@@ -270,3 +270,20 @@ phases). Whether it eventually deserves an ARC line is the owner's call, not thi
   `restore-evidence.sh`'s pattern) — explicitly deferred per decision (iv); revisit only
   if the advisory step is observed being skipped.
 - The RELEASE_CHECKLIST.md truncation claim (§2) — verify or drop.
+
+## 10. Addendum (2026-07-18): the pointer line's hash was a separate, unhardened channel
+
+This design hardened the **file** transfer — content that must survive verbatim now
+travels as a committed, fingerprint-validated artifact, not a clipboard paste — and that
+part held up: a real-world corruption attempt on that channel has not recurred since
+`feat/handoff-integrity-kit` shipped. But the one-line **pointer** itself (`Handoff: <path>
+@ <branch> (<short-hash>)`, §5 iii above) was left as agent-typed prose, with no mechanism
+forcing or checking its commit hash. That gap was hit for real on `fix/plan-approval-hook-scope`'s
+own handoff: the closing agent fabricated a short hash from pattern completion after a
+`git merge --no-ff` whose output doesn't include one — full evidence in
+[`diagnosis/handoff-pointer-verification.md`](diagnosis/handoff-pointer-verification.md).
+Closed on `fix/handoff-pointer-verification`: `scripts/print_handoff_pointer.py` generates
+the line from git directly, and `scripts/check_handoff_pointer.py` independently
+re-verifies it against git state on both the generation and consumption side. Two different
+integrity problems, two different fixes — the file-transfer fix does not cover the pointer
+line, and vice versa.

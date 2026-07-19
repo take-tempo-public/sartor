@@ -515,7 +515,38 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **14** (**−1** this entry — the handoff-transfer-corruption item
+_Rendered open count: **18** (**+3** this entry — `refactor/css-cascade-collapse`,
+2026-07-18: PX-51 (`style.css` duplicate-cascade collapse) lands (see the efficiency-review
+row above), which does not itself change this ledger's open count — but the census that
+made it possible surfaced two new, pre-existing, unrelated-to-the-merge bugs (a likely-dead
+`.cb-panel` collapse-animation easing, and an already-shadowed mobile `.panel-body` padding
+override), both deliberately left unfixed and filed as new open items below; and the
+branch's own close-out surfaced a third — `block-merge-to-main`'s wiki arm evaluates the
+PRE-merge worktree, so a branch that refreshes the wiki cannot be locally merged (the
+block is triggered by the state the merge would fix). Prior to that:
+**15** (**+1** this entry — `fix/capture-screenshots-welcome-modal`,
+2026-07-18: three independent `scripts/capture_screenshots.py` staleness bugs found+fixed
+(welcome-modal auto-open, clarify-button double-click, cover-letter drawer visibility), but
+the lack of periodic exercise that let them accumulate is itself filed as a new open item —
+see below. Prior to that: **14** (**−1** this entry — `docs/handoff-template-relative-link`,
+2026-07-18: `AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" relative-link citation,
+**RESOLVED** — see its `#### Resolved` entry below. **Correction to the prior entry's count:**
+the actual count immediately before this one was **15**, not the 14 stated there —
+`fix/compose-unawaited-reloads` filed this item into `#### Open` on 2026-07-18 but never
+updated this header for the +1 (verified by counting `- [ ]` bullets directly). This entry's
+−1 brings the true count back to 14, which happens to match what the stale header already said.
+Prior to that (as stated there, undercounted by the one-item gap just described): **14**
+(unchanged this entry — `fix/handoff-pointer-verification`,
+2026-07-18: found-and-fixed within its own branch, never entered `#### Open`, so no net change
+to the open count; full evidence in its `#### Resolved` entry below and
+`docs/dev/diagnosis/handoff-pointer-verification.md`).
+Prior to that: **14** (unchanged this entry — `fix/plan-approval-hook-scope`,
+2026-07-17: **−1** the `check-plan-approved` global-scope hook gap, **RESOLVED** (marker +
+pointer state now keyed off `CLAUDE_PROJECT_DIR`; full detail in its Resolved-section note);
+**+1** a new item filed same branch — `enforcement.md`'s own remedy for that finding cited
+"charter W-1" as an existing clause, and reading `charter.md` directly during the fix
+confirmed no such clause exists. Net unchanged, still over the ~8-10 ceiling.
+Prior to that: **14** (**−1** this entry — the handoff-transfer-corruption item
 **RESOLVED** on `feat/handoff-integrity-kit`, 2026-07-17: the kit (provenance stamp +
 fingerprint validator + ledger, vendored from spolia) is implemented and this item moved to
 Resolved — see its note there for detail. Prior to that: **15** (**+1** the
@@ -537,9 +568,9 @@ CodeQL as a required check. Earlier still: the count reached 12 on
 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
 prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out — confirmed 15 by direct count at time of this edit). **OVER THE
+each close-out — confirmed 18 by direct count at time of this edit). **OVER THE
 CEILING — the reduction sprint is overdue and should be scheduled before the v1.1.0
-tag** (the rule is ~8–10; this is 15); several items below are small and
+tag** (the rule is ~8–10; this is 18); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
@@ -623,6 +654,27 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       commit, not yet turned into the resumable-gate tooling this item still asks for.
       Doesn't resolve the `-m "not ux"` / `-m ux` non-additive-timing contradiction above — still
       unexplained, still the first thing to measure before choosing a remedy.
+      **→ Update (2026-07-18, `refactor/css-cascade-collapse`):** same wall, new evidence that
+      weakens the "per-command wall-clock ceiling" model above. Same `python -m scripts.gate`
+      command, run three times in a row: killed at **58%** through pytest one time (well past
+      5-10 min — ruff+format+mypy ran first, but 58% of a ~49-min suite is still a lot of
+      survived pytest time), killed almost **instantly** (before pytest finished collecting) on
+      an immediate identical retry, killed at **9%** on a third, narrower `pytest -m "not ux"`
+      retry right after that. Same command, three tries, no consistent completion point — hard
+      to explain as a fixed per-command timer. **New, more direct evidence for an
+      environment-wide event, not a per-command one:** in the same window, a Flask dev server
+      background process that had already been running successfully for a long time (used
+      repeatedly for live browser verification) was killed **simultaneously** with a
+      freshly-started gate re-run — a long-lived, previously-stable process dying at the same
+      moment as a brand-new command suggests something is killing multiple unrelated background
+      processes at once (a shell/session recycle?), not each command independently hitting its
+      own ceiling. **Worked around the same way as before** (file-list splitting via `split -n
+      l/8` into ~15-file chunks, run sequentially) — still a manual workaround, not the
+      resumable-gate tooling this item has asked for since 2026-07-14. **This item now has two
+      independent sessions' worth of evidence pointing at ambient environment/session behavior
+      rather than a per-invocation resource limit** — worth prioritizing the instrumentation this
+      item already calls for, since manual chunking is being reinvented by hand each time it's
+      hit.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -904,6 +956,28 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `git diff --stat main -- '*.py' '*.js'`), so it cannot be this branch's regression; filed
       here as a fresh data point for whoever next works this flake class, per C-7's "an instrument
       narrowed to your theory hides its rivals" — not fixed, not silently ignored.
+      **Data point, WITH a controlled baseline A/B (2026-07-18, `refactor/css-cascade-collapse`):**
+      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (same file, same
+      settle/restore mechanism family) failed twice on that branch — and, importantly, with **two
+      different failure modes across two consecutive runs**: first `before == 0` ("test setup
+      didn't actually scroll the page (page too short?)"), then the generation-mismatch assert
+      (`306 == 59`, "the stale invocation's restore was not correctly abandoned"). Because that
+      branch edits `static/style.css`'s layout properties (`.cb-main`'s `min-height`/`display:flex`,
+      `.cb-panel`'s `display:grid`/`grid-template-rows`, `.panel-body`'s `overflow`/`min-height`),
+      a "page too short to scroll" failure was a **genuinely plausible CSS regression** and was NOT
+      assumed benign. **Settled by experiment, not by argument** (the method this entry's own
+      2026-07-14 measurement established): backed up the working tree's `style.css`, restored the
+      unmodified baseline via `git checkout HEAD -- static/style.css`, and re-ran the same single
+      test 3× on the **baseline** → **1 failed / 2 passed**. The flake reproduces with the CSS
+      change absent, so it is **not** attributable to the cascade collapse; working tree restored
+      byte-identically (md5-verified) afterward. Sample is small (n=3 baseline, n=2 branch) and is
+      offered as attribution evidence only — **not** as a rate measurement, and it does not
+      supersede the 4/24 (~17%) mode-C figure above. **New wrinkle worth noting for whoever picks
+      this up:** the `before == 0` variant is a failure signature not listed in the A/B/C/D
+      taxonomy for *this* test (the taxonomy's `before == 0` mode was catalogued against
+      `test_corpus_reload_preserves_scroll_position`), and it appeared here **without** deliberate
+      CPU saturation — so the settle/restore family may flake on an ordinary loaded dev machine,
+      not only under the 7-worker busy-loop calibration.
 
 - [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
       incomplete (not failed)** — removes 6 references to the owner's private local testing
@@ -940,30 +1014,54 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-13, `chore/scorecard-and-docs-voice`.)_
       **→ Opportunistic; do not schedule.**
 
-- [ ] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
+- [x] **Compose user-action reloads still fire `loadComposition()` un-awaited** —
       `fix/ci-first-linux-run` awaited the **five auto-arrival cascade** fires
       (`_fireDraftSummary` / `_fireRecommendSummary` / `_fireDraftGapFill` /
       `_fireRecommendSkills` / `_fireRecommendExperienceSummaries`) so the settle
       gate (`data-compose-bg-pending`) can't read terminal mid-repaint (the
       confirmed compose-summary load-flake, PR #8). The **user-action** reloads
-      that share the identical `_markComposeBgReload(±1)` bracket —
-      `_fireSuggestSkills`, `_togglePositioningPin`, `_addComposeRoleIntro`, the
-      add-title / apply-change handlers — were left un-awaited (out of the approved
-      scope). Lower-risk (each drives a test that waits on a specific DOM outcome,
-      not the bare settle gate), but for full settle-gate consistency they should
-      `await loadComposition()` too. **Fix:** add `await` to each; fold in next
-      time `static/app.js`'s Compose section is touched.
+      that share the identical `_markComposeBgReload(±1)` bracket were left
+      un-awaited (out of the approved scope).
       _(discovered: v1.1.0 stream, 2026-07-12, `fix/ci-first-linux-run`.)_
-      **→ Low priority, own small pass.**
       **→ Investigated and EXONERATED as a suspect (2026-07-13,
       `fix/compose-summary-draft-settle-hole`)** — it was the leading hypothesis for the
       chronically-red `test_compose_summary_draft_autofills_edits_and_persists`, and it is
       **not** the cause: that test's failing path runs through `_fireDraftSummary`, whose
       `loadComposition()` **is** awaited (`static/app.js:7338`), and every un-awaited site
       above sits off it. The real cause was a torn read of a non-atomically-written context
-      file plus a once-ever latch burned before the fire. **This row stays open on its own
-      merits** (the sites are still a genuine latent settle-gate inconsistency) — but do not
-      re-chase it as the explanation for a Compose flake; that ground is covered.
+      file plus a once-ever latch burned before the fire.
+      **→ RESOLVED (2026-07-18, `fix/compose-unawaited-reloads`).** Re-derived the
+      live call-site list from `static/app.js` rather than trusting this entry's own
+      prose (it had gone stale: the "add-title" handler was already awaited since an
+      earlier, unrelated commit `c988db3`, and this entry omitted two sites —
+      `_reviewPendingSkill`, `_decideGapFill`). Added `await` to the 9 actually-open
+      sites across 6 already-`async` functions: `_acceptRefinementProposal` (4 call
+      sites), `_togglePositioningPin`, `_fireSuggestSkills`, `_reviewPendingSkill`,
+      `_decideGapFill`, `_addComposeRoleIntro`. Falsified before fixing per charter
+      C-7: `docs/dev/diagnosis/compose-unawaited-reloads.md` — a new regression test
+      (`tests/ux/regression/test_20260718_compose_unawaited_reloads.py`) failed
+      deterministically on unmodified HEAD (settle gate reported "not pending" while
+      `data-compose-ready` was still absent) and passed after the fix, no retry. Left
+      out of scope: 3 sites (`wizardGoTo`, `_resumeIntoStep6`,
+      `_resumeIntoPreGenerateStep`) whose call chains include non-`async`
+      intermediate frames and mixed triggers (browser Back/Forward, a chained-async
+      cascade tail) — see the new carry-forward row immediately below.
+
+- [ ] **3 `loadComposition()` sites excluded from the `compose-unawaited-reloads` fix
+      have a materially different shape and need their own pass** —
+      `static/app.js:6549` (`_resumeIntoStep6`), `:6606`
+      (`_resumeIntoPreGenerateStep`), and `:6932` (`wizardGoTo`, single call site,
+      step===3). Reaching the first two requires making `resumeApplicationIntoWizard`
+      and its `onResume` click-handler caller async-aware (currently plain
+      functions); `wizardGoTo`'s call site is reachable from a direct click AND a
+      chained-async cascade tail (`_fireRecommendThenCompose`) AND browser
+      Back/Forward (`_onWizardPopState`) — awaiting it changes the shape of at least
+      3 different call paths, not a 1-line mechanical edit like the 9 sites just
+      fixed. **Fix:** design a scoped approach (may not be "just add await" for the
+      popstate-triggered path) before touching it.
+      _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`, while
+      re-deriving the full call-site map for the row above.)_
+      **→ Low priority, own small pass — needs design, not just mechanical `await`.**
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
@@ -1468,6 +1566,16 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       project's actual `1.0.9`), PX-51 (deliberately deferred, low risk). Full
       reconciliation + the individual-branch sequence to close these out:
       `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation".
+      **→ Landed (2026-07-18, `refactor/css-cascade-collapse`):** PX-51 lands.
+      Re-derived the duplicate-selector census fresh against HEAD `248703b`
+      (both the original prescription and the 2026-07-07 staleness re-verify's
+      line numbers had gone stale) — 16 duplicate selector-group pairs across
+      three source regions, ~128 lines of real duplication (well below the
+      original "~780 lines/20%" estimate). Verified behavior-preserving via a
+      live `getComputedStyle` before/after snapshot, byte-identical across all
+      16 selectors. Full detail in `CHANGELOG.md`. **Corrected count: 8 of 13
+      fully landed, 5 remain:** PX-37, PX-39, PX-44 (refactor half), PX-46,
+      PX-47 (remainder).
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
@@ -1555,27 +1663,201 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       draft down-payment landed). #12 and #14 are already routed/low-stakes per the
       notes above. The `app.run(threaded=True)` governance flag is a deliberate
       owner-gated deferral, not a miss.
+      **→ Landed (2026-07-18, `refactor/css-cascade-collapse`):** PX-51 lands as its
+      own branch — see the carry-forward ledger's PX-51 row above and `CHANGELOG.md`
+      for full detail. This ledger item's remaining scope is now just the two items
+      named directly above (run-cancel endpoint, content-cluster full pass).
 
-- [ ] **`check-plan-approved` hook has no per-project/session scope — a concurrent
-      unrelated session can false-positive block this one** — the hook (source read
-      directly) compares the newest `*.md` in `~/.claude/plans/` GLOBALLY against one
-      `.approved` marker; plan files carry no project association, so any concurrent
-      Claude Code session on this machine, in ANY project, mid-plan, blocks Edit/Write
-      in every other session until that session calls `ExitPlanMode`. Hit live on this
-      branch (2026-07-16, Chip 2) by an unrelated session working on a different repo
-      entirely. Worked around per-instance (user confirmed the other session was
-      unrelated; the hook is registered for `Edit|Write` only, not `Bash`, so a narrow
-      scripted text-replacement proceeded without touching the shared marker or the
-      other session's plan) — not a fix. Full mechanism in
-      [[reference-plan-approval-hook-global-scope]] (durable memory). **Needs an actual
-      fix**: scope the marker/newest-plan comparison per project (e.g. a
-      project-path-derived subdirectory or marker filename) so concurrent multi-project
-      sessions don't collide.
-      _(discovered: v1.1.0 stream, 2026-07-16, `fix/ux-scroll-position-flake` Chip 2 —
-      unrelated to the scroll-flake work it was hit alongside; open count 13 → 14, over
-      the ~8-10 ceiling and rising — the reduction sprint is now more overdue, not less.)_
+- [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
+      (the parallel-session working model) as an established governance clause — it does
+      not exist.** `docs/governance/charter.md` has no `W-1` clause anywhere (only
+      `C-0`…`C-9` and `D-1`…`D-7`). Discovered while fixing the hook side of the same
+      finding on `fix/plan-approval-hook-scope` (item 14 below, now Resolved) —
+      `enforcement.md:107`'s own "Why it stays soft" cell named "codify ... as prose
+      governance (charter W-1)" as the other half of that fix's remedy, and reading
+      `charter.md` directly confirmed the clause was never actually written. Corrected
+      in place at `enforcement.md:107` (now says so honestly) rather than silently
+      implying W-1 exists. **Needs an actual fix**: an owner-directed amendment ceremony
+      that writes the real `W-1` clause text into `charter.md` (the same shape as how
+      **C-9** was added on `feat/handoff-integrity-kit`), then reconciles the other
+      dangling citations (`enforcement.md:108,155` at minimum — not audited exhaustively
+      here, since authoring the clause is the owner's call, not this branch's).
+      _(discovered: v1.1.0 stream, 2026-07-17, `fix/plan-approval-hook-scope`; open count
+      14 → 14 — item 14 below resolved same branch, this one added, net unchanged, still
+      over the ~8-10 ceiling.)_
+
+- [ ] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
+      accumulated THREE independent staleness bugs over ~7 weeks with nobody noticing.**
+      Discovered on `fix/capture-screenshots-welcome-modal` (2026-07-18) while capturing
+      PX-51's before-baseline: (1) a first-visit welcome/tour help-modal
+      (`static/app.js`'s `_HELP_REGISTRY`, 17 auto-firing blocks) blocked the script's
+      very first click — fixed by extracting `tests/ux/conftest.py`'s existing
+      `page.add_init_script` suppression pattern into `ui_pages/selectors.py::Help`
+      (shared by both consumers now); (2) `run_step2` manually clicked `#btnClarify`
+      after already reaching Step 2 via the "Continue to Clarify →" CTA, which
+      (`app.js` "Finding #6") already auto-fires the same fetch and disables that
+      button — fixed by calling the already-existing `WizardClarifyPage.wait_for_questions()`
+      instead of `request_questions()`; (3) `generate_cover_letter()` waited for
+      `#coverLetterPreview` to become visible, but that element's home location is
+      permanently hidden — it's only visible once moved into the "Edit before
+      downloading" drawer via `openEditDrawer('cover')` — fixed by clicking
+      `#btnOpenCoverEditDrawer` first. All three fixed + verified together in one
+      full, unmodified, genuinely-fresh-context run (`docs/dev/diagnosis/capture-screenshots-welcome-modal.md`).
+      **Still open:** the script has no periodic exercise (not in CI, no scheduled
+      smoke run), so the same class of silent drift can recur — needs an owner
+      decision on whether a cheap periodic check (e.g. a pre-tag or monthly smoke
+      run through just Step 1) is worth the LLM spend, or whether "run before each
+      release + manually" (its current de facto cadence) is accepted as sufficient.
+      _(discovered: v1.1.0 stream, 2026-07-18, `fix/capture-screenshots-welcome-modal`;
+      open count 14 → 15, still over the ~8-10 ceiling — reduction sprint now more
+      overdue, not less.)_
+
+- [ ] **`.cb-panel`'s collapse animation likely already snaps instead of easing** —
+      discovered during the `refactor/css-cascade-collapse` (PX-51) selector census:
+      `.cb-panel`'s `transition` property is fully contested between the primary and
+      restyle copies (not additive), and the restyle copy's value (`border-color …,
+      box-shadow …`) already wins today, completely replacing the primary copy's
+      `grid-template-rows 0.35s ease` easing. So the panel open/collapse toggle is
+      likely already snapping instantly rather than easing, independent of and
+      unaffected by the PX-51 collapse itself (same behavior before and after that
+      merge either way — deliberately left unfixed there, see `CHANGELOG.md`).
+      **Needs an owner decision:** restore the easing (add `grid-template-rows` back
+      into the restyle `transition` list) or accept the current snap behavior as-is.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 15 → 16, still over the ~8-10 ceiling.)_
+
+- [ ] **A mobile `.panel-body` padding override is already shadowed/dead** — discovered
+      during the same PX-51 census: the `@media (max-width:768px) { .panel-body {
+      padding: 12px 16px; } }` override (`static/style.css` ~line 220 at HEAD `248703b`)
+      is same-specificity as, but sits earlier in source than, an unconditional
+      `.panel-body` rule in the restyle section — so on mobile viewports today, the
+      unconditional rule already wins regardless of the media query (media conditions
+      don't affect source-order tie-breaking once both rules are "in effect"). Likely
+      already broken independent of PX-51 (unaffected by that merge either way — left
+      unfixed there, see `CHANGELOG.md`). **Needs verification on a real narrow
+      viewport, then an owner decision** on whether to fix (raise specificity or move
+      the override later in source) or accept current behavior.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 16 → 17, further over the ~8-10 ceiling — reduction sprint now more overdue
+      still.)_
+
+- [ ] **`block-merge-to-main`'s wiki arm makes a wiki-refreshing branch unmergeable —
+      the guard reads the PRE-merge worktree** — `scripts/enforcement/guards/block_merge_to_main.py`'s
+      `_wiki_freshness_result()` runs `wiki_freshness.check()` against **the invoking
+      worktree**. When you stand on `main` to merge a branch whose whole point includes
+      advancing `docs/wiki/.last_ingest_sha`, the guard reads *main's* still-stale
+      checkpoint against *main's* HEAD and blocks — even though completing that very
+      merge is what makes the wiki fresh. The block is therefore triggered by the state
+      the merge would fix. **Observed 2026-07-18** on `refactor/css-cascade-collapse`:
+      ran `/wiki-self-update` on the branch (genuine pass — zero cite drift, 1 page
+      synthesized + audited, checkpoint advanced `9f3c800` → `248703b`, `wiki_freshness`
+      reporting OK on the branch), then `CLAUDE_CONFIRM_MERGE=1 git merge --no-ff` from
+      `main` was **BLOCKED**: *"docs/wiki/ is 76 file(s) stale vs HEAD"*.
+      **Why nobody hit this before (checked, not assumed):** the wiki arm landed
+      2026-07-10 (`b8ae771`, `ci/doc-merge-gate`), and the only checkpoint advance since
+      (`0e5b9c8`, 2026-07-13) reached `main` on its **first-parent line** — a GitHub
+      PR-style merge, not a local `git merge` — so this local guard never fired for it.
+      Verified via `git rev-list --first-parent main`. This path is genuinely
+      unexercised, not a regression.
+      **There is deliberately NO escape hatch** — the guard's own docstring states
+      `CLAUDE_CONFIRM_MERGE=1` does not cover the wiki arm and "the only way through is
+      running `/wiki-self-update` … mirroring the `DOC-STATUS` gate's no-escape-hatch
+      design." That design intent is right; the *evaluation point* is the bug. Advancing
+      the checkpoint by hand on `main` to satisfy it would be exactly the
+      hand-create-the-file-a-hook-checks-for move that `feedback_hook_discipline`
+      forbids, so it was **not** done — surfaced to the owner instead.
+      **Candidate fixes (none implemented — this touches the enforcement surface and
+      wants its own branch, plausibly folded into step 6 `chore/hook-dispatcher`):**
+      (a) evaluate freshness against the **post-merge** result (e.g. the merge source's
+      `.last_ingest_sha`, or `git merge-tree`), not the pre-merge worktree; (b) allow
+      when the incoming ref's checkpoint is at-or-ahead of the resulting HEAD; (c) accept
+      that local `--no-ff` merges to `main` are not the project's real publish channel
+      and scope the arm to push/PR instead. **Decide before the next wiki refresh** —
+      every future wiki-refreshing branch hits this same wall.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 17 → 18.)_
 
 #### Resolved
+
+- [x] **`AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" verbatim block had a
+      relative link that broke every time it was copied into an actual handoff — RESOLVED**
+      on `docs/handoff-template-relative-link`, 2026-07-18. Was:
+      `docs/dev/AGENT_HANDOFF_TEMPLATE.md:286`'s citation
+      `[...](diagnosis/handoff-pointer-verification.md)` resolved correctly from the
+      template's own location (`docs/dev/`) but 404'd once copied verbatim into
+      `docs/dev/handoffs/<slug>.md` (one directory deeper). Every closing agent since had
+      been hand-patching their own copy to `../diagnosis/...` (confirmed in both
+      `fix-handoff-pointer-verification.md:303` and `fix-compose-unawaited-reloads.md:331`),
+      which made every handoff's "verbatim" section deliberately diverge from the template —
+      the exact `verify_doc_template.py --event consumed` `BLOCKED` result hit while consuming
+      the `fix-compose-unawaited-reloads` handoff pointer this session (traced and confirmed
+      as this known, already-documented deviation — not new drift — before deciding to close
+      it here rather than accept-and-move-on). **Fix shipped:** dropped the markdown-link
+      syntax for a plain-text, full-repo-relative-path citation
+      (`` `docs/dev/diagnosis/handoff-pointer-verification.md` `` — no `[text](path)` at all),
+      matching the form already used one directory over in
+      `docs/dev/handoffs/README.md:23` to cite the same file. A plain path citation has no
+      relative-resolution step, so it survives being copied to any directory depth, and
+      `scripts/check_doc_links.py`'s link check doesn't even parse it (backtick-only, not
+      `[text](path)`) — nothing left to break. No sweep of already-merged handoffs was needed:
+      `scripts/check_doc_links.py` already reported 0 violations repo-wide before this fix (the
+      hand-patched `../` forms all resolve correctly in place); the ledger item's "sweep"
+      clause was conditional on finding breakage, and none existed. Found-and-fixed within its
+      own branch — sat in `#### Open` since `fix/compose-unawaited-reloads`, 2026-07-18, so
+      this is a **−1** to the open count (see the `#### Open` header's top entry for the
+      count correction this also carried).
+
+- [x] **Handoff-pointer commit hash was hand-typed and unchecked — RESOLVED** on
+      `fix/handoff-pointer-verification`, 2026-07-18. Was: the closing agent's mandatory
+      close-out pointer line (`Handoff: <path> @ <branch> (<short-hash>)` — per
+      `docs/dev/handoff-integrity-design.md`, the ONE thing meant to reliably cross into
+      the next session) had its commit hash hand-typed from memory, with nothing forcing
+      or checking it — unlike the handoff FILE it points to, which is already fingerprint/
+      provenance-verified. **Proven fabricated, not merely theorized:** the next session
+      received pointer `Handoff: docs/dev/handoffs/fix-plan-approval-hook-scope.md @ main
+      (0d7fe1a)`; `0d7fe1a` does not exist anywhere in the repo. Grepping the prior
+      session's own transcript found the string exactly once — in the model's generated
+      closing text, present in no tool call or tool result — right after a
+      `git merge --no-ff` whose stdout is a diffstat with no commit hash in it. Full
+      evidence: [`diagnosis/handoff-pointer-verification.md`](diagnosis/handoff-pointer-verification.md).
+      **Fix shipped:** `scripts/print_handoff_pointer.py` reads branch + short HEAD hash
+      from git directly and refuses to print anything for a handoff doc not yet committed
+      and reachable at HEAD; `scripts/check_handoff_pointer.py` independently re-verifies
+      a pointer line's cited commit/path/branch against real git state, run on both ends
+      (by the closing agent right after generating the pointer, and by the next agent as
+      its first action on receiving one) — enforce the method, then check the result.
+      `AGENT_HANDOFF_TEMPLATE.md` / `AGENTS.md` / `docs/dev/handoffs/README.md` now mandate
+      both scripts. New regression suite `tests/test_handoff_pointer.py` (11 tests,
+      subprocess-level against both real scripts in a throwaway git repo). Found-and-fixed
+      within its own branch — never sat in `#### Open` — so no net change to the open count.
+
+- [x] **`check-plan-approved` hook global scope — RESOLVED** on
+      `fix/plan-approval-hook-scope`, 2026-07-17. Was: the hook (source read directly)
+      compared the newest `*.md` in `~/.claude/plans/` GLOBALLY against one `.approved`
+      marker; plan files carried no project association, so any concurrent Claude Code
+      session on this machine, in ANY project, mid-plan, blocked Edit/Write in every
+      other session until that session called `ExitPlanMode` — hit live on
+      `fix/ux-scroll-position-flake` (2026-07-16, Chip 2) by an unrelated session working
+      on a different repo entirely. **Fix shipped:** `check-plan-approved.sh` /
+      `mark-plan-approved.sh` / `cleanup-plan-on-merge.sh` now key their approval marker
+      and a new "current plan file" pointer off `CLAUDE_PROJECT_DIR` (confirmed a real
+      env var inside hook bodies, matching 9 of the other 12 hooks), so a concurrent
+      session in a different project/worktree can no longer trip or satisfy this
+      project's gate, and its merge close-out can no longer wipe this project's state.
+      **A second, related defect was found live during this branch's own
+      investigation** (not hypothesized): `cleanup-plan-on-merge.sh`'s merge-detection
+      was a bare text `grep` over the whole raw stdin JSON with no check that a merge
+      actually happened — a diagnostic Bash command whose text merely *mentioned* the
+      trigger phrases (as echoed test data) tripped it for real and deleted a just-
+      approved plan. Fixed by gating the actual deletion on a structural check (`git -C
+      "$CLAUDE_PROJECT_DIR" log -1 --pretty=%P` has ≥2 parents — HEAD is genuinely a
+      merge commit right now), keeping the text `grep` only as a cheap pre-filter. Full
+      evidence: [`diagnosis/plan-approval-hook-scope.md`](diagnosis/plan-approval-hook-scope.md).
+      New regression suite `tests/test_plan_approval_scoping.py` (7 tests, subprocess-
+      level against the real scripts); `tests/test_governance_hooks_gate.py` unchanged
+      and still green. The "charter W-1" citation this finding's own remedy depended on
+      turned out not to exist — filed as its own new item above rather than silently
+      authored mid-branch.
 
 - [x] **Handoff transfer channel — RESOLVED** on `feat/handoff-integrity-kit`,
       2026-07-17 (kit implemented; design + evidence:

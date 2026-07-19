@@ -21,6 +21,70 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: `static/style.css`'s duplicate-selector cascade collapsed (PX-51, `refactor/css-cascade-collapse`)
+
+An early "primary" CSS section and a later "sartor. component layer" (restyle) section
+both defined some of the same selectors — a later-rule-wins footgun where, for any
+property only the earlier copy declared, that copy's value (not the later one's) was
+actually rendering. A 2026-07 efficiency review flagged this (PX-51) and originally
+estimated "merge ~780 lines, ~20% shrink"; a later re-verify found that overstated and
+re-scoped it to a precise selector-level collapse. This branch re-derived a fresh,
+full-file census against current HEAD (line numbers in both prior estimates had gone
+stale) and found 16 duplicate selector-group pairs across three source regions
+(`.compose-row.pinned`/`::before`/`.excluded`; the Phase D.2 top-level tabs; and the
+primary layout/panel/form/button rules) — realistically ~128 lines of duplication, not
+~780.
+
+For every pair, the later ("restyle") copy's location was kept — its values are what's
+actually rendering for every contested property — and any property only the earlier
+copy declared was carried into the kept rule before the earlier copy was deleted, so
+the change is 100% behavior-preserving (verified via a live `getComputedStyle`
+before/after snapshot across all 16 selectors, byte-identical, plus a manual
+screenshot/click-through comparison). The highest-risk carryover was
+`.panel-header::after`'s `content: '▾'` — a pseudo-element generates no box at all
+without `content`, so a naive deletion would have silently removed the panel-collapse
+chevron. A second, less obvious case: `.compose-row.pinned`'s `box-shadow: var(--edge-top)`
+survives specificity-over-source-order (a 2-class selector beats the later 1-class base
+rule regardless of which comes first in the file) — confirmed live via computed-style
+inspection (the rendered alpha channel matched `--edge-top`'s value, not the base rule's
+`--edge-soft`).
+
+Two pre-existing, unrelated bugs were discovered during the census and deliberately
+left unfixed (both are independent of this collapse — same behavior before and after
+either way, and fixing them would turn a provably behavior-preserving refactor into an
+actual behavior change): `.cb-panel`'s collapse-animation easing is already fully
+overridden by the later rule's `transition`, so the panel collapse likely already snaps
+instantly rather than easing; and a `@media (max-width:768px) { .panel-body {...} }`
+override is already shadowed by an unconditional later rule (media conditions don't
+affect source-order tie-breaking). Both filed as carry-forward ledger items.
+
+### Fixed: the handoff pointer line's commit hash was hand-typed, with nothing forcing or checking it (`fix/handoff-pointer-verification`)
+
+The one line of copyable chat text a closing agent hands the user at end-of-session — `Handoff:
+<path> @ <branch> (<short-hash>)` — had its commit hash typed from memory, with nothing forcing
+or checking it, even though the committed handoff FILE it points to is already fingerprint/
+provenance-verified (`scripts/verify_doc_template.py`, charter C-9). Proven fabricated at least
+once: a closing agent ran `git merge --no-ff` (stdout is a diffstat, no hash), then typed a
+plausible-looking but nonexistent short hash into its closing summary — found by grepping that
+session's own transcript, where the string appears exactly once, in the model's generated text,
+nowhere in any tool call or result (full evidence:
+[`docs/dev/diagnosis/handoff-pointer-verification.md`](docs/dev/diagnosis/handoff-pointer-verification.md)).
+
+- New `scripts/print_handoff_pointer.py` generates the pointer line from git directly (branch +
+  short HEAD hash), and refuses to print anything for a handoff doc that isn't yet committed and
+  reachable at HEAD — this also guards against citing a pointer before its own merge has landed.
+- New `scripts/check_handoff_pointer.py` independently re-verifies a pointer line against git
+  state (the cited commit exists, the doc is present in its tree, the commit is an ancestor of
+  the named branch) — run on both ends: by the closing agent immediately after generating the
+  pointer, before pasting it, and by the next agent as its first action on receiving one, before
+  trusting anything else about it. Enforce the method, then check the result.
+- `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s Close-out checklist step 5, `AGENTS.md`'s own step 5,
+  and `docs/dev/handoffs/README.md`'s "The pointer"/"Consumption" bullets now mandate both
+  scripts instead of a hand-typed, unchecked line.
+- New regression suite `tests/test_handoff_pointer.py` (11 tests), subprocess-level against both
+  real scripts in a throwaway git repo.
+- Governance/process fix — no route, prompt, or dependency change; `PROMPT_VERSION` untouched.
+
 ### Added: handoff transfer integrity — committed, fingerprint-validated handoff files (`feat/handoff-integrity-kit`)
 
 Handoffs copy-pasted between Claude Code sessions have been silently arriving corrupted —
@@ -59,6 +123,41 @@ evidence + decision record: [`docs/dev/handoff-integrity-design.md`](docs/dev/ha
   (`docs/governance/charter.md`) — raised as an open question, decided by the owner at this
   branch's own merge-confirmation, honestly cited as documented convention rather than a
   blocking hook, per that clause's own claims discipline (C-0).
+
+### Fixed: the plan-approval hooks shared one global marker across every Claude Code project on the machine (`fix/plan-approval-hook-scope`)
+
+`check-plan-approved.sh`, `mark-plan-approved.sh`, and `cleanup-plan-on-merge.sh` kept their
+approval state in one global `$HOME/.claude/plans/.approved` marker and treated
+`$HOME/.claude/plans/*.md` as one flat, shared pool — with no project association in the
+filename or location. A concurrent Claude Code session in a completely unrelated repo could
+false-block this project's already-approved edits (its plan file merely being newer than the
+marker was enough), and that unrelated session's merge close-out could delete this project's
+live approval outright. Both live-reproduced against the unmodified scripts before the fix
+(full evidence: [`docs/dev/diagnosis/plan-approval-hook-scope.md`](docs/dev/diagnosis/plan-approval-hook-scope.md)).
+
+- All three scripts now key their approval marker and a new "current plan file" pointer off
+  `CLAUDE_PROJECT_DIR` (confirmed a real environment variable inside hook script bodies,
+  matching 9 of the other 12 hooks in `.claude-plugin/hooks/`) instead of one shared global
+  file — a concurrent session in a different project or worktree can no longer trip or
+  satisfy this project's gate.
+- **A second, related defect was found live during this fix's own investigation**, not
+  hypothesized: `cleanup-plan-on-merge.sh`'s merge-detection was a bare text `grep` over the
+  whole raw stdin JSON, with no check that a merge had actually happened. A diagnostic Bash
+  command whose text merely *mentioned* the trigger phrases (as echoed test data) tripped it
+  for real and deleted a just-approved plan. Fixed by gating the actual deletion on a
+  structural check — HEAD in this project's own repo must currently be a merge commit
+  (`git -C "$CLAUDE_PROJECT_DIR" log -1 --pretty=%P` has ≥2 parents) — keeping the text
+  `grep` only as a cheap pre-filter.
+- New regression suite `tests/test_plan_approval_scoping.py` (7 tests, subprocess-level
+  against the real scripts, temp `HOME` + distinct `CLAUDE_PROJECT_DIR` values per test).
+  `tests/test_governance_hooks_gate.py` needed no changes (its assertions are text/wiring-
+  based, not marker-path-based).
+- Governance/process fix — no route, prompt, or dependency change; `PROMPT_VERSION` untouched.
+- **Not done here (owner-directed):** `docs/governance/enforcement.md` and several memory
+  files cite "charter W-1" (the parallel-session working model) as an existing clause; it is
+  not — `charter.md` has no `W-1` section. `enforcement.md:107` now says so honestly rather
+  than implying it exists; authoring the actual clause is filed as its own
+  `RELEASE_CHECKLIST.md` Carry-forward item for a future, owner-directed amendment ceremony.
 
 ### Fixed: corpus/Compose reloads could snap your scroll position away (`fix/ux-scroll-position-flake`)
 

@@ -42,7 +42,8 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/prompt-version-discipline.md`](pages/prompt-version-discipline.md) — the
   `PROMPT_VERSION` bump rule + the eval prompt-override primitive.
 - [`pages/context-set-contract.md`](pages/context-set-contract.md) — the `context_set`
-  JSON contract every pipeline stage reads + writes; the containment guard.
+  JSON contract every pipeline stage reads + writes; atomic writes + the lost-update
+  transaction; the containment guard.
 - [`pages/iteration-audit-chain.md`](pages/iteration-audit-chain.md) — per-generate
   child context files; `parent_context_path` as the immutable audit trail.
 - [`pages/corpus-data-model.md`](pages/corpus-data-model.md) — the SQLite corpus schema

@@ -105,6 +105,28 @@ mutating the parent: it deep-copies via a JSON round-trip, increments `iteration
 consumed edit fields, and appends an [`IterationNote`](../../../hardening.py). The chain
 of `parent_context_path` pointers IS the audit trail — see [[iteration-audit-chain]].
 
+All writes to context files are serialized for safety against two distinct hazards.
+[`hardening.py:write_context_atomic`](../../../hardening.py) closes **torn reads**: it
+writes to a unique temp file and atomically moves it into place via `os.replace` (rather
+than truncating in-place), so a concurrent reader always sees either the whole old file
+or the whole new one. This is necessary on Windows where `Path.write_text` truncates
+before writing, leaving a window where reads see empty or half-written JSON that fails
+to parse. However, atomic writes do NOT prevent **lost updates**: when a route reads the
+whole context dict, spends seconds in an LLM call, then writes the stale dict back, any
+concurrent delta written during that window is silently erased. This was
+live — a candidate's drafted positioning summary could vanish permanently after being
+persisted. It is closed by [`hardening.py:context_transaction`](../../../hardening.py),
+a context manager that acquires a per-file in-process lock, re-reads the file fresh
+inside the lock (discarding the caller's optimistic pre-call copy), yields the dict to
+the caller for delta application only (NOT for carrying stale sub-dicts back in), then
+writes atomically on clean exit. The LLM call stays outside the lock — only the
+microseconds-fast delta application is serialized — and transient staging keys are
+never present on the fresh read, so the "don't leak staging keys into the iteration
+chain" hazard disappears structurally. See
+`tests/test_draft_summary.py:TestConcurrentContextWriters` and
+[`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](../../dev/diagnosis/compose-summary-draft-settle-hole.md)
+for the full evidence and design rationale.
+
 ## The containment guard
 
 Because the context path arrives from the client, every route that loads or writes one

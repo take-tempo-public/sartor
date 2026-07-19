@@ -42,5 +42,15 @@ class WizardOutputPage(BasePage):
             self.page.wait_for_selector(Output.COVER_TAB_ACTIVE, timeout=DEFAULT_TIMEOUT_MS)
         except PWTimeout:
             self.page.click(Output.COVER_TAB)
-        self.page.wait_for_selector(Output.COVER_PREVIEW, state="visible", timeout=LLM_TIMEOUT_MS)
+        # #coverLetterPreview's home location is hidden by default — the
+        # generation call populates it but only openEditDrawer('cover')
+        # (the "Edit before downloading" button) relocates it into the
+        # visible drawer host (templates/index.html:586).
+        self.page.wait_for_selector(
+            Output.OPEN_COVER_EDIT_DRAWER, state="visible", timeout=LLM_TIMEOUT_MS
+        )
+        self.page.click(Output.OPEN_COVER_EDIT_DRAWER)
+        self.page.wait_for_selector(
+            Output.COVER_PREVIEW, state="visible", timeout=DEFAULT_TIMEOUT_MS
+        )
         return True
