@@ -1,0 +1,2 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/chore-merge-channel-alignment.md", "session": "0ea5832d-e464-47fd-acf4-1d8d32a6343b", "branch": "main", "commit": "cce2dc1", "actor": "amodal1", "agent": "claude", "ts": "2026-07-19T19:11:12Z", "fingerprint": "3ce923405511"}
+{"event": "generated", "doc": "docs/dev/handoffs/chore-scrub-local-eval-paths.md", "session": "0ea5832d-e464-47fd-acf4-1d8d32a6343b", "branch": "chore/scrub-local-eval-paths", "commit": "7e0bd67", "actor": "amodal1", "agent": "claude", "ts": "2026-07-19T20:42:38Z", "fingerprint": "7d037e0ccc82"}

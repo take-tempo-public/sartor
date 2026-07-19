@@ -1603,6 +1603,16 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       16 selectors. Full detail in `CHANGELOG.md`. **Corrected count: 8 of 13
       fully landed, 5 remain:** PX-37, PX-39, PX-44 (refactor half), PX-46,
       PX-47 (remainder).
+      **→ Landed (2026-07-19, `chore/config-drift-batch`):** PX-47 lands. Re-verified
+      all four sub-items live against `main` (not the 2026-07-07 re-verify's prose) —
+      the revised scope held, with the `plugin.json` drift having widened further
+      (`1.0.6` vs `pyproject.toml`'s now-`1.0.9`, up from `1.0.6` vs `1.0.7` at the
+      last check). Bumped `plugin.json` to `1.0.9`; refreshed `CLAUDE.local.md`'s
+      stale path + future-tense hook-location note; documented the Sonnet/Haiku
+      model-pin split in `CLAUDE.md` as intentional and provider-imposed
+      (owner-directed, no `agents/*.md` re-pin). `settings.local.json` needed no
+      change (still 42 entries, zero stale-path hits). **Corrected count: 9 of 13
+      fully landed, 4 remain:** PX-37, PX-39, PX-44 (refactor half), PX-46.
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

@@ -1,7 +1,7 @@
 {
   "name": "sartor",
   "description": "Workflow plugin for the sartor. resume-optimizer Flask app: eval-harness + observability slash commands and grading/tuning subagents. Deterministic security/quality hooks ship in this directory but are wired via .claude/settings.json (see README).",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "author": {
     "name": "Cooksey"
   },
