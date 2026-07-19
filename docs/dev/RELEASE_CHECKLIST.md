@@ -515,12 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **17** (**+2** this entry — `refactor/css-cascade-collapse`,
+_Rendered open count: **18** (**+3** this entry — `refactor/css-cascade-collapse`,
 2026-07-18: PX-51 (`style.css` duplicate-cascade collapse) lands (see the efficiency-review
 row above), which does not itself change this ledger's open count — but the census that
 made it possible surfaced two new, pre-existing, unrelated-to-the-merge bugs (a likely-dead
 `.cb-panel` collapse-animation easing, and an already-shadowed mobile `.panel-body` padding
-override), both deliberately left unfixed and filed as new open items below. Prior to that:
+override), both deliberately left unfixed and filed as new open items below; and the
+branch's own close-out surfaced a third — `block-merge-to-main`'s wiki arm evaluates the
+PRE-merge worktree, so a branch that refreshes the wiki cannot be locally merged (the
+block is triggered by the state the merge would fix). Prior to that:
 **15** (**+1** this entry — `fix/capture-screenshots-welcome-modal`,
 2026-07-18: three independent `scripts/capture_screenshots.py` staleness bugs found+fixed
 (welcome-modal auto-open, clarify-button double-click, cover-letter drawer visibility), but
@@ -565,9 +568,9 @@ CodeQL as a required check. Earlier still: the count reached 12 on
 2026-07-14, +1 the `scroll_position` UX flake, +1 the CodeQL disposition resolved on the
 prior branch.)
 (`grep -c '^- \[ \]'` over this subsection is the source of truth, re-verified at
-each close-out — confirmed 17 by direct count at time of this edit). **OVER THE
+each close-out — confirmed 18 by direct count at time of this edit). **OVER THE
 CEILING — the reduction sprint is overdue and should be scheduled before the v1.1.0
-tag** (the rule is ~8–10; this is 17); several items below are small and
+tag** (the rule is ~8–10; this is 18); several items below are small and
 clearable in one pass. The full per-item
 addition/resolution chronology since 2026-06-15 lives in git history
 (`git log -p -- docs/dev/RELEASE_CHECKLIST.md`), not restated here.
@@ -1737,6 +1740,42 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
       count 16 → 17, further over the ~8-10 ceiling — reduction sprint now more overdue
       still.)_
+
+- [ ] **`block-merge-to-main`'s wiki arm makes a wiki-refreshing branch unmergeable —
+      the guard reads the PRE-merge worktree** — `scripts/enforcement/guards/block_merge_to_main.py`'s
+      `_wiki_freshness_result()` runs `wiki_freshness.check()` against **the invoking
+      worktree**. When you stand on `main` to merge a branch whose whole point includes
+      advancing `docs/wiki/.last_ingest_sha`, the guard reads *main's* still-stale
+      checkpoint against *main's* HEAD and blocks — even though completing that very
+      merge is what makes the wiki fresh. The block is therefore triggered by the state
+      the merge would fix. **Observed 2026-07-18** on `refactor/css-cascade-collapse`:
+      ran `/wiki-self-update` on the branch (genuine pass — zero cite drift, 1 page
+      synthesized + audited, checkpoint advanced `9f3c800` → `248703b`, `wiki_freshness`
+      reporting OK on the branch), then `CLAUDE_CONFIRM_MERGE=1 git merge --no-ff` from
+      `main` was **BLOCKED**: *"docs/wiki/ is 76 file(s) stale vs HEAD"*.
+      **Why nobody hit this before (checked, not assumed):** the wiki arm landed
+      2026-07-10 (`b8ae771`, `ci/doc-merge-gate`), and the only checkpoint advance since
+      (`0e5b9c8`, 2026-07-13) reached `main` on its **first-parent line** — a GitHub
+      PR-style merge, not a local `git merge` — so this local guard never fired for it.
+      Verified via `git rev-list --first-parent main`. This path is genuinely
+      unexercised, not a regression.
+      **There is deliberately NO escape hatch** — the guard's own docstring states
+      `CLAUDE_CONFIRM_MERGE=1` does not cover the wiki arm and "the only way through is
+      running `/wiki-self-update` … mirroring the `DOC-STATUS` gate's no-escape-hatch
+      design." That design intent is right; the *evaluation point* is the bug. Advancing
+      the checkpoint by hand on `main` to satisfy it would be exactly the
+      hand-create-the-file-a-hook-checks-for move that `feedback_hook_discipline`
+      forbids, so it was **not** done — surfaced to the owner instead.
+      **Candidate fixes (none implemented — this touches the enforcement surface and
+      wants its own branch, plausibly folded into step 6 `chore/hook-dispatcher`):**
+      (a) evaluate freshness against the **post-merge** result (e.g. the merge source's
+      `.last_ingest_sha`, or `git merge-tree`), not the pre-merge worktree; (b) allow
+      when the incoming ref's checkpoint is at-or-ahead of the resulting HEAD; (c) accept
+      that local `--no-ff` merges to `main` are not the project's real publish channel
+      and scope the arm to push/PR instead. **Decide before the next wiki refresh** —
+      every future wiki-refreshing branch hits this same wall.
+      _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
+      count 17 → 18.)_
 
 #### Resolved
 

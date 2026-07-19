@@ -139,9 +139,10 @@ rather than inferred, per `prov/SPEC.md` §1.
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 Full detail for every item lives in `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward ledger
-(`#### Open`); this is the required one-line-each mirror. **17 open** (verified by direct
-`grep -c '^- \[ \]'` over that subsection) — this branch resolved none and added two
-(16, 17), both pre-existing CSS bugs surfaced by its own census.
+(`#### Open`); this is the required one-line-each mirror. **18 open** (verified by direct
+`grep -c '^- \[ \]'` over that subsection) — this branch resolved none and added three
+(16, 17 — pre-existing CSS bugs surfaced by its own census; 18 — a merge-guard defect
+surfaced by its own close-out).
 
 1. `--reruns 2` on the `ux` CI tier is a masking policy — it hid a chronically broken test
    (64% fail rate) for 11 CI runs. Underlying bug fixed; the retry-policy question is
@@ -188,9 +189,17 @@ Full detail for every item lives in `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forw
     shadowed/dead (same-specificity, earlier in source than an unconditional rule; media
     conditions don't affect source-order tie-breaking). Needs verification on a real narrow
     viewport, then an owner decision.
+18. **NEW, AND IT WILL BLOCK YOU TOO** — `block-merge-to-main`'s wiki arm evaluates the
+    **pre-merge** worktree, so a branch that refreshes the wiki cannot be locally merged:
+    standing on `main`, the guard reads main's still-stale `.last_ingest_sha` and blocks,
+    even though completing that merge is what makes the wiki fresh. No escape hatch by
+    design (`CLAUDE_CONFIRM_MERGE=1` explicitly does not cover it). Never hit before
+    because the only prior checkpoint advance reached `main` on its first-parent line (a
+    GitHub PR merge), so this local guard never fired — verified, not assumed. **If you
+    run a wiki pass, expect this wall at close-out and read the ledger item first.**
 
 **Reduction sprint is overdue and getting worse** — the ~8–10 ceiling has been exceeded
-across multiple handoffs and this branch pushed it 15 → 17. Items 5, 6, 9 and possibly 3
+across multiple handoffs and this branch pushed it 15 → 18. Items 5, 6, 9 and possibly 3
 look cheap to clear in one pass. Strongly consider scheduling the sprint before the
 v1.1.0 tag rather than after another feature branch.
 
