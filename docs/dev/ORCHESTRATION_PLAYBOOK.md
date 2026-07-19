@@ -41,9 +41,9 @@
    report delivered. A lane that died without a report: its work is judged by
    `git log`/`git status` in its worktree — commits survive; resume via
    SendMessage from the exact stopping point.
-3. Lanes NEVER merge, never touch `main`, never touch the owner's e2e clone
-   (`../sartor-e2e` — read-only for everyone, writes only on explicit
-   owner instruction).
+3. Lanes NEVER merge, never touch `main`, never touch the owner's private
+   local testing clone — read-only for everyone; off-limits, never named or
+   pathed in a committed file.
 
 ## Lane discipline (cite this section in every lane prompt)
 

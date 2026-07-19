@@ -99,8 +99,8 @@ download and submit.
   clarifications + typed edits; the no-invention rule is enforced in the generate
   prompt. Gap-fill/generated content is a REVIEWABLE proposal (retire), never
   silently canonical.
-- **Validate corpus-mode changes deterministically** on a saved
-  `../sartor-e2e/output/robert/context_*.json` + one real `generate()` (use
+- **Validate corpus-mode changes deterministically** on a saved corpus
+  `context_*.json` from a local read-only clone + one real `generate()` (use
   `/sartor:replay`). `--suite synthetic` is LEGACY-only and does not cover
   corpus-mode.
 - Security on every new Flask route: `_safe_username()` + `secure_filename()` +
@@ -495,7 +495,7 @@ scoped proposal + richer banner).
 
 ## 6. Remaining work — Phase 5 (DONE 2026-07-06; sections below kept as as-built reference)
 
-> Phase-5 exit evidence: live corpus-mode replay on `../sartor-e2e/output/robert/`
+> Phase-5 exit evidence: live corpus-mode replay on a local read-only robert corpus clone
 > (0 résumé-body LLM calls; download == frozen == preview), the
 > `evals/TUNING_LOG.md` "Compose-frozen-composition" entry, the CHANGELOG entry,
 > and the legacy byte-identity unit tests (`tests/test_corpus_mode_prompt.py`).
@@ -566,7 +566,7 @@ Model it on the proven "propose grounded new items → accept/retire" pattern
   still calls the LLM; legacy generate unchanged.
 
 ### Phase 5 — validation + durable docs
-- Corpus-mode validation on `../sartor-e2e/output/robert/context_*.json`: assemble → 0
+- Corpus-mode validation on a local read-only robert corpus clone (`context_*.json`): assemble → 0
   résumé-body LLM calls; assembled doc == frozen composition == preview; summary + gap-fill
   present + grounded. Record in `evals/TUNING_LOG.md`.
 - Legacy synthetic eval (`python evals/runner.py --suite synthetic`) unchanged /

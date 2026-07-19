@@ -2731,7 +2731,7 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    perturb `_stable_user_prefix`) + `test_deterministic_generate.py` (a legacy context
    still calls `generate()`; a corpus context makes ZERO `generate`/`generate_streaming`
    calls). The `PROMPT_VERSION` bumps are attribution-only. **Live replay DONE** on the REAL
-   robert corpus (`../sartor-e2e/output/robert/context_20260706_122956.json` + a read-only
+   robert corpus (a local read-only clone: `context_20260706_122956.json` + a read-only
    copy of the robert DB): froze the composition deterministically (8 roles / 34 bullets),
    drove the real `/api/generate` (`.md`), and confirmed **0 new `generate`/`generate_streaming`
    records in `logs/llm_calls.jsonl`**, `download == json_resume_to_markdown(frozen)`, and

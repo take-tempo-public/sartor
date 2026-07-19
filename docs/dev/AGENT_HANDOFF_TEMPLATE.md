@@ -254,7 +254,10 @@ damaged text instead of saying so (see
    memory/cleanup on `main` gets hook-blocked, forcing a repeat ceremony that
    steps on the next branch); loose ends resolved or deferred; **every trailing
    "track this" observation filed durably now OR written into the `Carried-forward
-   observations` section above**; branches to prune identified. "Done" is the output
+   observations` section above**; branches to prune identified; **any dev server or
+   long-lived background process started this session terminated** before closing the
+   window (check with `tasklist`/equivalent — an agent's own orphaned processes are
+   exactly the failure mode carry-forward ledger item 20 documents). "Done" is the output
    of this sweep, not a declaration. NEVER merge and then open a follow-up branch for
    a doc / memory / note edit — that re-triggers the marker-wipe ceremony; fold it in
    before the merge.
