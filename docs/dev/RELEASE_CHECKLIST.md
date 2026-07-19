@@ -515,7 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**+1** this entry — `chore/merge-channel-alignment`,
+_Rendered open count: **19** (net unchanged this entry — `chore/scrub-local-eval-paths`,
+2026-07-19: item 5 **RESOLVED** (**−1**) — rebased onto current `main` (clean, no conflict
+despite the prior entry's expectation), the `db/models.py:3` docstring leak and the
+`../sartor-e2e` references scrubbed, landed (see its `#### Resolved` entry below) — but a
+**new item 20** (**+1**) was filed the same branch: an owner-reported Claude Code
+session/process lifecycle gap, corroborated by this session's own evidence (an orphaned
+day-old `python app.py` process caused a real UX test failure; killing it fixed the failure).
+Net zero change to the open count, still well over the ~8-10 ceiling.
+Prior to that: **19** (**+1** this entry — `chore/merge-channel-alignment`,
 2026-07-19: root-causing the dual merge channel surfaced the `enforce_admins: false` bypass as
 its own owner decision. Note the two items this branch does NOT add: item 18 is being
 **dissolved** rather than patched (its premise — that a local merge to `main` is a legitimate
@@ -703,6 +711,16 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       accumulation is the cause, the tooling is solving a symptom. If it is confirmed, the real
       fix is process-lifecycle hygiene (why do CLI sessions never exit?), which is a Claude Code
       issue the owner has already filed feedback on, not a repo change.
+      **→ Related, corroborating evidence (2026-07-19, `chore/scrub-local-eval-paths`) — still
+      not the decisive experiment this item asks for.** A day-old orphaned `python app.py`
+      process was found and killed during this branch's gate run, and doing so fixed a live
+      `sqlite3.OperationalError: database is locked` UX test failure — a real before/after, with
+      the shared-file-collision explanation explicitly checked and ruled out (the failing test
+      uses an isolated `tmp_path` DB, per `tests/ux/conftest.py:51`). This is evidence *for*
+      general orphaned-process resource contention as *a* cause of test flakiness, but it is not
+      the specific "kill orphans, then re-run the full un-chunked gate" experiment this item
+      still calls for — this session's gate only ran chunked. Full detail and the owner-reported
+      framing of the underlying process-lifecycle question: item 20 below.
 
 - [x] **The Compose context file has a LOST-UPDATE defect class — root cause identified, NOT
       fixed** — twelve routes in `blueprints/applications.py` each read the whole
@@ -1006,45 +1024,6 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `test_corpus_reload_preserves_scroll_position`), and it appeared here **without** deliberate
       CPU saturation — so the settle/restore family may flake on an ordinary loaded dev machine,
       not only under the 7-worker busy-loop calibration.
-
-- [ ] **`chore/scrub-local-eval-paths` parked — 2 commits, unmerged, gate re-verification
-      incomplete (not failed)** — removes 6 references to the owner's private local testing
-      clone from tracked docs (`CHANGELOG.md`, `evals/TUNING_LOG.md`, two dev docs) per an
-      owner directive that nothing committed to git may reference that clone, plus a dead
-      personal-path docstring reference in `db/models.py`. Working-tree-only scrub; a
-      git-history rewrite is deliberately not done (destructive, sign-off-gated, separate).
-      Current with `main` (merge-base = `main` HEAD, no rebase needed) — touches only
-      docs/comments, no production logic. First commit (`71ef57f`) claims a full
-      `python -m scripts.gate` green run (2100 passed, 1 skipped); the second, docstring-only
-      commit (`5e84d3b`) claims only ruff/mypy green. A full-suite re-verification after both
-      commits was interrupted mid-run (95–96% through) when the session running it froze — an
-      **incomplete** run, not a failed one. **Owner decision (2026-07-15): leave parked.**
-      Unrelated to the scroll-flake work it was discovered alongside.
-      _(discovered: v1.1.0 stream, 2026-07-15, `fix/ux-scroll-position-flake` Chip 0 — filed as
-      a new item, not folded into the scroll-flake entry above, since it's an unrelated fact;
-      open count 12 → 13, over the ~8–10 ceiling.)_
-      **→ Next: re-run `python -m scripts.gate` to completion and merge separately (off this
-      branch) whenever the owner wants it off the parked list.**
-      **→ SCHEDULED (2026-07-19, owner-directed, `chore/merge-channel-alignment`): no longer
-      parked — this is now step 6 of `RELEASE_ARC.md`'s "v1.1.0 close-out" sequence**, placed
-      deliberately **ahead of** PX-47 because it is public-facing (private paths live in tracked
-      files on a public repo) whereas PX-47 is cosmetic version drift. Re-verified against
-      `main` @ `6b03591` this session — the exposure is **still live**, so this is not stale
-      bookkeeping: `db/models.py:3` (`C:\Users\iam\.claude\plans\rosy-chasing-pinwheel.md`),
-      `docs/dev/ORCHESTRATION_PLAYBOOK.md:45`, `docs/dev/generation-experience-rearchitecture.md`
-      :103/:498/:569, and `evals/TUNING_LOG.md:2734` (all `../sartor-e2e/output/robert/...`).
-      **Two corrections to the entry above, both verified:** (i) it is **no longer "current with
-      `main`, no rebase needed"** — `main` has moved a long way since 2026-07-14 and the branch
-      touches `CHANGELOG.md`, which later branches also edited, so **expect a conflict on
-      rebase**; (ii) **grep trap** — the `db/models.py` path is double-escaped inside a raw
-      docstring (`C:\\Users\\iam\\...`), so a natural pattern like `grep "Users.iam"` returns
-      NOTHING and reads as "already fixed" (it cost exactly that false all-clear this session).
-      Search a distinctive literal (`grep -n "rosy-chasing-pinwheel"`) and check against `main`,
-      never against the branch. Prior analysis: `[[project-scrub-local-eval-paths-parked]]`.
-      **Files ≠ history:** merging cleans the working tree only; the strings stay in public git
-      history, including inside `71ef57f` (the scrub commit itself, which by nature contains what
-      it removes). A history rewrite on an already-public repo remains a separate, sign-off-gated
-      owner decision — do not attempt it as part of landing this.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
@@ -1856,7 +1835,70 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-19, `chore/merge-channel-alignment`; open count
       18 → 19 — the ceiling is ~8-10 and the reduction sprint is now badly overdue.)_
 
+- [ ] **[OWNER-REPORTED] Claude Code CLI sessions/processes don't terminate when the owner
+      closes them — orphaned processes accumulate across multiple projects and must be killed
+      manually (command line / Task Manager)** — filed 2026-07-19 by direct owner report while
+      landing `chore/scrub-local-eval-paths` (step 6). **Concrete evidence from this session,
+      not just the theory:** mid-gate, a UX regression test (`test_20260612_corpus_affordance_
+      polish.py::test_accept_all_pending_clears_banner`) failed with `sqlite3.OperationalError:
+      database is locked` while its own `_set_sqlite_pragmas` connect-event handler tried to set
+      `PRAGMA journal_mode = WAL`. Investigation found a stray `python app.py` dev server (PID
+      91224) that had been running since **2026-07-18** — a full day — plus a Werkzeug-reloader
+      child (PID 57276) it had just spawned at 12:25 that day, apparently in response to this
+      session's own doc edits (the reloader watches the whole tree). **Killing both processes
+      made the failure disappear** (full re-run of that chunk: 24/24 passed, vs. 23 passed/1
+      error before) — a real, controlled before/after, not a guess.
+      **One hypothesis explicitly checked and FALSIFIED, so as not to overclaim the mechanism:**
+      this is **not** a shared-sqlite-file collision — `tests/ux/conftest.py:51` isolates every
+      UX test's DB at `tmp_path / "ux.sqlite"`, a different file from the stray server's default
+      `db/resume.sqlite` (`db/session.py:25`, `DEFAULT_DB_PATH`). The more likely explanation is
+      general resource contention from a day-old orphaned process (CPU/disk I/O pressure
+      delaying an unrelated file's WAL-pragma past its busy-timeout), consistent with — but not
+      identical to — the candidate-cause note already on item 2 above (which asked for the
+      decisive experiment of killing orphans then re-running the **full, un-chunked** gate; this
+      session only ran the gate chunked throughout, so that exact experiment is still unrun).
+      **Do not record either mechanism as settled** — only that an orphaned process from a prior
+      session caused a live test failure in this one, and killing it fixed that specific failure.
+      **This is a Claude Code product-level issue** (why does a CLI session's process tree
+      survive the window/session closing?), not something a repo-code change can fix. Two
+      separate, non-competing responses are appropriate: **(a) practical, immediate:** the
+      branch close-out checklist should gain an explicit step for the closing agent to check for
+      and terminate any dev server / long-lived background process **it started** during the
+      session, before ending the window — cheap, and directly prevents this specific recurrence;
+      **(b) [HUMAN/OWNER]:** the underlying CLI/session lifecycle behavior needs to be reported
+      to Anthropic (or tracked if already filed) — an agent cannot fix its own host harness from
+      inside this repo.
+      _(discovered: v1.1.0 stream, 2026-07-19, `chore/scrub-local-eval-paths`; open count
+      19 → 20 (net unchanged after this branch's own −1 for item 5) — the ceiling is ~8-10 and
+      the reduction sprint is now badly overdue.)_
+
 #### Resolved
+
+- [x] **`chore/scrub-local-eval-paths` private-clone / personal-path exposure — RESOLVED** on
+      `chore/scrub-local-eval-paths`, 2026-07-19 (step 6 of `RELEASE_ARC.md`'s v1.1.0
+      close-out sequence). Was: `db/models.py:3` carried a dead docstring reference to the
+      owner's personal plans file (`C:\\Users\\iam\\.claude\\plans\\rosy-chasing-pinwheel.md`,
+      double-escaped inside a raw docstring), and `CHANGELOG.md`,
+      `docs/dev/ORCHESTRATION_PLAYBOOK.md`, `docs/dev/generation-experience-rearchitecture.md`
+      (×3), and `evals/TUNING_LOG.md` referenced the owner's private local testing clone by
+      relative path (`../sartor-e2e/output/robert/...`) — both against an owner directive that
+      nothing committed to git may reference either. Re-verified live against `main` @ `cce2dc1`
+      immediately before landing (distinctive-literal grep `rosy-chasing-pinwheel`, not the
+      trap-prone `Users.iam` pattern) — confirmed still present, not stale bookkeeping.
+      **Fix shipped:** the two parked commits (`71ef57f` → `783f577`, `5e84d3b` → `5a71da2`
+      after rebase) rebased cleanly onto current `main` with **no conflict** — a
+      `git merge-tree` 3-way simulation run before the rebase had already predicted this,
+      contrary to this ledger's own prior note expecting a `CHANGELOG.md` conflict (`main` had
+      moved 45 commits since the 2026-07-14 branch point, but the branch's one `CHANGELOG.md`
+      hunk sat far enough from all later insertions that git's context matching resolved it
+      automatically). Post-rebase `git grep` for both `rosy-chasing-pinwheel` and `sartor-e2e`
+      across the tree returns zero hits outside this ledger's and `RELEASE_ARC.md`'s own
+      meta-documentation *about* the historical leak. **Working-tree-only, as designed:** the
+      leaked strings remain permanently in git history (including inside the scrub commits
+      themselves, which by nature diff away the old strings) — a history rewrite on an
+      already-public repo is a separate, sign-off-gated owner decision, deliberately not
+      attempted here. Found-and-fixed within its own branch — sat in `#### Open` as item 5
+      since 2026-07-15, so this is a **−1** to the open count.
 
 - [x] **`AGENT_HANDOFF_TEMPLATE.md`'s "Branch close-out checklist" verbatim block had a
       relative link that broke every time it was copied into an actual handoff — RESOLVED**

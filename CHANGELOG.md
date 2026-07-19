@@ -75,6 +75,42 @@ section, so the seven handoffs written before this change no longer byte-match i
 expected, not corruption — they are historical records of past sessions, not live instructions,
 and the pointer chain only ever validates the most recent one.
 
+### Fixed: private-clone and personal-filesystem paths still live in tracked files (`chore/scrub-local-eval-paths`)
+
+A parked branch (2 commits, cut 2026-07-14) sat unmerged because its gate re-verification was
+interrupted mid-run, not because anything was wrong with the change. Landed as step 6 of
+`RELEASE_ARC.md`'s v1.1.0 close-out sequence, deliberately ahead of PX-47's cosmetic version
+drift because this one is public-facing: `db/models.py:3` still carried a dead docstring
+reference to the owner's personal plans file, and `CHANGELOG.md`,
+`docs/dev/ORCHESTRATION_PLAYBOOK.md`, `docs/dev/generation-experience-rearchitecture.md` (×3),
+and `evals/TUNING_LOG.md` referenced the owner's private local testing clone by relative path.
+
+- **Re-verified live before landing**, not treated as stale bookkeeping — a distinctive-literal
+  grep against `main` (not the branch) confirmed both exposures were still present.
+- **Rebased clean onto `main` @ `cce2dc1` with no conflict**, contradicting this file's own
+  prior expectation of a `CHANGELOG.md` conflict — a `git merge-tree` 3-way simulation run
+  before the rebase predicted this correctly; the branch's one `CHANGELOG.md` hunk sat far
+  enough from 45 intervening commits' insertions for git's context matching to resolve it
+  automatically.
+- **Working-tree-only, as designed.** The leaked strings remain permanently in git history,
+  including inside the scrub commits themselves. A history rewrite on an already-public repo
+  is a separate, sign-off-gated owner decision — surfaced, not attempted.
+- Clears carry-forward ledger item 5 (`docs/dev/RELEASE_CHECKLIST.md`).
+
+Incidentally, while gating this branch: a UX regression test failed with
+`sqlite3.OperationalError: database is locked`, traced to a day-old orphaned `python app.py`
+dev server left running from an earlier, already-closed session. Killing it fixed the test
+(re-run: 24/24 passed). The shared-file-collision explanation was checked and ruled out
+(`tests/ux/conftest.py:51` isolates UX tests onto their own `tmp_path` DB, distinct from the
+stray server's default `db/resume.sqlite`) — the likelier mechanism is general resource
+contention from the orphaned process, corroborating (without fully proving) carry-forward
+ledger item 2's existing candidate-cause note. Filed as its own item (20): Claude Code CLI
+sessions/processes not terminating when a session/window closes is a host-harness issue, not
+something a repo-code change can fix — but `AGENTS.md`'s and `AGENT_HANDOFF_TEMPLATE.md`'s
+pre-close sweep (step 0) now has an explicit bullet requiring the closing agent to check for
+and terminate any dev server or long-lived background process it started, as a cheap, direct
+mitigation against this specific recurrence.
+
 ### Fixed: `static/style.css`'s duplicate-selector cascade collapsed (PX-51, `refactor/css-cascade-collapse`)
 
 An early "primary" CSS section and a later "sartor. component layer" (restyle) section
