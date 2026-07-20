@@ -15,12 +15,16 @@ the client's normal `_closed` terminal path (see `run()` in dashboard.html),
 proving `releaseRunLock()` fires and un-disables all four buttons.
 
 CW-117 (v1.1.0 debt-burn): the eval-run test above was the ONLY one of the four
-hand-wired acquire/release sites with regression coverage — bootstrap and
-grounding-score each have their OWN hand-rolled SSE pump (not
+hand-wired acquire/release sites with regression coverage. At the time, bootstrap
+and grounding-score each had their OWN hand-rolled SSE pump (not
 `window.sartorEval.stream`), so a future edit to either could silently drop its
 `acquireRunLock()`/`releaseRunLock()` pair without any test noticing. The two
 tests below close that gap by driving each of THOSE routes through the exact
-same hold-then-release pattern, independently.
+same hold-then-release pattern, independently — kept even after
+feat/diagnostics-run-cancel folded both hand-rolled pumps into
+`window.sartorEval.stream()` (to get Cancel-button wiring for free), since the
+per-route acquire/release call sites are still independent and worth covering
+on their own.
 """
 
 from __future__ import annotations
@@ -112,9 +116,10 @@ def test_run_lock_blocks_other_buttons_and_releases(
 def test_bootstrap_run_lock_blocks_other_buttons_and_releases(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    """CW-117: the bootstrap POST's hand-rolled SSE pump (runBootstrap() in
-    dashboard.html — NOT window.sartorEval.stream) independently acquires +
-    releases the shared lock; this proves that release site specifically."""
+    """CW-117: runBootstrap() in dashboard.html independently acquires +
+    releases the shared lock; this proves that release site specifically
+    (now via window.sartorEval.stream() since feat/diagnostics-run-cancel,
+    previously its own hand-rolled SSE pump)."""
     from tests.ux.seeding import seed_user
 
     seed_user(ux_app, "alice")
@@ -154,9 +159,10 @@ def test_bootstrap_run_lock_blocks_other_buttons_and_releases(
 def test_score_grounding_run_lock_blocks_other_buttons_and_releases(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    """CW-117: the /score POST's hand-rolled SSE pump (scoreGrounding() in
-    dashboard.html — also NOT window.sartorEval.stream) independently acquires
-    + releases the shared lock; this proves that release site specifically."""
+    """CW-117: scoreGrounding() in dashboard.html independently acquires +
+    releases the shared lock; this proves that release site specifically
+    (now via window.sartorEval.stream() since feat/diagnostics-run-cancel,
+    previously its own hand-rolled SSE pump)."""
     ann_root = ux_app.app.config["ANNOTATION_ROOT"]
     fixture_dir = ann_root / "alice-bootstrap"
     fixture_dir.mkdir(parents=True)
