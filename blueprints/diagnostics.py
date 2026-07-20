@@ -554,7 +554,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
             cancel_event.set()
             logger.warning(
                 "Diagnostics run cancelled (client disconnected): "
-                "route=annotation_score_grounding slug=%s",
+                "route=annotation_score_grounding slug=%r",
                 slug,
             )
             raise
@@ -1025,7 +1025,7 @@ def eval_run_stream() -> ResponseReturnValue:
             cancel_event.set()
             logger.warning(
                 "Diagnostics run cancelled (client disconnected): "
-                "route=eval_run_stream suite=%s subset=%s",
+                "route=eval_run_stream suite=%r subset=%r",
                 suite,
                 subset,
             )
@@ -1239,7 +1239,7 @@ def tune_run_stream() -> ResponseReturnValue:
             cancel_event.set()
             logger.warning(
                 "Diagnostics run cancelled (client disconnected): "
-                "route=tune_run_stream suite=%s subset=%s",
+                "route=tune_run_stream suite=%r subset=%r",
                 suite,
                 subset,
             )

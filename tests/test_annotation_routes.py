@@ -1254,6 +1254,7 @@ class TestRunCancelDisconnect:
 
     def test_eval_run_route_stops_before_next_paid_call(self, ann_app, monkeypatch):
         import evals.runner as runner
+        from evals.runner import EvalRunResult
 
         captured: dict = {}
         started = threading.Event()
@@ -1263,7 +1264,6 @@ class TestRunCancelDisconnect:
             captured["cancel_check"] = kwargs.get("cancel_check")
             started.set()
             release.wait(timeout=5)
-            from evals.runner import EvalRunResult
 
             return EvalRunResult(
                 exit_code=0, out_path=None, n_pass=0, n_fail=0, regressions=[], improvements=[]
@@ -1283,6 +1283,7 @@ class TestRunCancelDisconnect:
 
     def test_tune_run_route_skips_candidate_pass_after_disconnect(self, ann_app, monkeypatch):
         import evals.runner as runner
+        from evals.runner import EvalRunResult
 
         calls: list = []
         started = threading.Event()
@@ -1292,7 +1293,6 @@ class TestRunCancelDisconnect:
             calls.append(kwargs)
             started.set()
             release.wait(timeout=5)
-            from evals.runner import EvalRunResult
 
             return EvalRunResult(
                 exit_code=0, out_path=None, n_pass=0, n_fail=0, regressions=[], improvements=[]
