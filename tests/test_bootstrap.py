@@ -406,6 +406,88 @@ class TestPipelineOrchestration:
         # generate still ran despite the clarify failure
         assert per_jd[0]["bullets"]
 
+    def test_cancel_check_stops_before_next_jd(self, db_session, monkeypatch, tmp_path) -> None:
+        """feat/diagnostics-run-cancel: cancel_check is polled at the top of the
+        per-JD loop — a cancellation observed after the first JD completes
+        leaves that JD's record in per_jd and never starts the second one."""
+        _seed_candidate(db_session)
+        seed = export_seed(db_session, candidate_username="alex")
+        generate_calls: list[int] = []
+
+        def fake_analyze(client, context, **kw) -> dict:
+            return {"essential_skills": ["python"], "overall_strategy": "lead with reliability"}
+
+        def fake_clarify(client, context, analysis, **kw) -> dict:
+            return {"questions": [], "reasoning": "r"}
+
+        def fake_generate(client, context, analysis, **kw) -> dict:
+            generate_calls.append(1)
+            return {"resume_content": RESUME_MD, "cover_letter_content": "Dear team,"}
+
+        monkeypatch.setattr(bootstrap, "analyze", fake_analyze)
+        monkeypatch.setattr(bootstrap, "clarify", fake_clarify)
+        monkeypatch.setattr(bootstrap, "generate", fake_generate)
+
+        jd_a = tmp_path / "kafka.txt"
+        jd_a.write_text("Kafka backend role", encoding="utf-8")
+        jd_b = tmp_path / "frontend.jd"
+        jd_b.write_text("Frontend role", encoding="utf-8")
+
+        client = anthropic.Anthropic(api_key="test-key")
+        with seeded_session(seed) as (session, username):
+            per_jd, _src = bootstrap.run_pipeline_over_jds(
+                client,
+                session,
+                username,
+                [jd_a, jd_b],
+                cancel_check=lambda: bool(generate_calls),
+            )
+
+        assert len(generate_calls) == 1
+        assert len(per_jd) == 1
+        assert per_jd[0]["jd_file"] == "kafka.txt"
+
+    def test_cancel_check_stops_before_generate(self, db_session, monkeypatch, tmp_path) -> None:
+        """A cancellation observed after clarify (before generate) stops that
+        JD's own pipeline — generate never runs, and the JD contributes no
+        record at all."""
+        _seed_candidate(db_session)
+        seed = export_seed(db_session, candidate_username="alex")
+        clarify_calls: list[int] = []
+        generate_calls: list[int] = []
+
+        def fake_analyze(client, context, **kw) -> dict:
+            return {"essential_skills": ["python"], "overall_strategy": "lead with reliability"}
+
+        def fake_clarify(client, context, analysis, **kw) -> dict:
+            clarify_calls.append(1)
+            return {"questions": [], "reasoning": "r"}
+
+        def fake_generate(client, context, analysis, **kw) -> dict:
+            generate_calls.append(1)
+            return {"resume_content": RESUME_MD, "cover_letter_content": "Dear team,"}
+
+        monkeypatch.setattr(bootstrap, "analyze", fake_analyze)
+        monkeypatch.setattr(bootstrap, "clarify", fake_clarify)
+        monkeypatch.setattr(bootstrap, "generate", fake_generate)
+
+        jd = tmp_path / "role.txt"
+        jd.write_text("Some role", encoding="utf-8")
+
+        client = anthropic.Anthropic(api_key="test-key")
+        with seeded_session(seed) as (session, username):
+            per_jd, _src = bootstrap.run_pipeline_over_jds(
+                client,
+                session,
+                username,
+                [jd],
+                cancel_check=lambda: bool(clarify_calls),
+            )
+
+        assert len(clarify_calls) == 1
+        assert generate_calls == []
+        assert per_jd == []
+
 
 class TestWritePathGuard:
     def test_default_path_under_allowed_root(self) -> None:

@@ -320,13 +320,16 @@ def run_pipeline_over_jds(
     jd_paths: list[Path],
     *,
     progress: ProgressFn | None = None,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
     """File-path entry point for the corpus pipeline — reads each JD then delegates.
 
     Behavior-preserving thin wrapper over ``run_pipeline_over_jd_texts``: reads
     each ``jd_path`` into a ``(name, text)`` pair (preserving the CLI's filename
     as ``jd_file``) and runs the shared in-memory pipeline. Kept so the CLI
-    (``evals/bootstrap.py``) path is unchanged.
+    (``evals/bootstrap.py``) path is unchanged. ``cancel_check`` is forwarded
+    unused by the CLI ``main()`` (which never passes one), matching how
+    ``progress`` is already forwarded-but-unused there.
     """
     jds = [(p.name, p.read_text(encoding="utf-8")) for p in jd_paths]
     return run_pipeline_over_jd_texts(
@@ -335,6 +338,7 @@ def run_pipeline_over_jds(
         username,
         jds,
         progress=progress,
+        cancel_check=cancel_check,
     )
 
 
@@ -345,6 +349,7 @@ def run_pipeline_over_jd_texts(
     jds: list[tuple[str, str]],
     *,
     progress: ProgressFn | None = None,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
     """Run analyze→clarify→generate for each in-memory JD over one corpus session.
 
@@ -357,16 +362,31 @@ def run_pipeline_over_jd_texts(
     ``corpus_source_text`` (identical across JDs since one corpus) is captured once
     for the grounding pass. ``progress`` (optional) is invoked at each step so a
     caller can stream coarse per-JD progress; it never alters the result.
+    ``cancel_check`` (optional) is polled before each remaining paid call (start
+    of a JD, before clarify, before generate) — the first ``True`` reading stops
+    the run early. Already-completed JDs stay in the returned ``per_jd`` list;
+    the caller learns whether a cancellation happened via its own
+    ``cancel_check`` (held in closure), since the return shape here is
+    unchanged.
     """
 
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
             progress(event, payload)
 
+    def _cancelled() -> bool:
+        return cancel_check is not None and cancel_check()
+
     per_jd: list[dict[str, Any]] = []
     corpus_source = ""
     total = len(jds)
     for index, (jd_name, jd_text) in enumerate(jds):
+        if _cancelled():
+            logger.info(
+                "Bootstrap run cancelled before JD %d/%d (%s) started", index, total, jd_name
+            )
+            break
+
         run_id = uuid.uuid4().hex[:12]
         username_tag = f"bootstrap:{Path(jd_name).stem}"
         logger.info("JD %s: building context + running pipeline (run_id=%s)", jd_name, run_id)
@@ -384,6 +404,10 @@ def run_pipeline_over_jd_texts(
         _emit("analyzing", jd_file=jd_name, index=index, total=total)
         analysis = analyze(client, context, username=username_tag, run_id=run_id)
 
+        if _cancelled():
+            logger.info("Bootstrap run cancelled after analyze for %s, before clarify", jd_name)
+            break
+
         clar_questions: list[dict[str, Any]] = []
         clar_reasoning = ""
         try:
@@ -393,6 +417,10 @@ def run_pipeline_over_jd_texts(
             clar_reasoning = clar.get("reasoning", "")
         except Exception as exc:
             logger.warning("Clarify failed for %s, continuing without it: %s", jd_name, exc)
+
+        if _cancelled():
+            logger.info("Bootstrap run cancelled after clarify for %s, before generate", jd_name)
+            break
 
         _emit("generating", jd_file=jd_name, index=index, total=total)
         result = generate(client, context, analysis, username=username_tag, run_id=run_id)
