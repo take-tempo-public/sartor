@@ -46,6 +46,7 @@ from hardening import (
     ClarificationQuestion,
     ContextSet,
     compute_iteration_signals,
+    context_transaction,
     save_context_set,
     summarize_recent_edits,
 )
@@ -484,10 +485,13 @@ def run_clarify() -> ResponseReturnValue:
     questions = result.get("questions", [])
     # Persist the questions back to the same context file so the user can
     # refresh the page and resume — and so generate() can pair each answer
-    # with its question text.
-    context_set["clarification_questions"] = questions
-    context_set["run_id"] = run_id
-    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+    # with its question text. Delta-only inside a transaction (charter C-7
+    # lost-update fix): a plain whole-dict write-back here would silently
+    # erase a concurrent /api/answer-clarifications persist, exactly the bug
+    # `docs/dev/diagnosis/context-write-lost-update-gap.md` reproduces.
+    with context_transaction(cp) as fresh:
+        fresh["clarification_questions"] = questions
+        fresh["run_id"] = run_id
 
     logger.info("Clarify produced %d questions for %s", len(questions), safe_user)
     return jsonify(
@@ -655,16 +659,21 @@ def submit_clarifications() -> ResponseReturnValue:
         if trimmed:
             cleaned[qid] = trimmed
 
-    if merge:
-        # Merge by id: a later round (the iteration interview submits only its
-        # own textareas) must not wipe the analyze-round answers already saved
-        # on the context — generate() at iter>=1 reads the union as ground truth.
-        existing = context_set.get("clarifications") or {}
-        context_set["clarifications"] = {**existing, **cleaned}
-    else:
-        # Deliberate replace/clear — the skip path posts answers={} merge=false.
-        context_set["clarifications"] = cleaned
-    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+    # Delta applied inside a transaction (charter C-7 lost-update fix): merging
+    # against `existing` from the pre-call `context_set` would itself recreate
+    # the bug — two concurrent submits each adding a different qid would have
+    # one silently lost. Re-derive `existing` from the fresh in-lock read.
+    with context_transaction(cp) as fresh:
+        if merge:
+            # Merge by id: a later round (the iteration interview submits only
+            # its own textareas) must not wipe the analyze-round answers
+            # already saved on the context — generate() at iter>=1 reads the
+            # union as ground truth.
+            existing = fresh.get("clarifications") or {}
+            fresh["clarifications"] = {**existing, **cleaned}
+        else:
+            # Deliberate replace/clear — the skip path posts answers={} merge=false.
+            fresh["clarifications"] = cleaned
 
     # KW7 / B.8: mirror answered pairs into candidate memory. Best-effort —
     # the context file is generation's source of truth; a memory-write failure
@@ -814,41 +823,47 @@ def run_iterate_clarify() -> ResponseReturnValue:
 
     new_questions = result.get("questions", []) or []
 
-    # Re-key new question ids to avoid collisions with existing q1/q2/...
-    # The /api/answer-clarifications route filters by id-membership, so unique
-    # ids per question are mandatory. Prefix with iteration number for clarity
-    # in saved JSON and dashboard rendering.
-    existing_ids = {q.get("id", "") for q in prior_qs}
-    renamed: list[ClarificationQuestion] = []
-    for i, q in enumerate(new_questions, 1):
-        new_id = f"iter{iteration}_q{i}"
-        # Defensive: ensure no collision even if a prior iteration used the same prefix
-        suffix = 1
-        while new_id in existing_ids:
-            suffix += 1
-            new_id = f"iter{iteration}_q{i}_{suffix}"
-        existing_ids.add(new_id)
-        q["id"] = new_id
-        renamed.append(q)
+    # Re-key + append inside a transaction (charter C-7 lost-update fix): both
+    # the id-collision check and the append must run against a FRESH read, not
+    # the pre-call `prior_qs`/`context_set` — otherwise a concurrent writer's
+    # already-persisted questions could either collide on id or be silently
+    # dropped by this route's stale whole-dict write-back.
+    with context_transaction(cp) as fresh:
+        fresh_prior_qs = fresh.get("clarification_questions") or []
 
-    # Append (do not replace) so the audit chain of all interview rounds stays
-    # intact. /api/answer-clarifications already merges into context["clarifications"]
-    # by id, so prior answers persist alongside new ones.
-    combined = list(prior_qs) + renamed
-    context_set["clarification_questions"] = combined
-    context_set["run_id"] = run_id
+        # Re-key new question ids to avoid collisions with existing q1/q2/...
+        # The /api/answer-clarifications route filters by id-membership, so
+        # unique ids per question are mandatory. Prefix with iteration number
+        # for clarity in saved JSON and dashboard rendering.
+        existing_ids = {q.get("id", "") for q in fresh_prior_qs}
+        renamed: list[ClarificationQuestion] = []
+        for i, q in enumerate(new_questions, 1):
+            new_id = f"iter{iteration}_q{i}"
+            # Defensive: ensure no collision even if a prior iteration used the same prefix
+            suffix = 1
+            while new_id in existing_ids:
+                suffix += 1
+                new_id = f"iter{iteration}_q{i}_{suffix}"
+            existing_ids.add(new_id)
+            q["id"] = new_id
+            renamed.append(q)
 
-    notes = list(context_set.get("iteration_notes") or [])
-    notes.append(
-        {
-            "timestamp": datetime.now().isoformat(),
-            "action": "iterate_clarify",
-            "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
-        }
-    )
-    context_set["iteration_notes"] = notes
+        # Append (do not replace) so the audit chain of all interview rounds
+        # stays intact. /api/answer-clarifications already merges into
+        # context["clarifications"] by id, so prior answers persist alongside
+        # new ones.
+        fresh["clarification_questions"] = list(fresh_prior_qs) + renamed
+        fresh["run_id"] = run_id
 
-    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+        notes = list(fresh.get("iteration_notes") or [])
+        notes.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "action": "iterate_clarify",
+                "summary": f"surfaced {len(renamed)} iteration questions at iteration {iteration}",
+            }
+        )
+        fresh["iteration_notes"] = notes
 
     logger.info(
         "iterate-clarify produced %d questions for %s (iteration=%d)",

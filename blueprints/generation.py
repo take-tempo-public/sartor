@@ -69,6 +69,7 @@ from generator import (
 from hardening import (
     ContextSet,
     compute_date_grounding,
+    context_transaction,
     save_iteration_context,
 )
 from web_infra import (
@@ -705,50 +706,55 @@ def save_edits() -> ResponseReturnValue:
     if not safe_user:
         return jsonify({"error": "Could not resolve username"}), 400
 
-    context_set: ContextSet = json.loads(cp.read_text(encoding="utf-8"))
-
     saved_resume = False
     saved_cover = False
+    new_json_resume = None
     if edited_resume.strip():
-        context_set["edited_resume_text"] = edited_resume
         # WYSIWYG (walkthrough D1/D2): recompute the cached JSON Resume the preview
         # route serves so the styled preview reflects the edit immediately — same
         # deterministic path the download uses (normalize → md_to_json_resume), no
         # LLM, no iteration advance. Preview == the future download of these edits.
+        # Pure function of edited_resume — safe to compute outside the transaction.
         from generator import _normalize_markdown
         from json_resume import md_to_json_resume
 
-        context_set["last_generated_json_resume"] = md_to_json_resume(
-            _normalize_markdown(edited_resume)
-        )
+        new_json_resume = md_to_json_resume(_normalize_markdown(edited_resume))
         saved_resume = True
     if edited_cover_letter.strip():
-        context_set["edited_cover_letter_text"] = edited_cover_letter
         saved_cover = True
 
-    # Append a note to the iteration_notes audit trail. Doesn't change iteration.
-    notes = list(context_set.get("iteration_notes") or [])
-    targets = []
-    if saved_resume:
-        targets.append("resume")
-    if saved_cover:
-        targets.append("cover_letter")
-    notes.append(
-        {
-            "timestamp": datetime.now().isoformat(),
-            "action": "save_edits",
-            "summary": f"edits saved as baseline for: {', '.join(targets)}",
-        }
-    )
-    context_set["iteration_notes"] = notes
+    # Delta applied inside a transaction (charter C-7 lost-update fix): a plain
+    # whole-dict write-back here would silently erase a concurrent writer's
+    # already-persisted delta to the same context file — the exact bug
+    # `docs/dev/diagnosis/context-write-lost-update-gap.md` reproduces.
+    with context_transaction(cp) as fresh:
+        if saved_resume:
+            fresh["edited_resume_text"] = edited_resume
+            fresh["last_generated_json_resume"] = new_json_resume
+        if saved_cover:
+            fresh["edited_cover_letter_text"] = edited_cover_letter
 
-    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+        # Append a note to the iteration_notes audit trail. Doesn't change iteration.
+        notes = list(fresh.get("iteration_notes") or [])
+        targets = []
+        if saved_resume:
+            targets.append("resume")
+        if saved_cover:
+            targets.append("cover_letter")
+        notes.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "action": "save_edits",
+                "summary": f"edits saved as baseline for: {', '.join(targets)}",
+            }
+        )
+        fresh["iteration_notes"] = notes
+        app_run_id = fresh.get("application_run_id")
 
     # D4 durability (generation-experience re-architecture, item (b)): mirror
     # the saved edit onto the DB run row for corpus-backed contexts, so it
     # survives independently of this context_*.json sidecar. Best-effort — the
     # context file above is already the primary, already-persisted source.
-    app_run_id = context_set.get("application_run_id")
     if app_run_id is not None and (saved_resume or saved_cover):
         try:
             _persist_edited_text_to_db(
@@ -1579,12 +1585,16 @@ def run_generate_cover_letter() -> ResponseReturnValue:
     # iteration loop + edit-detect pick it up the same way résumé state
     # propagates. No new iteration counter bump — the cover letter is
     # additive to the current generation, not a fresh résumé revision.
-    context_set["last_generated_cover_letter"] = cl_content
-    # Drop any prior typed-edit shadow: the user just got a fresh
-    # LLM-generated letter; the next refine cycle should diff against it.
-    if "edited_cover_letter_text" in context_set:
-        context_set.pop("edited_cover_letter_text", None)
-    cp.write_text(json.dumps(context_set, indent=2), encoding="utf-8")
+    # Delta applied inside a transaction (charter C-7 lost-update fix): a plain
+    # whole-dict write-back here would silently erase a concurrent writer's
+    # already-persisted delta to the same context file — the exact bug
+    # `docs/dev/diagnosis/context-write-lost-update-gap.md` reproduces.
+    with context_transaction(cp) as fresh:
+        fresh["last_generated_cover_letter"] = cl_content
+        # Drop any prior typed-edit shadow: the user just got a fresh
+        # LLM-generated letter; the next refine cycle should diff against it.
+        fresh.pop("edited_cover_letter_text", None)
+        app_run_id = fresh.get("application_run_id")
 
     # Capture the cover-letter signal B.8 Part 2 will consume: persist the
     # cover-letter md onto the same run row the résumé generation wrote to, so
@@ -1592,7 +1602,6 @@ def run_generate_cover_letter() -> ResponseReturnValue:
     # cover letters that earned them. Corpus-backed mode only (context carries
     # application_run_id); best-effort so a DB hiccup never fails the
     # generated-and-downloaded cover letter.
-    app_run_id = context_set.get("application_run_id")
     if app_run_id is not None:
         try:
             _persist_cover_letter_to_db(int(app_run_id), cl_content)
