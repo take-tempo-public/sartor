@@ -637,6 +637,27 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       always separate from the bug, and the whole lesson of this branch is that `--reruns 2` is
       what let a 64%-broken test read as green for eleven runs. Decide (a)/(b)/(c) once CI has
       produced a real post-fix sample — not before.
+      **→ DECIDED (2026-07-20, `docs/scroll-flake-ci-data-rerun-policy`): (a) — keep `--reruns 2`,
+      add a rerun-rate alarm.** Real post-fix CI sample pulled via `gh api .../actions/jobs/<id>/logs`
+      over the **12 CI runs on `main`** from the scroll-fix's own landing run (`df95773`,
+      2026-07-16) through `6323599` (2026-07-20): **0/12 red** (the chronic 64%-broken test stays
+      fixed), but **5/12 runs (~42%) fired at least one rerun**, spread across **5 distinct tests**
+      in the already-tracked settle/restore scroll-flake family (`test_corpus_reload_preserves_scroll_position`,
+      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll`,
+      `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`, plus
+      `test_add_title_then_pin_persists` and `test_no_recommendations_order_persists_on_reload`) —
+      no single test dominates the way the old bug did. One run (`8326b5e`, 2026-07-16) came close
+      to red: `test_corpus_reload_preserves_scroll_position` failed 2 of its 3 attempts. Owner's
+      reasoning: dropping reruns (b) would flash `main` red on ~42% of runs from load, not
+      regressions — likely to erode trust in the signal fast; the 42% rate is real enough that
+      leaving it silent (c) repeats the exact blind spot that hid the original bug, just at a lower
+      per-test rate. **Not yet built:** the alarm itself is a code change (CI workflow/pytest-report
+      logic), not a docs edit, so it is deliberately NOT bundled into this docs-only branch — the
+      item stays open, evolving-notes style (matching this ledger's own pattern), until a follow-on
+      branch implements it. Raw per-run job data:
+      `df95773`→1 rerun, `8326b5e`→3 (incl. the 2/3 near-miss), `4a259e1`→0, `8a77d91`→1,
+      `6b03591`→0, `cce2dc1`→1, `cb68182`→0, `ad04d27`→0, `702d96a`→0, `ec6128a`→0,
+      `981a639`→0, `6323599`→2.
 
 - [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
       `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
@@ -996,9 +1017,18 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       overclaim:** the fix's target defect is closed; the *original* flaky test is **not** fully
       green under saturated load, for reasons entirely outside this fix's scope. **Mode C's
       measured rate here (4/24, ~17%) is real enough that a real user could hit it** — tracked as a
-      follow-on below, not silently dropped. **Not yet met:** the CI leg of the acceptance bar
-      (`--reruns`-free, >1 CI run) — needs an actual CI run post-merge, out of a local session's
-      control. Full write-up: `docs/dev/diagnosis/ux-scroll-position-flake.md` "## The fix" +
+      follow-on below, not silently dropped. **Not yet met (as of 2026-07-16):** the CI leg of the
+      acceptance bar (`--reruns`-free, >1 CI run) — needs an actual CI run post-merge, out of a
+      local session's control.
+      **→ CI leg now confirmed (2026-07-20, `docs/scroll-flake-ci-data-rerun-policy`):** pulled
+      job logs for all 12 CI runs on `main` since this fix's own landing run — the settle/restore
+      family (this test plus 4 siblings) reran in **5/12 runs (~42%)**, including one run where
+      this exact test failed 2 of 3 attempts. Full raw data + the resulting retry-policy decision
+      logged on the `--reruns 2` ledger item above — **not** duplicated here. Confirms the flake is
+      real on CI, not just under local CPU-saturation simulation, at a rate consistent with the
+      ~17% per-attempt figure once multiple family members are sampled across runs. Still
+      `--reruns`-masked from going red; still open pending its own diagnosis/fix branch.
+      Full write-up: `docs/dev/diagnosis/ux-scroll-position-flake.md` "## The fix" +
       "## Acceptance bar". CHANGELOG entry added. **Branch ready to close** pending the gate +
       user merge confirmation.
       **Follow-on filed here, not as a new ledger item** (matching this entry's own "one item,
@@ -1037,6 +1067,19 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `test_corpus_reload_preserves_scroll_position`), and it appeared here **without** deliberate
       CPU saturation — so the settle/restore family may flake on an ordinary loaded dev machine,
       not only under the 7-worker busy-loop calibration.
+      **Data point, elevated local rate (2026-07-20, `docs/scroll-flake-ci-data-rerun-policy`):**
+      the full `pytest -m ux` gate run hit `test_restore_scroll_y_stale_invocation_overwrites_later_scroll`
+      (same test as the 2026-07-18 A/B entry above) — `before=59 after=260`. 4 isolated re-runs
+      immediately after: **3 failed / 1 passed (75%)**, well above the ~17% mode-C figure. This
+      branch changes zero `.py`/`.js` (docs-only, verified via `git diff --stat main -- '*.py'
+      '*.js'`), so it cannot be a regression from it; the elevated rate is most plausibly this
+      machine being under load right after two ~15-25 min full pytest-suite runs completed back to
+      back, consistent with this entry's own "ordinary loaded dev machine" note above — offered as
+      a data point only, not attributed, per C-7. **Gate treated as green**: 122/123 UX + 2050/1-skip
+      non-UX pass, and this one failure is the pre-existing, separately-tracked, own-branch item
+      above — matching this ledger's own repeated precedent (e.g. the `feat/diagnostics-run-cancel`
+      and `fix/context-write-lost-update-gap` entries) of confirming via isolated re-run rather than
+      blocking an unrelated branch's close-out on it.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
