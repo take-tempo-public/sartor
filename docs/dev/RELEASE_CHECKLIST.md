@@ -515,7 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **20** (**+1** this entry — `fix/context-write-lost-update-gap`,
+_Rendered open count: **19** (**−1** this entry — `docs/diagnostics-content-cluster`,
+2026-07-20: item 12 **UX round-2 remediation** **RESOLVED** — the #2/4/5/6/16 field-level
+`_DASH_HELP` authoring pass landed (9 new entries + 13 icon instances across
+Quality/Tuning/Annotate), the last remaining sub-scope after step 9 already landed the
+run-cancel endpoint. See its `#### Resolved` entry below; the item's full multi-branch
+history (Wave A quick wins 2026-07-09 → diagnostics-dx batch 2026-07-11 → design-system
+pass 2026-07-11 → run-cancel 2026-07-20 → content cluster 2026-07-20) stays on the record
+there rather than reproduced twice. Prior to that: **20** (**+1** this entry —
+`fix/context-write-lost-update-gap`,
 2026-07-20: filed the `compliance-witness` tuning-gap item above; the branch's own
 lost-update fix (5 sites converted to `hardening.context_transaction`, matching the 12 already
 fixed in `blueprints/applications.py`) is found-and-fixed within its own branch and does not
@@ -1635,112 +1643,6 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       1-script-per-guard assumptions broke; all pass. **Corrected count:
       10 of 13 fully landed, 3 remain:** PX-39, PX-44 (refactor half), PX-46.
 
-- [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
-      end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in
-      [`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md). Six
-      decision-free findings (G6 clarify/more-Q busy-gap, C2 skills bounded-scroll, T1
-      templates-card overflow, Co2 tailor-skills-state, Co4 wire the already-built
-      corpus-wide skill-suggest endpoint, O1a docx blank-line spacing) landed as **Wave A**
-      on `fix/round2-quick-wins`. The design-heavy remainder — state-communication
-      unification (shape = strengthen the existing `_setBusy` banner, not a new modal),
-      skills redesign (denial semantics + collapsible-toggle + icon unification + ATS-shape
-      tuning), a design-system pass (caps-vs-sentence-case, iconography, modal-fade
-      consistency), and prior-application compact cards — is registered as the **UX
-      Cohesion Epic** ([`RELEASE_ARC.md`](RELEASE_ARC.md) "UX Cohesion Epic", unscheduled,
-      post-v1.0.8, version slot TBD vs the v1.0.9 docs epic). **Dates (O1b) RESOLVED
-      2026-07-09** — owner chose keep-status-quo: preview/download parity holds, and right
-      tab-stops are ATS-safe, so the date-column lock was a non-constraint — no code change.
-      The **diagnostics round-2 batch** (17 items) + the **#14 run-health** review are durably
-      captured in [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)
-      + [`reviews/2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md) and
-      bundle into the v1.0.9 epic (owner-decided; nothing pre-empts the v1.0.8 tag).
-      **→ Progress (2026-07-09, unattended Diagnostics-DX bug-fix stack — awaiting the owner merge
-      train):** the four confirmed-bug fixes are BUILT + gated (full suite 1951 ✓), stacked on
-      `main`: **#15** anchor-JD `.txt` reconcile (`fix/diagnostics-15-anchor-jd-path`, `272f05a`)
-      → **#11** collate CLI `--fixture` (`fix/diagnostics-11-collate-cli-fixture`, `7c25e9b`) →
-      **#8** bootstrap skills-parser inline-label strip (`fix/diagnostics-08-skills-parser`,
-      `3068563`) → **#1** client-side global run-lock (`fix/diagnostics-01-run-lock`, `8a40ae8`).
-      **Still open** (stay in the review doc + the [`RELEASE_ARC.md`](RELEASE_ARC.md) Diagnostics-DX
-      epic section): #2–#7, #9–#10, #12–#17, the **run-cancel** endpoint, and the
-      `app.run(threaded=True)` governance flag. **Tracked sub-decisions from this stack:**
-      (a) **#1 lock-scope design-Q** — the lock ships the conservative *block-any-second-run*
-      default; whether to narrow it to *paid-runs-only* (letting the cheap seed export run
-      concurrently) is an owner call for the epic; (b) **run-lock test-hardening (witness CW-117,
-      WATCH)** — the no-deadlock guarantee is hand-wired at 10 release sites, but only the eval
-      `_closed` path is regression-tested and bootstrap/grounding-score don't route through the
-      shared streamer, so fold them through it or extend the test when the epic hardens this surface.
-      _(discovered: 2026-07-09, `fix/round2-quick-wins`; open count 5 → 6.)_
-      **→ Integrate:** Wave A is done on this branch; the epic itself needs owner slotting
-      before it becomes a branch sequence.
-      **→ Update (2026-07-11, `feat/diagnostics-dx`, v1.1.0 debt-burn Lane DX):** a further
-      batch landed off `wave1-assembly` (gate green — ruff/mypy/pytest incl. `-m ux` + a11y,
-      2030 tests): **#3** (Tuning-tab cross-link to Annotate's Export-seed button), **#7**
-      (`should_omit` tooltip + relabel), **#9** (localStorage draft snapshot/restore +
-      jump-to-flagged-item), **#10** (real `<progress>` bars for eval/tune/bootstrap, driven
-      by the SSE's existing `index`/`total`), **#13** (indeterminate busy bar for the
-      grounding-score button — deliberately coarse, per its own disposition), and **#17**
-      (the doc-grounded assistant ported onto `/_dashboard`, dev-mode checkbox defaulting
-      checked there — no backend change). **(a) #1 lock-scope** verified ALREADY correct at
-      this branch's base (seed export never took the lock; only eval/tune/bootstrap/
-      grounding-score do) — no design-Q remained, just a small hygiene close (the
-      dynamically-created "Run this fixture" button now also participates in the shared
-      disable-list). **(b) CW-117 run-lock test-hardening** resolved by adding Playwright
-      coverage for the bootstrap and grounding-score hand-rolled SSE pumps (previously only
-      the eval `_closed` path was regression-tested); left them as their own hand-rolled
-      pumps rather than routing through `window.sartorEval.stream` (lower risk, same
-      guarantee now proven). **Content cluster #2/#4/#5/#6/#16** got a SMALL, DRAFT,
-      owner-review-before-merge down payment only (a handful of new field-level tooltips +
-      one clarifying help sentence) — not the full field-level authoring pass. **Still open**
-      (unchanged by this branch): #12, #14 (already routed elsewhere), #16's remaining
-      breadth, the **run-cancel** endpoint, and the `app.run(threaded=True)` governance flag.
-      The **grounding-signal persistence gap** this same branch also fixed (RH-1/RH-2, off
-      the paired [`2026-07-e2e-run-health-review.md`](reviews/2026-07-e2e-run-health-review.md))
-      is logged under the "Grounding / hallucination metric" ledger item above, not
-      restated here.
-
-      **→ Update (2026-07-11, `feat/ux-cohesion`, v1.1.0 Wave 2 Lane UX):** the design-
-      system remainder landed — dec 1 sentence-case app-wide, dec 2 the one ~150ms
-      modal fade, dec 3 Phosphor vendored skill-icon chips (glyph→concept mapping
-      owner-review-before-merge), dec 4 the state-comm two-tier (`_setBusy` audit +
-      the new `.btn-pending` pulse), dec 5 the Compose autosave "Saved" toast, dec 6
-      the skills denial data-model (reversible soft-tombstone, replacing the old
-      hard-delete-on-deny; un-deny via `PUT is_active=true`) + the denied-skills
-      collapsible lane, and dec 7 the compact prior-application cards. Full per-decision
-      detail (files, functions, CSS tokens) in `CHANGELOG.md`'s "UX Cohesion Epic" entry
-      — this note only summarizes. **PX-51 (style.css duplicate-cascade collapse) was
-      explicitly NOT landed** — deferred because it would have collided with the
-      in-flight dec-1/dec-2 edits above; documented, low risk to leave (see
-      `CHANGELOG.md` for the full rationale).
-      **→ Reconciled (2026-07-16, `docs/v110-plan-reconciliation`, this note was found
-      truncated mid-sentence during a full audit against `docs/dev/reviews/` and actual
-      code — nothing was lost, only this one progress note was ever incomplete; see
-      `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation" for the full audit).** This
-      ledger item's true remaining scope, precisely: the diagnostics **run-cancel/abort
-      endpoint** (owner explicitly opted in; only the weaker client-side lock shipped)
-      and the **#2/4/5/6/16 instructional content-cluster full pass** (only a small
-      draft down-payment landed). #12 and #14 are already routed/low-stakes per the
-      notes above. The `app.run(threaded=True)` governance flag is a deliberate
-      owner-gated deferral, not a miss.
-      **→ Landed (2026-07-18, `refactor/css-cascade-collapse`):** PX-51 lands as its
-      own branch — see the carry-forward ledger's PX-51 row above and `CHANGELOG.md`
-      for full detail. This ledger item's remaining scope is now just the two items
-      named directly above (run-cancel endpoint, content-cluster full pass).
-      **→ Landed (2026-07-20, `feat/diagnostics-run-cancel`, step 9 of the v1.1.0
-      close-out — reconciliation sequence):** the run-cancel endpoint. Disconnect-as-
-      cancel, not a literal second route — the single-threaded `app.run()` (the
-      `app.run(threaded=True)` flag below, still deliberately deferred) means a real
-      `POST /cancel` couldn't be serviced while the original SSE connection is open,
-      so the cancel signal travels over that same connection: all 4 SSE routes now
-      poll their result queue with a timeout + heartbeat, and a real disconnect (or
-      the new frontend Cancel button) delivers `GeneratorExit`, which sets a
-      per-request `threading.Event` an optional `cancel_check` param on
-      `run_suite`/`run_pipeline_over_jd_texts`/`run_grounding_signals` polls before
-      its next paid/CPU call. Full detail:
-      [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)'s
-      RUN-LIFECYCLE note + `CHANGELOG.md`. This ledger item's remaining scope is now
-      just the **#2/4/5/6/16 instructional content-cluster full pass**
-      (`docs/diagnostics-content-cluster`, step 10, next in the same sequence).
-
 - [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does
       not exist.** `docs/governance/charter.md` has no `W-1` clause anywhere (only
@@ -1942,6 +1844,33 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       reduction sprint is now badly overdue.)_
 
 #### Resolved
+
+- [x] **UX round-2 remediation (e2e feedback 2026-07-09) — RESOLVED** on
+      `docs/diagnostics-content-cluster`, 2026-07-20 (step 10, the last of the v1.1.0
+      close-out — reconciliation sequence). Was: the owner's second end-to-end walkthrough
+      surfaced a fresh UX friction set
+      ([`reviews/2026-07-ux-round2-findings.md`](reviews/2026-07-ux-round2-findings.md)),
+      which fanned out into several branches over six weeks: **Wave A** quick wins
+      (`fix/round2-quick-wins`, 2026-07-09 — 6 decision-free findings + dates O1b resolved
+      keep-status-quo); the **diagnostics-DX batch** (`feat/diagnostics-dx`, 2026-07-11 —
+      #3/#7/#9/#10/#13/#17 of the 17-item diagnostics round-2 set, plus the run-lock
+      lock-scope and CW-117 test-hardening sub-decisions closed); the **UX Cohesion Epic**
+      design-system pass (`feat/ux-cohesion`, 2026-07-11 — sentence-case, modal fade,
+      Phosphor skill-icon chips, state-comm `.btn-pending` pulse, Compose autosave toast,
+      skills soft-tombstone denial model, compact prior-app cards); `PX-51` style.css
+      duplicate-cascade collapse (`refactor/css-cascade-collapse`, 2026-07-18); the
+      **run-cancel/abort endpoint** the owner explicitly opted into
+      (`feat/diagnostics-run-cancel`, step 9, 2026-07-20 — disconnect-as-cancel over the
+      existing SSE connection, since `app.run()` stays single-threaded); and finally **this
+      branch's field-level `_DASH_HELP` authoring pass** (#2/#4/#5/#6/#16) — 9 new
+      registry entries + 13 icon instances across Quality/Tuning/Annotate, superseding the
+      small draft down-payment (a handful of native `title=` tooltips) that had landed on
+      `feat/diagnostics-dx`. **Fix shipped:** every sub-scope this item ever tracked is now
+      landed; #12 (this item) and #14 (already routed to the run-health review) both close
+      here. Full per-branch detail lives in each branch's own `CHANGELOG.md` entry and in
+      `RELEASE_ARC.md`'s "v1.1.0 close-out — reconciliation" step-by-step — not reproduced
+      a third time here. Sat in `#### Open` since 2026-07-09 as one of the ledger's oldest
+      items; this is a **−1** to the open count.
 
 - [x] **`chore/scrub-local-eval-paths` private-clone / personal-path exposure — RESOLVED** on
       `chore/scrub-local-eval-paths`, 2026-07-19 (step 6 of `RELEASE_ARC.md`'s v1.1.0

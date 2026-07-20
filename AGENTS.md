@@ -190,7 +190,7 @@ CI runs the same on PR. Eval harness (Anthropic API costs apply) runs locally an
 
 ```bash
 python evals/runner.py --suite synthetic --subset smoke   # ~$0.35-0.40 under Sonnet 5, grounding only
-python evals/runner.py --suite synthetic                  # ~$1.50, all 4 rubrics × 3 fixtures
+python evals/runner.py --suite synthetic                  # ~$0.30-0.40, all 4 rubrics × 3 fixtures (down from ~$1.50 pre-Sonnet-5; see evals/TUNING_LOG.md)
 ```
 
 Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhost:5000/_dashboard` while `python app.py` is running locally. Only reachable via `localhost`/`127.0.0.1` (host-header guard).
