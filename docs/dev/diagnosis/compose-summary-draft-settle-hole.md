@@ -297,6 +297,16 @@ An in-process lock is the right scope: the Dockerfile runs `CMD ["sartor", "--ho
 a single-process **threaded** server. (If that ever becomes multi-process, this needs to become a
 file lock, and *that* is the moment to revisit — not before.)
 
+> **Erratum (2026-07-20, `fix/context-write-lost-update-gap`):** the "threaded server" claim above
+> is factually wrong and was left uncorrected here on purpose — this dossier is a historical
+> evidence record, not living documentation, and the original claim is what was believed at the
+> time. `app.py`'s `app.run(...)` has never set `threaded=True`; the Dockerfile reaches the same
+> non-threaded call. The lock is still the right scope, for a different reason than stated: every
+> request is already serialized by the single-threaded server, and the lock is forward cover for if
+> `threaded=True` is ever flipped (a separate, deliberately deferred governance decision). Corrected
+> going forward in `hardening.py`'s `context_transaction` docstring; full record in
+> `docs/dev/diagnosis/context-write-lost-update-gap.md`.
+
 **A bonus that falls out for free:** the transient staging keys (`jd_text`, `career_facts`, …) are
 not present on a fresh in-lock read, so every defensive `ctx.pop(transient)` and the whole
 "don't leak staging keys into the iteration chain" hazard disappear structurally rather than by

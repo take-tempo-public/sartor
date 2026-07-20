@@ -21,6 +21,36 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: 5 more context-file routes shared the already-fixed lost-update shape, unprotected (`fix/context-write-lost-update-gap`)
+
+`hardening.context_transaction` (built in `fix/compose-frozen-composition` to close a
+proven "lost update" bug — a concurrent writer's stale whole-dict write-back silently
+erasing another route's already-persisted delta to the same `context_*.json`) was
+converted at all twelve write sites in `blueprints/applications.py`, but that fix's own
+scope was that one file. A repo-wide sweep found the identical unprotected
+read-modify-write-whole-dict shape at 5 more sites, never audited against it, sharing
+the same `OUTPUT_DIR/<username>/context_*.json` namespace as the 12 already-fixed
+routes: `blueprints/analysis.py`'s `/api/clarify`, `/api/answer-clarifications`,
+`/api/iterate-clarify`, and `blueprints/generation.py`'s `/api/save-edits`,
+`/api/generate-cover-letter`. Dynamically reproduced (not just structurally matched)
+for the `/api/clarify` ↔ `/api/answer-clarifications` pairing before the fix — see
+`docs/dev/diagnosis/context-write-lost-update-gap.md`.
+
+- All 5 sites converted to `context_transaction`, matching the established
+  `applications.py` pattern: delta computed/applied against a freshly-read dict inside
+  the lock, never a stale pre-call copy.
+- New concurrent-writer regression tests (`tests/test_app_clarify.py`,
+  `tests/test_context_write_races.py`) cover all 5 sites, mirroring
+  `tests/test_draft_summary.py::TestConcurrentContextWriters`'s forced-interleaving
+  pattern.
+- Corrected a related, previously-uncaught documentation error: `hardening.py`'s
+  `context_transaction` docstring and `docs/dev/diagnosis/compose-summary-draft-settle-hole.md`
+  both claimed the production server is threaded (`app.run(threaded=True)`); it is not
+  — `threaded=True` appears nowhere outside a test-only fixture
+  (`tests/ux/conftest.py`). The in-process lock is still correctly scoped, for the
+  actual reason (today's single-threaded serialization, plus forward cover if
+  `threaded=True` — a separate, owner-gated decision — is ever flipped).
+
 ### Changed: consolidated 5 Edit/Write hooks into one dispatcher, re-homed hooks to root `hooks/` (PX-37, kit-adoption commitment 3, `chore/hook-dispatcher`)
 
 Every `Edit`/`Write` tool call spawned 5 separate `python3` processes, one per
