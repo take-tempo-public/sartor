@@ -9,6 +9,7 @@ shape (clarification_questions, clarifications) written back to the context file
 """
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
@@ -584,3 +585,133 @@ class TestClarificationMemoryWrite:
         assert resp.status_code == 200
         assert resp.get_json()["memory_rows"] == 0
         assert _memory_rows(ids["candidate"]) == []
+
+
+# -------------------------------------------------------------------
+# The falsification experiment (charter C-7)
+# -------------------------------------------------------------------
+
+
+class TestConcurrentContextWriters:
+    """Does a concurrent `/api/clarify` erase `/api/answer-clarifications`'s persisted delta?
+
+    Specified in `docs/dev/diagnosis/fix-context-write-lost-update-gap.md`'s
+    Falsification section. `/api/clarify` and `/api/answer-clarifications` share
+    the read-whole-file / do-work / write-whole-dict-back shape that
+    `docs/dev/diagnosis/compose-summary-draft-settle-hole.md` (O-4/O-7) already
+    proved is a lost-update hazard at 12 other sites — but that proof was never
+    run against these two routes specifically. This test exists to kill or
+    confirm the hypothesis for this pairing, not to assume it.
+
+    Forces the one ordering the hypothesis requires:
+
+        1. `/api/clarify` reads the whole context          (analysis.py:459)
+        2. `/api/answer-clarifications` reads, merges, and
+           persists its answer                              (analysis.py:667)
+        3. `/api/clarify` returns from its stubbed LLM call and writes its
+           now-stale whole dict back                         (analysis.py:490)
+
+    `/api/clarify` has necessarily completed its read by the time it reaches its
+    LLM call, so stubbing that call is a precise, non-invasive probe of step 1.
+    `/api/answer-clarifications` has no LLM call to stub — it runs synchronously
+    in the main test thread while `/api/clarify`'s thread is parked, which is
+    sufficient to force step 2 inside step 1-3's window.
+
+    **If this test PASSES on HEAD the hypothesis is dead for this pairing —
+    stop, do not fix, widen the instrument** (the dossier's Falsification section
+    names the other 4 sites as further candidates).
+    """
+
+    def test_answer_clarifications_does_not_erase_a_concurrent_clarify(
+        self, app_client, monkeypatch
+    ):
+        import blueprints.analysis as ban
+
+        client, context_path, _output_dir = app_client
+        app = client.application
+
+        # Pre-seed a known clarification question so /api/answer-clarifications
+        # has a valid id to merge an answer against.
+        seeded = json.loads(context_path.read_text(encoding="utf-8"))
+        seeded["clarification_questions"] = [
+            {
+                "id": "q1",
+                "text": "Used Kubernetes in production?",
+                "target_gap": "Essential skill Kubernetes missing from resume",
+                "kind": "experience_probe",
+            }
+        ]
+        context_path.write_text(json.dumps(seeded), encoding="utf-8")
+
+        clarify_has_read = threading.Event()
+        answer_has_persisted = threading.Event()
+
+        def _slow_clarify(client_arg, context_set, analysis, username="", run_id=""):
+            # Reaching here means /api/clarify already holds its in-memory copy
+            # of the context (read at analysis.py:459, before this call at :471).
+            # Hold the call open — as a real multi-second Haiku call would —
+            # while /api/answer-clarifications reads, merges, and persists.
+            clarify_has_read.set()
+            assert answer_has_persisted.wait(timeout=20), (
+                "/api/answer-clarifications never persisted"
+            )
+            return {
+                "questions": [
+                    {
+                        "id": "q2",
+                        "text": "Did the migration ship or remain a POC?",
+                        "target_gap": "Scope ambiguity",
+                        "kind": "scope_probe",
+                    }
+                ],
+                "reasoning": "Probing shipped status.",
+            }
+
+        monkeypatch.setattr(ban, "clarify", _slow_clarify)
+
+        status: dict[str, int] = {}
+
+        def _fire_clarify() -> None:
+            c = app.test_client()
+            r = c.post("/api/clarify", json={"context_path": str(context_path)})
+            status["clarify"] = r.status_code
+
+        t_clarify = threading.Thread(target=_fire_clarify)
+        t_clarify.start()
+        assert clarify_has_read.wait(timeout=20), "/api/clarify never reached its LLM call"
+
+        # /api/clarify is now provably parked mid-call, holding a pre-answer
+        # copy of the context. Fire /api/answer-clarifications to completion
+        # (read, merge, write) inside that window.
+        c2 = app.test_client()
+        r2 = c2.post(
+            "/api/answer-clarifications",
+            json={
+                "context_path": str(context_path),
+                "answers": {"q1": "Yes, led a K8s migration for a 12-person team."},
+            },
+        )
+        status["answer"] = r2.status_code
+        # Its write has landed on disk; release /api/clarify into its write-back.
+        answer_has_persisted.set()
+
+        t_clarify.join(timeout=30)
+        assert not t_clarify.is_alive(), "/api/clarify thread hung"
+
+        # Asserted BEFORE the lost-update check so a threading/500 failure is
+        # never mistaken for the defect under test. Different failure, different line.
+        assert status.get("answer") == 200, f"/api/answer-clarifications did not succeed: {status}"
+        assert status.get("clarify") == 200, f"/api/clarify did not succeed: {status}"
+
+        final = json.loads(context_path.read_text(encoding="utf-8"))
+
+        # /api/clarify's own delta must land — it wrote last, so this holds on HEAD.
+        assert len(final.get("clarification_questions", [])) == 1, "/api/clarify's delta is missing"
+
+        # ...and it must NOT have cost us /api/answer-clarifications's. On HEAD it does.
+        assert final.get("clarifications", {}).get("q1") == (
+            "Yes, led a K8s migration for a 12-person team."
+        ), (
+            "LOST UPDATE: /api/clarify's whole-dict write-back erased the answer "
+            "/api/answer-clarifications had already persisted."
+        )
