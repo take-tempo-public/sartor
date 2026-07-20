@@ -49,7 +49,7 @@ _GUARD_NAMES = (
 )
 
 
-def _load_payload() -> dict[str, Any]:
+def load_payload() -> dict[str, Any]:
     raw = sys.stdin.read()
     try:
         return json.loads(raw) if raw.strip() else {}
@@ -82,7 +82,7 @@ def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(f"usage: claude_hook.py <{'|'.join(_GUARD_NAMES)}>", file=sys.stderr)
         return 2
-    payload = _load_payload()
+    payload = load_payload()
     result = dispatch(argv[1], payload)
     if result.blocked:
         for line in result.messages:

@@ -36,6 +36,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.enforcement.adapters import claude_dispatcher
 from scripts.enforcement.guards import (
     block_merge_to_main,
     block_secrets,
@@ -790,3 +791,86 @@ class TestGitHookAdapter:
             "pre-push", "origin", "https://example.invalid/repo.git", cwd=repo, stdin=stdin
         )
         assert result.returncode == 0
+
+
+# --------------------------------------------------------------------------- #
+# 4. Edit|Write dispatcher (PX-37) — one process, all five guards, no
+#    short-circuit (no OLD equivalent — new surface).
+# --------------------------------------------------------------------------- #
+
+
+def _run_claude_dispatcher(payload: dict, *, cwd: Path) -> tuple[int, str]:
+    """Invoke `claude_dispatcher.py` directly.
+
+    `hooks/edit-write-dispatcher.sh` (the settings.json-wired wrapper) is a
+    one-line `exec python3 .../claude_dispatcher.py` with no arguments — this
+    helper calls the same module the same way, so it's meaningful both before
+    and after the wrapper/re-home commit lands.
+    """
+    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_ALLOW_MAIN_EDITS",)}
+    env["CLAUDE_PROJECT_DIR"] = str(REPO_ROOT)
+    result = subprocess.run(  # noqa: S603 - fixed argv, test-authored input
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "enforcement" / "adapters" / "claude_dispatcher.py"),
+        ],
+        input=json.dumps(payload),
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        check=False,
+    )
+    return result.returncode, result.stderr
+
+
+class TestEditWriteDispatcher:
+    """PX-37: require-feature-branch, require-evidence-before-fix, block-secrets,
+    validate-context, and route-security-lint all run in one process, and every
+    blocked guard's messages appear — proving there's no short-circuit."""
+
+    def test_guard_order_is_exactly_the_five_edit_write_guards(self) -> None:
+        assert set(claude_dispatcher._GUARD_ORDER) == {
+            "require-feature-branch",
+            "require-evidence-before-fix",
+            "block-secrets",
+            "validate-context",
+            "route-security-lint",
+        }
+
+    def test_allow_when_all_five_allow(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "dispatch_allow", "feat/x")
+        payload = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
+        }
+        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        assert code == 0, err
+
+    def test_block_on_main_single_guard(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "dispatch_main", "main")
+        payload = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
+        }
+        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        assert code == 2
+        assert "require-feature-branch" in err
+
+    def test_aggregates_two_simultaneous_blocks_no_short_circuit(self, tmp_path: Path) -> None:
+        """require-feature-branch (on main) AND block-secrets (embedded key) both
+        trip on one payload — both messages must appear, proving no short-circuit."""
+        repo = _make_repo(tmp_path, "dispatch_double_block", "main")
+        payload = {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": str(repo / "app.py"),
+                "content": "KEY = 'sk-ant-" + "a" * 30 + "'\n",
+            },
+        }
+        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        assert code == 2
+        assert "require-feature-branch" in err
+        assert "block-secrets" in err
