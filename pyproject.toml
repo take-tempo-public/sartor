@@ -94,7 +94,7 @@ dev = [
     # (CI `ux` tier only, `--reruns 2` — see .github/workflows/ci.yml "Flake policy").
     # Inert unless `--reruns` is passed, so the strict `quality`/`gate` pytest is
     # unaffected (it never passes the flag).
-    "pytest-rerunfailures>=14,<16",
+    "pytest-rerunfailures>=14,<17",
     # Ruff is EXACT-pinned (not a range) so local and CI format identically: ruff does not
     # guarantee formatter-output stability even across patch releases, so a range let 5 files
     # silently drift under a newer formatter (carry-forward ledger, cleared on
