@@ -759,3 +759,57 @@ only over-tags is the *good* failure mode.
 resolve, all relative links resolve, 0 orphans.
 
 **Checkpoint:** `.last_ingest_sha` advanced `9f3c800` → `248703b`.
+
+## 2026-07-20 — `feat/diagnostics-run-cancel` — diff pass (`/wiki-self-update`, default `--cap 8`)
+
+**Mode: diff pass**, `248703b` → `b87ab19` — 77 files changed, spanning several merged
+branches accumulated since the last ingest (`chore/scrub-local-eval-paths`,
+`chore/config-drift-batch`, `chore/hook-dispatcher`, `fix/context-write-lost-update-gap`,
+and this branch's own run-cancel work), not just this branch. Triggered by the CI
+`test_this_repos_wiki_is_fresh_enough_to_merge` gate crossing the 75-file block
+threshold on PR #35.
+
+**Scope triage (before spending):** a naive file-level scan (any page citing any changed
+file) surfaced ~20 candidate pages — well over the default cap. A precision pass (reading
+each candidate page's actual claim against the real diff content, not just filename
+overlap) narrowed this to **4 genuinely affected pages**, well under cap; no `--cap` raise
+needed. 16 candidates were checked and ruled out — files that changed for reasons
+unrelated to what the citing page actually claims (e.g. `db/models.py`'s only change was
+removing a stray absolute local-machine path from a comment; `static/style.css`'s 128-line
+net deletion was PX-51's duplicate-selector cascade collapse, zero hits on the specific
+classes `frontend-wizard` cites; `route-surface.md` was already current on the
+hook-dispatcher migration).
+
+**Pages changed (4):**
+- `diagnostics-console` — new "Run cancellation (disconnect-as-cancel)" subsection: the
+  `_HEARTBEAT_INTERVAL_S` timeout-poll + `GeneratorExit` mechanism across all 4 SSE
+  routes, the per-request `cancel_check` threading, and why it's disconnect-based rather
+  than a literal second route (single-threaded `app.run()`). The page previously covered
+  these same 4 routes and the run-lock in detail but said nothing about cancellation — a
+  real coverage gap, not just drift.
+- `iteration-audit-chain` — corrected a now-false claim: `save_edits` no longer "rewrites
+  that same file in place," it applies a delta via `context_transaction` (the
+  `fix/context-write-lost-update-gap` rewrite, landed before this branch).
+- `eval-harness` — documented the new `cancel_check` param on `run_suite` and
+  `run_pipeline_over_jd_texts`, parallel to the existing `progress` param coverage.
+- `context-set-contract` — `context_transaction`'s site count widened from 12 to 17 (5
+  more sites converted); cited both diagnosis dossiers as evidence.
+
+**16-page citation-drift check (explicitly requested):** re-verified whether any of the
+16 ruled-out pages' citations had merely drifted in line number even though content was
+unaffected. First pass over-reported drift (~30 apparent hits) — a grep bug misread its
+own `-n` line-number prefix as a cited target line. Re-run with a pattern matching only
+genuine `path:N` citations in the source text found exactly 2 real numeric citations in
+the whole 16-page set (`pyproject.toml:81`, `:92` in `non-dependency-downloads.md`), both
+confirmed still accurate (the `pyproject.toml` edit was a same-line comment fix, no
+line-count shift). Every other citation across these 16 pages links at file/symbol
+granularity, which cannot drift from an unrelated line moving. **Net: zero drift, zero
+edits needed** on the 16 — confirmed, not assumed.
+
+**Audit (author ≠ auditor):** all 4 changed pages reviewed by a second pass against
+source at HEAD before being accepted; no fabrication beyond the named source files found.
+
+**Deterministic gate:** 0 ERRORs — 38/38 pages present in `index.md`, all `[[backlinks]]`
+resolve, all 85 unique cited repo paths exist, 0 orphans.
+
+**Checkpoint:** `.last_ingest_sha` advanced `248703b` → `b87ab19`.

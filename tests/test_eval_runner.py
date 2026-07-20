@@ -501,6 +501,157 @@ class TestRunSuite:
             run_suite(fixture_name="does-not-exist", out_dir=tmp_path, client=MagicMock())
 
 
+class TestRunSuiteCancel:
+    """feat/diagnostics-run-cancel: cancel_check is polled before each remaining
+    paid call. These are new-feature tests (fail before this branch, pass after)
+    — there's no pre-existing bug to falsify, the gap itself is the absence of
+    any cancellation mechanism."""
+
+    def _stub_pipeline(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner,
+            "_score_distinctiveness",
+            lambda *a, **k: {"score": 4.0, "summary": "ok"},
+        )
+
+    def test_cancel_before_first_fixture_runs_nothing(self, tmp_path, monkeypatch):
+        """cancel_check already True at the top-of-loop checkpoint: no paid call
+        happens at all, and the zero-records guard doesn't raise for an
+        intentional cancellation (only for the RH-2 silent-failure case)."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        analyze_calls: list[int] = []
+        monkeypatch.setattr(
+            runner, "analyze", lambda *a, **k: analyze_calls.append(1) or {"overall_strategy": "ok"}
+        )
+
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            cancel_check=lambda: True,
+        )
+
+        assert analyze_calls == []
+        assert result.cancelled is True
+        assert result.n_pass == 0
+        assert result.n_fail == 0
+        # Guard deletes the empty file but does not raise when cancelled.
+        assert result.out_path is not None
+        assert not result.out_path.exists()
+
+    def test_cancel_after_generate_skips_distinctiveness_and_grading(self, tmp_path, monkeypatch):
+        """A cancellation observed between generate and the distinctiveness
+        judge stops before that (and every later) paid call for the fixture,
+        and writes no record for it."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        generate_calls: list[int] = []
+        distinctiveness_calls: list[int] = []
+        grade_calls: list[int] = []
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: (
+                generate_calls.append(1)
+                or {"resume_content": "- Led a project", "cover_letter_content": "Dear team,"}
+            ),
+        )
+        monkeypatch.setattr(
+            runner,
+            "_score_distinctiveness",
+            lambda *a, **k: distinctiveness_calls.append(1) or {"score": 4.0, "summary": "ok"},
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: (
+                grade_calls.append(1)
+                or {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"}
+            ),
+        )
+
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            fixture_name="sre-mid-level",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            cancel_check=lambda: bool(generate_calls),
+        )
+
+        assert len(generate_calls) == 1
+        assert distinctiveness_calls == []
+        assert grade_calls == []
+        assert result.cancelled is True
+        assert result.n_pass == 0
+        assert result.n_fail == 0
+        assert result.out_path is not None
+        assert not result.out_path.exists()
+
+    def test_cancel_between_fixtures_keeps_already_written_records(self, tmp_path, monkeypatch):
+        """A cancellation observed at the top of the next fixture's loop
+        iteration leaves the already-completed fixture's records on disk —
+        nothing already billed and graded is discarded."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        grade_calls: list[int] = []
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: (
+                grade_calls.append(1)
+                or {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"}
+            ),
+        )
+
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            cancel_check=lambda: bool(grade_calls),
+        )
+
+        # 3 committed synthetic fixtures under smoke; only the first completes.
+        assert len(grade_calls) == 1
+        assert result.cancelled is True
+        assert result.n_pass == 1
+        assert result.n_fail == 0
+        assert result.out_path is not None and result.out_path.exists()
+        lines = [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+        grounding = [r for r in lines if r.get("rubric") == "grounding"]
+        assert len(grounding) == 1
+
+
 class TestGroundingSignalsDegrade:
     """Fix (2026-07-08): a grounding-scorer exception must degrade the fixture
     to un-scored and continue the run, never abort it — run_suite now honors

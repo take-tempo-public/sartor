@@ -186,6 +186,34 @@ lock is not enforced server-side; `seed_export` (the deterministic corpus snapsh
 feature in the Annotate tab) deliberately does not acquire it and may run in
 parallel with paid runs `[synthesis]`.
 
+**Run cancellation (disconnect-as-cancel):** Each SSE route polls its result queue
+with a [`_HEARTBEAT_INTERVAL_S`](../../../blueprints/diagnostics.py) `5`-second timeout
+instead of blocking forever on `queue.get()` (lines 487, 754, 980, 1186),
+yielding a plain SSE comment line (`: heartbeat\n\n`) when the timeout expires.
+Without periodic yields, a closed tab is invisible to Werkzeug until the blocking
+worker call finishes — with the heartbeat, a disconnect is noticed within 5 seconds
+`[synthesis]`. When the client closes the fetch or clicks the Cancel button (both fire
+`GeneratorExit` into the generator), each SSE route wraps its stream body in
+`try/except GeneratorExit` (lines 553–560, 855–862, 1024–1032, 1238–1246) to
+capture the disconnect, set a `threading.Event(cancel_event)`, and pass
+`cancel_check=cancel_event.is_set` into its evals-layer call
+([`run_grounding_signals`](../../../blueprints/diagnostics.py),
+[`run_pipeline_over_jd_texts`](../../../blueprints/diagnostics.py),
+[`run_suite`](../../../blueprints/diagnostics.py) for both eval and tune) so worker
+threads can short-circuit their loops on cancellation `[synthesis]`. The
+`tune_run_stream` route has an additional optimization: its baseline-then-candidate
+worker checks `if not cancel_event.is_set()` (line 1161) before starting the expensive
+candidate run, so a disconnect during baseline skips the candidate entirely rather than
+launching a second full paid run the client gave up on `[synthesis]`. Cancellation is
+signalled by client disconnect rather than a separate `POST /cancel` route because
+`app.run()` has never been `threaded=True` — a single request handler cannot service a
+new cancel request while the original SSE connection is still open, so the connection
+close is the only reliable signalling mechanism `[synthesis]`. The frontend
+[`dashboard.html`](../../../dashboard/templates/dashboard.html) Cancel button shows
+"Cancelling…" on click but offers no server confirmation — once the fetch aborts, the
+client side cannot receive a message from a closed connection, making this an
+accepted UX limitation rather than a defect `[synthesis]`.
+
 Every annotation write is contained:
 [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py) routes apply
 `_safe_username()` (from `web_infra`) + `secure_filename(slug)` +

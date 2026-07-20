@@ -146,6 +146,7 @@ class EvalRunResult:
     regressions: list[dict[str, Any]]
     improvements: list[dict[str, Any]]
     candidate_version: str | None = None
+    cancelled: bool = False
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -1008,6 +1009,7 @@ def run_suite(
     out_dir: str | Path = RESULTS_DIR,
     client: anthropic.Anthropic | None = None,
     progress: ProgressFn | None = None,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> EvalRunResult:
     """Run one eval suite — the importable core extracted from ``main()``.
 
@@ -1030,7 +1032,12 @@ def run_suite(
     ``ValueError`` here, before the fixture loop. An unknown ``--fixture`` raises
     ``FileNotFoundError``. ``progress`` (optional) is invoked with
     ``(event, payload)`` at coarse milestones so a caller can stream progress; it
-    never alters the result.
+    never alters the result. ``cancel_check`` (optional) is polled before each
+    remaining paid Anthropic call (start of a fixture, before clarify, before
+    generate/assemble, before the distinctiveness judge, before each rubric
+    grading call) — the first ``True`` reading stops the run early and the
+    returned ``EvalRunResult.cancelled`` is ``True``. Already-written JSONL
+    records are kept; nothing already billed is discarded.
 
     ``mode`` (F-11, 2026-07 UX review): ``"generate"`` (default) is the historical
     LLM-generate path, unchanged. ``"assemble"`` drives the SAME Compose -> freeze ->
@@ -1059,6 +1066,9 @@ def run_suite(
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
             progress(event, payload)
+
+    def _cancelled() -> bool:
+        return cancel_check is not None and cancel_check()
 
     # Candidate prompt overrides: the caller (CLI ``main`` / console route) has
     # already read + shape-validated the mapping; here we validate the prompt-NAMES
@@ -1146,7 +1156,14 @@ def run_suite(
         if seed_data is not None:
             session, seed_username = stack.enter_context(seeded_session(seed_data))
         total_fixtures = len(fixtures)
+        cancelled = False
         for index, fdir in enumerate(fixtures):
+            if _cancelled():
+                cancelled = True
+                logger.info(
+                    "Eval run cancelled before fixture %d/%d started", index, total_fixtures
+                )
+                break
             try:
                 fixture = _load_fixture(fdir, seed_mode=seed_data is not None)
             except Exception as exc:
@@ -1202,6 +1219,13 @@ def run_suite(
                     username=f"eval:{fixture['name']}",
                     run_id=run_id,
                 )
+                if _cancelled():
+                    cancelled = True
+                    logger.info(
+                        "Eval run cancelled after analyze for %s, before clarify",
+                        fixture["name"],
+                    )
+                    break
                 _t_clarify = time.perf_counter()
                 _emit("clarifying", fixture=fixture["name"], index=index, total=total_fixtures)
                 try:
@@ -1223,6 +1247,13 @@ def run_suite(
                         fixture["name"],
                         exc,
                     )
+                if _cancelled():
+                    cancelled = True
+                    logger.info(
+                        "Eval run cancelled after clarify for %s, before generate",
+                        fixture["name"],
+                    )
+                    break
                 _t_generate = time.perf_counter()
                 if mode == "assemble":
                     _emit("assembling", fixture=fixture["name"], index=index, total=total_fixtures)
@@ -1323,6 +1354,13 @@ def run_suite(
                 jd_keywords=context["deterministic_analysis"]["jd_keywords"],
                 source_union=source_union,
             )
+            if _cancelled():
+                cancelled = True
+                logger.info(
+                    "Eval run cancelled after generate for %s, before distinctiveness scoring",
+                    fixture["name"],
+                )
+                break
             det_metrics["distinctiveness"] = _score_distinctiveness(
                 client,
                 result.get("resume_content", ""),
@@ -1418,6 +1456,14 @@ def run_suite(
             fixture_scores: dict[str, float] = {}
 
             for rubric_path in rubrics:
+                if _cancelled():
+                    cancelled = True
+                    logger.info(
+                        "Eval run cancelled mid-rubric-grading for %s (before %s)",
+                        fixture["name"],
+                        rubric_path.stem,
+                    )
+                    break
                 # Skip judge entirely when clarify failed AND this is the
                 # clarification_quality rubric — emit a pipeline_error row so
                 # the dashboard surfaces it, but don't waste a judge call.
@@ -1662,6 +1708,9 @@ def run_suite(
                         elif delta["is_improvement"]:
                             improvements.append(delta)
 
+            if cancelled:
+                break
+
             # Compute and write one eval_composite record per fixture.
             # Weighted average of available (non-error) rubric scores using
             # callback_weights.json. Uses only rubrics that were actually run
@@ -1716,7 +1765,8 @@ def run_suite(
             )
 
     logger.info(
-        "Eval complete: %d pass, %d fail. Results: %s",
+        "Eval %s: %d pass, %d fail. Results: %s",
+        "cancelled" if cancelled else "complete",
         n_pass,
         n_fail,
         out_path,
@@ -1732,14 +1782,18 @@ def run_suite(
     # console SSE routes (`/api/eval/run`, `/api/tune/run` — both already wrap
     # run_suite in try/except) surface a real error instead of a phantom
     # "0 pass / 0 fail" done event.
+    # A cancellation can also leave a zero-byte file (e.g. cancelled before the
+    # first fixture even started) — that is an intentional early stop, not the
+    # RH-2 silent-failure case this guard exists to catch, so skip the raise.
     if n_pass == 0 and n_fail == 0 and out_path.exists() and out_path.stat().st_size == 0:
         out_path.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"Eval run wrote zero result records (suite={suite!r} subset={subset!r}"
-            f"{f' fixture={fixture_name!r}' if fixture_name else ''}) — every matched "
-            "fixture failed to load or grade; see the log above for the per-fixture "
-            "error. No empty results file was left on disk."
-        )
+        if not cancelled:
+            raise RuntimeError(
+                f"Eval run wrote zero result records (suite={suite!r} subset={subset!r}"
+                f"{f' fixture={fixture_name!r}' if fixture_name else ''}) — every matched "
+                "fixture failed to load or grade; see the log above for the per-fixture "
+                "error. No empty results file was left on disk."
+            )
 
     # Regression summary — concise, only printed when there's something to say.
     if regressions or improvements:
@@ -1779,6 +1833,7 @@ def run_suite(
         regressions=regressions,
         improvements=improvements,
         candidate_version=candidate_version,
+        cancelled=cancelled,
     )
 
 

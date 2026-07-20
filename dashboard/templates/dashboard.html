@@ -322,6 +322,7 @@
       <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="evalGrounding"
         title="Also score with the offline DeBERTa NLI + MiniCheck grounding models (needs the [eval-grounding] extras; CPU-bound, no extra paid calls)."> grounding signals</label>
       <button class="ann-btn primary" id="evalRunBtn" type="button">Run eval</button>
+      <button class="ann-btn" id="evalCancelBtn" type="button" hidden>Cancel</button>
     </div>
     <p class="eval-cost" id="evalCost"></p>
     <progress id="evalProgressBar" class="run-progress" max="1" value="0" hidden></progress>
@@ -471,6 +472,7 @@
     </details>
     <p class="eval-cost" id="tuneCost"></p>
     <button class="ann-btn primary" id="tuneRunBtn" type="button">Run A/B</button>
+    <button class="ann-btn" id="tuneCancelBtn" type="button" hidden>Cancel</button>
     <progress id="tuneProgressBar" class="run-progress" max="1" value="0" hidden></progress>
     <div id="tuneProgress" class="annotate-progress" role="status" aria-live="polite"></div>
     <pre id="tuneDelta" class="tune-delta" hidden></pre>
@@ -540,6 +542,7 @@
         <button class="ann-btn" id="bsExportSeed" type="button"
                 title="Snapshot this candidate's corpus to seed.json — deterministic, no paid LLM calls. Needs only the candidate username (JDs are ignored).">Export seed (no LLM)</button>
         <button class="ann-btn primary" id="bsRun" type="button">Run bootstrap</button>
+        <button class="ann-btn" id="bsCancelBtn" type="button" hidden>Cancel</button>
       </div>
       <progress id="bsProgressBar" class="run-progress" max="1" value="0" hidden></progress>
       <div id="bsProgress" class="annotate-progress" role="status" aria-live="polite"></div>
@@ -579,6 +582,7 @@
       <button class="ann-btn" id="annCollate" type="button">Collate → fixture + brief</button>
       <button class="ann-btn" id="annScore" type="button"
               title="Run the offline grounding scorers over this fixture's bullets (CPU, no paid LLM calls). Requires a seed.json + the [eval-grounding] extras.">Score grounding</button>
+      <button class="ann-btn" id="annScoreCancelBtn" type="button" hidden>Cancel</button>
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
     <progress id="annScoreProgressBar" class="run-progress" hidden></progress>
@@ -1291,10 +1295,17 @@
     return '';
   }
   // Generic SSE POST streamer: calls onEvent(ev, payload) for EVERY server event, plus a
-  // synthetic 'error' on a non-OK pre-stream response and '_closed' when the body ends.
-  // The eval-run wrapper below and the Tuning-tab A/B both ride this one fetch/pump loop.
+  // synthetic 'error' on a non-OK pre-stream response, '_closed' when the body ends
+  // normally, and '_aborted' when the caller cancels via the returned handle's
+  // .abort() — the run-cancel feature travels over this one fetch/pump loop, so every
+  // caller (Quality/Tuning/Bootstrap/Annotate) gets Cancel support for free.
+  // Returns { abort() } — a disconnect on .abort() is what the server's SSE routes
+  // detect (GeneratorExit) to stop before their next paid/CPU-bound call.
   function stream(url, params, onEvent) {
-    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(function (resp) {
+    var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) };
+    if (controller) opts.signal = controller.signal;
+    fetch(url, opts).then(function (resp) {
       if (!resp.ok) {
         return resp.json().then(function (d) { return d; }, function () { return {}; }).then(function (d) {
           onEvent('error', { error: d.error || resp.status, detail: d.detail, http_status: resp.status });
@@ -1310,7 +1321,31 @@
         });
       }
       return pump();
-    }).catch(function () { onEvent('error', { error: 'request failed' }); });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') { onEvent('_aborted', {}); return; }
+      onEvent('error', { error: 'request failed' });
+    });
+    return { abort: function () { if (controller) controller.abort(); } };
+  }
+  // Shared Cancel-button wiring: shows the button, aborts the in-flight stream on
+  // click, and shows the already-accepted-limitation "Cancelling…" text (no server
+  // confirmation can reach the client once the connection drops).
+  function wireCancel(cancelBtnEl, handle, progEl) {
+    if (!cancelBtnEl || !handle) return;
+    cancelBtnEl.hidden = false;
+    function onClick() {
+      handle.abort();
+      cancelBtnEl.hidden = true;
+      cancelBtnEl.removeEventListener('click', onClick);
+      if (progEl) progEl.textContent = 'Cancelling…';
+    }
+    cancelBtnEl.addEventListener('click', onClick);
+    return onClick;
+  }
+  function hideCancel(cancelBtnEl, onClick) {
+    if (!cancelBtnEl) return;
+    cancelBtnEl.hidden = true;
+    if (onClick) cancelBtnEl.removeEventListener('click', onClick);
   }
   // #10 (diagnostics round-2): update a real <progress> bar from any SSE
   // payload that carries index/total (fixture_start/analyzing/clarifying/
@@ -1325,30 +1360,36 @@
 
   // Stream POST /api/eval/run; update progEl, toggle btnEl, call onDone(payload) on
   // 'done'. barEl (optional) is a <progress> element updated from index/total events.
-  function run(params, progEl, btnEl, onDone, barEl) {
+  // cancelBtnEl (optional) gets Cancel wiring for the duration of the run.
+  function run(params, progEl, btnEl, onDone, barEl, cancelBtnEl) {
     if (btnEl) btnEl.disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
     if (barEl) { barEl.hidden = false; barEl.value = 0; }
-    stream('/api/eval/run', params, function (ev, p) {
+    var onCancelClick;
+    var handle = stream('/api/eval/run', params, function (ev, p) {
       _updateBar(barEl, p);
-      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; return; }
+      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
+      if (ev === '_aborted') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
         if (barEl) barEl.hidden = true;
+        hideCancel(cancelBtnEl, onCancelClick);
         if (onDone) onDone(p);
       } else if (ev === 'error') {
         if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
         if (btnEl) btnEl.disabled = false;
         if (window.sartorRunLock) window.sartorRunLock.release();
         if (barEl) barEl.hidden = true;
+        hideCancel(cancelBtnEl, onCancelClick);
       } else {
         var msg = describe(ev, p); if (msg && progEl) progEl.textContent = msg;
       }
     });
+    onCancelClick = wireCancel(cancelBtnEl, handle, progEl);
   }
-  window.sartorEval = { run: run, stream: stream, parseSse: parseSse };
+  window.sartorEval = { run: run, stream: stream, parseSse: parseSse, wireCancel: wireCancel, hideCancel: hideCancel };
 
   // ---- Quality-tab "Run eval" control ----
   var btn = document.getElementById('evalRunBtn');
@@ -1371,7 +1412,7 @@
     run({ suite: suite, subset: subset, grounding_signals: grounding.checked }, prog, btn, function () {
       prog.textContent += ' Reloading…';
       setTimeout(function () { location.reload(); }, 1400);
-    }, document.getElementById('evalProgressBar'));
+    }, document.getElementById('evalProgressBar'), document.getElementById('evalCancelBtn'));
   });
 })();
 </script>
@@ -1399,6 +1440,7 @@
   var bar = document.getElementById('tuneProgressBar');
   var deltaEl = document.getElementById('tuneDelta');
   var promote = document.getElementById('tunePromote');
+  var cancelBtn = document.getElementById('tuneCancelBtn');
 
   document.getElementById('tuneLoadBtn').addEventListener('click', function () {
     ta.value = byName[sel.value] || '';
@@ -1455,11 +1497,13 @@
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
     if (bar) { bar.hidden = false; bar.value = 0; }
-    window.sartorEval.stream('/api/tune/run', params, function (ev, p) {
+    var onCancelClick;
+    var handle = window.sartorEval.stream('/api/tune/run', params, function (ev, p) {
       if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
         bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
       }
-      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
+      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+      if (ev === '_aborted') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -1470,15 +1514,18 @@
           + ' Promote a winner by hand: copy the text into the analyzer.py constant, bump PROMPT_VERSION, log TUNING_LOG.md.';
         prog.textContent = 'A/B complete (' + (p.baseline_file || '') + ' vs ' + (p.candidate_file || '') + ').';
         if (bar) bar.hidden = true;
+        window.sartorEval.hideCancel(cancelBtn, onCancelClick);
       } else if (ev === 'error') {
         prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
         btn.disabled = false;
         if (window.sartorRunLock) window.sartorRunLock.release();
         if (bar) bar.hidden = true;
+        window.sartorEval.hideCancel(cancelBtn, onCancelClick);
       } else {
         var msg = describeTune(ev, p); if (msg) prog.textContent = msg;
       }
     });
+    onCancelClick = window.sartorEval.wireCancel(cancelBtn, handle, prog);
   });
 })();
 </script>
@@ -1760,57 +1807,50 @@
     });
     return out;
   }
-  function parseSse(buffer, onEvent) {
-    var parts = buffer.split('\n\n'); var tail = parts.pop();
-    parts.forEach(function (block) {
-      var ev = 'message', data = '';
-      block.split('\n').forEach(function (line) {
-        if (line.indexOf('event:') === 0) ev = line.slice(6).trim();
-        else if (line.indexOf('data:') === 0) data += line.slice(5).trim();
-      });
-      var payload = {}; try { payload = data ? JSON.parse(data) : {}; } catch (e) { payload = {}; }
-      onEvent(ev, payload);
-    });
-    return tail;
-  }
   function runBootstrap() {
     var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var jds = collectJds(); var prog = $('bsProgress');
-    var bar = $('bsProgressBar');
+    var bar = $('bsProgressBar'); var cancelBtn = $('bsCancelBtn');
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
     $('bsRun').disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
     if (bar) { bar.hidden = false; bar.value = 0; }
-    fetch(API + '/bootstrap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined, jds: jds, grounding_signals: $('bsGrounding').checked }) }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status); $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; }); }
-      var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
-      function pump() {
-        return reader.read().then(function (chunk) {
-          if (chunk.done) { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
-          buf += dec.decode(chunk.value, { stream: true });
-          buf = parseSse(buf, function (ev, p) {
-            // #10: per-JD index/total (jd_start/analyzing/clarifying/generating/
-            // jd_done all carry them — evals/bootstrap.py's _emit calls).
-            if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
-              bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
-            }
-            if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
-            else if (ev === 'jd_start') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' (' + p.jd_file + '): starting…';
-            else if (ev === 'analyzing') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': analyzing…';
-            else if (ev === 'clarifying') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': clarifying…';
-            else if (ev === 'generating') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': generating…';
-            else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
-            else if (ev === 'scoring') prog.textContent = p.message || 'Scoring grounding…';
-            else if (ev === 'warning') prog.textContent = '⚠ ' + (p.message || 'warning');
-            else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; if (bar) bar.hidden = true; loadFixtures().then(function () { $('fixtureSelect').value = p.slug; loadFixture(p.slug, user); }); }
-            else if (ev === 'error') { prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : ''); if (bar) bar.hidden = true; }
-          });
-          return pump();
-        });
+    var onCancelClick;
+    var handle = window.sartorEval.stream(
+      API + '/bootstrap',
+      { username: user, slug: slug || undefined, jds: jds, grounding_signals: $('bsGrounding').checked },
+      function (ev, p) {
+        // #10: per-JD index/total (jd_start/analyzing/clarifying/generating/
+        // jd_done all carry them — evals/bootstrap.py's _emit calls).
+        if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
+          bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
+        }
+        if (ev === '_closed' || ev === '_aborted') { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+        if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
+        else if (ev === 'jd_start') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' (' + p.jd_file + '): starting…';
+        else if (ev === 'analyzing') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': analyzing…';
+        else if (ev === 'clarifying') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': clarifying…';
+        else if (ev === 'generating') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': generating…';
+        else if (ev === 'jd_done') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' done (' + p.bullets + 'b/' + p.skills + 's).';
+        else if (ev === 'scoring') prog.textContent = p.message || 'Scoring grounding…';
+        else if (ev === 'warning') prog.textContent = '⚠ ' + (p.message || 'warning');
+        else if (ev === 'done') { prog.textContent = 'Bootstrap written: ' + p.slug + ' (' + p.bullet_clusters + ' bullet clusters, ' + p.skill_clusters + ' skill clusters' + (p.grounded ? ', grounded' : '') + ').'; if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); loadFixtures().then(function () { $('fixtureSelect').value = p.slug; loadFixture(p.slug, user); }); }
+        else if (ev === 'error') {
+          // A pre-stream non-OK response (e.g. 400/403/409) never reaches
+          // '_closed' — this stream ends right here, so this branch does the
+          // same terminal cleanup '_closed' does for the mid-stream case
+          // (harmless to repeat: sartorRunLock.release()/hideCancel are both
+          // idempotent, so a later '_closed' after a mid-stream error is safe).
+          prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
+          if (bar) bar.hidden = true;
+          $('bsRun').disabled = false;
+          if (window.sartorRunLock) window.sartorRunLock.release();
+          window.sartorEval.hideCancel(cancelBtn, onCancelClick);
+        }
       }
-      return pump();
-    }).catch(function () { prog.textContent = 'Bootstrap request failed.'; $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; });
+    );
+    onCancelClick = window.sartorEval.wireCancel(cancelBtn, handle, prog);
   }
 
   // ---- standalone seed export (deterministic, no paid LLM calls) ----
@@ -1837,36 +1877,40 @@
     // scorer call with no per-item index/total (unlike #10's eval/tune/
     // bootstrap runs), so the bar stays INDETERMINATE (no [value]) — just a
     // more-visible "busy" signal than the text line alone, nothing granular.
-    var bar = $('annScoreProgressBar');
+    var bar = $('annScoreProgressBar'); var cancelBtn = $('annScoreCancelBtn');
     $('annScore').disabled = true;
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
     if (bar) { bar.hidden = false; bar.removeAttribute('value'); }
-    fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score', { method: 'POST' }).then(function (resp) {
-      if (!resp.ok) { return jsonRes(resp).then(function (res) { prog.textContent = 'Error: ' + ((res.d && res.d.error) || resp.status) + ((res.d && res.d.detail) ? ' — ' + res.d.detail : ''); $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; }); }
-      var reader = resp.body.getReader(); var dec = new TextDecoder(); var buf = '';
-      function pump() {
-        return reader.read().then(function (chunk) {
-          if (chunk.done) { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
-          buf += dec.decode(chunk.value, { stream: true });
-          buf = parseSse(buf, function (ev, p) {
-            if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
-            else if (ev === 'scoring') prog.textContent = p.message || 'Scoring…';
-            else if (ev === 'done') {
-              var nli = (p.mean_entailment != null) ? p.mean_entailment.toFixed(2) : '–';
-              var mc = (p.mean_minicheck != null) ? p.mean_minicheck.toFixed(2) : '–';
-              prog.textContent = 'Scored ' + p.bullet_count + ' bullets (mean NLI ' + nli + ', mean MiniCheck ' + mc + ')'
-                + (p.annotations_patched ? ', patched ' + p.annotations_patched + ' annotation(s)' : '') + '. Reloading…';
-              if (bar) bar.hidden = true;
-              loadFixture(state.slug, state.candidate);
-            }
-            else if (ev === 'error') { prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : ''); if (bar) bar.hidden = true; }
-          });
-          return pump();
-        });
+    var onCancelClick;
+    var handle = window.sartorEval.stream(
+      API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score',
+      {},
+      function (ev, p) {
+        if (ev === '_closed' || ev === '_aborted') { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+        if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
+        else if (ev === 'scoring') prog.textContent = p.message || 'Scoring…';
+        else if (ev === 'done') {
+          var nli = (p.mean_entailment != null) ? p.mean_entailment.toFixed(2) : '–';
+          var mc = (p.mean_minicheck != null) ? p.mean_minicheck.toFixed(2) : '–';
+          prog.textContent = 'Scored ' + p.bullet_count + ' bullets (mean NLI ' + nli + ', mean MiniCheck ' + mc + ')'
+            + (p.annotations_patched ? ', patched ' + p.annotations_patched + ' annotation(s)' : '') + '. Reloading…';
+          if (bar) bar.hidden = true;
+          window.sartorEval.hideCancel(cancelBtn, onCancelClick);
+          loadFixture(state.slug, state.candidate);
+        }
+        else if (ev === 'error') {
+          // See runBootstrap's identical comment: a pre-stream non-OK response
+          // never reaches '_closed', so this branch does its own cleanup too.
+          prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : '');
+          if (bar) bar.hidden = true;
+          $('annScore').disabled = false;
+          if (window.sartorRunLock) window.sartorRunLock.release();
+          window.sartorEval.hideCancel(cancelBtn, onCancelClick);
+        }
       }
-      return pump();
-    }).catch(function () { prog.textContent = 'Score request failed.'; $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; });
+    );
+    onCancelClick = window.sartorEval.wireCancel(cancelBtn, handle, prog);
   }
 
   // ---- wire up ----

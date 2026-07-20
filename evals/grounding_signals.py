@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -257,6 +257,8 @@ def score_minicheck_bullets(
 def run_grounding_signals(
     generated_resume: str,
     source_texts: list[str],
+    *,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     """Orchestrate bullet extraction + NLI + MiniCheck scoring.
 
@@ -265,10 +267,18 @@ def run_grounding_signals(
     Args:
         generated_resume: Raw markdown string from generate().
         source_texts: Source texts to ground against (résumé text + clarification answers).
+        cancel_check: Optional, polled once between the NLI pass and the
+            MiniCheck pass. This module makes no paid Anthropic calls (both
+            scorers are offline CPU models), so a cancellation here doesn't
+            stop any billing — it only shortens wall-clock and frees the
+            single Flask request slot sooner on client disconnect. On a
+            ``True`` reading, returns early with the NLI results already
+            computed and an empty MiniCheck pass.
 
     Returns:
-        Dict with bullet_count, per-bullet nli/minicheck results, and summary stats.
-        Returns a zero-state dict when no bullets are found in the resume.
+        Dict with bullet_count, per-bullet nli/minicheck results, summary
+        stats, and a ``cancelled`` flag. Returns a zero-state dict when no
+        bullets are found in the resume.
     """
     bullets = extract_bullets(generated_resume)
     if not bullets:
@@ -278,6 +288,7 @@ def run_grounding_signals(
             "nli_summary": {"mean_entailment": 0.0, "contradiction_count": 0},
             "minicheck": [],
             "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
+            "cancelled": False,
         }
 
     source_text = " ".join(t for t in source_texts if t)
@@ -286,14 +297,28 @@ def run_grounding_signals(
     mc_scorer = _load_minicheck_scorer()
 
     nli_results = score_nli_bullets(bullets, source_text, _pipeline=nli_pipeline)
-    mc_results = score_minicheck_bullets(bullets, source_text, _scorer=mc_scorer)
-
     nli_entailments = [r["nli_entailment_score"] for r in nli_results]
+
+    if cancel_check is not None and cancel_check():
+        return {
+            "bullet_count": len(bullets),
+            "nli": nli_results,
+            "nli_summary": {
+                "mean_entailment": round(sum(nli_entailments) / len(nli_entailments), 4),
+                "contradiction_count": sum(1 for r in nli_results if r["nli_contradiction_flag"]),
+            },
+            "minicheck": [],
+            "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
+            "cancelled": True,
+        }
+
+    mc_results = score_minicheck_bullets(bullets, source_text, _scorer=mc_scorer)
     mc_scores = [r["minicheck_grounding_score"] for r in mc_results]
 
     return {
         "bullet_count": len(bullets),
         "nli": nli_results,
+        "cancelled": False,
         "nli_summary": {
             "mean_entailment": round(sum(nli_entailments) / len(nli_entailments), 4),
             "contradiction_count": sum(1 for r in nli_results if r["nli_contradiction_flag"]),

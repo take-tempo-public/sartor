@@ -1725,6 +1725,21 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       own branch — see the carry-forward ledger's PX-51 row above and `CHANGELOG.md`
       for full detail. This ledger item's remaining scope is now just the two items
       named directly above (run-cancel endpoint, content-cluster full pass).
+      **→ Landed (2026-07-20, `feat/diagnostics-run-cancel`, step 9 of the v1.1.0
+      close-out — reconciliation sequence):** the run-cancel endpoint. Disconnect-as-
+      cancel, not a literal second route — the single-threaded `app.run()` (the
+      `app.run(threaded=True)` flag below, still deliberately deferred) means a real
+      `POST /cancel` couldn't be serviced while the original SSE connection is open,
+      so the cancel signal travels over that same connection: all 4 SSE routes now
+      poll their result queue with a timeout + heartbeat, and a real disconnect (or
+      the new frontend Cancel button) delivers `GeneratorExit`, which sets a
+      per-request `threading.Event` an optional `cancel_check` param on
+      `run_suite`/`run_pipeline_over_jd_texts`/`run_grounding_signals` polls before
+      its next paid/CPU call. Full detail:
+      [`reviews/2026-07-diagnostics-round2-findings.md`](reviews/2026-07-diagnostics-round2-findings.md)'s
+      RUN-LIFECYCLE note + `CHANGELOG.md`. This ledger item's remaining scope is now
+      just the **#2/4/5/6/16 instructional content-cluster full pass**
+      (`docs/diagnostics-content-cluster`, step 10, next in the same sequence).
 
 - [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does

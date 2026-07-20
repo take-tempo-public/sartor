@@ -123,8 +123,11 @@ writes atomically on clean exit. The LLM call stays outside the lock — only th
 microseconds-fast delta application is serialized — and transient staging keys are
 never present on the fresh read, so the "don't leak staging keys into the iteration
 chain" hazard disappears structurally. See
-`tests/test_draft_summary.py:TestConcurrentContextWriters` and
+`tests/test_draft_summary.py:TestConcurrentContextWriters`,
 [`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](../../dev/diagnosis/compose-summary-draft-settle-hole.md)
+(the original twelve sites in `blueprints/applications.py`), and
+[`docs/dev/diagnosis/context-write-lost-update-gap.md`](../../dev/diagnosis/context-write-lost-update-gap.md)
+(five additional sites found in `blueprints/analysis.py` and `blueprints/generation.py`)
 for the full evidence and design rationale.
 
 ## The containment guard
