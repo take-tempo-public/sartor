@@ -1519,17 +1519,27 @@ def _context_lock(path: Path) -> threading.Lock:
 def context_transaction(path: Path) -> Iterator[dict[str, Any]]:
     """Read-modify-write a context file atomically AND without lost updates.
 
-    Twelve routes in `blueprints/applications.py` share one shape: read the whole
-    `context_*.json`, spend seconds in an LLM call, then write the whole dict back.
-    Any route that writes inside that window has its delta silently erased by the
-    other's stale write-back. That is a **lost update**, and it was live: a user's
-    drafted positioning summary could vanish permanently after being persisted.
+    Originally twelve routes in `blueprints/applications.py` shared one shape: read
+    the whole `context_*.json`, spend seconds in an LLM call, then write the whole
+    dict back. Any route that writes inside that window has its delta silently
+    erased by the other's stale write-back. That is a **lost update**, and it was
+    live: a user's drafted positioning summary could vanish permanently after being
+    persisted.
 
     Observed, reproduced, and pinned by
     `tests/test_draft_summary.py::TestConcurrentContextWriters`; the full evidence
     record is `docs/dev/diagnosis/compose-summary-draft-settle-hole.md` (O-2, O-4,
     O-7). `write_context_atomic` does NOT close this — atomic writes stop torn
     *reads* and do nothing whatsoever about lost *updates*.
+
+    Five more sites in `blueprints/analysis.py` and `blueprints/generation.py`
+    shared the identical unprotected shape, unaudited by the original fix (it scoped
+    itself to `applications.py` only) — found via a repo-wide sweep, dynamically
+    reproduced, and converted in `fix/context-write-lost-update-gap`. Full record:
+    `docs/dev/diagnosis/context-write-lost-update-gap.md`. All 17 sites now route
+    through this function; `grep -rn "with context_transaction("` is the way to
+    confirm the current count rather than trusting either dossier's number, which
+    will drift the next time a new context-writing route is added.
 
     This closes it by re-reading the file **fresh inside the lock** and discarding
     the caller's optimistic pre-call copy. Usage:
@@ -1553,10 +1563,25 @@ def context_transaction(path: Path) -> Iterator[dict[str, Any]]:
       write site — and the whole "don't leak staging keys into the iteration chain"
       hazard — disappears structurally rather than by vigilance.
 
-    An in-process lock is the right scope: the Dockerfile runs a single-process
-    **threaded** server (`CMD ["sartor", "--host", "0.0.0.0"]`). If that ever becomes
-    multi-process this must become a file lock — and *that* is the moment to revisit,
-    not before.
+    An in-process lock is the right scope **today, and for a documented reason** —
+    not because the server is threaded. It is not: `app.py`'s `app.run(...)` has no
+    `threaded=True` (Werkzeug defaults to `threaded=False`), and the Dockerfile's
+    `CMD ["sartor", "--host", "0.0.0.0"]` reaches the exact same call via the console
+    script. Repo-wide, `threaded=True` appears in exactly one place —
+    `tests/ux/conftest.py`'s test-only `live_server` fixture — never in production.
+    (A prior version of this docstring claimed otherwise; see
+    `docs/dev/diagnosis/context-write-lost-update-gap.md` Observed #8-9 for how that
+    was found and why it went uncaught through a compliance-witness pass.)
+
+    Given that, an in-process lock is *already* sufficient on its own — every HTTP
+    request is serialized by the single-threaded server regardless. Its actual job is
+    forward cover: `threaded=True` is a deliberately deferred, owner-gated governance
+    decision (touches the C-1 loopback-bind security posture — see
+    `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`), and if it is ever
+    flipped, this lock is what keeps every route sharing the `context_*.json`
+    namespace correct under real concurrency instead of silently reintroducing lost
+    updates. If the deployment ever becomes multi-*process* (not just multi-threaded)
+    this must become a file lock — that is the moment to revisit, not before.
 
     Args:
         path: The context file. Must already exist — this is a read-modify-write, not
