@@ -1460,6 +1460,14 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       separate scripts. This row's own account above was already accurate; it just needed a
       fresh confirmation post-debt-burn-train. Slotted as its own individual branch
       (`chore/hook-dispatcher`) in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation".
+      **→ Update (2026-07-20, `chore/hook-dispatcher`):** commitment (3)'s **hooks half is DONE**
+      — all 13 scripts re-homed `.claude-plugin/hooks/` → root `hooks/`; PX-37's dispatcher
+      (`hooks/edit-write-dispatcher.sh` + `scripts/enforcement/adapters/claude_dispatcher.py`)
+      consolidates the 5 Edit|Write guards into one process, no short-circuit. **Root `skills/`
+      landed as an empty scaffold only** (owner decision this session) — the
+      `context-structure-review` skill import itself needs a `CLAUDE.local.md`-recorded kit
+      source path first (none exists yet); see `skills/README.md`. **Row stays open** pending
+      that skill-content import.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
@@ -1613,6 +1621,14 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       (owner-directed, no `agents/*.md` re-pin). `settings.local.json` needed no
       change (still 42 entries, zero stale-path hits). **Corrected count: 9 of 13
       fully landed, 4 remain:** PX-37, PX-39, PX-44 (refactor half), PX-46.
+      **→ Landed (2026-07-20, `chore/hook-dispatcher`):** PX-37 lands. Consolidated
+      the 5 Edit|Write PreToolUse guards into one `hooks/edit-write-dispatcher.sh`
+      process (`scripts/enforcement/adapters/claude_dispatcher.py`), no
+      short-circuit; re-homed all 13 hook scripts to root `hooks/` (kit-adoption
+      commitment 3's hooks half — the `skills/` half stayed a scaffold, see the
+      kit-adoption ledger row above). Updated the 4 test files whose
+      1-script-per-guard assumptions broke; all pass. **Corrected count:
+      10 of 13 fully landed, 3 remain:** PX-39, PX-44 (refactor half), PX-46.
 
 - [ ] **UX round-2 remediation (e2e feedback 2026-07-09)** — the owner's second
       end-to-end walkthrough surfaced a fresh UX friction set, captured + dispositioned in

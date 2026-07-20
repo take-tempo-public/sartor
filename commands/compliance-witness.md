@@ -101,7 +101,7 @@ flag on no-op windows and train the reader to ignore flags):
 
 **Out of scope — per-merge.** Most merges touch no governance surface; a flag on every
 merge trains the reader to ignore flags. This witness adopts the
-[`wiki-freshness-reminder`](../.claude-plugin/hooks/wiki-freshness-reminder.sh)
+[`wiki-freshness-reminder`](../hooks/wiki-freshness-reminder.sh)
 honest-silence discipline instead.
 
 ## What this command does NOT do

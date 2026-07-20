@@ -30,32 +30,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/check-plan-approved.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/check-plan-approved.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/require-feature-branch.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/require-evidence-before-fix.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/block-secrets.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/validate-context.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/route-security-lint.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/edit-write-dispatcher.sh",
             "timeout": 5
           }
         ]
@@ -65,17 +45,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/block-secrets.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/block-secrets.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/block-merge-to-main.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/block-merge-to-main.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/ruff-changed.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/ruff-changed.sh",
             "timeout": 30
           }
         ]
@@ -87,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/mark-plan-approved.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/mark-plan-approved.sh",
             "timeout": 5
           }
         ]
@@ -97,12 +77,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/cleanup-plan-on-merge.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/cleanup-plan-on-merge.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/wiki-freshness-reminder.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/wiki-freshness-reminder.sh",
             "timeout": 5
           }
         ]
@@ -114,7 +94,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/restore-evidence.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/restore-evidence.sh",
             "timeout": 5
           }
         ]
@@ -126,7 +106,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude-plugin/hooks/capture-before-compact.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/hooks/capture-before-compact.sh",
             "timeout": 5
           }
         ]

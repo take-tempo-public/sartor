@@ -23,7 +23,7 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
 
 > **This is an LLM op — a human decides when to pay.** Like [`/wiki-ingest`](wiki-ingest.md)
 > and [`/eval`](eval.md), it surfaces its scope and cost **before** spending. It is
-> **invoked, never self-firing** — the commit-time [freshness reminder](../.claude-plugin/hooks/wiki-freshness-reminder.sh)
+> **invoked, never self-firing** — the commit-time [freshness reminder](../hooks/wiki-freshness-reminder.sh)
 > only *tells the human when the spend is worth it*; it does not run this loop.
 
 > **Why a new command, not `--auto` on `/wiki-ingest`.** [`/wiki-ingest`](wiki-ingest.md)

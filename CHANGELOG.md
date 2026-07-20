@@ -21,6 +21,31 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Changed: consolidated 5 Edit/Write hooks into one dispatcher, re-homed hooks to root `hooks/` (PX-37, kit-adoption commitment 3, `chore/hook-dispatcher`)
+
+Every `Edit`/`Write` tool call spawned 5 separate `python3` processes, one per
+guard (`require-feature-branch`, `require-evidence-before-fix`, `block-secrets`,
+`validate-context`, `route-security-lint`), each independently re-parsing the
+same stdin JSON.
+
+- Added `scripts/enforcement/adapters/claude_dispatcher.py`: reads stdin once,
+  runs all 5 guards in-process via the existing `claude_hook.dispatch()`
+  routing, and aggregates every blocked guard's messages before exiting — no
+  short-circuit, so a user tripping two guards at once still sees both,
+  matching the prior parallel-hook behavior.
+- Wired as one new `hooks/edit-write-dispatcher.sh` entry in
+  `.claude/settings.json`, replacing the 5 separate entries.
+- Re-homed all 13 hook scripts from `.claude-plugin/hooks/` to root `hooks/`
+  (kit-adoption commitment 3's hooks half), mirroring the `commands/`/`agents/`
+  convention. Root `skills/` landed as an empty scaffold only — the
+  `context-structure-review` skill import itself is a separate, still-open
+  follow-on pending a `CLAUDE.local.md`-recorded kit source path.
+- Updated the 4 test files whose 1-script-per-guard assumptions this broke
+  (`tests/test_governance_hooks_gate.py`, `tests/test_enforcement_core.py`,
+  `tests/test_evidence_gate.py`, `tests/test_plan_approval_scoping.py`).
+
+No guard decision logic changed.
+
 ### Fixed: config drift across plugin version, machine-local notes, and model-pin split (PX-47, `chore/config-drift-batch`)
 
 `.claude-plugin/plugin.json` had been reporting `1.0.6` while `pyproject.toml` moved on to
@@ -4840,7 +4865,7 @@ product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; n
   read-only `Read`/`Grep`/`Glob`) — adversarial quote-match of each cite/`[synthesis]` claim
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED; the read-only tool grant *is* the
   "never silently rewrite committed history" enforcement.
-- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](.claude-plugin/hooks/wiki-freshness-reminder.sh)
+- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](hooks/wiki-freshness-reminder.sh)
   now escalates its message to `/wiki-self-update` past a 10-file drift threshold (below it, the
   existing `/wiki-ingest` nudge). It **stays a witness** (always exit 0, silent under the
   sentinel and when nothing changed) — only the wording tiers.

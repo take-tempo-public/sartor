@@ -36,6 +36,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.enforcement.adapters import claude_dispatcher
 from scripts.enforcement.guards import (
     block_merge_to_main,
     block_secrets,
@@ -47,13 +48,34 @@ from scripts.enforcement.guards import (
 from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
+HOOKS_DIR = REPO_ROOT / "hooks"
 # The merge-train-4 base this branch forked from (env block: "isolated git
 # worktree of this repo at main b2c83d2") — the last commit before this
 # migration, so `git show OLD_SHA:<path>` is the pre-migration standalone hook.
 OLD_SHA = "b2c83d2"
 
+# NEW-side file each guard's equivalence test runs against. Since PX-37
+# (`chore/hook-dispatcher`), require-feature-branch/route-security-lint/
+# validate-context no longer ship their own standalone .sh — they run inside
+# edit-write-dispatcher.sh (no short-circuit: the other four guards also run
+# on these payloads, but none of the existing fixtures below incidentally
+# trip a second guard — verified when this branch landed). block-secrets
+# stays pointed at its own file: that file still backs the separate
+# Bash-matcher wiring (secret-scanning on Bash commands), untouched by this
+# migration.
 GUARD_FILES = {
+    "require-feature-branch": "edit-write-dispatcher.sh",
+    "block-merge-to-main": "block-merge-to-main.sh",
+    "block-secrets": "block-secrets.sh",
+    "route-security-lint": "edit-write-dispatcher.sh",
+    "ruff-changed": "ruff-changed.sh",
+    "validate-context": "edit-write-dispatcher.sh",
+}
+
+# OLD_SHA-side filename per guard (unchanged — the pre-migration standalone
+# scripts still live in git history at their original .claude-plugin/hooks/
+# path regardless of where the NEW side now lives).
+OLD_GUARD_FILES = {
     "require-feature-branch": "require-feature-branch.sh",
     "block-merge-to-main": "block-merge-to-main.sh",
     "block-secrets": "block-secrets.sh",
@@ -130,7 +152,7 @@ def old_hooks(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
         )
     out_dir = tmp_path_factory.mktemp("old_hooks")
     paths: dict[str, Path] = {}
-    for name, filename in GUARD_FILES.items():
+    for name, filename in OLD_GUARD_FILES.items():
         result = _git(["show", f"{OLD_SHA}:.claude-plugin/hooks/{filename}"], cwd=REPO_ROOT)
         dest = out_dir / filename
         dest.write_text(result.stdout, encoding="utf-8", newline="\n")
@@ -790,3 +812,61 @@ class TestGitHookAdapter:
             "pre-push", "origin", "https://example.invalid/repo.git", cwd=repo, stdin=stdin
         )
         assert result.returncode == 0
+
+
+# --------------------------------------------------------------------------- #
+# 4. Edit|Write dispatcher (PX-37) — one process, all five guards, no
+#    short-circuit (no OLD equivalent — new surface). Exercises the real
+#    hooks/edit-write-dispatcher.sh wrapper via the same _run_hook helper the
+#    OLD-vs-NEW equivalence classes above use.
+# --------------------------------------------------------------------------- #
+
+
+class TestEditWriteDispatcher:
+    """PX-37: require-feature-branch, require-evidence-before-fix, block-secrets,
+    validate-context, and route-security-lint all run in one process, and every
+    blocked guard's messages appear — proving there's no short-circuit."""
+
+    def test_guard_order_is_exactly_the_five_edit_write_guards(self) -> None:
+        assert set(claude_dispatcher._GUARD_ORDER) == {
+            "require-feature-branch",
+            "require-evidence-before-fix",
+            "block-secrets",
+            "validate-context",
+            "route-security-lint",
+        }
+
+    def test_allow_when_all_five_allow(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "dispatch_allow", "feat/x")
+        payload = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
+        }
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        assert code == 0, err
+
+    def test_block_on_main_single_guard(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "dispatch_main", "main")
+        payload = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
+        }
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        assert code == 2
+        assert "require-feature-branch" in err
+
+    def test_aggregates_two_simultaneous_blocks_no_short_circuit(self, tmp_path: Path) -> None:
+        """require-feature-branch (on main) AND block-secrets (embedded key) both
+        trip on one payload — both messages must appear, proving no short-circuit."""
+        repo = _make_repo(tmp_path, "dispatch_double_block", "main")
+        payload = {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": str(repo / "app.py"),
+                "content": "KEY = 'sk-ant-" + "a" * 30 + "'\n",
+            },
+        }
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        assert code == 2
+        assert "require-feature-branch" in err
+        assert "block-secrets" in err

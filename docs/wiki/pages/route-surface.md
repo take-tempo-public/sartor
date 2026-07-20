@@ -10,7 +10,7 @@
 > [`web_infra/security.py`](../../../web_infra/security.py),
 > [`app.py`](../../../app.py),
 > [`docs/architecture.md` §Module map](../../architecture.md),
-> [`.claude-plugin/hooks/route-security-lint.sh`](../../../.claude-plugin/hooks/route-security-lint.sh).
+> [`scripts/enforcement/guards/route_security_lint.py`](../../../scripts/enforcement/guards/route_security_lint.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -60,8 +60,9 @@ is asserted never to import `app.py`, any blueprint, or `config.py`
   from any filename before it joins a path.
 
 This is uniform **because a hook guards it**, and the hook's scope widened with
-the split (PX-21): [`route-security-lint.sh`](../../../.claude-plugin/hooks/route-security-lint.sh)
-now runs on an `Edit`/`Write` to **`app.py` OR any `blueprints/**.py`** module
+the split (PX-21): [`route_security_lint.py`](../../../scripts/enforcement/guards/route_security_lint.py)
+(run via `hooks/edit-write-dispatcher.sh` since PX-37) now runs on an `Edit`/`Write` to
+**`app.py` OR any `blueprints/**.py`** module
 that adds or modifies a route touching the filesystem (detected by
 `open(`/`send_file(`/`Path(`/`OUTPUT_DIR`/etc.) unless **both** `_safe_username`
 and `_within` appear in the same content; the read-only `dashboard/` surface is

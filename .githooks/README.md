@@ -19,13 +19,15 @@ Each hook is a thin bash wrapper that execs `python3
 scripts/enforcement/adapters/git_hook.py <event>`; the guard decisions
 themselves live once in `scripts/enforcement/guards/` and are shared with the
 Claude Code PreToolUse adapter (`scripts/enforcement/adapters/claude_hook.py`,
-invoked via the wrappers left in place at `.claude-plugin/hooks/*.sh`).
+invoked via wrappers in root `hooks/*.sh` — since PX-37 (`chore/hook-dispatcher`),
+five of them run through one consolidated `hooks/edit-write-dispatcher.sh`
+entry rather than each having their own file).
 
 **Not covered here:** the plan-mode lifecycle hooks (`check-plan-approved`,
 `mark-plan-approved`, `cleanup-plan-on-merge`) are Claude-only by design —
 there is no git-native equivalent of "has this session's plan been approved
-via `ExitPlanMode`", so they stay standalone scripts under
-`.claude-plugin/hooks/`, untouched by this migration.
+via `ExitPlanMode`", so they stay standalone scripts under root `hooks/`,
+untouched by this migration.
 
 ## Activation (one-time, per clone — NOT automatic)
 

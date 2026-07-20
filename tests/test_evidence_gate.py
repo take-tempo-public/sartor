@@ -204,7 +204,6 @@ class TestEnforcementIsWired:
     @pytest.mark.parametrize(
         ("event", "script"),
         [
-            ("PreToolUse", "require-evidence-before-fix.sh"),
             ("SessionStart", "restore-evidence.sh"),
             ("PreCompact", "capture-before-compact.sh"),
         ],
@@ -213,7 +212,21 @@ class TestEnforcementIsWired:
         settings = json.loads((_REPO_ROOT / ".claude" / "settings.json").read_text("utf-8"))
         wired = json.dumps(settings["hooks"][event])
         assert script in wired, f"{script} is not wired under {event} in .claude/settings.json"
-        assert (_REPO_ROOT / ".claude-plugin" / "hooks" / script).is_file()
+        assert (_REPO_ROOT / "hooks" / script).is_file()
+
+    def test_require_evidence_before_fix_is_dispatched_on_edit_write(self) -> None:
+        """require-evidence-before-fix no longer ships its own standalone .sh —
+        since PX-37 (`chore/hook-dispatcher`) it runs inside
+        `edit-write-dispatcher.sh`. Assert the wiring + the dispatcher's
+        internal guard list instead of a same-named standalone file."""
+        settings = json.loads((_REPO_ROOT / ".claude" / "settings.json").read_text("utf-8"))
+        wired = json.dumps(settings["hooks"]["PreToolUse"])
+        assert "edit-write-dispatcher.sh" in wired
+        assert (_REPO_ROOT / "hooks" / "edit-write-dispatcher.sh").is_file()
+
+        from scripts.enforcement.adapters import claude_dispatcher
+
+        assert "require-evidence-before-fix" in claude_dispatcher._GUARD_ORDER
 
     def test_every_hook_script_is_executable_in_the_index(self) -> None:
         """Mode `100644` means the hook silently does not run on Linux — i.e. in CI.
@@ -223,7 +236,7 @@ class TestEnforcementIsWired:
         is what CI checks out, and Windows would report the local bit meaninglessly.
         """
         out = subprocess.run(
-            ["git", "ls-files", "-s", ".claude-plugin/hooks/"],
+            ["git", "ls-files", "-s", "hooks/"],
             cwd=_REPO_ROOT,
             capture_output=True,
             text=True,
