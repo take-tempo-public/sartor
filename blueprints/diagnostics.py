@@ -41,6 +41,14 @@ logger = logging.getLogger(__name__)
 
 diagnostics_bp = Blueprint("diagnostics", __name__)
 
+# feat/diagnostics-run-cancel: how often the 4 SSE routes below poll their
+# result queue with a timeout instead of blocking forever. A queue.Empty
+# timeout yields a plain SSE comment line (heartbeat) — this gives Werkzeug a
+# periodic write to fail on when the client has disconnected, which is what
+# delivers GeneratorExit into the generator. Without periodic yields, a
+# closed tab is invisible until the blocking worker call finally returns.
+_HEARTBEAT_INTERVAL_S = 5.0
+
 
 # ---------------------------------------------------------------------------
 # Annotation + bootstrap write surface (the console's READ-WRITE routes).
@@ -445,11 +453,14 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
         events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
         result: dict[str, Any] = {}
+        cancel_event = threading.Event()
 
         def worker() -> None:
             """Thread target: run grounding signals over the corpus; stash the result/error and signal done."""
             try:
-                result["gs"] = run_grounding_signals(reps_md, [corpus_source])
+                result["gs"] = run_grounding_signals(
+                    reps_md, [corpus_source], cancel_check=cancel_event.is_set
+                )
             except ImportError as exc:
                 result["import_error"] = exc
             except Exception as exc:
@@ -458,73 +469,95 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse("start", {"slug": slug, "bullet_clusters": len(clusters)})
-        yield _sse(
-            "scoring",
-            {
-                "message": f"Scoring {len(clusters)} bullet clusters (DeBERTa NLI + MiniCheck, "
-                "~2-4s each)…",
-            },
-        )
-
-        # Single scorer call (no incremental progress) — block until the worker is done.
-        while events.get() is not sentinel:
-            pass
-
-        if "import_error" in result:
-            logger.warning(
-                "Grounding backfill: extras not installed for %s: %s", slug, result["import_error"]
-            )
+        try:
+            yield _sse("start", {"slug": slug, "bullet_clusters": len(clusters)})
             yield _sse(
-                "error",
+                "scoring",
                 {
-                    "error": "Grounding extras not installed.",
-                    "detail": "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md).",
-                    "http_status": 400,
+                    "message": f"Scoring {len(clusters)} bullet clusters (DeBERTa NLI + MiniCheck, "
+                    "~2-4s each)…",
                 },
             )
-            return
-        if "error" in result:
-            logger.error(
-                "Grounding backfill failed for %s: %s",
+
+            # Single scorer call (no incremental progress) — poll with a timeout
+            # so a client disconnect is noticed within _HEARTBEAT_INTERVAL_S
+            # instead of only after the worker finishes.
+            while True:
+                try:
+                    events.get(timeout=_HEARTBEAT_INTERVAL_S)
+                except _queue.Empty:
+                    yield ": heartbeat\n\n"
+                    continue
+                break
+
+            if "import_error" in result:
+                logger.warning(
+                    "Grounding backfill: extras not installed for %s: %s",
+                    slug,
+                    result["import_error"],
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Grounding extras not installed.",
+                        "detail": "Install with: pip install -e '.[eval-grounding]' (see CONTRIBUTING.md).",
+                        "http_status": 400,
+                    },
+                )
+                return
+            if "error" in result:
+                logger.error(
+                    "Grounding backfill failed for %s: %s",
+                    slug,
+                    result["error"],
+                    exc_info=result["error"],
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Grounding scoring failed.",
+                        "detail": str(result["error"]),
+                        "http_status": 500,
+                    },
+                )
+                return
+
+            gs = result["gs"]
+            bootstrap["grounding_signals"] = gs
+            bootstrap_path.write_text(
+                json.dumps(bootstrap, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            patched = _patch_annotation_scores(ann_path, gs) if ann_path.exists() else 0
+            bullet_count = gs.get("bullet_count", 0)
+            logger.info(
+                "Grounding backfill wrote %s (%d bullets scored, %d annotations patched)",
                 slug,
-                result["error"],
-                exc_info=result["error"],
+                bullet_count,
+                patched,
             )
             yield _sse(
-                "error",
+                "done",
                 {
-                    "error": "Grounding scoring failed.",
-                    "detail": str(result["error"]),
-                    "http_status": 500,
+                    "slug": slug,
+                    "bullet_count": bullet_count,
+                    "mean_entailment": (gs.get("nli_summary", {}) or {}).get(
+                        "mean_entailment", 0.0
+                    ),
+                    "mean_minicheck": (gs.get("minicheck_summary", {}) or {}).get(
+                        "mean_score", 0.0
+                    ),
+                    "annotations_patched": patched,
                 },
             )
-            return
-
-        gs = result["gs"]
-        bootstrap["grounding_signals"] = gs
-        bootstrap_path.write_text(
-            json.dumps(bootstrap, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        patched = _patch_annotation_scores(ann_path, gs) if ann_path.exists() else 0
-        bullet_count = gs.get("bullet_count", 0)
-        logger.info(
-            "Grounding backfill wrote %s (%d bullets scored, %d annotations patched)",
-            slug,
-            bullet_count,
-            patched,
-        )
-        yield _sse(
-            "done",
-            {
-                "slug": slug,
-                "bullet_count": bullet_count,
-                "mean_entailment": (gs.get("nli_summary", {}) or {}).get("mean_entailment", 0.0),
-                "mean_minicheck": (gs.get("minicheck_summary", {}) or {}).get("mean_score", 0.0),
-                "annotations_patched": patched,
-            },
-        )
+        except GeneratorExit:
+            cancel_event.set()
+            logger.warning(
+                "Diagnostics run cancelled (client disconnected): "
+                "route=annotation_score_grounding slug=%s",
+                slug,
+            )
+            raise
 
     return Response(
         stream(),
@@ -676,6 +709,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
         events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
         result: dict[str, Any] = {}
+        cancel_event = threading.Event()
 
         def worker() -> None:
             """Thread target: run the bootstrap pipeline in a fresh DB session; stash result/error and signal done."""
@@ -689,6 +723,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                         safe_user,
                         jds,
                         progress=lambda ev, payload: events.put(("progress", ev, payload)),
+                        cancel_check=cancel_event.is_set,
                     )
                     result["per_jd"] = per_jd
                     result["corpus"] = corpus
@@ -711,105 +746,120 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse("start", {"total": len(jds), "slug": slug, "candidate": safe_user})
+        try:
+            yield _sse("start", {"total": len(jds), "slug": slug, "candidate": safe_user})
 
-        while True:
-            item = events.get()
-            if item is sentinel:
-                break
-            _, event_kind, payload = item
-            yield _sse(event_kind, payload)
+            while True:
+                try:
+                    item = events.get(timeout=_HEARTBEAT_INTERVAL_S)
+                except _queue.Empty:
+                    yield ": heartbeat\n\n"
+                    continue
+                if item is sentinel:
+                    break
+                _, event_kind, payload = item
+                yield _sse(event_kind, payload)
 
-        if "error" in result:
-            logger.error("Bootstrap wrapper failed: %s", result["error"], exc_info=result["error"])
+            if "error" in result:
+                logger.error(
+                    "Bootstrap wrapper failed: %s", result["error"], exc_info=result["error"]
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Bootstrap pipeline failed.",
+                        "detail": str(result["error"]),
+                        "http_status": 500,
+                    },
+                )
+                return
+
+            # Optional grounding scorers (eval-only models), resolved AFTER the paid
+            # pipeline so a missing dep never wastes the LLM spend. The grounding_signals
+            # module is pure-Python (the heavy deps import lazily inside the scorer), so
+            # the import here always succeeds; any scorer failure (a missing
+            # `[eval-grounding]` extra, a drifted dep, a failed model download) is now
+            # absorbed *inside* build_bootstrap_document, which degrades to an un-scored
+            # doc rather than raising (window-8.5-findings EV-2) — so the paid pipeline
+            # output is never lost and this route never 500s on a grounding hiccup.
+            grounding_fn = None
+            grounding_note = None
+            if grounding_requested:
+                from evals.grounding_signals import run_grounding_signals
+
+                grounding_fn = run_grounding_signals
+                yield _sse(
+                    "scoring",
+                    {
+                        "message": "Running grounding scorers (DeBERTa NLI + MiniCheck) over "
+                        "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
+                    },
+                )
+
+            # Deterministic collation + write (LLM-free apart from the optional scorers).
+            # build_bootstrap_document fails soft on grounding, so this never raises for
+            # a scoring failure; we surface a note below from the outcome.
+            doc = build_bootstrap_document(
+                result["per_jd"],
+                username=safe_user,
+                seed_path="(browser bootstrap wrapper)",
+                threshold=DEFAULT_JACCARD,
+                corpus_source=result.get("corpus", ""),
+                grounding_fn=grounding_fn,
+            )
+            if grounding_requested and doc.get("grounding_signals") is None:
+                grounding_note = (
+                    "Grounding unavailable — bootstrap saved without scores (see the server "
+                    "log for detail; if the extras are missing, install with "
+                    "pip install -e '.[eval-grounding]' — see CONTRIBUTING.md)."
+                )
+            fixture_dir.mkdir(parents=True, exist_ok=True)
+            (fixture_dir / "bootstrap.json").write_text(
+                json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            # Persist the corpus snapshot so the fixture is runnable by
+            # `runner.py --suite real --seed …/seed.json` and so the grounding backfill
+            # can score against the exact corpus this bootstrap was built from.
+            seed = result.get("seed")
+            if seed is not None:
+                _write_seed_json(fixture_dir, seed)
+            # Persist the pasted JDs so collate can later produce the fixture jd.txt.
+            jds_dir = fixture_dir / "jds"
+            jds_dir.mkdir(parents=True, exist_ok=True)
+            for name, text in jds:
+                jd_file = jds_dir / _jd_filename(name)
+                if _within(jd_file, annotation_root):
+                    jd_file.write_text(text, encoding="utf-8")
+            grounded = doc.get("grounding_signals") is not None
+            logger.info(
+                "Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
+                slug,
+                doc["jd_count"],
+                doc["dedup"]["bullets"]["cluster_count"],
+                grounded,
+            )
+            if grounding_note:
+                yield _sse("warning", {"message": grounding_note})
             yield _sse(
-                "error",
+                "done",
                 {
-                    "error": "Bootstrap pipeline failed.",
-                    "detail": str(result["error"]),
-                    "http_status": 500,
+                    "slug": slug,
+                    "candidate": safe_user,
+                    "jd_count": doc["jd_count"],
+                    "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
+                    "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
+                    "grounded": grounded,
                 },
             )
-            return
-
-        # Optional grounding scorers (eval-only models), resolved AFTER the paid
-        # pipeline so a missing dep never wastes the LLM spend. The grounding_signals
-        # module is pure-Python (the heavy deps import lazily inside the scorer), so
-        # the import here always succeeds; any scorer failure (a missing
-        # `[eval-grounding]` extra, a drifted dep, a failed model download) is now
-        # absorbed *inside* build_bootstrap_document, which degrades to an un-scored
-        # doc rather than raising (window-8.5-findings EV-2) — so the paid pipeline
-        # output is never lost and this route never 500s on a grounding hiccup.
-        grounding_fn = None
-        grounding_note = None
-        if grounding_requested:
-            from evals.grounding_signals import run_grounding_signals
-
-            grounding_fn = run_grounding_signals
-            yield _sse(
-                "scoring",
-                {
-                    "message": "Running grounding scorers (DeBERTa NLI + MiniCheck) over "
-                    "deduped bullets — this is CPU-bound (~2-4s/bullet)…",
-                },
+        except GeneratorExit:
+            cancel_event.set()
+            logger.warning(
+                "Diagnostics run cancelled (client disconnected): "
+                "route=annotation_bootstrap_stream slug=%s",
+                slug,
             )
-
-        # Deterministic collation + write (LLM-free apart from the optional scorers).
-        # build_bootstrap_document fails soft on grounding, so this never raises for
-        # a scoring failure; we surface a note below from the outcome.
-        doc = build_bootstrap_document(
-            result["per_jd"],
-            username=safe_user,
-            seed_path="(browser bootstrap wrapper)",
-            threshold=DEFAULT_JACCARD,
-            corpus_source=result.get("corpus", ""),
-            grounding_fn=grounding_fn,
-        )
-        if grounding_requested and doc.get("grounding_signals") is None:
-            grounding_note = (
-                "Grounding unavailable — bootstrap saved without scores (see the server "
-                "log for detail; if the extras are missing, install with "
-                "pip install -e '.[eval-grounding]' — see CONTRIBUTING.md)."
-            )
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-        (fixture_dir / "bootstrap.json").write_text(
-            json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        # Persist the corpus snapshot so the fixture is runnable by
-        # `runner.py --suite real --seed …/seed.json` and so the grounding backfill
-        # can score against the exact corpus this bootstrap was built from.
-        seed = result.get("seed")
-        if seed is not None:
-            _write_seed_json(fixture_dir, seed)
-        # Persist the pasted JDs so collate can later produce the fixture jd.txt.
-        jds_dir = fixture_dir / "jds"
-        jds_dir.mkdir(parents=True, exist_ok=True)
-        for name, text in jds:
-            jd_file = jds_dir / _jd_filename(name)
-            if _within(jd_file, annotation_root):
-                jd_file.write_text(text, encoding="utf-8")
-        grounded = doc.get("grounding_signals") is not None
-        logger.info(
-            "Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
-            slug,
-            doc["jd_count"],
-            doc["dedup"]["bullets"]["cluster_count"],
-            grounded,
-        )
-        if grounding_note:
-            yield _sse("warning", {"message": grounding_note})
-        yield _sse(
-            "done",
-            {
-                "slug": slug,
-                "candidate": safe_user,
-                "jd_count": doc["jd_count"],
-                "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
-                "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
-                "grounded": grounded,
-            },
-        )
+            raise
 
     return Response(
         stream(),
@@ -893,6 +943,7 @@ def eval_run_stream() -> ResponseReturnValue:
         events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
         result: dict[str, Any] = {}
+        cancel_event = threading.Event()
 
         def worker() -> None:
             """Thread target: run the eval suite; stash the result/error and signal done."""
@@ -904,6 +955,7 @@ def eval_run_stream() -> ResponseReturnValue:
                     seed_data=seed_data,
                     grounding_signals=grounding_signals,
                     progress=lambda ev, payload: events.put(("progress", ev, payload)),
+                    cancel_check=cancel_event.is_set,
                 )
             except Exception as exc:
                 result["error"] = exc
@@ -911,52 +963,73 @@ def eval_run_stream() -> ResponseReturnValue:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse(
-            "start",
-            {
-                "suite": suite,
-                "subset": subset,
-                "fixture": fixture_name,
-                "grounding": grounding_signals,
-                "seeded": seed_data is not None,
-            },
-        )
-
-        while True:
-            item = events.get()
-            if item is sentinel:
-                break
-            _, event_kind, payload = item
-            yield _sse(event_kind, payload)
-
-        if "error" in result:
-            logger.error("Console eval run failed: %s", result["error"], exc_info=result["error"])
+        try:
             yield _sse(
-                "error",
+                "start",
                 {
-                    "error": "Eval run failed.",
-                    "detail": str(result["error"]),
-                    "http_status": 500,
+                    "suite": suite,
+                    "subset": subset,
+                    "fixture": fixture_name,
+                    "grounding": grounding_signals,
+                    "seeded": seed_data is not None,
                 },
             )
-            return
 
-        res = result["res"]
-        logger.info(
-            "Console eval run complete: %d pass, %d fail → %s", res.n_pass, res.n_fail, res.out_path
-        )
-        yield _sse(
-            "done",
-            {
-                "suite": suite,
-                "subset": subset,
-                "out_file": res.out_path.name if res.out_path else None,
-                "n_pass": res.n_pass,
-                "n_fail": res.n_fail,
-                "regressions": len(res.regressions),
-                "exit_code": res.exit_code,
-            },
-        )
+            while True:
+                try:
+                    item = events.get(timeout=_HEARTBEAT_INTERVAL_S)
+                except _queue.Empty:
+                    yield ": heartbeat\n\n"
+                    continue
+                if item is sentinel:
+                    break
+                _, event_kind, payload = item
+                yield _sse(event_kind, payload)
+
+            if "error" in result:
+                logger.error(
+                    "Console eval run failed: %s", result["error"], exc_info=result["error"]
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Eval run failed.",
+                        "detail": str(result["error"]),
+                        "http_status": 500,
+                    },
+                )
+                return
+
+            res = result["res"]
+            logger.info(
+                "Console eval run %s: %d pass, %d fail → %s",
+                "cancelled" if res.cancelled else "complete",
+                res.n_pass,
+                res.n_fail,
+                res.out_path,
+            )
+            yield _sse(
+                "done",
+                {
+                    "suite": suite,
+                    "subset": subset,
+                    "out_file": res.out_path.name if res.out_path else None,
+                    "n_pass": res.n_pass,
+                    "n_fail": res.n_fail,
+                    "regressions": len(res.regressions),
+                    "exit_code": res.exit_code,
+                    "cancelled": res.cancelled,
+                },
+            )
+        except GeneratorExit:
+            cancel_event.set()
+            logger.warning(
+                "Diagnostics run cancelled (client disconnected): "
+                "route=eval_run_stream suite=%s subset=%s",
+                suite,
+                subset,
+            )
+            raise
 
     return Response(
         stream(),
@@ -1061,6 +1134,7 @@ def tune_run_stream() -> ResponseReturnValue:
         events: _queue.Queue[Any] = _queue.Queue()
         sentinel = object()
         result: dict[str, Any] = {}
+        cancel_event = threading.Event()
 
         def _run(phase: str, overrides_map: dict[str, str] | None) -> EvalRunResult:
             """Run the suite for one ``phase`` (with optional ``overrides_map``), emitting phase-tagged progress."""
@@ -1074,81 +1148,102 @@ def tune_run_stream() -> ResponseReturnValue:
                 progress=lambda ev, payload: events.put(
                     ("progress", ev, {**payload, "phase": phase})
                 ),
+                cancel_check=cancel_event.is_set,
             )
 
         def worker() -> None:
             """Thread target: run baseline then candidate; stash results/error and signal done."""
             try:
                 result["baseline"] = _run("baseline", None)
-                result["candidate"] = _run("candidate", overrides)
+                # A disconnect during the baseline pass must skip the candidate
+                # pass entirely — otherwise it starts a second full paid run the
+                # client already gave up on.
+                if not cancel_event.is_set():
+                    result["candidate"] = _run("candidate", overrides)
             except Exception as exc:
                 result["error"] = exc
             finally:
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
-        yield _sse(
-            "start",
-            {
-                "mode": "tune",
-                "runs": 2,
-                "suite": suite,
-                "subset": subset,
-                "fixture": fixture_name,
-                "grounding": grounding_signals,
-                "seeded": seed_data is not None,
-                "overrides": sorted(overrides),
-            },
-        )
-
-        while True:
-            item = events.get()
-            if item is sentinel:
-                break
-            _, event_kind, payload = item
-            yield _sse(event_kind, payload)
-
-        if "error" in result:
-            logger.error("Console tune A/B failed: %s", result["error"], exc_info=result["error"])
+        try:
             yield _sse(
-                "error",
+                "start",
                 {
-                    "error": "Tune A/B failed.",
-                    "detail": str(result["error"]),
-                    "http_status": 500,
+                    "mode": "tune",
+                    "runs": 2,
+                    "suite": suite,
+                    "subset": subset,
+                    "fixture": fixture_name,
+                    "grounding": grounding_signals,
+                    "seeded": seed_data is not None,
+                    "overrides": sorted(overrides),
                 },
             )
-            return
 
-        base = result["baseline"]
-        cand = result["candidate"]
-        if base.out_path is None or cand.out_path is None:
-            yield _sse("error", {"error": "No fixtures matched — nothing to compare."})
-            return
+            while True:
+                try:
+                    item = events.get(timeout=_HEARTBEAT_INTERVAL_S)
+                except _queue.Empty:
+                    yield ": heartbeat\n\n"
+                    continue
+                if item is sentinel:
+                    break
+                _, event_kind, payload = item
+                yield _sse(event_kind, payload)
 
-        rows = build_delta_table(load_scores(base.out_path), load_scores(cand.out_path))
-        logger.info(
-            "Console tune A/B complete: baseline %d/%d, candidate %d/%d (%s) → %d row(s)",
-            base.n_pass,
-            base.n_fail,
-            cand.n_pass,
-            cand.n_fail,
-            cand.candidate_version,
-            len(rows),
-        )
-        yield _sse(
-            "delta",
-            {
-                "table": format_delta_table(rows),
-                "rows": [asdict(r) for r in rows],
-                "candidate_version": cand.candidate_version,
-                "baseline_file": base.out_path.name,
-                "candidate_file": cand.out_path.name,
-                "regressed": sum(1 for r in rows if r.regressed),
-                "baseline": {"n_pass": base.n_pass, "n_fail": base.n_fail},
-                "candidate": {"n_pass": cand.n_pass, "n_fail": cand.n_fail},
-            },
-        )
+            if "error" in result:
+                logger.error(
+                    "Console tune A/B failed: %s", result["error"], exc_info=result["error"]
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "error": "Tune A/B failed.",
+                        "detail": str(result["error"]),
+                        "http_status": 500,
+                    },
+                )
+                return
+
+            base = result["baseline"]
+            cand = result["candidate"]
+            if base.out_path is None or cand.out_path is None:
+                yield _sse("error", {"error": "No fixtures matched — nothing to compare."})
+                return
+
+            rows = build_delta_table(load_scores(base.out_path), load_scores(cand.out_path))
+            logger.info(
+                "Console tune A/B complete: baseline %d/%d, candidate %d/%d (%s) → %d row(s)",
+                base.n_pass,
+                base.n_fail,
+                cand.n_pass,
+                cand.n_fail,
+                cand.candidate_version,
+                len(rows),
+            )
+            yield _sse(
+                "delta",
+                {
+                    "table": format_delta_table(rows),
+                    "rows": [asdict(r) for r in rows],
+                    "candidate_version": cand.candidate_version,
+                    "baseline_file": base.out_path.name,
+                    "candidate_file": cand.out_path.name,
+                    "regressed": sum(1 for r in rows if r.regressed),
+                    "baseline": {"n_pass": base.n_pass, "n_fail": base.n_fail},
+                    "candidate": {"n_pass": cand.n_pass, "n_fail": cand.n_fail},
+                },
+            )
+        except GeneratorExit:
+            cancel_event.set()
+            logger.warning(
+                "Diagnostics run cancelled (client disconnected): "
+                "route=tune_run_stream suite=%s subset=%s",
+                suite,
+                subset,
+            )
+            raise
 
     return Response(
         stream(),

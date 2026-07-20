@@ -11,6 +11,8 @@ paid calls in the suite.
 from __future__ import annotations
 
 import json
+import threading
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -314,7 +316,7 @@ class TestCollate:
         """
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")  # client construct only
 
-        def _fake_pipeline(client, session, username, jds, *, progress=None):
+        def _fake_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
             per_jd = []
             for i, (name, _text) in enumerate(jds):
                 per_jd.append(
@@ -390,7 +392,7 @@ class TestBootstrapStream:
     def test_writes_bootstrap_from_stubbed_pipeline(self, ann_app, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")  # client construct only; never called
 
-        def _fake_pipeline(client, session, username, jds, *, progress=None):
+        def _fake_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
             per_jd = []
             for i, (name, _text) in enumerate(jds):
                 if progress:
@@ -543,7 +545,7 @@ def _write_seed(fixture_dir):
     (fixture_dir / "seed.json").write_text(json.dumps(_SEED), encoding="utf-8")
 
 
-def _fake_scorer(resume_md, source_texts):
+def _fake_scorer(resume_md, source_texts, *, cancel_check=None):
     """Stand-in for evals.grounding_signals.run_grounding_signals — same output
     shape, no model download. Bullets are the `- ` lines of the rendered reps."""
     bullets = [ln[2:].strip() for ln in resume_md.splitlines() if ln.strip().startswith("- ")]
@@ -647,7 +649,7 @@ class TestBootstrapGrounding:
 
     @staticmethod
     def _stub_pipeline(monkeypatch):
-        def _fake_pipeline(client, session, username, jds, *, progress=None):
+        def _fake_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
             return (
                 [
                     {
@@ -1163,3 +1165,161 @@ class TestSeedExport:
             assert ann_app._within(p, ann_app.ANNOTATION_ROOT)
         # Nothing escaped to a sibling of ANNOTATION_ROOT.
         assert not (ann_app.ANNOTATION_ROOT.parent / "etc" / "seed.json").exists()
+
+
+class TestRunCancelDisconnect:
+    """feat/diagnostics-run-cancel: a real client disconnect (not just a UI
+    lock) must stop the worker before its next paid/CPU-bound call. Flask's
+    test client fully drains the SSE generator on `.get_data()`, so a real
+    disconnect is simulated by pulling `resp.response` (the undrained WSGI
+    iterator) directly and calling `.close()` on it mid-flight — Werkzeug
+    delivers `GeneratorExit` into the generator's currently suspended `yield`
+    point exactly as it would on a real socket disconnect. These are
+    new-feature tests (fail before this branch, pass after) — there's no
+    pre-existing bug to falsify, the gap itself is the absence of any
+    disconnect-detection mechanism."""
+
+    def _disconnect_after_start(self, resp) -> None:
+        """Advance past the route's first SSE event (which starts the
+        background worker, since nothing in a generator runs before the
+        first `next()`), then close the raw WSGI iterator — the same thing
+        Werkzeug does when a real client goes away mid-stream."""
+        it = resp.response
+        next(it)
+        it.close()
+
+    def test_score_grounding_route_stops_before_minicheck_pass(self, ann_app, monkeypatch):
+        fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        _write_seed(fixture_dir)
+        captured: dict = {}
+        started = threading.Event()
+        release = threading.Event()
+
+        def blocking_scorer(resume_md, source_texts, *, cancel_check=None):
+            captured["cancel_check"] = cancel_check
+            started.set()
+            release.wait(timeout=5)
+            return {
+                "bullet_count": 0,
+                "nli": [],
+                "nli_summary": {"mean_entailment": 0.0, "contradiction_count": 0},
+                "minicheck": [],
+                "minicheck_summary": {"mean_score": 0.0, "low_score_count": 0},
+                "cancelled": False,
+            }
+
+        monkeypatch.setattr("evals.grounding_signals.run_grounding_signals", blocking_scorer)
+
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/score")
+        assert resp.status_code == 200
+        try:
+            self._disconnect_after_start(resp)
+            assert started.wait(timeout=5), "worker never reached the stubbed scorer"
+            assert captured["cancel_check"]() is True
+        finally:
+            release.set()
+
+    def test_bootstrap_route_stops_before_next_jd(self, ann_app, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        captured: dict = {}
+        started = threading.Event()
+        release = threading.Event()
+
+        def blocking_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
+            captured["cancel_check"] = cancel_check
+            started.set()
+            release.wait(timeout=5)
+            return [], "corpus source text"
+
+        import evals.bootstrap as bootstrap_mod
+
+        monkeypatch.setattr(bootstrap_mod, "run_pipeline_over_jd_texts", blocking_pipeline)
+
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [{"name": "kafka backend", "text": "JD one"}],
+            },
+        )
+        assert resp.status_code == 200
+        try:
+            self._disconnect_after_start(resp)
+            assert started.wait(timeout=5), "worker never reached the stubbed pipeline"
+            assert captured["cancel_check"]() is True
+        finally:
+            release.set()
+
+    def test_eval_run_route_stops_before_next_paid_call(self, ann_app, monkeypatch):
+        import evals.runner as runner
+
+        captured: dict = {}
+        started = threading.Event()
+        release = threading.Event()
+
+        def blocking_run_suite(**kwargs):
+            captured["cancel_check"] = kwargs.get("cancel_check")
+            started.set()
+            release.wait(timeout=5)
+            from evals.runner import EvalRunResult
+
+            return EvalRunResult(
+                exit_code=0, out_path=None, n_pass=0, n_fail=0, regressions=[], improvements=[]
+            )
+
+        monkeypatch.setattr(runner, "run_suite", blocking_run_suite)
+
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={"suite": "synthetic", "subset": "smoke"})
+        assert resp.status_code == 200
+        try:
+            self._disconnect_after_start(resp)
+            assert started.wait(timeout=5), "worker never reached the stubbed run_suite"
+            assert captured["cancel_check"]() is True
+        finally:
+            release.set()
+
+    def test_tune_run_route_skips_candidate_pass_after_disconnect(self, ann_app, monkeypatch):
+        import evals.runner as runner
+
+        calls: list = []
+        started = threading.Event()
+        release = threading.Event()
+
+        def blocking_run_suite(**kwargs):
+            calls.append(kwargs)
+            started.set()
+            release.wait(timeout=5)
+            from evals.runner import EvalRunResult
+
+            return EvalRunResult(
+                exit_code=0, out_path=None, n_pass=0, n_fail=0, regressions=[], improvements=[]
+            )
+
+        monkeypatch.setattr(runner, "run_suite", blocking_run_suite)
+
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/tune/run",
+            json={
+                "prompt_overrides": {"SYSTEM_PROMPT": "candidate text"},
+                "suite": "synthetic",
+                "subset": "smoke",
+            },
+        )
+        assert resp.status_code == 200
+        try:
+            self._disconnect_after_start(resp)
+            assert started.wait(timeout=5), "worker never reached the stubbed run_suite"
+            # The disconnect landed during the baseline pass (the only call so
+            # far) — confirm the cancel_event it captured reads True.
+            assert len(calls) == 1
+            assert calls[0]["cancel_check"]() is True
+        finally:
+            release.set()
+            # Give the worker thread a moment to observe cancel_event and skip
+            # the candidate pass, then confirm it never ran a second call.
+            time.sleep(0.3)
+            assert len(calls) == 1
