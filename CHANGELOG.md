@@ -21,6 +21,43 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: field-level help for the diagnostics console — the remaining #2/4/5/6/16 content-cluster authoring pass (`docs/diagnostics-content-cluster`)
+
+`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s instructional-cluster finding:
+the diagnostics console (`/_dashboard`) already ported the main app's help pattern
+(`_DASH_HELP` mirrors `_HELP_REGISTRY` via the shared `static/help-modal.js` opener), but
+only at 5 tab-level info-circles vs the main app's field-level granularity — granular
+controls fell back to native `title=` tooltips (a small draft down-payment landed
+previously). This branch authors the missing field-level entries, content-only.
+
+- 9 new `_DASH_HELP` entries in `dashboard/templates/dashboard.html`: `dashSuiteField`,
+  `dashSubsetField`, `dashGroundingSignals` (each shared verbatim across the 2-3 tabs
+  where that control repeats — Quality + Tuning, plus Annotate for grounding signals),
+  `dashTuneConstant`, `dashTuneCandidate`, `dashTuneSeed`, `dashBootstrapRun`,
+  `dashVerdicts`, `dashAnnScore`. Voice matches the main app's `_HELP_REGISTRY` (2nd
+  person, 2-5 sentences, plain-text bodies — the shared opener sets `.textContent`, so
+  deep-doc references stay literal paths, never `<a>` tags).
+- 13 new static `.help-info` icon instances across the Quality, Tuning, and Annotate tabs
+  (Pipeline and Groundedness stayed tab-level only — their tiles are read-only, nothing
+  granular to explain). Every icon is a sibling of its `<label>`/control, never nested
+  inside one — a `<button>` nested in a `<label>` risks the label's default click
+  forwarding double-firing the wrapped checkbox/select, so icons sit in the field's
+  existing flex row (`.filters`, `.tune-editor-head`, `.annotate-actions`) instead.
+- Broadened the console's one click-handler selector from `.dash-pane-intro .help-info` to
+  `.help-info[data-help]` so the new field-level icons (which live outside the tab intro
+  paragraph) wire up through the same handler as the 5 pre-existing tab-level icons.
+  Field icons carry no auto-open — only the tab-level entries do — so they stay
+  click-only, matching the main app's field-level entries.
+- Rewrote `dashTuning`'s prompt-tuning-loop explainer in plainer language (finding #6):
+  shorter sentences, dropped the ALL-CAPS emphasis.
+
+Verified live: full gate green (ruff, ruff format, mypy 331 files, `pytest -m "not ux"`
+2049 passed/1 pre-existing skip, `pytest -m ux` 123 passed) plus a real Chromium/Playwright
+click-through confirming all 9 new entries open with correct title/body and zero console
+errors. Resolves `RELEASE_CHECKLIST.md`'s "UX round-2 remediation" carry-forward ledger
+item (its last open sub-scope) — see that entry's `#### Resolved` note for the item's full
+multi-branch history.
+
 ### Added: a real Cancel button for diagnostics runs — disconnect-as-cancel, not a click-lock (`feat/diagnostics-run-cancel`)
 
 `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s RUN-LIFECYCLE finding: every

@@ -313,14 +313,20 @@
           <option value="anchor">anchor</option>
         </select>
       </label>
+      <button class="help-info" id="help-icon-dashSuiteField-quality" data-help="dashSuiteField" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About Suite" aria-label="Help: Suite — which fixtures to grade" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Subset
         <select id="evalSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
       </label>
+      <button class="help-info" id="help-icon-dashSubsetField-quality" data-help="dashSubsetField" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About Subset" aria-label="Help: Subset — how much of the suite to run" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="evalGrounding"
         title="Also score with the offline DeBERTa NLI + MiniCheck grounding models (needs the [eval-grounding] extras; CPU-bound, no extra paid calls)."> grounding signals</label>
+      <button class="help-info" id="help-icon-dashGroundingSignals-quality" data-help="dashGroundingSignals" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About grounding signals" aria-label="Help: Grounding signals — the offline scorers" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <button class="ann-btn primary" id="evalRunBtn" type="button">Run eval</button>
       <button class="ann-btn" id="evalCancelBtn" type="button" hidden>Cancel</button>
     </div>
@@ -424,25 +430,35 @@
       <label>Constant
         <select id="tuneConstant" title="Which analyzer.py persona/system-prompt constant to A/B — the candidate text below REPLACES this constant for the run, via analyzer.prompt_overrides() (analyzer.py is never edited)."></select>
       </label>
+      <button class="help-info" id="help-icon-dashTuneConstant" data-help="dashTuneConstant" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About Constant" aria-label="Help: Constant — which prompt you’re A/B-ing" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Suite
         <select id="tuneSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
           <option value="synthetic">synthetic</option>
           <option value="anchor">anchor</option>
         </select>
       </label>
+      <button class="help-info" id="help-icon-dashSuiteField-tuning" data-help="dashSuiteField" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About Suite" aria-label="Help: Suite — which fixtures to grade" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Subset
         <select id="tuneSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
       </label>
+      <button class="help-info" id="help-icon-dashSubsetField-tuning" data-help="dashSubsetField" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About Subset" aria-label="Help: Subset — how much of the suite to run" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label class="bs-grounding" style="margin:0;align-self:end"><input type="checkbox" id="tuneGrounding"
         title="Also score with the offline DeBERTa NLI + MiniCheck grounding models (needs the [eval-grounding] extras; CPU-bound, no extra paid calls)."> grounding signals</label>
+      <button class="help-info" id="help-icon-dashGroundingSignals-tuning" data-help="dashGroundingSignals" type="button" style="align-self:end;margin-bottom:0.4rem"
+              title="About grounding signals" aria-label="Help: Grounding signals — the offline scorers" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
     </div>
     <div class="tune-editor">
       <div class="tune-editor-head">
         <button class="ann-btn" id="tuneLoadBtn" type="button">Load current text</button>
         <span class="sub">Loads the baseline constant so you edit it — don't paste a full prompt from scratch.</span>
+        <button class="help-info" id="help-icon-dashTuneCandidate" data-help="dashTuneCandidate" type="button"
+                title="About the candidate text" aria-label="Help: Candidate text — the full replacement" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       </div>
       <textarea id="tuneCandidate" rows="10" spellcheck="false"
         placeholder="Candidate text — the FULL replacement for the chosen constant (not a diff)."></textarea>
@@ -460,6 +476,8 @@
         </label>
         <label>Fixture slug<input type="text" id="tuneSlug" placeholder="&lt;name&gt;"
           title="The evals/fixtures/real/<slug>/ directory to seed from (must already have a seed.json — export or bootstrap one on the Annotate tab first)."></label>
+        <button class="help-info" id="help-icon-dashTuneSeed" data-help="dashTuneSeed" type="button" style="align-self:end;margin-bottom:0.4rem"
+                title="About the real-corpus seed" aria-label="Help: Real-corpus seed — A/B against your own data" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       </div>
       <p class="sub">Sets <code class="short">--suite real --seed</code>: the corpus comes from
         <code class="short">evals/fixtures/real/&lt;slug&gt;/seed.json</code> — capture one with the
@@ -530,6 +548,8 @@
         </label>
         <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"
           title="Directory name under evals/fixtures/real/ — defaults to <candidate>-bootstrap. Reuse an existing slug to add more JDs to that same fixture."></label>
+        <button class="help-info" id="help-icon-dashBootstrapRun" data-help="dashBootstrapRun" type="button" style="align-self:end;margin-bottom:0.4rem"
+                title="About producing a bootstrap" aria-label="Help: Bootstrap — produce something to annotate" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       </div>
       <div id="bsJds"></div>
       <label class="bs-grounding"><input type="checkbox" id="bsGrounding"
@@ -537,6 +557,8 @@
         (DeBERTa NLI + MiniCheck) over the deduped bullets — needs the
         <code class="short">[eval-grounding]</code> extras; CPU-bound (~2-4s/bullet). Missing
         extras just save an un-scored bootstrap.</label>
+      <button class="help-info" id="help-icon-dashGroundingSignals-annotate" data-help="dashGroundingSignals" type="button"
+              title="About grounding signals" aria-label="Help: Grounding signals — the offline scorers" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <div class="annotate-actions">
         <button class="ann-btn" id="bsAddJd" type="button">+ Add JD</button>
         <button class="ann-btn" id="bsExportSeed" type="button"
@@ -570,7 +592,9 @@
       <code class="short">fix</code> — true but needs rewording (fill in an <code class="short">honest_rewrite</code>) ·
       <code class="short">omit</code> — leave it off the résumé ·
       <code class="short">fabricated</code> — not supported by the candidate's source (add a
-      <code class="short">forbidden_pattern</code> regex so the scorer catches it next time).</p>
+      <code class="short">forbidden_pattern</code> regex so the scorer catches it next time).
+      <button class="help-info" id="help-icon-dashVerdicts" data-help="dashVerdicts" type="button"
+              title="About verdicts" aria-label="Help: Verdicts — keep / fix / omit / fabricated" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
     <h3 class="ann-h3">Bullets</h3>
     <div id="annBullets"></div>
     <h3 class="ann-h3">Skills</h3>
@@ -582,6 +606,8 @@
       <button class="ann-btn" id="annCollate" type="button">Collate → fixture + brief</button>
       <button class="ann-btn" id="annScore" type="button"
               title="Run the offline grounding scorers over this fixture's bullets (CPU, no paid LLM calls). Requires a seed.json + the [eval-grounding] extras.">Score grounding</button>
+      <button class="help-info" id="help-icon-dashAnnScore" data-help="dashAnnScore" type="button"
+              title="About Score grounding" aria-label="Help: Score grounding — run the offline scorers here" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <button class="ann-btn" id="annScoreCancelBtn" type="button" hidden>Cancel</button>
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
@@ -984,14 +1010,16 @@
     },
     dashTuning: {
       title: 'Tuning — candidate-vs-baseline A/B',
-      body: 'This tab A/Bs a candidate system prompt against the current baseline '
-        + 'WITHOUT editing the persona constants: pick a constant, edit its text, '
-        + 'and run candidate-vs-baseline. The candidate run is logged as '
-        + 'prompt_version=candidate:<hash> so it never pollutes the score-over-'
-        + 'time chart. It runs TWO paid eval suites (baseline + candidate), so it '
-        + 'costs roughly double a single Quality run. "Promote" stays a manual '
-        + 'step — copy a winning prompt into analyzer.py, bump PROMPT_VERSION, and '
-        + 'log TUNING_LOG.md by hand.',
+      body: 'This tab lets you try a prompt change safely, without touching '
+        + 'analyzer.py: pick a persona constant, edit its text, and run it '
+        + 'against the current baseline. Nothing you write here is saved to the '
+        + 'codebase — the candidate run is logged as '
+        + 'prompt_version=candidate:<hash>, so it never shows up in the '
+        + 'score-over-time chart. Because it grades both the baseline and your '
+        + 'candidate, it costs about twice what a single Quality run does. If '
+        + 'the candidate wins, promoting it is still a manual step: copy the '
+        + 'winning text into analyzer.py, bump PROMPT_VERSION, and note the '
+        + 'change in TUNING_LOG.md.',
     },
     dashAnnotate: {
       title: 'Annotate — the label-the-truth surface',
@@ -1006,15 +1034,101 @@
         + 'auto-saved to this browser as you type, so a reload or a failed Save '
         + 'never loses labor — Save clears that local draft once it succeeds.',
     },
+    // Field-level entries below (v1.1.0 close-out step 10, content cluster
+    // #2/#4/#5/#6/#16): the tab-level explainers above cover "what is this
+    // tab", these cover "what does this one control do" — the same
+    // granularity the main app's _HELP_REGISTRY gives its 16 fields. Suite /
+    // Subset / grounding-signals repeat verbatim across Quality and Tuning,
+    // so one shared entry each rather than a near-duplicate per tab.
+    dashSuiteField: {
+      title: 'Suite — which fixtures to grade',
+      body: '"Synthetic" grades against the committed sample fixtures under '
+        + 'evals/fixtures/synthetic/ — the full, four-rubric set. "Anchor" '
+        + 'grades against a small, always-on smoke set that stays cheap enough '
+        + 'to run on every change. Reach for anchor for a quick sanity check, '
+        + 'synthetic when you want the fuller picture.',
+    },
+    dashSubsetField: {
+      title: 'Subset — how much of the suite to run',
+      body: '"Smoke" runs a fast, grounding-only subset — the cheapest way to '
+        + 'check nothing broke (roughly $0.35–0.40 under Sonnet 5). "Full" runs '
+        + 'all four rubrics, so it costs more and takes longer but is the whole '
+        + 'picture. Reach for full before landing a prompt change; smoke is '
+        + 'enough for a quick spot-check.',
+    },
+    dashGroundingSignals: {
+      title: 'Grounding signals — the offline scorers',
+      body: 'Turning this on adds the offline DeBERTa NLI + MiniCheck models to '
+        + 'the run, scoring groundedness alongside the LLM-judged rubrics. It '
+        + 'is CPU-bound and makes no extra paid calls, but it does need the '
+        + 'optional [eval-grounding] extras (~3.2 GB of model weights) '
+        + 'installed first — see CONTRIBUTING.md, section "Grounding signal '
+        + 'scorers". Leave it unchecked if those extras aren’t installed; the '
+        + 'run still goes through fine without it.',
+    },
+    dashTuneConstant: {
+      title: 'Constant — which prompt you’re A/B-ing',
+      body: 'Pick the analyzer.py persona or system-prompt constant you want '
+        + 'to test a change against. The candidate text below REPLACES this '
+        + 'constant for the run only, via analyzer.prompt_overrides() — '
+        + 'analyzer.py itself is never edited, so there’s nothing to undo if '
+        + 'the candidate doesn’t win.',
+    },
+    dashTuneCandidate: {
+      title: 'Candidate text — the full replacement',
+      body: 'Paste the FULL text you want to try in place of the chosen '
+        + 'constant — not a diff, not a snippet to append. Click "Load current '
+        + 'text" first so you’re editing the real baseline rather than '
+        + 'starting from scratch; that way the parts you don’t mean to change '
+        + 'stay identical to what’s already live.',
+    },
+    dashTuneSeed: {
+      title: 'Real-corpus seed — A/B against your own data',
+      body: 'Optional. By default the A/B runs against committed fixtures; '
+        + 'filling in a candidate username and fixture slug here instead seeds '
+        + 'the run from that candidate’s real corpus '
+        + '(evals/fixtures/real/<slug>/seed.json). Capture a seed first with '
+        + 'the Annotate tab’s "Export seed" button, or python -m '
+        + 'scripts.export_corpus_seed from the CLI — this field only points at '
+        + 'one that already exists.',
+    },
+    dashBootstrapRun: {
+      title: 'Bootstrap — produce something to annotate',
+      body: 'A bootstrap runs the real analyze → clarify → generate pipeline '
+        + 'over the job descriptions you paste, for one candidate, then merges '
+        + 'the results into one bootstrap.json you can label. It makes paid '
+        + 'Sonnet/Haiku calls (~70s per JD you add), so add only the JDs you '
+        + 'actually plan to annotate. Not ready to spend yet? "Export seed" '
+        + 'snapshots the candidate’s existing corpus instead — deterministic, '
+        + 'no LLM calls, no JDs needed.',
+    },
+    dashVerdicts: {
+      title: 'Verdicts — keep / fix / omit / fabricated',
+      body: 'Every bullet and skill needs one verdict before you can save, '
+        + 'exactly like the CLI. Keep — true and usable as written. Fix — true '
+        + 'but needs rewording; fill in an honest_rewrite. Omit — leave it off '
+        + 'the résumé, no judgment implied. Fabricated — not supported by the '
+        + 'candidate’s source; add a forbidden_pattern regex so the grounding '
+        + 'scorer catches it next time it appears.',
+    },
+    dashAnnScore: {
+      title: 'Score grounding — run the offline scorers here',
+      body: 'Runs the same offline DeBERTa NLI + MiniCheck scorers as the '
+        + 'eval’s grounding-signals checkbox, but just over this fixture’s '
+        + 'bullets — CPU-bound, no paid calls. It needs a seed.json for this '
+        + 'fixture (produce one with Export seed) and the optional '
+        + '[eval-grounding] extras installed; missing either just means '
+        + 'nothing scores, not an error.',
+    },
   };
-  // DRAFT — owner-review-before-merge (content cluster #2/#4/#5/#6/#16, v1.1.0
-  // debt-burn Lane DX): the sentence above documenting the new #9 draft
-  // behavior, plus the handful of new field-level `.title` tooltips elsewhere
-  // in this file (tuneConstant/tuneSlug/bsSlug/JD name+text), are a SMALL,
-  // provisional down payment on the content-cluster ask — not the full
-  // field-level authoring pass the finding calls for (only 5 per-tab
-  // info-circles vs the main app's 18). Land provisionally; flag for the
-  // owner before treating the cluster as closed.
+  // v1.1.0 close-out step 10 (content cluster #2/#4/#5/#6/#16): the field-level
+  // entries above complete the authoring pass the finding called for — the
+  // console now carries 5 tab-level + 9 field-level explainers (the main
+  // app's _HELP_REGISTRY has 16 field-level entries; the two registries cover
+  // different surfaces, so parity is "same granularity", not an equal count).
+  // The prior in-markup `title=` tooltips on tuneConstant/tuneSlug/bsSlug/JD
+  // name+text stay as the native fallback (hover, no click); the new
+  // .help-info icons below give those same fields a full explainer.
   // tab name -> help block id (the block id is also the cb_help_seen: key).
   var _DASH_HELP_ID = {
     pipeline: 'dashPipeline', quality: 'dashQuality', groundedness: 'dashGroundedness',
@@ -1046,9 +1160,12 @@
   function _dashIcon(name) {
     return document.getElementById('help-icon-' + (_DASH_HELP_ID[name] || ''));
   }
-  // Wire each pane's static (i)-circle to its explainer (aria is already in the
-  // markup; this only attaches the click handler).
-  document.querySelectorAll('.dash-pane-intro .help-info').forEach(function (icon) {
+  // Wire every static (i)-circle to its explainer (aria is already in the
+  // markup; this only attaches the click handler) — both the 5 tab-level
+  // icons in .dash-pane-intro AND the field-level icons added in step 10,
+  // which live wherever their control does (a .filters row, an
+  // .annotate-actions row, etc.), not just inside the intro paragraph.
+  document.querySelectorAll('.help-info[data-help]').forEach(function (icon) {
     var id = icon.dataset.help;
     if (id) icon.addEventListener('click', function () { openDashHelp(id, icon); });
   });
