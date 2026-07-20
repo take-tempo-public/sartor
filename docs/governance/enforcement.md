@@ -26,8 +26,9 @@ witness/best-effort — and that is correct, not a gap (D-4, E-1, T-C).
 
 ## Enforcement vocabulary
 
-- **Blocker hook** — PreToolUse, `exit 2`, refuses the action. 7 exist
-  (F-gov-04, CONFIRMED).
+- **Blocker hook** — PreToolUse, `exit 2`, refuses the action. 8 exist
+  (F-gov-04's original 7, CONFIRMED, plus `require-evidence-before-fix`
+  added for charter C-7 — see `tests/test_governance_hooks_gate.py`).
 - **Witness hook** — PostToolUse, always `exit 0`, surfaces a nudge. 3 exist; the
   wiki-freshness reminder + honest sentinel are the working amendment-ceremony precedent
   (F-gov-04, F-gov-06).
@@ -145,13 +146,24 @@ the Claude plugin, with CI as the server-side backstop — was **decided (split)
 `design/governance-extraction` (2026-06-15)** and **landed on
 `feat/portable-enforcement-core` (2026-07-08, Sprint 8.7 / TRAIN 4)**: one guard
 implementation per rule in `scripts/enforcement/guards/`, three consumers (the Claude
-PreToolUse adapter at the unchanged `.claude-plugin/hooks/*.sh` paths, the opt-in native
-git hooks at [`../../.githooks/`](../../.githooks/) via `core.hooksPath`, and the CI
-backstop step in `.github/workflows/ci.yml`, itself still latent until the git remote
-activates). The migration also fixed the two `block-merge-to-main` defects filed against
-it (the `merge-base`/`merge-tree` false positive, and resolving HEAD against the
-invocation's own cwd instead of the hook process's ambient cwd — see
+PreToolUse adapter, the opt-in native git hooks at
+[`../../.githooks/`](../../.githooks/) via `core.hooksPath`, and the CI backstop step
+in `.github/workflows/ci.yml`, itself still latent until the git remote activates). The
+migration also fixed the two `block-merge-to-main` defects filed against it (the
+`merge-base`/`merge-tree` false positive, and resolving HEAD against the invocation's
+own cwd instead of the hook process's ambient cwd — see
 `scripts/enforcement/guards/block_merge_to_main.py`'s docstring and
 `tests/test_enforcement_core.py`). See charter W-1; design §5;
 [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) Carry-forward ledger for the
 resolution record.
+
+**`chore/hook-dispatcher` (PX-37, kit-adoption commitment 3's hooks half, 2026-07-20)**:
+re-homed every hook script from `.claude-plugin/hooks/` to root `hooks/`, and
+consolidated five of the eight blockers — `require-feature-branch`,
+`require-evidence-before-fix`, `block-secrets`, `validate-context`,
+`route-security-lint` — into one `hooks/edit-write-dispatcher.sh` entry
+(`scripts/enforcement/adapters/claude_dispatcher.py`), replacing five separate
+per-Edit/Write process spawns with one. No guard decision logic changed; see
+`tests/test_governance_hooks_gate.py`'s 2026-07-20 amendment note for the
+resulting split between the 8-rule governance invariant and the 5-file on-disk
+classification.

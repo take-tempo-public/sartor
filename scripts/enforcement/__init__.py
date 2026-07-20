@@ -2,9 +2,12 @@
 
 One guard implementation per rule, three consumers:
 
-- `adapters/claude_hook.py` — the Claude Code PreToolUse JSON-stdin contract
-  (invoked by the thin wrappers left in place at `.claude-plugin/hooks/*.sh`
-  so `.claude/settings.json` wiring stays valid).
+- `adapters/claude_hook.py` — the Claude Code PreToolUse JSON-stdin contract.
+  Since PX-37 (`chore/hook-dispatcher`), five of the seven guards it can
+  dispatch run via `adapters/claude_dispatcher.py`'s single `hooks/
+  edit-write-dispatcher.sh` entry rather than each having its own wrapper;
+  `block-merge-to-main` and `ruff-changed` (Bash-matcher only) still have
+  their own `hooks/*.sh` wrapper naming this module directly.
 - `adapters/git_hook.py` — native git hooks (`.githooks/`, opt-in via
   `git config core.hooksPath .githooks` — see `.githooks/README.md`).
 - `ci_backstop.py` — a repo-wide secrets scan wired into `.github/workflows/ci.yml`,
@@ -16,7 +19,8 @@ package implements the "gate" side of, and `RELEASE_CHECKLIST.md`'s
 
 Plan-mode lifecycle hooks (`check-plan-approved`, `mark-plan-approved`,
 `cleanup-plan-on-merge`) are Claude-only by design and are NOT part of this
-package — they stay standalone scripts under `.claude-plugin/hooks/`.
+package — they stay standalone scripts, re-homed to root `hooks/` alongside
+the rest (kit-adoption commitment 3).
 """
 
 from __future__ import annotations

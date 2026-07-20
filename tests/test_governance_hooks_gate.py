@@ -38,6 +38,20 @@ behaviorally translate a blocked guard into exit code 2 (asserted in-process bel
 the full per-guard block/allow matrix through the real wrappers lives in
 ``tests/test_enforcement_core.py``). ``check-plan-approved`` stays a standalone
 Claude-only script and keeps the literal-text check.
+
+**Amended 2026-07-20** (`chore/hook-dispatcher`, PX-37): five of the "core-delegated"
+blockers (``require-feature-branch``, ``require-evidence-before-fix``,
+``block-secrets``, ``validate-context``, ``route-security-lint``) no longer each ship
+their own file on the ``Edit|Write`` matcher — they run *inside* one new
+``hooks/edit-write-dispatcher.sh`` (``scripts/enforcement/adapters/
+claude_dispatcher.py``), which runs all five and aggregates every blocked guard's
+messages (no short-circuit). This is exactly the
+"deliberate, reviewed edit" this file's docstring above says a hook-count change must
+force: the **governance invariant stays eight enforced rules** (``BLOCKER_RULE_NAMES``),
+but the **on-disk file classification** (``BLOCKER_HOOKS``, what ``test_every_hook_is_
+classified`` globs against) now has five members, not eight, because four rules share
+one file. Hook scripts also re-homed from ``.claude-plugin/hooks/`` to root ``hooks/``
+(kit-adoption commitment 3's hooks half) in the same branch.
 """
 
 from __future__ import annotations
@@ -48,14 +62,15 @@ from pathlib import Path
 
 import pytest
 
-from scripts.enforcement.adapters import claude_context_hook, claude_hook
+from scripts.enforcement.adapters import claude_context_hook, claude_dispatcher, claude_hook
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
+HOOKS_DIR = REPO_ROOT / "hooks"
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 
-# The eight enforced blockers — each reaches `exit 2` to stop a tool call.
-BLOCKER_HOOKS = frozenset(
+# The eight enforced RULES (governance invariant — unchanged since PX-37; only
+# their on-disk file layout moved, not the count of enforced behaviors).
+BLOCKER_RULE_NAMES = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
@@ -65,6 +80,38 @@ BLOCKER_HOOKS = frozenset(
         "route-security-lint",
         "ruff-changed",
         "validate-context",
+    }
+)
+
+# The on-disk blocker .sh stems (what test_every_hook_is_classified globs
+# against, and what test_wiring_matches_witness_blocker_split pins). Four rules
+# (require-feature-branch, require-evidence-before-fix, block-secrets,
+# validate-context, route-security-lint minus block-secrets's own standalone
+# Bash-matcher file — see DISPATCHED_GUARD_NAMES) collapsed into one dispatcher
+# script (PX-37); the rest still ship their own file.
+BLOCKER_HOOKS = frozenset(
+    {
+        "block-merge-to-main",
+        "block-secrets",
+        "check-plan-approved",
+        "ruff-changed",
+        "edit-write-dispatcher",
+    }
+)
+
+# The five Edit|Write rules that run INSIDE edit-write-dispatcher.sh rather than
+# shipping their own standalone file. block-secrets is here even though it ALSO
+# keeps its own hooks/block-secrets.sh file — that file backs the separate
+# Bash-matcher wiring (secret-scanning on Bash commands), untouched by this
+# migration; verified directly against the dispatcher's guard list below rather
+# than assumed via .sh-file-globbing.
+DISPATCHED_GUARD_NAMES = frozenset(
+    {
+        "require-feature-branch",
+        "require-evidence-before-fix",
+        "block-secrets",
+        "validate-context",
+        "route-security-lint",
     }
 )
 
@@ -98,11 +145,7 @@ CORE_DELEGATED_BLOCKERS = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
-        "require-evidence-before-fix",
-        "require-feature-branch",
-        "route-security-lint",
         "ruff-changed",
-        "validate-context",
     }
 )
 
@@ -171,16 +214,18 @@ def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
     Standalone scripts prove it textually (a literal ``exit 2``); core-delegated
     wrappers prove it structurally (they exec the shared Claude adapter with their
     own guard name) + behaviorally (the adapter's ``main`` returns 2 for a blocked
-    payload — the exact exit code the wrapper's ``exec`` propagates). Per-guard
-    block/allow coverage through the real wrappers: ``tests/test_enforcement_core.py``.
+    payload — the exact exit code the wrapper's ``exec`` propagates); dispatched
+    guards prove it via the dispatcher's own guard list + the same behavioral
+    check. Per-guard block/allow coverage through the real wrappers:
+    ``tests/test_enforcement_core.py``.
     """
-    assert len(BLOCKER_HOOKS) == 8, (
-        "Eight enforced blockers: F-gov-04's seven, plus require-evidence-before-fix "
+    assert len(BLOCKER_RULE_NAMES) == 8, (
+        "Eight enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
         "(charter C-7). Changing this count is a governance change — make it deliberately."
     )
 
     # Standalone blockers: the script text itself must reach exit 2.
-    standalone = BLOCKER_HOOKS - CORE_DELEGATED_BLOCKERS
+    standalone = BLOCKER_HOOKS - CORE_DELEGATED_BLOCKERS - {"edit-write-dispatcher"}
     toothless = sorted(s for s in standalone if "exit 2" not in _hook_text(s))
     assert not toothless, (
         f"Standalone blocker hook(s) with no reachable `exit 2`: {toothless}. A blocker "
@@ -205,6 +250,19 @@ def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
         "The shared Claude adapter must exit 2 on a blocked guard — the delegated "
         "blockers' teeth all route through this path."
     )
+
+
+def test_dispatcher_delegates_to_claude_dispatcher() -> None:
+    """`edit-write-dispatcher.sh` must exec the new dispatcher module — the file
+    that actually owns the five dispatched guards' exit-2 path."""
+    text = _hook_text("edit-write-dispatcher")
+    assert "scripts/enforcement/adapters/claude_dispatcher.py" in text
+
+
+def test_dispatcher_guard_list_is_exactly_the_five() -> None:
+    """The dispatcher's internal guard list is this file's other source of truth
+    for the five rules PX-37 folded out of their own standalone .sh files."""
+    assert set(claude_dispatcher._GUARD_ORDER) == DISPATCHED_GUARD_NAMES
 
 
 # --------------------------------------------------------------------------- #

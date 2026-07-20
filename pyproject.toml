@@ -316,7 +316,7 @@ convention = "google"
 
 [tool.ruff.format]
 # Kit-adoption Phase 1 (KIT-6): declare the adopted formatter style explicitly so the
-# `ruff format --check` gate (wired in .claude-plugin/hooks/ruff-changed.sh) is deterministic
+# `ruff format --check` gate (wired in hooks/ruff-changed.sh) is deterministic
 # across machines + ruff versions. These match ruff's current defaults — they pin the style,
 # they do not change formatter output. `line-ending` is left at the default ("auto", preserve
 # each file's existing ending) to avoid CRLF/LF churn on Windows clones.

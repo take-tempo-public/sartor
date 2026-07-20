@@ -48,13 +48,34 @@ from scripts.enforcement.guards import (
 from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
+HOOKS_DIR = REPO_ROOT / "hooks"
 # The merge-train-4 base this branch forked from (env block: "isolated git
 # worktree of this repo at main b2c83d2") — the last commit before this
 # migration, so `git show OLD_SHA:<path>` is the pre-migration standalone hook.
 OLD_SHA = "b2c83d2"
 
+# NEW-side file each guard's equivalence test runs against. Since PX-37
+# (`chore/hook-dispatcher`), require-feature-branch/route-security-lint/
+# validate-context no longer ship their own standalone .sh — they run inside
+# edit-write-dispatcher.sh (no short-circuit: the other four guards also run
+# on these payloads, but none of the existing fixtures below incidentally
+# trip a second guard — verified when this branch landed). block-secrets
+# stays pointed at its own file: that file still backs the separate
+# Bash-matcher wiring (secret-scanning on Bash commands), untouched by this
+# migration.
 GUARD_FILES = {
+    "require-feature-branch": "edit-write-dispatcher.sh",
+    "block-merge-to-main": "block-merge-to-main.sh",
+    "block-secrets": "block-secrets.sh",
+    "route-security-lint": "edit-write-dispatcher.sh",
+    "ruff-changed": "ruff-changed.sh",
+    "validate-context": "edit-write-dispatcher.sh",
+}
+
+# OLD_SHA-side filename per guard (unchanged — the pre-migration standalone
+# scripts still live in git history at their original .claude-plugin/hooks/
+# path regardless of where the NEW side now lives).
+OLD_GUARD_FILES = {
     "require-feature-branch": "require-feature-branch.sh",
     "block-merge-to-main": "block-merge-to-main.sh",
     "block-secrets": "block-secrets.sh",
@@ -131,7 +152,7 @@ def old_hooks(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
         )
     out_dir = tmp_path_factory.mktemp("old_hooks")
     paths: dict[str, Path] = {}
-    for name, filename in GUARD_FILES.items():
+    for name, filename in OLD_GUARD_FILES.items():
         result = _git(["show", f"{OLD_SHA}:.claude-plugin/hooks/{filename}"], cwd=REPO_ROOT)
         dest = out_dir / filename
         dest.write_text(result.stdout, encoding="utf-8", newline="\n")
@@ -795,35 +816,10 @@ class TestGitHookAdapter:
 
 # --------------------------------------------------------------------------- #
 # 4. Edit|Write dispatcher (PX-37) — one process, all five guards, no
-#    short-circuit (no OLD equivalent — new surface).
+#    short-circuit (no OLD equivalent — new surface). Exercises the real
+#    hooks/edit-write-dispatcher.sh wrapper via the same _run_hook helper the
+#    OLD-vs-NEW equivalence classes above use.
 # --------------------------------------------------------------------------- #
-
-
-def _run_claude_dispatcher(payload: dict, *, cwd: Path) -> tuple[int, str]:
-    """Invoke `claude_dispatcher.py` directly.
-
-    `hooks/edit-write-dispatcher.sh` (the settings.json-wired wrapper) is a
-    one-line `exec python3 .../claude_dispatcher.py` with no arguments — this
-    helper calls the same module the same way, so it's meaningful both before
-    and after the wrapper/re-home commit lands.
-    """
-    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_ALLOW_MAIN_EDITS",)}
-    env["CLAUDE_PROJECT_DIR"] = str(REPO_ROOT)
-    result = subprocess.run(  # noqa: S603 - fixed argv, test-authored input
-        [
-            sys.executable,
-            str(REPO_ROOT / "scripts" / "enforcement" / "adapters" / "claude_dispatcher.py"),
-        ],
-        input=json.dumps(payload),
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        env=env,
-        check=False,
-    )
-    return result.returncode, result.stderr
 
 
 class TestEditWriteDispatcher:
@@ -846,7 +842,7 @@ class TestEditWriteDispatcher:
             "tool_name": "Edit",
             "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
         }
-        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
         assert code == 0, err
 
     def test_block_on_main_single_guard(self, tmp_path: Path) -> None:
@@ -855,7 +851,7 @@ class TestEditWriteDispatcher:
             "tool_name": "Edit",
             "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
         }
-        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
         assert code == 2
         assert "require-feature-branch" in err
 
@@ -870,7 +866,7 @@ class TestEditWriteDispatcher:
                 "content": "KEY = 'sk-ant-" + "a" * 30 + "'\n",
             },
         }
-        code, err = _run_claude_dispatcher(payload, cwd=repo)
+        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
         assert code == 2
         assert "require-feature-branch" in err
         assert "block-secrets" in err

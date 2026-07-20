@@ -7,10 +7,19 @@ exit-code contract (0 = allow, 2 = block with a stderr message) —
 byte-identical to the pre-migration standalone `.claude-plugin/hooks/*.sh`
 scripts (see `tests/test_enforcement_core.py`).
 
-Invoked by the thin wrapper left in place at each `.claude-plugin/hooks/
-<guard-name>.sh` (so `.claude/settings.json` wiring stays valid):
+Invoked by a thin wrapper in root `hooks/` naming its own guard (so
+`.claude/settings.json` wiring stays valid):
 
     exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_hook.py" <guard-name>
+
+Since PX-37 (`chore/hook-dispatcher`), only `block-merge-to-main` and
+`ruff-changed` still ship their own such wrapper (`hooks/block-merge-to-main.sh`,
+`hooks/ruff-changed.sh` — both Bash-matcher only). The five Edit|Write guards
+(`require-feature-branch`, `require-evidence-before-fix`, `block-secrets`,
+`validate-context`, `route-security-lint`) run instead via `dispatch()`, called
+from `claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry —
+this module's per-guard CLI (`main()`, below) stays in place for those two and
+for direct guard-module callers (`git_hook.py`, `ci_backstop.py`).
 """
 
 from __future__ import annotations

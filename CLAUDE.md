@@ -64,7 +64,7 @@ When the harness says **"Plan mode is active"**, Claude Code must:
 4. Call `ExitPlanMode` ONLY after the plan file is complete
    and ready for user review.
 
-The PreToolUse hook at `.claude-plugin/hooks/check-plan-approved.sh`
+The PreToolUse hook at `hooks/check-plan-approved.sh`
 enforces rules 2 and 4.
 
 ### Plugin commands + agents + hooks

@@ -16,7 +16,7 @@ Two confirmed, live-reproduced defects in `check-plan-approved.sh` /
    this branch's own investigation (see the dossier's `## Observed` step 5) — it
    deleted a real, just-approved plan.
 
-These tests invoke the real `.claude-plugin/hooks/*.sh` scripts as subprocesses
+These tests invoke the real `hooks/*.sh` scripts as subprocesses
 against a temp `HOME`, following the byte-correct-JSON-via-`json.dumps` convention
 established in `tests/test_enforcement_core.py` (never echo/heredoc).
 """
@@ -33,7 +33,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / ".claude-plugin" / "hooks"
+HOOKS_DIR = REPO_ROOT / "hooks"
 
 CHECK = HOOKS_DIR / "check-plan-approved.sh"
 MARK = HOOKS_DIR / "mark-plan-approved.sh"
