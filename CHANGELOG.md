@@ -4865,7 +4865,7 @@ product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; n
   read-only `Read`/`Grep`/`Glob`) — adversarial quote-match of each cite/`[synthesis]` claim
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED; the read-only tool grant *is* the
   "never silently rewrite committed history" enforcement.
-- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](.claude-plugin/hooks/wiki-freshness-reminder.sh)
+- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](hooks/wiki-freshness-reminder.sh)
   now escalates its message to `/wiki-self-update` past a 10-file drift threshold (below it, the
   existing `/wiki-ingest` nudge). It **stays a witness** (always exit 0, silent under the
   sentinel and when nothing changed) — only the wording tiers.

@@ -34,7 +34,7 @@ build." The capability is **already three composable primitives** —
 [`/wiki-lint`](../../commands/wiki-lint.md) (deterministic structural check, no LLM), and
 [`/wiki-audit`](../../commands/wiki-audit.md) (adversarial per-page grounding) — plus a
 **witness trigger substrate**,
-[`wiki-freshness-reminder.sh`](../../.claude-plugin/hooks/wiki-freshness-reminder.sh)
+[`wiki-freshness-reminder.sh`](../../hooks/wiki-freshness-reminder.sh)
 (commit-time, always-exit-0 nudge). 7.3's design job — this doc — is to **bound and
 sequence** those primitives into a loop that runs Haiku at steady state against
 [`SCHEMA.md`](../wiki/SCHEMA.md) + baked-in exemplars + the deterministic backstop, so
@@ -100,7 +100,7 @@ boundaries**:
 | Option | Verdict | Reasoning |
 |---|---|---|
 | **A1 — bounded-checkpoint convention** (branch close-out + pre-tag) | **PRIMARY** | Direct parallel to [`/wiki-lint`](../../commands/wiki-lint.md)'s designated "periodic + pre-release gate" and the compliance-agent's two deliberate triggers (per-release-tag + on-demand). A close-out / pre-tag is exactly when code-vs-docs has had a sprint's worth of chances to drift and when the spend is justified by a coherent unit of change. Realized as a [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) line ("run `/wiki-self-update` before the version-bump") + on-demand invocation — **not** a hook that fires it. |
-| **A2 — accumulated-drift escalation in the freshness hook** | **ADOPT as the secondary nudge** | [`wiki-freshness-reminder.sh`](../../.claude-plugin/hooks/wiki-freshness-reminder.sh) already counts tracked files changed since `.last_ingest_sha`, is silent under the sentinel, and is silent when nothing changed (the F-gov-06 honest-witness precedent). It **stays a witness (always exit 0)**; the only change is its *message* tiers — below the threshold, the current "consider `/wiki-ingest`" copy; at/above it, "the diff is large enough to run the loop — consider `/wiki-self-update`." It **informs** the human's spend decision; it does **not** invoke the loop. The named amendment-ceremony precedent (the freshness reminder + honest sentinel, [`charter.md`](../governance/charter.md) Amendment ceremony) is preserved unchanged. |
+| **A2 — accumulated-drift escalation in the freshness hook** | **ADOPT as the secondary nudge** | [`wiki-freshness-reminder.sh`](../../hooks/wiki-freshness-reminder.sh) already counts tracked files changed since `.last_ingest_sha`, is silent under the sentinel, and is silent when nothing changed (the F-gov-06 honest-witness precedent). It **stays a witness (always exit 0)**; the only change is its *message* tiers — below the threshold, the current "consider `/wiki-ingest`" copy; at/above it, "the diff is large enough to run the loop — consider `/wiki-self-update`." It **informs** the human's spend decision; it does **not** invoke the loop. The named amendment-ceremony precedent (the freshness reminder + honest sentinel, [`charter.md`](../governance/charter.md) Amendment ceremony) is preserved unchanged. |
 | **A3 — scheduler / cron** | **REJECT** | No scheduler exists in the repo; no precedent. A timer fires regardless of whether code changed → pays tokens on no-op windows (the time-domain form of the "per-merge noise" the compliance design rules out). It removes the human from the spend boundary, directly clashing with the witness posture — [`charter.md`](../governance/charter.md) C-0 bars LLM-behavior categoricals and D-4 bars recurring-human-SLA hard commitments, and a standing cron is the machine equivalent of a standing obligation to pay. The latent GitHub CI (active at Sprint 8.7) is the *only* future automation surface, and even there the loop should be a **reporting/diff** step, never an auto-committing one. |
 
 **Resolution.** Primary trigger = **bounded checkpoint** (a `RELEASE_CHECKLIST` convention
@@ -213,7 +213,7 @@ committed pages themselves, cited by slug. (Exactly which 2–3 pages is a §H k
 
 ### EDIT — the freshness hook (witness escalation only)
 
-**`.claude-plugin/hooks/wiki-freshness-reminder.sh`** — add a **threshold escalation** to
+**`hooks/wiki-freshness-reminder.sh`** — add a **threshold escalation** to
 the existing `CHANGED` count: below the threshold, the current "wiki may be stale… consider
 `/wiki-ingest`" copy; at/above it, escalate to "consider running the loop
 (`/wiki-self-update`)." **Stays always-exit-0, silent under the sentinel, silent when
@@ -358,7 +358,7 @@ green but **does not prove the loop.** `feat/` therefore adds, beyond the gate:
 | `wiki-scribe` (Haiku) | [`eval-judge.md`](../../agents/eval-judge.md) (Haiku `model:` pin) + [`tune-drafter.md`](../../agents/tune-drafter.md) (read-mostly drafting subagent, work-from-file) | `feat/` → `agents/wiki-scribe.md` |
 | `wiki-grounding-auditor` (Haiku, read-only) | the compliance subagent / `prompt-archaeologist` (read-only tool grant = enforcement) + WS-4b author≠auditor ([`log.md`](../wiki/log.md) 2026-06-13) | `feat/` → `agents/wiki-grounding-auditor.md` |
 | Warm-start exemplars | WS-4b pages (`route-surface`, `deterministic-llm-boundary`, …) — **by reference** | (no new file — cited by slug) |
-| Trigger escalation | [`wiki-freshness-reminder.sh`](../../.claude-plugin/hooks/wiki-freshness-reminder.sh) (witness, F-gov-06 honest sentinel) | `feat/` → hook message tiering |
+| Trigger escalation | [`wiki-freshness-reminder.sh`](../../hooks/wiki-freshness-reminder.sh) (witness, F-gov-06 honest sentinel) | `feat/` → hook message tiering |
 | Deterministic backstop | [`/wiki-lint`](../../commands/wiki-lint.md) (unchanged) + [`/wiki-audit`](../../commands/wiki-audit.md) (the discipline the auditor realizes) | (reused as-is) |
 | This design doc | [`governance-extraction-design.md`](governance-extraction-design.md) (8-section structure) | `design/` → this file |
 

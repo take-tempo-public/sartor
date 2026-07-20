@@ -960,7 +960,7 @@ Then: `chore/version-bump-v1.0.7`.
 > loop run on the **decomposed** code — so the gather tests exactly what ships and also
 > catches any refactor regression. **`route-security-lint` widening leads the refactor**
 > — the hook currently matches `app.py` only
-> ([`route-security-lint.sh`](../../.claude-plugin/hooks/route-security-lint.sh), line 13),
+> ([`route_security_lint.py`](../../scripts/enforcement/guards/route_security_lint.py), line 13 at the time),
 > so widen it (the PX-21 prescription) *before* any route — or the v1.0.7 `recall/` /
 > assistant module — moves out from under its coverage.
 
