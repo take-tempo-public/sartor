@@ -190,6 +190,86 @@ class TestRunGroundingSignals:
         assert result["nli"] == mock_nli
         assert result["minicheck"] == mock_mc
 
+    def test_cancelled_flag_false_on_normal_completion(self):
+        mock_nli = [
+            {"bullet": "Led a team", "nli_entailment_score": 0.8, "nli_contradiction_flag": False},
+        ]
+        mock_mc = [
+            {"bullet": "Led a team", "minicheck_grounding_score": 0.75},
+        ]
+        result = self._run_with_mocks(mock_nli, mock_mc, resume="## Exp\n- Led a team\n")
+        assert result["cancelled"] is False
+
+
+class TestRunGroundingSignalsCancel:
+    """feat/diagnostics-run-cancel: cancel_check is polled once between the NLI
+    pass and the MiniCheck pass. This module makes no paid Anthropic calls, so
+    this doesn't stop any billing — it only shortens wall-clock. New-feature
+    test (fails before this branch, passes after)."""
+
+    def test_cancel_check_skips_minicheck_pass(self):
+        mock_nli = [
+            {"bullet": "Led a team", "nli_entailment_score": 0.8, "nli_contradiction_flag": False},
+            {
+                "bullet": "Shipped product",
+                "nli_entailment_score": 0.6,
+                "nli_contradiction_flag": True,
+            },
+        ]
+        minicheck_calls: list[int] = []
+
+        def fake_minicheck(*_a, **_k):
+            minicheck_calls.append(1)
+            return [{"bullet": "x", "minicheck_grounding_score": 0.9}]
+
+        with (
+            patch("evals.grounding_signals._load_nli_pipeline", return_value=MagicMock()),
+            patch("evals.grounding_signals._load_minicheck_scorer", return_value=MagicMock()),
+            patch("evals.grounding_signals.score_nli_bullets", return_value=mock_nli),
+            patch("evals.grounding_signals.score_minicheck_bullets", fake_minicheck),
+        ):
+            result = run_grounding_signals(
+                "## Exp\n- Led a team\n- Shipped product\n",
+                ["source text"],
+                cancel_check=lambda: True,
+            )
+
+        assert minicheck_calls == []
+        assert result["cancelled"] is True
+        assert result["bullet_count"] == 2
+        assert result["nli"] == mock_nli
+        assert result["nli_summary"]["mean_entailment"] == pytest.approx(0.7)
+        assert result["nli_summary"]["contradiction_count"] == 1
+        assert result["minicheck"] == []
+        assert result["minicheck_summary"]["mean_score"] == 0.0
+
+    def test_no_cancel_check_runs_both_passes(self):
+        """The default (cancel_check=None) path is unaffected — both scorers run."""
+        mock_nli = [
+            {"bullet": "Led a team", "nli_entailment_score": 0.8, "nli_contradiction_flag": False},
+        ]
+        mock_mc = [{"bullet": "Led a team", "minicheck_grounding_score": 0.75}]
+        minicheck_calls: list[int] = []
+
+        def fake_minicheck(*_a, **_k):
+            minicheck_calls.append(1)
+            return mock_mc
+
+        with (
+            patch("evals.grounding_signals._load_nli_pipeline", return_value=MagicMock()),
+            patch("evals.grounding_signals._load_minicheck_scorer", return_value=MagicMock()),
+            patch("evals.grounding_signals.score_nli_bullets", return_value=mock_nli),
+            patch("evals.grounding_signals.score_minicheck_bullets", fake_minicheck),
+        ):
+            result = run_grounding_signals(
+                "## Exp\n- Led a team\n",
+                ["source text"],
+            )
+
+        assert len(minicheck_calls) == 1
+        assert result["cancelled"] is False
+        assert result["minicheck"] == mock_mc
+
 
 class TestMinicheckLoaderHardening:
     """Fix #2 (2026-07-08): MiniCheck's Inferencer hardcodes device_map="auto"
