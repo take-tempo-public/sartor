@@ -132,7 +132,12 @@ Override scope is the named system-prompt constants only, not the dynamic user-p
 localhost `POST /api/eval/run` console route, which passes a `progress` sartor to stream
 per-fixture/per-rubric milestones to the browser dashboard; the default `progress=None` path
 makes every `_emit` a no-op so the written bytes are unchanged `[synthesis]`
-([`evals/runner.py:run_suite`](../../../evals/runner.py)).
+([`evals/runner.py:run_suite`](../../../evals/runner.py)). An optional `cancel_check`
+callable, when set, is polled before each paid LLM call (fixture start, before clarify,
+before generate/assemble, before grading judges) — the first `True` reading stops the run
+early and sets `EvalRunResult.cancelled=True`; already-written JSONL records are kept
+`[synthesis]` ([`evals/runner.py:run_suite`](../../../evals/runner.py),
+[`evals/bootstrap.py:run_pipeline_over_jd_texts`](../../../evals/bootstrap.py)).
 
 A zero-result-record guard (RH-2, 2026-07 e2e-run-health-review) detects runs where every
 matched fixture failed to load or grade, leaving a silent 0-byte JSONL on disk with no error

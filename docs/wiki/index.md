@@ -67,7 +67,8 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/eval-harness.md`](pages/eval-harness.md) — the offline eval system: suites,
   rubric judges, baseline/anchors, bootstrap, prompt-override A/B.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
-  `/_dashboard` console + the SSE eval/tune/annotation loop.
+  `/_dashboard` console + the SSE eval/tune/annotation loop; disconnect-as-cancel run
+  cancellation.
 
 The v1.0.9 pre-merge refresh (`chore/wiki-refresh-v109`) added the spectree
 OpenAPI Layer B page (same `audience: dev` code-cold-ingest family):

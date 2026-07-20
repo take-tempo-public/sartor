@@ -30,7 +30,7 @@ The output filename keeps the iteration count visible at the filesystem level (`
 
 ## Edits vs. generations — two different write modes
 
-Not every write advances the chain. `/api/save-edits` ([`blueprints/generation.py:save_edits`](../../../blueprints/generation.py)) merges the user's typed `edited_resume_text` / `edited_cover_letter_text` into the **current** context and rewrites that **same** file in place (`cp.write_text`), appending a `save_edits` `IterationNote` but **not** incrementing `iteration` `[synthesis]`. So:
+Not every write advances the chain. `/api/save-edits` ([`blueprints/generation.py:save_edits`](../../../blueprints/generation.py)) merges the user's typed `edited_resume_text` / `edited_cover_letter_text` into the **current** context and applies a delta to that **same** file via [`hardening.py:context_transaction`](../../../hardening.py), appending a `save_edits` `IterationNote` but **not** incrementing `iteration` `[synthesis]`. So:
 
 - **save-edits** = in-place mutation of the *working* (latest) file, staging a baseline for the next generate.
 - **generate** = a new child file, parent left frozen.
