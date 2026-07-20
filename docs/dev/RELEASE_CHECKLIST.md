@@ -515,7 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (net unchanged this entry — `chore/scrub-local-eval-paths`,
+_Rendered open count: **20** (**+1** this entry — `fix/context-write-lost-update-gap`,
+2026-07-20: filed the `compliance-witness` tuning-gap item above; the branch's own
+lost-update fix (5 sites converted to `hardening.context_transaction`, matching the 12 already
+fixed in `blueprints/applications.py`) is found-and-fixed within its own branch and does not
+itself add an open item, matching the `fix/handoff-pointer-verification` precedent. Prior to
+that: **19** (net unchanged this entry — `chore/scrub-local-eval-paths`,
 2026-07-19: item 5 **RESOLVED** (**−1**) — rebased onto current `main` (clean, no conflict
 despite the prior entry's expectation), the `db/models.py:3` docstring leak and the
 `../sartor-e2e` references scrubbed, landed (see its `#### Resolved` entry below) — but a
@@ -1897,6 +1902,29 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-19, `chore/scrub-local-eval-paths`; open count
       19 → 20 (net unchanged after this branch's own −1 for item 5) — the ceiling is ~8-10 and
       the reduction sprint is now badly overdue.)_
+
+- [ ] **`compliance-witness` doesn't verify code-level claims (docstrings/comments) or
+      re-sweep for recurrence of a previously-fixed defect class** — filed 2026-07-20 by direct
+      user request while landing `fix/context-write-lost-update-gap`. That branch found (and
+      fixed) a factual error in `hardening.py`'s `context_transaction` docstring — it claimed the
+      production server runs threaded; it does not (`threaded=True` appears nowhere outside a
+      test-only fixture) — that had gone uncaught since 2026-07-14 (`61ec8584`) through at least
+      one full compliance-witness pass. `docs/governance/compliance-log.md:91`'s CW-111 AFFIRMed
+      "`#15` + `threaded=True` citations exact at the sha," but that check verified citations in
+      the round2-findings review doc only, never the `hardening.py` docstring making the opposite
+      claim. Separately, the same branch found 5 more sites sharing an already-fixed lost-update
+      bug's exact unprotected shape (`blueprints/analysis.py`/`generation.py`, never audited
+      against the original 12-site fix in `blueprints/applications.py`) — a recurrence the witness
+      has no mechanism to catch, since its tool grant (Read/Grep/Glob/Bash over docs, git history,
+      wiki provenance) is doc-to-doc and doc-to-git-history consistency, not a code-pattern
+      recurrence sweep. Whether to widen the witness's citation-checking to docstrings/comments,
+      and/or add a "does a previously-fixed defect class recur elsewhere" prompt pattern, is an
+      **[OWNER DECISION]** — not something to decide or implement here.
+      _(discovered: v1.1.0 stream, 2026-07-20, `fix/context-write-lost-update-gap`; the branch's
+      own lost-update fix does not itself add an open item — found and fixed within the branch,
+      matching the `fix/handoff-pointer-verification` precedent — but this compliance-witness gap
+      is a distinct, unfixed observation; open count 19 → 20 — the ceiling is ~8-10 and the
+      reduction sprint is now badly overdue.)_
 
 #### Resolved
 
