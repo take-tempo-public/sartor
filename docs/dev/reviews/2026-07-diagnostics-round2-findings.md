@@ -43,6 +43,17 @@
   (`app.py:292`; `Dockerfile:57`) → one request app-wide at a time → a 2nd click
   hangs, then silently fires a 2nd paid run when the first connection closes. True
   concurrent corruption is foreclosed; the real risk is the **silent queued paid run**.
+  **→ Landed (`feat/diagnostics-run-cancel`):** disconnect-as-cancel, not a literal
+  second route — `app.run()` staying single-threaded (the architectural flag below,
+  still deliberately deferred) means a real `POST /cancel` couldn't be serviced while
+  the original SSE connection is open, so the cancel signal travels over that SAME
+  connection instead. All 4 SSE routes now poll their result queue with a timeout,
+  yielding a heartbeat SSE comment on each `queue.Empty`; a real client disconnect
+  (or the new frontend Cancel button's `AbortController.abort()`) causes the next
+  write to fail, Werkzeug tears the generator down, and the caught `GeneratorExit`
+  sets a per-request `threading.Event` the worker checks before its next paid/CPU
+  call (`run_suite`/`run_pipeline_over_jd_texts`/`run_grounding_signals` all gained an
+  optional `cancel_check` param, mirroring the existing `progress` pattern).
 - **#2 — Diagnostics cards need informational + instructional "love" in main-app
   style.** → *UX content-authoring* (cluster with #4/#5/#6/#16; plumbing already exists).
 - **#3 — Does Tuning A/B leverage the Annotate seed export? No GUI indication, only a
@@ -150,7 +161,8 @@ granular controls rely on native `title=` tooltips. Fix = author field-level
    **S / M.**
 7. **Run-cancel (owner opted in)** — daemon workers with no abort path
    (`diagnostics.py:421/650/872/1039`); add a cancel endpoint that stops a worker before
-   its next paid call.
+   its next paid call. **Landed** — see RUN-LIFECYCLE above for the disconnect-as-cancel
+   mechanism (`feat/diagnostics-run-cancel`).
 
 ## Architectural flag (separate governance decision — NOT epic bug work)
 

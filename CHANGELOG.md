@@ -21,6 +21,65 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: a real Cancel button for diagnostics runs — disconnect-as-cancel, not a click-lock (`feat/diagnostics-run-cancel`)
+
+`docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s RUN-LIFECYCLE finding: every
+long diagnostics run (eval, tune A/B, corpus bootstrap, grounding-score backfill) spawned
+a `threading.Thread(daemon=True)` with no request handle — closing the tab didn't abort
+the run, it billed and completed silently, and the only existing safeguard (`sartorRunLock`)
+was a client-side button-lock, not anything server-side. The owner explicitly opted into a
+real abort path.
+
+`app.run()` has never been `threaded=True` in this project (that flag stays its own
+deliberately-deferred governance decision, touching the C-1-sensitive loopback-bind area) —
+so with the dev server handling one request at a time, a literal second `POST /cancel`
+couldn't be serviced while the original run's SSE connection is still open. The cancel
+signal instead travels over that same connection:
+
+- All 4 SSE routes in `blueprints/diagnostics.py` (`annotation_score_grounding`,
+  `annotation_bootstrap_stream`, `eval_run_stream`, `tune_run_stream`) switched their
+  blocking `events.get()` for a 5-second-timeout poll, yielding a harmless SSE comment
+  line (`: heartbeat`) on each `queue.Empty` instead of blocking indefinitely. This gives
+  Werkzeug a periodic write to fail on once the client is gone.
+- Each route's generator body is wrapped in `try/except GeneratorExit`: a real disconnect
+  (or the new frontend Cancel button aborting its `fetch`) causes the next write to fail,
+  Werkzeug tears the generator down, and the handler sets a per-request `threading.Event`
+  before re-raising.
+- `evals/runner.py:run_suite`, `evals/bootstrap.py:run_pipeline_over_jd_texts`, and
+  `evals/grounding_signals.py:run_grounding_signals` each gained an optional
+  `cancel_check: Callable[[], bool] | None = None` parameter — additive, mirroring the
+  existing `progress` callback pattern, so every existing caller (production and ~40 test
+  call sites) is unaffected by default. `run_suite` polls it at 6 points per fixture (start
+  of fixture, before clarify, before generate/assemble, before the distinctiveness judge,
+  and at the top of the per-rubric grading loop — before each `_grade`/iteration-quality
+  call) — broader than stopping only between fixtures, since the finding's own wording is
+  "before its next paid Anthropic call." `tune_run_stream`'s baseline→candidate double-pass
+  skips the candidate run entirely if cancellation lands during baseline.
+  `run_grounding_signals` makes zero paid LLM calls (pure offline NLI + MiniCheck CPU
+  work) — its one checkpoint, between the two scoring passes, doesn't save any billing,
+  only wall-clock, but keeps all 4 routes structurally consistent.
+- Frontend: `window.sartorEval.stream()` gained `AbortController` support plus a shared
+  `wireCancel`/`hideCancel` helper; a Cancel button was added to all 4 run surfaces
+  (Quality, Tuning, Bootstrap, Annotate), hidden until a run starts, showing an optimistic
+  "Cancelling…" on click (no server confirmation can reach the client once the connection
+  drops — an accepted UX limitation). The bootstrap and grounding-score routes' own
+  hand-rolled `fetch`+`getReader` pumps (pre-existing duplication, ~70 lines total) were
+  folded into `window.sartorEval.stream()` as part of this branch, since Cancel needed
+  identical wiring in all 4 places — one implementation instead of four hand-rolled
+  `AbortController`s.
+- New tests: 3 `run_suite` cancel-checkpoint unit tests, 2 `run_pipeline_over_jd_texts`, 2
+  `run_grounding_signals`, 4 route-level tests that simulate a real client disconnect by
+  grabbing the Flask test client's undrained WSGI iterator and calling `.close()` on it
+  directly (delivers a genuine `GeneratorExit`, the same thing Werkzeug does on a real
+  socket disconnect) — proving `cancel_check()` reads `True` afterward and the next
+  simulated paid call never fires. Plus 2 Playwright browser tests driving the real Cancel
+  buttons against a held route interceptor, confirming the `AbortController` wiring
+  end-to-end in Chromium.
+
+Full gate green: `ruff check .` + `ruff format --check .` + `mypy .` (331 files) + `pytest`
+— 2050 passed / 1 skipped (pre-existing) non-UX + 123 passed UX (a11y, flows, and
+regression, including the new Cancel-button coverage).
+
 ### Fixed: 5 more context-file routes shared the already-fixed lost-update shape, unprotected (`fix/context-write-lost-update-gap`)
 
 `hardening.context_transaction` (built in `fix/compose-frozen-composition` to close a
