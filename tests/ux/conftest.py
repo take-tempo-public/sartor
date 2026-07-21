@@ -11,6 +11,8 @@ functions (see `tests/ux/stubs.py`); regression tests seed the DB directly.
 from __future__ import annotations
 
 import importlib
+import os
+import sys
 import threading
 from collections.abc import Iterator
 from types import ModuleType
@@ -18,7 +20,34 @@ from types import ModuleType
 import pytest
 from playwright.sync_api import Browser, ConsoleMessage, Page, Response
 
+from tests.ux.rerun_report import render_annotations, render_step_summary
 from ui_pages.selectors import Help
+
+# Per-nodeid count of "rerun" outcomes this session (module-level: pytest hooks are called
+# against the module, not an instance, and this suite doesn't run under pytest-xdist, so a
+# plain global is safe — no cross-process aggregation needed). Fed by `pytest_runtest_logreport`
+# below, consumed by `pytest_terminal_summary`'s rerun-rate alarm at session end.
+_rerun_counts: dict[str, int] = {}
+
+
+def _safe_print(text: str) -> None:
+    """`print(text)`, but never raises `UnicodeEncodeError`.
+
+    `report.longrepr` and a rerun's captured `report.sections` (below) can contain ANY text a
+    test — or the app/browser it drives — produced, including characters a console's active code
+    page can't represent. Reproduced directly (`feat/rerun-rate-alarm`, 2026-07-21): a forced
+    rerun whose captured section happened to contain "β" raised `UnicodeEncodeError` on a Windows
+    console still on the legacy `cp1252` code page, which pytest turned into a session-ending
+    `INTERNALERROR` — losing the rerun report entirely, the opposite of this hook's whole purpose.
+    Falls back to the stream's own encoding with unencodable characters backslash-escaped rather
+    than losing the report over one character pytest's own capture happened to produce.
+    """
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "utf-8"
+        sys.stdout.buffer.write(text.encode(encoding, errors="backslashreplace") + b"\n")
+        sys.stdout.flush()
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
@@ -37,12 +66,41 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     """
     if report.outcome != "rerun":
         return
-    print(f"\n[ux] RERUN — this attempt FAILED: {report.nodeid}")
+    _rerun_counts[report.nodeid] = _rerun_counts.get(report.nodeid, 0) + 1
+    _safe_print(f"\n[ux] RERUN — this attempt FAILED: {report.nodeid}")
     if report.longrepr is not None:
-        print(report.longrepr)
+        _safe_print(str(report.longrepr))
     for title, content in report.sections:
         if content.strip():
-            print(f"---- {title} ----\n{content}")
+            _safe_print(f"---- {title} ----\n{content}")
+
+
+def pytest_terminal_summary(
+    terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
+) -> None:
+    """Rerun-rate alarm (RELEASE_CHECKLIST carry-forward ledger item 1, option (a),
+    decided 2026-07-20 on `docs/scroll-flake-ci-data-rerun-policy`): every test this
+    session needed a retry for gets reported — a `$GITHUB_STEP_SUMMARY` table plus one
+    `::warning::` checks-UI annotation each — so an absorbed-but-chronic failure can't
+    hide behind a green `PASSED` the way the 64%-broken Compose test did. Deliberately
+    report-only: this NEVER touches `exitstatus`, so a rerun that eventually passes still
+    exits 0 — a hard gate here would collapse option (a) back into the rejected option
+    (b) ("drop reruns, let load flakes go red").
+    """
+    del terminalreporter, config  # unused — the tally already lives in `_rerun_counts`
+    del exitstatus  # never altered; see docstring
+    if not _rerun_counts:
+        return
+    reruns = sorted(_rerun_counts.items())
+    _safe_print(f"\n[ux] rerun-rate alarm: {len(reruns)} test(s) needed a retry this run:")
+    for nodeid, failed in reruns:
+        _safe_print(f"  {nodeid} - {failed} attempt(s) failed")
+    for line in render_annotations(reruns):
+        _safe_print(line)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(render_step_summary(reruns))
 
 
 @pytest.fixture

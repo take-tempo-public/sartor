@@ -515,7 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**−1** this entry — `docs/diagnostics-content-cluster`,
+_Rendered open count: **18** (**−1** this entry — `feat/rerun-rate-alarm`, 2026-07-21: item 1
+**RESOLVED** — the rerun-rate alarm decided on `docs/scroll-flake-ci-data-rerun-policy` (option
+(a): keep `--reruns 2`, add the alarm) is now built. See its `#### Resolved` entry below; the
+found-and-fixed `_safe_print` bug (a Windows `cp1252`-console crash on arbitrary rerun output)
+does not itself add an open item, matching the `fix/context-write-lost-update-gap` precedent
+below. Prior to that: **19** (**−1** this entry — `docs/diagnostics-content-cluster`,
 2026-07-20: item 12 **UX round-2 remediation** **RESOLVED** — the #2/4/5/6/16 field-level
 `_DASH_HELP` authoring pass landed (9 new entries + 13 icon instances across
 Quality/Tuning/Annotate), the last remaining sub-scope after step 9 already landed the
@@ -608,56 +613,6 @@ tally had PX-44 mis-classified as landed and PX-46 untracked entirely; the UX ro
 Lane UX progress note was truncated mid-sentence). Both are corrected in place above. This
 reduction sprint now has a concrete, ordered, individual-branch plan — not just a pile of open
 items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
-
-- [ ] **`--reruns 2` on the `ux` tier is a masking policy, and it masked a real bug for 11
-      runs** — `fix/ci-first-linux-run` scoped `--reruns 2` to the `ux` tier for a
-      characterized load-flake class (`ci.yml`, "Flake policy": *a real regression fails all
-      three attempts*). It then hid a **chronically broken** test:
-      `test_compose_summary_draft_autofills_edits_and_persists` was failing **64% of
-      attempts**, which `--reruns 2` rendered as a `0.636³ ≈ 25.8%` predicted red-per-run
-      lottery (**27.3% observed** across 11 runs) — so `main`'s CI was a coin flip, not a
-      signal, and a governance commit that touched zero UX code appeared to "break" it.
-      The underlying bug is **NOT yet fixed** (see the next item); the **policy question is
-      separate**, and is deliberately left open rather than changed in the same breath as the
-      bug it was masking. **Decide:** (a) keep `--reruns 2` and add a *rerun-rate alarm* (a
-      test that needs a retry more than X% of runs is reported, not silently passed); (b) drop
-      reruns on the `ux` tier and let genuine load-flakes go red; (c) keep as-is. Needs the
-      post-fix true pass rate first — measure it over the next several `main` runs.
-      **Partly mitigated already:** `tests/ux/conftest.py::pytest_runtest_logreport` now
-      prints every rerun attempt's traceback, so a masked failure is at least *visible* even
-      while the policy stands.
-      _(discovered: v1.1.0 stream, 2026-07-13, `fix/compose-summary-draft-settle-hole`;
-      open count 8 → 9. Corrected 2026-07-14: the original text claimed the underlying bug
-      was fixed on that branch. It was not — see the next item.)_
-      **→ Owner call; gather the post-fix rate first. Do not change the retry policy blind.**
-      **→ Update (2026-07-14): the underlying bug IS now fixed** (the lost-update item below is
-      resolved), so the post-fix rate can finally be gathered. First data point: **7/7 local runs,
-      zero RERUNs** — but that is *local*, and this decision needs the rate on **CI**, over several
-      `main` runs, which does not exist yet. **Still open, deliberately:** the policy question was
-      always separate from the bug, and the whole lesson of this branch is that `--reruns 2` is
-      what let a 64%-broken test read as green for eleven runs. Decide (a)/(b)/(c) once CI has
-      produced a real post-fix sample — not before.
-      **→ DECIDED (2026-07-20, `docs/scroll-flake-ci-data-rerun-policy`): (a) — keep `--reruns 2`,
-      add a rerun-rate alarm.** Real post-fix CI sample pulled via `gh api .../actions/jobs/<id>/logs`
-      over the **12 CI runs on `main`** from the scroll-fix's own landing run (`df95773`,
-      2026-07-16) through `6323599` (2026-07-20): **0/12 red** (the chronic 64%-broken test stays
-      fixed), but **5/12 runs (~42%) fired at least one rerun**, spread across **5 distinct tests**
-      in the already-tracked settle/restore scroll-flake family (`test_corpus_reload_preserves_scroll_position`,
-      `test_restore_scroll_y_stale_invocation_overwrites_later_scroll`,
-      `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`, plus
-      `test_add_title_then_pin_persists` and `test_no_recommendations_order_persists_on_reload`) —
-      no single test dominates the way the old bug did. One run (`8326b5e`, 2026-07-16) came close
-      to red: `test_corpus_reload_preserves_scroll_position` failed 2 of its 3 attempts. Owner's
-      reasoning: dropping reruns (b) would flash `main` red on ~42% of runs from load, not
-      regressions — likely to erode trust in the signal fast; the 42% rate is real enough that
-      leaving it silent (c) repeats the exact blind spot that hid the original bug, just at a lower
-      per-test rate. **Not yet built:** the alarm itself is a code change (CI workflow/pytest-report
-      logic), not a docs edit, so it is deliberately NOT bundled into this docs-only branch — the
-      item stays open, evolving-notes style (matching this ledger's own pattern), until a follow-on
-      branch implements it. Raw per-run job data:
-      `df95773`→1 rerun, `8326b5e`→3 (incl. the 2/3 near-miss), `4a259e1`→0, `8a77d91`→1,
-      `6b03591`→0, `cce2dc1`→1, `cb68182`→0, `ad04d27`→0, `702d96a`→0, `ec6128a`→0,
-      `981a639`→0, `6323599`→2.
 
 - [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
       `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
@@ -1887,6 +1842,31 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       reduction sprint is now badly overdue.)_
 
 #### Resolved
+
+- [x] **`--reruns 2` on the `ux` CI tier — masking-vs-alarm retry-policy decision — RESOLVED**
+      on `feat/rerun-rate-alarm`, 2026-07-21. Was: `--reruns 2` masked a chronically-broken test
+      for 11 CI runs (27.3% observed red-per-run lottery) before the underlying bug was found and
+      fixed; the retry-policy question (mask real regressions vs. hide load flakes) was left open
+      pending a post-fix CI sample. `docs/scroll-flake-ci-data-rerun-policy` (2026-07-20) gathered
+      that sample (12 real `main` runs: 0/12 red, 5/12 ~42% fired a rerun across 5 settle/restore
+      family tests) and the owner decided option (a): keep `--reruns 2` unchanged, add a
+      rerun-rate alarm that reports every absorbed rerun without ever failing the build (a hard
+      gate would collapse (a) back into the rejected option (b), "drop reruns, let load flakes go
+      red"). **Fix shipped:** this branch built that alarm — `tests/ux/rerun_report.py` (pure
+      `$GITHUB_STEP_SUMMARY` table + `::warning::` annotation rendering) wired into the existing
+      `tests/ux/conftest.py::pytest_runtest_logreport` / a new `pytest_terminal_summary` hook;
+      unit tests in `tests/test_ux_rerun_report.py`; verified end-to-end against a real forced
+      rerun (not just direct function calls) via a throwaway `ux`-marked test, deleted after use.
+      **Found-and-fixed within this same branch, not a new open item** (matching the
+      `fix/context-write-lost-update-gap` precedent below): the end-to-end verification run
+      surfaced a pre-existing latent bug in `pytest_runtest_logreport`'s own rerun-visibility
+      print — arbitrary captured test/app output containing a character outside a Windows
+      console's active `cp1252` code page (observed directly: a literal "β" from an alembic
+      migration log) crashed the whole pytest session with an `INTERNALERROR`, losing the rerun
+      report this exact hook exists to guarantee. Added `_safe_print` (falls back to
+      backslash-escaped bytes on `UnicodeEncodeError`) to close it. Full detail: `CHANGELOG.md`
+      `[Unreleased]` "`ux` CI tier rerun-rate alarm". Sat in `#### Open` since 2026-07-13 as one
+      of the ledger's oldest items; this is a **−1** to the open count.
 
 - [x] **UX round-2 remediation (e2e feedback 2026-07-09) — RESOLVED** on
       `docs/diagnostics-content-cluster`, 2026-07-20 (step 10, the last of the v1.1.0

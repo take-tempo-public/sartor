@@ -225,6 +225,12 @@ jobs:
         # the "Flake policy" comment above. Reruns ONLY failed tests, up to twice;
         # a real regression fails all three attempts. NOT applied to the strict
         # quality-matrix pytest or the deterministic PDF slice below.
+        #
+        # Rerun-rate alarm (RELEASE_CHECKLIST carry-forward ledger item 1, decided
+        # 2026-07-20 on docs/scroll-flake-ci-data-rerun-policy): every absorbed rerun this
+        # step produces is reported, not silently passed — see tests/ux/conftest.py's
+        # `pytest_terminal_summary` (writes $GITHUB_STEP_SUMMARY, set by GitHub for every
+        # step automatically — nothing to wire here) + tests/ux/rerun_report.py.
         run: pytest -m ux --reruns 2 --reruns-delay 1
 
       - name: Pytest (PDF end-to-end render — shares the Chromium install above)
