@@ -21,6 +21,29 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Changed: v1.1.0 endgame requirements catalog refreshed (`docs/v110-endgame-scope`)
+
+Docs-only. Sourced current verified state (not the prior handoff summary) for every
+remaining v1.1.0 fork item and refreshed `docs/dev/RELEASE_ARC.md`'s step 11-17 branch
+sequence + `docs/dev/RELEASE_CHECKLIST.md`'s carry-forward ledger in place, so the
+endgame can be reviewed and sequenced in one pass instead of piecemeal at each branch
+close-out. No sequence or decision was changed — annotations only.
+
+- **PX-39 (step 12) reclassified UNBLOCKED** — the `.api_key`-present blocker is
+  cleared; data source updated to the owner's real E2E corpus (via
+  `scripts/export_corpus_seed.py`) instead of the thin `testuser` fixture.
+- **Step 15 (`release/visual-assets`)** — noted the 10 screenshots are ~7.5 weeks
+  stale and the captured README hero image was never wired into `README.md`.
+- **Step 16 (`[HUMAN]`-only toggles)** and **step 17 (release cut)** — enumerated
+  concrete mechanics (PyPI Trusted Publisher, GHCR visibility, CodeQL required check,
+  `enforce_admins`; the `pyproject.toml` bump + CHANGELOG `[1.1.0]` cut that activates
+  the D-7.4 disclosure gate).
+- Added a **Recommended endgame order** subsection to `RELEASE_ARC.md` (owner's call
+  to accept or reorder).
+- Filed one new carry-forward ledger item: a non-JD-paired "exemplar resume" tuning
+  input the owner surfaced this session, needing its own future design session
+  (open count 18 → 19).
+
 ### Added: fast-lane fixture-scoping pilot (`test/fixture-scoping`)
 
 PX-44's deferred fixture-scoping refactor, piloted per its own escape valve

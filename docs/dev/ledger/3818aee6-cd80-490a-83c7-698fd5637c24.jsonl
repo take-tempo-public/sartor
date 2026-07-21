@@ -1,0 +1,2 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/test-fixture-scoping.md", "session": "3818aee6-cd80-490a-83c7-698fd5637c24", "branch": "main", "commit": "96aec1d", "actor": "amodal1", "agent": "claude-code", "ts": "2026-07-21T18:19:15Z", "fingerprint": "a381c8de6329"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-v110-endgame-scope.md", "session": "3818aee6-cd80-490a-83c7-698fd5637c24", "branch": "docs/v110-endgame-scope", "commit": "96aec1d", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5", "ts": "2026-07-21T19:36:22Z", "fingerprint": "27873e6e7e12"}

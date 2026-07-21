@@ -515,7 +515,10 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **18** (**−1** this entry — `feat/rerun-rate-alarm`, 2026-07-21: item 1
+_Rendered open count: **19** (**+1** this entry — `docs/v110-endgame-scope`, 2026-07-21: filed a
+new item — a non-JD-paired "exemplar resume" tuning input the owner surfaced while scoping the
+v1.1.0 endgame catalog; see its own note below. Prior to that: **18** (**−1** this entry —
+`feat/rerun-rate-alarm`, 2026-07-21: item 1
 **RESOLVED** — the rerun-rate alarm decided on `docs/scroll-flake-ci-data-rerun-policy` (option
 (a): keep `--reruns 2`, add the alarm) is now built. See its `#### Resolved` entry below; the
 found-and-fixed `_safe_print` bug (a Windows `cp1252`-console crash on arbitrary rerun output)
@@ -1654,6 +1657,13 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       generalization is a deliberate, owner-scoped follow-on, not done here.
       Full detail: `docs/dev/perf/TEST_SUITE_PERFORMANCE.md`,
       `RELEASE_ARC.md` step 11.
+      **→ Update (2026-07-21, `docs/v110-endgame-scope` — PX-39 unblocked, not yet run):**
+      the `.api_key` present / not-an-isolated-worktree blocker on PX-39's real-corpus
+      measurement is cleared — this session-class satisfies it. Data source updated: run
+      against the owner's E2E clone real user data (richer than `testuser`) via
+      `scripts/export_corpus_seed.py`, not the thin `testuser` fixture. **Still "remain," not
+      "fully landed"** — unblocked and scoped, but the measurement itself was not executed on
+      this docs-only branch. Full requirement detail: `RELEASE_ARC.md` step 12.
 
 - [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does
@@ -1854,6 +1864,25 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       matching the `fix/handoff-pointer-verification` precedent — but this compliance-witness gap
       is a distinct, unfixed observation; open count 19 → 20 — the ceiling is ~8-10 and the
       reduction sprint is now badly overdue.)_
+
+- [ ] **New tuning input surfaced: a non-JD-paired "exemplar resume" that generated real
+      interest outside this app's own pipeline** — filed 2026-07-21 while scoping the v1.1.0
+      endgame catalog (`docs/v110-endgame-scope`). The owner has a resume that produced real
+      callback interest independent of Sartor's own generate flow and wants to use it to inform
+      tuning, alongside a separate E2E clone holding richer real user data than the project's
+      current `evals/fixtures/real/testuser/` seed (see RELEASE_ARC.md step 12 / PX-39, which
+      this session updated to target that richer corpus). Every existing mechanism in this
+      pipeline is **JD-paired** — `context_set` is assembled per job description, and bullets /
+      positioning are drafted against a specific JD's requirements (`analyzer.py`'s
+      `SYSTEM_PROMPT`, the `callback_likelihood` rubric, the `headhunter` agent). A real-world
+      success case with no JD to pair against does not fit any existing fixture or prompt-tuning
+      contract as a drop-in — it reads as a **reference exemplar** (calibration input for the
+      `callback_likelihood` rubric, or the `headhunter` agent's judgment, or a new non-JD-paired
+      tuning axis) rather than ordinary corpus data. **[OWNER DECISION]:** needs its own dedicated
+      design session to work out the mechanism — deliberately not attempted here, out of scope for
+      a docs-only catalog pass.
+      _(discovered: v1.1.0 stream, 2026-07-21, `docs/v110-endgame-scope`; open count 18 → 19 — the
+      ceiling is ~8-10 and the reduction sprint remains overdue.)_
 
 #### Resolved
 
