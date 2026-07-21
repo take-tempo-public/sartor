@@ -2,22 +2,39 @@
 
 from __future__ import annotations
 
+import shutil
+
 import pytest
 
 
 @pytest.fixture
-def memory_app(tmp_path, monkeypatch):
+def memory_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app (Sprint 8.3f) — list_clarifications moved to
     blueprints/applications.py and reads current_app.config[...]; the DB-path
-    monkeypatch stays. Returns a namespace exposing `memory_app.app`."""
+    monkeypatch stays. Returns a namespace exposing `memory_app.app`.
+
+    `test/fixture-scoping` (PX-44) pilot — second (confirmation) pilot file:
+    converted from per-test `init_db(db_file)` to copying the session-scoped
+    `_migrated_template_db` (see `tests/conftest.py`). This file's per-test
+    `Candidate.username` uniqueness (candidates are seeded fresh in 8 of 9
+    tests) is a complementary leak canary to `test_corpus_duplicates_route.py`'s
+    needs_onboarding assertions — any cross-test DB sharing here surfaces as a
+    hard `IntegrityError` on the second seed, not a silent wrong-answer.
+    """
     import types
 
     db_file = tmp_path / "mem.sqlite"
+    assert db_file != _migrated_template_db, "must never point a test at the shared template"
+    shutil.copy2(_migrated_template_db, db_file)
+
     import db.session as db_session_mod
 
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
+    # Mandatory pre-register — see tests/conftest.py::_migrated_template_db
+    # docstring: init_db skips alembic only for a path already in this set.
+    db_session_mod._initialized_paths.add(db_file.resolve())
 
     from app import create_app
     from config import Config
@@ -28,13 +45,17 @@ def memory_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
-    return types.SimpleNamespace(
+    # Skip-proof: proves alembic did NOT re-run against the copy.
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
+
+    yield types.SimpleNamespace(
         app=app,
         BASE_DIR=cfg.base_dir,
         CONFIGS_DIR=cfg.configs_dir,
         OUTPUT_DIR=cfg.output_dir,
     )
+
+    db_session_mod.get_engine().dispose()
 
 
 def _seed_candidate(username="alice"):
