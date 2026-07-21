@@ -21,6 +21,32 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: fast-lane fixture-scoping pilot (`test/fixture-scoping`)
+
+PX-44's deferred fixture-scoping refactor, piloted per its own escape valve
+("pilot on ONE file first, prove zero cross-test leakage, then decide whether
+to generalize" — `docs/dev/perf/TEST_SUITE_PERFORMANCE.md`). Dev-infra only,
+no user-visible behavior change.
+
+- `tests/conftest.py`: new session-scoped `_migrated_template_db` fixture —
+  migrates one template SQLite to alembic head once per session (checkpointing
+  WAL first so bundled-template seed rows survive a file copy), instead of the
+  full 15-revision chain running at function scope in every one of ~46 test
+  files that build a fresh Flask app + DB.
+- `tests/test_corpus_duplicates_route.py`, `tests/test_clarifications_list.py`:
+  piloted the mechanism — their `dup_app`/`memory_app` fixtures now
+  `shutil.copy2` the template instead of calling `init_db()` per test, with
+  zero test-body changes. Isolation proven under three explicit orderings
+  (forward, reversed, scrambled/interleaved); full fast lane confirmed
+  identical pass count (2053 passed, 1 skipped) on both sides of the diff.
+- Measured, decomposed cost: this mechanism removes ~99% of the `init_db`
+  slice (0.138s → 0.0015s median per test) but leaves `create_app` (0.108s,
+  unaffected) as the residual per-test cost — see the perf doc for the full
+  before/after numbers and the go/no-go rationale.
+- The 46-file rollout is deliberately out of scope for this branch (owner
+  decision: pilot only, then decide) — a follow-on branch with this pilot's
+  measured evidence as its starting point.
+
 ### Added: `ux` CI tier rerun-rate alarm (`feat/rerun-rate-alarm`)
 
 `ci.yml`'s `ux` job runs `pytest -m ux --reruns 2` — a real regression fails all 3 attempts, but

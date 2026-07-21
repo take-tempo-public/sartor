@@ -7,33 +7,57 @@ surface can offer keep-one-soft-retire-others merging.
 
 from __future__ import annotations
 
+import shutil
+
 import pytest
 
 
 @pytest.fixture
-def dup_app(tmp_path, monkeypatch):
+def dup_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
+
+    `test/fixture-scoping` (PX-44) pilot, converted from a per-test
+    `init_db(db_file)` (full alembic chain, ~46 files pay this cost across the
+    fast lane) to copying the session-scoped `_migrated_template_db` — see that
+    fixture's docstring in `tests/conftest.py` for the two traps this closes
+    (path-set memoization, WAL sidecar). Per-test file isolation is unchanged:
+    each test still gets its own on-disk DB, just seeded by copy instead of by
+    a fresh migration run.
 
     The duplicates route moved to blueprints/corpus and reads current_app.config
     at request time, so create_app(Config(base_dir=tmp_path)) replaces the old
     reload + monkeypatch-the-globals pattern. The DB-path monkeypatch stays.
     """
     db_file = tmp_path / "dup.sqlite"
+    assert db_file != _migrated_template_db, "must never point a test at the shared template"
+    shutil.copy2(_migrated_template_db, db_file)
+
     import db.session as db_session_mod
 
     monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
     db_session_mod._engine = None
     db_session_mod._SessionLocal = None
+    # Mandatory pre-register: `init_db` only skips the alembic chain when the
+    # resolved path is already in this set — it never inspects DB state, so
+    # without this line the first route to call bare `init_db()` re-migrates
+    # the copy from scratch, silently erasing the fixture's whole purpose.
+    db_session_mod._initialized_paths.add(db_file.resolve())
 
     from app import create_app
     from config import Config
 
     app = create_app(Config(base_dir=tmp_path))
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
+
     from db.session import init_db
 
-    init_db(db_file)
-    return app
+    # Skip-proof: proves alembic did NOT re-run against the copy. If this ever
+    # returns True, the pre-register above silently stopped working.
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
+
+    yield app
+
+    db_session_mod.get_engine().dispose()
 
 
 def _seed(username="alice", bullets_per_exp=None):

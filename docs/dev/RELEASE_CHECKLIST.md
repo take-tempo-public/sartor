@@ -1640,6 +1640,20 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       kit-adoption ledger row above). Updated the 4 test files whose
       1-script-per-guard assumptions broke; all pass. **Corrected count:
       10 of 13 fully landed, 3 remain:** PX-39, PX-44 (refactor half), PX-46.
+      **→ Piloted, not fully landed (2026-07-21, `test/fixture-scoping`):**
+      PX-44's refactor half re-scoped mid-pilot — the perf doc's own SAVEPOINT
+      recommendation was structurally wrong for this codebase (routes commit via
+      their own independently-opened session mid-request, so a test-held
+      `begin_nested()` can't wrap it without re-plumbing production session
+      wiring) and module-scoping had no safe read-only target. Piloted a
+      migrated-template-DB-copy mechanism instead on 2 of the 46 files, proven
+      isolation-safe (3 orderings, identical full-fast-lane pass count) and
+      measured (removes ~99% of the `init_db` slice, 0.138s→0.0015s median;
+      `create_app` at 0.108s is untouched and becomes the new dominant cost).
+      **Still counts as "remain," not "fully landed"** — the 46-file
+      generalization is a deliberate, owner-scoped follow-on, not done here.
+      Full detail: `docs/dev/perf/TEST_SUITE_PERFORMANCE.md`,
+      `RELEASE_ARC.md` step 11.
 
 - [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does
