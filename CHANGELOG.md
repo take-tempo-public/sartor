@@ -21,6 +21,37 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: `ux` CI tier rerun-rate alarm (`feat/rerun-rate-alarm`)
+
+`ci.yml`'s `ux` job runs `pytest -m ux --reruns 2` — a real regression fails all 3 attempts, but
+a fail-fail-pass reports as a bare `PASSED` with no traceback anywhere, which is exactly how a
+64%-broken test read green for 11 CI runs before it was caught. The step-14 CI investigation
+(`docs/scroll-flake-ci-data-rerun-policy`) measured the post-fix real rate on `main` — 0/12 red,
+5/12 (~42%) fired at least one rerun — and the owner decided: keep `--reruns 2` unchanged, add a
+rerun-rate alarm (`docs/dev/RELEASE_CHECKLIST.md` carry-forward ledger item 1, option (a)). This
+branch builds that alarm.
+
+- `tests/ux/rerun_report.py`: pure rendering helpers — a `$GITHUB_STEP_SUMMARY` markdown table
+  and one GitHub `::warning::` checks-UI annotation per test that needed a retry this run.
+  Report-only by construction: nothing here can fail the build (a hard gate would collapse the
+  owner's chosen option (a) back into the rejected option (b), "drop reruns, let load flakes go
+  red").
+- `tests/ux/conftest.py`: the existing `pytest_runtest_logreport` hook (which already prints
+  every rerun attempt's traceback) now also tallies reruns by nodeid; a new
+  `pytest_terminal_summary` hook renders the tally via the helpers above at session end. No
+  workflow change — `$GITHUB_STEP_SUMMARY` is set by GitHub for every step automatically.
+- Found and fixed a latent bug in the same hook while building this: `report.longrepr` and a
+  rerun's captured `report.sections` can contain arbitrary text (anything the test, or the
+  app/browser it drives, produced), and printing an unencodable character crashed the whole
+  pytest session with an `INTERNALERROR` on a Windows console still on the legacy `cp1252` code
+  page — reproduced directly via a forced-rerun end-to-end smoke run whose captured log
+  contained "β". Added `_safe_print`, a fallback to backslash-escaped bytes on
+  `UnicodeEncodeError`, so a rerun's evidence can no longer be lost to the very crash this
+  ledger item exists to prevent.
+- `tests/test_ux_rerun_report.py`: unit tests for the pure helpers (empty case, single/multiple
+  reruns, the real `8326b5e` "2 of 3" near-miss shape, `::warning::` escaping). Deliberately
+  top-level, not under `tests/ux/`, to avoid that tree's `autouse` Chromium-launching fixture.
+
 ### Added: field-level help for the diagnostics console — the remaining #2/4/5/6/16 content-cluster authoring pass (`docs/diagnostics-content-cluster`)
 
 `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s instructional-cluster finding:
