@@ -46,6 +46,15 @@
     "sharp": "^0.35.0",
     "fast-uri": "^3.1.4"
   },
+  "comment:typescript": [
+    "Held at ^6.0.3 (not the latest 7.x) deliberately: typescript@7 restructured to a",
+    "pure-ESM package and dropped lib/typescript.js, but next@16.2.11's TypeScript",
+    "detector (verify-typescript-setup.js) hard-codes an existsSync check for exactly",
+    "that file, so a genuinely-installed typescript@7.x reads as 'missing' and the",
+    "build fails. See docs/dev/diagnosis/docs-site-typescript-detection.md for the",
+    "full source-read proof. Unpin once next ships a detector that resolves",
+    "typescript via its exports map."
+  ],
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/mdx": "^2.0.14",
@@ -55,6 +64,6 @@
     "postcss": "^8.5.16",
     "serve": "^14.2.6",
     "tailwindcss": "^4.3.2",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }

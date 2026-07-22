@@ -515,7 +515,11 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **20** (net unchanged this entry — `chore/docs-site-npm-audit`,
+_Rendered open count: **19** (**−1** this entry — `fix/docs-site-typescript-detection`,
+2026-07-22: **RESOLVED** the `docs-site/` production build outage filed `[URGENT]` by the
+immediately-prior branch — see `#### Resolved` below for the fix (root cause proven by
+reading the installed Next.js detector source directly, not just correlation). Prior to
+that: **20** (net unchanged this entry — `chore/docs-site-npm-audit`,
 2026-07-22: **CLOSED** the docs-site `npm audit` item — see `#### Resolved` below for the
 fix. While verifying it end-to-end, discovered a **separate, unrelated, already-live
 production outage**: `docs-site/`'s static-export build has failed on every one of the
@@ -1953,32 +1957,32 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
 
-- [ ] **[URGENT — active production outage] `docs-site/` static-export build has failed on
-      every push to `main` for 5 consecutive merges** (PRs #42, #44, #45, #46, #47;
-      2026-07-22T06:36Z through 17:38Z), discovered incidentally this branch
-      (`chore/docs-site-npm-audit`) while verifying the npm-audit fix below. Confirmed via
-      isolated fresh `npm ci` + `npm run build` that this reproduces on unmodified `main`
-      HEAD, **unrelated to this branch's own `next`/`sharp`/`fast-uri` change**. No PR check
-      builds `docs-site/` (`docs-deploy.yml` triggers on push-to-main only), so every one of
-      those 5 merges landed with production deploy silently broken. Full evidence trail in
-      [`docs/dev/diagnosis/docs-site-typescript-detection-broken.md`](diagnosis/docs-site-typescript-detection-broken.md)
-      — read that before attempting a fix. Leading, evidence-backed (not yet
-      falsification-proven) hypothesis: the exact commit that bumped `typescript`
-      `^6.0.3` (CJS) → `^7.0.2` (ESM, `"type": "module"`) is the exact commit where
-      `docs-deploy.yml` first started failing, and no other change in that diff touches
-      `next`/TypeScript/build config — Next.js's TypeScript-installed detector likely
-      produces a false negative against the ESM-shaped package (`typescript` is
-      genuinely present and installed; this is a detection bug, not a missing
-      dependency). Also names a still-open, separate time-dependent-reproducibility
-      puzzle (the last known-good commit no longer builds cleanly either today, but
-      fails a *different* way) that complicates using CI green/red history as a clean
-      bisection signal.
-      _(discovered: v1.1.0 stream, 2026-07-22, `chore/docs-site-npm-audit`; open count 19 →
-      20 — the ceiling is ~8-10 and the reduction sprint remains badly overdue. This item is
-      itself a strong argument for prioritizing that sprint, or at minimum this one item,
-      immediately — it is not routine backlog, it is a live break.)_
-
 #### Resolved
+
+- [x] **[URGENT — active production outage] `docs-site/` static-export build had failed on
+      every push to `main` for 5 consecutive merges** (PRs #42, #44, #45, #46, #47) —
+      **RESOLVED** by `fix/docs-site-typescript-detection`. Filed 2026-07-22
+      (`chore/docs-site-npm-audit`), fixed same day. **Root cause proven by directly reading
+      the installed detector source** (not just correlation, superseding the originally
+      specified pin-and-observe falsification experiment): `next@16.2.11`'s TypeScript
+      detector (`verify-typescript-setup.js` / `has-necessary-dependencies.js`) hard-codes an
+      `existsSync` check for `typescript/lib/typescript.js`; `typescript@7.0.2`'s ESM
+      restructure genuinely does not ship that file (the API moved under `dist/`, addressed
+      via the package's `exports` map), so a fully-installed `typescript@7.x` reads as
+      "missing" — matching both the CI failure text and the local auto-install-then-crash
+      behavior exactly, gated on one `process.env.CI` check. Full source-read trail in
+      [`docs/dev/diagnosis/docs-site-typescript-detection.md`](diagnosis/docs-site-typescript-detection.md)
+      (renamed from `-broken.md`). **Fix:** pinned `docs-site/package.json`'s
+      `devDependencies.typescript` back to `^6.0.3` (last CJS-shaped, last-known-good line)
+      + regenerated the lockfile; added a dependabot `ignore` for `typescript` majors so the
+      exact break isn't re-proposed; added `docs-deploy.yml`'s `pull_request` trigger (build
+      steps only, deploy steps stay push-gated) closing the blind spot that let 5 merges land
+      broken unnoticed. Verified: clean `npm ci` + `npm run build` → `out/index.html`
+      produced, 132/132 pages, `npm audit` 0 vulnerabilities, full `python -m scripts.gate`
+      green. The dossier's separately-flagged time-dependent old-commit reproducibility
+      puzzle and the `chore/dependabot-docs-site` CHANGELOG-vs-CI-outcome discrepancy remain
+      open questions but are unchased (out of this fix's critical path; noted in the
+      dossier's `## Inferred` section for whoever picks them up).
 
 - [x] **`npm audit` on `docs-site/` reports high-severity findings** (`sharp` inherited
       libvips CVEs via `next@16.2.10`; `fast-uri` via `ajv`) — **RESOLVED** by
