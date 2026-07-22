@@ -515,7 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**+1** this entry — `docs/v110-endgame-scope`, 2026-07-21: filed a
+_Rendered open count: **20** (**+1** this entry — `docs/compose-rewrite-dial`, 2026-07-21:
+filed the **Dependabot backlog** item below (14 open PRs, surfaced at close-out when the owner
+asked to merge "the opens"; deferred to its own session on inspection — see that item for the
+risk breakdown). The same branch also revised the exemplar-resume item filed hours earlier into
+the compose-rewrite-dial item — a rewrite in place, **not** a new row, so no count change from
+that. Prior to that: **19** (**+1** — `docs/v110-endgame-scope`, 2026-07-21: filed a
 new item — a non-JD-paired "exemplar resume" tuning input the owner surfaced while scoping the
 v1.1.0 endgame catalog; see its own note below. Prior to that: **18** (**−1** this entry —
 `feat/rerun-rate-alarm`, 2026-07-21: item 1
@@ -1895,6 +1900,33 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-21, `docs/v110-endgame-scope`; open count 18 → 19 —
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
+
+- [ ] **Dependabot backlog — 14 open PRs, most of them majors, several touching the quality
+      gate itself** — filed 2026-07-21 (`docs/compose-rewrite-dial`) at close-out, when the owner
+      asked to "merge the opens." Inspected rather than merged; owner then deferred the sweep to
+      its own session. **Do NOT bulk-merge** — this is a dedicated branch with a full gate run
+      between the risky bumps, not a close-out step. Grouped by risk:
+      **(a) Touches the gate — one at a time, full gate after each:** #26 ruff `0.15.12→0.15.22`
+      (ruff is **deliberately exact-pinned** here — a bump can reformat or re-flag the whole tree;
+      see the kit-phase2 ratchet notes), #5 mypy `<2.0→<3.0` and #6 pytest `<9.0→<10.0` (both
+      *widen the bound to admit the next major*, which can surface a large new error surface),
+      #14 pytest-rerunfailures `<16→<17`.
+      **(b) CI infrastructure, major — breakage blocks every future PR:** #10
+      actions/download-artifact `4.3.0→8.0.1` (four majors), #12 actions/setup-python `5.6.0→7.0.0`
+      (**note the mismatch: the branch name says `6.3.0`, the title says `7.0.0` — resolve before
+      merging**), #11 docker/setup-buildx-action `3→4`, #18 docker/build-push-action `6→7`.
+      **(c) Already red:** #23 github/codeql-action/init `3.37.0→4.37.1` has **2 failing checks** —
+      and CodeQL is exactly what step 16 wants to promote to a *required* check, so this one is
+      load-bearing for the tag.
+      **(d) docs-site, lower risk:** #17 typescript `6.0.3→7.0.2` (major), #24 fumadocs-openapi,
+      #25 fumadocs-core, #27 fumadocs-mdx, #28 @tailwindcss/postcss (patch).
+      **Also true of all 14:** they are based on `main` from 2026-07-13/16 and branch protection
+      is `strict: true`, so every one needs updating against current `main` before it can merge at
+      all. Suggested order: (d) minors as one batch → (b) individually → (a) individually with a
+      full gate each → (c) after diagnosing its failures.
+      _(discovered: v1.1.0 stream, 2026-07-21, `docs/compose-rewrite-dial`; open count 19 → 20 —
+      the ceiling is ~8-10 and the reduction sprint is badly overdue. Owner-deferred to the next
+      session at filing time, not an oversight.)_
 
 #### Resolved
 
