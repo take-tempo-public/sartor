@@ -515,7 +515,24 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**−1** this entry — `chore/dependabot-ci-infra`, 2026-07-22:
+_Rendered open count: **19** (net unchanged this entry — `chore/dependabot-group-a`,
+2026-07-22: item 20 (the Dependabot backlog) **CLOSED** — landed the last remaining
+group (a): #26 ruff `0.15.12→0.15.22`, #5 mypy `<2.0→<3.0` (resolved 2.3.0, itself a
+MAJOR), #6 pytest `<8.0→<10.0` (resolved 9.1.1), #14 pytest-rerunfailures `<14→<17`
+(resolved 16.4). Full local gate run — `ruff check .` ✓ · `ruff format --check .` ✓
+(318 files, 0 reformats) · `mypy .` ✓ (0 errors, 94 pre-existing `annotation-unchecked`
+notes, unchanged count) · `pytest` **2180 passed, 1 skipped, 0 failed** in 1317s
+(22 min) — this time including the `ux`/Playwright tier the prior session's throwaway-venv
+probe could not exercise (no Chromium there; Chromium is installed in this environment).
+All 14 original PRs now
+accounted for: 9 landed prior (`chore/dependabot-docs-site` + `chore/dependabot-ci-infra`),
+4 landed here, #10 deferred to the v1.1.0 release tag (step 17). **But this does NOT
+reduce the open count** — item 20's own entry (now in `#### Resolved`) had folded in a
+still-unresolved sub-finding (the docs-site `npm audit` high-severity findings) rather
+than giving it its own row, "ceiling already breached." With item 20 closing, that
+sub-finding is promoted to its own open row (see "`npm audit` on `docs-site/`..." above)
+so it isn't lost — one item closes, one item opens, net **19, unchanged**. The reduction
+sprint remains just as overdue as before this branch. Prior to that: **19** (**−1** this entry — `chore/dependabot-ci-infra`, 2026-07-22:
 resolved the "[HUMAN/OWNER] Wire CodeQL as a required status check on `main`" item — found,
 while diagnosing an unrelated Dependabot PR, that `Analyze (python)` +
 `Analyze (javascript-typescript)` are already in `main`'s required-checks list via the
@@ -1923,31 +1940,40 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
 
-- [ ] **Dependabot backlog — 14 open PRs, most of them majors, several touching the quality
-      gate itself** — filed 2026-07-21 (`docs/compose-rewrite-dial`) at close-out, when the owner
-      asked to "merge the opens." Inspected rather than merged; owner then deferred the sweep to
-      its own session. **Do NOT bulk-merge** — this is a dedicated branch with a full gate run
-      between the risky bumps, not a close-out step. Grouped by risk:
-      **(a) Touches the gate — one at a time, full gate after each — STILL DEFERRED,
-      probed this session (no repo change):** #26 ruff `0.15.12→0.15.22` (ruff is
-      **deliberately exact-pinned** here — a bump can reformat or re-flag the whole tree;
-      see the kit-phase2 ratchet notes), #5 mypy `<2.0→<3.0` (resolves **2.3.0**, itself a
-      MAJOR — verified against the live PyPI index), #6 pytest `<9.0→<10.0` (resolves
-      9.1.1), #14 pytest-rerunfailures `<16→<17` (resolves 16.4).
-      **Probe results (2026-07-22, `chore/dependabot-ci-infra`, throwaway venv, no repo
-      change):** all 4 resolved to the exact versions predicted above. `ruff check .` +
-      `ruff format --check .` under 0.15.22 — **0 new findings, 0 reformats**, clean.
-      `mypy .` under 2.3.0 (the MAJOR) — **0 new errors**; the 94 `annotation-unchecked`
-      informational notes are identical in count to the 1.20.2 baseline run side-by-side,
-      confirming they're pre-existing, not new noise from the bump. `pytest` under 9.1.1 +
-      rerunfailures 16.4 — **2024 passed, 129 skipped, 0 failed, 0 errors** in 379s. Caveat:
-      the probe venv never ran `playwright install chromium`, so the entire `ux`-marked
-      tier (129 tests) skipped rather than exercised — this probe does NOT validate the
-      Playwright/a11y tier under the new pytest, only the ~2024 non-`ux` tests. Also
-      Python-3.13-only; doesn't cover the 3.11/3.12 CI matrix. **Net: no red flag from the
-      probe, but the UX tier and the 3.11/3.12 matrix remain unvalidated** — still requires
-      its own dedicated branch with the FULL local gate (not a probe) between each bump, per
-      this item's original ordering guidance, before landing.
+- [ ] **`npm audit` on `docs-site/` reports 7-8 high-severity findings** (`sharp` inherited
+      libvips CVEs via `next@16.2.10`; `fast-uri` via `ajv`) — surfaced 2026-07-22
+      (`chore/dependabot-docs-site`) while landing group (d) of the (now-closed) Dependabot
+      backlog item, confirmed identical on unmodified `main` via an isolated worktree audit:
+      **pre-existing**, not introduced by any Dependabot bump, and no open Dependabot PR
+      touches `next` or `sharp`. Directly **contradicts** this file's own 2026-07-14
+      "`npm audit` now reports 0 vulnerabilities" claim (`chore/scorecard-and-docs-voice`) —
+      drifted upward since via an unpinned transitive path. Needs its own dedicated look (a
+      `next`/`sharp` upgrade is its own risk-bearing change, out of scope for a
+      Dependabot-bump branch). Was folded into the Dependabot backlog item's own entry rather
+      than given its own row while that item was open (ceiling already breached); promoted to
+      its own row here now that the parent item has closed (see the Dependabot backlog's
+      `#### Resolved` entry below for full original context).
+
+#### Resolved
+
+- [x] **Dependabot backlog — 14 open PRs, most of them majors, several touching the quality
+      gate itself — RESOLVED, all 14 accounted for.** Filed 2026-07-21 (`docs/compose-rewrite-dial`)
+      at close-out, when the owner asked to "merge the opens." Inspected rather than merged;
+      owner then deferred the sweep to its own session. Grouped by risk:
+      **(a) Touches the gate — LANDED** via `chore/dependabot-group-a` (2026-07-22): #26 ruff
+      `0.15.12→0.15.22` (ruff is **deliberately exact-pinned** here — a bump can reformat or
+      re-flag the whole tree; see the kit-phase2 ratchet notes), #5 mypy `<2.0→<3.0` (resolved
+      **2.3.0**, itself a MAJOR), #6 pytest `<9.0→<10.0` (resolved 9.1.1), #14
+      pytest-rerunfailures `<16→<17` (resolved 16.4). A prior throwaway-venv probe
+      (2026-07-22, `chore/dependabot-ci-infra`, no repo change) found all 4 clean but never
+      exercised the `ux`/Playwright tier (no Chromium there) and ran Python-3.13-only. This
+      branch re-verified all 4 target versions against the live PyPI index (unchanged from the
+      probe), confirmed Chromium was installed locally, and ran the FULL local gate — `ruff
+      check .` ✓ · `ruff format --check .` ✓ (318 files, 0 reformats) · `mypy .` ✓ (0 errors,
+      94 pre-existing `annotation-unchecked` notes, unchanged count) · `pytest` **2180
+      passed, 1 skipped, 0 failed** in 1317s (22 min), the `ux`/Playwright tier included and
+      green — closing both gaps the probe left open. The PR's own required checks
+      additionally covered the 3.11/3.12/3.13 matrix legs.
       **(b) CI infrastructure, major — LANDED** via `chore/dependabot-ci-infra`: #11
       docker/setup-buildx-action `3→4` (`bb05f3f5519dd87d3ba754cc423b652a5edd6d2c`), #18
       docker/build-push-action `6→7` (`53b7df96c91f9c12dcc8a07bcb9ccacbed38856a`) — both
@@ -1993,27 +2019,9 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       because `fumadocs-ui`'s `npm:@fumadocs/base-ui` peer dependency locks fumadocs-core to an
       exact version; fixed by bumping the base-ui pin to `16.11.5` in lockstep. Full detail:
       `CHANGELOG.md` `[Unreleased]` "docs-site dependency bumps."
-      **Also found this session, NOT fixed — new sub-note, no separate item (ceiling already
-      breached; folding in rather than adding a 21st row):** `npm audit` on the docs-site tree
-      reports **7-8 high-severity findings** (`sharp` inherited libvips CVEs via
-      `next@16.2.10`; `fast-uri` via `ajv`), confirmed identical on unmodified `main` via an
-      isolated worktree audit — **pre-existing**, not introduced by any bump here, and no open
-      Dependabot PR touches `next` or `sharp`. This directly **contradicts** this file's own
-      2026-07-14 "`npm audit` now reports 0 vulnerabilities" claim
-      (`chore/scorecard-and-docs-voice`, above) — drifted upward since via an unpinned
-      transitive path. Needs its own dedicated look (a `next`/`sharp` upgrade is its own
-      risk-bearing change, out of scope for a Dependabot-bump branch).
-      **Also true of what remains (group a):** all are based on `main` from 2026-07-13/16 and
-      branch protection is `strict: true`, so each still needs updating against current `main`.
-      _(discovered: v1.1.0 stream, 2026-07-21, `docs/compose-rewrite-dial`; open count 19 → 20.
-      Groups (b)/(c)/(d) landed 2026-07-22 via `chore/dependabot-docs-site` +
-      `chore/dependabot-ci-infra` — 9 of 14 PRs closed (#17/#24/#25/#27/#28/#11/#12/#18/#23).
-      #10 deferred to release time, not landed. Group (a)'s 4 PRs (#26/#5/#6/#14) stay
-      untouched pending a throwaway-venv probe — the item's only remaining open surface.
-      Item stays OPEN (not renumbered out) until group (a) lands too; ceiling is ~8-10 and
-      the reduction sprint remains overdue.)_
-
-#### Resolved
+      **npm audit finding split out 2026-07-22:** the docs-site tree's 7-8 high-severity
+      `npm audit` findings (pre-existing, unrelated to any Dependabot bump) are now their own
+      open item in `#### Open` above, rather than staying folded into this now-closed item.
 
 - [x] **`--reruns 2` on the `ux` CI tier — masking-vs-alarm retry-policy decision — RESOLVED**
       on `feat/rerun-rate-alarm`, 2026-07-21. Was: `--reruns 2` masked a chronically-broken test

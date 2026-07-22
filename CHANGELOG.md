@@ -65,6 +65,30 @@ Dependabot's own diff never touches.
   gate-touching bumps. Full risk detail in `RELEASE_CHECKLIST.md`'s carry-forward ledger
   item 20.
 
+### Changed: tooling dependency bumps — ruff, mypy major, pytest, pytest-rerunfailures (`chore/dependabot-group-a`)
+
+Supersedes the last 4 open Dependabot PRs (#26, #5, #6, #14) — group (a) of the backlog,
+the bumps that touch the quality gate itself. **This closes the Dependabot backlog
+entirely** (14 of 14 PRs accounted for: 9 landed across `chore/dependabot-docs-site` +
+`chore/dependabot-ci-infra`, 4 here, #10 deliberately deferred to the v1.1.0 release tag).
+A prior throwaway-venv probe (`chore/dependabot-ci-infra`, 2026-07-22) found all 4 clean,
+but never exercised the `ux`/Playwright tier (no Chromium in that venv) and ran
+Python-3.13-only; this branch does the real bump with the full local gate, `ux` tier
+included, plus the PR's required-check matrix (3.11/3.12/3.13).
+
+- `ruff` `0.15.12 → 0.15.22` (exact-pinned — see `pyproject.toml`'s in-file comment on why
+  a range isn't used for ruff).
+- `mypy` `<2.0 → <3.0`, resolving to **2.3.0** (itself a MAJOR).
+- `pytest` `<9.0 → <10.0`, resolving to **9.1.1**.
+- `pytest-rerunfailures` `<16 → <17`, resolving to **16.4** — landed alongside pytest
+  since both touch the same `pytest` invocation.
+- **Full local gate, this time with the `ux` tier for real:** `ruff check .` ✓ ·
+  `ruff format --check .` ✓ (318 files, 0 reformats) · `mypy .` ✓ (0 errors; 94
+  pre-existing `annotation-unchecked` informational notes, identical count to the prior
+  baseline) · `pytest` **2180 passed, 1 skipped, 0 failed** in 1317s (22 min), including
+  the full `ux`/Playwright regression tier (the prior probe's one real gap — no
+  Chromium there; present here).
+
 ### Changed: docs-site dependency bumps — fumadocs trio, tailwindcss/postcss, typescript major (`chore/dependabot-docs-site`)
 
 Supersedes 5 open Dependabot PRs (#17, #24, #25, #27, #28), all based on `main` from

@@ -83,7 +83,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0,<9.0",
+    "pytest>=8.0,<10.0",
     "pytest-socket>=0.7,<1.0",  # PX-08 / G-2 network-egress falsifiability gate
     # Charter D-7 (release versioning): scripts/release_version.py + its gate test parse
     # and ORDER versions under PEP 440, which is the only way to prove the semver git tag
@@ -94,7 +94,7 @@ dev = [
     # (CI `ux` tier only, `--reruns 2` — see .github/workflows/ci.yml "Flake policy").
     # Inert unless `--reruns` is passed, so the strict `quality`/`gate` pytest is
     # unaffected (it never passes the flag).
-    "pytest-rerunfailures>=14,<16",
+    "pytest-rerunfailures>=14,<17",
     # Ruff is EXACT-pinned (not a range) so local and CI format identically: ruff does not
     # guarantee formatter-output stability even across patch releases, so a range let 5 files
     # silently drift under a newer formatter (carry-forward ledger, cleared on
@@ -102,8 +102,8 @@ dev = [
     # gate (ci.yml `quality` job + the ruff-changed commit hook) deterministic — pin + gate are
     # one inseparable fix. Bumping ruff is a deliberate one-commit action: upgrade + `ruff format .`
     # + re-pin here.
-    "ruff==0.15.12",
-    "mypy>=1.10,<2.0",
+    "ruff==0.15.22",
+    "mypy>=1.10,<3.0",
     "pyyaml>=6.0,<7.0",
     "types-requests>=2.31",
     "interrogate>=1.7,<2.0",  # KIT-6 docstring-coverage floor-lock gate (Phase 2 final sub-item)

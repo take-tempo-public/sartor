@@ -1,0 +1,2 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/chore-dependabot-ci-infra.md", "session": "649e51e5-7576-45b0-872b-03713c3bda8f", "branch": "main", "commit": "19081d2", "actor": "amodal1", "agent": "claude-sonnet-5", "ts": "2026-07-22T15:17:28Z", "fingerprint": "2ebf90982922"}
+{"event": "generated", "doc": "docs/dev/handoffs/chore-dependabot-group-a.md", "session": "649e51e5-7576-45b0-872b-03713c3bda8f", "branch": "chore/dependabot-group-a", "commit": "d41520a", "actor": "amodal1", "agent": "claude-sonnet-5", "ts": "2026-07-22T16:09:16Z", "fingerprint": "b850df53efc0"}
