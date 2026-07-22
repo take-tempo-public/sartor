@@ -254,7 +254,12 @@ damaged text instead of saying so (see
    memory/cleanup on `main` gets hook-blocked, forcing a repeat ceremony that
    steps on the next branch); loose ends resolved or deferred; **every trailing
    "track this" observation filed durably now OR written into the `Carried-forward
-   observations` section above**; branches to prune identified; **any dev server or
+   observations` section above**; branches to prune identified; **this session's
+   own `consumed`-event provenance-ledger file** (`docs/dev/ledger/<session>.jsonl`,
+   written on `main` at session start when the incoming handoff pointer was
+   consumed) **committed on this branch** — folded into an early commit, never
+   left untracked and never given its own dedicated branch/PR (see
+   `docs/dev/prov/SPEC.md` §5 step 3); **any dev server or
    long-lived background process started this session terminated** before closing the
    window (check with `tasklist`/equivalent — an agent's own orphaned processes are
    exactly the failure mode carry-forward ledger item 20 documents). "Done" is the output
