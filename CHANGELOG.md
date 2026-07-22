@@ -21,6 +21,42 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Security: `docs-site/` npm audit findings cleared — sharp/libvips, fast-uri (`chore/docs-site-npm-audit`)
+
+Resolves the docs-site `npm audit` item filed 2026-07-22 (`chore/dependabot-docs-site`,
+promoted to its own carry-forward ledger row on `chore/dependabot-group-a`). A live
+`npm audit` on this branch found **3** high-severity findings (the original filing
+estimated "7-8," a live count run when this branch actually picked up the item) across
+two vectors:
+
+- `fast-uri` `3.0.0–3.1.3` (GHSA-v2hh-gcrm-f6hx, host confusion via a literal backslash
+  authority delimiter), pulled in via `ajv`.
+- `sharp` `<0.35.0` (GHSA-f88m-g3jw-g9cj, inherited libvips CVE-2026-33327/33328/35590/35591),
+  an optional dependency of `next`. `next`'s own audit flag was purely a consequence of
+  depending on vulnerable `sharp` — not a third distinct vector.
+
+**Fix:** extended `docs-site/package.json`'s existing `overrides` block (the same
+mechanism already used for the `postcss`/GHSA-qx2v-qp2m-jg93 case below) with
+`sharp: ^0.35.0` and `fast-uri: ^3.1.4`. Note that `next@16.2.11` (bumped here from
+`16.2.10` as hygiene, alongside the fix) **still declares `sharp ^0.34.5`** — bumping
+`next` alone does not clear this advisory; only the override does. `sharp` is unused at
+runtime regardless (`next.config.mjs`: `output: 'export'`, `images.unoptimized: true`).
+Verified via `npm audit` → **0 vulnerabilities** (was 3 high) and `npm ls next sharp
+fast-uri postcss` showing the resolved patched versions. This reconciles this file's own
+2026-07-14 "`npm audit` now reports 0 vulnerabilities" claim (`chore/scorecard-and-docs-voice`,
+below), which had drifted false since via this unpinned transitive path — it is genuinely
+true again as of this entry.
+
+**Discovered, not fixed, on this branch:** while verifying this fix end-to-end, found
+`docs-site/`'s static-export build (`npm run build`) has been failing on every push to
+`main` for 5 consecutive merges (since PR #42), independent of and unrelated to this
+fix — confirmed via an isolated worktree that the failure reproduces on unmodified `main`
+HEAD. No PR check builds `docs-site/`, so this went unnoticed at merge time each time.
+Filed as a new, URGENT carry-forward ledger item (`docs/dev/RELEASE_CHECKLIST.md`) with a
+full evidence trail in `docs/dev/diagnosis/docs-site-typescript-detection-broken.md` — out
+of scope to fix here (a distinct root cause, most likely an ESM/CJS detection break in
+Next's TypeScript-installed check against `typescript@7.0.2`).
+
 ### Changed: CI-infra action bumps — setup-python major, codeql-action major (config-error fix), docker actions (`chore/dependabot-ci-infra`)
 
 Supersedes 4 open Dependabot PRs (#11, #12, #18, #23) — the CI-infrastructure-major and

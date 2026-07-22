@@ -515,7 +515,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (net unchanged this entry — `chore/dependabot-group-a`,
+_Rendered open count: **20** (net unchanged this entry — `chore/docs-site-npm-audit`,
+2026-07-22: **CLOSED** the docs-site `npm audit` item — see `#### Resolved` below for the
+fix. While verifying it end-to-end, discovered a **separate, unrelated, already-live
+production outage**: `docs-site/`'s static-export build has failed on every one of the
+last 5 merges to `main`, silently (no PR check builds it). Filed as a new `[URGENT]` open
+item immediately rather than deferred — one item closes, one opens, net unchanged, but
+the composition is worse: the new item is an active break, not routine backlog.
+**Correction to the prior entry's own count:** re-counting the actual `- [ ] **` bullets
+in this section (rather than trusting the carried-forward number) found the true count
+was already **20**, not the 19 the previous entry's header claimed — a pre-existing
+one-item drift in this header, not something introduced by this branch; noted rather
+than silently perpetuated. The reduction sprint is more overdue than ever — now clearing
+20, two above the stated ~8-10 ceiling. Prior to that (header, uncorrected): **19**
+(net unchanged this entry — `chore/dependabot-group-a`,
 2026-07-22: item 20 (the Dependabot backlog) **CLOSED** — landed the last remaining
 group (a): #26 ruff `0.15.12→0.15.22`, #5 mypy `<2.0→<3.0` (resolved 2.3.0, itself a
 MAJOR), #6 pytest `<8.0→<10.0` (resolved 9.1.1), #14 pytest-rerunfailures `<14→<17`
@@ -1940,21 +1953,57 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
 
-- [ ] **`npm audit` on `docs-site/` reports 7-8 high-severity findings** (`sharp` inherited
-      libvips CVEs via `next@16.2.10`; `fast-uri` via `ajv`) — surfaced 2026-07-22
-      (`chore/dependabot-docs-site`) while landing group (d) of the (now-closed) Dependabot
-      backlog item, confirmed identical on unmodified `main` via an isolated worktree audit:
-      **pre-existing**, not introduced by any Dependabot bump, and no open Dependabot PR
-      touches `next` or `sharp`. Directly **contradicts** this file's own 2026-07-14
-      "`npm audit` now reports 0 vulnerabilities" claim (`chore/scorecard-and-docs-voice`) —
-      drifted upward since via an unpinned transitive path. Needs its own dedicated look (a
-      `next`/`sharp` upgrade is its own risk-bearing change, out of scope for a
-      Dependabot-bump branch). Was folded into the Dependabot backlog item's own entry rather
-      than given its own row while that item was open (ceiling already breached); promoted to
-      its own row here now that the parent item has closed (see the Dependabot backlog's
-      `#### Resolved` entry below for full original context).
+- [ ] **[URGENT — active production outage] `docs-site/` static-export build has failed on
+      every push to `main` for 5 consecutive merges** (PRs #42, #44, #45, #46, #47;
+      2026-07-22T06:36Z through 17:38Z), discovered incidentally this branch
+      (`chore/docs-site-npm-audit`) while verifying the npm-audit fix below. Confirmed via
+      isolated fresh `npm ci` + `npm run build` that this reproduces on unmodified `main`
+      HEAD, **unrelated to this branch's own `next`/`sharp`/`fast-uri` change**. No PR check
+      builds `docs-site/` (`docs-deploy.yml` triggers on push-to-main only), so every one of
+      those 5 merges landed with production deploy silently broken. Full evidence trail in
+      [`docs/dev/diagnosis/docs-site-typescript-detection-broken.md`](diagnosis/docs-site-typescript-detection-broken.md)
+      — read that before attempting a fix. Leading, evidence-backed (not yet
+      falsification-proven) hypothesis: the exact commit that bumped `typescript`
+      `^6.0.3` (CJS) → `^7.0.2` (ESM, `"type": "module"`) is the exact commit where
+      `docs-deploy.yml` first started failing, and no other change in that diff touches
+      `next`/TypeScript/build config — Next.js's TypeScript-installed detector likely
+      produces a false negative against the ESM-shaped package (`typescript` is
+      genuinely present and installed; this is a detection bug, not a missing
+      dependency). Also names a still-open, separate time-dependent-reproducibility
+      puzzle (the last known-good commit no longer builds cleanly either today, but
+      fails a *different* way) that complicates using CI green/red history as a clean
+      bisection signal.
+      _(discovered: v1.1.0 stream, 2026-07-22, `chore/docs-site-npm-audit`; open count 19 →
+      20 — the ceiling is ~8-10 and the reduction sprint remains badly overdue. This item is
+      itself a strong argument for prioritizing that sprint, or at minimum this one item,
+      immediately — it is not routine backlog, it is a live break.)_
 
 #### Resolved
+
+- [x] **`npm audit` on `docs-site/` reports high-severity findings** (`sharp` inherited
+      libvips CVEs via `next@16.2.10`; `fast-uri` via `ajv`) — **RESOLVED** by
+      `chore/docs-site-npm-audit`. Filed 2026-07-22 (`chore/dependabot-docs-site`) while
+      landing group (d) of the (now-closed) Dependabot backlog item, confirmed identical on
+      unmodified `main` via an isolated worktree audit: pre-existing, not introduced by any
+      Dependabot bump. Directly **contradicted** this file's own 2026-07-14 "`npm audit` now
+      reports 0 vulnerabilities" claim (`chore/scorecard-and-docs-voice`) — drifted upward
+      since via an unpinned transitive path; that claim is now genuinely true again.
+      **Correction to the original filing:** a live `npm audit` when this branch actually
+      picked up the item found **3** high-severity findings, not the "7-8" estimated at
+      filing time — two real vectors: `fast-uri` `3.0.0–3.1.3` (GHSA-v2hh-gcrm-f6hx, host
+      confusion via a literal backslash authority delimiter) and `sharp` `<0.35.0`
+      (GHSA-f88m-g3jw-g9cj, inherited libvips CVE-2026-33327/33328/35590/35591 — `next`'s own
+      flag was purely a consequence of depending on vulnerable `sharp`, not a third distinct
+      vector). **Fix:** extended `docs-site/package.json`'s existing `overrides` block
+      (already used for the `postcss`/GHSA-qx2v-qp2m-jg93 case) with `sharp: ^0.35.0` and
+      `fast-uri: ^3.1.4`, since `next@16.2.11` (also bumped, from `16.2.10`, as hygiene)
+      still declares `sharp ^0.34.5` — an override, not a `next` bump, is what actually
+      clears the advisory. `sharp` is unused at runtime here regardless
+      (`next.config.mjs`: `output: 'export'`, `images.unoptimized: true`). Verified via
+      `npm audit` → **0 vulnerabilities** and `npm ls next sharp fast-uri postcss` showing
+      the resolved patched versions. **Could not verify the full static-export build
+      end-to-end** — blocked by the separate, pre-existing, unrelated production-outage item
+      above (filed fresh in `#### Open` this same branch).
 
 - [x] **Dependabot backlog — 14 open PRs, most of them majors, several touching the quality
       gate itself — RESOLVED, all 14 accounted for.** Filed 2026-07-21 (`docs/compose-rewrite-dial`)
