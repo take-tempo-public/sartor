@@ -138,3 +138,12 @@ docs-site/openapi.json
 # top-level rules don't reach this nested subfolder (gitignore `*` doesn't
 # cross directory boundaries), hence the separate entry.
 docs-site/content/docs/api-reference/
+
+# ---- scratchpad/ — ad-hoc working files (investigation logs, throwaway
+#      scripts, captured command output). Previously untracked-but-not-ignored,
+#      so a `git add -A` would have swept them in. That is a real exposure
+#      route, not just noise: this directory is where analysis of REAL corpus
+#      and application data lands, and "do not commit real personal data" is a
+#      standing rule (AGENTS.md "What NOT to do"). Ignored outright — nothing
+#      here is ever a deliverable; anything worth keeping belongs in docs/.
+scratchpad/

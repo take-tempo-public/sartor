@@ -515,7 +515,12 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**+1** this entry — `docs/v110-endgame-scope`, 2026-07-21: filed a
+_Rendered open count: **20** (**+1** this entry — `docs/compose-rewrite-dial`, 2026-07-21:
+filed the **Dependabot backlog** item below (14 open PRs, surfaced at close-out when the owner
+asked to merge "the opens"; deferred to its own session on inspection — see that item for the
+risk breakdown). The same branch also revised the exemplar-resume item filed hours earlier into
+the compose-rewrite-dial item — a rewrite in place, **not** a new row, so no count change from
+that. Prior to that: **19** (**+1** — `docs/v110-endgame-scope`, 2026-07-21: filed a
 new item — a non-JD-paired "exemplar resume" tuning input the owner surfaced while scoping the
 v1.1.0 endgame catalog; see its own note below. Prior to that: **18** (**−1** this entry —
 `feat/rerun-rate-alarm`, 2026-07-21: item 1
@@ -1865,24 +1870,63 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       is a distinct, unfixed observation; open count 19 → 20 — the ceiling is ~8-10 and the
       reduction sprint is now badly overdue.)_
 
-- [ ] **New tuning input surfaced: a non-JD-paired "exemplar resume" that generated real
-      interest outside this app's own pipeline** — filed 2026-07-21 while scoping the v1.1.0
-      endgame catalog (`docs/v110-endgame-scope`). The owner has a resume that produced real
-      callback interest independent of Sartor's own generate flow and wants to use it to inform
-      tuning, alongside a separate E2E clone holding richer real user data than the project's
-      current `evals/fixtures/real/testuser/` seed (see RELEASE_ARC.md step 12 / PX-39, which
-      this session updated to target that richer corpus). Every existing mechanism in this
-      pipeline is **JD-paired** — `context_set` is assembled per job description, and bullets /
-      positioning are drafted against a specific JD's requirements (`analyzer.py`'s
-      `SYSTEM_PROMPT`, the `callback_likelihood` rubric, the `headhunter` agent). A real-world
-      success case with no JD to pair against does not fit any existing fixture or prompt-tuning
-      contract as a drop-in — it reads as a **reference exemplar** (calibration input for the
-      `callback_likelihood` rubric, or the `headhunter` agent's judgment, or a new non-JD-paired
-      tuning axis) rather than ordinary corpus data. **[OWNER DECISION]:** needs its own dedicated
-      design session to work out the mechanism — deliberately not attempted here, out of scope for
-      a docs-only catalog pass.
-      _(discovered: v1.1.0 stream, 2026-07-21, `docs/v110-endgame-scope`; open count 18 → 19 — the
-      ceiling is ~8-10 and the reduction sprint remains overdue.)_
+- [ ] **Compose-time rewrite latitude — the "generate but don't invent" dial** — filed
+      2026-07-21 (`docs/v110-endgame-scope`), **substantially revised the same day**
+      (`docs/compose-rewrite-dial`) after an owner-led analysis replaced the original framing.
+      **Full findings + design context: [`COMPOSE_REWRITE_DIAL.md`](COMPOSE_REWRITE_DIAL.md)** —
+      read that, not this summary, before acting.
+      **The original framing was wrong and is superseded:** this was first filed as a
+      "non-JD-paired exemplar resume" needing a new tuning axis. The artifact turned out to be
+      **JD-paired after all** (the real JD survives), and the corpus reproduces every fact in it
+      with **zero gaps** — so it is a **reproducible test case with a real-world grade**, the only
+      one this project has, not an orphan exemplar.
+      **What the analysis actually found:** (1) corpus-selected bullets render **verbatim** —
+      never re-worded for JD fit; (2) that capability existed and was documented (this file's own
+      v1.0.2 WYSIWYG section, ~L3496-3504: the LLM was *"free to reword each bullet for sharpness
+      / JD relevance"*) and was lost as **WYSIWYG-divergence collateral, not a grounding
+      decision** — and the trade-off dissolves if re-wording moves to **compose** time, before the
+      freeze (preview==download and C-6 both hold); (3) the middle-dial machinery **already
+      exists** — `draft_surgical_refinement` + `supersedes_bullet_id` + `pattern_kind` + an
+      accept-time exclusion that already enforces "never the rewrite AND its source in one
+      compose" — missing only a **JD-driven, compose-wide trigger**; (4) any contract must permit
+      **categorization** (naming the discipline stated facts belong to) as distinct from
+      invention, and (5) `grounding_overlap`'s lexical matching will flag category-2 language as
+      `missing`, so a tuning pass **fights its own metric** unless that is handled deliberately.
+      **[OWNER DECISION], evidence-gated:** the PX-39 real-corpus run (RELEASE_ARC step 12) can
+      produce the validating comparison at no extra cost if it uses this JD against this corpus.
+      **Evidence first, then the dial** — n=1, no content-level attribution, do not tune on it
+      blind. Owner has further material for the normal annotate workflow when the tuning phase
+      opens.
+      _(discovered: v1.1.0 stream, 2026-07-21, `docs/v110-endgame-scope`; open count 18 → 19 —
+      the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
+      `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
+
+- [ ] **Dependabot backlog — 14 open PRs, most of them majors, several touching the quality
+      gate itself** — filed 2026-07-21 (`docs/compose-rewrite-dial`) at close-out, when the owner
+      asked to "merge the opens." Inspected rather than merged; owner then deferred the sweep to
+      its own session. **Do NOT bulk-merge** — this is a dedicated branch with a full gate run
+      between the risky bumps, not a close-out step. Grouped by risk:
+      **(a) Touches the gate — one at a time, full gate after each:** #26 ruff `0.15.12→0.15.22`
+      (ruff is **deliberately exact-pinned** here — a bump can reformat or re-flag the whole tree;
+      see the kit-phase2 ratchet notes), #5 mypy `<2.0→<3.0` and #6 pytest `<9.0→<10.0` (both
+      *widen the bound to admit the next major*, which can surface a large new error surface),
+      #14 pytest-rerunfailures `<16→<17`.
+      **(b) CI infrastructure, major — breakage blocks every future PR:** #10
+      actions/download-artifact `4.3.0→8.0.1` (four majors), #12 actions/setup-python `5.6.0→7.0.0`
+      (**note the mismatch: the branch name says `6.3.0`, the title says `7.0.0` — resolve before
+      merging**), #11 docker/setup-buildx-action `3→4`, #18 docker/build-push-action `6→7`.
+      **(c) Already red:** #23 github/codeql-action/init `3.37.0→4.37.1` has **2 failing checks** —
+      and CodeQL is exactly what step 16 wants to promote to a *required* check, so this one is
+      load-bearing for the tag.
+      **(d) docs-site, lower risk:** #17 typescript `6.0.3→7.0.2` (major), #24 fumadocs-openapi,
+      #25 fumadocs-core, #27 fumadocs-mdx, #28 @tailwindcss/postcss (patch).
+      **Also true of all 14:** they are based on `main` from 2026-07-13/16 and branch protection
+      is `strict: true`, so every one needs updating against current `main` before it can merge at
+      all. Suggested order: (d) minors as one batch → (b) individually → (a) individually with a
+      full gate each → (c) after diagnosing its failures.
+      _(discovered: v1.1.0 stream, 2026-07-21, `docs/compose-rewrite-dial`; open count 19 → 20 —
+      the ceiling is ~8-10 and the reduction sprint is badly overdue. Owner-deferred to the next
+      session at filing time, not an oversight.)_
 
 #### Resolved
 

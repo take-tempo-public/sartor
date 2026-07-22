@@ -21,6 +21,34 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Added: compose-time rewrite-latitude findings (`docs/compose-rewrite-dial`)
+
+Docs-only; design input for a future tuning pass. Nothing built or scheduled.
+
+New [`docs/dev/COMPOSE_REWRITE_DIAL.md`](docs/dev/COMPOSE_REWRITE_DIAL.md) records an
+owner-led analysis of why corpus-selected bullets render verbatim and never get
+re-worded for JD fit:
+
+- The capability **existed and was documented** (`RELEASE_CHECKLIST.md`'s v1.0.2 WYSIWYG
+  section: the LLM was *"free to reword each bullet for sharpness / JD relevance"*) and was
+  lost as **WYSIWYG-divergence collateral — not a grounding decision**. The trade-off
+  dissolves if re-wording moves to **compose** time, before the freeze: preview==download
+  and the deterministic-assembly boundary (C-6) both still hold.
+- The mechanism is **largely already built** — `draft_surgical_refinement`,
+  `supersedes_bullet_id`, `pattern_kind`, and an accept-time exclusion that already
+  enforces "never a rewrite and its source bullet in the same compose." It is missing a
+  **JD-driven, compose-wide trigger**, not new architecture. Jaccard dedup lives in corpus
+  curation, not compose, so it cannot suppress a rewrite.
+- Records the three-category grounding model any contract must respect —
+  restate / **categorize** / invent — and flags that `grounding_overlap`'s lexical matching
+  scores legitimate categorization as `missing`, so a tuning pass would fight its own metric.
+- Evidence-gated: the PX-39 real-corpus run can yield the validating comparison at no extra
+  cost. n=1 with no content-level attribution — evidence first, then the dial.
+
+`RELEASE_CHECKLIST.md`'s carry-forward ledger item is revised in place to point here; its
+original "non-JD-paired exemplar" framing was superseded by the analysis (the artifact is
+JD-paired, and the corpus reproduces it with zero fact gaps). No net change to the open count.
+
 ### Changed: v1.1.0 endgame requirements catalog refreshed (`docs/v110-endgame-scope`)
 
 Docs-only. Sourced current verified state (not the prior handoff summary) for every
