@@ -21,6 +21,38 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Changed: docs-site dependency bumps — fumadocs trio, tailwindcss/postcss, typescript major (`chore/dependabot-docs-site`)
+
+Supersedes 5 open Dependabot PRs (#17, #24, #25, #27, #28), all based on `main` from
+2026-07-13/16 and rebased here against current `main` per branch protection's
+`strict: true`. Landed as one PR rather than five separate Dependabot merges because a
+grouped CHANGELOG entry has to live on a contributing branch, and because #25 needed a
+fix Dependabot's own diff doesn't offer (below).
+
+- `fumadocs-openapi` `11.1.1 → 11.2.2`, `fumadocs-core` `16.11.2 → 16.11.5`,
+  `fumadocs-mdx` `15.1.0 → 15.2.0`, `@tailwindcss/postcss` `4.3.2 → 4.3.3`, `typescript`
+  `6.0.3 → 7.0.2` (major).
+- **Found and fixed within this branch, not a new open item:** `fumadocs-core`'s bump
+  alone (Dependabot PR #25) breaks `npm ci` — `fumadocs-ui` (aliased to
+  `npm:@fumadocs/base-ui`) has a peer dependency that locks `fumadocs-core` to an EXACT
+  version, so bumping fumadocs-core without also bumping the base-ui pin leaves an
+  unresolvable peer conflict. Verified this is a defect in #25 itself (not an artifact
+  of this branch's cherry-pick order) by running `npm ci` against #25's own commit in an
+  isolated worktree — it fails there too. No PR check builds `docs-site/`
+  (`docs-deploy.yml` triggers on push-to-`main` only), so Dependabot's own CI never
+  caught it. Fix: bump `fumadocs-ui`'s pin to `npm:@fumadocs/base-ui@16.11.5` in
+  lockstep, whose peer dependency matches.
+- Validated with a full local `npm run build` (not just lockfile resolution) — compiles,
+  typechecks under TS 7, and generates all 126 static pages clean.
+- **`npm audit` on this branch reports 7-8 high-severity findings** (`sharp` inherited
+  libvips CVEs via `next@16.2.10`; `fast-uri` via `ajv`), confirmed identical on
+  unmodified `main` via an isolated worktree audit — pre-existing, not introduced by any
+  bump here, and no open Dependabot PR touches `next` or `sharp`. This contradicts this
+  file's 2026-07-14 "`npm audit` now reports 0 vulnerabilities" claim (`chore/scorecard-and-docs-voice`,
+  below) — the count has drifted upward since via an unpinned transitive path. Filed as
+  a new carry-forward ledger item rather than fixed here (out of scope for a
+  Dependabot-bump branch; `next`/`sharp` upgrades are their own risk-bearing change).
+
 ### Added: compose-time rewrite-latitude findings (`docs/compose-rewrite-dial`)
 
 Docs-only; design input for a future tuning pass. Nothing built or scheduled.
