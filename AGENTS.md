@@ -125,6 +125,7 @@ is the failure mode this section exists to prevent.
    - **trailing "track this" observations** — every note surfaced this session (flaky tests, drift spotted, process friction, follow-on flags, deferred sub-decisions) is **filed durably now** into the **one** Carry-forward ledger in `RELEASE_CHECKLIST.md` (a memory / a PX row may *also* hold detail, but the ledger is the single authoritative home — not scattered per-stream sections joined by pointers); never left to surface after merge as a new one-file branch;
    - **the handoff renders the FULL still-open ledger** — the `Carried-forward observations` section reproduces the *cumulative* still-open subset (every open item, not just this session's), so nothing falls out of attention across handoffs; at **~8–10 open items**, flag a reduction sprint. (Canonical: charter **W-1** "carry-forward discipline".)
    - **branches to prune** identified;
+   - **this session's own `consumed`-event provenance-ledger file** (`docs/dev/ledger/<session>.jsonl`, written on `main` at session start when the incoming handoff pointer was consumed) **is committed on this branch** — folded into an early commit, never left untracked and never given its own dedicated branch/PR (see `docs/dev/prov/SPEC.md` §5 step 3);
    - **any dev server or long-lived background process started this session terminated**
      before closing the window — an agent's own orphaned processes are exactly the failure
      mode carry-forward ledger item 20 documents (a day-old orphaned `python app.py` caused

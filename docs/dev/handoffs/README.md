@@ -35,6 +35,15 @@ an edit to the original (append-only history).
   validator with `--event consumed` as the next step. See
   `docs/dev/prov/SPEC.md` §5 for the full workflow and what a `blocked`
   result means.
+- **Landing the ledger file the consumption step writes.** `--event
+  consumed` writes a new, untracked `docs/dev/ledger/<session>.jsonl` on
+  `main`, before any branch exists — nothing else will commit it for
+  you. Fold it into the **first commit** of the next branch this session
+  creates; do not open a dedicated branch or PR just to land it. If the
+  session ends without creating any branch, name the stray file in
+  `RELEASE_CHECKLIST.md`'s carry-forward ledger so the next session's
+  first branch picks it up instead of it going orphaned again. Full
+  rule: `docs/dev/prov/SPEC.md` §5 step 3.
 
 Full schema and rationale: `docs/dev/prov/SPEC.md`. Design record:
 `docs/dev/handoff-integrity-design.md`.

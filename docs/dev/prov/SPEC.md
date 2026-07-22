@@ -137,3 +137,20 @@ for the CLI.
    result is the doc's first output to the user — surface it and stop.
    Never reconstruct silently, even if the reconstruction looks obviously
    correct.
+3. **Landing the consumption record.** This step writes a new, untracked
+   `docs/dev/ledger/<session>.jsonl` — consumption happens at session
+   start, on `main`, before any branch exists, so unlike a `generated`
+   event (which rides along with the branch that produced the doc it
+   describes) nothing automatically picks this file up. **This session
+   owns landing it:** commit it as part of the **first commit** of the
+   next branch this session creates — do not open a branch (let alone a
+   PR) just to land a one-line `.jsonl`; that was the ad hoc pattern used
+   twice (`docs/record-orphaned-ledger-event`, then
+   `docs/record-handoff-consumed-event`) before this rule existed, and
+   it is needless process overhead repeated every session. If a session
+   ends without creating any branch, name the stray file explicitly in
+   `RELEASE_CHECKLIST.md`'s carry-forward ledger before closing, so the
+   next session's first branch folds it in rather than it sitting
+   silently untracked (an orphaned record is exactly the gap
+   `docs/dev/handoffs/docs-record-orphaned-ledger-event.md` recorded and
+   fixed once already).
