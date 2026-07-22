@@ -21,6 +21,50 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Changed: CI-infra action bumps — setup-python major, codeql-action major (config-error fix), docker actions (`chore/dependabot-ci-infra`)
+
+Supersedes 4 open Dependabot PRs (#11, #12, #18, #23) — the CI-infrastructure-major and
+already-red groups of the Dependabot backlog, continuing `chore/dependabot-docs-site`'s
+group (d). Hand-applied rather than cherry-picked, because each has a call site
+Dependabot's own diff never touches.
+
+- `actions/setup-python` `5.6.0 → 7.0.0` at **5 sites**: `ci.yml` (×2), `docs-deploy.yml`,
+  `release.yml`, and the shared composite action
+  `.github/actions/setup-python-env/action.yml` — the last of which Dependabot doesn't
+  scan (it only reads workflow files directly, not composite actions), so it would have
+  stayed pinned to v5 indefinitely. **Live-exercised** by this PR's own required `quality`
+  checks.
+- `github/codeql-action` (init/analyze/upload-sarif) `3 → 4.37.1` at **3 sites**:
+  `codeql.yml` (init + analyze) and `scorecard.yml` (upload-sarif). **Root-caused, not
+  guessed:** Dependabot's own PR #23 bumped only `init`, leaving `analyze` and
+  `upload-sarif` on the old v3 pin — the resulting CI failure is CodeQL's own workflow
+  linter refusing to run with mismatched action versions ("CodeQL job status was
+  configuration error"), verified from the run log, not inferred from a plausible
+  mechanism. All 3 sites now share the same v4.37.1 commit SHA, independently
+  re-verified against the GitHub API rather than trusted from Dependabot's diff (whose
+  `# v3` pin-comment on the new SHA was itself stale). #23 closed as superseded.
+  **Live-exercised** by this PR's own required `Analyze` checks.
+- **Found and reconciled, not itself a dependency bump:** `codeql.yml`'s in-file comment
+  and `RELEASE_CHECKLIST.md`'s carry-forward ledger both stated CodeQL is "NOT a required
+  check" on `main`, pending an `[HUMAN/OWNER]` toggle. Querying `main`'s branch protection
+  directly (`gh api repos/:owner/:repo/branches/main/protection`) shows `Analyze (python)`
+  and `Analyze (javascript-typescript)` are **already** required — the toggle had already
+  happened without either doc being updated. Both corrected on this branch; the
+  `RELEASE_CHECKLIST.md` item is marked resolved.
+- `docker/setup-buildx-action` `3 → 4.2.0`, `docker/build-push-action` `6 → 7.3.0`, both
+  single-site in `docker.yml`. **Not live-exercised** — `docker.yml` triggers on
+  tag-push/`workflow_dispatch` only, so these merge on YAML-correctness + review; first
+  real exercise is the v1.1.0 tag.
+- **Deliberately NOT landed:** #10 `actions/download-artifact` `4.3.0 → 8.0.1`.
+  `release.yml` uploads with `actions/upload-artifact@v4` (no matching upload-side bump is
+  offered by Dependabot), and pairing a v4 upload with a v8 download risks breaking the
+  release — it also can't be live-tested pre-tag. Deferred to release time, to be handled
+  in lockstep with `upload-artifact`.
+- **Deliberately NOT landed:** group (a) of the Dependabot backlog — #26 ruff, #5 mypy
+  (resolves 2.3.0, itself a MAJOR), #6 pytest, #14 pytest-rerunfailures — the 4
+  gate-touching bumps. Full risk detail in `RELEASE_CHECKLIST.md`'s carry-forward ledger
+  item 20.
+
 ### Changed: docs-site dependency bumps — fumadocs trio, tailwindcss/postcss, typescript major (`chore/dependabot-docs-site`)
 
 Supersedes 5 open Dependabot PRs (#17, #24, #25, #27, #28), all based on `main` from
