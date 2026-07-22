@@ -53,9 +53,48 @@ true again as of this entry.
 fix — confirmed via an isolated worktree that the failure reproduces on unmodified `main`
 HEAD. No PR check builds `docs-site/`, so this went unnoticed at merge time each time.
 Filed as a new, URGENT carry-forward ledger item (`docs/dev/RELEASE_CHECKLIST.md`) with a
-full evidence trail in `docs/dev/diagnosis/docs-site-typescript-detection-broken.md` — out
-of scope to fix here (a distinct root cause, most likely an ESM/CJS detection break in
-Next's TypeScript-installed check against `typescript@7.0.2`).
+full evidence trail in `docs/dev/diagnosis/docs-site-typescript-detection.md` (renamed
+from `-broken.md` on the fix branch below) — out of scope to fix here (a distinct root
+cause, most likely an ESM/CJS detection break in Next's TypeScript-installed check
+against `typescript@7.0.2`). **Fixed below, same file.**
+
+### Fixed: `docs-site/` production build outage — TypeScript-detection false negative (`fix/docs-site-typescript-detection`)
+
+Resolves carry-forward ledger item 20 (filed above, `[URGENT]`), an active production
+outage: `docs-deploy.yml` had failed on every push to `main` for 5 consecutive merges
+(PRs #42, #44, #45, #46, #47) since 2026-07-22T06:36Z — the hosted docs site had not
+rebuilt since PR #41.
+
+**Root cause, proven by reading the installed source (not just correlation):** PR #42's
+dependabot bump moved `typescript` `6.0.3 → 7.0.2`. `typescript@7` restructured to a
+pure-ESM package and no longer ships `lib/typescript.js` (the API moved under `dist/`,
+addressed via the package's `exports` map). But `next@16.2.11`'s TypeScript detector
+(`verify-typescript-setup.js` / `has-necessary-dependencies.js`) hard-codes an
+`existsSync` check for exactly that file — so a genuinely-installed `typescript@7.x`
+reads as "missing." In CI this prints the exact "trying to use TypeScript..." error and
+exits; locally it instead attempts an auto-install (silently rewriting `package.json`)
+then crashes differently — both observed failure shapes are explained by this one
+function, gated on `process.env.CI`. Full read-the-source trail in
+`docs/dev/diagnosis/docs-site-typescript-detection.md`.
+
+**Fix:** pinned `docs-site/package.json`'s `devDependencies.typescript` back to
+`^6.0.3` (the last CJS-shaped, last-known-good line whose `lib/typescript.js` genuinely
+exists) and regenerated the lockfile. `next` stays at `16.2.11` — unchanged. Added a
+dependabot `ignore` for `typescript` major-version bumps under the `/docs-site` entry so
+the exact break isn't re-proposed next week. Verified: clean `npm ci` + `npm run build`
+reaches `out/index.html` with no TypeScript-detection error; `npm audit` still reports 0
+vulnerabilities.
+
+**Also closed the blind spot that let this regress silently 5 times:** `docs-deploy.yml`
+now also triggers on `pull_request` (build steps only — the artifact-upload and
+SFTP-deploy steps stay push-gated), so a broken docs-site build now fails a visible PR
+check instead of landing on `main` unnoticed.
+
+**Side effect, noted not chased:** the standalone `fumadocs-mdx` CLI (used only by the
+`types:check` npm script, which no CI workflow or doc references) generates empty
+`.source/*.ts` files under `typescript@6.0.3` where it did not under `7.0.2` — the actual
+build path (`next build`, what CI runs) is unaffected, verified by the full 132-page
+static export above. See the diagnosis dossier's `## Inferred` section.
 
 ### Changed: CI-infra action bumps — setup-python major, codeql-action major (config-error fix), docker actions (`chore/dependabot-ci-infra`)
 

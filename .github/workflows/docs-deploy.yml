@@ -12,9 +12,21 @@ name: Docs site deploy
 # pushed to a GitHub remote (same "committed but latent" status as the rest
 # of CI; see docs/governance/enforcement.md). No literal secrets — see
 # docs/dev/docs-site-deploy.md for the setup runbook.
+#
+# Also runs on pull_request (fix/docs-site-typescript-detection) — the build
+# steps through "Verify static export was produced" are shared by both
+# triggers, so a broken docs-site build now fails a visible PR check instead
+# of landing silently on main. Before this, 5 consecutive merges (PRs #42,
+# #44, #45, #46, #47) broke the deploy with nobody noticing at merge time —
+# see docs/dev/diagnosis/docs-site-typescript-detection.md. The
+# artifact-upload and SFTP-deploy steps stay gated to push-only: publishing a
+# downloadable artifact or pushing to the live host for every PR would be
+# noise, not signal.
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch: {}
 
@@ -90,11 +102,13 @@ jobs:
         working-directory: docs-site
         run: test -f out/index.html
 
-      # PRIMARY output — always produced. A zip any webhost can serve:
+      # PRIMARY output — always produced on push. A zip any webhost can serve:
       # download from the workflow run, upload via FTP/SFTP/cPanel/File
       # Manager. This is the deploy path that works before any secret is
-      # configured, and stays the fallback afterward.
+      # configured, and stays the fallback afterward. Push-gated: a PR run
+      # only needs to prove the build succeeds, not publish an artifact.
       - name: Upload static export artifact
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: docs-site-out
@@ -111,8 +125,10 @@ jobs:
       #   SFTP_PORT          — optional; SFTP port (default: 22)
       # See docs/dev/docs-site-deploy.md for the full setup runbook. Absent
       # secrets are NOT a failure — this step logs "not configured" and the
-      # job still succeeds (the artifact above already published).
+      # job still succeeds (the artifact above already published). Push-gated:
+      # a PR run must never touch the live host.
       - name: Check SFTP/SSH deploy secrets
+        if: github.event_name == 'push'
         id: sftp_check
         env:
           HAS_HOST: ${{ secrets.SFTP_HOST != '' }}
@@ -130,7 +146,7 @@ jobs:
           fi
 
       - name: Deploy over SFTP/SSH
-        if: steps.sftp_check.outputs.configured == 'true'
+        if: github.event_name == 'push' && steps.sftp_check.outputs.configured == 'true'
         uses: wlixcc/SFTP-Deploy-Action@da88a4dbe95286266bbac3c0b2b8284048d20c8f # v1.2.4
         with:
           username: ${{ secrets.SFTP_USER }}

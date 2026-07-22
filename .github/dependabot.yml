@@ -38,3 +38,12 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # typescript is held at ^6.0.3 deliberately — typescript@7's ESM restructure
+    # dropped lib/typescript.js, which next@16.2.11's TypeScript detector hard-codes
+    # an existsSync check against, so a genuinely-installed typescript@7.x reads as
+    # "missing" and the build fails on every push. See
+    # docs/dev/diagnosis/docs-site-typescript-detection.md. Remove this ignore once
+    # next ships a detector that resolves typescript via its exports map.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
