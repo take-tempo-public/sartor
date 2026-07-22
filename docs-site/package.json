@@ -19,21 +19,32 @@
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.11.5",
     "lucide-react": "^1.23.0",
     "mermaid": "^11.16.0",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "next-themes": "^0.4.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "shiki": "^4.3.1"
   },
   "comment:overrides": [
-    "next@16.2.10 pins postcss 8.4.31 in its own nested tree, which is affected by",
+    "next@16.2.11 pins postcss 8.4.31 in its own nested tree, which is affected by",
     "GHSA-qx2v-qp2m-jg93 (moderate: postcss < 8.5.10 fails to escape </style> when",
     "stringifying a CSS AST). Our own top-level postcss is already 8.5.x; this",
     "override lifts the nested copy to the patched line too, so no vulnerable",
-    "postcss is installed anywhere in the tree. Remove once Next ships a patched pin."
+    "postcss is installed anywhere in the tree. Remove once Next ships a patched pin.",
+    "sharp is an optional dep of next (declared ^0.34.5, unchanged as of next@16.2.11)",
+    "and is affected by GHSA-f88m-g3jw-g9cj (high: inherited libvips CVE-2026-33327,",
+    "CVE-2026-33328, CVE-2026-35590, CVE-2026-35591). This site never invokes sharp:",
+    "next.config.mjs sets output:'export' + images.unoptimized:true. Override lifts it",
+    "to a patched line anyway so npm audit reports 0 vulnerabilities.",
+    "fast-uri (pulled in via ajv, itself a dep of fumadocs' schema tooling) is affected",
+    "by GHSA-v2hh-gcrm-f6hx (high: host confusion via a literal backslash authority",
+    "delimiter) below 3.1.4. Override lifts it to the patched line; stays within ajv's",
+    "own declared ^3.0.1 range."
   ],
   "overrides": {
-    "postcss": "^8.5.16"
+    "postcss": "^8.5.16",
+    "sharp": "^0.35.0",
+    "fast-uri": "^3.1.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
