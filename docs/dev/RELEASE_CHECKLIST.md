@@ -515,12 +515,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **20** (net unchanged this entry — `chore/dependabot-docs-site`,
-2026-07-22: landed the Dependabot backlog item's group (d), 5 of 14 PRs closed, and diagnosed
-(not yet executed) groups (b)/(c) — see that item's updated detail below. No item opened or
-resolved outright, so the count itself doesn't move; recorded for the audit trail per this
-ledger's own convention of chaining every substantive touch. Prior to that: **20** (**+1** this
-entry — `docs/compose-rewrite-dial`, 2026-07-21:
+_Rendered open count: **19** (**−1** this entry — `chore/dependabot-ci-infra`, 2026-07-22:
+resolved the "[HUMAN/OWNER] Wire CodeQL as a required status check on `main`" item — found,
+while diagnosing an unrelated Dependabot PR, that `Analyze (python)` +
+`Analyze (javascript-typescript)` are already in `main`'s required-checks list via the
+branch-protection API; the owner toggle this item was tracking had already happened without
+the ledger being reconciled. Also landed groups (b)/(c) of the Dependabot-backlog item (9 of
+14 PRs now closed) — no separate count change from that, since the item itself stays open
+until group (a) too lands; see that item's updated detail below. Prior to that: **20** (net
+unchanged — `chore/dependabot-docs-site`, 2026-07-22: landed the Dependabot backlog item's
+group (d), 5 of 14 PRs closed, and diagnosed (not yet executed) groups (b)/(c). No item
+opened or resolved outright, so the count itself didn't move; recorded for the audit trail
+per this ledger's own convention of chaining every substantive touch. Prior to that: **20**
+(**+1** this entry — `docs/compose-rewrite-dial`, 2026-07-21:
 filed the **Dependabot backlog** item below (14 open PRs, surfaced at close-out when the owner
 asked to merge "the opens"; deferred to its own session on inspection — see that item for the
 risk breakdown). The same branch also revised the exemplar-resume item filed hours earlier into
@@ -833,6 +840,16 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       toggle); cannot be done from a workflow or by an agent. _(split from the CodeQL item above,
       2026-07-14, `fix/codeql-path-injection-context`; the resolver+barrier work is done, this is
       the residual owner toggle.)_
+      **→ RESOLVED (found already done, not by this branch) — 2026-07-22,
+      `chore/dependabot-ci-infra`.** Queried `main`'s branch protection directly
+      (`gh api repos/:owner/:repo/branches/main/protection`) while diagnosing an unrelated
+      Dependabot PR (#23, codeql-action bump): **`Analyze (python)` and
+      `Analyze (javascript-typescript)` are already in the required-checks list** (owner must
+      have flipped the toggle at some point after 2026-07-14 without updating this item or the
+      matching stale comment in `codeql.yml`, which claimed "NOT a required check" until this
+      branch corrected it — see `codeql.yml`'s CodeQL-init step). No workflow or owner action
+      needed; this item just hadn't been reconciled against reality. Retired from the open
+      count, not from the historical record.
 
 - [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
       fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
@@ -1911,41 +1928,62 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       asked to "merge the opens." Inspected rather than merged; owner then deferred the sweep to
       its own session. **Do NOT bulk-merge** — this is a dedicated branch with a full gate run
       between the risky bumps, not a close-out step. Grouped by risk:
-      **(a) Touches the gate — one at a time, full gate after each — DEFERRED, probe only:**
-      #26 ruff `0.15.12→0.15.22` (ruff is **deliberately exact-pinned** here — a bump can
-      reformat or re-flag the whole tree; see the kit-phase2 ratchet notes), #5 mypy
-      `<2.0→<3.0` (resolves **2.3.0**, itself a MAJOR — verified against the live PyPI index
-      2026-07-21), #6 pytest `<9.0→<10.0` (resolves 9.1.1), #14 pytest-rerunfailures `<16→<17`
-      (resolves 16.4). Still open — a throwaway-venv probe of the resulting error surface is
-      this session's only touch, no repo change.
-      **(b) CI infrastructure, major — PLANNED, next branch this session (not started as of
-      this commit):** #11 docker/setup-buildx-action `3→4`, #18 docker/build-push-action
-      `6→7`, targeted for `chore/dependabot-ci-infra` (docker.yml triggers on
-      tag-push/`workflow_dispatch` only, so these would merge on YAML-correctness + review, not
-      a live PR check; first real exercise is the v1.1.0 tag).
-      #10 actions/download-artifact `4.3.0→8.0.1` **recommend deferring to release time** —
+      **(a) Touches the gate — one at a time, full gate after each — STILL DEFERRED,
+      probed this session (no repo change):** #26 ruff `0.15.12→0.15.22` (ruff is
+      **deliberately exact-pinned** here — a bump can reformat or re-flag the whole tree;
+      see the kit-phase2 ratchet notes), #5 mypy `<2.0→<3.0` (resolves **2.3.0**, itself a
+      MAJOR — verified against the live PyPI index), #6 pytest `<9.0→<10.0` (resolves
+      9.1.1), #14 pytest-rerunfailures `<16→<17` (resolves 16.4).
+      **Probe results (2026-07-22, `chore/dependabot-ci-infra`, throwaway venv, no repo
+      change):** all 4 resolved to the exact versions predicted above. `ruff check .` +
+      `ruff format --check .` under 0.15.22 — **0 new findings, 0 reformats**, clean.
+      `mypy .` under 2.3.0 (the MAJOR) — **0 new errors**; the 94 `annotation-unchecked`
+      informational notes are identical in count to the 1.20.2 baseline run side-by-side,
+      confirming they're pre-existing, not new noise from the bump. `pytest` under 9.1.1 +
+      rerunfailures 16.4 — **2024 passed, 129 skipped, 0 failed, 0 errors** in 379s. Caveat:
+      the probe venv never ran `playwright install chromium`, so the entire `ux`-marked
+      tier (129 tests) skipped rather than exercised — this probe does NOT validate the
+      Playwright/a11y tier under the new pytest, only the ~2024 non-`ux` tests. Also
+      Python-3.13-only; doesn't cover the 3.11/3.12 CI matrix. **Net: no red flag from the
+      probe, but the UX tier and the 3.11/3.12 matrix remain unvalidated** — still requires
+      its own dedicated branch with the FULL local gate (not a probe) between each bump, per
+      this item's original ordering guidance, before landing.
+      **(b) CI infrastructure, major — LANDED** via `chore/dependabot-ci-infra`: #11
+      docker/setup-buildx-action `3→4` (`bb05f3f5519dd87d3ba754cc423b652a5edd6d2c`), #18
+      docker/build-push-action `6→7` (`53b7df96c91f9c12dcc8a07bcb9ccacbed38856a`) — both
+      single-site in `docker.yml`. `docker.yml` triggers on tag-push/`workflow_dispatch`
+      only, so these merged on YAML-correctness + review, not a live PR check; first real
+      exercise is the v1.1.0 tag.
+      #10 actions/download-artifact `4.3.0→8.0.1` **deferred to release time, NOT landed** —
       `release.yml` uploads with `actions/upload-artifact@v4` (a matching upload-side bump
       isn't offered by Dependabot) and pairing v4-upload with v8-download risks breaking the
       release; handle it in lockstep with `upload-artifact` at the v1.1.0 tag (folds into
       step 17).
-      #12 actions/setup-python `5.6.0→7.0.0` also targeted for `chore/dependabot-ci-infra` —
-      the branch-name/title mismatch the prior entry flagged is benign (both agree on v7.0.0);
-      the **real gap Dependabot missed** is the composite action
-      `.github/actions/setup-python-env/action.yml:17`, which Dependabot doesn't scan and never
-      bumps — needs a hand fix alongside the 4 direct call sites.
-      **(c) Already red — DIAGNOSED this session, fix PLANNED for `chore/dependabot-ci-infra`
-      (not started as of this commit):** #23 github/codeql-action/init `3.37.0→4.37.1`'s 2
-      failing checks are a **CodeQL configuration error**, not a code problem — the run log
-      states plainly: *"Not all workflow steps that use `github/codeql-action` actions use the
-      same version … CodeQL job status was configuration error."* Dependabot bumped `init`
-      only; `analyze` (`codeql.yml:63`) and `upload-sarif` (`scorecard.yml:49`) still pinned
-      v3. Plan: close #23, land a 3-site v4.37.1 alignment
-      (`7188fc363630916deb702c7fdcf4e481b751f97a`). **Also found this session (true now,
-      independent of when the fix branch lands):** `Analyze (python)` +
+      #12 actions/setup-python `5.6.0→7.0.0` also **LANDED** via `chore/dependabot-ci-infra`
+      (`5fda3b95a4ea91299a34e894583c3862153e4b97`) — the branch-name/title mismatch the prior
+      entry flagged was benign (both agreed on v7.0.0). **Found and fixed within that
+      branch, not a new open item:** the composite action
+      `.github/actions/setup-python-env/action.yml:17`, which Dependabot doesn't scan and
+      never bumps, was still pinned to v5 — fixed by hand alongside the 4 direct call sites
+      Dependabot's own diff did cover (`ci.yml` ×2, `docs-deploy.yml`, `release.yml`). This
+      site is exercised live by this PR's own required `quality` checks.
+      **(c) Already red — RESOLVED-BY-DIAGNOSIS, fix LANDED** via `chore/dependabot-ci-infra`:
+      #23 github/codeql-action/init `3.37.0→4.37.1`'s 2 failing checks were a **CodeQL
+      configuration error**, not a code problem — the run log stated plainly: *"Not all
+      workflow steps that use `github/codeql-action` actions use the same version … CodeQL
+      job status was configuration error."* Dependabot bumped `init` only; `analyze`
+      (`codeql.yml:63`) and `upload-sarif` (`scorecard.yml:49`) were still pinned to v3.
+      Closed #23 as superseded; landed a 3-site v4.37.1 alignment
+      (`7188fc363630916deb702c7fdcf4e481b751f97a`, independently re-verified against the
+      GitHub API, not just Dependabot's diff — its `# v3` comment was itself stale/wrong).
+      This is exercised live by this PR's own required `Analyze` checks. **Also found this
+      session, reconciled the same branch:** `Analyze (python)` +
       `Analyze (javascript-typescript)` are **already required status checks on `main`**
-      (confirmed via the branch-protection API) — contradicting both this backlog's own framing
-      above ("load-bearing for [step 16's] promotion [to required]") and `codeql.yml`'s in-file
-      comment ("this workflow is NOT a required check"). To be reconciled in the same branch.
+      (confirmed via the branch-protection API) — contradicting both this backlog's own prior
+      framing above ("load-bearing for [step 16's] promotion [to required]") and
+      `codeql.yml`'s in-file comment ("this workflow is NOT a required check"), both now
+      corrected. See also the now-RESOLVED "[HUMAN/OWNER] Wire CodeQL as a required status
+      check" item above, which had the identical stale premise.
       **(d) docs-site, lower risk — LANDED:** #17 typescript `6.0.3→7.0.2` (major), #24
       fumadocs-openapi, #25 fumadocs-core, #27 fumadocs-mdx, #28 @tailwindcss/postcss (patch) —
       landed via `chore/dependabot-docs-site` this session, validated with a real
@@ -1968,11 +2006,12 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       **Also true of what remains (group a):** all are based on `main` from 2026-07-13/16 and
       branch protection is `strict: true`, so each still needs updating against current `main`.
       _(discovered: v1.1.0 stream, 2026-07-21, `docs/compose-rewrite-dial`; open count 19 → 20.
-      Group (d) landed 2026-07-22 via `chore/dependabot-docs-site` (5 of 14 PRs closed); groups
-      (b)/(c) diagnosed and planned the same branch/day but not yet executed — next step is
-      `chore/dependabot-ci-infra`. #10 recommended for deferral to release time. Group (a)'s 4
-      PRs stay untouched pending a throwaway-venv probe. Item stays OPEN (not renumbered out)
-      until group (a) lands too; ceiling is ~8-10 and the reduction sprint remains overdue.)_
+      Groups (b)/(c)/(d) landed 2026-07-22 via `chore/dependabot-docs-site` +
+      `chore/dependabot-ci-infra` — 9 of 14 PRs closed (#17/#24/#25/#27/#28/#11/#12/#18/#23).
+      #10 deferred to release time, not landed. Group (a)'s 4 PRs (#26/#5/#6/#14) stay
+      untouched pending a throwaway-venv probe — the item's only remaining open surface.
+      Item stays OPEN (not renumbered out) until group (a) lands too; ceiling is ~8-10 and
+      the reduction sprint remains overdue.)_
 
 #### Resolved
 

@@ -41,13 +41,17 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           languages: ${{ matrix.language }}
           # security-and-quality is a superset of the default security queries.
-          # Advisory only — this workflow is NOT a required check (see ci.yml's
-          # activation note); a new query surfacing a finding must not block a PR
-          # until the finding is triaged.
+          # `Analyze (python)` and `Analyze (javascript-typescript)` ARE required
+          # status checks on `main`'s branch protection (verified via the
+          # branch-protection API, 2026-07-22) — a new query surfacing a finding
+          # blocks the PR until triaged/resolved. This corrects a stale comment
+          # here (previously "NOT a required check", pointing at a ci.yml
+          # "activation note" that doesn't exist) and RELEASE_CHECKLIST.md's
+          # carry-forward ledger item 2, which had the same status wrong.
           #
           # The model pack under .github/codeql/extensions/sartor-python-models/
           # (which declares web_infra.security.resolve_within a py/path-injection
@@ -60,6 +64,6 @@ jobs:
       # no-op here. Analyzing straight from the checked-out source avoids
       # installing the dependency tree twice.
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        uses: github/codeql-action/analyze@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           category: "/language:${{ matrix.language }}"
