@@ -6545,7 +6545,8 @@ function _resumeIntoStep6(rs) {
   // would on a fresh Step-3 arrival — an already-drafted summary or gap-fill
   // never re-fires the cascade, and nothing saved is clobbered. Skipping the
   // call entirely when compose was never reached avoids firing that cascade
-  // as a side effect of just viewing a downloaded résumé.
+  // as a side effect of just viewing a downloaded résumé. Intentionally
+  // unawaited — see the rationale at `wizardGoTo`'s own bare call (~:6932).
   if (rs.has_composition) loadComposition();
 
   if (_wizardReachable(6)) {
@@ -6603,6 +6604,7 @@ function _resumeIntoPreGenerateStep(rs, targetStep) {
   // is set, so steps 2–3 pass _wizardReachable.
   _wizardStep = targetStep;
   _wizardRender();
+  // Intentionally unawaited — see the rationale at wizardGoTo's own bare call (~:6932).
   if (targetStep === 3) loadComposition();
   _wizardStampHistory(targetStep);  // PX-22: re-entry baseline at the landed step
   setStatus('RESUMED FROM PRIOR APPLICATION');
@@ -6929,6 +6931,19 @@ function wizardGoTo(step, opts) {
   }
   _wizardStep = step;
   _wizardRender();
+  // Intentionally fire-and-forget (ledger carry-forward item #5, resolved
+  // 2026-07-22): unlike the 9 sites `fix/compose-unawaited-reloads` fixed,
+  // this call is never wrapped in a `_markComposeBgReload(1)/finally(-1)`
+  // bracket, so the premature-`finally`-decrement settle-race those 9 sites
+  // had is structurally absent here. `loadComposition()` self-manages
+  // `data-compose-ready` (removed synchronously at its own entry, re-added
+  // only at its terminal) and drives `data-compose-bg-pending` entirely
+  // through its own internally-awaited cascade — nothing external to
+  // prematurely release. Awaiting here would block the trailing sync UI
+  // work below behind a network round-trip and force async-ifying sync
+  // callers (the popstate handler, inline onclick attributes) for no
+  // correctness gain. Proven via `tests/ux/regression/
+  // test_20260722_compose_bare_reload_settle.py`.
   if (step === 3) loadComposition();
   if (step === 4) _loadTemplatePicker();
   if (step === 5) _renderGenerateStepCopy();

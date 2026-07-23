@@ -515,7 +515,16 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **19** (**−1** this entry — `fix/docs-site-typescript-detection`,
+_Rendered open count: **16** (**−3** this entry — `chore/reduction-sprint-ledger-compose-notes`,
+2026-07-22: the overdue reduction sprint's first bounded bite. **RESOLVED three items**:
+#2 (CodeQL required-check — ledger reconciliation only, the substantive action was already
+done and just never reconciled here), #15 (`block-merge-to-main` wiki arm — confirmed
+already re-scoped to push-only in shipped code, same reconciliation gap), and #5 (3
+excluded `loadComposition()` sites — proved `await` would be the WRONG fix via an
+adversarial-reviewer-verified analysis, resolved by documentation + a falsification test
+instead). Re-counted the actual `- [ ] **` bullets rather than trusting arithmetic (this
+ledger's own anti-drift rule): 19 → 16, confirmed. Prior to that: **19** (**−1** this
+entry — `fix/docs-site-typescript-detection`,
 2026-07-22: **RESOLVED** the `docs-site/` production build outage filed `[URGENT]` by the
 immediately-prior branch — see `#### Resolved` below for the fix (root cause proven by
 reading the installed Next.js detector source directly, not just correlation). Prior to
@@ -864,7 +873,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `take-tempo-public/sartor-python-models` (0.0.1/0.0.2) published by an earlier iteration is
       now unused (superseded by auto-discovery) and can be deleted from GHCR at leisure.
 
-- [ ] **[HUMAN/OWNER] Wire CodeQL as a *required* status check on `main`** — the
+- [x] **[HUMAN/OWNER] Wire CodeQL as a *required* status check on `main`** — the
       `fix/codeql-path-injection-context` branch earned CodeQL green *by construction* (0 open
       `py/path-injection`, 0 open high-severity — verified by API), but CodeQL is still only
       *advisory*: it is NOT in `main`'s required-check set (required = quality ×3 + UX/a11y/PDF).
@@ -1149,7 +1158,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       intermediate frames and mixed triggers (browser Back/Forward, a chained-async
       cascade tail) — see the new carry-forward row immediately below.
 
-- [ ] **3 `loadComposition()` sites excluded from the `compose-unawaited-reloads` fix
+- [x] **3 `loadComposition()` sites excluded from the `compose-unawaited-reloads` fix
       have a materially different shape and need their own pass** —
       `static/app.js:6549` (`_resumeIntoStep6`), `:6606`
       (`_resumeIntoPreGenerateStep`), and `:6932` (`wizardGoTo`, single call site,
@@ -1163,7 +1172,25 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       popstate-triggered path) before touching it.
       _(discovered: v1.1.0 stream, 2026-07-18, `fix/compose-unawaited-reloads`, while
       re-deriving the full call-site map for the row above.)_
-      **→ Low priority, own small pass — needs design, not just mechanical `await`.**
+      **→ RESOLVED (2026-07-22, `chore/reduction-sprint-ledger-compose-notes`) — `await`
+      is the WRONG fix, not merely "needs design."** Analysis plus an independent
+      adversarial reviewer (tasked to actively refute the finding) both concluded these
+      three sites are race-free by construction: unlike the 9 sites the prior branch
+      fixed, none of them wraps `loadComposition()` in a `_markComposeBgReload(1)/…
+      finally(-1)` bracket, so the premature-`finally`-decrement settle-race those 9 sites
+      had cannot occur here — `loadComposition()` self-manages `data-compose-ready`
+      (cleared synchronously at its own entry, re-added only at its true terminal) and
+      drives `data-compose-bg-pending` entirely through its own internally-awaited
+      cascade. Adding `await` would delay trailing synchronous UI work behind a network
+      round-trip, force async-ifying the synchronous `popstate` handler and inline
+      `onclick` attributes, and break `_resumeIntoStep6`'s deliberate background
+      hydration. **Fix applied:** documented the rationale at all three call sites
+      (`static/app.js`, comment at `wizardGoTo`'s bare call plus one-line pointers at the
+      other two) and added a falsification regression test,
+      `tests/ux/regression/test_20260722_compose_bare_reload_settle.py`, proving
+      `Compose.SETTLED` cannot report true until the genuinely-delayed reload finishes —
+      confirmed to fail when the settle marker's clear is disabled (sanity-checked, then
+      reverted). No `await` added; no behavior change.
 
 - [x] **Wiki-freshness gate over-counts `docs-site/` (L3 projection) as drift** —
       `scripts/wiki_freshness.py:drift_count` excludes only `docs/wiki/`, not `docs-site/`.
@@ -1799,7 +1826,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       count 16 → 17, further over the ~8-10 ceiling — reduction sprint now more overdue
       still.)_
 
-- [ ] **`block-merge-to-main`'s wiki arm makes a wiki-refreshing branch unmergeable —
+- [x] **`block-merge-to-main`'s wiki arm makes a wiki-refreshing branch unmergeable —
       the guard reads the PRE-merge worktree** — `scripts/enforcement/guards/block_merge_to_main.py`'s
       `_wiki_freshness_result()` runs `wiki_freshness.check()` against **the invoking
       worktree**. When you stand on `main` to merge a branch whose whole point includes
@@ -1834,8 +1861,13 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       every future wiki-refreshing branch hits this same wall.
       _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
       count 17 → 18.)_
-      **→ RESOLUTION IS (c), NOT A PATCH — being dissolved on `chore/merge-channel-alignment`
-      (step 5, scheduled 2026-07-19).** Investigating the root cause the next day showed the
+      **→ RESOLVED — RESOLUTION IS (c), NOT A PATCH — dissolved on
+      `chore/merge-channel-alignment` (step 5, 2026-07-19); confirmed 2026-07-22
+      (`chore/reduction-sprint-ledger-compose-notes`) directly in
+      `scripts/enforcement/guards/block_merge_to_main.py`: the wiki-freshness arm is now
+      gated on `_PUSH_MAIN_RE` only (`decide()`), and `git_operation_check` (the native
+      local-merge adapter) carries no wiki arm at all — a local merge to `main` no longer
+      evaluates doc freshness.** Investigating the root cause the next day showed the
       premise underneath (a) and (b) was wrong: they both assume a local `--no-ff` merge to
       `main` is a legitimate channel. It is not. **`main` carries branch protection requiring a
       PR** (6 required status checks, `strict: true`), so the local merge this guard was
