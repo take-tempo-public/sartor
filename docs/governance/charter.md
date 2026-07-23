@@ -1,7 +1,7 @@
 # Constitution — sartor.
 
 > **Purpose:** the single canonical home for sartor.'s *binding* governance —
-> the constitutional clauses (C-0…C-8), the defaults (D-1…D-7), the parallel-session
+> the constitutional clauses (C-0…C-9), the defaults (D-1…D-7), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
 > **Audience:** every contributor and every AI agent (Claude Code, Cursor, Codex,
@@ -273,3 +273,99 @@ here as an honest gap under this clause's own claims discipline (C-0), not silen
   Enforced by `tests/test_release_versioning_gate.py` + the tag-match step in
   `.github/workflows/release.yml`; mechanics in
   [`enforcement.md`](enforcement.md#b2-d-7--release-versioning--release-notes).
+
+---
+
+## Working model (W-1/W-2)
+
+**W-1 — Parallel-session isolation; serial by current posture.** The isolation
+mechanics below are the **construction** that makes concurrent agent sessions safe —
+they do not by themselves authorize running sessions concurrently; see the posture
+paragraph.
+
+1. **W-1.1 — Worktree-per-session.** Each concurrent agent session runs in its own git
+   worktree; sessions never share a working tree. This is the structural precondition
+   that makes W-1.2/W-1.3 enforceable rather than advisory.
+2. **W-1.2 — Session-scoped global state.** Plan state and its `.approved` marker under
+   `~/.claude/plans/` are keyed per project/worktree (`CLAUDE_PROJECT_DIR`), so one
+   session's plan lifecycle cannot false-block or wipe another's. No session hand-creates
+   the marker a hook checks for — only the sanctioned path (`ExitPlanMode`) creates
+   `.approved`.
+3. **W-1.3 — Branch ownership.** One branch per session; a session owns its branch
+   end-to-end. A worktree-local `HEAD == main`/`master` check backs this structurally,
+   so branch ownership is gate-backed, not vigilance-backed.
+4. **W-1.4 — Carry-forward discipline.** Tracked-deferred observations (flaky tests,
+   drift spotted, process friction, deferred sub-decisions) live in **one** cumulative
+   open ledger (`../dev/RELEASE_CHECKLIST.md`'s Carry-forward section), not scattered
+   per-branch notes; every handoff renders the full still-open subset, not just the
+   authoring session's own additions; at **~8–10 open items**, a reduction sprint is
+   flagged rather than left to grow unbounded.
+
+**Posture.** W-1.1–W-1.3 are the construction that makes parallel sessions safe *if*
+run; they are not, by themselves, a standing authorization to run them. The **operative
+default today is serial**: one branch, one session, sequential — no multi-agent
+conductor, no parallel lanes, no wave assembly — until Claude Code's reliability is
+trusted again (`../dev/RELEASE_ARC.md` Key decision 10, 2026-07-16). This does not
+forbid a single session using read-only research subagents; it forbids multi-agent
+orchestration that writes code or reports completion on another agent's behalf without
+direct, line-level verification. Parallelism is available-by-construction, not
+currently endorsed — revisit this posture paragraph, not W-1.1–W-1.4, when reliability
+is re-established. *[src: adopted 2026-07-23, owner-directed, from the ledger
+walk-through on `fix/panel-css-cascade-residuals`. W-1.1–W-1.3 grounded in **F-gov-02**
+(two live isolation collisions found in production hook code: a global `.approved`
+marker a second session's plan invalidated, and `cleanup-plan-on-merge` deleting all
+plan files + the marker) and **F-gov-01** (the worktree-local `HEAD==main` branch-merge
+check); base wording adapted from the 2026-06 product-excellence review's governance
+draft §"Working-model governance (W-1)"
+([`../dev/reviews/2026-06-product-excellence/03-prescriptions/governance-draft/constitution.md`](../dev/reviews/2026-06-product-excellence/03-prescriptions/governance-draft/constitution.md)),
+**reconciled to the serial posture** `../dev/RELEASE_ARC.md` Key decision 10 later
+adopted — the draft's original framing ("the real working model is multi-altitude
+parallelism; the serial-session framing is stale and retired") is superseded by that
+later, owner-directed reversal and is not carried forward. W-1.2 shipped as a
+worktree-local hook on `fix/plan-approval-hook-scope` (2026-07-17); W-1.3's branch-check
+witness-class fix shipped as **PX-24**. W-1.4 was already treated as citable canon by
+`enforcement.md`, `../governance/compliance-log.md`, and `../../AGENTS.md` before this
+clause existed to back it — this authoring makes those citations resolve. **F-gov-03**
+(the citation gap itself) is resolved by this clause's existence.]*
+
+**W-2 — Governance is constitution-building.** This document *is* the extraction
+vehicle: one canonical home the descriptive layer (`vision.md`, `AGENTS.md`,
+`SECURITY.md`, and the rest) is audited against — does what sartor. built still match
+what this charter says? The operator-stack triad — memory supplies context, governance
+directs posture, the operator LLM occupies that space — is the extraction architecture;
+the doc-grounded assistant receives its governance interface at build time. A dedicated
+governance→assistant design home does not yet exist (**F-gov-10**, WATCH). *[src:
+adopted 2026-07-23, owner-directed, from the same ledger walk-through as W-1; base
+wording adapted from the 2026-06 review draft §"W-2"; `../wiki/pages/governance-extraction.md`.]*
+
+---
+
+## Amendment ceremony
+
+This charter is itself amended under the ceremony below — C-7, C-8, C-9, and this
+Working-model section were each added this way; the ceremony was practiced by
+convention (a dated `[src: adopted …, owner-directed, from …]` tag on each) before it
+was written down as its own rule here.
+
+Amending a **constitutional clause (C-0…C-9)** requires, in order:
+
+1. a dated amendment entry **in this document** — the `[src: adopted <date>,
+   owner-directed, from <trigger>]` tag with rationale — following the same clauses
+   it amends, not a separate changelog of governance edits;
+2. a `../../CHANGELOG.md` entry;
+3. explicit **owner sign-off at merge** (the PR channel `../../AGENTS.md` "Branch
+   close-out checklist" already requires for every branch, not an additional gate);
+4. once the compliance-witness subagent runs against the change, a flag in its next
+   drift report — **witness, not approver**: it records the amendment, it does not
+   gate the merge.
+
+**Defaults (D-1…D-7) and the working model (W-1/W-2)** change in normal branch flow
+with a single written rationale line — no full ceremony; they are named "binding until
+changed," not constitutional.
+
+*[src: charter "Amendment ceremony" (2026-06 product-excellence review, reviewer
+proposal, confirmed at sign-off); witness-class precedent
+[`enforcement.md`](enforcement.md) "Wiki freshness" row (**F-gov-06**) — the
+`wiki-freshness-reminder` witness hook + honest `.last_ingest_sha` sentinel is the
+working precedent for a gate that records without taxing the owner, the same posture
+this ceremony's step 4 takes toward amendments.]*
