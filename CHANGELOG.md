@@ -21,6 +21,29 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Governance: authored charter W-1, W-2, and the amendment ceremony (`docs/charter-w1-amendment`)
+
+Resolves carry-forward ledger item #9 and **F-gov-03**. `docs/governance/charter.md`'s
+own purpose header had promised "the parallel-session working model (W-1/W-2), and the
+amendment ceremony" since the v1.0.7 governance extraction, but the body carried none
+of the three — several docs (`enforcement.md`, `AGENTS.md`, `compliance-log.md`,
+`metrics.md`) already cited `W-1` / `W-1.4` / `W-2` as if they existed. Authored, via
+the same dated-`[src: adopted …]` shape used for C-7/C-8/C-9:
+
+- **W-1 — Parallel-session isolation; serial by current posture.** Four numbered
+  sub-clauses (worktree-per-session, session-scoped global state, branch ownership,
+  carry-forward discipline — `W-1.4` is the clause `enforcement.md` and `AGENTS.md`
+  already cited), reconciled to `RELEASE_ARC.md` Key decision 10's later serial-only
+  posture rather than the 2026-06 draft's "embrace parallelism" framing, which that
+  decision superseded.
+- **W-2 — Governance is constitution-building.**
+- **Amendment ceremony** — codifies the dated-tag + `CHANGELOG.md` + owner-sign-off +
+  witness-flag practice C-7/C-8/C-9 already followed by convention.
+
+`enforcement.md`'s two dangling citations (the "Parallel-session isolation" row; "See
+charter W-1" on the block-merge guard) now resolve to real clauses instead of a
+documented gap.
+
 ### Fixed: `.cb-panel` collapse snapped instead of easing, and mobile `.panel-body` padding never applied (`fix/panel-css-cascade-residuals`)
 
 Resolves carry-forward ledger items #11 and #12, both discovered during the

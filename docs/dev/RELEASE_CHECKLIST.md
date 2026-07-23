@@ -515,7 +515,13 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **12** (**−4** this entry — `fix/panel-css-cascade-residuals`,
+_Rendered open count: **11** (**−1** this entry — `docs/charter-w1-amendment`,
+2026-07-23: **RESOLVED item #9** — authored the real charter W-1 (four numbered
+sub-clauses, reconciled to the `RELEASE_ARC.md` Key decision 10 serial posture) + W-2 +
+an Amendment-ceremony section, per the owner decision recorded the prior session; the
+two `enforcement.md` dangling citations now resolve. Re-counted the actual `- [ ] **`
+bullets in this Open section rather than trusting arithmetic: 12 → 11, confirmed. Prior
+to that: **12** (**−4** this entry — `fix/panel-css-cascade-residuals`,
 2026-07-23: an owner walk-through of all owner-gated ledger items. **RESOLVED four
 items**: #11 (`.cb-panel` collapse easing restored), #12 (mobile `.panel-body` padding
 fixed — the live-verify step the item itself called for), `enforce_admins` (owner
@@ -1774,7 +1780,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       "fully landed"** — unblocked and scoped, but the measurement itself was not executed on
       this docs-only branch. Full requirement detail: `RELEASE_ARC.md` step 12.
 
-- [ ] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
+- [x] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does
       not exist.** `docs/governance/charter.md` has no `W-1` clause anywhere (only
       `C-0`…`C-9` and `D-1`…`D-7`). Discovered while fixing the hook side of the same
@@ -1795,6 +1801,12 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `fix/panel-css-cascade-residuals`): author the real clause now**, via the same
       amendment-ceremony shape used for C-9. Remains open pending its own branch — this
       needs careful, deliberate writing, not a fold-in.
+      **→ RESOLVED (2026-07-23, `docs/charter-w1-amendment`):** `charter.md` now carries
+      real W-1 (four numbered sub-clauses, reconciled to the `RELEASE_ARC.md` Key
+      decision 10 serial posture rather than the 2026-06 draft's superseded
+      "embrace parallelism" framing), W-2, and an Amendment-ceremony section; the two
+      `enforcement.md` dangling citations (`:108`, `:156`) now resolve to real text.
+      Full detail: `CHANGELOG.md` `[Unreleased]` Governance entry.
 
 - [ ] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
       accumulated THREE independent staleness bugs over ~7 weeks with nobody noticing.**
