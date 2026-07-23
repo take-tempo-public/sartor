@@ -1,5 +1,5 @@
 ---
-description: Read-only governance drift witness. Reads charter/RELEASE_ARC/CHANGELOG/git-history/wiki provenance at a pinned sha and emits a ranked, capped (default 12, --cap N) drift report in FLAG/WATCH/AFFIRM findings-register format, appended to docs/governance/compliance-log.md. Reports, never edits, never blocks. Pre-tag companion + on-demand.
+description: Read-only governance drift witness. Reads charter/RELEASE_ARC/CHANGELOG/git-history/wiki-provenance/code-level-docstring-and-comment-claims at a pinned sha and emits a ranked, capped (default 12, --cap N) drift report in FLAG/WATCH/AFFIRM findings-register format, appended to docs/governance/compliance-log.md. Reports, never edits, never blocks. Pre-tag companion + on-demand.
 argument-hint: [--since <sha>] [--cap <N>]
 allowed-tools:
   - Bash
@@ -11,8 +11,9 @@ allowed-tools:
 
 Run the **compliance witness**: a read-only, periodic read of whole-repo coherence
 that emits a **ranked, capped drift report** — places where what the project's
-governance, plan, changelog, code, or wiki provenance *say* has drifted from what the
-repo *is* at a pinned sha. It is the [`/wiki-lint`](wiki-lint.md) witness posture
+governance, plan, changelog, code, wiki provenance, or code-level docstrings/comments
+*say* has drifted from what the repo *is* at a pinned sha. It is the
+[`/wiki-lint`](wiki-lint.md) witness posture
 turned on the **governance** surface: this command **orchestrates and renders**; it
 does not analyze drift itself — it delegates the read to the model-pinned
 [`compliance-witness`](../agents/compliance-witness.md) subagent (Sonnet, read-only),
@@ -47,11 +48,14 @@ the severity anchor is [`docs/governance/charter.md`](../docs/governance/charter
    the plan ([`RELEASE_ARC.md`](../docs/dev/RELEASE_ARC.md) +
    [`RELEASE_CHECKLIST.md`](../docs/dev/RELEASE_CHECKLIST.md)),
    the declared history ([`CHANGELOG.md`](../CHANGELOG.md)), the actual history
-   (`git log` / tags / the merge record), and the wiki provenance
-   ([`docs/wiki/`](../docs/wiki/) pages + `.last_ingest_sha` + the cite graph). The
-   subagent (Sonnet; read-only `Read`/`Grep`/`Glob`/`Bash`) re-derives every cited line
-   at the sha, finds pairwise disagreements (and C-0 categoricals lacking by-construction
-   backing), and returns **ranked candidate flags**. It changes nothing.
+   (`git log` / tags / the merge record), the wiki provenance
+   ([`docs/wiki/`](../docs/wiki/) pages + `.last_ingest_sha` + the cite graph), and —
+   bounded to files a flag's evidence trail already touches, not a repo-wide sweep —
+   the docstrings/comments in that code. The subagent (Sonnet; read-only
+   `Read`/`Grep`/`Glob`/`Bash`) re-derives every cited line at the sha, finds pairwise
+   disagreements — including a docstring/comment contradicting the code it describes —
+   and C-0 categoricals (in docs or in code) lacking by-construction backing, and
+   returns **ranked candidate flags**. It changes nothing.
 
 3. **Apply the cap.** Default **N = 12** (override `--cap N`). The cap is load-bearing —
    an uncapped witness that emits everything is back to per-merge noise. If the subagent
