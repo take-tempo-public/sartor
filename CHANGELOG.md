@@ -21,6 +21,30 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Fixed: `.cb-panel` collapse snapped instead of easing, and mobile `.panel-body` padding never applied (`fix/panel-css-cascade-residuals`)
+
+Resolves carry-forward ledger items #11 and #12, both discovered during the
+`refactor/css-cascade-collapse` (PX-51) selector census and deliberately left unfixed
+there pending an owner decision (owner walk-through of the ledger this session decided
+both).
+
+- **Collapse easing:** PX-51's cascade collapse (`dd30c82`) merged the duplicate
+  `.cb-panel` blocks into one, whose surviving `transition` list omitted
+  `grid-template-rows` — so toggling a panel's collapsed state snapped instantly instead
+  of easing. Fixed by adding `grid-template-rows var(--t-med) var(--ease)` to the
+  transition list (owner-chosen 240ms duration).
+- **Mobile padding:** the `@media (max-width:768px) { .panel-body { padding: 12px 16px
+  } }` override was dead on every real panel — an unconditional `.cb-main .panel-body`
+  rule (0,2,0 specificity) elsewhere in the file always beat the mobile override's
+  (0,1,0), confirmed by a `getComputedStyle` capture at a 375px viewport showing `18px
+  22px` instead. **First attempted fix (raising the override to equal (0,2,0)
+  specificity) was tried and falsified live** — same-specificity ties fall back to
+  source order, and the competing rule sits later in the file, so it still won. Fixed by
+  raising the override to `body .cb-main .panel-body` (0,3,0), strictly higher — live
+  re-verified: `12px 16px` at 375px, unchanged `18px 22px` at a 1280px desktop control.
+
+Full evidence trail: `docs/dev/diagnosis/panel-css-cascade-residuals.md`.
+
 ### Security: `docs-site/` npm audit findings cleared — sharp/libvips, fast-uri (`chore/docs-site-npm-audit`)
 
 Resolves the docs-site `npm audit` item filed 2026-07-22 (`chore/dependabot-docs-site`,

@@ -516,7 +516,7 @@ textarea {
   .cb-sidebar { display: none; }
   .cb-elbow { width: 60px; min-width: 40px; }
   .cb-title { font-size: 18px; letter-spacing: 1px; }
-  .panel-body { padding: 12px 16px; }
+  body .cb-main .panel-body { padding: 12px 16px; }
 }
 
 /* ---- Refinement Area ---- */
@@ -3362,7 +3362,8 @@ textarea:focus-visible {
   box-shadow: var(--edge-top), var(--shadow-1);
   transition:
     border-color var(--t-fast) var(--ease),
-    box-shadow var(--t-med) var(--ease);
+    box-shadow var(--t-med) var(--ease),
+    grid-template-rows var(--t-med) var(--ease);
 }
 .cb-panel:hover {
   border-color: var(--border-2);

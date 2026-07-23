@@ -515,7 +515,18 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **16** (**−3** this entry — `chore/reduction-sprint-ledger-compose-notes`,
+_Rendered open count: **12** (**−4** this entry — `fix/panel-css-cascade-residuals`,
+2026-07-23: an owner walk-through of all owner-gated ledger items. **RESOLVED four
+items**: #11 (`.cb-panel` collapse easing restored), #12 (mobile `.panel-body` padding
+fixed — the live-verify step the item itself called for), `enforce_admins` (owner
+reconfirmed keep `false`, no code change), and the Claude Code CLI orphaned-process item
+(both parts done — checklist reminder already in place, owner confirms already reported
+to Anthropic). Six further items got an owner decision recorded but remain open pending
+their own future branches (charter W-1 authoring, compliance-witness scope-widen, the
+screenshot periodic-check, the citation viewer reaffirmed-deferred, the kit-adoption
+source path found/unblocked). Re-counted the actual `- [ ] **` bullets rather than
+trusting arithmetic (this ledger's own anti-drift rule): 16 → 12, confirmed. Prior to
+that: **16** (**−3** this entry — `chore/reduction-sprint-ledger-compose-notes`,
 2026-07-22: the overdue reduction sprint's first bounded bite. **RESOLVED three items**:
 #2 (CodeQL required-check — ledger reconciliation only, the substantive action was already
 done and just never reconciled here), #15 (`block-merge-to-main` wiki arm — confirmed
@@ -1270,6 +1281,8 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.0.7 stream, 2026-06-19, `feat/avatar-citation-format`.)_
       **→ Triage (2026-06-20, 7.9 ledger capture):** leave deferred — conditional on real
       friction (external-tab annoyance or the unpushed-`sha`-404 biting). Do not schedule.
+      **→ Reaffirmed (2026-07-23, ledger walk-through, `fix/panel-css-cascade-residuals`):**
+      owner confirms no friction signal has shown up since — stays deferred, unchanged.
 
 - [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
@@ -1570,6 +1583,14 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `context-structure-review` skill import itself needs a `CLAUDE.local.md`-recorded kit
       source path first (none exists yet); see `skills/README.md`. **Row stays open** pending
       that skill-content import.
+      **→ Update (2026-07-23, ledger walk-through, `fix/panel-css-cascade-residuals`):** kit
+      source path found and confirmed with the owner —
+      `/c/Dev/lichen/projects/agent-coding-practices-kit/` (has
+      `markdown-for-llm-apps.md`, `doc-discipline-for-coding-agents.md`,
+      `strict-typing-and-style.md`, `context-structure-review/` — matches exactly).
+      Recorded in `CLAUDE.local.md` (gitignored). **Row stays open** — the skill import
+      itself (kit-adoption Phase 5, Decision 5) is still its own future branch, now
+      unblocked.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
@@ -1770,6 +1791,10 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-17, `fix/plan-approval-hook-scope`; open count
       14 → 14 — item 14 below resolved same branch, this one added, net unchanged, still
       over the ~8-10 ceiling.)_
+      **→ Owner decision recorded (2026-07-23, ledger walk-through,
+      `fix/panel-css-cascade-residuals`): author the real clause now**, via the same
+      amendment-ceremony shape used for C-9. Remains open pending its own branch — this
+      needs careful, deliberate writing, not a fold-in.
 
 - [ ] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
       accumulated THREE independent staleness bugs over ~7 weeks with nobody noticing.**
@@ -1796,8 +1821,12 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-18, `fix/capture-screenshots-welcome-modal`;
       open count 14 → 15, still over the ~8-10 ceiling — reduction sprint now more
       overdue, not less.)_
+      **→ Owner decision recorded (2026-07-23, ledger walk-through,
+      `fix/panel-css-cascade-residuals`): add a periodic smoke check** (pre-tag or
+      monthly, through just Step 1). Remains open pending its own branch (new CI/scheduled
+      job, distinct scope from this CSS-fix branch).
 
-- [ ] **`.cb-panel`'s collapse animation likely already snaps instead of easing** —
+- [x] **`.cb-panel`'s collapse animation likely already snaps instead of easing** —
       discovered during the `refactor/css-cascade-collapse` (PX-51) selector census:
       `.cb-panel`'s `transition` property is fully contested between the primary and
       restyle copies (not additive), and the restyle copy's value (`border-color …,
@@ -1810,8 +1839,14 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       into the restyle `transition` list) or accept the current snap behavior as-is.
       _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
       count 15 → 16, still over the ~8-10 ceiling.)_
+      **→ RESOLVED (2026-07-23, `fix/panel-css-cascade-residuals`):** owner decided
+      restore the easing. Added `grid-template-rows var(--t-med) var(--ease)`
+      (`static/style.css`, `.cb-panel` transition list) — 240ms, owner-chosen over the
+      slower `--t-slow`/original-0.35s alternative. Live-verified via
+      `getComputedStyle().transitionProperty`. Full trail:
+      `docs/dev/diagnosis/panel-css-cascade-residuals.md`.
 
-- [ ] **A mobile `.panel-body` padding override is already shadowed/dead** — discovered
+- [x] **A mobile `.panel-body` padding override is already shadowed/dead** — discovered
       during the same PX-51 census: the `@media (max-width:768px) { .panel-body {
       padding: 12px 16px; } }` override (`static/style.css` ~line 220 at HEAD `248703b`)
       is same-specificity as, but sits earlier in source than, an unconditional
@@ -1825,6 +1860,17 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-18, `refactor/css-cascade-collapse`; open
       count 16 → 17, further over the ~8-10 ceiling — reduction sprint now more overdue
       still.)_
+      **→ RESOLVED (2026-07-23, `fix/panel-css-cascade-residuals`):** owner decided
+      verify-then-fix. Live `getComputedStyle` capture at a 375px viewport confirmed the
+      hypothesis (`18px 22px`, not the intended `12px 16px`) — a THIRD rule,
+      `.cb-main .panel-body` (0,2,0), turned out to be the actual winner (every real
+      `.panel-body` is nested under `.cb-main`), not just the plain `.panel-body` restyle
+      copy this row's own text named. **First fix attempt (raise to equal (0,2,0)
+      specificity) was tried and falsified live** — ties fall back to source order,
+      which still favored the later unconditional rule. Fixed by raising to
+      `body .cb-main .panel-body` (0,3,0), strictly higher. Live re-verified: `12px 16px`
+      at 375px, `18px 22px` unchanged at a 1280px desktop control. Full trail:
+      `docs/dev/diagnosis/panel-css-cascade-residuals.md`.
 
 - [x] **`block-merge-to-main`'s wiki arm makes a wiki-refreshing branch unmergeable —
       the guard reads the PRE-merge worktree** — `scripts/enforcement/guards/block_merge_to_main.py`'s
@@ -1882,7 +1928,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       accumulated on `main` cannot see that drift — the union across both lineages is what a
       post-merge HEAD actually contains. Full context: `[[project-v110-css-cascade-collapse]]`.
 
-- [ ] **[OWNER DECISION] `enforce_admins` is `false` on `main`'s branch protection, so the six
+- [x] **[OWNER DECISION] `enforce_admins` is `false` on `main`'s branch protection, so the six
       required status checks remain bypassable** — surfaced 2026-07-19 while root-causing the
       dual merge channel (`chore/merge-channel-alignment`, step 5). Branch protection on `main`
       requires a PR and six passing checks, but `enforce_admins: false` means the repo admin can
@@ -1897,8 +1943,12 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       structurally impossible rather than a convention to remember.
       _(discovered: v1.1.0 stream, 2026-07-19, `chore/merge-channel-alignment`; open count
       18 → 19 — the ceiling is ~8-10 and the reduction sprint is now badly overdue.)_
+      **→ CLOSED (2026-07-23, owner decision during the ledger walk-through,
+      `fix/panel-css-cascade-residuals`):** owner reconfirmed **keep `false`** — the
+      solo-maintainer escape valve outweighs closing the bypass. No repo change; this is
+      the decision itself being the resolution, not a deferred item.
 
-- [ ] **[OWNER-REPORTED] Claude Code CLI sessions/processes don't terminate when the owner
+- [x] **[OWNER-REPORTED] Claude Code CLI sessions/processes don't terminate when the owner
       closes them — orphaned processes accumulate across multiple projects and must be killed
       manually (command line / Task Manager)** — filed 2026-07-19 by direct owner report while
       landing `chore/scrub-local-eval-paths` (step 6). **Concrete evidence from this session,
@@ -1934,6 +1984,11 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-19, `chore/scrub-local-eval-paths`; open count
       19 → 20 (net unchanged after this branch's own −1 for item 5) — the ceiling is ~8-10 and
       the reduction sprint is now badly overdue.)_
+      **→ CLOSED (2026-07-23, owner-confirmed during the ledger walk-through,
+      `fix/panel-css-cascade-residuals`):** both responses done. (a) the close-out
+      checklist's dev-server/background-process-termination step is already in place
+      (`AGENTS.md` "Branch close-out checklist" step 0). (b) owner confirms **already
+      reported** the underlying session-lifecycle behavior to Anthropic.
 
 - [ ] **`compliance-witness` doesn't verify code-level claims (docstrings/comments) or
       re-sweep for recurrence of a previously-fixed defect class** — filed 2026-07-20 by direct
@@ -1957,6 +2012,11 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       matching the `fix/handoff-pointer-verification` precedent — but this compliance-witness gap
       is a distinct, unfixed observation; open count 19 → 20 — the ceiling is ~8-10 and the
       reduction sprint is now badly overdue.)_
+      **→ Owner decision recorded (2026-07-23, ledger walk-through,
+      `fix/panel-css-cascade-residuals`): widen to code-level claims** —
+      docstring/comment citation-checking, specifically. Remains open pending its own
+      implementation branch (widening the witness's tool grant + prompt is a distinct
+      scope-expansion project, not folded into this CSS-fix branch).
 
 - [ ] **Compose-time rewrite latitude — the "generate but don't invent" dial** — filed
       2026-07-21 (`docs/v110-endgame-scope`), **substantially revised the same day**
