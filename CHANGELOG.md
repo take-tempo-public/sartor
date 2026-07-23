@@ -21,6 +21,25 @@ silence is never mistaken for a disclosure. Scope is Sartor's own code; dependen
 advisories — e.g. the nested `postcss` GHSA-qx2v-qp2m-jg93 patched below — are tracked
 in the Security section, not here.)
 
+### Governance: widened `compliance-witness` to code-level docstring/comment claims (`docs/compliance-witness-code-claims`)
+
+Resolves carry-forward ledger item #10. The witness's source corpus was doc-to-doc and
+doc-to-git-history only — it never treated a claim written in a code docstring/comment
+as a citeable source, so a docstring contradicting its own code could not surface as
+drift. Concrete miss on record: `fix/context-write-lost-update-gap` (2026-07-20) found
+`hardening.py`'s `context_transaction` docstring claiming the production server runs
+threaded (it does not); `compliance-log.md`'s CW-111 had AFFIRMed a citation pair in a
+review doc while never reading the docstring beside it making the opposite claim.
+
+`agents/compliance-witness.md` and `commands/compliance-witness.md` now treat a
+docstring/comment as a source subject to the same two rules as any other: contradicting
+its code is a two-source disagreement, and an unbacked categorical fails C-0 on its own.
+**Bounded, not a repo-wide sweep** — only files already in a flag's evidence trail get
+the cross-check. The tool grant is unchanged (`Read`/`Grep`/`Glob`/`Bash`, still no
+`Edit`/`Write`/`Task`) — this widens the method, not the witness's capability. The
+ledger's other candidate for this item, a "does a previously-fixed defect class recur
+elsewhere" sweep, was not picked (owner decision, 2026-07-23) and stays out of scope.
+
 ### Governance: authored charter W-1, W-2, and the amendment ceremony (`docs/charter-w1-amendment`)
 
 Resolves carry-forward ledger item #9 and **F-gov-03**. `docs/governance/charter.md`'s

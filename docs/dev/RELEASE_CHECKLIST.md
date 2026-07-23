@@ -515,13 +515,20 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **11** (**−1** this entry — `docs/charter-w1-amendment`,
-2026-07-23: **RESOLVED item #9** — authored the real charter W-1 (four numbered
-sub-clauses, reconciled to the `RELEASE_ARC.md` Key decision 10 serial posture) + W-2 +
-an Amendment-ceremony section, per the owner decision recorded the prior session; the
-two `enforcement.md` dangling citations now resolve. Re-counted the actual `- [ ] **`
-bullets in this Open section rather than trusting arithmetic: 12 → 11, confirmed. Prior
-to that: **12** (**−4** this entry — `fix/panel-css-cascade-residuals`,
+_Rendered open count: **10** (**−1** this entry — `docs/compliance-witness-code-claims`,
+2026-07-23: **RESOLVED item #10** — widened `agents/compliance-witness.md` +
+`commands/compliance-witness.md` to treat a docstring/comment as a source subject to
+the same pairwise-disagreement and C-0 categorical rules as any other, bounded to files
+already in a flag's evidence trail; the recurrence-sweep half of the item was not
+picked. Re-counted the actual `- [ ] **` bullets in this Open section rather than
+trusting arithmetic: 11 → 10, confirmed. Prior to that: **11** (**−1** this entry —
+`docs/charter-w1-amendment`, 2026-07-23: **RESOLVED item #9** — authored the real
+charter W-1 (four numbered sub-clauses, reconciled to the `RELEASE_ARC.md` Key decision
+10 serial posture) + W-2 + an Amendment-ceremony section, per the owner decision
+recorded the prior session; the two `enforcement.md` dangling citations now resolve.
+Re-counted the actual `- [ ] **` bullets in this Open section rather than trusting
+arithmetic: 12 → 11, confirmed. Prior to that: **12** (**−4** this entry —
+`fix/panel-css-cascade-residuals`,
 2026-07-23: an owner walk-through of all owner-gated ledger items. **RESOLVED four
 items**: #11 (`.cb-panel` collapse easing restored), #12 (mobile `.panel-body` padding
 fixed — the live-verify step the item itself called for), `enforce_admins` (owner
@@ -2002,7 +2009,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       (`AGENTS.md` "Branch close-out checklist" step 0). (b) owner confirms **already
       reported** the underlying session-lifecycle behavior to Anthropic.
 
-- [ ] **`compliance-witness` doesn't verify code-level claims (docstrings/comments) or
+- [x] **`compliance-witness` doesn't verify code-level claims (docstrings/comments) or
       re-sweep for recurrence of a previously-fixed defect class** — filed 2026-07-20 by direct
       user request while landing `fix/context-write-lost-update-gap`. That branch found (and
       fixed) a factual error in `hardening.py`'s `context_transaction` docstring — it claimed the
@@ -2029,6 +2036,13 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       docstring/comment citation-checking, specifically. Remains open pending its own
       implementation branch (widening the witness's tool grant + prompt is a distinct
       scope-expansion project, not folded into this CSS-fix branch).
+      **→ RESOLVED (2026-07-23, `docs/compliance-witness-code-claims`):**
+      `agents/compliance-witness.md` and `commands/compliance-witness.md` now treat a
+      docstring/comment as a source subject to the same pairwise-disagreement and C-0
+      categorical rules as any other, bounded to files already in a flag's evidence
+      trail (not a repo-wide sweep). The recurrence-sweep half of this item was **not**
+      picked — stays out of scope. Tool grant unchanged (method widened, not
+      capability). Full detail: `CHANGELOG.md` `[Unreleased]` Governance entry.
 
 - [ ] **Compose-time rewrite latitude — the "generate but don't invent" dial** — filed
       2026-07-21 (`docs/v110-endgame-scope`), **substantially revised the same day**
