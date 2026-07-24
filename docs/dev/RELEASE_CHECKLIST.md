@@ -515,7 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **9** (**−1** this entry — `feat/capture-screenshots-smoke-check`,
+_Rendered open count: **8** (**−1** this entry — `feat/context-structure-review-skill`,
+2026-07-24: **CLOSED the Agent-coding-practices kit-adoption ledger row** — all
+three staged commitments done (mypy `--strict` ratchet, ratchet-then-block gate
+hardness, skills/hooks packaging coherence); the `context-structure-review` skill
+import completed the skills half, and the owner confirmed the four-parallel
+`commands/agents/skills/hooks` end-state satisfies the row now rather than waiting
+on 8.7 `feat/portable-enforcement-core`. Re-counted the actual `- [ ] **` bullets in
+this Open section rather than trusting arithmetic: 9 → 8, confirmed.
+Prior to that: **9** (**−1** this entry — `feat/capture-screenshots-smoke-check`,
 2026-07-23: **RESOLVED the `capture_screenshots.py` periodic drift smoke check** —
 added a `--smoke` flag (setup + Step 1 only, then stop) and a new scheduled
 `.github/workflows/capture-smoke.yml` (monthly cron + manual `workflow_dispatch`,
@@ -1359,7 +1367,8 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       raises + cleans up instead of silently returning a "0 pass / 0 fail" result over a run that
       wrote zero records).
 
-- [ ] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23)** — the
+- [x] **Agent-coding-practices kit-adoption — staged commitments (2026-06-23) — RESOLVED
+      2026-07-24 on `feat/context-structure-review-skill`.** The
       [`kit-adoption-design.md`](kit-adoption-design.md) arc's cross-cutting deferrals, kept in
       **one** tracked home so they can't silently half-migrate (the hooks split-home is the
       in-repo cautionary example): (1) the **mypy `--strict` ratchet to its finite exit
@@ -1611,17 +1620,19 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       Recorded in `CLAUDE.local.md` (gitignored). **Row stays open** — the skill import
       itself (kit-adoption Phase 5, Decision 5) is still its own future branch, now
       unblocked.
-      **→ Update (2026-07-23, `feat/context-structure-review-skill`):** commitment (3)'s
+      **→ Update (2026-07-24, `feat/context-structure-review-skill`):** commitment (3)'s
       **skills half is DONE** — `skills/context-structure-review/` (SKILL.md +
       `references/criteria.md`) imported from the kit, with the two repo-specific refs
       localized (Callback → Sartor; the doc-discipline cross-ref repointed to the
       external kit). Phase 5's second deliverable (§7 promotable shortlist) was already
       authored at `kit-adoption-design.md` §7 — confirmed present, nothing new to add.
       All four families (`commands/ agents/ skills/ hooks/`) are now populated at root.
-      **Row stays open at owner direction** — the design's temporal map ties the
-      four-parallel end-state to the 8.7 `feat/portable-enforcement-core` window, so
-      whether this closes the row is an owner call, flagged at this branch's close-out
-      rather than decided here.
+      **Row CLOSED at owner direction** — asked explicitly whether commitment (3)
+      needed anything further from the 8.7 `feat/portable-enforcement-core` window
+      given the structural end-state (four populated root families) was already
+      reached; owner confirmed close now rather than wait on 8.7 timing. All three
+      staged commitments (mypy `--strict` ratchet, ratchet-then-block gate hardness,
+      skills/hooks packaging coherence) are now done.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
