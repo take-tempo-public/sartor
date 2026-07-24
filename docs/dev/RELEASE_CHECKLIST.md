@@ -515,7 +515,14 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **10** (**−1** this entry — `docs/compliance-witness-code-claims`,
+_Rendered open count: **9** (**−1** this entry — `feat/capture-screenshots-smoke-check`,
+2026-07-23: **RESOLVED the `capture_screenshots.py` periodic drift smoke check** —
+added a `--smoke` flag (setup + Step 1 only, then stop) and a new scheduled
+`.github/workflows/capture-smoke.yml` (monthly cron + manual `workflow_dispatch`,
+per the owner's cadence choice this session), implementing the owner decision
+recorded on `fix/panel-css-cascade-residuals`. Re-counted the actual `- [ ] **`
+bullets in this Open section rather than trusting arithmetic: 10 → 9, confirmed.
+Prior to that: **10** (**−1** this entry — `docs/compliance-witness-code-claims`,
 2026-07-23: **RESOLVED item #10** — widened `agents/compliance-witness.md` +
 `commands/compliance-witness.md` to treat a docstring/comment as a source subject to
 the same pairwise-disagreement and C-0 categorical rules as any other, bounded to files
@@ -1815,7 +1822,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `enforcement.md` dangling citations (`:108`, `:156`) now resolve to real text.
       Full detail: `CHANGELOG.md` `[Unreleased]` Governance entry.
 
-- [ ] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
+- [x] **`scripts/capture_screenshots.py` has zero automated coverage, so it silently
       accumulated THREE independent staleness bugs over ~7 weeks with nobody noticing.**
       Discovered on `fix/capture-screenshots-welcome-modal` (2026-07-18) while capturing
       PX-51's before-baseline: (1) a first-visit welcome/tour help-modal
@@ -1844,6 +1851,17 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `fix/panel-css-cascade-residuals`): add a periodic smoke check** (pre-tag or
       monthly, through just Step 1). Remains open pending its own branch (new CI/scheduled
       job, distinct scope from this CSS-fix branch).
+      **→ RESOLVED (2026-07-23, `feat/capture-screenshots-smoke-check`):** owner
+      chose monthly cron + manual `workflow_dispatch` (decoupled from `release.yml`)
+      over pre-tag-only. Added `--smoke` to `scripts/capture_screenshots.py`
+      (runs setup + `run_step1` only, then stops — the paths where all three
+      historical bugs lived, plus the single most representative LLM round-trip)
+      and `.github/workflows/capture-smoke.yml` (mirrors `ci.yml`'s `ux` job's
+      Chromium-cache block; `ANTHROPIC_API_KEY` from the existing secret;
+      backgrounds `python app.py`, which auto-detects CI via
+      `_is_ci_or_container()` and disables the reloader/browser-open; uploads
+      the Step-1 PNGs as an artifact for visual-drift review). Full detail:
+      `CHANGELOG.md` `[Unreleased]` entry.
 
 - [x] **`.cb-panel`'s collapse animation likely already snaps instead of easing** —
       discovered during the `refactor/css-cascade-collapse` (PX-51) selector census:

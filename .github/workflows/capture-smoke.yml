@@ -1,0 +1,108 @@
+name: Capture-screenshots smoke check
+
+# Periodic drift check for scripts/capture_screenshots.py — the script that
+# drives the real wizard end-to-end via Playwright to produce the 10
+# docs/screenshots/ PNGs. It has zero coverage from the regular test suite
+# (pytest -m ux stubs the LLM; this script deliberately does not) and its
+# de-facto cadence used to be "run manually before each release" — a gap
+# that let THREE independent staleness bugs (welcome-modal auto-open,
+# clarify-button double-click, cover-letter drawer visibility) accumulate
+# silently over ~7 weeks before anyone noticed them by accident
+# (docs/dev/diagnosis/capture-screenshots-welcome-modal.md).
+#
+# Owner decision (RELEASE_CHECKLIST.md ledger item #9, 2026-07-23): a
+# periodic smoke check, through just Step 1 (setup + paste JD + Analyze) —
+# not the full 10-shot pass — to bound the LLM spend (one real Haiku
+# corpus-extract + one real Sonnet analyze call per run) while still
+# exercising the paths where all three historical bugs lived.
+#
+# Deliberately a SEPARATE workflow file, not a job in ci.yml — it is
+# schedule/dispatch-only (never runs on push/PR), same reasoning as
+# codeql.yml / scorecard.yml being split out. Not a PR-required check.
+
+on:
+  schedule:
+    # 06:00 UTC on the 1st of each month.
+    - cron: "0 6 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  capture-smoke:
+    name: Capture-screenshots Step 1 smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: ./.github/actions/setup-python-env
+        with:
+          python-version: "3.13"
+
+      # Same cache-then-install pattern as ci.yml's `ux` job — see its
+      # comments for why the cache only covers the ~150MB browser binary,
+      # not the OS-level apt deps `--with-deps` installs.
+      - name: Resolve installed Playwright version (cache key input)
+        id: playwright-version
+        run: echo "version=$(pip show playwright | grep '^Version:' | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright Chromium (+ OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: python -m playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies (cache hit — browser already cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: python -m playwright install-deps chromium
+
+      # capture_screenshots.py does not stand up its own server (unlike the
+      # tests/ux/ suite's live_server fixture) — it expects one already
+      # running at localhost:5000. app.py auto-detects CI (_is_ci_or_container())
+      # and disables both the reloader and the browser-auto-open, so a
+      # backgrounded run here is a single, clean process.
+      - name: Start app server in background
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python app.py > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Wait for server to accept connections
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:5000/ -o /dev/null; then
+              echo "server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not come up in time"
+          cat app.log
+          exit 1
+
+      - name: Run capture_screenshots Step-1 smoke
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m scripts.capture_screenshots --headless --smoke
+
+      - name: Stop app server
+        if: always()
+        run: kill "$(cat app.pid)" 2>/dev/null || true
+
+      - name: Upload Step-1 screenshots (visual drift review)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: capture-smoke-step1-screenshots
+          path: |
+            docs/screenshots/walkthrough_step1*.png
+            docs/screenshots/readme_hero_wizard-step1-filled.png
+          if-no-files-found: warn
+          retention-days: 30
