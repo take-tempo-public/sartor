@@ -1,7 +1,13 @@
 # Diagnosis — scroll-flake "mode C": wizard-rail smooth-scroll corrupts an unrelated later baseline
 
-> **Status:** root cause PROVEN by direct capture (O-1/O-2 below). Fix not yet
-> written as of this commit.
+> **Status:** the O-1/O-2 mechanism (wizard render firing at/after the
+> baseline) is confirmed, but the FIX first attempted from it (honor
+> `prefers-reduced-motion`, scoped-approved before this evidence existed) is
+> **FALSIFIED by direct A/B on the real target test** — see O-3/O-4/F-3.
+> **The true mechanism is not primarily an animation-timing race; it is
+> `scrollIntoView`'s target landing near-but-not-at the test's own baseline
+> because of the document's own max-scroll clamp** (O-4). Root cause not yet
+> fully closed; no working fix landed as of this commit.
 > **Branch:** `fix/ux-scroll-wizard-rail-flake`
 
 ---
@@ -118,10 +124,75 @@ settle wait — plenty of time for `wizardInit()`'s single real call to have
 already started) means the wild failures are consistent with either (a) an
 unusually late-firing single call under CPU load, delaying `onUserSelect`'s
 async chain (`app.js:394-441`) past the corpus test's own baseline point, or
-(b) some other path re-entering `_wizardRender()` a second time — this
-dossier did not need to distinguish those two to reach a fix (see
-"## The fix"), since both funnel through the same `scrollIntoView` call
-site.
+(b) some other path re-entering `_wizardRender()` a second time.
+
+### O-4 — the fix (honor `prefers-reduced-motion`) was tried and FALSIFIED by direct A/B on the real target test
+
+A candidate fix (see the now-superseded "Planned approach" this section
+used to describe) routed all 5 of `app.js`'s explicit
+`behavior:'smooth'` call sites — `:508`, `:2916`, `:5855`, `:5862`, `:7021`
+(the mode-C site) — through a shared `_scrollBehavior()` helper returning
+`'auto'` when `prefers-reduced-motion: reduce` is set, and emulated that
+media feature in the real corpus test
+(`page.emulate_media(reduced_motion="reduce")`, the same pattern
+`tests/ux/a11y/test_axe_smoke.py:116` uses). **This was evaluated against
+the REAL target test, not just the isolated instrument, before being
+trusted:**
+
+| condition | runs | failed | rate |
+|---|---|---|---|
+| control — `static/app.js` at this commit (git-stashed fix), `emulate_media` present but a no-op against the unfixed code | 6 | 2 | ~33% |
+| with the fix — `_scrollBehavior()` routing + reduced-motion emulated | 8 | 5 | ~62% |
+
+Small samples (this is exactly the kind of measurement charter C-0/C-7
+requires be reported as what it is, not rounded up to a stronger claim),
+but the direction is unambiguous and reproduced across TWO separate runs
+of the fix condition: **the fix did not reduce the failure rate — it
+appears to increase it.**
+
+Re-running O-2's own forced-ordering instrument WITH the fix applied
+confirms why, via a 1-second frame-by-frame trace (40 samples,
+`requestAnimationFrame`-paced) taken after firing the (now `behavior:
+'auto'`) second `_wizardRender()` call:
+
+```
+t=25.7    y=306   panelAbsTop=512.1875
+t=33.4    y=306   panelAbsTop=512.1875
+...  (every one of 40 samples across the full 1000ms window)
+t=668.2   y=306   panelAbsTop=512.1875
+```
+
+`window.scrollY` lands at **306 and never moves again** — not even one
+frame of settling. `#panelJD`'s own true layout position (`panelAbsTop`,
+computed from `getBoundingClientRect()`) is a STABLE **512** the entire
+time. The scroll never reaches its nominal target at all, with `'auto'` or
+`'smooth'`. This viewport is 900px tall (`tests/ux/conftest.py`); this
+test's own page content is ~1206px tall (per the O-1/O-2 spy dumps' own
+`h` field) — so the document's maximum possible `scrollY` is
+`1206 - 900 = 306`, **exactly the observed landing value**. `scrollIntoView`
+is being **clamped by the document's own max-scroll bound**, not
+completing a partial animation. It was never "still in flight" in O-2
+either — O-2's apparent multi-frame "creep" (a `scroll-event` landing at
+306 arriving after an earlier sample read a different value) is consistent
+with the SAME clamped target being reached over 1-2 frames rather than a
+long free-running animation; `'auto'` reaches the same clamped value in
+under 2ms.
+
+**Reframed mechanism:** mode C is not fundamentally an animation-duration
+race. `_wizardRender`'s `scrollIntoView(block:'start')` on `#panelJD`
+targets a position the document cannot actually reach once the corpus
+card list is tall enough (20 seeded cards > viewport), so the browser
+clamps it to `scrollHeight - viewportHeight`. That clamped value is a
+property of page height and viewport height, not of the wizard panel's
+"real" target — and it happens to land close to (but not exactly at) the
+test's own `scrollTo(0, 300)` baseline for this fixture's specific card
+count/viewport combination. Making the call INSTANT (this fix) does not
+change WHETHER it corrupts a baseline that was already established when
+it fires late — it only removes the possibility that a `scrollTo` shortly
+after catches it mid-animation and cancels it cleanly (O-1's finding). If
+anything, instant landing may make every late-firing occurrence corrupt
+deterministically instead of only when the read happens to land inside a
+multi-frame window — consistent with the measured rate increasing.
 
 ---
 
@@ -141,59 +212,65 @@ the first half of O-2: 5/5 passed at 100ms even with the corrected
 manifest in this isolated instrument, which doesn't have the real test's
 extra `refreshCorpus()`-settle elapsed time as a stand-in.
 
+**F-3 — "honoring `prefers-reduced-motion` at the wizard-render call site
+fixes mode C."** Falsified by O-4: direct A/B against the REAL target test
+(`test_corpus_reload_preserves_scroll_position`, not just the isolated
+instrument) shows the fix condition failing at a HIGHER rate (~62%, n=8)
+than the unfixed control (~33%, n=6) run in the same session on the same
+machine. The animation-timing framing (O-1/O-2/O-3) was a real, correctly
+observed phenomenon, but not the primary defect — O-4's frame trace shows
+the true defect is a max-scroll clamp, which an instant scroll corrupts
+just as surely as (and possibly more reliably than) an animated one.
+**Do not re-attempt the reduced-motion fix as scoped here without a new
+mechanism.** The `_scrollBehavior()` helper + 5-site a11y fix may still be
+worth keeping on its OWN merits (the reduced-motion gap is real regardless
+of mode C), but it must not be presented as this bug's fix.
+
 ---
 
 ## Inferred
 
-None beyond what O-3 states as directly observed. The remaining open
-question — single delayed call vs. a genuine second call in the wild — is
-explicitly NOT resolved here (see O-3's last paragraph) because the fix
-below (honoring `prefers-reduced-motion`) closes the entire class either
-way: with no in-flight smooth animation possible, there is nothing left to
-race regardless of which of the two shapes production actually hits.
+The remaining open question — single delayed call vs. a genuine second
+call in the wild — is still not resolved (see O-3's last paragraph), and
+now matters more: whichever it is, the corrupting call's target position
+is clamped by `scrollHeight - viewportHeight` at the moment it fires, and
+whether that clamp lands "close enough" to a real user's own scroll
+position is presumably why this reads as ~10-20% rather than "always" —
+NOT resolved by direct observation yet; this is a hypothesis for the next
+falsification round.
 
 ---
 
 ## Falsification
 
-Already run as part of reaching O-1/O-2 above (the instrument-first
-requirement was satisfied by iterating the experiment itself, per charter
-C-7 — the first hypothesis tried (O-1's ordering) was falsified, not
-patched around; the second (O-2's ordering) was then tried and confirmed).
-No further experiment is needed before writing the fix: O-2 is a
-9/10-reproducible, non-CPU-saturation-dependent capture of the exact
-`before -> partial-target` signature the wild failures show.
+O-1/O-2 satisfied the instrument-first requirement for the (now falsified)
+animation-timing framing. O-4 is itself a falsification experiment against
+the fix that framing produced, run BEFORE trusting the fix (per C-7,
+"green [an isolated instrument] is not evidence" if the real target test
+isn't also checked) — and it caught the fix being wrong. **Next
+falsification round, not yet run:** an instrument that holds `document`
+height / viewport height fixed and directly tests the clamp hypothesis —
+e.g. force `scrollHeight - viewportHeight` to land exactly at vs. away
+from the test's own baseline value and confirm the corruption only occurs
+in the "away from" case, or investigate whether `_captureScrollY`/
+`_restoreScrollY`'s own generation-counter mechanism (already wraps
+`scrollIntoView`, `app.js:5551-5554`) could be extended to protect a
+plain baseline read the same way it protects a `refreshCorpus` capture,
+rather than changing the wizard's own scroll call at all.
 
 ---
 
 ## The fix
 
-See `CHANGELOG.md` / the branch's own commits for the final diff. Planned
-approach (per the plan approved before this dossier was written): honor
-`prefers-reduced-motion` across all 5 JS `behavior:'smooth'` call sites in
-`static/app.js` (`:508`, `:2916`, `:5855`, `:5862`, `:7021` — the last is
-the mode-C site), via one shared helper, rather than a test-side-only
-timing fix. The app already honors `prefers-reduced-motion` for its CSS
-transitions (`style.css:762,805,2904,3925`) but not for these JS-driven
-scrolls — this closes that a11y gap and, as a side effect, removes the
-in-flight-animation window mode C depends on entirely: with reduced motion
-emulated (the same pattern `tests/ux/a11y/test_axe_smoke.py:116` already
-uses), `scrollIntoView` becomes an instant, single-frame jump, so there is
-no multi-frame window left for a later baseline read to land inside.
+**Not yet found.** See "## Falsified" F-3 and "## Inferred" above. Do not
+build on the reduced-motion framing without new evidence.
 
 ---
 
 ## Acceptance bar
 
-- `test_wizard_render_firing_after_baseline_creeps_it` (O-2's instrument)
-  flips from proving the defect (`after != before`, ~9/10) to proving the
-  fix (`after == before`, deterministic) once reduced-motion is honored at
-  the wizard-render call site, under the SAME forced ordering — no longer
-  timing-dependent at all once the animation is instant.
-- The real `test_corpus_reload_preserves_scroll_position` test emulates
-  reduced motion and shows zero mode-C (`300 -> 369`-shaped) failures across
-  a saturated-load campaign that previously reproduced it ~17%
-  (`scratchpad/capture_scroll_phase1b.sh`, 7 workers / 8 cores).
-- Full `python -m scripts.gate` green, verified from the log's own
-  pass/fail line (not a bare exit code — `pytest-rerunfailures` can mask a
-  fail-fail-pass as a bare `PASSED`).
+Not applicable yet — no fix has passed its own falsification test. Once a
+new candidate exists, it must be checked the same way O-4 checked this
+one: A/B against the REAL `test_corpus_reload_preserves_scroll_position`
+(not just an isolated instrument), with sample sizes reported honestly, not
+just "does the isolated instrument now pass."
