@@ -267,6 +267,52 @@ _WIZARD_RENDER_SPY_JS = r"""
 """
 
 
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7), mode-C round 5 step 0 — ATTRIBUTE the growth.
+#
+# O-9 established that `scrollY` shifts by exactly the document's height
+# growth (`dy == dh`). Round 4 then assumed that growth was the corpus card
+# list and put `overflow-anchor: none` there — and was refuted (F-6). That
+# assumption was never measured. This watches `documentElement.scrollHeight`
+# on every frame and, on each CHANGE, snapshots which id'd elements are tall
+# enough to account for it — so the +25054px is attributed to a real element
+# instead of guessed at.
+#
+# Deliberately does not pre-name a suspect list (that would be scoping the
+# instrument to the theory again); it reports every id'd element over a size
+# floor and lets the numbers pick the culprit.
+# ---------------------------------------------------------------------------
+_HEIGHT_ATTRIBUTION_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__heightAttrError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  let last = -1;
+  const snap = () => {
+    const out = [];
+    document.querySelectorAll('[id]').forEach(el => {
+      const h = el.offsetHeight;
+      if (h > 400) out.push([el.id, h]);
+    });
+    // Tallest first; only the top few can plausibly explain a 25000px jump.
+    return out.sort((a, b) => b[1] - a[1]).slice(0, 6);
+  };
+  const tick = () => {
+    const h = document.documentElement.scrollHeight;
+    if (h !== last) {
+      rec('height-change', {from: last, to: h, delta: last < 0 ? null : h - last, tall: snap()});
+      last = h;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  window.__heightAttrInstalled = true;
+})();
+"""
+
+
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
     ``_SCROLL_SPY_NAMED_HOOKS_JS`` (diagnostic). Never raises: this is called
@@ -518,6 +564,10 @@ def test_corpus_reload_preserves_scroll_position(
     # hooks above — wizardInit()'s _wizardRender() can't fire until select()
     # runs, so this is the last moment the wrapper can be in place for it.
     page.evaluate(_WIZARD_RENDER_SPY_JS)
+    # Round 5 step 0 (C-7): attribute the +25054px growth to a real element
+    # rather than assuming it — round 4 assumed the corpus list and was
+    # refuted (F-6) partly on that unmeasured assumption.
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
     UserPickerPage(page, live_server).select("alice")
 
     try:
@@ -723,6 +773,126 @@ def test_wizard_render_firing_after_baseline_creeps_it(
         f"wizard render to fire LATE (after the baseline is set), not "
         f"merely be a residual animation from before it (docs/dev/"
         f"diagnosis/ux-scroll-wizard-rail-flake.md)."
+    )
+
+
+@pytest.mark.ux
+def test_merge_suggestions_growth_shifts_scroll_deterministically(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-7 PROBE for mode C, round 5 step 1 -- a MEASURING DEVICE, not an
+    acceptance signal (see the dossier's "## Acceptance bar"; F-4 is what
+    that distinction cost).
+
+    Round 4 could not measure its own fix: the mechanism fires in roughly 1
+    run in 6, so a 5-run arm (1/6 control vs 1/5 fixed) was evidence of
+    neither improvement nor harm. This forces the SAME ordering the wild
+    failures take -- document growth landing after a baseline is already
+    established -- so a candidate fix can be A/B'd against a signal that
+    fires every run instead of one in six.
+
+    Admissible as an instrument only because the ordering it forces is
+    directly OBSERVED in the wild (dossier O-6: control run1 and fix run4
+    both captured it), and because it drives the REAL production render path
+    (`refreshMergeSuggestions`, app.js:5212) rather than simulating growth.
+
+    What round 5 step 0 established (dossier O-12), and why this test targets
+    merge suggestions rather than the corpus cards: the +25054px that moves
+    the scroll is `#mergeSuggestionsList` (24956px), NOT
+    `#corpusExperienceList` (1308px, which never grows). Round 4 placed
+    `overflow-anchor: none` on the corpus list -- an element that does not
+    grow -- which is part of why it was refuted (F-6). The growth sits ABOVE
+    the corpus cards in the DOM (templates/index.html:739 vs :841), the
+    classic "content inserted above the anchor pushes scroll down" shape.
+
+    Reports `dy` vs `dh` rather than a bare pass/fail, because O-9's finding
+    is an EQUALITY (`dy == dh` at +69 and at +25054), and an equality is a
+    far stronger signal than "the number changed."
+    """
+    cid = seed_user(ux_app, "alice")
+    # 20 near-identical companies -> the duplicate-role scorer emits a large
+    # pairwise suggestion set; that volume is what makes the growth ~25000px.
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    # Wait for the suggestions to actually RENDER, then for the document
+    # height to stop moving. O-7: card attachment and layout height are
+    # different events, and gating on the former is what lets ~25000px of
+    # layout land after a baseline is set.
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_function(
+        """() => {
+             const h = document.documentElement.scrollHeight;
+             const stable = window.__probeLastH === h;
+             window.__probeLastH = h;
+             return stable;
+           }""",
+        timeout=15_000,
+    )
+
+    # Collapse the section back to its pre-render state so its growth can be
+    # re-triggered ON DEMAND. This is the only synthetic step, and it only
+    # undoes a render -- the growth itself is then produced by the real
+    # production function below, not by injected filler.
+    page.evaluate(
+        """() => {
+             const list = document.getElementById('mergeSuggestionsList');
+             const sec = document.getElementById('mergeSuggestionsSection');
+             while (list.firstChild) list.removeChild(list.firstChild);
+             sec.classList.add('hidden');
+           }"""
+    )
+    page.wait_for_timeout(150)
+
+    page.evaluate("() => window.scrollTo(0, 300)")
+    page.wait_for_timeout(150)  # let the baseline settle before sampling it
+    before = page.evaluate("() => window.scrollY")
+    h_before = page.evaluate("() => document.documentElement.scrollHeight")
+    assert before > 0, "probe setup didn't actually scroll the page"
+
+    # Re-render through the REAL production path (app.js:5212). Playwright
+    # awaits the returned promise, so the fetch + render have completed.
+    page.evaluate("() => refreshMergeSuggestions()")
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(200)
+
+    after = page.evaluate("() => window.scrollY")
+    h_after = page.evaluate("() => document.documentElement.scrollHeight")
+    dy, dh = after - before, h_after - h_before
+
+    if dy != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "merge-growth-probe", after, before)
+    # Guards the probe itself: if the growth didn't happen, a dy of 0 proves
+    # nothing and must NOT read as "the bug is fixed" (the exact way a dead
+    # instrument lies -- see _dump_scroll_spy's own liveness checks).
+    assert dh > 10_000, (
+        f"PROBE DID NOT ARM: expected the merge-suggestions re-render to grow "
+        f"the document by ~25000px, got dh={dh:+} ({h_before} -> {h_after}). "
+        f"A dy of {dy:+} here is meaningless -- fix the probe, do not read "
+        f"this as a result."
+    )
+    assert dy == 0, (
+        f"scroll-anchoring shift reproduced deterministically: "
+        f"y {before} -> {after} (dy={dy:+}) while scrollHeight "
+        f"{h_before} -> {h_after} (dh={dh:+}); dy==dh is {dy == dh}. "
+        f"Growth is #mergeSuggestionsList, ABOVE the corpus cards in the DOM. "
+        f"See docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md O-9/O-12."
     )
 
 

@@ -7,9 +7,15 @@
 > `dy == dh`, verified at `+69` and at `+25054` in the same run, with no
 > scroll event of any kind. Consistent with Chromium **scroll anchoring**.
 >
+> **What grows** (O-12, measured not assumed): `#mergeSuggestionsList`
+> (24956px). **`#corpusExperienceList` is 1308px and never grows** — which
+> is why round 4's fix, placed there, never had a chance.
+>
 > **What is NOT observed:** what makes it fire. The same growth lands in
-> the same window in 5 of 6 control runs and shifts `y` in only 1 (O-10).
-> Growth-in-the-window is necessary, not sufficient.
+> the same window in 5 of 6 control runs and shifts `y` in only 1 (O-10),
+> and a probe that forces that ordering on demand does not fire it at all
+> (O-13, 0 shifts in 4 armed runs). Growth-in-the-window is necessary, not
+> sufficient. **No fix can be honestly measured until this is closed.**
 >
 > **Five framings are dead — do not rebuild on any of them:**
 > `prefers-reduced-motion` (**F-3**, made the real test worse), a
@@ -376,6 +382,80 @@ harm either. The informative signal here is not the rate — it is the single
 captured `fix run4` timeline showing the mechanism firing unchanged through
 the fix.
 
+### O-12 — the growth is `#mergeSuggestionsList`, NOT the corpus card list
+
+Round 4 placed its fix on `.corpus-experience-list` on the assumption that
+the corpus cards were what grew. **That assumption was never measured.**
+Round 5 step 0 measured it: a per-frame watcher on
+`documentElement.scrollHeight` that, on each change, snapshots every id'd
+element over a size floor (`_HEIGHT_ATTRIBUTION_JS`, deliberately given no
+pre-named suspect list). Captured at the `+25054` step:
+
+```
+height-change from=2170 to=27224 delta=+25054
+  tall: [['tab-corpus', 27046], ['panelCorpus', 26958],
+         ['mergeSuggestionsSection', 25044], ['mergeSuggestionsList', 24956],
+         ['corpusExperienceList', 1308], ...]
+```
+
+**`#corpusExperienceList` is 1308px and never grows.** The entire jump is
+`#mergeSuggestionsList` (24956px) — the possible-duplicate-roles cards
+rendered by `refreshMergeSuggestions()` (`app.js:5212`), fed by
+`GET /api/users/<u>/corpus/merge-suggestions`.
+
+Two consequences:
+
+1. **Round 4's fix was placed on an element that does not grow.** F-6
+   refuted the placement; O-12 explains why it never had a chance. The
+   round-4 conclusion stands, but its post-mortem is now specific.
+2. `#mergeSuggestionsSection` sits **above** `#corpusExperienceList` in the
+   DOM (`templates/index.html:739` vs `:841`), so ~25000px inflates ABOVE
+   the corpus cards — the classic "content inserted above the anchor pushes
+   scroll down" shape.
+
+**Efficiency note, filed not fixed (out of scope for this branch):** 20
+seeded near-identical companies produce a ~25000px pairwise suggestion
+list. The suggestion set appears to grow superlinearly with corpus size and
+is rendered in full with no cap or virtualization. That is a real
+user-facing cost at a large corpus, independent of this flake.
+
+### O-13 — growth-after-baseline is reproducible on demand, and does NOT by itself cause the shift
+
+Probe: `test_merge_suggestions_growth_shifts_scroll_deterministically`
+(round 5 step 1). Settles the corpus tab fully, empties
+`#mergeSuggestionsList` back to its pre-render state, sets a `scrollTo(0,
+300)` baseline, then re-renders via the REAL `refreshMergeSuggestions()`
+and reports `dy` vs `dh`. It carries a self-guard (`dh > 10_000`) so a dead
+probe cannot read as a fix.
+
+**Result: 4 runs, 4 armed (`dh = +25054` every time), 0 shifts (`dy = 0`).**
+Representative timeline:
+
+```
+t=3117.9  y=0    h=2170   window.scrollTo [0,300]   (baseline)
+t=3220.5  y=300  h=2170   scroll-event
+t=3737.9  y=300  h=27224  height-change delta=+25054   <- y does NOT move
+```
+
+The full `+25054`, inserted above the scroll position, moved nothing. This
+**independently confirms O-10 from the other direction**: the unprotected
+window is a precondition, not a trigger. It also means **round 5 step 1 is
+NOT yet achieved** — this probe reproduces the ordering but not the
+mechanism, so it cannot yet measure a fix.
+
+**What the probe removes relative to the wild failures** (candidate missing
+ingredients, NONE tested — do not fix on these):
+
+- It waits for `scrollHeight` to go stable before setting the baseline. In
+  the failing wild run the layout was **still settling**: the `+69` step
+  (`h 2101 -> 2170`) landed in the same window as the baseline, and that
+  step shifted `y` too. Anchoring may require an anchor established during
+  an unsettled layout.
+- It empties the list first, causing a `-25054` shrink immediately before
+  the test. A shrink may reset the browser's anchor selection.
+- In the failing run, `_restoreScrollY`'s rAF settle loop was still ticking
+  around the baseline; in the probe it has long since stopped.
+
 ---
 
 ## Falsified
@@ -497,8 +577,28 @@ classifying every run by `dy` vs `dh` — not by pass/fail — is what made a
 5-run arm informative at a ~17% base rate, and is what caught that the
 O-6 discriminator table had sampled only one end of the interval.
 
-**Round 5, NOT yet run — the pre-registered successor to round 4.** Two
-things must happen, in this order, and the first is not optional:
+**Round 5 step 0 (RUN — this is O-12).** Attributed the growth before
+theorizing about it: it is `#mergeSuggestionsList`, not the corpus cards.
+This is the step round 4 skipped, and skipping it is what made round 4's
+placement unfalsifiable-in-practice rather than merely wrong.
+
+**Round 5 step 1 (RUN — INCONCLUSIVE, this is O-13).** The probe was built
+and it arms reliably (`dh = +25054`, 4/4) but does not reproduce the shift
+(`dy = 0`, 4/4). **It is therefore not yet usable as the measuring device
+step 2 depends on**, and step 2 (the document-level `overflow-anchor` A/B)
+is BLOCKED behind fixing that — running it against a probe that never
+fires would produce a guaranteed-green result that means nothing. That
+trap is the whole reason round 5 was ordered this way.
+
+**Round 6, NOT yet run — close the gap O-13 opened.** Re-introduce, one at
+a time, the conditions the probe removes (unsettled layout at baseline
+time; no preceding shrink; an active `_restoreScrollY` settle loop) until
+the probe fires, then proceed to step 2. Test them **singly**: the whole
+point of a probe is attribution, and a probe that fires only with all
+three restored has told you nothing more than the real test already does.
+
+**Superseded — round 5's original two-step text follows for the record.**
+Two things must happen, in this order, and the first is not optional:
 
 1. **Make the mechanism fire on demand.** At a ~1-in-6 trigger rate no
    arm of any affordable size can measure a fix honestly (round 4's 1/6
