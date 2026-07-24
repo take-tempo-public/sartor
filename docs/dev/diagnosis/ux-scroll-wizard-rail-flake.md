@@ -533,6 +533,24 @@ reported all three attempts, so the fail-fail-fail was visible. Had it been
 fail-fail-pass it would have surfaced as a bare `PASSED` with no traceback —
 the exact masking charter C-7 warns about.
 
+**Disposition (owner-decided, 2026-07-24):** marked `xfail(strict=False)`
+citing O-15 + F-7 — the same treatment its sibling got for F-4, and for the
+same underlying reason: both wizard-render instruments assert properties of a
+mechanism F-7 removed from the case. `strict=False` is load-bearing twice
+over: the effect is environment-dependent, so **both** outcomes are legal
+(it **xpasses locally and xfails on CI** — verified: `13 passed, 1 xfailed,
+1 xpassed` locally), and it keeps the test **running** on every CI run so its
+xfail/xpass status remains a live signal. That signal is what produced O-15
+in the first place, and preserving it is why these were marked rather than
+deleted.
+
+**Two instruments neutralized in one close-out is a pattern worth
+distrusting**, so the reasoning is recorded here rather than only in the
+commit: neither assertion was edited, neither test was removed, both still
+execute, and each reason string names the specific finding (F-4, O-15/F-7)
+that demoted it. If a later round re-establishes the wizard render as
+load-bearing, **remove the markers — do not edit the asserts.**
+
 ---
 
 ## Falsified

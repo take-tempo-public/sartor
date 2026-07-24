@@ -614,6 +614,25 @@ def test_corpus_reload_preserves_scroll_position(
 
 
 @pytest.mark.ux
+@pytest.mark.xfail(
+    reason=(
+        "O-15 + F-7 (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md). Two reasons, "
+        "and the second is why this is not merely a flaky test: (1) F-7 established the "
+        "wizard rail is not involved in mode C at all — instrumenting the REAL test found "
+        "exactly one _wizardRender call in 6/6 runs, always early, and the 300->369 "
+        "signature is a height-tracking shift, not a scroll to #panelJD. So this asserts "
+        "a property of a NON-mechanism. (2) O-15: this instrument passes locally 5/5 but "
+        "fails on CI 3/3 with NEGATIVE drift (300->245), so its assertion is "
+        "environment-dependent — which is itself the finding, not a defect to tune away. "
+        "strict=False so BOTH outcomes are legal and the test keeps RUNNING on every CI "
+        "run: its xfail/xpass status is the live signal that caught the CI-vs-local "
+        "divergence in the first place, and that signal is the reason this is marked "
+        "rather than deleted. DO NOT 'fix' this by widening a tolerance or pinning the "
+        "number — if the question needs answering, re-run it sampling `h` at both ends, "
+        "on both environments."
+    ),
+    strict=False,
+)
 def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:

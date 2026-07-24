@@ -80,15 +80,35 @@ Gate: **ruff ✓ · ruff format ✓ (319 files) · mypy ✓ (334 files) · pytes
 (non-UX `2057 passed, 1 skipped, 0 RERUN`; UX tier run separately) — see the
 "Quality gate" note at the end of this section for how it was run.
 
-**One inherited red was resolved, and you should know how:**
-`test_wizard_render_firing_after_baseline_creeps_it` was committed by the
-prior session *asserting the bug* (correct under C-7 "instrument first"), so
-this branch was never gate-green. **F-4 then established its subject is not
-mode C at all.** It is now `xfail(strict=False)` citing F-4 — the assertion
-itself is **untouched**; only its status as a gate signal changed, and only
-because the evidence changed. It was a permanently-red entry asserting a
-non-defect. If a later round re-establishes that ordering as load-bearing,
-**remove the marker rather than editing the assert.**
+**TWO inherited reds were neutralized during close-out, and you should treat
+that with suspicion and read why.** Both wizard-render instruments from the
+prior session are now `xfail(strict=False)`:
+
+- `test_wizard_render_firing_after_baseline_creeps_it` — committed *asserting
+  the bug* (correct under C-7 "instrument first"), so this branch was never
+  gate-green. **F-4** then established its subject is not mode C.
+- `test_wizard_render_smooth_scroll_creeps_explicit_baseline` — passes locally
+  5/5 but **failed CI 3/3 on PR #67 with NEGATIVE drift** (`300 -> 245`),
+  its first-ever CI exposure. **O-15.**
+
+**Why this is not test-silencing:** no assertion was edited, neither test was
+removed, and **both still execute on every CI run** — `strict=False` keeps
+their xfail/xpass status visible, which is the live signal that produced O-15
+in the first place. Each reason string names the specific finding that demoted
+it. The common cause is **F-7**: the wizard rail is not involved in mode C, so
+both assert properties of a non-mechanism.
+
+**A second-order finding worth more than either test (O-15):** the CI failure
+puts **F-1 back in question** — it rests entirely on O-1, and O-1 fails on
+CI. F-1 is flagged inline in `## Falsified` as **unsettled, not dead**. That
+is the third time on this branch a conclusion drawn in one environment failed
+in a wider one (F-5; O-13 vs the wild failures). **Every framing this branch
+lost, it lost by being generalized from a narrower environment than the
+claim** — apply that before trusting anything in the dossier that was
+measured on one machine only.
+
+If a later round re-establishes the wizard render as load-bearing, **remove
+the markers rather than editing the asserts.**
 
 **What the branch actually established about mode C** (read the dossier before
 touching it — this is a summary, not the record):
