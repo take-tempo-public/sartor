@@ -490,6 +490,49 @@ precisely the "green from a dead instrument" failure this branch's own
 `_dump_scroll_spy` liveness checks exist to prevent, reproduced here in a
 new instrument written the same session.
 
+### O-15 — CI contradicts O-1, and the drift there is NEGATIVE
+
+First-ever CI exposure of this branch (PR #67; the branch had never been
+pushed, so its instruments had never run on Linux/GitHub-hosted Playwright).
+The **O-1 instrument** — `test_wizard_render_smooth_scroll_creeps_explicit_baseline`,
+which asserts **no** drift at the early sync point and passes locally 5/5 plus
+a full local `pytest -m ux` run — **failed on CI reproducibly**, on all three
+attempts (initial + both `--reruns 2` retries):
+
+```
+attempt 1:  308 -> 294     (dy = -14)
+attempt 2:  300 -> 245     (dy = -55)
+attempt 3:  300 -> 245     (dy = -55)   <- identical to attempt 2
+```
+
+Two things matter here, and neither was visible from local runs:
+
+1. **O-1 does not generalize.** Its finding — "an early sync point does not
+   reproduce drift" — is true on this Windows dev machine and **false on CI**.
+   Since **F-1 rests entirely on O-1**, F-1 is now in question as stated: it
+   may be a local-environment property, not a browser property. This is the
+   *third* time on this branch that a conclusion drawn from one environment
+   failed to survive a wider one (see F-5, and O-13 vs the wild failures).
+   **Pattern worth naming: every framing this branch has lost, it lost by
+   being generalized from a narrower environment than the claim.**
+2. **The drift is NEGATIVE.** Every local observation on this branch drifted
+   *upward* (`+69`, `+25054`). On CI it goes *down*. Under the O-9 `dy == dh`
+   relation that implies the document **shrank** at that moment on CI rather
+   than growing — plausible on a different OS/font stack where the wizard
+   panel's laid-out height differs — but **`h` was not sampled in the O-1
+   instrument**, so this is NOT confirmed. It is exactly the both-ends
+   sampling omission that produced the corrected O-6 table.
+
+**Do not "fix" this by widening a tolerance or pinning the number.** The
+instrument is not wrong; the *claim it was read as supporting* was
+over-generalized. If a future round needs O-1's question answered properly,
+re-run it with `h` sampled at both ends, on both environments.
+
+**Note the CI mechanics that made this legible:** the `--reruns 2` policy
+reported all three attempts, so the fail-fail-fail was visible. Had it been
+fail-fail-pass it would have surfaced as a bare `PASSED` with no traceback —
+the exact masking charter C-7 warns about.
+
 ---
 
 ## Falsified
@@ -500,6 +543,12 @@ settling" framing literally).** Falsified by O-1: 5/5 clean cancellations,
 zero drift, when the explicit `scrollTo` follows ~61ms after the animation
 starts. Whatever "residual" means in the wild, it is not "the exact same
 animation instance keeps moving after an explicit scrollTo overrides it."
+> **⚠️ F-1 IS ITSELF NOW IN QUESTION (O-15).** It rests entirely on O-1,
+> and O-1 **fails on CI** — 3/3 attempts, with *negative* drift
+> (`300 -> 245`). So F-1 is established only for this local environment,
+> not as a browser property. **Treat F-1 as unsettled**, not as a dead
+> theory you may skip re-testing. It is the one entry in this section that
+> should NOT be trusted as closed.
 
 **F-2 — "a plain 100ms read-delay (matching the real test's own wait) is
 sufficient to catch the drift once the ordering is right."** Falsified by
