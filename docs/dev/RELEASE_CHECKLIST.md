@@ -515,14 +515,18 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **8** (**−1** this entry — `feat/context-structure-review-skill`,
-2026-07-24: **CLOSED the Agent-coding-practices kit-adoption ledger row** — all
+_Rendered open count: **9** (net unchanged this entry — `feat/context-structure-review-skill`,
+2026-07-24: **CLOSED the Agent-coding-practices kit-adoption ledger row** (9 → 8) — all
 three staged commitments done (mypy `--strict` ratchet, ratchet-then-block gate
 hardness, skills/hooks packaging coherence); the `context-structure-review` skill
 import completed the skills half, and the owner confirmed the four-parallel
 `commands/agents/skills/hooks` end-state satisfies the row now rather than waiting
-on 8.7 `feat/portable-enforcement-core`. Re-counted the actual `- [ ] **` bullets in
-this Open section rather than trusting arithmetic: 9 → 8, confirmed.
+on 8.7 `feat/portable-enforcement-core`. **Then +1** for a newly-discovered item (8 → 9)
+— this same branch's PR #66 hit a `docs-site/` static-export build flake (a live
+`shields.io` badge-image fetch timing out at build time), confirmed unrelated to the
+branch's own changes and not merge-blocking (not in `main`'s required six checks), but
+filed since it will recur on every future PR until fixed. Re-counted the actual
+`- [ ] **` bullets in this Open section rather than trusting arithmetic: 9, confirmed.
 Prior to that: **9** (**−1** this entry — `feat/capture-screenshots-smoke-check`,
 2026-07-23: **RESOLVED the `capture_screenshots.py` periodic drift smoke check** —
 added a `--smoke` flag (setup + Step 1 only, then stop) and a new scheduled
@@ -2114,6 +2118,23 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-21, `docs/v110-endgame-scope`; open count 18 → 19 —
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
+
+- [ ] **`docs-site/`'s static-export build fetches a live `shields.io` CI-badge image at build
+      time with no retry/timeout handling — a repeat of the same failure class as the
+      already-resolved TypeScript-detection outage below, different root cause.** Observed on
+      PR #66 (`feat/context-structure-review-skill`): the **non-required** "Project docs -> MDX,
+      build static export, publish" check failed identically twice in a row —
+      `content/docs/index.mdx`'s remark-image plugin tries to fetch
+      `https://img.shields.io/github/actions/workflow/status/take-tempo-public/sartor/ci.yml?branch=main&label=CI`
+      to compute the badge's image dimensions at build time, and `shields.io` returned a `408
+      Request Timeout` both attempts. Confirmed unrelated to that branch's own changes (zero
+      `docs-site/` diff). Not merge-blocking today (this check is not in `main`'s required
+      six — `Lint/type-check/test ×3`, `UX/a11y/PDF`, `Analyze (js-ts)`, `Analyze (python)` —
+      per `gh api repos/.../branches/main/protection/required_status_checks`), but every future
+      PR's docs-site check will flake the same way until fixed: either self-host the badge SVG,
+      point it at a source that doesn't need dimension-probing, or make `remark-image` skip/retry
+      on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
+      2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
 
 #### Resolved
 

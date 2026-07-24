@@ -128,8 +128,9 @@ verify from the log's own `gate: all steps passed.` / `FAILED` line instead, sam
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 Full detail for every item lives in `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward
-ledger (`#### Open`). **Rendered open count: 8** (down from 9 — this branch closed
-the entire kit-adoption arc row; verified by counting the actual `- [ ] **` bullets).
+ledger (`#### Open`). **Rendered open count: 9** (net unchanged this branch — closed
+the entire kit-adoption arc row (9 → 8), then filed one new item discovered on this
+branch's own PR (8 → 9); verified by counting the actual `- [ ] **` bullets).
 One line each, in ledger order:
 
 1. The quality gate is unrunnable by an agent in one shot — makes it unenforceable as
@@ -156,11 +157,16 @@ One line each, in ledger order:
 8. Compose-time rewrite latitude — the "generate but don't invent" dial —
    **[OWNER DECISION], evidence-gated**; needs the PX-39 real-corpus run first (see
    item 7); see `COMPOSE_REWRITE_DIAL.md` for full context, not the ledger summary.
+9. `docs-site/`'s static-export build flakes on a live `shields.io` badge-image fetch
+   timing out at build time (this branch's own PR #66) — not merge-blocking (not one
+   of `main`'s required six checks) but will recur on every future PR until fixed;
+   solo-closeable (self-host the badge, or make the fetch retry/skip on failure).
 
-**The ceiling is ~8-10 open items; this ledger is now at 8** — the lowest point of
-this reduction sprint. All remaining items are owner-gated (PyPI/GHCR console access,
-E2E corpus access, calibration passes, opportunistic-only sweeps) — none is
-solo-closeable without an owner decision or access this session doesn't have.
+**The ceiling is ~8-10 open items; this ledger is at 9** — closed the kit-adoption arc
+row entirely this branch, then filed one new solo-closeable item discovered on this
+branch's own PR. Of the 9, only item 9 above is freely solo-closeable; the rest are
+owner-gated (PyPI/GHCR console access, E2E corpus access, calibration passes,
+opportunistic-only sweeps).
 
 ---
 
