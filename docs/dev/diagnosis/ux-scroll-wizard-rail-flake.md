@@ -1,19 +1,30 @@
 # Diagnosis — scroll-flake "mode C": wizard-rail smooth-scroll corrupts an unrelated later baseline
 
-> **Status:** mechanism **directly observed in the REAL target test**
-> (O-5/O-6): `scrollY` shifts silently by exactly the amount the corpus
-> list's document height grows (`+25054`/`+25054`, no scroll event) —
-> Chromium **scroll anchoring**, in the unprotected window between the
-> test's baseline read and `refreshCorpus`'s own capture. **No fix landed
-> yet; round 4 (the falsification test for O-6) is not yet run.**
+> **Status: no fix. Read O-9/O-10/O-11 before anything else here.**
 >
-> Three earlier framings are dead — do not rebuild on them: honoring
+> **What is observed:** when the corpus list's second-stage layout lands,
+> `window.scrollY` shifts by **exactly** the document's height growth —
+> `dy == dh`, verified at `+69` and at `+25054` in the same run, with no
+> scroll event of any kind. Consistent with Chromium **scroll anchoring**.
+>
+> **What is NOT observed:** what makes it fire. The same growth lands in
+> the same window in 5 of 6 control runs and shifts `y` in only 1 (O-10).
+> Growth-in-the-window is necessary, not sufficient.
+>
+> **Five framings are dead — do not rebuild on any of them:**
 > `prefers-reduced-motion` (**F-3**, made the real test worse), a
 > second/late `_wizardRender()` call (**F-4**, 6/6 runs show exactly one,
-> always early), and the max-scroll clamp (**F-5**, an artifact of the
-> isolated instrument's 1206px page; the real page is 27224px).
-> Each earlier framing came from an isolated instrument and died on
-> contact with the real test.
+> always early), the max-scroll clamp (**F-5**, an artifact of the
+> isolated instrument's 1206px page), list-scoped `overflow-anchor: none`
+> (**F-6**, refuted against its own pre-registered prediction, reverted),
+> and — note this one — **the wizard rail itself** (**F-7**: the
+> `300 -> 369` signature this branch is named after is a `+69`/`+69`
+> height-tracking shift, not a scroll to `#panelJD`).
+>
+> **The branch name and this file's title are historical, not
+> descriptive.** Every framing that died here was born on an isolated
+> instrument and killed by the real test; round 5 is specified to keep
+> that ordering.
 > **Branch:** `fix/ux-scroll-wizard-rail-flake`
 
 ---
@@ -248,9 +259,16 @@ the assertion:
 
 1. `before` was read as **369, not 300** — the baseline itself drifted
    between the `scrollTo(0,300)` and the very next `window.scrollY` read
-   (two separate CDP round-trips). `369` is `#panelJD`'s absolute top. This
-   is the original "mode C" `300 -> 369` signature, and here it lands in
-   `before` rather than `after`.
+   (two separate CDP round-trips). This is the original "mode C"
+   `300 -> 369` signature, and here it lands in `before` rather than
+   `after`.
+   > **CORRECTION (this section originally asserted "`369` is `#panelJD`'s
+   > absolute top"). That was an inference stated as an observation, and
+   > O-9 below falsifies it:** across the same window `h` went
+   > `2101 -> 2170`, i.e. **+69**, while `y` went `300 -> 369`, i.e.
+   > **+69**. The `369` is not a panel position at all — it is the same
+   > `dy == dh` relation as corruption #2, at small scale. Both
+   > "corruptions" are one mechanism.
 2. Then `scrollY` went **369 -> 25423** with **no `scroll-event` recorded
    at all**, while `h` went **2170 -> 27224**. The arithmetic is exact:
 
@@ -272,24 +290,17 @@ completes BEFORE the test's `refreshCorpus()` runs. That invocation's
 `_restoreScrollY` faithfully restores **25423**. The capture/restore
 primitives worked exactly as designed on an already-wrong value.
 
-**The discriminator across all 6 runs**, read at `refreshCorpus-enter id=2`
-(i.e. at the moment the test's own reload starts):
-
-| run | `h` at refreshCorpus#2 entry | `y` there | result |
-|---|---|---|---|
-| 1 | 27224 (already grown) | **25423** | **FAIL** `369 -> 25423` |
-| 2 | 27224 (already grown) | 300 | pass |
-| 3 | 27224 (already grown) | 300 | pass |
-| 4 | 27224 (already grown) | 300 | pass |
-| 5 | 27224 (already grown) | 300 | pass |
-| 6 | 2170 (grows later) | 300 | pass |
-
-Runs 2-5: the list finished growing **before** the baseline was set, so
-anchoring had nothing left to shift. Run 6: the growth landed **after**
-`refreshCorpus()` had already captured, so capture/restore corrected it —
-the prior branch's fix doing its job. Run 1 is the unprotected middle
-window: growth landing **after the baseline read but before
-`refreshCorpus`'s capture**, where nothing is watching.
+> **CORRECTION — the discriminator table that stood here was WRONG, and
+> O-10 below is the corrected measurement.** It read `h` only at
+> `refreshCorpus#2` entry and inferred from `h = 27224` there that runs
+> 2-5 "finished growing before the baseline was set." Re-reading the same
+> logs with `h` sampled at BOTH ends shows `h = 2170` at the baseline in
+> those runs too: **the growth lands inside the unprotected window in 5 of
+> 6 control runs, and the anchoring shift fires in only 1 of them.**
+> Growth-in-the-window is therefore **necessary but NOT sufficient**, and
+> the "runs 2-5 grew early" explanation was an artifact of sampling one
+> end of the interval. Kept visible rather than deleted: it is the same
+> single-end-sampling error that produced F-5.
 
 ### O-7 — the test's settle gate does not gate on what actually moves
 
@@ -314,6 +325,56 @@ corruption. O-4's reframing was correct about the artifact in front of it
 and wrong to be generalized — which is precisely the hazard C-7's "scope
 the instrument wider than the hypothesis" exists to catch, here caught by
 widening back out to the real test.
+
+### O-9 — `dy == dh` exactly, at BOTH scales: the two "corruptions" are one mechanism
+
+Re-analyzing the captured logs mechanistically (script: sample `y` and `h`
+at the test's own baseline `scrollTo`, and again at `refreshCorpus-enter
+id=2`) shows the shift is not merely "large and silent" — it is **exactly
+equal to the document's growth, every time it occurs, at any size**:
+
+| run | `y` | `h` | `dy` | `dh` |
+|---|---|---|---|---|
+| control run1, small step | 300 -> 369 | 2101 -> 2170 | **+69** | **+69** |
+| control run1, large step | 369 -> 25423 | 2170 -> 27224 | **+25054** | **+25054** |
+| fix run4 (whole window) | 300 -> 25423 | 2101 -> 27224 | **+25123** | **+25123** |
+
+This **retires the "two separate corruptions" framing** of O-6: the
+`300 -> 369` step (the ORIGINAL mode-C signature, present since the first
+dossier) and the large jump are the same relation sampled at two moments.
+There is no separate wizard-animation corruption to fix — which is
+consistent with O-5 finding no late/second `_wizardRender` call at all.
+
+### O-10 — growth in the unprotected window is NECESSARY but NOT SUFFICIENT
+
+Corrected per-run classification (the measurement the O-6 table got wrong).
+Control = `static/app.js`/`style.css` at `3b29716`; fix = `overflow-anchor:
+none` on `.corpus-experience-list`. No CPU saturation; `--reruns` not in
+play; every run a separate pytest process:
+
+| arm | runs | grew in window | anchoring fired | test failed |
+|---|---|---|---|---|
+| control | 6 | **5** | **1** | 1 |
+| `overflow-anchor: none` on the list | 5 | **4** | **1** | 1 |
+
+In 4 of 6 control runs the document grew by the full `+25054` inside the
+unprotected window and `y` did **not** move at all. So the window is a
+precondition, not a trigger; what selects the ~1-in-6 runs where anchoring
+actually fires is **NOT yet observed** and is the open question.
+
+### O-11 — the list-scoped `overflow-anchor: none` does not suppress the shift
+
+Round 4's pre-registered prediction was: if the `dy == dh` failures persist
+unchanged, the fix is refuted and must be reverted. They persisted —
+`fix run4` shows a textbook `dy = dh = +25123` shift **with the rule
+applied** (verified present in `static/style.css` for that arm). Reverted
+in the same session it was written; it is not in the tree.
+
+Sample sizes are small and are reported as counts for that reason: 1/6 vs
+1/5 is **not** evidence of improvement, and would not have been evidence of
+harm either. The informative signal here is not the rate — it is the single
+captured `fix run4` timeline showing the mechanism firing unchanged through
+the fix.
 
 ---
 
@@ -365,6 +426,24 @@ real test's document is 27224px at the moment of corruption, so nothing is
 clamped there. O-4's observation stands **for the artifact it was taken
 on**; its generalization to the real flake does not.
 
+**F-6 — "`overflow-anchor: none` on `.corpus-experience-list` fixes mode
+C."** Falsified by O-11, against its own prediction registered before the
+run. **Reverted.** Note the scope of what this kills: it refutes *this
+placement*, not scroll anchoring as the mechanism (O-9's exact `dy == dh`
+at two independent scales is not something a rival explanation gets for
+free). Opting the list subtree out of *providing* anchor nodes does not
+help if the anchor node the viewport actually locks onto lives **outside**
+that subtree — which is now the leading untested placement, and is
+pre-registered as round 5 below rather than smuggled in as a rescue of
+round 4.
+
+**F-7 — "the `300 -> 369` step is the wizard's `scrollIntoView` landing on
+`#panelJD`'s top."** This is the framing the ENTIRE dossier was built on,
+including its title. Falsified by O-9: the same step is `dy = dh = +69`, a
+height-tracking shift, and O-5 shows no wizard render fires anywhere near
+it. **The wizard rail is not implicated in mode C at all** — the branch
+name and this dossier's title are now historical, not descriptive.
+
 ---
 
 ## Inferred
@@ -376,12 +455,22 @@ render pass adds it (a per-card bullet/summary fetch, an expand pass, image
 or font layout) has NOT been traced. This matters only for choosing where
 a fix attaches, not for the mechanism itself, which O-6 observed directly.
 
-**Whether the `before = 369` drift (O-6 corruption #1) and the anchoring
-shift (corruption #2) are independent** is likewise not established. Both
-appeared in the same failing run; only anchoring produced the assertion
-failure. A fix for anchoring alone may leave a lower-rate `300 -> 369`
-flake behind — that would be the ORIGINAL mode-C signature, and it should
-be re-measured after any anchoring fix rather than assumed gone.
+~~**Whether the `before = 369` drift and the anchoring shift are
+independent.**~~ **RESOLVED by O-9 — they are the same mechanism**
+(`dy == dh` at +69 and at +25054). There is no separate second bug to
+chase, and no residual `300 -> 369` flake should be expected to survive a
+correct anchoring fix.
+
+**What selects the ~1-in-6 runs where anchoring actually fires** is the
+central open question after O-10, and nothing observed so far constrains
+it. In 4 of 6 control runs the identical `+25054` growth landed in the
+identical window and `y` did not move. Candidate discriminators, NONE
+tested: which element the viewport has locked as its anchor at that
+instant; whether the growth is above or below that anchor; whether a
+scroll (the wizard's, or the baseline's own) is still settling when the
+growth commits. **Do not build a fix on any of these until one is
+observed** — that is the exact mistake F-3, F-5 and F-6 each already made
+on this branch.
 
 ---
 
@@ -401,7 +490,37 @@ non-generalizing (F-5) and the actual mechanism (scroll anchoring, O-6)
 was seen at all. A clamp-only instrument would have confirmed the clamp on
 the short isolated page and hidden its rival.
 
-**Round 4, NOT yet run — the falsification test for O-6.** Scroll
+**Round 4 (RUN — REFUTED ITS OWN FIX; this is O-11/F-6).** Predictions
+below were registered before the run; the failures persisted; the fix was
+reverted the same session. **The measurement design is the reusable part:**
+classifying every run by `dy` vs `dh` — not by pass/fail — is what made a
+5-run arm informative at a ~17% base rate, and is what caught that the
+O-6 discriminator table had sampled only one end of the interval.
+
+**Round 5, NOT yet run — the pre-registered successor to round 4.** Two
+things must happen, in this order, and the first is not optional:
+
+1. **Make the mechanism fire on demand.** At a ~1-in-6 trigger rate no
+   arm of any affordable size can measure a fix honestly (round 4's 1/6
+   vs 1/5 is the proof). Build a probe that sets a baseline, forces the
+   list's second-stage growth, and reads `y` — and that reports `dy` vs
+   `dh` rather than pass/fail. **Guard against F-4's lesson:** an isolated
+   forced-ordering instrument already misled this branch once. This one is
+   only admissible because the ordering it forces is directly observed in
+   the wild (control run1, fix run4) — and it is a *measuring device*, not
+   an acceptance signal. The real test remains the acceptance bar.
+2. **Only then** A/B placements of `overflow-anchor: none` (document/
+   `body` level first — the leading untested placement per F-6), each
+   against the probe, and promote to the real-test A/B only what moves the
+   probe.
+
+Registered prediction for the document-level placement: if `dy == dh`
+shifts vanish on the probe, anchoring is confirmed AND locatable; if they
+survive a `body`-level opt-out, **scroll anchoring itself is refuted** as
+the mechanism (a document-wide opt-out has no remaining hiding place) and
+O-6/O-9 need a rival explanation for the exact `dy == dh` relation.
+
+**Superseded — round 4's original text follows for the record.** Scroll
 anchoring is a *browser* behavior with a direct off switch
 (`overflow-anchor: none`). The falsification is therefore cheap and
 sharp: suppress anchoring on the growing container and re-measure the REAL
@@ -432,12 +551,13 @@ rounded rate alone.
 than inferred.** Do not build on the reduced-motion framing (F-3), the
 second-render/late-render framing (F-4), or the clamp framing (F-5).
 
-Candidate shapes for round 4, in order of how surgical they are — **none
-of these has been tested; they are candidates, not findings:**
+Candidate shapes, in order of how surgical they are — **only #1 has been
+tested (and REFUTED as placed, F-6); the rest are candidates, not
+findings:**
 
-1. `overflow-anchor: none` on the corpus list container (or the scroll
-   container that grows). Smallest possible change; directly targets the
-   observed mechanism.
+1. ~~`overflow-anchor: none` on the corpus list container.~~ **TRIED,
+   FALSIFIED (O-11/F-6), reverted.** The document/`body`-level placement
+   is untested and is round 5's first arm.
 2. Reserve the list's height before the cards' second-stage layout lands,
    so the document does not grow above the anchor at all.
 3. Extend the `_scrollInterruptGen` / capture-restore protection

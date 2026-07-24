@@ -1151,6 +1151,27 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       above — matching this ledger's own repeated precedent (e.g. the `feat/diagnostics-run-cancel`
       and `fix/context-write-lost-update-gap` entries) of confirming via isolated re-run rather than
       blocking an unrelated branch's close-out on it.
+      **Mode-C investigation, rounds 3-4 (2026-07-24, `fix/ux-scroll-wizard-rail-flake`):**
+      still open, **no fix**, but the mechanism is now directly observed and five framings are
+      dead. Instrumenting the **real** test (not the isolated instrument) showed `window.scrollY`
+      shifting by **exactly** the document's height growth — `dy == dh`, at `+69` and `+25054` in
+      the same run, with no scroll event — i.e. scroll anchoring on the corpus list's second-stage
+      layout, in the unprotected window between an external baseline read and `refreshCorpus`'s own
+      `_captureScrollY`. Falsified this round: a second/late `_wizardRender()` call (exactly one
+      fires, always early, 6/6 runs), the max-scroll clamp (an artifact of the isolated
+      instrument's 1206px page), list-scoped `overflow-anchor: none` (tried, refuted against its
+      own pre-registered prediction, reverted same session), and — note — **the wizard rail
+      itself**: the `300 -> 369` signature this branch is named for is a `+69`/`+69` height-tracking
+      shift, so the branch name is historical, not descriptive. **Central open question:** the same
+      growth lands in the same window in 5 of 6 control runs and shifts `y` in only 1 — what selects
+      that run is NOT observed. Round 5 is pre-registered in the dossier and blocks on building a
+      probe that fires the mechanism on demand: at a ~1-in-6 trigger rate no affordable arm can
+      measure a fix honestly (round 4's 1/6-vs-1/5 is the proof of that). Full record:
+      `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md` (O-5…O-11, F-4…F-7).
+      **Owner-held verification (2026-07-24):** the owner will exercise this path in the real app
+      during the **next pre-release E2E** and confirm whether the behavior holds there — so any fix
+      that eventually lands needs a real-app check, not only the pytest A/B. Do not close this item
+      on a green suite alone.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
