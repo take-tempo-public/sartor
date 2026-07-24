@@ -813,3 +813,62 @@ source at HEAD before being accepted; no fabrication beyond the named source fil
 resolve, all 85 unique cited repo paths exist, 0 orphans.
 
 **Checkpoint:** `.last_ingest_sha` advanced `248703b` → `b87ab19`.
+
+## 2026-07-24 — diff pass, `feat/context-structure-review-skill` (clears the 75-file
+staleness threshold)
+
+**Mode: diff pass**, `b87ab19` → `c79b916` (78 files changed — the gate's block
+threshold is 75; this branch's own commit was what tipped the count over). Scoped down
+from an initially-requested full cold pass after flagging the cost/scope tradeoff: with
+38 existing pages already covering most of the codebase, a true whole-repo re-verify
+was materially more expensive than what clearing the threshold required.
+
+**File-list triage:** of the 78 changed files, the large majority were non-wiki
+artifacts — 17 `docs/dev/ledger/*.jsonl` provenance records, ~17 `docs/dev/handoffs/*.md`
+session handoffs, CI/workflow + dependency-bump config, and dev-process docs
+(`RELEASE_ARC.md`, `RELEASE_CHECKLIST.md`, `kit-adoption-design.md`, `COMPOSE_REWRITE_DIAL.md`)
+that the wiki doesn't track as concept pages. Four pages (`context-set-contract.md`,
+`diagnostics-console.md`, `eval-harness.md`, `iteration-audit-chain.md`) were already
+hand-updated in-diff by the branches that touched their underlying code (the
+"`.last_ingest_sha` unchanged" convention this log already documents elsewhere) — trusted
+as current, not re-verified from scratch.
+
+**Real candidates checked, diffed against current wiki content:**
+- `blueprints/diagnostics.py` (6-line diff, `%s`→`%r` log format only) — no drift, no
+  edit.
+- `static/app.js` / `static/style.css` (comment additions explaining already-documented
+  race-free/cascade behavior, plus a CSS specificity fix) — matches existing
+  understanding, no drift, no edit.
+- `scripts/capture_screenshots.py` (new `--smoke` flag, 60-line diff) — dev-tooling, no
+  existing or warranted dedicated page under this wiki's scope conventions.
+- `docs/governance/charter.md` (98-line addition) + `docs/governance/enforcement.md`
+  (small diff) — **real gap found**: the charter grew C-7…C-9, the full "Working model
+  (W-1/W-2)" section, and a formal Amendment ceremony since the last ingest, none of
+  which [[governance-extraction]] reflected.
+
+**Page updated:**
+- `governance-extraction` — added a "Working model (W-1/W-2) + amendment ceremony"
+  section summarizing the landing (referencing `charter.md`, not restating its clauses,
+  per this page's own D5 grounding rule) and the F-gov-03 citation-gap resolution
+  `enforcement.md` records. Backlink to [[engineering-workstreams]] already existed
+  bidirectionally — no new backlink wiring needed.
+
+**No pages added** — this pass found one real content gap on an existing page, not new
+concept territory.
+
+**Checkpoint:** `.last_ingest_sha` advanced `b87ab19` → `c79b916`.
+
+## 2026-07-24 — `/wiki-lint` (pre-merge gate, `feat/context-structure-review-skill`)
+
+**Staleness:** 0 files changed since `.last_ingest_sha` — no ingest debt.
+
+**Structural integrity:** 38/38 pages present in `index.md` (0 missing either
+direction) · 0 dangling `[[backlinks]]` · 0 orphan pages (every page has at least one
+inbound link) · 324 `path:line`/`path:SYMBOL` cites checked across 43 unique cited
+paths, 0 broken (all resolve once checked against their actual subdirectory —
+`static/`, `dashboard/templates/`, etc. — rather than assumed repo-root).
+
+**Coverage gaps:** none newly identified this pass; scope was the diff-pass ingest
+above, not a fresh full-repo coverage sweep.
+
+**ERROR count: 0. WARN count: 0. Gate verdict: PASS.**

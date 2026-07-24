@@ -91,12 +91,37 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
    an explicit canonical pointer to `docs/governance/charter.md` (**F-gov-05**; RELEASE_ARC
    §Phase 4.7, the AGENTS.md-shape sub-decision) `[synthesis]`.
 
+## Working model (W-1/W-2) + amendment ceremony — landed 2026-07-23
+
+The charter grew past its original C-0…C-6 clause set: `charter.md` now carries
+**C-7…C-9** (evidence-before-mechanism, durable-before-deep, corrupted-input-is-a-
+blocked-gate) and a full **"Working model (W-1/W-2)"** section — [`charter.md`
+§Working model](../../governance/charter.md#working-model-w-1w-2) — plus a formal
+**Amendment ceremony** section governing how the charter itself changes. Per this
+page's own grounding rule, the clauses are not restated here; the durable home is
+`charter.md`. `[synthesis]`
+
+- **W-1** states the parallel-session isolation construction (worktree-per-session,
+  session-scoped plan-approval state, branch ownership, the cumulative carry-forward
+  ledger) plus an explicit **posture paragraph**: the construction is available, but
+  the operative default is still **serial** — one branch, one session — until Claude
+  Code's reliability is re-established ([[engineering-workstreams]] tracks that
+  posture call).
+- **W-2** names governance itself as the constitution-building extraction vehicle
+  this page describes — closing the loop between this page's design account and the
+  charter's own self-description.
+- The **amendment ceremony** section formalizes, after the fact, the citation
+  discipline this page's own history already practiced (a dated `[src: adopted …]`
+  tag per amendment) — see `enforcement.md`'s "Parallel-session isolation (W-1)" row,
+  which tracked the W-1 citation gap (**F-gov-03**) as open until this landed.
+
 ## Related
 
 - [[llm-wiki-design]] — the wiki design; this extraction is where the earlier `raw/`
   question got resolved — `raw/` was rejected in favor of `docs/governance/` (§Status
   above), so it stays unbuilt.
-- [[engineering-workstreams]] — this is WS-4's follow-on.
+- [[engineering-workstreams]] — this is WS-4's follow-on; also tracks the W-1 serial-
+  vs-parallel posture call.
 - [[system-model-derivation]] — the seven-functions language that dissolved the crux.
 - [[consistency-tracks-enforcement]] — the finding this extends to the vision.
 - [[excellence-walk]] — the walk this design belongs to.
