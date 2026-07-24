@@ -515,7 +515,16 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **9** (net unchanged this entry — `feat/context-structure-review-skill`,
+_Rendered open count: **10** (**+1** this entry — `fix/ux-scroll-wizard-rail-flake`,
+2026-07-24: filed **large-corpus scalability** as its own item, owner-raised, with the
+first hard measurement attached (a ~25000px uncapped merge-suggestion render at 20 seeded
+roles) and an owner-stated provenance caveat that the symptoms are ~a week old and
+un-retested. The mode-C scroll-flake row (item above) was **updated, not closed** — three
+more framings falsified, mechanism directly observed, still no fix. Re-counted the actual
+`- [ ] **` bullets in this Open section rather than trusting arithmetic: 10, confirmed.
+**This hits the ~8–10 ceiling — a reduction sprint is now due** (charter W-1); the two
+freely solo-closeable rows are the `docs-site` badge flake and, once round 6 arms B/C
+resolve, mode C. Prior to that: **9** (net unchanged — `feat/context-structure-review-skill`,
 2026-07-24: **CLOSED the Agent-coding-practices kit-adoption ledger row** (9 → 8) — all
 three staged commitments done (mypy `--strict` ratchet, ratchet-then-block gate
 hardness, skills/hooks packaging coherence); the `context-structure-review` skill
@@ -2156,6 +2165,39 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       point it at a source that doesn't need dimension-probing, or make `remark-image` skip/retry
       on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
       2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
+
+- [ ] **Large-corpus scalability — the app must remain usable at a real corpus size, and
+      currently degrades in ways we have started to measure.** **Owner-raised (2026-07-24),
+      with a concrete first measurement attached.** The owner saw issues with their own corpus
+      in the E2E clone trials and has stated the requirement directly: *"we must be able to deal
+      with large corpuses."*
+      **Provenance caveat, owner-stated 2026-07-24 and load-bearing:** those observations are
+      roughly **a week old**, and the owner has **not re-tested during that week of release
+      work**. So the reported symptoms predate an unknown amount of intervening change. Some may
+      already be addressed by other fixes (e.g. the `list_applications` N+1 collapse, PX-39's
+      targets); some may persist; some may have been superseded by new behavior. **None of that
+      is known.** Do not treat the week-old symptoms as current state, and do not treat
+      "probably fixed by X" as a resolution — **the first action on this item is to re-observe,
+      not to optimize.**
+      **First hard data point, from `fix/ux-scroll-wizard-rail-flake` (2026-07-24):** the
+      possible-duplicate-roles panel renders its **entire** suggestion set with no cap, no
+      pagination and no virtualization, and the set appears to grow **superlinearly** with
+      corpus size — 20 near-identical seeded roles produce a **~25000px** `#mergeSuggestionsList`
+      (measured: `mergeSuggestionsList` 24956px vs `corpusExperienceList` 1308px, via the
+      height-attribution instrument in `tests/ux/regression/test_20260708_busy_states_and_chip.py`).
+      At a realistic corpus this is a pairwise scan rendered in full into the DOM. It is also the
+      growth that drives the mode-C scroll flake (see that item above), so the two interact —
+      but this item is **about the product cost, not the flake**, and must not be closed by
+      fixing the flake.
+      **Not yet done, and deliberately not guessed at:** no profiling of the
+      merge-suggestion scorer's complexity, no measurement of the other corpus surfaces
+      (corpus list, Compose, applications) at owner-scale, and no threshold for what "large"
+      means here. **The right first move is measurement against the owner's real corpus in the
+      E2E clone** (`project-e2e-instance-location` — evidence lives in a separate clone, not
+      this repo's `output/`), producing a per-surface cost table, before any optimization is
+      designed. Scope, target sizes and acceptance thresholds are an **[OWNER DECISION]**.
+      _(discovered: v1.1.0 stream, 2026-07-24, `fix/ux-scroll-wizard-rail-flake`;
+      open count 9 → 10 — **at the ~8–10 ceiling; a reduction sprint is now due**.)_
 
 #### Resolved
 
