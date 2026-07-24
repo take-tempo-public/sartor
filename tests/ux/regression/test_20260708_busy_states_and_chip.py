@@ -777,8 +777,13 @@ def test_wizard_render_firing_after_baseline_creeps_it(
 
 
 @pytest.mark.ux
+@pytest.mark.parametrize("settle_before_growth", [True, False], ids=["settled", "tight"])
 def test_merge_suggestions_growth_shifts_scroll_deterministically(
-    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    settle_before_growth: bool,
 ) -> None:
     """C-7 PROBE for mode C, round 5 step 1 -- a MEASURING DEVICE, not an
     acceptance signal (see the dossier's "## Acceptance bar"; F-4 is what
@@ -822,6 +827,18 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
     page.evaluate(_HEIGHT_ATTRIBUTION_JS)
     UserPickerPage(page, live_server).select("alice")
 
+    # Let onUserSelect's async chain finish BEFORE clicking the tab. select()
+    # only waits for #userSelect.value (set synchronously by the native change
+    # event), so without this the chain's own _landingTab() can land after our
+    # click and switch the tab back out from under the probe — observed once as
+    # a `dh=+0 (1206 -> 1206)` self-guard trip, the tailor tab's height. The
+    # wizard's scrollIntoView is the chain's last observable act (app.js:441 ->
+    # wizardInit -> _wizardRender), so the spy seeing it means the chain is done.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+
     page.click("#topTabCorpus")
     page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
     expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
@@ -857,14 +874,36 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
     )
     page.wait_for_timeout(150)
 
-    page.evaluate("() => window.scrollTo(0, 300)")
-    page.wait_for_timeout(150)  # let the baseline settle before sampling it
-    before = page.evaluate("() => window.scrollY")
-    h_before = page.evaluate("() => document.documentElement.scrollHeight")
+    # ROUND 6, single-variable arm (dossier O-13/O-14): how long after the
+    # baseline scroll the growth lands. In the wild failure the growth landed
+    # ~110ms after the baseline, WHILE it was still settling; the original
+    # "settled" probe let ~620ms elapse and never fired. These two ids differ
+    # in that one variable and nothing else, so a difference between them
+    # attributes cleanly.
+    if settle_before_growth:
+        page.evaluate("() => window.scrollTo(0, 300)")
+        page.wait_for_timeout(150)  # let the baseline fully settle
+        before = page.evaluate("() => window.scrollY")
+        h_before = page.evaluate("() => document.documentElement.scrollHeight")
+    else:
+        # Scroll, sample, and kick the growth in ONE evaluate — no Playwright
+        # round-trips in between — so the render lands as early after the
+        # scroll as the fetch allows.
+        before, h_before = page.evaluate(
+            """() => {
+                 window.scrollTo(0, 300);
+                 const y = window.scrollY;
+                 const h = document.documentElement.scrollHeight;
+                 refreshMergeSuggestions();   // deliberately NOT awaited here
+                 return [y, h];
+               }"""
+        )
     assert before > 0, "probe setup didn't actually scroll the page"
 
     # Re-render through the REAL production path (app.js:5212). Playwright
     # awaits the returned promise, so the fetch + render have completed.
+    # In the "tight" arm this is a second, idempotent call — the first was
+    # already kicked above; this one just guarantees a settled end state.
     page.evaluate("() => refreshMergeSuggestions()")
     page.wait_for_function(
         "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",

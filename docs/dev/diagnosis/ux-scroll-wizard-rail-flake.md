@@ -456,6 +456,40 @@ ingredients, NONE tested — do not fix on these):
 - In the failing run, `_restoreScrollY`'s rAF settle loop was still ticking
   around the baseline; in the probe it has long since stopped.
 
+### O-14 — growth-timing is NOT the missing ingredient either
+
+Round 6 arm A. O-13 listed three conditions the probe removes relative to
+the wild failure; this tested the most suspicious one **singly**, as
+specified, by parametrizing the probe on that one variable and nothing
+else:
+
+| arm id | when the growth lands after the baseline scroll |
+|---|---|
+| `settled` | ~620ms — baseline fully settled first (O-13's original) |
+| `tight` | as early as the fetch allows: scroll, sample, and kick the render in ONE `page.evaluate`, no round-trips between |
+
+The wild failure's growth landed **~110ms** after its baseline, while it
+was still settling — so `tight` reproduces the wild timing and `settled`
+does not.
+
+**Result: 11 armed runs (6 `tight`, 5 `settled`), `dy = 0` in every one.**
+Timing is therefore **not** what selects the ~1-in-6 firing runs. Two of
+O-13's three candidate ingredients remain untested (no preceding shrink;
+an active `_restoreScrollY` settle loop), plus whatever is not yet on that
+list.
+
+**Probe self-guard earned its keep.** One `settled` run tripped
+`PROBE DID NOT ARM` with `dh = +0 (1206 -> 1206)` — the app was on the
+tailor tab, so nothing grew. Cause: `select()` only waits for
+`#userSelect.value`, so `onUserSelect`'s async chain could still run
+`_landingTab()` *after* the probe's tab click and switch the tab back. The
+probe now waits for the chain's last observable act before clicking.
+**Without the `dh > 10_000` guard this would have been reported as a clean
+`dy = 0` — i.e. as evidence, from a probe that never armed.** That is
+precisely the "green from a dead instrument" failure this branch's own
+`_dump_scroll_spy` liveness checks exist to prevent, reproduced here in a
+new instrument written the same session.
+
 ---
 
 ## Falsified
@@ -590,12 +624,29 @@ is BLOCKED behind fixing that — running it against a probe that never
 fires would produce a guaranteed-green result that means nothing. That
 trap is the whole reason round 5 was ordered this way.
 
-**Round 6, NOT yet run — close the gap O-13 opened.** Re-introduce, one at
-a time, the conditions the probe removes (unsettled layout at baseline
-time; no preceding shrink; an active `_restoreScrollY` settle loop) until
-the probe fires, then proceed to step 2. Test them **singly**: the whole
-point of a probe is attribution, and a probe that fires only with all
-three restored has told you nothing more than the real test already does.
+**Round 6 arm A (RUN — NEGATIVE, this is O-14).** Tested growth-timing
+singly, via a `settled`/`tight` parametrization of the probe. 11 armed
+runs, `dy = 0` in all of them. Timing is not the selector.
+
+**Round 6 arms B and C, NOT yet run.** The remaining two candidates from
+O-13's list, still to be tested **one at a time**:
+
+- **B — no preceding shrink.** The probe empties the list (a `-25054`
+  shrink) right before the test; the wild failure has no such shrink. A
+  shrink plausibly resets Chromium's anchor selection. Testing this needs
+  a way to grow the section without first collapsing it (e.g. render half
+  the suggestions, then the rest).
+- **C — an active `_restoreScrollY` settle loop.** In the wild failure
+  that rAF loop was still ticking around the baseline; in the probe it
+  stopped long before.
+
+If B and C both come back negative, the candidate list is exhausted and
+the next move is **not** a fourth guess: go back to capturing more wild
+failures with the existing instrumentation (which now records height
+attribution, `_wizardRender` invocations, and the full scroll timeline)
+and let a second captured failure discriminate. One failing run is a thin
+base for a selector hypothesis, and this branch has repeatedly paid for
+theorizing past its evidence — F-3, F-5, F-6.
 
 **Superseded — round 5's original two-step text follows for the record.**
 Two things must happen, in this order, and the first is not optional:
