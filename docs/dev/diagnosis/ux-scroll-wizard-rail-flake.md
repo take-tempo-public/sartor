@@ -741,6 +741,17 @@ checked the same way O-4 checked the last one, plus what O-5 added:
   acceptance signal any more — F-4 showed it reproduces an ordering the
   real test never takes. Keep it as negative-space coverage; do not gate
   on it.
+  **It is now marked `xfail(strict=False)`** with F-4 as the stated reason.
+  Rationale, so a later session doesn't read this as a silenced failure:
+  it was committed asserting the bug (correct at the time, C-7's
+  "instrument first"), and F-4 then established its subject is **not** the
+  defect — so it was a permanently-red gate entry asserting a non-defect.
+  `strict=False` because the underlying effect reproduces ~9/10, so an
+  occasional xpass is expected and must not itself go red. **This is not a
+  weakened assertion** — the assertion is untouched; only its status as a
+  gate signal changed, and only because the evidence changed. If a future
+  round re-establishes this ordering as load-bearing, remove the marker
+  rather than editing the assert.
 - The captured spy timeline of any surviving failure must be inspected for
   shape, not just counted: a `y`-tracks-`h` `+N/+N` failure and a
   `300 -> 369` failure are different bugs (O-6 corruptions #2 and #1) and

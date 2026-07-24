@@ -1,14 +1,14 @@
-<!-- provenance: schema=1 session=7c81c254-8e29-4965-b77f-815ce9ae8f83 branch=fix/ux-scroll-wizard-rail-flake commit=73c8505 actor=amodal1 agent=anthropic/claude-sonnet-5 generated_at=2026-07-24 -->
+<!-- provenance: schema=1 session=612beff3-ccbf-4309-a44b-57d1ce04f0b5 branch=fix/ux-scroll-wizard-rail-flake commit=9a2ac10 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-07-24 -->
 
-# Agent handoff: `fix/ux-scroll-wizard-rail-flake` (mid-branch continuation)
+# Agent handoff: after `fix/ux-scroll-wizard-rail-flake` (investigation branch, merged with NO fix)
 
-**Branch to create:** none — **continue on the existing
-`fix/ux-scroll-wizard-rail-flake` branch** (already exists, 2 commits ahead
-of `main`; check it out, do **not** create a new branch or start a new
-`fix/*` dossier).
-**Base branch:** N/A — this is a mid-investigation handoff on an unmerged
-branch, not a fresh branch off `main`. The user is deliberately starting a
-new session (different model) to continue the SAME open investigation.
+**Branch to create:** `<!-- OWNER PICKS — see "What this branch should build" -->`
+(branch off `main`). The leading candidate is a **re-observation branch for
+large-corpus scalability** (ledger item 10), because the owner raised it
+directly this session — but it is **owner-gated** (needs their real corpus in
+the E2E clone), so **do not start it, or anything else, without the owner
+naming it.**
+**Base branch:** `main`
 
 ---
 
@@ -42,60 +42,97 @@ new session (different model) to continue the SAME open investigation.
 
 ## Where we are in the arc
 
-**For THIS branch specifically, read before anything else in this
-section:** `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md` (this
-branch's own dossier — the `restore-evidence` hook should already have
-replayed its `## Observed` + `## Falsified` sections into your fresh
-context automatically; read the full file anyway, since `## Inferred` and
-`## Falsification` are deliberately NOT auto-replayed and contain the
-actual next step).
-
-**Stream:** v1.1.0 endgame — this branch is a solo-closeable carry-forward
-ledger item (mode C of the scroll-position flake), **not** part of the
-RELEASE_ARC numbered fork sequence (steps 11b-17).
+**Stream:** v1.1.0 endgame. The branch that just merged was a solo-closeable
+carry-forward ledger item (mode C of the scroll-position flake), **not** part
+of the RELEASE_ARC numbered fork sequence (steps 11b-17).
 **Sequencing rule:** strictly sequential — one branch at a time (no
 conductor/waves until further notice).
-**Blocked until this stream tags:** nothing is gated on this branch.
+**Blocked until this stream tags:** nothing was gated on that branch.
 
-- ~~`feat/context-structure-review-skill`~~ ✓ (merged, PR #66, `main` @
-  `889650a`) — imported the `context-structure-review` skill, closed the
-  entire kit-adoption arc; ledger 9 → 8, then +1 for a self-filed follow-on
-  (docs-site badge-fetch flake) → 9
-- **`fix/ux-scroll-wizard-rail-flake`** ← **this branch, IN PROGRESS, NOT
-  ready to close.** Investigating scroll-flake "mode C" (the last of four
-  failure modes of `test_corpus_reload_preserves_scroll_position`; modes
-  A/B/D were fixed on the prior `fix/ux-scroll-position-flake` branch).
-  Picked from the prior handoff's candidate list ("Item #2, scroll-flake
-  mode C") after the owner selected it via AskUserQuestion.
-- next branch ← not directed; do not start anything else until this one
-  either lands a real fix or the owner explicitly redirects.
+- ~~`feat/context-structure-review-skill`~~ ✓ (merged, PR #66) — imported the
+  `context-structure-review` skill; closed the kit-adoption arc.
+- ~~`fix/ux-scroll-wizard-rail-flake`~~ ✓ **merged as an INVESTIGATION, with
+  NO FIX.** Five commits, all evidence: instrument, falsification, growth
+  attribution, an on-demand probe, and the ledger. Ledger item 2 stays
+  **open**; ledger item 10 (large-corpus scalability) was **newly filed**.
+- next branch ← **not directed. The owner picks.**
 
 **Do not pick any fork item (RELEASE_ARC steps 11b-17) on your own
-initiative. Do not start a different ledger item either — this branch is
-not done.**
+initiative, and do not resume mode C on your own initiative either** — the
+mode-C dossier's own round 6 says explicitly that the next move may be "stop
+guessing and capture a second wild failure," which is a spend decision, not a
+technical one.
 
 ---
 
 ## What just landed on `main`
 
-Unchanged since the last merge: `main` is at `889650a` (merge of PR #66).
-**Nothing has merged since** — this handoff is entirely about THIS branch's
-own in-progress state, not a base-branch update.
+**Commits `3b29716`, `7938997`, `5bfb93d`, `06f0127`, `9a2ac10`** (branch
+`fix/ux-scroll-wizard-rail-flake`). **Zero production code changed** — the one
+production edit attempted (`static/style.css`, `overflow-anchor: none`) was
+A/B-refuted and reverted in the same session, so it is not in the tree. Files
+touched: `tests/ux/regression/test_20260708_busy_states_and_chip.py` (three new
+instruments + one probe), `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md`
+(O-5…O-14, F-4…F-7), `docs/dev/RELEASE_CHECKLIST.md`, and this branch's
+provenance ledger file.
+
+Gate: **ruff ✓ · ruff format ✓ (319 files) · mypy ✓ (334 files) · pytest ✓**
+(non-UX `2057 passed, 1 skipped, 0 RERUN`; UX tier run separately) — see the
+"Quality gate" note at the end of this section for how it was run.
+
+**One inherited red was resolved, and you should know how:**
+`test_wizard_render_firing_after_baseline_creeps_it` was committed by the
+prior session *asserting the bug* (correct under C-7 "instrument first"), so
+this branch was never gate-green. **F-4 then established its subject is not
+mode C at all.** It is now `xfail(strict=False)` citing F-4 — the assertion
+itself is **untouched**; only its status as a gate signal changed, and only
+because the evidence changed. It was a permanently-red entry asserting a
+non-defect. If a later round re-establishes that ordering as load-bearing,
+**remove the marker rather than editing the assert.**
+
+**What the branch actually established about mode C** (read the dossier before
+touching it — this is a summary, not the record):
+
+- **Mechanism, directly observed:** `window.scrollY` shifts by **exactly** the
+  document's height growth — `dy == dh`, verified at `+69` and `+25054` in the
+  same run, with **no scroll event at all**. Chromium **scroll anchoring**.
+- **What grows** (measured, not assumed): `#mergeSuggestionsList` (24956px).
+  `#corpusExperienceList` is 1308px and **never grows**.
+- **Seven framings are dead.** Do not rebuild on any: `prefers-reduced-motion`
+  (F-3), a second/late `_wizardRender()` (F-4), the max-scroll clamp (F-5),
+  list-scoped `overflow-anchor: none` (F-6), and — note — **the wizard rail
+  itself** (F-7). The `300 -> 369` signature the branch is *named* after is a
+  `+69`/`+69` height shift, not a scroll to `#panelJD`. **The branch name and
+  dossier title are historical, not descriptive.**
+- **The open question:** what *selects* the ~1-in-6 runs where it fires. The
+  same growth lands in the same window in 5 of 6 control runs and shifts `y`
+  in only 1. A probe that forces that ordering on demand never fires it (0
+  shifts in 11 armed runs), and growth *timing* was isolated singly and ruled
+  out. **No fix can be honestly measured until this is closed** — at a ~1-in-6
+  rate, round 4's 1/6-vs-1/5 arms were evidence of neither improvement nor harm.
+
+**Quality gate note (relevant to ledger item 1):** the gate was run in stages
+(`ruff check` / `ruff format --check` / `mypy` / `pytest` split by tier) rather
+than as one `python -m scripts.gate` call, because a single call exceeds the
+agent's per-command wall-clock ceiling. This is the known ledger item 1, not a
+new problem — but it means "gate green" here is an *assembled* result. Re-run
+it whole if you need a single-command attestation.
 
 ---
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 Full detail for every item lives in `docs/dev/RELEASE_CHECKLIST.md`'s
-Carry-forward ledger (`#### Open`). **Rendered open count: 9** (unchanged
-this session — this branch is investigating ledger item 2's mode-C
-follow-on but has not yet closed it). One line each, in ledger order:
+Carry-forward ledger (`#### Open`). **Rendered open count: 10** (+1 this
+session: item 10 filed; item 2 updated, not closed). One line each, in ledger
+order:
 
 1. The quality gate is unrunnable by an agent in one shot (~15-25min,
    background-Bash kill risk around 5-10min) — makes it unenforceable as a
-   single command in some environments.
-2. `test_corpus_reload_preserves_scroll_position` mode-C follow-on — **this
-   branch's own subject.** Not yet fixed; see "## The fix" status below.
+   single command. **Hit again this session** (see the gate note above).
+2. `test_corpus_reload_preserves_scroll_position` mode-C follow-on — **the
+   branch that just merged.** Mechanism now directly observed; **still no
+   fix**; round 6 arms B/C specified and not run.
 3. Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/` — opportunistic
    fold-in only, not a standalone branch.
 4. PyPI wheel not installable — **RESOLVED-PENDING-PUBLISH**, owner-gated
@@ -109,85 +146,63 @@ follow-on but has not yet closed it). One line each, in ledger order:
    item 7's PX-39 run.
 9. `docs-site/`'s shields.io badge-fetch build flake — solo-closeable, not
    merge-blocking, will recur on every future PR until fixed.
+10. **Large-corpus scalability — NEW this session, owner-raised.** *"We must be
+    able to deal with large corpuses."* First hard data point: the
+    possible-duplicate-roles panel renders its entire suggestion set with no
+    cap/pagination/virtualization and appears to grow **superlinearly** — 20
+    seeded roles → **~25000px**. **Owner-stated provenance caveat: their
+    symptoms are ~a week old and have NOT been re-tested during that week of
+    release work.** First action is to **re-observe, not optimize**;
+    "probably fixed by X" is not a resolution.
 
-**The ceiling is ~8-10 open items; this ledger is at 9.** Only items 2
-(this branch) and 9 are freely solo-closeable right now.
+**The ceiling is ~8-10 open items; this ledger is now at 10 — a reduction
+sprint is DUE** (charter W-1). Freely solo-closeable right now: item 9, and
+item 2 only once the round-6 spend decision is made.
 
 ---
 
 ## What this branch should build
 
-**Continue the mode-C investigation — do not start over, do not pick a
-different item.** Concretely, in order:
+**Nothing is directed. The owner picks the next branch.** Three candidates,
+with what each actually needs — presented so the owner can choose, not as a
+recommendation to act on unprompted:
 
-1. **Read `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md` in full**,
-   especially `## Inferred` and `## Falsification` (the sections NOT
-   auto-replayed by the SessionStart hook). The short version: the
-   approved fix from the prior session (route the wizard rail's
-   `scrollIntoView` through `prefers-reduced-motion`) was **falsified by a
-   direct A/B against the real target test** (control ~33% n=6 vs.
-   with-fix ~62% n=8 failure rate — the fix made it WORSE). A
-   frame-by-frame trace showed the true mechanism is `scrollIntoView`
-   being clamped by the document's own max-scroll bound
-   (`scrollHeight − viewportHeight`), not an animation-duration race as
-   first assumed.
-2. **Next falsification round (owner-selected, not yet run):** hold page
-   height / viewport height fixed and directly test the clamp hypothesis —
-   force `scrollHeight − viewportHeight` to land exactly at vs. away from
-   the test's own baseline value, and confirm corruption only occurs in
-   the "away from" case. The dossier's own `## Falsification` section has
-   the fuller writeup of this and an alternative fix-shape hint (extending
-   the existing `_scrollInterruptGen` generation-counter guard, which
-   already wraps `scrollIntoView` at `app.js:5551-5554`, to also protect a
-   plain baseline read the same way it protects a `refreshCorpus` capture
-   — rather than changing the wizard's own scroll call at all).
-3. **Whatever fix candidate you reach, A/B it against the REAL target
-   test** (`test_corpus_reload_preserves_scroll_position`, ≥6-8 runs each
-   side, both conditions) **before trusting it** — not just the isolated
-   forced-ordering instrument
-   (`test_wizard_render_firing_after_baseline_creeps_it`). The isolated
-   instrument passing is necessary but was NOT sufficient last time; it
-   missed the regression the real test caught immediately. This is the
-   single most important lesson from this session — see the feedback
-   memory `feedback-ab-fix-against-real-test-not-just-instrument` if your
-   memory system carries it forward.
-4. Once a fix survives that A/B cleanly (materially lower failure rate,
-   ideally near-zero, on both the isolated instrument AND the real test),
-   flip the falsifying test(s) into regression tests (the O-10/O-11
-   "flip" pattern the prior `fix/ux-scroll-position-flake` branch used),
-   update the dossier's `## The fix` / `## Acceptance bar` sections, run
-   the full quality gate, and proceed through the normal close-out
-   checklist below.
+1. **Large-corpus scalability re-observation** (ledger item 10) — the owner
+   raised this directly and it is the only item with fresh owner energy behind
+   it. **Owner-gated:** it needs their real corpus in the E2E clone
+   (`project-e2e-instance-location` — that evidence lives in a *separate*
+   clone, not this repo's `output/`). Deliverable would be a **per-surface
+   cost table** (corpus list, merge suggestions, Compose, applications) at
+   real scale, *before* any optimization is designed. Start points already
+   measured: `refreshMergeSuggestions()` (`static/app.js:5212`) and
+   `GET /api/users/<u>/corpus/merge-suggestions`. Target sizes and acceptance
+   thresholds are an **[OWNER DECISION]**.
+2. **A ledger reduction sprint** (charter W-1) — the ledger is at its ceiling.
+   Item 9 (`docs-site` shields.io badge fetch) is solo-closeable and would take
+   it to 9.
+3. **Mode C round 6** (ledger item 2) — arms B (no preceding shrink) and C
+   (active `_restoreScrollY` settle loop), each tested **singly**, per the
+   dossier's `## Falsification`. **Read that section first:** it says if both
+   come back negative, the next move is *not* a fourth guess but capturing a
+   second wild failure. That is a spend decision the owner should make, since
+   this branch already spent three rounds on refuted framings.
 
-**Reference: 2 tests already exist in
-`tests/ux/regression/test_20260708_busy_states_and_chip.py`** from this
-session's own instrument work (both still present, committed, and
-correctly reflect the CURRENT understanding — no revert needed):
-- `test_wizard_render_smooth_scroll_creeps_explicit_baseline` — falsified
-  ordering (O-1), stays green, useful negative-space coverage.
-- `test_wizard_render_firing_after_baseline_creeps_it` — the confirmed
-  forced-ordering instrument (O-2), currently asserts the BUG (expected to
-  fail on `HEAD` until a real fix lands — this is intentional, matching
-  the dossier's own falsification-test convention, not a broken test to
-  "fix" by weakening its assertion).
-
-Scope is bounded to mode C of `test_corpus_reload_preserves_scroll_position`
-(ledger item 2). Do not expand into other carry-forward items or RELEASE_ARC
-fork items.
+**Scope is bounded to whichever single item the owner names.** Do not expand
+beyond it, and do not combine two of the above into one branch.
 
 ---
 
 ## First move
 
-Do **not** create a new branch — `git checkout fix/ux-scroll-wizard-rail-flake`
-(it already exists locally with 2 commits: `2284e0a` instrument, `73c8505`
-falsification docs). Read the dossier in full, then either continue
-directly (this is a research/instrument continuation, not a fresh
-feature — the existing plan-mode approval already covers "investigate and
-fix mode C") or write an updated plan at `~/.claude/plans/<slug>.md` if the
-new falsification round changes the shape of the work enough to warrant
-re-confirming with the user. **Do not silently implement a new fix without
-A/B-testing it against the real target test first** — see item 3 above.
+Create the branch the owner names off `main`, write a plan at
+`~/.claude/plans/<slug>.md`, and show it to the user before touching any
+code. **Do not code first.**
+
+If the owner names candidate 1 or 3, note that **both are measurement-first**:
+the first commit is an instrument or a measurement table, never a fix
+(charter C-7). Candidate 3 additionally inherits an existing dossier — read
+`docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md` in full, including
+`## Falsified`, and do not re-chase F-3 through F-7.
 
 ---
 

@@ -689,6 +689,21 @@ def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
 
 
 @pytest.mark.ux
+@pytest.mark.xfail(
+    reason=(
+        "F-4 (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md): this instrument "
+        "forces an ordering the REAL test never takes. Instrumenting "
+        "test_corpus_reload_preserves_scroll_position showed exactly ONE _wizardRender "
+        "call in 6/6 runs, always ~500ms BEFORE the baseline — there is no second call "
+        "and no late call in the wild. The behavior asserted here is real browser "
+        "behavior but is NOT mode C, so its outcome is not a gate signal (the dossier's "
+        "'## Acceptance bar' says so explicitly). Kept as negative-space coverage rather "
+        "than deleted: it is the evidence that killed the late-render theory. "
+        "strict=False because the underlying effect reproduces ~9/10, not 10/10, so it "
+        "may legitimately xpass."
+    ),
+    strict=False,
+)
 def test_wizard_render_firing_after_baseline_creeps_it(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
