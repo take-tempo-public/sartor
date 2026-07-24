@@ -194,6 +194,79 @@ _SCROLL_SPY_NAMED_HOOKS_JS = r"""
 """
 
 
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7) for mode C's NEXT falsification round — see
+# docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md "## Falsification".
+#
+# Deliberately scoped WIDER than the clamp hypothesis it was written to test
+# ("never scope an instrument to the theory you are testing — it will confirm
+# your theory by hiding its rivals"). It captures, per `_wizardRender()`
+# invocation, in the REAL target test rather than an isolated instrument:
+#
+#   * a structural invocation id + count  -> settles O-3's still-open question
+#     (a) "ONE call arriving late" vs (b) "a genuine SECOND call", which the
+#     dossier flags as unresolved and now load-bearing;
+#   * `maxScroll` (scrollHeight - innerHeight) at call time and the resolved
+#     panel's true absolute top -> tests O-4's clamp reframing directly, by
+#     recording whether the nominal target was even REACHABLE when it fired;
+#   * the caller stack -> distinguishes wizardInit / _wizardAdvanceTo /
+#     wizardGoTo / resume paths without inferring it from wall-clock order.
+#
+# Same post-load `page.evaluate` injection rule as _SCROLL_SPY_NAMED_HOOKS_JS
+# (see that constant's comment): `_wizardRender` is a top-level *function
+# declaration* (app.js:6974), so it is a genuine window-scoped global and
+# reassigning `window._wizardRender` does rebind the identifier its own
+# in-app callers resolve. `_wizardStep` (`let`, app.js:6874) and
+# `_WIZARD_PANELS` (`const`, app.js:6878) are NOT window properties — they
+# live in the global *lexical* environment — so they are read here by bare
+# identifier, which a classic script evaluated later can still resolve.
+# ---------------------------------------------------------------------------
+_WIZARD_RENDER_SPY_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__wizardRenderSpyError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const orig = window._wizardRender;
+  if (typeof orig !== 'function') {
+    window.__wizardRenderSpyError = '_wizardRender missing at hook time';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  const caller = () => ((new Error().stack || '').split('\n').slice(2, 6).map(l => l.trim()).join(' | '));
+  let _wrCounter = 0;
+  window._wizardRender = function (...args) {
+    const id = ++_wrCounter;
+    // Snapshot BEFORE the real call, so the target's reachability is recorded
+    // as it was when the scroll decision was made — not after the render's own
+    // show()/hide() has already changed the document height under it.
+    const extra = {id, y: window.scrollY,
+                   maxScroll: document.documentElement.scrollHeight - window.innerHeight};
+    try {
+      extra.step = _wizardStep;
+      const pid = (_WIZARD_PANELS[_wizardStep] || [])[0];
+      extra.targetId = pid || null;
+      const el = pid ? document.getElementById(pid) : null;
+      // Absolute document top of the element scrollIntoView(block:'start')
+      // will aim at == the scrollY it WANTS. Compare against maxScroll to see
+      // whether the browser can actually honor it.
+      extra.wantY = el ? +(el.getBoundingClientRect().top + window.scrollY).toFixed(1) : null;
+      extra.targetHidden = el ? el.classList.contains('hidden') : null;
+    } catch (e) {
+      extra.resolveError = String(e && e.message || e);
+    }
+    extra.by = caller();
+    rec('_wizardRender-enter', extra);
+    const result = orig.apply(this, args);
+    rec('_wizardRender-exit', {id, y: window.scrollY,
+        maxScroll: document.documentElement.scrollHeight - window.innerHeight});
+    return result;
+  };
+  window._wizardRender.__wizardSpyWrapped = true;  // dump-time install marker
+})();
+"""
+
+
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
     ``_SCROLL_SPY_NAMED_HOOKS_JS`` (diagnostic). Never raises: this is called
@@ -226,6 +299,20 @@ def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = Non
             f"\n[scroll-spy] phase={phase} -- WARNING: named-fn hooks did not "
             f"install ({page.evaluate('() => window.__scrollSpyNamedHooksError || null')!r}); "
             f"FIRST/SECOND-invocation tagging is ABSENT below."
+        )
+    # Only meaningful in tests that inject _WIZARD_RENDER_SPY_JS; stays silent
+    # elsewhere (an un-injected hook reads as None, not as a failure) but shouts
+    # if it WAS injected and did not take — the same "a dead spy must never read
+    # as 'nothing happened'" rule the two checks above enforce.
+    wizard_hook = page.evaluate(
+        "() => (window._wizardRender && window._wizardRender.__wizardSpyWrapped)"
+        "        ? 'ok' : (window.__wizardRenderSpyError || null)"
+    )
+    if wizard_hook and wizard_hook != "ok":
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: _wizardRender hook did "
+            f"not install ({wizard_hook!r}); _wizardRender-enter/-exit events "
+            f"are ABSENT below."
         )
     spy = page.evaluate("() => window.__scrollSpy || []")
     print(f"\n[scroll-spy] phase={phase} value={value} before={before} -- {len(spy)} events:")
@@ -427,6 +514,10 @@ def test_corpus_reload_preserves_scroll_position(
     # refreshCorpus, onUserSelect -> _landingTab() -> loadCorpusIfReady(), can't
     # fire until select() runs).
     page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    # Mode-C round 2 (C-7): same post-load-before-select window as the named
+    # hooks above — wizardInit()'s _wizardRender() can't fire until select()
+    # runs, so this is the last moment the wrapper can be in place for it.
+    page.evaluate(_WIZARD_RENDER_SPY_JS)
     UserPickerPage(page, live_server).select("alice")
 
     try:
