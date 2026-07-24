@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `context-structure-review` skill (`feat/context-structure-review-skill`)
+
+Kit-adoption arc, commitment (3) skills half (`kit-adoption-design.md` §3 Decision 5,
+§4 Phase 5). Imported the lichen agent-coding-practices kit's
+`context-structure-review` skill into a committed root `skills/` dir (not
+`.claude/skills/`, which is gitignored and unshippable) — an audit skill for
+reviewing a repo's markdown/agent-instruction-file structure against
+context-engineering best practices. Two repo-specific refs localized on import:
+the old product name (Callback → Sartor) and a cross-reference to a kit file that
+stays external rather than being imported. No code change, no new dependency.
+
 ### Added: periodic drift smoke check for `capture_screenshots.py` (`feat/capture-screenshots-smoke-check`)
 
 Resolves carry-forward ledger item #9. `scripts/capture_screenshots.py` had zero

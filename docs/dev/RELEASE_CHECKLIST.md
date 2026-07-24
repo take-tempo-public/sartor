@@ -1611,6 +1611,17 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       Recorded in `CLAUDE.local.md` (gitignored). **Row stays open** — the skill import
       itself (kit-adoption Phase 5, Decision 5) is still its own future branch, now
       unblocked.
+      **→ Update (2026-07-23, `feat/context-structure-review-skill`):** commitment (3)'s
+      **skills half is DONE** — `skills/context-structure-review/` (SKILL.md +
+      `references/criteria.md`) imported from the kit, with the two repo-specific refs
+      localized (Callback → Sartor; the doc-discipline cross-ref repointed to the
+      external kit). Phase 5's second deliverable (§7 promotable shortlist) was already
+      authored at `kit-adoption-design.md` §7 — confirmed present, nothing new to add.
+      All four families (`commands/ agents/ skills/ hooks/`) are now populated at root.
+      **Row stays open at owner direction** — the design's temporal map ties the
+      four-parallel end-state to the 8.7 `feat/portable-enforcement-core` window, so
+      whether this closes the row is an owner call, flagged at this branch's close-out
+      rather than decided here.
 
 - [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /

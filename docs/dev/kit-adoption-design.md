@@ -11,7 +11,7 @@
 > for that remaining commitment; read §4/§6 for the phase log and exit proof.
 > Canonical: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) carry-forward
 > ledger, "Agent-coding-practices kit-adoption — staged commitments".
-<!-- DOC-STATUS(kit-adoption): Phases 1-2 (commitments 1+2) SHIPPED 2026-07-10, §6 exit reached; commitment (3)'s hooks half [re-home out of .claude-plugin/ to root hooks/, PX-37 dispatcher] SHIPPED 2026-07-20 (chore/hook-dispatcher). Root skills/ landed as an empty scaffold only (chore/hook-dispatcher) — the context-structure-review skill import itself is still open, pending a CLAUDE.local.md-recorded kit source path. Canonical: RELEASE_CHECKLIST.md carry-forward ledger. -->
+<!-- DOC-STATUS(kit-adoption): Phases 1-2 (commitments 1+2) SHIPPED 2026-07-10, §6 exit reached; commitment (3)'s hooks half [re-home out of .claude-plugin/ to root hooks/, PX-37 dispatcher] SHIPPED 2026-07-20 (chore/hook-dispatcher). The context-structure-review skill import (§3 Decision 5, §4 Phase 5) SHIPPED 2026-07-23 (feat/context-structure-review-skill) — root skills/ now holds the imported skill, not just the empty scaffold. Whether commitment (3) fully closes (four-parallel end-state vs. the 8.7 feat/portable-enforcement-core window) is an owner call, still open. Canonical: RELEASE_CHECKLIST.md carry-forward ledger. -->
 
 > **Purpose:** the settled evaluation + sequenced plan for adopting the lichen
 > `agent-coding-practices-kit` (context / documentation / strict-typing practices +
