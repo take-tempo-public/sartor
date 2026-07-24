@@ -18,10 +18,20 @@ Usage:
     python -m scripts.capture_screenshots
     python -m scripts.capture_screenshots --headless
     python -m scripts.capture_screenshots --keep-user
+    python -m scripts.capture_screenshots --headless --smoke
 
 Cleanup: by default the script deletes the demo user and its
 on-disk artefacts after capture. Pass --keep-user to retain them
 (useful when iterating on capture states).
+
+--smoke: stop after Step 1 (setup + Job/Analyze) instead of running
+the full 10-shot pass. This is the periodic drift check driven by
+.github/workflows/capture-smoke.yml (monthly cron + manual
+workflow_dispatch) — it exists because this script had zero
+automated coverage and silently accumulated three independent
+staleness bugs over ~7 weeks before anyone noticed (see
+docs/dev/diagnosis/capture-screenshots-welcome-modal.md). Cost is
+one real Haiku corpus-extract + one real Sonnet analyze call.
 """
 
 from __future__ import annotations
@@ -435,6 +445,14 @@ def main() -> int:
         action="store_true",
         help="don't delete the demo user + on-disk artefacts after capture",
     )
+    ap.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "run setup + Step 1 only, then stop (periodic drift smoke check; "
+            "skips the Step 2-6 + cover-letter LLM calls)"
+        ),
+    )
     args = ap.parse_args()
 
     SHOTS.mkdir(parents=True, exist_ok=True)
@@ -488,25 +506,29 @@ def main() -> int:
         run_step1(page)
         print()
 
-        print("6) Step 2 — Clarify (S06)")
-        run_step2(page)
-        print()
+        if args.smoke:
+            print("--smoke: stopping after Step 1 (periodic drift smoke check)")
+            print()
+        else:
+            print("6) Step 2 — Clarify (S06)")
+            run_step2(page)
+            print()
 
-        print("7) Step 3 — Compose (S07)")
-        run_step3(page)
-        print()
+            print("7) Step 3 — Compose (S07)")
+            run_step3(page)
+            print()
 
-        print("8) Step 4 — Template (S08)")
-        run_step4(page)
-        print()
+            print("8) Step 4 — Template (S08)")
+            run_step4(page)
+            print()
 
-        print("9) Steps 5 + 6 — Generate + Download (S09)")
-        run_step5_and_6(page)
-        print()
+            print("9) Steps 5 + 6 — Generate + Download (S09)")
+            run_step5_and_6(page)
+            print()
 
-        print("10) Cover letter (S10)")
-        run_cover_letter(page)
-        print()
+            print("10) Cover letter (S10)")
+            run_cover_letter(page)
+            print()
 
         browser.close()
 

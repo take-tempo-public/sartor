@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: periodic drift smoke check for `capture_screenshots.py` (`feat/capture-screenshots-smoke-check`)
+
+Resolves carry-forward ledger item #9. `scripts/capture_screenshots.py` had zero
+automated coverage and silently accumulated three independent staleness bugs over
+~7 weeks (welcome-modal auto-open, a clarify-button double-click, a cover-letter
+drawer visibility change) before anyone noticed, all found by accident on
+`fix/capture-screenshots-welcome-modal` (2026-07-18;
+`docs/dev/diagnosis/capture-screenshots-welcome-modal.md`).
+
+Owner decision on record (2026-07-23, RELEASE_CHECKLIST ledger item #9): a periodic
+smoke check, through just Step 1, to bound LLM spend. This branch implements it:
+a new `--smoke` flag on the script (setup + Step 1 only, then stop) and a new
+`.github/workflows/capture-smoke.yml` — monthly cron (1st of the month) plus a
+manual `workflow_dispatch` button, deliberately separate from `ci.yml` since it
+never runs on push/PR. Cost per run: one real Haiku corpus-extract + one real
+Sonnet analyze call (~$0.05).
+
 ### Fixed vulnerabilities
 
 No publicly known vulnerabilities in Sartor's own code were fixed in this release —
