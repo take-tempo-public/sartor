@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: merge-suggestions render cap — paginate instead of rendering every match (`fix/merge-suggestions-render-cap`)
+
+Resolves carry-forward ledger item 11. `GET /corpus/merge-suggestions`
+(`blueprints/corpus/curation.py::list_merge_suggestions`) returned every
+SIMILAR-band pair with no limit, and `refreshMergeSuggestions()`
+(`static/app.js`) rendered the entire response in one synchronous DOM pass —
+measured at 1,086 cards / 142,682px on a 48-role duplicate-heavy corpus
+(`docs/dev/diagnosis/merge-suggestions-render-cap.md`, citing
+`docs/dev/perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md` O-6). The endpoint now
+accepts `limit`/`offset` (default page size 25) and returns `total_count` +
+`has_more`; the client renders one page at a time and appends a "Show more"
+control. A/B'd against the committed O-6 baseline
+(`docs/dev/perf/MERGE_SUGGESTIONS_RENDER_CAP_2026-07-25.md`):
+`#mergeSuggestionsList` 142,682px/1,086 cards → 3,277px/25 cards (43.5×);
+document 146,798px → 7,438px (19.7×). The existing scroll-anchoring
+regression test tied to this render path
+(`test_merge_suggestions_growth_shifts_scroll_deterministically`, guarding
+the still-open mode-C flake investigation) now passes an explicit unbounded
+`limit` override so its reproduction technique is unaffected. No new
+dependency.
+
 ### Fixed: merge-suggestions cost — gate on company similarity before scoring bullets (`fix/merge-suggestions-cost`)
 
 Resolves carry-forward ledger item 10. `score_experiences()`
