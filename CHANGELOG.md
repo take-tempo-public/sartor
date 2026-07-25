@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: corpus-scale benchmark + cost table (`chore/large-corpus-re-observation`)
+
+Resolves the carry-forward ledger's large-corpus scalability row by doing the
+re-observation it called for — and **refutes that row's own framing**. New
+`scripts/bench_corpus_scale.py` measures the four corpus surfaces (corpus list,
+merge suggestions, applications, Compose composition) for wall-clock, SQL query
+count and response size across a size curve (`--size`), against an existing
+database (`--db`), or in the browser (`--render`). Results in
+`docs/dev/perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md` +
+`docs/dev/perf/data/large-corpus-curve.json`.
+
+**No production code changed.** The headline: `GET /corpus/merge-suggestions`
+costs **~6.9s on an ordinary 8-role corpus** and returns a 29-byte empty list —
+a live defect at current scale, not the large-corpus risk it was filed as. It is
+**O(n²)** in experiences, and the duplicate-heavy corpus is **26× faster** than an
+ordinary one because the exact-match fast path in `bullet_overlap` short-circuits
+only when bullets repeat. Filed as two new ledger rows (server cost; uncapped
+render) rather than fixed here. No new dependency.
+
 ### Added: `context-structure-review` skill (`feat/context-structure-review-skill`)
 
 Kit-adoption arc, commitment (3) skills half (`kit-adoption-design.md` §3 Decision 5,
