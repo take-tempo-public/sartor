@@ -212,11 +212,25 @@ def score_experiences(a: ExperienceLike, b: ExperienceLike) -> MatchScore:
     """Score one experience pair across all four signals and assign a band.
 
     Company gates the verdict: below :data:`COMPANY_GATE` the pair is DISTINCT
-    regardless of other overlap. Above it, an exact normalized-company +
-    start-date match is EXACT; otherwise the weighted score decides SIMILAR vs
-    DISTINCT at :data:`SIMILAR_THRESHOLD`.
+    regardless of other overlap, and title/dates/bullets are never computed —
+    those signals are the expensive terms (bullet_overlap runs difflib over
+    full bullet text), and a company mismatch decides the verdict on its own.
+    Above the gate, an exact normalized-company + start-date match is EXACT;
+    otherwise the weighted score decides SIMILAR vs DISTINCT at
+    :data:`SIMILAR_THRESHOLD`.
     """
     comp = company_similarity(a.company, b.company)
+    if comp < COMPANY_GATE:
+        return MatchScore(
+            band="DISTINCT",
+            score=0.0,
+            company=round(comp, 4),
+            title=0.0,
+            dates=0.0,
+            bullets=0.0,
+            matched_signals=(),
+        )
+
     title = _best_title_similarity(a.titles, b.titles)
     dates = date_similarity(a.start_date, a.end_date, b.start_date, b.end_date)
     bullets = bullet_overlap(a.bullets, b.bullets)
@@ -229,18 +243,14 @@ def score_experiences(a: ExperienceLike, b: ExperienceLike) -> MatchScore:
         and (a.start_date == b.start_date)
     )
 
-    if comp < COMPANY_GATE:
-        band = "DISTINCT"
-    elif is_exact:
+    if is_exact:
         band = "EXACT"
     elif score >= SIMILAR_THRESHOLD:
         band = "SIMILAR"
     else:
         band = "DISTINCT"
 
-    signals: list[str] = []
-    if comp >= COMPANY_GATE:
-        signals.append("company")
+    signals: list[str] = ["company"]
     if title >= 0.6:
         signals.append("title")
     if dates >= 0.5:
