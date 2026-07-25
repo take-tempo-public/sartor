@@ -515,7 +515,19 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **10** (**+1** this entry — `fix/ux-scroll-wizard-rail-flake`,
+_Rendered open count: **11** (**net +1** this entry — `chore/large-corpus-re-observation`,
+2026-07-24: **RESOLVED the large-corpus scalability row** by doing the re-observation it
+called for (−1), and **split its findings into two open items** (+2). The re-observation
+refuted the row's own framing: filed as a *large-corpus* risk, measurement found a **live
+defect at the owner's ordinary 8-role corpus** — `GET /corpus/merge-suggestions` costs
+**6.9s** and returns a 29-byte empty list. The two new rows are genuinely disjoint failure
+modes (server-side fuzzy-scan cost on ORDINARY corpora; uncapped client render on
+duplicate-heavy ones) that the single original row conflated — which is exactly why the live
+defect went unseen. Owner chose two rows over one, accepting the +1. Full table:
+`docs/dev/perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md`. Re-counted the actual `- [ ] **`
+bullets in this Open section rather than trusting arithmetic: 11, confirmed.
+**Now one ABOVE the ~8–10 ceiling — the reduction sprint called for last entry is overdue,
+not merely due.** Prior to that: **10** (**+1** — `fix/ux-scroll-wizard-rail-flake`,
 2026-07-24: filed **large-corpus scalability** as its own item, owner-raised, with the
 first hard measurement attached (a ~25000px uncapped merge-suggestion render at 20 seeded
 roles) and an owner-stated provenance caveat that the symptoms are ~a week old and
@@ -2166,11 +2178,77 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
       2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
 
-- [ ] **Large-corpus scalability — the app must remain usable at a real corpus size, and
-      currently degrades in ways we have started to measure.** **Owner-raised (2026-07-24),
+- [ ] **`GET /corpus/merge-suggestions` costs ~6.9s on an ORDINARY 8-role corpus and returns
+      an empty list** — **a live defect at current scale, not a scaling risk.** Measured
+      2026-07-24 (`chore/large-corpus-re-observation`), full table in
+      [`docs/dev/perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md`](perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md),
+      raw data in `docs/dev/perf/data/large-corpus-curve.json`, instrument
+      `scripts/bench_corpus_scale.py`.
+      **Observed:** 6930ms median (4701 / 9127 min-max) against the owner's real corpus (8
+      experiences, 87 active bullets), returning a **29-byte** `{"suggestions": [], "count": 0}`.
+      The whole cost is deciding there is nothing to show. Synthetic curve: 647ms / 10.2s / 42s /
+      97s at 8 / 24 / 48 / 96 roles; cost per pair is ~22–27ms across a 163× range in pair count,
+      i.e. **O(n²) in experiences**.
+      **The counterintuitive part, and the reason this went unseen:** the duplicate-heavy corpus
+      is **26× FASTER** on the server than an ordinary one. `bullet_overlap` /
+      `shared_bullet_count` try an exact normalized-set membership test and only fall through to
+      `difflib.SequenceMatcher` when it misses (`onboarding/experience_match.py:196-198`), so the
+      fast path fires **only for corpora that need the feature least**. Bullet TEXT length
+      dominates at real scale — 222-char real bullets vs ~100-char synthetic explains a 10.7× gap
+      under `SequenceMatcher`'s O(L²).
+      **Filed fix direction, UNVERIFIED:** `score_experiences` computes `bullet_overlap`
+      unconditionally *before* the cheap company gate can reject the pair
+      (`onboarding/experience_match.py:219-232`); gating first would skip the quadratic term for
+      DISTINCT-bound pairs. The saving depends on the gate's rejection fraction, which the table
+      does **not** measure. **A/B any fix against these numbers** — the prior branch on these same
+      surfaces had a plausible fix refuted by direct measurement.
+      **Also recorded here (latent, not urgent):** `corpus list` issues **~2N+2** queries
+      (18 / 50 / 98 / 194 at 8 / 24 / 48 / 96 roles) — the same N+1 shape `list_applications`
+      already fixed once with `selectinload`. Harmless today at 271ms.
+      _(discovered: v1.1.0 stream, 2026-07-24, `chore/large-corpus-re-observation`.)_
+
+- [ ] **The merge-suggestion panel renders its entire suggestion set uncapped — 142 682px at 48
+      duplicate-heavy roles** — the **client-side** half of the split below. Measured 2026-07-24
+      (`chore/large-corpus-re-observation`, Tier 2, headless Chromium 1280×900); same doc + raw
+      data as the item above.
+      **Observed:** 6× duplicate-heavy profile renders **1 086 cards / 142 682px** in
+      `#mergeSuggestionsList`, producing a **146 798px document** — ~163× the viewport — with no
+      cap, pagination or virtualization. The server is fast in this mode (4.9s settle); the page
+      is the defect. The earlier ~25000px figure (from `fix/ux-scroll-wizard-rail-flake`, 20
+      seeded roles) was this same mode measured smaller.
+      **Why it is a SEPARATE item from the one above:** the two failure modes are disjoint and
+      have different fixes — an ordinary corpus makes the **user wait** (47.6s settle at 6×, tiny
+      DOM), a duplicate-heavy corpus makes the **browser drown** (fast server, enormous DOM). The
+      original single ledger row conflated them, which is precisely why the live 6.9s defect went
+      unnoticed.
+      **Interaction with the mode-C scroll flake (item above):** that dossier attributed mode C's
+      document growth to `#mergeSuggestionsList`, and this is that growth measured at size, so
+      capping the render would remove the flake's driver. **That is a hypothesis about the flake —
+      no flake run was performed on the measuring branch.**
+      _(discovered: v1.1.0 stream, 2026-07-24, `chore/large-corpus-re-observation`.)_
+
+#### Resolved
+
+- [x] **Large-corpus scalability — RE-OBSERVED and split into the two items above (2026-07-24,
+      `chore/large-corpus-re-observation`).** **Owner-raised (2026-07-24),
       with a concrete first measurement attached.** The owner saw issues with their own corpus
       in the E2E clone trials and has stated the requirement directly: *"we must be able to deal
       with large corpuses."*
+      **Outcome of the re-observation: the item's own framing was wrong, and the truth was
+      worse.** Filed as a *large-corpus scalability* risk; measurement found a **live defect at
+      the owner's ordinary 8-role corpus** (6.9s to return an empty list). Corpus growth makes an
+      existing problem worse — it did not create it. The "appears superlinear" first data point
+      was a duplicate-heavy instrument measuring the *client* mode, while the mode the owner
+      actually lives in is a *server* one that the same instrument would never have surfaced.
+      The provenance caveat below was honoured: the re-observation measured current state
+      directly rather than reasoning from the week-old symptom list, and no symptom was closed as
+      "probably fixed by X". Per-surface findings for the other three surfaces:
+      **`applications` is clean** (flat 3 queries across a 12× range — the `1+2N → ~3`
+      `selectinload` collapse is holding, no regression), **Compose** grows in payload not query
+      count (12→14 queries; 38 on real data, which carries rows the synthetic seeder omits), and
+      **corpus list** carries a latent ~2N+2 N+1 folded into the first item above.
+      Target corpus sizes and acceptance thresholds remain an **[OWNER DECISION]** — the table
+      exists to make them decidable and deliberately does not set them.
       **Provenance caveat, owner-stated 2026-07-24 and load-bearing:** those observations are
       roughly **a week old**, and the owner has **not re-tested during that week of release
       work**. So the reported symptoms predate an unknown amount of intervening change. Some may
@@ -2189,17 +2267,13 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       growth that drives the mode-C scroll flake (see that item above), so the two interact —
       but this item is **about the product cost, not the flake**, and must not be closed by
       fixing the flake.
-      **Not yet done, and deliberately not guessed at:** no profiling of the
-      merge-suggestion scorer's complexity, no measurement of the other corpus surfaces
-      (corpus list, Compose, applications) at owner-scale, and no threshold for what "large"
-      means here. **The right first move is measurement against the owner's real corpus in the
-      E2E clone** (`project-e2e-instance-location` — evidence lives in a separate clone, not
-      this repo's `output/`), producing a per-surface cost table, before any optimization is
-      designed. Scope, target sizes and acceptance thresholds are an **[OWNER DECISION]**.
+      **All three "not yet done" gaps this item named are now closed:** the merge-suggestion
+      scorer's complexity is profiled (O(n²), ~22–27ms per pair), the other three corpus
+      surfaces are measured across the curve, and the cost table exists. What "large" means —
+      target sizes and acceptance thresholds — remains deliberately unset, as an
+      **[OWNER DECISION]** the table now makes decidable.
       _(discovered: v1.1.0 stream, 2026-07-24, `fix/ux-scroll-wizard-rail-flake`;
-      open count 9 → 10 — **at the ~8–10 ceiling; a reduction sprint is now due**.)_
-
-#### Resolved
+      re-observed and split 2026-07-24, `chore/large-corpus-re-observation`.)_
 
 - [x] **[URGENT — active production outage] `docs-site/` static-export build had failed on
       every push to `main` for 5 consecutive merges** (PRs #42, #44, #45, #46, #47) —
