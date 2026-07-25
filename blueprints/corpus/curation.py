@@ -279,6 +279,10 @@ def _suggestion_side(exp: Experience) -> dict[str, Any]:
     }
 
 
+MERGE_SUGGESTIONS_PAGE_SIZE = 25
+MERGE_SUGGESTIONS_MAX_LIMIT = 1000
+
+
 @corpus_bp.route("/api/users/<username>/corpus/merge-suggestions", methods=["GET"])
 def list_merge_suggestions(username: str) -> ResponseReturnValue:
     """Surface experience pairs that look like the SAME role for a merge/keep-separate decision.
@@ -290,6 +294,15 @@ def list_merge_suggestions(username: str) -> ResponseReturnValue:
 
     `exp_in_corpus` is the lower-id (older / canonical) role — the merge target
     whose dates are kept; `exp_other` is the more recently imported duplicate.
+
+    Paginated (ledger item 11 — a duplicate-heavy corpus can produce well over
+    a thousand SIMILAR-band pairs, and rendering them all client-side is the
+    defect this caps): `limit` (default `MERGE_SUGGESTIONS_PAGE_SIZE`, clamped
+    to `MERGE_SUGGESTIONS_MAX_LIMIT`) and `offset` (default 0) slice the
+    score-sorted list; `total_count` is the full match count and `has_more`
+    tells the caller whether another page remains. `count` stays "number of
+    suggestions in this response" for backward compatibility with small
+    fixtures that never approach the page size.
     """
     from db.models import Candidate, Experience, MergeDismissal
     from db.session import get_session, init_db
@@ -299,12 +312,31 @@ def list_merge_suggestions(username: str) -> ResponseReturnValue:
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
 
+    try:
+        limit = int(request.args.get("limit", MERGE_SUGGESTIONS_PAGE_SIZE))
+    except ValueError:
+        limit = MERGE_SUGGESTIONS_PAGE_SIZE
+    limit = max(1, min(limit, MERGE_SUGGESTIONS_MAX_LIMIT))
+    try:
+        offset = int(request.args.get("offset", 0))
+    except ValueError:
+        offset = 0
+    offset = max(0, offset)
+
     init_db()
     session = get_session()
     try:
         candidate = session.query(Candidate).filter_by(username=safe_user).first()
         if candidate is None:
-            return jsonify({"suggestions": [], "count": 0, "needs_onboarding": True})
+            return jsonify(
+                {
+                    "suggestions": [],
+                    "count": 0,
+                    "total_count": 0,
+                    "has_more": False,
+                    "needs_onboarding": True,
+                }
+            )
         experiences = (
             session.query(Experience)
             .filter_by(candidate_id=candidate.id)
@@ -341,7 +373,16 @@ def list_merge_suggestions(username: str) -> ResponseReturnValue:
                     }
                 )
         suggestions.sort(key=lambda s: s["score"], reverse=True)
-        return jsonify({"suggestions": suggestions, "count": len(suggestions)})
+        total_count = len(suggestions)
+        page = suggestions[offset : offset + limit]
+        return jsonify(
+            {
+                "suggestions": page,
+                "count": len(page),
+                "total_count": total_count,
+                "has_more": offset + limit < total_count,
+            }
+        )
     finally:
         session.close()
 

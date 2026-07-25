@@ -1657,6 +1657,7 @@ textarea:focus-visible {
   letter-spacing: 0.5px;
 }
 .merge-suggestion-actions { display: flex; gap: 8px; }
+#mergeSuggestionsMoreBtn { margin-top: 10px; }
 
 /* P2 — persistent "working…" banner during long actions. Unlike the 2.4s toast,
    it stays up for the whole call so a scrolled-away user still sees it. */

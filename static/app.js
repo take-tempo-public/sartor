@@ -5207,30 +5207,72 @@ function toggleCorpusRetired(checked) {
 // P1 — possible-duplicate-roles review (merge suggestions)
 // ---------------------------------------------------------------------------
 
+// ledger item 11: the full match set can run into the thousands on a
+// duplicate-heavy corpus (docs/dev/diagnosis/merge-suggestions-render-cap.md
+// -- 1,086 cards / 142,682px at 48 duplicate-heavy roles), so this renders
+// one page at a time instead of the whole list in one synchronous pass.
+const MERGE_SUGGESTIONS_PAGE_SIZE = 25;
+let _mergeSuggestionsLimit = MERGE_SUGGESTIONS_PAGE_SIZE;
+let _mergeSuggestionsOffset = 0;
+
 // Fetch + render the "possible duplicate roles" cards. Called after an import
 // and on corpus load. Hidden entirely when the server scan finds none.
-async function refreshMergeSuggestions() {
+// opts.limit overrides the page size -- test-only: the C-7 growth-probe
+// instrument (tests/ux/regression/test_20260708_busy_states_and_chip.py
+// ::test_merge_suggestions_growth_shifts_scroll_deterministically) depends on
+// a single call rendering its whole ~190-pair fixture to reproduce a
+// still-open scroll-anchoring bug, so it passes an explicit large limit to
+// keep that exact behavior. See docs/dev/diagnosis/merge-suggestions-render-cap.md.
+async function refreshMergeSuggestions(opts = {}) {
   const section = document.getElementById('mergeSuggestionsSection');
   const listEl = document.getElementById('mergeSuggestionsList');
   if (!section || !listEl || !currentUser) return;
+  _clearChildren(listEl);
+  _removeMergeSuggestionsMoreButton();
+  _mergeSuggestionsLimit = opts.limit || MERGE_SUGGESTIONS_PAGE_SIZE;
+  _mergeSuggestionsOffset = 0;
+  const total = await _loadMergeSuggestionsPage(section, listEl);
+  if (total === 0) section.classList.add('hidden');
+  else section.classList.remove('hidden');
+}
+
+// Fetch one page at the current offset, append its cards, and add/remove the
+// "Show more" control based on has_more. Returns total_count (0 on error, so
+// the caller hides the section the same way an empty result does).
+async function _loadMergeSuggestionsPage(section, listEl) {
   let data;
   try {
     const res = await fetch(
-      `/api/users/${encodeURIComponent(currentUser)}/corpus/merge-suggestions`);
-    if (!res.ok) { section.classList.add('hidden'); return; }
+      `/api/users/${encodeURIComponent(currentUser)}/corpus/merge-suggestions` +
+      `?limit=${_mergeSuggestionsLimit}&offset=${_mergeSuggestionsOffset}`);
+    if (!res.ok) return 0;
     data = await res.json();
   } catch {
-    section.classList.add('hidden');
-    return;
+    return 0;
   }
   const suggestions = data.suggestions || [];
-  _clearChildren(listEl);
-  if (suggestions.length === 0) {
-    section.classList.add('hidden');
-    return;
-  }
   suggestions.forEach(s => listEl.appendChild(_renderMergeSuggestion(s)));
-  section.classList.remove('hidden');
+  _removeMergeSuggestionsMoreButton();
+  if (data.has_more) {
+    const remaining = (data.total_count || 0) - (_mergeSuggestionsOffset + suggestions.length);
+    const more = _el('button', {
+      id: 'mergeSuggestionsMoreBtn',
+      className: 'cb-btn',
+      textContent: `Show ${Math.min(_mergeSuggestionsLimit, remaining)} more`,
+    });
+    more.onclick = async () => {
+      _mergeSuggestionsOffset += _mergeSuggestionsLimit;
+      more.disabled = true;
+      await _loadMergeSuggestionsPage(section, listEl);
+    };
+    section.appendChild(more);
+  }
+  return data.total_count || 0;
+}
+
+function _removeMergeSuggestionsMoreButton() {
+  const btn = document.getElementById('mergeSuggestionsMoreBtn');
+  if (btn) btn.remove();
 }
 
 function _renderMergeSuggestion(s) {

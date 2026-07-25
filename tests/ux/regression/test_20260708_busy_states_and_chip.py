@@ -928,7 +928,7 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
                  window.scrollTo(0, 300);
                  const y = window.scrollY;
                  const h = document.documentElement.scrollHeight;
-                 refreshMergeSuggestions();   // deliberately NOT awaited here
+                 refreshMergeSuggestions({ limit: 1000 });   // deliberately NOT awaited here
                  return [y, h];
                }"""
         )
@@ -938,7 +938,13 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
     # awaits the returned promise, so the fetch + render have completed.
     # In the "tight" arm this is a second, idempotent call — the first was
     # already kicked above; this one just guarantees a settled end state.
-    page.evaluate("() => refreshMergeSuggestions()")
+    # { limit: 1000 } here (and above) is deliberate, not a default: ledger
+    # item 11 (docs/dev/diagnosis/merge-suggestions-render-cap.md) capped
+    # refreshMergeSuggestions()'s default render to a page at a time, which
+    # would drop this fixture's single-call growth below the dh > 10_000 probe
+    # floor below on totally unrelated grounds. The explicit override
+    # preserves this test's exact single-call, full-growth timing model.
+    page.evaluate("() => refreshMergeSuggestions({ limit: 1000 })")
     page.wait_for_function(
         "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
         timeout=15_000,
