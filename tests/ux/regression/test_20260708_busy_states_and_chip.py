@@ -194,6 +194,125 @@ _SCROLL_SPY_NAMED_HOOKS_JS = r"""
 """
 
 
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7) for mode C's NEXT falsification round — see
+# docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md "## Falsification".
+#
+# Deliberately scoped WIDER than the clamp hypothesis it was written to test
+# ("never scope an instrument to the theory you are testing — it will confirm
+# your theory by hiding its rivals"). It captures, per `_wizardRender()`
+# invocation, in the REAL target test rather than an isolated instrument:
+#
+#   * a structural invocation id + count  -> settles O-3's still-open question
+#     (a) "ONE call arriving late" vs (b) "a genuine SECOND call", which the
+#     dossier flags as unresolved and now load-bearing;
+#   * `maxScroll` (scrollHeight - innerHeight) at call time and the resolved
+#     panel's true absolute top -> tests O-4's clamp reframing directly, by
+#     recording whether the nominal target was even REACHABLE when it fired;
+#   * the caller stack -> distinguishes wizardInit / _wizardAdvanceTo /
+#     wizardGoTo / resume paths without inferring it from wall-clock order.
+#
+# Same post-load `page.evaluate` injection rule as _SCROLL_SPY_NAMED_HOOKS_JS
+# (see that constant's comment): `_wizardRender` is a top-level *function
+# declaration* (app.js:6974), so it is a genuine window-scoped global and
+# reassigning `window._wizardRender` does rebind the identifier its own
+# in-app callers resolve. `_wizardStep` (`let`, app.js:6874) and
+# `_WIZARD_PANELS` (`const`, app.js:6878) are NOT window properties — they
+# live in the global *lexical* environment — so they are read here by bare
+# identifier, which a classic script evaluated later can still resolve.
+# ---------------------------------------------------------------------------
+_WIZARD_RENDER_SPY_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__wizardRenderSpyError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const orig = window._wizardRender;
+  if (typeof orig !== 'function') {
+    window.__wizardRenderSpyError = '_wizardRender missing at hook time';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  const caller = () => ((new Error().stack || '').split('\n').slice(2, 6).map(l => l.trim()).join(' | '));
+  let _wrCounter = 0;
+  window._wizardRender = function (...args) {
+    const id = ++_wrCounter;
+    // Snapshot BEFORE the real call, so the target's reachability is recorded
+    // as it was when the scroll decision was made — not after the render's own
+    // show()/hide() has already changed the document height under it.
+    const extra = {id, y: window.scrollY,
+                   maxScroll: document.documentElement.scrollHeight - window.innerHeight};
+    try {
+      extra.step = _wizardStep;
+      const pid = (_WIZARD_PANELS[_wizardStep] || [])[0];
+      extra.targetId = pid || null;
+      const el = pid ? document.getElementById(pid) : null;
+      // Absolute document top of the element scrollIntoView(block:'start')
+      // will aim at == the scrollY it WANTS. Compare against maxScroll to see
+      // whether the browser can actually honor it.
+      extra.wantY = el ? +(el.getBoundingClientRect().top + window.scrollY).toFixed(1) : null;
+      extra.targetHidden = el ? el.classList.contains('hidden') : null;
+    } catch (e) {
+      extra.resolveError = String(e && e.message || e);
+    }
+    extra.by = caller();
+    rec('_wizardRender-enter', extra);
+    const result = orig.apply(this, args);
+    rec('_wizardRender-exit', {id, y: window.scrollY,
+        maxScroll: document.documentElement.scrollHeight - window.innerHeight});
+    return result;
+  };
+  window._wizardRender.__wizardSpyWrapped = true;  // dump-time install marker
+})();
+"""
+
+
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7), mode-C round 5 step 0 — ATTRIBUTE the growth.
+#
+# O-9 established that `scrollY` shifts by exactly the document's height
+# growth (`dy == dh`). Round 4 then assumed that growth was the corpus card
+# list and put `overflow-anchor: none` there — and was refuted (F-6). That
+# assumption was never measured. This watches `documentElement.scrollHeight`
+# on every frame and, on each CHANGE, snapshots which id'd elements are tall
+# enough to account for it — so the +25054px is attributed to a real element
+# instead of guessed at.
+#
+# Deliberately does not pre-name a suspect list (that would be scoping the
+# instrument to the theory again); it reports every id'd element over a size
+# floor and lets the numbers pick the culprit.
+# ---------------------------------------------------------------------------
+_HEIGHT_ATTRIBUTION_JS = r"""
+(() => {
+  if (typeof window.__scrollSpyRec !== 'function') {
+    window.__heightAttrError = 'builtin spy missing — _SCROLL_SPY_JS must run first';
+    return;
+  }
+  const rec = window.__scrollSpyRec;
+  let last = -1;
+  const snap = () => {
+    const out = [];
+    document.querySelectorAll('[id]').forEach(el => {
+      const h = el.offsetHeight;
+      if (h > 400) out.push([el.id, h]);
+    });
+    // Tallest first; only the top few can plausibly explain a 25000px jump.
+    return out.sort((a, b) => b[1] - a[1]).slice(0, 6);
+  };
+  const tick = () => {
+    const h = document.documentElement.scrollHeight;
+    if (h !== last) {
+      rec('height-change', {from: last, to: h, delta: last < 0 ? null : h - last, tall: snap()});
+      last = h;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  window.__heightAttrInstalled = true;
+})();
+"""
+
+
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
     ``_SCROLL_SPY_NAMED_HOOKS_JS`` (diagnostic). Never raises: this is called
@@ -226,6 +345,20 @@ def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = Non
             f"\n[scroll-spy] phase={phase} -- WARNING: named-fn hooks did not "
             f"install ({page.evaluate('() => window.__scrollSpyNamedHooksError || null')!r}); "
             f"FIRST/SECOND-invocation tagging is ABSENT below."
+        )
+    # Only meaningful in tests that inject _WIZARD_RENDER_SPY_JS; stays silent
+    # elsewhere (an un-injected hook reads as None, not as a failure) but shouts
+    # if it WAS injected and did not take — the same "a dead spy must never read
+    # as 'nothing happened'" rule the two checks above enforce.
+    wizard_hook = page.evaluate(
+        "() => (window._wizardRender && window._wizardRender.__wizardSpyWrapped)"
+        "        ? 'ok' : (window.__wizardRenderSpyError || null)"
+    )
+    if wizard_hook and wizard_hook != "ok":
+        print(
+            f"\n[scroll-spy] phase={phase} -- WARNING: _wizardRender hook did "
+            f"not install ({wizard_hook!r}); _wizardRender-enter/-exit events "
+            f"are ABSENT below."
         )
     spy = page.evaluate("() => window.__scrollSpy || []")
     print(f"\n[scroll-spy] phase={phase} value={value} before={before} -- {len(spy)} events:")
@@ -427,6 +560,14 @@ def test_corpus_reload_preserves_scroll_position(
     # refreshCorpus, onUserSelect -> _landingTab() -> loadCorpusIfReady(), can't
     # fire until select() runs).
     page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    # Mode-C round 2 (C-7): same post-load-before-select window as the named
+    # hooks above — wizardInit()'s _wizardRender() can't fire until select()
+    # runs, so this is the last moment the wrapper can be in place for it.
+    page.evaluate(_WIZARD_RENDER_SPY_JS)
+    # Round 5 step 0 (C-7): attribute the +25054px growth to a real element
+    # rather than assuming it — round 4 assumed the corpus list and was
+    # refuted (F-6) partly on that unmeasured assumption.
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
     UserPickerPage(page, live_server).select("alice")
 
     try:
@@ -470,6 +611,362 @@ def test_corpus_reload_preserves_scroll_position(
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "after-refresh", after, before)
     assert after == before, f"scroll position not preserved: {before} -> {after}"
+
+
+@pytest.mark.ux
+@pytest.mark.xfail(
+    reason=(
+        "O-15 + F-7 (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md). Two reasons, "
+        "and the second is why this is not merely a flaky test: (1) F-7 established the "
+        "wizard rail is not involved in mode C at all — instrumenting the REAL test found "
+        "exactly one _wizardRender call in 6/6 runs, always early, and the 300->369 "
+        "signature is a height-tracking shift, not a scroll to #panelJD. So this asserts "
+        "a property of a NON-mechanism. (2) O-15: this instrument passes locally 5/5 but "
+        "fails on CI 3/3 with NEGATIVE drift (300->245), so its assertion is "
+        "environment-dependent — which is itself the finding, not a defect to tune away. "
+        "strict=False so BOTH outcomes are legal and the test keeps RUNNING on every CI "
+        "run: its xfail/xpass status is the live signal that caught the CI-vs-local "
+        "divergence in the first place, and that signal is the reason this is marked "
+        "rather than deleted. DO NOT 'fix' this by widening a tolerance or pinning the "
+        "number — if the question needs answering, re-run it sampling `h` at both ends, "
+        "on both environments."
+    ),
+    strict=False,
+)
+def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-7 INSTRUMENT for scroll-flake "mode C" (the last of four failure
+    modes of test_corpus_reload_preserves_scroll_position above; modes A/B/D
+    were fixed on fix/ux-scroll-position-flake -- see docs/dev/diagnosis/
+    ux-scroll-position-flake.md "## The fix" -- and are structurally
+    unrelated to this one, Inferred Sec3 there).
+
+    Isolates whether `_wizardRender`'s own `scrollIntoView({behavior:
+    'smooth'})` (app.js:7021, fired by `wizardInit()` -- app.js:6906 --
+    which `onUserSelect()` -- app.js:441 -- calls as its LAST statement,
+    itself the tail of an async chain: loadConfig -> _landingTab ->
+    _activateTab -> refreshApplications -> _loadPersonaOptions ->
+    wizardInit) can still be mid-animation when an UNRELATED later explicit
+    `window.scrollTo()` sets a baseline -- and whether that baseline then
+    drifts, with ZERO corpus reload / refreshCorpus() / _captureScrollY /
+    _restoreScrollY involved anywhere in this test. This rules out any
+    interaction with the already-fixed capture/restore primitives entirely:
+    if this fails, the defect is proven to live in the wizard-render /
+    native-smooth-scroll path alone.
+
+    UserPickerPage.select() only waits for `#userSelect.value` to update --
+    fired SYNCHRONOUSLY by the native `change` event -- not for
+    onUserSelect()'s own async chain (and therefore not for wizardInit()) to
+    complete. So instead of guessing a wall-clock delay (which is exactly
+    what made the original failure CPU-load-dependent, ~12-17%/attempt), this
+    synchronizes on the scroll spy actually observing the wizard's own
+    `scrollIntoView` call fire -- deterministic w.r.t. WHEN the race window
+    opens, not IF it opens. No CPU saturation needed.
+
+    Falsification (charter C-7): if `after == before`, the wizard's animation
+    was NOT still live at this synchronization point and mode C's attributed
+    mechanism is at least incomplete as stated -- widen the instrument,
+    report, do not fix on this basis alone. If `after != before`, the
+    mechanism is confirmed at its simplest possible reproduction.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+
+    UserPickerPage(page, live_server).select("alice")
+    # No tab click, no refreshCorpus call anywhere in this test -- isolates
+    # wizardInit()'s own _wizardRender() scrollIntoView as the sole actor.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    if before <= 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "wizard-only-before", before)
+    assert before > 0, "test setup didn't actually scroll the page"
+
+    page.wait_for_timeout(100)  # give any in-flight animation frame(s) a chance to land
+    after = page.evaluate("() => window.scrollY")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "wizard-only-after", after, before)
+    assert after == before, (
+        f"_wizardRender's own scrollIntoView (app.js:7021) creeps an "
+        f"unrelated later baseline with ZERO refreshCorpus / corpus-reload "
+        f"involvement: {before} -> {after}. Confirms mode C is a pure "
+        f"wizard-render / native-smooth-scroll race, structurally "
+        f"independent of _captureScrollY/_restoreScrollY (docs/dev/"
+        f"diagnosis/ux-scroll-wizard-rail-flake.md)."
+    )
+
+
+@pytest.mark.ux
+@pytest.mark.xfail(
+    reason=(
+        "F-4 (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md): this instrument "
+        "forces an ordering the REAL test never takes. Instrumenting "
+        "test_corpus_reload_preserves_scroll_position showed exactly ONE _wizardRender "
+        "call in 6/6 runs, always ~500ms BEFORE the baseline — there is no second call "
+        "and no late call in the wild. The behavior asserted here is real browser "
+        "behavior but is NOT mode C, so its outcome is not a gate signal (the dossier's "
+        "'## Acceptance bar' says so explicitly). Kept as negative-space coverage rather "
+        "than deleted: it is the evidence that killed the late-render theory. "
+        "strict=False because the underlying effect reproduces ~9/10, not 10/10, so it "
+        "may legitimately xpass."
+    ),
+    strict=False,
+)
+def test_wizard_render_firing_after_baseline_creeps_it(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-7 INSTRUMENT, second experiment for mode C -- forces the OPPOSITE
+    ordering from test_wizard_render_smooth_scroll_creeps_explicit_baseline
+    above, after that test's own captured spy dump falsified the ordering it
+    assumed (see docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md O-1/O-2):
+    there, wizardInit()'s scrollIntoView fired ~61ms BEFORE this test's own
+    `scrollTo(0, 300)`, and the explicit scrollTo cleanly CANCELLED the
+    in-flight smooth animation with zero drift. That is the opposite of what
+    a "residual, still-settling" animation implies.
+
+    This experiment tests the reverse: does a `_wizardRender()` call (the
+    same real production function, app.js:6974, called directly the same way
+    Chip 2's tests called `_captureScrollY`/`_restoreScrollY` directly)
+    firing AFTER an explicit baseline is already established creep that
+    baseline away? Rationale for trying this ordering: under CPU load,
+    wizardInit()'s OWN async chain (onUserSelect -> loadConfig ->
+    _landingTab -> ... -> wizardInit -> _wizardRender, app.js:394-441) could
+    plausibly be delayed past the point the corpus test has already clicked
+    the tab and established its own scrollTo(0,300) baseline -- i.e.
+    late-arriving, not residual-from-earlier.
+
+    CONFIRMED (O-2): with a 100ms read-delay (matching the real corpus
+    test's own `page.wait_for_timeout(100)`) this did not reproduce in 5/5
+    tries -- the ~69px animation (300 -> #panelJD's ~369) hadn't progressed
+    far enough to register a *different* value yet, even though the spy
+    still showed it in flight past the 100ms mark on inspection. Widening
+    the read-delay to 350ms -- still well under the real test's own total
+    elapsed time once `refreshCorpus()`'s corpus-card re-render/settle is
+    counted -- reproduces deterministically: 4/5 runs failed with the same
+    "before -> partial-target" shape mode C's own captured traces show
+    (`300 -> 306`, `300 -> 309`, etc. -- never `300 -> 369` exactly, because
+    a fresh 69px animation is caught at whatever point its 350ms window
+    lands, not necessarily its end). This is the confirmed mechanism: mode C
+    requires the wizard render's scrollIntoView to fire (or still be
+    animating) AFTER the baseline is read, not merely be a residual
+    animation from strictly before it.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+
+    UserPickerPage(page, live_server).select("alice")
+    # Let the FIRST (setup) scrollIntoView fully settle before this
+    # experiment's own baseline -- isolates a SECOND, later-firing render
+    # call as the sole variable, rather than confounding with the first.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(500)  # generous settle window for the first animation
+
+    page.evaluate("() => window.scrollTo(0, 300)")
+    before = page.evaluate("() => window.scrollY")
+    if before <= 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "reversed-order-before", before)
+    assert before > 0, "test setup didn't actually scroll the page"
+
+    # Fire a SECOND _wizardRender() call directly -- the real production
+    # function, not a simulation -- immediately after the baseline is set.
+    page.evaluate("() => _wizardRender()")
+
+    # 350ms, not the real test's own 100ms: see O-2 in the docstring above --
+    # a plain 100ms window under-catches this specific ~69px animation, but
+    # the real corpus test's total elapsed time (refreshCorpus's own
+    # card-re-render/settle, which this isolated instrument deliberately
+    # doesn't call) plausibly provides the extra margin in the wild.
+    page.wait_for_timeout(350)
+    after = page.evaluate("() => window.scrollY")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "reversed-order-after", after, before)
+    assert after == before, (
+        f"a _wizardRender() call (app.js:6974) firing AFTER an explicit "
+        f"baseline creeps that baseline away within a 350ms read window: "
+        f"{before} -> {after}. Confirms mode C's mechanism requires the "
+        f"wizard render to fire LATE (after the baseline is set), not "
+        f"merely be a residual animation from before it (docs/dev/"
+        f"diagnosis/ux-scroll-wizard-rail-flake.md)."
+    )
+
+
+@pytest.mark.ux
+@pytest.mark.parametrize("settle_before_growth", [True, False], ids=["settled", "tight"])
+def test_merge_suggestions_growth_shifts_scroll_deterministically(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    settle_before_growth: bool,
+) -> None:
+    """C-7 PROBE for mode C, round 5 step 1 -- a MEASURING DEVICE, not an
+    acceptance signal (see the dossier's "## Acceptance bar"; F-4 is what
+    that distinction cost).
+
+    Round 4 could not measure its own fix: the mechanism fires in roughly 1
+    run in 6, so a 5-run arm (1/6 control vs 1/5 fixed) was evidence of
+    neither improvement nor harm. This forces the SAME ordering the wild
+    failures take -- document growth landing after a baseline is already
+    established -- so a candidate fix can be A/B'd against a signal that
+    fires every run instead of one in six.
+
+    Admissible as an instrument only because the ordering it forces is
+    directly OBSERVED in the wild (dossier O-6: control run1 and fix run4
+    both captured it), and because it drives the REAL production render path
+    (`refreshMergeSuggestions`, app.js:5212) rather than simulating growth.
+
+    What round 5 step 0 established (dossier O-12), and why this test targets
+    merge suggestions rather than the corpus cards: the +25054px that moves
+    the scroll is `#mergeSuggestionsList` (24956px), NOT
+    `#corpusExperienceList` (1308px, which never grows). Round 4 placed
+    `overflow-anchor: none` on the corpus list -- an element that does not
+    grow -- which is part of why it was refuted (F-6). The growth sits ABOVE
+    the corpus cards in the DOM (templates/index.html:739 vs :841), the
+    classic "content inserted above the anchor pushes scroll down" shape.
+
+    Reports `dy` vs `dh` rather than a bare pass/fail, because O-9's finding
+    is an EQUALITY (`dy == dh` at +69 and at +25054), and an equality is a
+    far stronger signal than "the number changed."
+    """
+    cid = seed_user(ux_app, "alice")
+    # 20 near-identical companies -> the duplicate-role scorer emits a large
+    # pairwise suggestion set; that volume is what makes the growth ~25000px.
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    # Let onUserSelect's async chain finish BEFORE clicking the tab. select()
+    # only waits for #userSelect.value (set synchronously by the native change
+    # event), so without this the chain's own _landingTab() can land after our
+    # click and switch the tab back out from under the probe — observed once as
+    # a `dh=+0 (1206 -> 1206)` self-guard trip, the tailor tab's height. The
+    # wizard's scrollIntoView is the chain's last observable act (app.js:441 ->
+    # wizardInit -> _wizardRender), so the spy seeing it means the chain is done.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+    # Wait for the suggestions to actually RENDER, then for the document
+    # height to stop moving. O-7: card attachment and layout height are
+    # different events, and gating on the former is what lets ~25000px of
+    # layout land after a baseline is set.
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_function(
+        """() => {
+             const h = document.documentElement.scrollHeight;
+             const stable = window.__probeLastH === h;
+             window.__probeLastH = h;
+             return stable;
+           }""",
+        timeout=15_000,
+    )
+
+    # Collapse the section back to its pre-render state so its growth can be
+    # re-triggered ON DEMAND. This is the only synthetic step, and it only
+    # undoes a render -- the growth itself is then produced by the real
+    # production function below, not by injected filler.
+    page.evaluate(
+        """() => {
+             const list = document.getElementById('mergeSuggestionsList');
+             const sec = document.getElementById('mergeSuggestionsSection');
+             while (list.firstChild) list.removeChild(list.firstChild);
+             sec.classList.add('hidden');
+           }"""
+    )
+    page.wait_for_timeout(150)
+
+    # ROUND 6, single-variable arm (dossier O-13/O-14): how long after the
+    # baseline scroll the growth lands. In the wild failure the growth landed
+    # ~110ms after the baseline, WHILE it was still settling; the original
+    # "settled" probe let ~620ms elapse and never fired. These two ids differ
+    # in that one variable and nothing else, so a difference between them
+    # attributes cleanly.
+    if settle_before_growth:
+        page.evaluate("() => window.scrollTo(0, 300)")
+        page.wait_for_timeout(150)  # let the baseline fully settle
+        before = page.evaluate("() => window.scrollY")
+        h_before = page.evaluate("() => document.documentElement.scrollHeight")
+    else:
+        # Scroll, sample, and kick the growth in ONE evaluate — no Playwright
+        # round-trips in between — so the render lands as early after the
+        # scroll as the fetch allows.
+        before, h_before = page.evaluate(
+            """() => {
+                 window.scrollTo(0, 300);
+                 const y = window.scrollY;
+                 const h = document.documentElement.scrollHeight;
+                 refreshMergeSuggestions();   // deliberately NOT awaited here
+                 return [y, h];
+               }"""
+        )
+    assert before > 0, "probe setup didn't actually scroll the page"
+
+    # Re-render through the REAL production path (app.js:5212). Playwright
+    # awaits the returned promise, so the fetch + render have completed.
+    # In the "tight" arm this is a second, idempotent call — the first was
+    # already kicked above; this one just guarantees a settled end state.
+    page.evaluate("() => refreshMergeSuggestions()")
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(200)
+
+    after = page.evaluate("() => window.scrollY")
+    h_after = page.evaluate("() => document.documentElement.scrollHeight")
+    dy, dh = after - before, h_after - h_before
+
+    if dy != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "merge-growth-probe", after, before)
+    # Guards the probe itself: if the growth didn't happen, a dy of 0 proves
+    # nothing and must NOT read as "the bug is fixed" (the exact way a dead
+    # instrument lies -- see _dump_scroll_spy's own liveness checks).
+    assert dh > 10_000, (
+        f"PROBE DID NOT ARM: expected the merge-suggestions re-render to grow "
+        f"the document by ~25000px, got dh={dh:+} ({h_before} -> {h_after}). "
+        f"A dy of {dy:+} here is meaningless -- fix the probe, do not read "
+        f"this as a result."
+    )
+    assert dy == 0, (
+        f"scroll-anchoring shift reproduced deterministically: "
+        f"y {before} -> {after} (dy={dy:+}) while scrollHeight "
+        f"{h_before} -> {h_after} (dh={dh:+}); dy==dh is {dy == dh}. "
+        f"Growth is #mergeSuggestionsList, ABOVE the corpus cards in the DOM. "
+        f"See docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md O-9/O-12."
+    )
 
 
 @pytest.mark.ux
