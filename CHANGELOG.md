@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: merge-suggestions cost — gate on company similarity before scoring bullets (`fix/merge-suggestions-cost`)
+
+Resolves carry-forward ledger item 10. `score_experiences()`
+(`onboarding/experience_match.py`) computed the expensive `bullet_overlap`
+fuzzy-text scan unconditionally, even for pairs the cheap company-similarity
+gate would reject. Measured the gate's rejection fraction before building
+anything (78.6% real corpus, 94.5–100% synthetic `realistic` profile — see
+`docs/dev/diagnosis/merge-suggestions-cost.md`), then short-circuited to
+`DISTINCT` immediately below `COMPANY_GATE`, skipping title/date/bullet
+computation entirely for those pairs. A/B'd against the committed baseline
+(`docs/dev/perf/MERGE_SUGGESTIONS_FIX_2026-07-25.md`): real corpus 6930ms →
+225ms (30.8×); synthetic `realistic` 647ms/10.2s/42s → 17ms/488ms/1.8s
+(20.8–37.4×) at 8/24/48 experiences. Suggestion output unchanged — pure cost
+fix. No new dependency; item 11 (uncapped client render) untouched.
+
 ### Added: corpus-scale benchmark + cost table (`chore/large-corpus-re-observation`)
 
 Resolves the carry-forward ledger's large-corpus scalability row by doing the

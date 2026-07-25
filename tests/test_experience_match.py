@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from onboarding.experience_match import (
+    COMPANY_GATE,
     ExperienceLike,
     bullet_overlap,
     company_similarity,
@@ -11,6 +14,7 @@ from onboarding.experience_match import (
     score_experiences,
     title_similarity,
 )
+from scripts.bench_corpus_scale import _COMPANIES, CURVE
 
 
 def test_normalize_company_strips_legal_suffix_and_punct():
@@ -100,3 +104,52 @@ def test_score_same_company_unrelated_roles_distinct():
         "Acme", "2020-01", "2022-01", ("Staff Engineer",), ("Designed the data platform.",)
     )
     assert score_experiences(a, b).band == "DISTINCT"
+
+
+def _company_for(i: int) -> str:
+    """Reproduce the `realistic` profile's company assignment (bench_corpus_scale._seed)."""
+    return _COMPANIES[i % len(_COMPANIES)] + ("" if i < len(_COMPANIES) else f" {i}")
+
+
+def test_company_gate_rejects_most_pairs_on_realistic_profile():
+    """Instrument for ledger item 10 / fix/merge-suggestions-cost.
+
+    `score_experiences` used to run the O(b_a x b_b) `bullet_overlap` scan on every
+    pair before checking whether the cheap company gate would reject it anyway. This
+    pins the fraction of pairs the gate rejects on the corpus shape the merge-
+    suggestions surface actually sees, so a regression can't silently make the
+    short-circuit in `score_experiences` pointless again.
+    """
+    for size in ("1x", "3x"):
+        n = CURVE[size]["experiences"]
+        companies = [_company_for(i) for i in range(n)]
+        pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
+        rejected = sum(
+            1 for i, j in pairs if company_similarity(companies[i], companies[j]) < COMPANY_GATE
+        )
+        assert rejected / len(pairs) >= 0.9, (
+            f"{size}: only {rejected}/{len(pairs)} pairs rejected by the company gate"
+        )
+
+
+def test_score_experiences_short_circuits_below_company_gate():
+    """Regression test: a below-gate pair must never reach title/date/bullet scoring.
+
+    Pins the invariant the fix establishes so a later refactor can't silently
+    reintroduce the unconditional `bullet_overlap` call this branch removed.
+    """
+    a = ExperienceLike("Acme", "2020-01", "2023-06", ("Engineer",), ("Built X.",))
+    b = ExperienceLike("Globex", "2020-01", "2023-06", ("Engineer",), ("Built X.",))
+    assert company_similarity(a.company, b.company) < COMPANY_GATE
+
+    with (
+        patch("onboarding.experience_match._best_title_similarity") as mock_title,
+        patch("onboarding.experience_match.date_similarity") as mock_dates,
+        patch("onboarding.experience_match.bullet_overlap") as mock_bullets,
+    ):
+        result = score_experiences(a, b)
+
+    assert result.band == "DISTINCT"
+    mock_title.assert_not_called()
+    mock_dates.assert_not_called()
+    mock_bullets.assert_not_called()

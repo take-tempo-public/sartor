@@ -515,7 +515,17 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **11** (**net +1** this entry — `chore/large-corpus-re-observation`,
+_Rendered open count: **10** (**net −1** this entry — `fix/merge-suggestions-cost`,
+2026-07-25: **RESOLVED** `GET /corpus/merge-suggestions` costs ~6.9s — measured the
+company-gate rejection fraction the prior branch left unverified (78.6% real / 94.5–100%
+synthetic), confirmed the filed "gate first" direction had real effect, built it, and A/B'd
+it against the committed baseline: 6930ms → 225ms real corpus (30.8x), 647ms/10.2s/42s →
+17ms/488ms/1.8s synthetic `realistic` at 8/24/48 experiences. Full detail:
+`docs/dev/perf/MERGE_SUGGESTIONS_FIX_2026-07-25.md`. Item 11 (uncapped client render)
+untouched, per the handoff's explicit scope boundary. Re-counted the actual `- [ ] **`
+bullets in this Open section rather than trusting arithmetic: 10, confirmed.
+**Back within the ~8–10 ceiling — the reduction sprint is no longer overdue, though still
+worth continuing.** Prior to that: **11** (**net +1** — `chore/large-corpus-re-observation`,
 2026-07-24: **RESOLVED the large-corpus scalability row** by doing the re-observation it
 called for (−1), and **split its findings into two open items** (+2). The re-observation
 refuted the row's own framing: filed as a *large-corpus* risk, measurement found a **live
@@ -2178,35 +2188,6 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
       2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
 
-- [ ] **`GET /corpus/merge-suggestions` costs ~6.9s on an ORDINARY 8-role corpus and returns
-      an empty list** — **a live defect at current scale, not a scaling risk.** Measured
-      2026-07-24 (`chore/large-corpus-re-observation`), full table in
-      [`docs/dev/perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md`](perf/LARGE_CORPUS_BENCHMARK_2026-07-24.md),
-      raw data in `docs/dev/perf/data/large-corpus-curve.json`, instrument
-      `scripts/bench_corpus_scale.py`.
-      **Observed:** 6930ms median (4701 / 9127 min-max) against the owner's real corpus (8
-      experiences, 87 active bullets), returning a **29-byte** `{"suggestions": [], "count": 0}`.
-      The whole cost is deciding there is nothing to show. Synthetic curve: 647ms / 10.2s / 42s /
-      97s at 8 / 24 / 48 / 96 roles; cost per pair is ~22–27ms across a 163× range in pair count,
-      i.e. **O(n²) in experiences**.
-      **The counterintuitive part, and the reason this went unseen:** the duplicate-heavy corpus
-      is **26× FASTER** on the server than an ordinary one. `bullet_overlap` /
-      `shared_bullet_count` try an exact normalized-set membership test and only fall through to
-      `difflib.SequenceMatcher` when it misses (`onboarding/experience_match.py:196-198`), so the
-      fast path fires **only for corpora that need the feature least**. Bullet TEXT length
-      dominates at real scale — 222-char real bullets vs ~100-char synthetic explains a 10.7× gap
-      under `SequenceMatcher`'s O(L²).
-      **Filed fix direction, UNVERIFIED:** `score_experiences` computes `bullet_overlap`
-      unconditionally *before* the cheap company gate can reject the pair
-      (`onboarding/experience_match.py:219-232`); gating first would skip the quadratic term for
-      DISTINCT-bound pairs. The saving depends on the gate's rejection fraction, which the table
-      does **not** measure. **A/B any fix against these numbers** — the prior branch on these same
-      surfaces had a plausible fix refuted by direct measurement.
-      **Also recorded here (latent, not urgent):** `corpus list` issues **~2N+2** queries
-      (18 / 50 / 98 / 194 at 8 / 24 / 48 / 96 roles) — the same N+1 shape `list_applications`
-      already fixed once with `selectinload`. Harmless today at 271ms.
-      _(discovered: v1.1.0 stream, 2026-07-24, `chore/large-corpus-re-observation`.)_
-
 - [ ] **The merge-suggestion panel renders its entire suggestion set uncapped — 142 682px at 48
       duplicate-heavy roles** — the **client-side** half of the split below. Measured 2026-07-24
       (`chore/large-corpus-re-observation`, Tier 2, headless Chromium 1280×900); same doc + raw
@@ -2228,6 +2209,38 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       _(discovered: v1.1.0 stream, 2026-07-24, `chore/large-corpus-re-observation`.)_
 
 #### Resolved
+
+- [x] **`GET /corpus/merge-suggestions` costs ~6.9s on an ORDINARY 8-role corpus and returns
+      an empty list — RESOLVED** on `fix/merge-suggestions-cost`, 2026-07-25. Was: filed
+      2026-07-24 (`chore/large-corpus-re-observation`) as a live defect, not a scaling risk —
+      `score_experiences` (`onboarding/experience_match.py`) computed `bullet_overlap`
+      unconditionally, before the cheap company-similarity gate could reject a pair, costing
+      6930ms median (4701/9127 min-max) on the owner's real 8-experience corpus to return an
+      empty `{"suggestions": [], "count": 0}`. The filed fix direction ("gate first") was marked
+      **UNVERIFIED** — the saving depended on the gate's rejection fraction, unmeasured by that
+      table.
+      **This branch measured the fraction before building anything (C-7):** 78.6% of real-corpus
+      pairs and 94.5–100% of synthetic `realistic`-profile pairs score below `COMPANY_GATE` —
+      see `docs/dev/diagnosis/merge-suggestions-cost.md`. That justified the filed direction
+      without needing the rivals (memoizing bullet normalization, capping the pairwise scan).
+      **Fix shipped:** `score_experiences` now returns `DISTINCT` immediately when
+      `company_similarity` is below `COMPANY_GATE`, skipping title/date/bullet computation
+      entirely for those pairs; pinned by a regression test that fails on HEAD and passes after
+      the change (`tests/test_experience_match.py::test_score_experiences_short_circuits_below_company_gate`).
+      **A/B'd against the committed baseline**
+      (`docs/dev/perf/MERGE_SUGGESTIONS_FIX_2026-07-25.md`): real corpus 6930ms → 225ms (30.8x);
+      synthetic `realistic` 647ms/10.2s/42s → 17ms/488ms/1.8s (20.8–37.4x) at 8/24/48
+      experiences; `duplicate` profile unchanged (49ms/1.3s, sanity check the fix targets the
+      right pairs). Suggestion output byte-identical before/after at every point — pure cost fix,
+      no behavior change.
+      **Also found here (latent, not urgent, left unfixed — not this branch's scope):**
+      `corpus list` / `merge suggestions` both still carry the ~2N+2 N+1
+      (18/50/98/194 queries at 8/24/48/96 roles) the baseline table noted — same shape
+      `list_applications` already fixed once with `selectinload`. Harmless today (9–271ms); not
+      addressed here per the handoff's explicit scope boundary.
+      **Item 11 (uncapped client render) is untouched** — separate row, disjoint failure mode,
+      per the handoff's explicit instruction not to fold it in.
+      **−1 to the open count.**
 
 - [x] **Large-corpus scalability — RE-OBSERVED and split into the two items above (2026-07-24,
       `chore/large-corpus-re-observation`).** **Owner-raised (2026-07-24),
