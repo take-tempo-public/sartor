@@ -369,5 +369,251 @@
         ]
       }
     }
+  },
+  {
+    "size": "1x",
+    "profile": "duplicate",
+    "shape": {
+      "experiences": 8,
+      "bullets": 122,
+      "applications": 20
+    },
+    "seeded": {
+      "candidate_id": 1,
+      "experiences": 8,
+      "bullets": 120,
+      "applications": 20,
+      "bullets_per_experience": 15,
+      "first_application_id": 1
+    },
+    "seed_ms": 146.0,
+    "repeats": 3,
+    "surfaces": {
+      "corpus_list": {
+        "url": "/api/users/bench/experiences",
+        "status": 200,
+        "ms_median": 17.62,
+        "ms_min": 13.34,
+        "ms_max": 17.88,
+        "queries": 18,
+        "bytes": 1861,
+        "samples": [
+          17.88,
+          17.62,
+          13.34
+        ]
+      },
+      "merge_suggestions": {
+        "url": "/api/users/bench/corpus/merge-suggestions",
+        "status": 200,
+        "ms_median": 54.14,
+        "ms_min": 46.79,
+        "ms_max": 60.41,
+        "queries": 19,
+        "bytes": 13210,
+        "samples": [
+          60.41,
+          46.79,
+          54.14
+        ]
+      },
+      "applications": {
+        "url": "/api/users/bench/applications",
+        "status": 200,
+        "ms_median": 7.32,
+        "ms_min": 5.01,
+        "ms_max": 8.3,
+        "queries": 3,
+        "bytes": 6606,
+        "samples": [
+          8.3,
+          5.01,
+          7.32
+        ]
+      },
+      "compose_composition": {
+        "url": "/api/applications/1/composition",
+        "status": 200,
+        "ms_median": 23.24,
+        "ms_min": 20.41,
+        "ms_max": 26.11,
+        "queries": 12,
+        "bytes": 36016,
+        "samples": [
+          26.11,
+          20.41,
+          23.24
+        ]
+      }
+    }
+  },
+  {
+    "size": "6x",
+    "profile": "duplicate",
+    "shape": {
+      "experiences": 48,
+      "bullets": 732,
+      "applications": 120
+    },
+    "seeded": {
+      "candidate_id": 1,
+      "experiences": 48,
+      "bullets": 720,
+      "applications": 120,
+      "bullets_per_experience": 15,
+      "first_application_id": 1
+    },
+    "seed_ms": 346.0,
+    "repeats": 2,
+    "surfaces": {
+      "corpus_list": {
+        "url": "/api/users/bench/experiences",
+        "status": 200,
+        "ms_median": 91.65,
+        "ms_min": 90.74,
+        "ms_max": 92.57,
+        "queries": 98,
+        "bytes": 11258,
+        "samples": [
+          90.74,
+          92.57
+        ]
+      },
+      "merge_suggestions": {
+        "url": "/api/users/bench/corpus/merge-suggestions",
+        "status": 200,
+        "ms_median": 1605.26,
+        "ms_min": 1524.45,
+        "ms_max": 1686.07,
+        "queries": 99,
+        "bytes": 517429,
+        "samples": [
+          1686.07,
+          1524.45
+        ]
+      },
+      "applications": {
+        "url": "/api/users/bench/applications",
+        "status": 200,
+        "ms_median": 13.44,
+        "ms_min": 11.74,
+        "ms_max": 15.14,
+        "queries": 3,
+        "bytes": 39753,
+        "samples": [
+          15.14,
+          11.74
+        ]
+      },
+      "compose_composition": {
+        "url": "/api/applications/1/composition",
+        "status": 200,
+        "ms_median": 80.54,
+        "ms_min": 72.1,
+        "ms_max": 88.98,
+        "queries": 13,
+        "bytes": 214733,
+        "samples": [
+          72.1,
+          88.98
+        ]
+      }
+    }
+  },
+  {
+    "size": "1x",
+    "profile": "duplicate+render",
+    "shape": {
+      "experiences": 8,
+      "bullets": 122,
+      "applications": 20
+    },
+    "settle_ms": 887.8,
+    "render": {
+      "mergeSuggestionsList": {
+        "scrollHeight": 3671,
+        "children": 28,
+        "nodes": 224
+      },
+      "corpusExperienceList": {
+        "scrollHeight": 516,
+        "children": 8,
+        "nodes": 64
+      },
+      "documentNodes": 1092,
+      "documentScrollHeight": 5147
+    }
+  },
+  {
+    "size": "1x",
+    "profile": "realistic+render",
+    "shape": {
+      "experiences": 8,
+      "bullets": 122,
+      "applications": 20
+    },
+    "settle_ms": 1740.3,
+    "render": {
+      "mergeSuggestionsList": {
+        "scrollHeight": 0,
+        "children": 0,
+        "nodes": 0
+      },
+      "corpusExperienceList": {
+        "scrollHeight": 516,
+        "children": 8,
+        "nodes": 64
+      },
+      "documentNodes": 868,
+      "documentScrollHeight": 1378
+    }
+  },
+  {
+    "size": "6x",
+    "profile": "duplicate+render",
+    "shape": {
+      "experiences": 48,
+      "bullets": 732,
+      "applications": 120
+    },
+    "settle_ms": 4908.3,
+    "render": {
+      "mergeSuggestionsList": {
+        "scrollHeight": 142682,
+        "children": 1086,
+        "nodes": 8688
+      },
+      "corpusExperienceList": {
+        "scrollHeight": 3156,
+        "children": 48,
+        "nodes": 384
+      },
+      "documentNodes": 10576,
+      "documentScrollHeight": 146798
+    }
+  },
+  {
+    "size": "6x",
+    "profile": "realistic+render",
+    "shape": {
+      "experiences": 48,
+      "bullets": 732,
+      "applications": 120
+    },
+    "settle_ms": 47613.0,
+    "render": {
+      "mergeSuggestionsList": {
+        "scrollHeight": 8138,
+        "children": 62,
+        "nodes": 496
+      },
+      "corpusExperienceList": {
+        "scrollHeight": 3156,
+        "children": 48,
+        "nodes": 384
+      },
+      "documentNodes": 2384,
+      "documentScrollHeight": 12254
+    }
   }
 ]

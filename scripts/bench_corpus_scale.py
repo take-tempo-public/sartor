@@ -290,6 +290,129 @@ def run_point(size: str, profile: str, repeats: int) -> dict[str, Any]:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def run_render(size: str, profile: str) -> dict[str, Any]:
+    """Tier 2 — measure what the Corpus tab actually renders at this corpus size.
+
+    Tier 1 says what the server costs; this says what the browser is handed.
+    Deliberately narrow: DOM node counts and rendered pixel heights, plus the
+    wall-clock to settle. Sizes and node counts are stable quantities; the
+    settle time is reported but is the noisiest number here and should be read
+    as an order of magnitude, not a benchmark.
+    """
+    import threading
+
+    from playwright.sync_api import sync_playwright
+    from werkzeug.serving import make_server
+
+    shape = CURVE[size]
+    tmp = Path(tempfile.mkdtemp(prefix="bench-render-"))
+    username = "bench"
+    try:
+        db_file = tmp / "bench.sqlite"
+
+        import db.session as db_session_mod
+
+        db_session_mod.DEFAULT_DB_PATH = db_file
+        db_session_mod._engine = None
+        db_session_mod._SessionLocal = None
+
+        from app import create_app
+        from config import Config
+
+        app = create_app(Config(base_dir=tmp))
+        for key in ("configs", "output", "resumes"):
+            (tmp / key).mkdir(parents=True, exist_ok=True)
+        app.config["CONFIGS_DIR"] = tmp / "configs"
+        app.config["OUTPUT_DIR"] = tmp / "output"
+        app.config["RESUMES_DIR"] = tmp / "resumes"
+        (tmp / "configs" / f"{username}.config").write_text("{}", encoding="utf-8")
+
+        from db.session import init_db
+
+        init_db(db_file)
+        _seed(shape, profile, username)
+
+        server = make_server("127.0.0.1", 0, app, threaded=True)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        try:
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch()
+                page = browser.new_page(viewport={"width": 1280, "height": 900})
+                try:
+                    from ui_pages.selectors import Corpus, Help, TopTabs, UserPicker
+
+                    # Without this the first-run help/tour modal's full-screen
+                    # backdrop intercepts the tab click. Same suppressor the UX
+                    # suite and capture_screenshots.py use.
+                    page.add_init_script(
+                        Help.suppress_tour_init_script(list(Help.TOUR_STOP_BLOCKS))
+                    )
+                    page.goto(base, wait_until="networkidle")
+
+                    page.wait_for_selector(UserPicker.SELECT, timeout=30_000)
+                    page.select_option(UserPicker.SELECT, username)
+                    page.wait_for_function(
+                        "(u) => document.getElementById('userSelect').value === u",
+                        arg=username,
+                        timeout=30_000,
+                    )
+
+                    # refreshCorpus() fires refreshMergeSuggestions() fire-and-forget,
+                    # so `networkidle` can go quiet BEFORE that request is even issued
+                    # — measuring there reports an empty panel that later fills in.
+                    # Synchronize on the merge-suggestions response itself, then flush
+                    # two animation frames so the synchronous append has painted.
+                    t0 = time.perf_counter()
+                    with page.expect_response(
+                        lambda r: "corpus/merge-suggestions" in r.url, timeout=300_000
+                    ):
+                        page.click(TopTabs.CORPUS)
+                        page.wait_for_selector(Corpus.PANEL, state="visible", timeout=60_000)
+                    page.wait_for_selector(Corpus.CARD, timeout=120_000)
+                    page.evaluate(
+                        "() => new Promise(r => requestAnimationFrame("
+                        "() => requestAnimationFrame(r)))"
+                    )
+                    settle_ms = (time.perf_counter() - t0) * 1000.0
+
+                    metrics = page.evaluate(
+                        """() => {
+                            const box = (id) => {
+                                const el = document.getElementById(id);
+                                if (!el) return null;
+                                return {
+                                    scrollHeight: el.scrollHeight,
+                                    children: el.children.length,
+                                    nodes: el.querySelectorAll('*').length,
+                                };
+                            };
+                            return {
+                                mergeSuggestionsList: box('mergeSuggestionsList'),
+                                corpusExperienceList: box('corpusExperienceList'),
+                                documentNodes: document.querySelectorAll('*').length,
+                                documentScrollHeight:
+                                    document.documentElement.scrollHeight,
+                            };
+                        }"""
+                    )
+                    return {
+                        "size": size,
+                        "profile": f"{profile}+render",
+                        "shape": shape,
+                        "settle_ms": round(settle_ms, 1),
+                        "render": metrics,
+                    }
+                finally:
+                    browser.close()
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def measure_existing(db_path: Path, username: str, repeats: int) -> dict[str, Any]:
     """Measure the surfaces against an ALREADY-POPULATED database.
 
@@ -398,7 +521,38 @@ def main() -> int:
         help="measure an already-populated database instead of seeding (point at a COPY)",
     )
     ap.add_argument("--username", default="bench", help="candidate username for --db")
+    ap.add_argument(
+        "--render",
+        action="store_true",
+        help="Tier 2 — measure browser render cost instead of server cost",
+    )
     args = ap.parse_args()
+
+    if args.render:
+        if not args.size:
+            ap.error("--render needs --size")
+        rec = run_render(args.size, args.profile)
+        _append(args.out, rec)
+        r = rec["render"]
+        print(f"--- {args.size} / {args.profile} / render ---", flush=True)
+        print(f"  settle {rec['settle_ms']:.0f}ms", flush=True)
+        for key in ("mergeSuggestionsList", "corpusExperienceList"):
+            box = r[key]
+            if box is None:
+                print(f"  {key:22s} (absent)", flush=True)
+            else:
+                print(
+                    f"  {key:22s} height={box['scrollHeight']:7d}px  "
+                    f"children={box['children']:5d}  nodes={box['nodes']:6d}",
+                    flush=True,
+                )
+        print(
+            f"  {'document':22s} height={r['documentScrollHeight']:7d}px  "
+            f"nodes={r['documentNodes']:6d}",
+            flush=True,
+        )
+        print(f"\nwrote {args.out}")
+        return 0
 
     if args.db:
         rec = measure_existing(args.db, args.username, args.repeats)

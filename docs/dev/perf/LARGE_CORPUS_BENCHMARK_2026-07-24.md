@@ -2,7 +2,8 @@
 
 > **Purpose:** the per-surface cost table carry-forward ledger item 10 asks for,
 > measured before any optimization is designed.
-> **Status:** Tier 1 (server-side) in progress. Tier 2 (browser render) not started.
+> **Status:** complete. Tier 1 (server-side) and Tier 2 (browser render) both run.
+> **No production code was changed on this branch** — the fix is filed, not built.
 > **Method + raw data:** `scripts/bench_corpus_scale.py`;
 > results in `docs/dev/perf/data/large-corpus-curve.json`.
 > **Authoritative for:** what the corpus surfaces actually cost at size. It does
@@ -88,7 +89,7 @@ this branch.**
 
 ---
 
-## Curve (in progress)
+## Curve
 
 Sizes anchored on the real shape and scaled ratio-preserving:
 
@@ -207,6 +208,51 @@ At 95 ms this is not a live cost problem, but the query count scales with conten
 the synthetic curve understates, so the Tier 1 Compose numbers above are a
 **floor**, not an estimate.
 
+### O-5 — the duplicate-heavy corpus is 26× FASTER on the server. The pathology is the ordinary corpus.
+
+The `duplicate` profile (near-identical companies/titles/dates, **repeated bullet
+text**) was expected to be the worst case — it is the shape that produced the
+original ~25000px render. On the server it is dramatically **cheaper**:
+
+| point | profile | merge-suggestions median | response |
+|---|---|---|---|
+| 1x (8 roles) | realistic | 647 ms | 29 B |
+| 1x (8 roles) | **duplicate** | **54 ms** | 13 210 B |
+| 6x (48 roles) | realistic | 41 952 ms | 27 646 B |
+| 6x (48 roles) | **duplicate** | **1 605 ms** | **517 429 B** |
+
+**26× faster at 6x, while returning 19× more data.** The mechanism explains it
+exactly. `bullet_overlap` and `shared_bullet_count` first try an exact
+normalized-set membership test, and only fall through to
+`SequenceMatcher` when that misses (`onboarding/experience_match.py:196-198`):
+
+```python
+if s in large_set or any(
+    SequenceMatcher(None, s, big).ratio() >= _FUZZY_BULLET_RATIO for big in large
+):
+```
+
+- **Duplicate corpus:** bullets are identical, so `s in large_set` **hits** and
+  the fuzzy loop never runs. Cheap.
+- **Ordinary corpus:** every bullet is distinct, so the set test **always misses**
+  and every comparison pays the full O(b²) fuzzy scan. Expensive.
+
+**The fast path only fires for the corpora that need the feature least.** A user
+whose corpus has no duplicates pays the maximum price to be told there are no
+duplicates — which is precisely O-4: 6.9 s to return an empty list.
+
+**Two distinct failure modes, previously conflated as one ledger item:**
+
+| | ordinary corpus | duplicate-heavy corpus |
+|---|---|---|
+| bottleneck | **server CPU** — fuzzy scan never short-circuits | **client render** — 517 KB payload, ~25000px DOM |
+| 6x cost | 42 s, 27 KB out | 1.6 s, 517 KB out |
+| who hits it | **every normal user, today** | users mid-import with unmerged roles |
+
+The original instrument measured the *second* mode and the ledger generalized it
+to a scaling problem. The first mode is the one the owner actually lives in, and
+it is worse.
+
 ### What is *not* a problem
 
 - **`applications` is clean** — flat 3 queries across an 12× range, 6 → 17.6 ms.
@@ -214,6 +260,42 @@ the synthetic curve understates, so the Tier 1 Compose numbers above are a
 - **Compose composition** is flat on queries (12 → 13) and grows with payload
   size, not query count. 214 KB at 48 roles is worth watching for render cost
   (Tier 2), but the server side is not the bottleneck.
+
+### O-6 — Tier 2: the render confirms both modes, and each is bad in its own way
+
+Browser tier (`scripts/bench_corpus_scale.py --render`, headless Chromium,
+1280×900, synchronized on the merge-suggestions response then two animation
+frames — **not** on `networkidle`, which goes quiet before `refreshCorpus()`'s
+fire-and-forget `refreshMergeSuggestions()` has even been issued).
+
+| point | profile | settle | `#mergeSuggestionsList` | cards | DOM nodes | document height |
+|---|---|---|---|---|---|---|
+| 1x | realistic | 1 740 ms | **0 px** | 0 | 868 | 1 378 px |
+| 1x | duplicate | 888 ms | 3 671 px | 28 | 1 092 | 5 147 px |
+| 6x | realistic | **47 613 ms** | 8 138 px | 62 | 2 384 | 12 254 px |
+| 6x | duplicate | 4 908 ms | **142 682 px** | **1 086** | 10 576 | **146 798 px** |
+
+**The two modes are confirmed as genuinely different failures:**
+
+- **Ordinary corpus → the user waits.** 6x realistic settles in **47.6 seconds**,
+  almost all of it the server's fuzzy scan (O-3's 42 s), for a panel showing 62
+  cards. The DOM is small. The wait is the defect.
+- **Duplicate-heavy corpus → the browser drowns.** 6x duplicate renders
+  **1 086 cards / 142 682 px** — a document **146 798 px** tall, ~163× the
+  viewport. The server was fast (4.9 s settle). The page is the defect.
+
+The original ~25000px measurement that motivated ledger item 10 was the second
+mode at 20 roles. At 48 roles the same mode reaches **142 682 px**, so the
+uncapped render is real and worse than first recorded — it was simply never the
+thing the owner was hitting.
+
+**Cross-reference to ledger item 2 (mode-C scroll flake):** that dossier
+established mode C as Chromium **scroll anchoring**, triggered when
+`window.scrollY` shifts by exactly the document's height growth, and attributed
+the growth to `#mergeSuggestionsList`. This table is the same growth measured at
+size — 142 682 px of it. The two items share a cause; **fixing the render cap
+would remove the flake's driver.** That is a hypothesis about the flake, not a
+result: no flake run was performed on this branch.
 
 ### The second finding — corpus list N+1
 
@@ -224,6 +306,54 @@ experience, lazily loaded. At current sizes the wall-clock impact is small
 same shape `list_applications` already fixed once with `selectinload`.
 
 ---
+
+## What this table concludes
+
+1. **Ledger item 10's framing was wrong, and the truth is worse.** It was filed
+   as a large-corpus scalability risk. `GET /corpus/merge-suggestions` costs
+   **6.9 s on the owner's real 8-role corpus** and returns an empty list. This is
+   a live defect at ordinary size, not a future scaling concern.
+2. **The expensive case is the ordinary corpus, not the duplicate-heavy one.**
+   The exact-match fast path short-circuits only when bullets repeat, so users
+   with no duplicates pay full price to learn they have none (O-5).
+3. **Bullet text length dominates at real scale.** 222-char real bullets versus
+   ~100-char synthetic explains a 10.7× cost gap under `SequenceMatcher`'s
+   O(L²) (O-4).
+4. **Two separate defects, previously one ledger item:** server-side fuzzy-scan
+   cost (ordinary corpora) and an uncapped client render (duplicate-heavy
+   corpora, 142 682 px at 48 roles).
+5. **`applications` is clean and Compose is adequate.** Flat query counts, no
+   regression in the earlier `1+2N → ~3` fix.
+6. **`corpus list` carries a latent ~2N+2 N+1** — 194 queries at 96 roles.
+   Not currently a cost problem (271 ms); the same shape already fixed once in
+   `list_applications`.
+
+## Filed, deliberately NOT built here
+
+Per the branch's scope, no optimization was implemented. Candidate directions,
+recorded so the fix branch starts from evidence rather than from scratch:
+
+- **Gate before scoring.** `score_experiences` computes `bullet_overlap`
+  unconditionally, *before* the company gate can reject the pair
+  (`onboarding/experience_match.py:219-232`). Company similarity is cheap;
+  bullet overlap is the quadratic term. Computing the gate first and
+  short-circuiting would skip the expensive term for pairs already destined for
+  DISTINCT. **Unverified — the saving depends on what fraction of pairs the gate
+  rejects, which this table does not measure.**
+- **Cap / paginate / virtualize the merge-suggestion render**, which also removes
+  the driver behind ledger item 2's scroll flake.
+- **`selectinload` the corpus-list titles/bullets**, closing the ~2N+2 N+1.
+
+**Any such change must be A/B'd against these numbers before it is trusted.** The
+prior branch on these same surfaces had a plausible fix refuted by direct
+measurement; `scripts/bench_corpus_scale.py` exists so the next one can be
+checked rather than assumed.
+
+## Still an [OWNER DECISION]
+
+This table does not set targets. Two questions it makes decidable but does not
+answer: what corpus size Sartor commits to supporting, and what latency is
+acceptable per surface at that size.
 
 ## Data handling
 
