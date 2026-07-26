@@ -515,7 +515,15 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **9** (**net −1** this entry — `fix/merge-suggestions-render-cap`,
+_Rendered open count: **8** (**net −1** this entry — `fix/ux-scroll-wizard-rail-flake`
+round 7, 2026-07-26: **RESOLVED item 2** (the mode-C scroll-anchoring flake) —
+`html, body { overflow-anchor: none; }` in `static/style.css`, A/B'd against the real
+target test (0/20 + 0/12 failures vs. control's 6/20 in the same session) after two prior
+JS-timing fix attempts (F-8) both failed. Full detail: O-19 in
+`docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md`; this item's own bullet above carries
+the resolution note. Re-counted the actual `- [ ] **` bullets rather than trusting
+arithmetic: 8, confirmed.
+Prior to that: **9** (**net −1** this entry — `fix/merge-suggestions-render-cap`,
 2026-07-25: **RESOLVED** the uncapped merge-suggestion render — capped
 `list_merge_suggestions` + `refreshMergeSuggestions` to paginate (default page size 25)
 instead of rendering every match in one pass, A/B'd against the committed O-6 baseline:
@@ -976,7 +984,7 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       needed; this item just hadn't been reconciled against reality. Retired from the open
       count, not from the historical record.
 
-- [ ] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
+- [x] **`test_corpus_reload_preserves_scroll_position` is a real ~10–20% flake — measured, NOT
       fixed** — `tests/ux/regression/test_20260708_busy_states_and_chip.py`. Fails as
       `scroll position not preserved: 369 -> 25423`, with **identical values every time** (a
       deterministic code path being hit, not random jitter). Note the tell: the test scrolls to
@@ -1249,6 +1257,25 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       list's height before its second-stage layout lands, so the document never grows above the
       anchor at all) is documented in the dossier's `## The fix` #2 for whoever picks this up
       next — owner direction required per AGENTS.md, same as before.
+      **→ RESOLVED, round 7 (2026-07-26, `fix/ux-scroll-wizard-rail-flake`).** Owner-directed
+      pickup after round 6's close-out. Both F-8 JS-timing attempts were dead ends (and a third,
+      paper-traced capture-timing variant would have regressed the existing "Loading… placeholder
+      shrink" protection via the ordinal most-recent-wins rule), so the candidate that landed was
+      the dossier's OWN never-executed round-5 pre-registration: `html, body { overflow-anchor:
+      none; }` (`static/style.css`), at the document/`body` scope rather than F-6's wrong subtree
+      (`.corpus-experience-list`, which O-12 already showed never grows). A/B against the REAL
+      target test, same session/machine: control **6/20 failed** (30%, same `dy≈dh` signature as
+      every prior round) vs. fix **0/20** (6-loader saturation) + **0/12** (unsaturated). One
+      full-suite failure on the fix tree (`test_scroll_spy_attributes_overlapping_refresh_corpus_calls`)
+      was directly attributed, not assumed benign: 8/8 isolated reruns passed on BOTH the fix and
+      the unfixed baseline, and a second full-suite run on the unfixed baseline ALSO produced
+      exactly one failure — a completely different, unrelated test
+      (`test_surgical_refinement_network_failure_surfaces_error_with_retry`) — confirming
+      pre-existing suite-level flakiness, not a regression from this change. Full record: O-19 in
+      `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md`. **Reserve-height (`## The fix` #2,
+      cited above as the untested candidate) was superseded, not attempted** — the document-level
+      `overflow-anchor: none` closed the defect first and is structurally simpler (one CSS
+      property, no JS timing at all).
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
