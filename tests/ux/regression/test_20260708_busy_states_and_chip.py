@@ -976,6 +976,250 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
 
 
 @pytest.mark.ux
+def test_merge_suggestions_append_with_no_preceding_shrink_shifts_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Round 6 arm B (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md O-16)
+    -- a MEASURING DEVICE, not an acceptance signal, same caveat as the
+    growth probe above.
+
+    Every prior probe (round 5 step 1, round 6 arm A above) clears
+    `#mergeSuggestionsList` to empty and re-renders the FULL set -- a
+    synthetic `-N` shrink immediately before the growth that the wild
+    failure never has (O-13 lists this as one of three untested candidate
+    discriminators). This probe never shrinks the list: page 1 renders once
+    (the FIRST-ever render of the section, same as the wild scenario), then
+    a real "Show more" click appends page 2 through the production
+    `_loadMergeSuggestionsPage` path (`app.js`, ledger item 11's pagination
+    fix) -- a pure growth event, nothing emptied first.
+    """
+    cid = seed_user(ux_app, "alice")
+    # 9 near-identical companies -> C(9,2)=36 pairs -> page 1 = 25 (the
+    # default MERGE_SUGGESTIONS_PAGE_SIZE), page 2 = 11. Same near-duplicate
+    # shape as the growth probe above, just enough companies to guarantee a
+    # second page exists.
+    for i in range(9):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    # Same chain-completion wait as the growth probe above -- see its own
+    # comment for why (_landingTab() can otherwise switch the tab back out
+    # from under this probe's click).
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(9, timeout=15_000)
+
+    # Wait for page 1's FIRST-ever render -- no clear, no shrink, unlike
+    # every prior probe.
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    more_btn = page.locator("#mergeSuggestionsMoreBtn")
+    expect(more_btn).to_be_visible(timeout=15_000)
+    page.wait_for_function(
+        """() => {
+             const h = document.documentElement.scrollHeight;
+             const stable = window.__probeLastH === h;
+             window.__probeLastH = h;
+             return stable;
+           }""",
+        timeout=15_000,
+    )
+
+    before, h_before = page.evaluate(
+        """() => {
+             window.scrollTo(0, 300);
+             const y = window.scrollY;
+             const h = document.documentElement.scrollHeight;
+             return [y, h];
+           }"""
+    )
+    assert before > 0, "probe setup didn't actually scroll the page"
+
+    # The append itself -- fires the real production onclick handler
+    # (app.js's `more.onclick`, the same "Show more" path a user's click
+    # would run) via page.evaluate rather than Playwright's Locator.click(),
+    # which auto-scrolls the target into view BEFORE clicking and would
+    # contaminate `dy` with a second, unrelated scroll source (confirmed:
+    # an earlier version of this probe using .click() measured dy=+2995 for
+    # dh=+1400, dy > dh, impossible under pure anchoring -- Playwright's
+    # own scroll-into-view was moving the page, not the app).
+    page.evaluate("() => document.getElementById('mergeSuggestionsMoreBtn').click()")
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount >= 36",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(200)
+
+    after = page.evaluate("() => window.scrollY")
+    h_after = page.evaluate("() => document.documentElement.scrollHeight")
+    dy, dh = after - before, h_after - h_before
+
+    if dy != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "arm-b-append-no-shrink", after, before)
+    # Guards the probe itself, same as the growth probe above -- a dy of 0
+    # proves nothing if the append didn't actually grow the page.
+    assert dh > 500, (
+        f"PROBE DID NOT ARM: expected the 'Show more' click to append page 2 "
+        f"(~11 cards) and grow the document meaningfully, got dh={dh:+} "
+        f"({h_before} -> {h_after}). A dy of {dy:+} here is meaningless -- "
+        f"fix the probe, do not read this as a result."
+    )
+    assert dy == 0, (
+        f"scroll-anchoring shift reproduced WITHOUT a preceding shrink: "
+        f"y {before} -> {after} (dy={dy:+}) while scrollHeight "
+        f"{h_before} -> {h_after} (dh={dh:+}); dy==dh is {dy == dh}. "
+        f"Arm B (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md, round 6) "
+        f"reproduces the shift -- the preceding shrink in prior probes was "
+        f"not required for anchoring to fire."
+    )
+
+
+@pytest.mark.ux
+def test_merge_suggestions_growth_during_active_restore_loop_shifts_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Round 6 arm C (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md O-17)
+    -- a MEASURING DEVICE, not an acceptance signal, same caveat as the
+    growth probe above.
+
+    Every prior probe calls `refreshMergeSuggestions()` standalone, so no
+    `_captureScrollY`/`_restoreScrollY` (app.js:5601-5630) settle loop is
+    ever running while the growth lands. In the wild failing run the
+    dossier captured, that rAF loop was still actively ticking around the
+    baseline moment (O-13's third listed candidate). This probe starts the
+    REAL production loop itself (`_captureScrollY()` + `_restoreScrollY()`,
+    called by name -- both are top-level function declarations, genuine
+    window globals) right before firing the merge-suggestions growth, so
+    the loop is genuinely active rather than never running at all.
+
+    Everything else matches round 5/6A's probe exactly (same clear-then-
+    full-regrow shape via `{ limit: 1000 }`, same ~25000px magnitude) --
+    single-variable arm: only "is the loop active" differs.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    # A small, deliberate delay on the SECOND merge-suggestions request (the
+    # probe's own triggered growth, not the initial page load) so its
+    # arrival reliably lands inside the loop's short active window (it exits
+    # after SCROLL_RESTORE_STABLE_TICKS=4 stable rAF ticks, ~64ms at 60fps,
+    # once nothing else is growing) rather than racing real fetch latency,
+    # which on this local threaded test server often beats that window.
+    # Test-side only, via Playwright route interception -- no production/
+    # Flask code touched. Counts requests so only the probe's own call (the
+    # second one) is delayed, not the initial page-load fetch.
+    request_count = {"n": 0}
+
+    def _delay_second_request(route):
+        request_count["n"] += 1
+        if request_count["n"] >= 2:
+            time.sleep(0.03)
+        route.continue_()
+
+    page.route("**/corpus/merge-suggestions*", _delay_second_request)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(20, timeout=15_000)
+
+    # Let the FIRST (undelayed) page-load render settle fully -- this test's
+    # variable is the SECOND, deliberately triggered growth below.
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_function(
+        """() => {
+             const h = document.documentElement.scrollHeight;
+             const stable = window.__probeLastH === h;
+             window.__probeLastH = h;
+             return stable;
+           }""",
+        timeout=15_000,
+    )
+    # Collapse back to empty, same synthetic step round 5/6A's probe uses --
+    # arm C's variable is the active loop, not the shrink (that's arm B,
+    # above); reusing the collapse keeps this single-variable against the
+    # ORIGINAL probe.
+    page.evaluate(
+        """() => {
+             const list = document.getElementById('mergeSuggestionsList');
+             const sec = document.getElementById('mergeSuggestionsSection');
+             while (list.firstChild) list.removeChild(list.firstChild);
+             sec.classList.add('hidden');
+           }"""
+    )
+    page.wait_for_timeout(150)
+
+    before, h_before = page.evaluate(
+        """() => {
+             window.scrollTo(0, 300);
+             const y = window.scrollY;
+             const h = document.documentElement.scrollHeight;
+             // Start the REAL production settle loop right before firing
+             // the (deliberately delayed) growth, so it is genuinely
+             // active/ticking when the merge-suggestions response lands.
+             const capture = _captureScrollY();
+             _restoreScrollY(capture);
+             refreshMergeSuggestions({ limit: 1000 });   // NOT awaited
+             return [y, h];
+           }"""
+    )
+    assert before > 0, "probe setup didn't actually scroll the page"
+
+    page.wait_for_function(
+        "() => (document.getElementById('mergeSuggestionsList') || {}).childElementCount > 0",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(300)  # comfortably past the loop's own settle window
+
+    after = page.evaluate("() => window.scrollY")
+    h_after = page.evaluate("() => document.documentElement.scrollHeight")
+    dy, dh = after - before, h_after - h_before
+
+    if dy != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "arm-c-active-restore-loop", after, before)
+    assert dh > 10_000, (
+        f"PROBE DID NOT ARM: expected the merge-suggestions re-render to grow "
+        f"the document by ~25000px, got dh={dh:+} ({h_before} -> {h_after}). "
+        f"A dy of {dy:+} here is meaningless -- fix the probe, do not read "
+        f"this as a result."
+    )
+    assert dy == 0, (
+        f"scroll-anchoring shift reproduced WITH an active _restoreScrollY "
+        f"loop: y {before} -> {after} (dy={dy:+}) while scrollHeight "
+        f"{h_before} -> {h_after} (dh={dh:+}); dy==dh is {dy == dh}. "
+        f"Arm C (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md, round 6) "
+        f"reproduces the shift -- an active settle loop does not prevent it."
+    )
+
+
+@pytest.mark.ux
 def test_restore_scroll_y_loses_to_post_restore_growth(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -1211,6 +1211,19 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       during the **next pre-release E2E** and confirm whether the behavior holds there — so any fix
       that eventually lands needs a real-app check, not only the pytest A/B. Do not close this item
       on a green suite alone.
+      **Round 6 arms B/C (2026-07-25/26, `chore/scroll-flake-round6-arms-bc`) — RUN, both
+      NEGATIVE.** The two remaining O-13 candidates, each tested singly: **B — no preceding
+      shrink** (the "Show more" pagination append from the item-above fix gave this a
+      production-faithful test that didn't exist when O-13 was written): 10/10 armed, 0/10
+      shifted. **C — an active `_restoreScrollY` settle loop**, confirmed genuinely active via a
+      captured timeline (not assumed — the loop had accumulated 3 stable ticks, one short of its
+      4-tick exit, when the growth landed, then correctly detected the change and forcibly held
+      `y` for 5 more ticks): 10/10 armed, 0/10 shifted. **All three round-6 candidates (timing,
+      shrink, active loop) are now exhausted — all negative.** Full write-up: O-16/O-17 in
+      `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md`. Per that dossier's own pre-registered
+      plan, the next step is capturing more wild failures (not a fourth synthetic arm) — **not
+      started**, left for explicit owner direction since it's open-ended scope, not bounded to
+      this branch. No fix attempted or landed; item stays open.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
