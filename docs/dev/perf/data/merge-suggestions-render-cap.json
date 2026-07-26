@@ -1,0 +1,26 @@
+[
+  {
+    "size": "6x",
+    "profile": "duplicate+render",
+    "shape": {
+      "experiences": 48,
+      "bullets": 732,
+      "applications": 120
+    },
+    "settle_ms": 2470.8,
+    "render": {
+      "mergeSuggestionsList": {
+        "scrollHeight": 3277,
+        "children": 25,
+        "nodes": 200
+      },
+      "corpusExperienceList": {
+        "scrollHeight": 3156,
+        "children": 48,
+        "nodes": 384
+      },
+      "documentNodes": 2089,
+      "documentScrollHeight": 7438
+    }
+  }
+]

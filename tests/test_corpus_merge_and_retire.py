@@ -260,6 +260,40 @@ class TestMergeSuggestions:
         assert r.status_code == 200
         assert client.get("/api/users/alice/corpus/merge-suggestions").get_json()["count"] == 0
 
+    def test_pagination_caps_page_and_reports_total(self, corpus_app):
+        """Ledger item 11: >page-size matches must be sliced, not all returned."""
+        from blueprints.corpus.curation import MERGE_SUGGESTIONS_PAGE_SIZE
+
+        cid = _seed_candidate()
+        n = 8  # C(8,2) = 28 pairs, comfortably over the default page size (25)
+        for i in range(n):
+            _seed_experience(
+                cid,
+                company=f"Company {i}",
+                start_date="2020-01",
+                end_date="2023-06",
+                official_title="Product Manager",
+                bullets=("Led roadmap for 3 products.", "Grew ARR 40%."),
+                display_order=i,
+            )
+        total_pairs = n * (n - 1) // 2
+        assert total_pairs > MERGE_SUGGESTIONS_PAGE_SIZE
+
+        client = corpus_app.test_client()
+        first = client.get("/api/users/alice/corpus/merge-suggestions").get_json()
+        assert first["total_count"] == total_pairs
+        assert first["count"] == MERGE_SUGGESTIONS_PAGE_SIZE
+        assert len(first["suggestions"]) == MERGE_SUGGESTIONS_PAGE_SIZE
+        assert first["has_more"] is True
+
+        second = client.get(
+            f"/api/users/alice/corpus/merge-suggestions?limit={MERGE_SUGGESTIONS_PAGE_SIZE}"
+            f"&offset={MERGE_SUGGESTIONS_PAGE_SIZE}"
+        ).get_json()
+        assert second["total_count"] == total_pairs
+        assert second["count"] == total_pairs - MERGE_SUGGESTIONS_PAGE_SIZE
+        assert second["has_more"] is False
+
 
 # --------------------------------------------------------------------------- #
 # Merge endpoint (P1)

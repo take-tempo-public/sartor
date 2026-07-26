@@ -515,15 +515,23 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **10** (**net −1** this entry — `fix/merge-suggestions-cost`,
+_Rendered open count: **9** (**net −1** this entry — `fix/merge-suggestions-render-cap`,
+2026-07-25: **RESOLVED** the uncapped merge-suggestion render — capped
+`list_merge_suggestions` + `refreshMergeSuggestions` to paginate (default page size 25)
+instead of rendering every match in one pass, A/B'd against the committed O-6 baseline:
+142 682px/1 086 cards → 3 277px/25 cards (43.5x), document 146 798px → 7 438px (19.7x).
+Full detail: `docs/dev/perf/MERGE_SUGGESTIONS_RENDER_CAP_2026-07-25.md`. Item 2's
+scroll-flake regression test (below) preserved via an explicit `{ limit }` override, not
+silently altered — confirmed still passing after the fix. Re-counted the actual
+`- [ ] **` bullets in this Open section rather than trusting arithmetic: 9, confirmed.
+Prior to that: **10** (**net −1** — `fix/merge-suggestions-cost`,
 2026-07-25: **RESOLVED** `GET /corpus/merge-suggestions` costs ~6.9s — measured the
 company-gate rejection fraction the prior branch left unverified (78.6% real / 94.5–100%
 synthetic), confirmed the filed "gate first" direction had real effect, built it, and A/B'd
 it against the committed baseline: 6930ms → 225ms real corpus (30.8x), 647ms/10.2s/42s →
 17ms/488ms/1.8s synthetic `realistic` at 8/24/48 experiences. Full detail:
 `docs/dev/perf/MERGE_SUGGESTIONS_FIX_2026-07-25.md`. Item 11 (uncapped client render)
-untouched, per the handoff's explicit scope boundary. Re-counted the actual `- [ ] **`
-bullets in this Open section rather than trusting arithmetic: 10, confirmed.
+untouched at the time, per that handoff's explicit scope boundary.
 **Back within the ~8–10 ceiling — the reduction sprint is no longer overdue, though still
 worth continuing.** Prior to that: **11** (**net +1** — `chore/large-corpus-re-observation`,
 2026-07-24: **RESOLVED the large-corpus scalability row** by doing the re-observation it
@@ -2188,26 +2196,6 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
       2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
 
-- [ ] **The merge-suggestion panel renders its entire suggestion set uncapped — 142 682px at 48
-      duplicate-heavy roles** — the **client-side** half of the split below. Measured 2026-07-24
-      (`chore/large-corpus-re-observation`, Tier 2, headless Chromium 1280×900); same doc + raw
-      data as the item above.
-      **Observed:** 6× duplicate-heavy profile renders **1 086 cards / 142 682px** in
-      `#mergeSuggestionsList`, producing a **146 798px document** — ~163× the viewport — with no
-      cap, pagination or virtualization. The server is fast in this mode (4.9s settle); the page
-      is the defect. The earlier ~25000px figure (from `fix/ux-scroll-wizard-rail-flake`, 20
-      seeded roles) was this same mode measured smaller.
-      **Why it is a SEPARATE item from the one above:** the two failure modes are disjoint and
-      have different fixes — an ordinary corpus makes the **user wait** (47.6s settle at 6×, tiny
-      DOM), a duplicate-heavy corpus makes the **browser drown** (fast server, enormous DOM). The
-      original single ledger row conflated them, which is precisely why the live 6.9s defect went
-      unnoticed.
-      **Interaction with the mode-C scroll flake (item above):** that dossier attributed mode C's
-      document growth to `#mergeSuggestionsList`, and this is that growth measured at size, so
-      capping the render would remove the flake's driver. **That is a hypothesis about the flake —
-      no flake run was performed on the measuring branch.**
-      _(discovered: v1.1.0 stream, 2026-07-24, `chore/large-corpus-re-observation`.)_
-
 #### Resolved
 
 - [x] **`GET /corpus/merge-suggestions` costs ~6.9s on an ORDINARY 8-role corpus and returns
@@ -2240,6 +2228,36 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       addressed here per the handoff's explicit scope boundary.
       **Item 11 (uncapped client render) is untouched** — separate row, disjoint failure mode,
       per the handoff's explicit instruction not to fold it in.
+      **−1 to the open count.**
+
+- [x] **The merge-suggestion panel rendered its entire suggestion set uncapped — 142 682px at 48
+      duplicate-heavy roles — RESOLVED** on `fix/merge-suggestions-render-cap`, 2026-07-25. Was:
+      filed 2026-07-24 (`chore/large-corpus-re-observation`, Tier 2, headless Chromium 1280×900)
+      as the client-side half of the split above — 6× duplicate-heavy profile rendered
+      **1 086 cards / 142 682px** in `#mergeSuggestionsList`, a **146 798px document** (~163× the
+      viewport), with no cap, pagination or virtualization; the server was fast in this mode
+      (4.9s settle), the page was the defect.
+      **Fix shipped:** `list_merge_suggestions` (`blueprints/corpus/curation.py`) now accepts
+      `limit`/`offset` (default page size 25) and returns `total_count` + `has_more`;
+      `refreshMergeSuggestions` (`static/app.js`) renders one page at a time through the existing
+      per-card render path and appends a "Show more" control, instead of appending every match in
+      one synchronous DOM pass. Pinned by a regression test that fails on HEAD and passes after
+      the change (`tests/ux/regression/test_20260725_merge_suggestions_render_cap.py`).
+      **A/B'd against the committed O-6 baseline**
+      (`docs/dev/perf/MERGE_SUGGESTIONS_RENDER_CAP_2026-07-25.md`): 6× duplicate-heavy —
+      `#mergeSuggestionsList` 142 682px/1 086 cards → 3 277px/25 cards (43.5x); document
+      146 798px → 7 438px (19.7x); settle 4 908ms → 2 471ms.
+      **Item 2 (mode-C scroll flake) coverage preserved, not silently altered:** the one existing
+      regression test tied to this render path
+      (`test_merge_suggestions_growth_shifts_scroll_deterministically`, a C-7 instrument for the
+      still-open item below) depends on a single `refreshMergeSuggestions()` call rendering its
+      whole ~190-pair fixture to reproduce that flake's timing. Rather than let the cap silently
+      break that probe, `refreshMergeSuggestions()` gained an explicit `{ limit }` override —
+      production call sites omit it (capped default), the probe test passes it explicitly — so
+      the probe's single-call, full-growth timing model is unchanged. Confirmed by running that
+      test after the fix: still passes, both parametrized arms.
+      **Does not attempt to fix item 2** — whether capping the render by default also removes the
+      flake's real-world driver remains a hypothesis (per O-6's own framing), untested here.
       **−1 to the open count.**
 
 - [x] **Large-corpus scalability — RE-OBSERVED and split into the two items above (2026-07-24,
