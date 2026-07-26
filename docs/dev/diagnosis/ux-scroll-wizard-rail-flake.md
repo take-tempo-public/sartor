@@ -1,6 +1,6 @@
 # Diagnosis — scroll-flake "mode C": wizard-rail smooth-scroll corrupts an unrelated later baseline
 
-> **Status: no fix. Read O-9/O-10/O-11 before anything else here.**
+> **Status: no fix. Read O-9/O-10/O-11 AND O-18 before anything else here.**
 >
 > **What is observed:** when the corpus list's second-stage layout lands,
 > `window.scrollY` shifts by **exactly** the document's height growth —
@@ -17,15 +17,32 @@
 > (O-13, 0 shifts in 4 armed runs). Growth-in-the-window is necessary, not
 > sufficient. **No fix can be honestly measured until this is closed.**
 >
-> **Five framings are dead — do not rebuild on any of them:**
-> `prefers-reduced-motion` (**F-3**, made the real test worse), a
-> second/late `_wizardRender()` call (**F-4**, 6/6 runs show exactly one,
-> always early), the max-scroll clamp (**F-5**, an artifact of the
-> isolated instrument's 1206px page), list-scoped `overflow-anchor: none`
-> (**F-6**, refuted against its own pre-registered prediction, reverted),
-> and — note this one — **the wizard rail itself** (**F-7**: the
-> `300 -> 369` signature this branch is named after is a `+69`/`+69`
-> height-tracking shift, not a scroll to `#panelJD`).
+> **Round 6, all three synthetic arms NEGATIVE — two fresh wild captures
+> (O-18) pinned the actual mechanism — then TWO fix attempts built on that
+> mechanism, BOTH FALSIFIED (F-8).** Timing (arm A, O-14), no preceding
+> shrink (arm B, O-16), and an active `_restoreScrollY` settle loop (arm C,
+> O-17) were each tested singly and refuted (0/31 armed runs combined
+> shifted). Capturing more wild failures (O-18) then showed the precise
+> mechanism: `refreshCorpus()`'s fire-and-forget `refreshMergeSuggestions()`
+> call straggles past its own cycle's exit and lands unprotected. **Both
+> attempts to fix that (F-8) made the REAL target test WORSE, not better —
+> attempt 2's own measurement: 4 failures in 10 unsaturated runs (40%),
+> worse than the original ~1-in-6 rate UNDER saturation.** Both reverted in
+> full. **No fix has landed on this defect, ever, on any branch.**
+>
+> **Six framings are dead — do not rebuild on any of them without a NEW
+> mechanism:** `prefers-reduced-motion` (**F-3**, made the real test
+> worse), a second/late `_wizardRender()` call (**F-4**, 6/6 runs show
+> exactly one, always early), the max-scroll clamp (**F-5**, an artifact of
+> the isolated instrument's 1206px page), list-scoped `overflow-anchor:
+> none` (**F-6**, refuted against its own pre-registered prediction,
+> reverted), the wizard rail itself (**F-7**: the `300 -> 369` signature
+> this branch is named after is a `+69`/`+69` height-tracking shift, not a
+> scroll to `#panelJD`), and — the newest, read it in full before
+> attempting anything here — **protecting `refreshMergeSuggestions()`'s own
+> growth, however placed** (**F-8**: closes the straggler window O-18
+> found, but widens the overlapping-invocation window instead — a
+> genuinely harder problem, not a smaller version of the same one).
 >
 > **The branch name and this file's title are historical, not
 > descriptive.** Every framing that died here was born on an isolated
@@ -533,6 +550,182 @@ reported all three attempts, so the fail-fail-fail was visible. Had it been
 fail-fail-pass it would have surfaced as a bare `PASSED` with no traceback —
 the exact masking charter C-7 warns about.
 
+### O-16 — round 6 arm B (no preceding shrink): NEGATIVE
+
+**Branch:** `chore/scroll-flake-round6-arms-bc` (investigation only, not
+`fix/*` — no fix attempted here). Every prior probe (round 5 step 1, round 6
+arm A) clears `#mergeSuggestionsList` to empty and re-renders the full set
+before measuring — a synthetic `-N` shrink immediately before the growth
+that the wild failure never has (one of O-13's three untested candidate
+discriminators). `fix/merge-suggestions-render-cap` (ledger item 11, landed
+the same session, unrelated to this investigation) incidentally gave this
+arm a production-faithful way to test it that didn't exist when O-13 was
+written: `refreshMergeSuggestions()` now paginates, so a "Show more" click
+appends a second page through the real `_loadMergeSuggestionsPage` path —
+pure growth, nothing ever cleared.
+
+Instrument: `test_merge_suggestions_append_with_no_preceding_shrink_shifts_scroll`
+(same file as the round 5/6A probe). Seeds 9 near-identical companies
+(C(9,2)=36 pairs → page 1 = 25, page 2 = 11), lets page 1 render for the
+FIRST time (no prior clear), sets a `scrollTo(0,300)` baseline, then fires
+the "Show more" click via `page.evaluate(...).click()` — not Playwright's
+`Locator.click()`, which auto-scrolls its target into view before clicking
+and was caught contaminating an early version of this probe (`dy=+2995` for
+`dh=+1400`, `dy > dh` — impossible under pure anchoring, so the extra
+movement had to be Playwright's own scroll-into-view, not the app).
+
+Representative armed run (forced dump, `SCROLL_SPY_ALWAYS=1`):
+
+```
+t=1250.5  h=4864              height-change  (page 1 settled: 25 cards)
+t=1365.2  y=300               window.scrollTo [0,300]  (this probe's baseline)
+t=1440.6  y=300  h=4864->6264 height-change delta=+1400  (page 2 append, 11 cards)
+```
+
+`before=300`, `after=300`, `dh=+1400`. **Result: 10/10 runs armed
+(`dh` a real, non-trivial page-2 growth every time), 0/10 shifted.** No
+`window.scrollTo` or `scroll-event` appears between the baseline and the
+growth in the captured timeline — nothing corrected anything; the shift
+simply didn't occur. A preceding shrink is not required for anchoring to
+fire in general (O-9's `dy==dh` relation is a real browser mechanism), but
+its ABSENCE does not cause it to fire here either. Arm B is refuted as the
+selector.
+
+### O-17 — round 6 arm C (active `_restoreScrollY` settle loop): NEGATIVE, loop confirmed genuinely active
+
+**Branch:** `chore/scroll-flake-round6-arms-bc`, same session as O-16.
+Every prior probe calls `refreshMergeSuggestions()` standalone, so no
+`_captureScrollY`/`_restoreScrollY` (`app.js:5601-5630`) settle loop is ever
+running while growth lands — O-13 lists the wild failure's active loop as
+its third untested candidate.
+
+Instrument: `test_merge_suggestions_growth_during_active_restore_loop_shifts_scroll`
+(same file). Otherwise identical to round 5/6A's probe (clear-then-full-
+regrow via `refreshMergeSuggestions({ limit: 1000 })`, same ~25000px
+magnitude — single-variable arm) except: a Playwright route handler delays
+the probe's own merge-suggestions request by 30ms (test-side only, no
+production code touched, and only the SECOND request — the initial page
+load is undelayed), and the baseline-setting `page.evaluate` calls the real
+`_captureScrollY()` + `_restoreScrollY()` (top-level function declarations,
+genuine `window` globals) immediately before firing the growth, so the loop
+is actually running rather than assumed to be.
+
+**The loop's activity is confirmed by direct instrumentation, not assumed**
+(forced dump, `SCROLL_SPY_ALWAYS=1`, one representative run — `t` values
+relative to page load):
+
+```
+t=1523.6  ordinal=2 scrollGen=2   _captureScrollY          (probe's baseline capture)
+t=1531.7                          _restoreScrollY-fired    (loop starts)
+t=1531.8  y=300  h=2170           window.scrollTo [0,300]  (tick 1, height unchanged)
+t=1586.5  y=300  h=2170           window.scrollTo [0,300]  (tick 2, still unchanged)
+t=1670.3  y=300  h=2170           window.scrollTo [0,300]  (tick 3, still unchanged -- ONE tick from the 4-stable exit)
+t=1786.4  y=300  h=2170->27224    height-change delta=+25054   <- growth lands mid-loop
+t=1786.6  y=300  h=27224          window.scrollTo [0,300]  (tick continues -- detected the change, reset stableTicks)
+t=1841.3  y=300  h=27224          window.scrollTo [0,300]
+t=1885.8  y=300  h=27224          window.scrollTo [0,300]
+t=1927.8  y=300  h=27224          window.scrollTo [0,300]
+t=1957.2  y=300  h=27224          window.scrollTo [0,300]
+```
+
+Three consecutive stable ticks (`h=2170` unchanged) had already accumulated
+when the delayed growth landed — one tick short of `SCROLL_RESTORE_STABLE_TICKS`
+(4) exiting the loop. `ordinal`/`scrollGen` still matched (nothing had
+invalidated the capture), so the loop correctly detected `currentHeight !==
+lastHeight`, reset `stableTicks`, and kept forcibly re-applying
+`scrollTo(0,300)` for five more ticks after the growth — and `y` held at
+300 throughout, in every one of those post-growth ticks.
+
+**Result: 10/10 runs armed (`dh` a real ~25000px growth every time), 0/10
+shifted.** An active settle loop does not fail to catch the shift in this
+timing configuration — on this evidence it successfully counteracts it.
+Arm C is refuted as the selector, and refuted with unusually direct
+supporting evidence (the loop's activity is measured, not inferred).
+
+### O-18 — two fresh wild captures pin the mechanism precisely: a naked fire-and-forget straggler from an EARLIER cycle
+
+**Branch:** `chore/scroll-flake-round6-arms-bc`. With all three round-6 arms
+negative, per this file's `## Falsification` plan the next move is capturing
+more wild failures with the existing instrumentation. Ran the REAL
+`test_corpus_reload_preserves_scroll_position` repeatedly under CPU
+saturation (`reference-cpu-saturation-flake-repro`). **First calibration (10
+loaders on 8 cores, ~1.6x oversubscription, the established technique's own
+number) produced 2 failures in 9 runs — both the pre-existing, unrelated
+`#panelCorpus` visibility timeout (O-8), zero mode-C captures.** That
+oversubscription level starves the whole tab-switch before mode-C's own
+narrower window matters, drowning the signal in unrelated noise. **Dialing
+back to 6 loaders (0.75x cores) fixed this**: 14 runs, 0 `#panelCorpus`
+timeouts, **2 genuine `300 -> 369` mode-C captures** (runs 11 and 13),
+reproducing the ORIGINAL signature this dossier is named after.
+
+Both captures show the **identical mechanism**, precisely:
+
+```
+run 11:                                              run 13:
+t=1533.9  refreshCorpus-enter id=1                   t=1343.2  refreshCorpus-enter id=1
+t=1537.4  _captureScrollY (ordinal=1, scrollGen=1)   t=1347.8  _captureScrollY (ordinal=1, scrollGen=1)
+t=1840.9  _restoreScrollY-scheduled (id=1)           t=1699.1  _restoreScrollY-scheduled (id=1)
+t=1865.4  refreshCorpus-exit id=1                    t=1721.9  refreshCorpus-exit id=1
+  ... id=1's tick() loop runs, ties to ordinal=1/scrollGen=1 ...
+t=2001.1  window.scrollTo [0,300]  <- TEST's OWN     t=1744.5  window.scrollTo [0,300]  <- TEST's OWN
+          baseline (via app.js's own wrapped                   baseline -- increments _scrollInterruptGen
+          window.scrollTo, so THIS increments                  to 2, invalidating id=1's loop (its
+          _scrollInterruptGen too -- id=1's loop's             scrollGen=1 no longer matches) even
+          scrollGen=1 stops matching from here on)              though id=1 already exited anyway
+t=2223.1  height-change delta=+69 (h 2101->2170)     (no separate height-change LOGGED here --
+          scroll-event y=369 -- SILENT relative to            see instrument note below)
+          any app-driven scrollTo
+t=2237.1  refreshCorpus-enter id=2 (TEST's own       t=1841    refreshCorpus-enter id=2 (TEST's own
+          2nd call)                                            2nd call)
+t=2237.4  _captureScrollY reads y=369 h=2170         t=1852.7  _captureScrollY reads y=369 h=2170
+          (ordinal=2, scrollGen=2) -- ALREADY                  (ordinal=2, scrollGen=2) -- ALREADY
+          CORRUPTED, id=2 has no way to know                   CORRUPTED
+          300 was ever the real baseline
+```
+
+**Instrument note (run 13):** no independent `height-change` spy entry was
+logged for the `2101 -> 2170` transition — the rAF-polling height-attribution
+watcher's own next tick was overtaken by id=2's OWN immediate corpus-list
+clear (`2170 -> 959`, part of its normal re-render) before it could sample
+the intermediate value. This is a **blind spot in the polling instrument,
+not evidence against `dy==dh`** — `_captureScrollY()`'s own synchronous read
+at `id=2`'s entry independently pairs `h=2170` with `y=369` at the exact
+same instant, from a completely different code path than the poller,
+confirming the relation via a second, independent measurement.
+
+**What id=1's straggler actually is.** `refreshCorpus()`
+(`app.js:3600-3659`) fires `refreshMergeSuggestions()` **fire-and-forget**
+at line 3657 — **before** its own final `_restoreScrollY(_scrollY)` call at
+line 3658 — so the function returns (`refreshCorpus-exit`) while
+`refreshMergeSuggestions()`'s fetch is still resolving in the background.
+`refreshMergeSuggestions()` itself has **no capture/restore call of its
+own** (confirmed directly reading `app.js` this session). In both captures,
+that orphaned fetch resolves and grows the document (the `+69` step is its
+FIRST DOM-visible tick, matching O-9's established scale-independence of
+`dy==dh`) in the specific gap between the test's own baseline read and the
+test's own SEPARATE, later `refreshCorpus()` call (id=2) — after id=1's own
+loop has already exited AND been invalidated by the test's own baseline
+`scrollTo` call. **Nothing is protecting this window because nothing owns
+it**: id=1's cycle has already fully ended, id=2's cycle hasn't started, and
+`refreshMergeSuggestions()` was never anyone's responsibility to protect in
+the first place.
+
+**Why none of arms A/B/C reproduced this:** all three deliberately trigger
+growth SYNCHRONOUSLY, in a single controlled `page.evaluate()`, as part of
+the SAME cycle whose timing the probe controls. The wild failure's growth is
+a **residual straggler from an EARLIER, already-exited cycle** (id=1), whose
+landing time relative to the test's own subsequent actions is governed by
+browser fetch/microtask scheduling under load — not by anything the test
+(or any prior probe) directly controls. This is a fourth, previously
+untested shape, not a re-run of A, B, or C.
+
+**Still not explained:** why this lands in the vulnerable gap only
+sometimes (~1-in-6) rather than every run — that depends on exact
+straggler-fetch timing relative to the test's own two `refreshCorpus()`
+calls, which two wild captures is too small a sample to characterize
+further. But WHAT the straggler is and WHERE it lands is now precise, not
+inferred.
+
 **Disposition (owner-decided, 2026-07-24):** marked `xfail(strict=False)`
 citing O-15 + F-7 — the same treatment its sibling got for F-4, and for the
 same underlying reason: both wizard-render instruments assert properties of a
@@ -625,6 +818,61 @@ height-tracking shift, and O-5 shows no wizard render fires anywhere near
 it. **The wizard rail is not implicated in mode C at all** — the branch
 name and this dossier's title are now historical, not descriptive.
 
+**F-8 — "protecting `refreshMergeSuggestions()`'s own growth (either via an
+independent capture placed right before its DOM mutation, or via awaiting
+it inside `refreshCorpus()` and passing the parent's own capture down)
+fixes mode C, with no regression."** Two attempts, both on
+`fix/ux-scroll-wizard-rail-flake` (renamed from
+`chore/scroll-flake-round6-arms-bc` once O-18 made a fix candidate
+concrete), both built on the mechanism O-18 correctly identified, both
+falsified by running the REAL target test repeatedly — not by inspection,
+not by a single green run:
+
+- **Attempt 1 — independent capture, placed right before the DOM mutation
+  inside `_loadMergeSuggestionsPage`, after its own fetch resolves.**
+  Passed its own narrow falsification test (a standalone-call scenario) and
+  an initial sanity run of the real target test. Broke on the FULL suite:
+  3 tests failed, including the target test itself. Root cause, traced via
+  a clean isolated timing probe: when this function is called from WITHIN
+  an already-open `refreshCorpus()` cycle and its fetch happens to resolve
+  QUICKLY (while that cycle's own `_renderCorpusList()` clear/rebuild is
+  still mid-flight), the new capture reads a TRANSIENT, mid-mutation
+  `scrollY` — and because `_captureScrollY`/`_restoreScrollY` let only the
+  MOST RECENT capture's restore ever apply (correct, load-bearing behavior
+  for the legitimate "a newer action supersedes a stale one" case —
+  `test_restore_scroll_y_ordinal_defers_to_newer_capture` — this is NOT a
+  bug to "fix away"), that wrong, transient capture silently outranked and
+  defeated its own parent's correct one.
+- **Attempt 2 — refreshCorpus() awaits refreshMergeSuggestions() and passes
+  its own capture down explicitly (`opts._parentCapture`), so the nested
+  call reuses the parent's already-known-correct target instead of
+  re-sampling `window.scrollY`.** This DID fix attempt 1's specific
+  regression — all 3 previously-broken tests passed again, repeatedly. But
+  it introduced a DIFFERENT, worse problem: awaiting merge-suggestions
+  makes each `refreshCorpus()` cycle take substantially longer to fully
+  exit (a full extra network round-trip), which widens the window during
+  which a SECOND action (a fresh `refreshCorpus()` call, an explicit
+  baseline `scrollTo`) can land while the FIRST cycle is still active —
+  observed directly: `openRC: [1, 2]` in a captured failure, meaning id=1
+  had not yet exited when the test's own id=2 began, and the test's own
+  baseline read itself came back already corrupted (`369`, not the `300` it
+  had just set). **Measured on the REAL target test, no CPU saturation at
+  all: 4 failures in 10 runs (40%)** — categorically worse than the
+  original defect's ~1-in-6 rate **under** saturation. This is not a
+  tradeoff worth taking; it does not net-improve reliability, it shifts
+  which race fires and makes the shifted one more frequent.
+
+**Both attempts reverted in full** (`git checkout HEAD --
+static/app.js tests/...` back to the O-18 commit) before this branch's
+close-out. **Do not rebuild on either shape without a new mechanism for the
+overlap problem attempt 2 exposed** — any future fix that makes a
+`refreshCorpus()` cycle take meaningfully longer needs to also address (or
+measure it does not worsen) the overlapping-invocation window, not just the
+straggler-past-exit window O-18 originally found. A fix that only reasons
+about ONE cycle in isolation, ignoring what a SECOND, concurrent cycle
+might observe mid-flight, is exactly the class of mistake both attempts
+made.
+
 ---
 
 ## Inferred
@@ -643,15 +891,25 @@ chase, and no residual `300 -> 369` flake should be expected to survive a
 correct anchoring fix.
 
 **What selects the ~1-in-6 runs where anchoring actually fires** is the
-central open question after O-10, and nothing observed so far constrains
-it. In 4 of 6 control runs the identical `+25054` growth landed in the
-identical window and `y` did not move. Candidate discriminators, NONE
-tested: which element the viewport has locked as its anchor at that
-instant; whether the growth is above or below that anchor; whether a
-scroll (the wizard's, or the baseline's own) is still settling when the
-growth commits. **Do not build a fix on any of these until one is
-observed** — that is the exact mistake F-3, F-5 and F-6 each already made
-on this branch.
+central open question after O-10, and O-18's two wild captures don't
+resolve it either — they establish WHAT the corrupting event is (a naked
+`refreshMergeSuggestions()` fire-and-forget straggler, O-18) and WHERE it
+lands (the gap between the test's own baseline and its own later
+`refreshCorpus()` call), but not WHY it lands there only sometimes. That
+depends on the straggler fetch's exact timing relative to the test's two
+`refreshCorpus()` calls, which two captures can't characterize — it would
+need many more wild captures specifically timing the straggler's arrival,
+which is out of scope for what this branch set out to do (capture ENOUGH to
+discriminate the mechanism, not fully characterize its trigger rate).
+
+**Two speculative ideas from O-13's own list remain literally untested**
+("which element the viewport has locked as its anchor at that instant";
+"whether the growth is above or below that anchor"), but O-18 makes them
+lower priority now: the mechanism is precise enough to reason about a fix
+directly (see `## The fix`, candidate #3) rather than needing a fourth
+synthetic arm first. **Do not build a fix without A/B'ing it against the
+real test** — that is the exact mistake F-3, F-5 and F-6 each already made
+on this branch, and O-18 being precise doesn't exempt a fix from that bar.
 
 ---
 
@@ -695,25 +953,40 @@ trap is the whole reason round 5 was ordered this way.
 singly, via a `settled`/`tight` parametrization of the probe. 11 armed
 runs, `dy = 0` in all of them. Timing is not the selector.
 
-**Round 6 arms B and C, NOT yet run.** The remaining two candidates from
-O-13's list, still to be tested **one at a time**:
+**Round 6 arms B and C (RUN — both NEGATIVE, this is O-16/O-17).** The
+remaining two candidates from O-13's list, tested **one at a time** on
+`chore/scroll-flake-round6-arms-bc`:
 
-- **B — no preceding shrink.** The probe empties the list (a `-25054`
-  shrink) right before the test; the wild failure has no such shrink. A
-  shrink plausibly resets Chromium's anchor selection. Testing this needs
-  a way to grow the section without first collapsing it (e.g. render half
-  the suggestions, then the rest).
-- **C — an active `_restoreScrollY` settle loop.** In the wild failure
-  that rAF loop was still ticking around the baseline; in the probe it
-  stopped long before.
+- **B — no preceding shrink.** Tested via `fix/merge-suggestions-render-cap`'s
+  (ledger item 11, incidental) pagination "Show more" append — a pure
+  growth with no clear beforehand, unlike every prior probe. **10/10 armed,
+  0/10 shifted (O-16).** Refuted.
+- **C — an active `_restoreScrollY` settle loop.** Tested by starting the
+  real production loop directly and confirming via captured timeline that
+  it was genuinely still ticking (3 stable ticks accumulated, one short of
+  the 4-tick exit) when the growth landed. **10/10 armed, 0/10 shifted
+  (O-17).** Refuted — and refuted with direct evidence the loop was active,
+  not an assumption.
 
-If B and C both come back negative, the candidate list is exhausted and
-the next move is **not** a fourth guess: go back to capturing more wild
-failures with the existing instrumentation (which now records height
-attribution, `_wizardRender` invocations, and the full scroll timeline)
-and let a second captured failure discriminate. One failing run is a thin
-base for a selector hypothesis, and this branch has repeatedly paid for
-theorizing past its evidence — F-3, F-5, F-6.
+**All three candidates from O-13's list (timing/arm A, no-shrink/arm B,
+active-loop/arm C) are now exhausted — all negative.** Per this section's
+own pre-registered plan, the next move was **not** a fourth guess: go back
+to capturing more wild failures with the existing instrumentation. **RUN
+(this is O-18).** CPU-saturation wild-capture (`chore/scroll-flake-round6-arms-bc`,
+same branch) at the established 10-loader/8-core calibration produced only
+the pre-existing unrelated `#panelCorpus` timeout (O-8) — that
+oversubscription level is too harsh for THIS test's setup phase, drowning
+mode-C signal in unrelated noise. Recalibrated to 6 loaders (0.75x cores):
+14 runs, **2 genuine mode-C captures**, both showing the identical precise
+mechanism (O-18) — a naked `refreshMergeSuggestions()` fire-and-forget
+straggler from an earlier, already-exited `refreshCorpus()` cycle. Two
+captures pin WHAT and WHERE; WHY it's only ~1-in-6 remains open and was
+deliberately not pursued further this branch (would need many more
+captures purely to characterize a trigger rate, not to identify a fixable
+mechanism — diminishing return once the mechanism itself is precise).
+**A fix candidate is now well-targeted (see `## The fix` #3), but not
+attempted here** — left for explicit owner direction before implementing,
+per this branch's own scope (investigation, not `fix/*`).
 
 **Superseded — round 5's original two-step text follows for the record.**
 Two things must happen, in this order, and the first is not optional:
@@ -765,24 +1038,36 @@ rounded rate alone.
 
 ## The fix
 
-**Not yet found — but the mechanism is now directly observed (O-6) rather
-than inferred.** Do not build on the reduced-motion framing (F-3), the
-second-render/late-render framing (F-4), or the clamp framing (F-5).
+**Not yet found — no fix has landed on any branch.** Two attempts based on
+option #3 below were built, tested against the real target test, and
+BOTH FALSIFIED (F-8) — see that entry for the full data. The mechanism is
+precise (O-18), but precision did not make the fix easy: attempt 2 measured
+4/10 failures with NO saturation, worse than the ~1-in-6 rate the original
+defect shows UNDER saturation. Do not build on the reduced-motion framing
+(F-3), the second-render/late-render framing (F-4), the clamp framing
+(F-5), or either shape of option #3 below without a mechanism for the
+overlapping-invocation problem F-8 exposed.
 
-Candidate shapes, in order of how surgical they are — **only #1 has been
-tested (and REFUTED as placed, F-6); the rest are candidates, not
-findings:**
+Candidate shapes, in order of how surgical they seemed BEFORE F-8 —
+**#1 and #3 have both been tried and REFUTED; #2 is the only genuinely
+untested candidate remaining:**
 
 1. ~~`overflow-anchor: none` on the corpus list container.~~ **TRIED,
    FALSIFIED (O-11/F-6), reverted.** The document/`body`-level placement
-   is untested and is round 5's first arm.
-2. Reserve the list's height before the cards' second-stage layout lands,
-   so the document does not grow above the anchor at all.
-3. Extend the `_scrollInterruptGen` / capture-restore protection
-   (`app.js:5538-5576`) to cover the currently-unprotected window O-6
-   identifies (between an external baseline read and `refreshCorpus`'s own
-   capture). This is the alternative hint the prior round recorded; note
-   it treats the symptom's blast radius rather than the growth itself.
+   is untested.
+2. **Untested.** Reserve the list's height before the cards' second-stage
+   layout lands, so the document does not grow above the anchor at all —
+   this is the only remaining candidate from the original list that has
+   never been attempted.
+3. ~~Protect `refreshMergeSuggestions()`'s own growth (independent capture
+   right before its mutation, OR await + pass the parent's capture down).~~
+   **TRIED (both shapes), FALSIFIED (F-8), both reverted in full.** O-18
+   correctly identified the naked fire-and-forget call as the mechanism;
+   protecting it turned out to require reasoning about MULTIPLE concurrent
+   `refreshCorpus()` cycles at once, not just the one that spawned the
+   straggler — see F-8 for exactly how each attempt failed and what a
+   correct fix would need to additionally handle (the overlapping-
+   invocation window, not just the straggler-past-exit window).
 
 **Test-side, and separable from the app fix (O-7):** the test's
 `to_have_count(20)` settle gate proves attachment, not layout. A gate that
