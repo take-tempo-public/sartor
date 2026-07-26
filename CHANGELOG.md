@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: corpus-reload scroll flake, mode C — Chromium scroll anchoring (`fix/ux-scroll-wizard-rail-flake`, round 7)
+
+Resolves carry-forward ledger item 2. `test_corpus_reload_preserves_scroll_position`
+flaked ~1-in-6 (worse under CPU load) because Chromium's scroll anchoring
+silently shifted `window.scrollY` by exactly the document's height growth
+whenever `#mergeSuggestionsList` grew late — outside the app's own
+`_captureScrollY`/`_restoreScrollY` protection window
+(`docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md` O-9/O-12/O-18). Two
+JS-timing fix attempts on prior rounds (F-8) both made the real target test
+worse. The fix that landed: `html, body { overflow-anchor: none; }`
+(`static/style.css`) — the same CSS property round 4 tried, but at the
+document/`body` scope rather than `.corpus-experience-list` (an element
+that never grows). A/B'd against the real target test, same session: fix
+0/20 (6-loader saturation) + 0/12 (unsaturated) vs. control 6/20 in the
+same session. Full record: O-19 in the dossier above. No new dependency.
+
 ### Fixed: merge-suggestions render cap — paginate instead of rendering every match (`fix/merge-suggestions-render-cap`)
 
 Resolves carry-forward ledger item 11. `GET /corpus/merge-suggestions`
