@@ -1221,9 +1221,22 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `y` for 5 more ticks): 10/10 armed, 0/10 shifted. **All three round-6 candidates (timing,
       shrink, active loop) are now exhausted — all negative.** Full write-up: O-16/O-17 in
       `docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md`. Per that dossier's own pre-registered
-      plan, the next step is capturing more wild failures (not a fourth synthetic arm) — **not
-      started**, left for explicit owner direction since it's open-ended scope, not bounded to
-      this branch. No fix attempted or landed; item stays open.
+      plan, the next step was capturing more wild failures (not a fourth synthetic arm).
+      **RUN, same branch, same session — 2 genuine mode-C captures pin the mechanism (O-18).**
+      CPU-saturation wild-capture at the established 10-loader/8-core calibration produced only
+      the pre-existing unrelated `#panelCorpus` timeout (O-8) in 9 runs — too harsh for this
+      test's setup phase, drowning signal in noise. Recalibrated to 6 loaders: 14 runs, 2 genuine
+      `300 -> 369` captures, both showing the IDENTICAL mechanism: `refreshCorpus()`'s
+      fire-and-forget `refreshMergeSuggestions()` call (no capture/restore of its own) from an
+      earlier, already-exited `refreshCorpus()` cycle straggles late and lands unprotected between
+      an external baseline read and a separate, later `refreshCorpus()` call — a shape none of
+      arms A/B/C tested (all three trigger growth synchronously, in the same cycle as the
+      baseline). What selects the ~1-in-6 runs remains open (straggler-fetch timing under load),
+      but WHAT the straggler is and WHERE it lands is now precise, not inferred. **A fix candidate
+      is now well-targeted** (protect `refreshMergeSuggestions()`'s own growth — either await it
+      inside `refreshCorpus()` or give it independent capture/restore — see the dossier's
+      `## The fix` #3), **but not attempted here**, per this branch's own scope (investigation,
+      not `fix/*`) — left for explicit owner direction.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
