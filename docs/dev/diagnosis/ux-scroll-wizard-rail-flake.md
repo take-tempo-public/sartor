@@ -17,30 +17,32 @@
 > (O-13, 0 shifts in 4 armed runs). Growth-in-the-window is necessary, not
 > sufficient. **No fix can be honestly measured until this is closed.**
 >
-> **Round 6, all three synthetic arms NEGATIVE — then two fresh wild
-> captures (O-18) pinned the actual mechanism.** Timing (arm A, O-14),
-> no preceding shrink (arm B, O-16), and an active `_restoreScrollY` settle
-> loop (arm C, O-17) were each tested singly and refuted (0/31 armed runs
-> combined shifted). Per this file's own plan, the next move was capturing
-> more wild failures — two captures (O-18) both show the SAME precise
-> mechanism: `refreshCorpus()`'s **fire-and-forget** `refreshMergeSuggestions()`
-> call (no capture/restore of its own) from an EARLIER, already-exited
-> `refreshCorpus()` cycle straggles late and lands, unprotected, in the gap
-> between an external baseline read and a SEPARATE, later `refreshCorpus()`
-> call — a shape none of the three synthetic arms tested (they all trigger
-> growth synchronously, in the SAME cycle the baseline belongs to). **What
-> selects the ~1-in-6 runs is still open** (straggler-fetch timing under
-> load), but WHAT the straggler is and WHERE it lands is now precise.
+> **Round 6, all three synthetic arms NEGATIVE — two fresh wild captures
+> (O-18) pinned the actual mechanism — then TWO fix attempts built on that
+> mechanism, BOTH FALSIFIED (F-8).** Timing (arm A, O-14), no preceding
+> shrink (arm B, O-16), and an active `_restoreScrollY` settle loop (arm C,
+> O-17) were each tested singly and refuted (0/31 armed runs combined
+> shifted). Capturing more wild failures (O-18) then showed the precise
+> mechanism: `refreshCorpus()`'s fire-and-forget `refreshMergeSuggestions()`
+> call straggles past its own cycle's exit and lands unprotected. **Both
+> attempts to fix that (F-8) made the REAL target test WORSE, not better —
+> attempt 2's own measurement: 4 failures in 10 unsaturated runs (40%),
+> worse than the original ~1-in-6 rate UNDER saturation.** Both reverted in
+> full. **No fix has landed on this defect, ever, on any branch.**
 >
-> **Five framings are dead — do not rebuild on any of them:**
-> `prefers-reduced-motion` (**F-3**, made the real test worse), a
-> second/late `_wizardRender()` call (**F-4**, 6/6 runs show exactly one,
-> always early), the max-scroll clamp (**F-5**, an artifact of the
-> isolated instrument's 1206px page), list-scoped `overflow-anchor: none`
-> (**F-6**, refuted against its own pre-registered prediction, reverted),
-> and — note this one — **the wizard rail itself** (**F-7**: the
-> `300 -> 369` signature this branch is named after is a `+69`/`+69`
-> height-tracking shift, not a scroll to `#panelJD`).
+> **Six framings are dead — do not rebuild on any of them without a NEW
+> mechanism:** `prefers-reduced-motion` (**F-3**, made the real test
+> worse), a second/late `_wizardRender()` call (**F-4**, 6/6 runs show
+> exactly one, always early), the max-scroll clamp (**F-5**, an artifact of
+> the isolated instrument's 1206px page), list-scoped `overflow-anchor:
+> none` (**F-6**, refuted against its own pre-registered prediction,
+> reverted), the wizard rail itself (**F-7**: the `300 -> 369` signature
+> this branch is named after is a `+69`/`+69` height-tracking shift, not a
+> scroll to `#panelJD`), and — the newest, read it in full before
+> attempting anything here — **protecting `refreshMergeSuggestions()`'s own
+> growth, however placed** (**F-8**: closes the straggler window O-18
+> found, but widens the overlapping-invocation window instead — a
+> genuinely harder problem, not a smaller version of the same one).
 >
 > **The branch name and this file's title are historical, not
 > descriptive.** Every framing that died here was born on an isolated
@@ -816,6 +818,61 @@ height-tracking shift, and O-5 shows no wizard render fires anywhere near
 it. **The wizard rail is not implicated in mode C at all** — the branch
 name and this dossier's title are now historical, not descriptive.
 
+**F-8 — "protecting `refreshMergeSuggestions()`'s own growth (either via an
+independent capture placed right before its DOM mutation, or via awaiting
+it inside `refreshCorpus()` and passing the parent's own capture down)
+fixes mode C, with no regression."** Two attempts, both on
+`fix/ux-scroll-wizard-rail-flake` (renamed from
+`chore/scroll-flake-round6-arms-bc` once O-18 made a fix candidate
+concrete), both built on the mechanism O-18 correctly identified, both
+falsified by running the REAL target test repeatedly — not by inspection,
+not by a single green run:
+
+- **Attempt 1 — independent capture, placed right before the DOM mutation
+  inside `_loadMergeSuggestionsPage`, after its own fetch resolves.**
+  Passed its own narrow falsification test (a standalone-call scenario) and
+  an initial sanity run of the real target test. Broke on the FULL suite:
+  3 tests failed, including the target test itself. Root cause, traced via
+  a clean isolated timing probe: when this function is called from WITHIN
+  an already-open `refreshCorpus()` cycle and its fetch happens to resolve
+  QUICKLY (while that cycle's own `_renderCorpusList()` clear/rebuild is
+  still mid-flight), the new capture reads a TRANSIENT, mid-mutation
+  `scrollY` — and because `_captureScrollY`/`_restoreScrollY` let only the
+  MOST RECENT capture's restore ever apply (correct, load-bearing behavior
+  for the legitimate "a newer action supersedes a stale one" case —
+  `test_restore_scroll_y_ordinal_defers_to_newer_capture` — this is NOT a
+  bug to "fix away"), that wrong, transient capture silently outranked and
+  defeated its own parent's correct one.
+- **Attempt 2 — refreshCorpus() awaits refreshMergeSuggestions() and passes
+  its own capture down explicitly (`opts._parentCapture`), so the nested
+  call reuses the parent's already-known-correct target instead of
+  re-sampling `window.scrollY`.** This DID fix attempt 1's specific
+  regression — all 3 previously-broken tests passed again, repeatedly. But
+  it introduced a DIFFERENT, worse problem: awaiting merge-suggestions
+  makes each `refreshCorpus()` cycle take substantially longer to fully
+  exit (a full extra network round-trip), which widens the window during
+  which a SECOND action (a fresh `refreshCorpus()` call, an explicit
+  baseline `scrollTo`) can land while the FIRST cycle is still active —
+  observed directly: `openRC: [1, 2]` in a captured failure, meaning id=1
+  had not yet exited when the test's own id=2 began, and the test's own
+  baseline read itself came back already corrupted (`369`, not the `300` it
+  had just set). **Measured on the REAL target test, no CPU saturation at
+  all: 4 failures in 10 runs (40%)** — categorically worse than the
+  original defect's ~1-in-6 rate **under** saturation. This is not a
+  tradeoff worth taking; it does not net-improve reliability, it shifts
+  which race fires and makes the shifted one more frequent.
+
+**Both attempts reverted in full** (`git checkout HEAD --
+static/app.js tests/...` back to the O-18 commit) before this branch's
+close-out. **Do not rebuild on either shape without a new mechanism for the
+overlap problem attempt 2 exposed** — any future fix that makes a
+`refreshCorpus()` cycle take meaningfully longer needs to also address (or
+measure it does not worsen) the overlapping-invocation window, not just the
+straggler-past-exit window O-18 originally found. A fix that only reasons
+about ONE cycle in isolation, ignoring what a SECOND, concurrent cycle
+might observe mid-flight, is exactly the class of mistake both attempts
+made.
+
 ---
 
 ## Inferred
@@ -981,40 +1038,36 @@ rounded rate alone.
 
 ## The fix
 
-**Not yet found — no fix has been attempted or landed on any branch.** The
-mechanism is now precise (O-18), not merely observed at a distance (O-6).
-Do not build on the reduced-motion framing (F-3), the second-render/late-
-render framing (F-4), or the clamp framing (F-5).
+**Not yet found — no fix has landed on any branch.** Two attempts based on
+option #3 below were built, tested against the real target test, and
+BOTH FALSIFIED (F-8) — see that entry for the full data. The mechanism is
+precise (O-18), but precision did not make the fix easy: attempt 2 measured
+4/10 failures with NO saturation, worse than the ~1-in-6 rate the original
+defect shows UNDER saturation. Do not build on the reduced-motion framing
+(F-3), the second-render/late-render framing (F-4), the clamp framing
+(F-5), or either shape of option #3 below without a mechanism for the
+overlapping-invocation problem F-8 exposed.
 
-Candidate shapes, in order of how surgical they are — **only #1 has been
-tested (and REFUTED as placed, F-6); the rest are candidates, not
-findings:**
+Candidate shapes, in order of how surgical they seemed BEFORE F-8 —
+**#1 and #3 have both been tried and REFUTED; #2 is the only genuinely
+untested candidate remaining:**
 
 1. ~~`overflow-anchor: none` on the corpus list container.~~ **TRIED,
    FALSIFIED (O-11/F-6), reverted.** The document/`body`-level placement
    is untested.
-2. Reserve the list's height before the cards' second-stage layout lands,
-   so the document does not grow above the anchor at all.
-3. **Now well-targeted by O-18, not just a hint.** O-18 identifies the
-   specific naked call: `refreshCorpus()` (`app.js:3657`) fires
-   `refreshMergeSuggestions()` fire-and-forget, and `refreshMergeSuggestions()`
-   has no `_captureScrollY`/`_restoreScrollY` (`app.js:5601-5630`) of its
-   own — so its growth is unprotected whenever it straggles past its
-   parent cycle's exit. Two candidate shapes within this option, NEITHER
-   tested yet: (a) `await refreshMergeSuggestions()` inside `refreshCorpus()`
-   before its own final restore, so the growth always lands before the
-   protecting `_restoreScrollY` call rather than after; or (b) give
-   `refreshMergeSuggestions()` its own independent capture/restore pair, so
-   it's protected regardless of which cycle (or none) invoked it — closer
-   to extending `_scrollInterruptGen`'s coverage generally, per the prior
-   round's original framing of this candidate. (a) is more surgical but
-   changes `refreshCorpus()`'s own completion timing (currently fire-and-
-   forget by design, for a reason not investigated here); (b) is more
-   general but adds a second protected region to reason about. **Either
-   needs its own C-7 falsification test and A/B against the real target
-   test before landing** — O-18 pinning the mechanism does not exempt a fix
-   from that bar (F-3/F-5/F-6 already show plausible-and-wrong is the
-   default outcome of skipping it).
+2. **Untested.** Reserve the list's height before the cards' second-stage
+   layout lands, so the document does not grow above the anchor at all —
+   this is the only remaining candidate from the original list that has
+   never been attempted.
+3. ~~Protect `refreshMergeSuggestions()`'s own growth (independent capture
+   right before its mutation, OR await + pass the parent's capture down).~~
+   **TRIED (both shapes), FALSIFIED (F-8), both reverted in full.** O-18
+   correctly identified the naked fire-and-forget call as the mechanism;
+   protecting it turned out to require reasoning about MULTIPLE concurrent
+   `refreshCorpus()` cycles at once, not just the one that spawned the
+   straggler — see F-8 for exactly how each attempt failed and what a
+   correct fix would need to additionally handle (the overlapping-
+   invocation window, not just the straggler-past-exit window).
 
 **Test-side, and separable from the app fix (O-7):** the test's
 `to_have_count(20)` settle gate proves attachment, not layout. A gate that

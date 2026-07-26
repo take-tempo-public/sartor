@@ -1232,11 +1232,23 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       an external baseline read and a separate, later `refreshCorpus()` call — a shape none of
       arms A/B/C tested (all three trigger growth synchronously, in the same cycle as the
       baseline). What selects the ~1-in-6 runs remains open (straggler-fetch timing under load),
-      but WHAT the straggler is and WHERE it lands is now precise, not inferred. **A fix candidate
-      is now well-targeted** (protect `refreshMergeSuggestions()`'s own growth — either await it
-      inside `refreshCorpus()` or give it independent capture/restore — see the dossier's
-      `## The fix` #3), **but not attempted here**, per this branch's own scope (investigation,
-      not `fix/*`) — left for explicit owner direction.
+      but WHAT the straggler is and WHERE it lands is now precise, not inferred.
+      **Two fix attempts followed, same branch (renamed to `fix/ux-scroll-wizard-rail-flake`),
+      same session — BOTH FALSIFIED (F-8), not landed.** Attempt 1 (independent capture right
+      before the DOM mutation) broke 3 previously-passing tests: a nested capture, when
+      `refreshMergeSuggestions()`'s fetch resolves while its PARENT `refreshCorpus()` cycle is
+      still mid-render, can read a transient value and illegitimately outrank its own parent's
+      correct one. Attempt 2 (await + pass the parent's own capture down) fixed that regression
+      cleanly, but made each `refreshCorpus()` cycle take measurably longer to exit — widening a
+      DIFFERENT window where a second, concurrent cycle can now more easily overlap the first.
+      Measured directly against the real target test: **4 failures in 10 runs with NO CPU
+      saturation (40%)** — worse than the original defect's ~1-in-6 rate **under** saturation.
+      Both attempts fully reverted (`git checkout HEAD --` back to the O-18 commit) before this
+      branch's close-out; full data in the dossier's F-8 entry. **No fix has landed on this
+      defect, on any branch, ever.** The one candidate shape never yet attempted (reserve the
+      list's height before its second-stage layout lands, so the document never grows above the
+      anchor at all) is documented in the dossier's `## The fix` #2 for whoever picks this up
+      next — owner direction required per AGENTS.md, same as before.
 
 - [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
