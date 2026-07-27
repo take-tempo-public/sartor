@@ -26,15 +26,18 @@ import pytest
 
 
 @pytest.fixture
-def bridge_app(tmp_path, monkeypatch):
+def bridge_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh DB + temp config dir, matching the
-    established corpus-route fixture pattern (tests/test_pending_review_routes.py)."""
-    db_file = tmp_path / "bridge.sqlite"
-    import db.session as db_session_mod
+    established corpus-route fixture pattern (tests/test_pending_review_routes.py).
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="bridge.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -43,7 +46,7 @@ def bridge_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return app
 
 
