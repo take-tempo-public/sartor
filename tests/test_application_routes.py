@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.fixture
-def app_app(tmp_path, monkeypatch):
+def app_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3f).
 
     The application routes moved to blueprints/applications.py and read
@@ -15,17 +15,18 @@ def app_app(tmp_path, monkeypatch):
     Returns a namespace exposing the factory app + Config paths (bodies keep using
     `app_app.app` / `.OUTPUT_DIR`) plus a context-pushing wrapper around the moved
     `_find_context_path_for_run` helper (it now reads current_app).
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
     """
     import types
 
     import blueprints.applications as applications_bp_mod
+    from tests.conftest import _fresh_migrated_db
 
-    db_file = tmp_path / "apps.sqlite"
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="apps.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -36,7 +37,7 @@ def app_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     def _find_context_path_for_run(safe_user, application_run_id):
         with app.app_context():

@@ -23,7 +23,7 @@ import pytest
 
 
 @pytest.fixture
-def preview_app(tmp_path, monkeypatch):
+def preview_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
 
     The preview routes moved to blueprints/templates.py and read
@@ -32,16 +32,17 @@ def preview_app(tmp_path, monkeypatch):
     stays. Returns a namespace exposing the factory app + Config-derived paths so
     the existing test bodies keep referencing `preview_app.app` / `.OUTPUT_DIR` /
     `.CONFIGS_DIR` unchanged.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
     """
     import types
 
-    db_file = tmp_path / "preview.sqlite"
+    from tests.conftest import _fresh_migrated_db
 
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="preview.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -52,7 +53,7 @@ def preview_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     # Materialize the bundled Classic HTML + CSS in the temp dir so the
     # fallback path works. Mirror the real classic.html + classic.css

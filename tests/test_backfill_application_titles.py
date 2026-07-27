@@ -24,18 +24,14 @@ import pytest
 
 
 @pytest.fixture
-def backfill_db(tmp_path, monkeypatch):
-    db_file = tmp_path / "backfill_titles.sqlite"
-    import db.session as db_session_mod
+def backfill_db(tmp_path, monkeypatch, _migrated_template_db):
+    """PX-44 rollout (`test/fixture-scoping-rollout`): seeded via a copy of
+    the session-scoped migrated template instead of a per-test alembic run."""
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
-
-    from db.session import init_db
-
-    init_db(db_file)
-    return db_file
+    return _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="backfill_titles.sqlite"
+    )
 
 
 def _seed_application(candidate_id, *, title, jd_text):

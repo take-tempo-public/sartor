@@ -18,7 +18,7 @@ import pytest
 
 
 @pytest.fixture
-def resolver_app(tmp_path, monkeypatch):
+def resolver_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
 
     `_resolve_default_persona_template_path` moved to blueprints/templates.py and
@@ -27,16 +27,19 @@ def resolver_app(tmp_path, monkeypatch):
     called inside an app context (the namespace's wrapper). The migration-seeded
     bundled rows (incl. Classic Single-Column) are present so the Phase β.1
     resolver has a real DB to query.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` (a copy of the migrated template) instead of a
+    per-test alembic run — the copy carries the same bundled-row seed data
+    `_migrated_template_db` itself asserts (`bundled_count == 4`).
     """
     import types
 
-    db_file = tmp_path / "resolver.sqlite"
+    from tests.conftest import _fresh_migrated_db
 
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="resolver.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -47,7 +50,7 @@ def resolver_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     # The seed migration inserted DB rows pointing at personas/bundled/*.docx, but
     # the actual files don't exist in this tmp_path. _resolve_persona_template_path

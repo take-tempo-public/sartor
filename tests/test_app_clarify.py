@@ -371,19 +371,21 @@ class TestAnswerClarificationsRoute:
 
 
 @pytest.fixture
-def memory_client(tmp_path, monkeypatch):
+def memory_client(tmp_path, monkeypatch, _migrated_template_db):
     """app_client variant with a real temp DB so the memory write path can
     resolve context.application_run_id → run → application → candidate.
 
     The DB-path monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate
     seam — only the app-global path monkeypatch retires with the factory.
-    """
-    db_file = tmp_path / "memory.sqlite"
-    import db.session as db_session_mod
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="memory.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -398,7 +400,7 @@ def memory_client(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     from db.models import Application, ApplicationRun, Candidate
     from db.session import get_session

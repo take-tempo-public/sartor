@@ -31,14 +31,17 @@ import pytest
 
 
 @pytest.fixture
-def spec_app(tmp_path, monkeypatch):
-    """Factory app on a fresh sqlite DB + temp config dir."""
-    import db.session as db_session_mod
+def spec_app(tmp_path, monkeypatch, _migrated_template_db):
+    """Factory app on a fresh sqlite DB + temp config dir.
 
-    db_file = tmp_path / "openapi.sqlite"
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="openapi.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -50,7 +53,7 @@ def spec_app(tmp_path, monkeypatch):
     # "{}" file reads as falsy — write a non-empty config, as `create_user`
     # (the real write path) always would.
     (cfg.configs_dir / "alice.config").write_text('{"name": "Alice Test"}', encoding="utf-8")
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return app
 
 

@@ -1958,6 +1958,22 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `scripts/export_corpus_seed.py`, not the thin `testuser` fixture. **Still "remain," not
       "fully landed"** — unblocked and scoped, but the measurement itself was not executed on
       this docs-only branch. Full requirement detail: `RELEASE_ARC.md` step 12.
+      **→ Landed (2026-07-27, `test/fixture-scoping-rollout`): PX-44's refactor half is now
+      FULLY LANDED** — the 46-file fixture-scoping rollout (owner-directed this session).
+      Re-derived the target list fresh (44 files matched the pilot's mechanical shape),
+      factored the pilot's hand-duplicated copy/monkeypatch/register block into one shared
+      `_fresh_migrated_db` helper (`tests/conftest.py`) instead of duplicating it 44 more
+      times, found and excluded one new case mid-rollout (`test_bundled_templates.py` tests
+      `init_db()`'s own migration behavior, same rationale as the already-excluded
+      `test_db_session.py`), and gave `test_context_write_races.py::races_app` a dedicated
+      before/after flake-rate check (15 runs each side, 0/30 failures both ways) before
+      converting it. Batched verification: every batch's pass count identical forward,
+      reversed, and cross-batch-interleaved. Full fast-lane chunked run: 2055 passed/1
+      skipped/1 failed — the 1 failure is this branch's own file-touch volume crossing the
+      wiki-freshness gate's 75-file threshold, not a functional regression (resolved at
+      close-out via `/wiki-self-update`, not a rollout defect). Full detail:
+      `docs/dev/perf/TEST_SUITE_PERFORMANCE.md` "Rollout result" section.
+      **Corrected count: 11 of 13 fully landed, 2 remain:** PX-39, PX-46.
 
 - [x] **`docs/governance/enforcement.md` (and several memory files) cite "charter W-1"
       (the parallel-session working model) as an established governance clause — it does

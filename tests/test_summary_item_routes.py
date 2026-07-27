@@ -18,7 +18,7 @@ import pytest
 
 
 @pytest.fixture
-def summary_app(tmp_path, monkeypatch):
+def summary_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh DB + temp config dir (Sprint 8.3d).
 
     The summary routes moved to blueprints/corpus and read current_app.config[...]
@@ -26,14 +26,15 @@ def summary_app(tmp_path, monkeypatch):
     reload + monkeypatch-the-globals pattern. Provisioning now threads configs_dir
     through web_infra, so the corpus_import.CONFIGS_DIR monkeypatch is gone. The
     DB-path monkeypatch stays (distinct seam).
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
     """
-    db_file = tmp_path / "summary.sqlite"
+    from tests.conftest import _fresh_migrated_db
 
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="summary.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -44,7 +45,7 @@ def summary_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return app
 
 

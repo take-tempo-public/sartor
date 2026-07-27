@@ -198,18 +198,97 @@ processes were present for the second run — so they're recorded for
 completeness, not cited as evidence; the controlled two-file + decomposed
 numbers above are the actual timing evidence.)
 
-**Go/no-go on the 46-file rollout: evidence-based, not decided here.** The
-mechanism is proven safe and drop-in (no test-body changes) and removes
-essentially all of the `init_db` cost. But the decomposition reveals the
-`create_app` cost (0.108 s/test, unaffected by this mechanism) would become
-the new dominant per-test cost once `init_db` is no longer the bottleneck —
-so a full rollout's realistic ceiling is closer to the `init_db` slice's
-share of the ~0.12 s/test average, not the whole average. The 46-file
-rollout was deliberately **out of this branch's scope** (owner decision,
-2026-07-21: pilot only, then decide) and is the natural next PX-44 follow-on,
-with this pilot's numbers as its starting evidence rather than a projection.
-`personas-500` and the rest of `tests/ux/` remain out of scope either way
-(already isolated, already outside the fast lane).
+**Go/no-go on the full rollout: landed, not deferred.** The pilot's
+mechanism proved safe and drop-in; the rollout below is the follow-on that
+executed on it. `personas-500` and the rest of `tests/ux/` stayed out of
+scope either way (already isolated, already outside the fast lane).
+
+---
+
+## Rollout result (PX-44, `test/fixture-scoping-rollout`, 2026-07-27)
+
+**Owner-directed follow-on to the pilot above.** Re-derived the target list
+fresh rather than trusting the pilot's 2026-07-11 counts (already 5 days
+stale by pilot time, more by rollout time): `grep -l 'create_app(\|init_db('
+tests/*.py` gave a 51-file union; after removing the 2 already-converted
+pilot files, 44 files matched the pilot's mechanical fixture shape.
+
+**Shared helper, not 44 more hand-duplications.** The pilot's two fixtures
+each inlined the same ~6-line copy/monkeypatch/register block. Continuing
+that pattern 44 more times would mean one future change to `db/session.py`'s
+internals needing 46 synchronized edits instead of one. Factored it into
+`_fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, *,
+filename=...)` in `tests/conftest.py`, next to `_migrated_template_db`. Each
+target file keeps its own uniquely-named local fixture, which now calls the
+helper as its first step — interface and test bodies unchanged, only the
+internal DB-setup lines differ.
+
+**Excluded, with reasons found by reading each file (not assumed from the
+mechanical grep match):**
+- `tests/test_bundled_templates.py::TestSeedMigration` — directly tests
+  `init_db()`'s own migration behavior (asserts a fresh migration settles at
+  exactly 4 bundled rows, and a second call is idempotent). Converting it
+  would test the copy mechanism instead of `init_db` itself — discovered
+  mid-rollout, not anticipated in the pilot's own scoping.
+- `tests/test_db_session.py::TestInitDb` — same rationale, already excluded
+  at pilot time.
+- `tests/test_packaging.py` — `create_app(Config())` with no `tmp_path`
+  override; tests default path resolution, not DB behavior.
+- `tests/test_migrations_data_safety.py` — hand-built historical schemas via
+  raw DDL + `alembic.command.stamp/upgrade/downgrade`; never goes through
+  `init_db()`/`create_app()` at all.
+- Several individual fixtures across otherwise-converted files never touched
+  the DB at all (no `init_db()` call, no `DEFAULT_DB_PATH` monkeypatch) —
+  `test_app_clarify.py::app_client`, `test_app_iterate_clarify.py`'s only
+  fixture, `test_assistant_route.py`'s only fixture,
+  `test_app_security.py::app_module`/`config_route_app`,
+  `test_users_routes.py::users_app`. Converting these would add DB-copy
+  machinery with no cost to remove — left as-is.
+
+**Special-case scrutiny, not blanket conversion:**
+- `tests/test_app_security.py::config_route_db_app` — the one DB-touching
+  fixture in that file; converted normally.
+- `tests/test_context_write_races.py::races_app` — races two concurrent HTTP
+  requests against the same DB file mid-request. The copy mechanism only
+  changes how the file reached alembic head, not the concurrency shape (one
+  process-global engine, one file, two threads) — but this needed evidence,
+  not an assumption. Ran the file's 2 tests 15x in a loop before conversion
+  and 15x after: **0/30 failures both ways**, flake rate unchanged. Converted.
+
+**This rollout's own timing evidence** (not re-citing the pilot's numbers as
+if they were this session's — re-measured fresh, idle machine, same machine
+as the pilot):
+
+| Measurement | Median | N |
+|---|---|---|
+| Bare `init_db(fresh_tmp)` | 84.4 ms | 8 |
+| `shutil.copy2(template, fresh_tmp)` | 1.0 ms | 8 |
+| Reduction | 98.8% | — |
+
+Consistent with the pilot's own ~99% figure (different machine load at
+measurement time explains the absolute-ms difference from the pilot's
+138 ms/1.5 ms).
+
+**Verification, batched (11/13/9/11-file groups, one commit per batch):**
+each batch run forward and in explicit reversed file order; each batch also
+run together with the immediately-preceding batch as a cross-batch
+interaction check. All batches: pass counts identical across every ordering
+— 191/191 (batch A), 248/248 ×2 + 439/439 (A+B), 90/90 ×2 + 338/338 (B+C),
+164/164 ×2 + 254/254 (C+D).
+
+**Full fast-lane check, chunked (3 file-list groups, never one `pytest
+tests/` call, per the ~13-minute full-gate / 5–10-minute agent-command-kill
+constraint this rollout doubles as partial mitigation for — ledger item
+#1):** **2055 passed, 1 skipped, 1 failed.** The 1 failure
+(`test_wiki_freshness_gate.py::test_this_repos_wiki_is_fresh_enough_to_merge`)
+is this branch's own file-touch volume (46 test files + this doc) pushing
+the repo's wiki-freshness count from 38 (on `main`, passing) to 83 files
+changed since the last `/wiki-ingest` checkpoint — past the 75-file
+merge-blocking threshold. Not a functional regression in this mechanism;
+resolving it is a separate `/wiki-self-update` (or owner override) step at
+close-out, not a rollout defect. `ruff check` and `mypy` both clean;
+`ruff format --check` flagged 3 files this rollout's own edits left
+unformatted, fixed in place.
 
 ---
 
@@ -217,6 +296,11 @@ with this pilot's numbers as its starting evidence rather than a projection.
 
 | Claim | Source |
 |---|---|
+| Rollout target-list derivation (44 mechanical + 2 special-case files) | `grep -l 'create_app(\|init_db(' tests/*.py`, run fresh on `test/fixture-scoping-rollout`, 2026-07-27 |
+| Rollout init_db/copy2 timing | inline Python microbenchmark against `db.session.init_db`/`shutil.copy2`, idle machine, N=8, 2026-07-27, this branch |
+| Rollout batched verification counts | pytest runs on `test/fixture-scoping-rollout`, per-batch + cross-batch, 2026-07-27 |
+| races_app flake-rate check (0/30 before, 0/30 after) | `pytest tests/test_context_write_races.py` × 15 runs each side, 2026-07-27, this branch |
+| Full fast-lane chunked result (2055/1/1) + wiki-freshness gate root cause | `pytest tests/ -m "not ux and not slow"` in 3 file-list chunks; `python scripts/wiki_freshness.py` + `git diff --name-only <last_ingest_sha> main/HEAD`, 2026-07-27, this branch |
 | Idle fast/full/slow timings | `docs/dev/reviews/2026-07-efficiency/verification-log.md`, "Addendum — idle fast-lane re-measurement (F-tci-01)" |
 | CONTRIBUTING.md double-run bug | `docs/dev/reviews/2026-07-efficiency/verification-log.md` F-tci-01; `pyproject.toml` `[tool.pytest.ini_options]` `addopts` (no default marker filter) |
 | Fixture-scoping static counts | `grep -rl "create_app("/"init_db(" tests/*.py`, `grep -rn "@pytest.fixture" tests/*.py \| grep -o 'scope="..."'`, run against this branch's working tree, 2026-07-11 |

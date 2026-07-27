@@ -145,7 +145,7 @@ class TestCritiqueProposalHelper:
 
 
 @pytest.fixture
-def b4_app(tmp_path, monkeypatch):
+def b4_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app (CORPUS_BACKED=1) on a fresh DB path (Sprint 8.3d).
 
     The proposal critique/decide/promote routes moved to
@@ -154,14 +154,16 @@ def b4_app(tmp_path, monkeypatch):
     monkeypatch-the-globals pattern. Returns the Flask app; tests seed the DB
     directly via _seed_b4 against the same tmp_path/"b4.sqlite". The DB-path
     monkeypatch stays.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run. `_seed_b4`'s own
+    `init_db(db_path)` call (below) now hits the pre-registered path and just
+    returns False — cheap, unchanged behavior.
     """
     monkeypatch.setenv("CORPUS_BACKED", "1")
-    db_file = tmp_path / "b4.sqlite"
-    import db.session as db_session_mod
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="b4.sqlite")
 
     from app import create_app
     from config import Config

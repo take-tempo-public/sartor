@@ -20,16 +20,18 @@ import pytest
 
 
 @pytest.fixture
-def career_asset_app(tmp_path, monkeypatch):
+def career_asset_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh DB + temp config dir, mirroring skill_app
-    in test_skill_corpus_item_routes.py (same seam: blueprints/corpus)."""
-    db_file = tmp_path / "career_assets.sqlite"
+    in test_skill_corpus_item_routes.py (same seam: blueprints/corpus).
 
-    import db.session as db_session_mod
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="career_assets.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -39,7 +41,7 @@ def career_asset_app(tmp_path, monkeypatch):
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return app
 
 

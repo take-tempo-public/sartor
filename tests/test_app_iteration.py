@@ -17,9 +17,12 @@ import blueprints.generation as bgen
 
 
 @pytest.fixture
-def app_client(tmp_path, monkeypatch):
+def app_client(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built Flask test client with config paths under tmp_path and the
     LLM/document-generation calls stubbed on the generation blueprint.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of implicit first-route init_db().
 
     The generate/save-edits routes live on `blueprints/generation.py` (Sprint
     8.3c), so paths come from `Config(base_dir=tmp_path)` (no app-global
@@ -29,11 +32,9 @@ def app_client(tmp_path, monkeypatch):
     seam. Seeds an iteration-0 context for /alice/ that mirrors what /api/analyze
     would have written. Tests exercise routes without any real LLM call.
     """
-    import db.session as db_session
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
-    db_session._engine = None
-    db_session._SessionLocal = None
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="test.sqlite")
 
     from app import create_app
     from config import Config

@@ -153,16 +153,21 @@ class TestConfigRouteContainment:
 
 
 @pytest.fixture
-def config_route_db_app(tmp_path, monkeypatch):
+def config_route_db_app(tmp_path, monkeypatch, _migrated_template_db):
     """config_route_app + a real DB, for the `needs_onboarding` flag
     (F-03/F-04, UX-W1, 2026-07-07). Same DB-swap pattern as
-    tests/test_skill_corpus_item_routes.py's `skill_app` fixture."""
-    import db.session as db_session_mod
+    tests/test_skill_corpus_item_routes.py's `skill_app` fixture.
 
-    db_file = tmp_path / "needs_onboarding.sqlite"
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run. The file's other
+    two fixtures (`app_module`, `config_route_app`) never touch the DB and
+    stay unconverted — no init_db() cost to remove there.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="needs_onboarding.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -170,7 +175,7 @@ def config_route_db_app(tmp_path, monkeypatch):
 
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return SimpleNamespace(app=app, configs_dir=cfg.configs_dir)
 
 

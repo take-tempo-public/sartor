@@ -872,3 +872,56 @@ paths, 0 broken (all resolve once checked against their actual subdirectory —
 above, not a fresh full-repo coverage sweep.
 
 **ERROR count: 0. WARN count: 0. Gate verdict: PASS.**
+
+## 2026-07-27 — `/wiki-self-update` (diff pass, `test/fixture-scoping-rollout`)
+
+**Mode: diff**, `c79b916` → `00c109a`. Triggered by the repo's own wiki-freshness
+merge gate: this branch's 46-file PX-44 test-fixture-scoping rollout pushed the
+cumulative changed-file count from 38 (on `main`, passing) to 83, past the 75-file
+block threshold — not itself a content-drift finding, but the trigger for this pass.
+
+**Sources read** (`git diff --name-status c79b916 HEAD`, excluding `docs/wiki/` and
+`docs/dev/reviews/`): 83 files. The overwhelming majority (46 `tests/*.py` +
+`tests/conftest.py`) are this branch's own DX-only test-fixture-mechanism changes,
+covered by no wiki page and introducing no user-facing or architectural concept —
+correctly out of scope per the wiki's own D5 rule (canonical/internal-mechanism docs
+are referenced, not restated). Of the remainder, real product-code changes worth
+checking against existing citations: `blueprints/corpus/curation.py` (merge-suggestions
+pagination, ledger item 11), `onboarding/experience_match.py` (company-gate
+short-circuit perf fix, ledger item 10), `static/app.js`/`static/style.css` (the same
+merge-suggestions render-cap UI + a scroll-anchoring CSS fix, ledger item 2 round 7),
+`scripts/bench_corpus_scale.py` (new dev-only benchmark script), `docs-site/source.config.ts`
+(badge-fetch build-flake fix, ledger item 8).
+
+**Affected-page determination:** checked each candidate against the pages that cite
+its file (`career-corpus`, `corpus-data-model`, `importing-your-experience`,
+`frontend-wizard`). None cite the SPECIFIC changed lines/functions at `path:line`
+granularity — `importing-your-experience.md`'s merge-suggestions description is
+prose-level UX behavior ("shows you a Possible duplicate roles section"), unaffected
+by the added pagination params (an internal >1000-match scale fix, not a UX change);
+the other three pages cite the changed files generically for unrelated sections.
+`onboarding/experience_match.py` has zero existing wiki citations — an internal
+scoring-algorithm optimization, not a new page-worthy concept.
+
+**0 affected pages — no scribe/auditor spend.** Confirmed via `/wiki-lint`
+(re-run this pass, see next entry) that this conclusion doesn't mask an existing
+drift: 0 dangling backlinks, 0 broken `path:line` cites, 0 orphans, index/pages
+agree exactly (38/38).
+
+**No pages added or changed.**
+
+**Checkpoint:** `.last_ingest_sha` advanced `c79b916` → `00c109a`.
+
+## 2026-07-27 — `/wiki-lint` (pre-merge gate, `test/fixture-scoping-rollout`)
+
+**Staleness:** 0 files changed since `.last_ingest_sha` (post-advance, this pass).
+
+**Structural integrity:** 38/38 pages present in `index.md` (0 missing either
+direction) · 0 dangling `[[backlinks]]` · 0 orphan pages (every page has at least one
+inbound link) · all `path:line` cites (numeric-suffixed citations only, script-checked)
+resolve to existing files.
+
+**Coverage gaps:** none newly identified this pass; scope was the diff-pass ingest
+above, not a fresh full-repo coverage sweep.
+
+**ERROR count: 0. WARN count: 0. Gate verdict: PASS.**

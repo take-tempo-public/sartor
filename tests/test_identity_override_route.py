@@ -28,12 +28,12 @@ import blueprints.generation as bgen
 
 
 @pytest.fixture
-def identity_app(tmp_path, monkeypatch):
-    import db.session as db_session
+def identity_app(tmp_path, monkeypatch, _migrated_template_db):
+    """PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of implicit first-route init_db()."""
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "identity.sqlite")
-    db_session._engine = None
-    db_session._SessionLocal = None
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="identity.sqlite")
 
     from app import create_app
     from config import Config

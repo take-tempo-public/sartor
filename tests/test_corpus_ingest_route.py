@@ -16,7 +16,7 @@ import pytest
 
 
 @pytest.fixture
-def ingest_app(tmp_path, monkeypatch):
+def ingest_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh DB + temp dirs (Sprint 8.3d).
 
     The ingest route moved to blueprints/corpus/curation and reads
@@ -25,13 +25,15 @@ def ingest_app(tmp_path, monkeypatch):
     makes configs/output/resumes. Provisioning threads configs_dir through
     web_infra, so the corpus_import.CONFIGS_DIR monkeypatch is gone. The DB-path
     monkeypatch stays.
-    """
-    db_file = tmp_path / "ingest.sqlite"
-    import db.session as db_session_mod
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="ingest.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -40,7 +42,7 @@ def ingest_app(tmp_path, monkeypatch):
     (tmp_path / "configs" / "alice.config").write_text("{}", encoding="utf-8")
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     return app
 
 
