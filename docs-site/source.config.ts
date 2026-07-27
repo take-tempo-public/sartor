@@ -38,5 +38,15 @@ export default defineConfig({
     // src/components/mermaid.tsx renders client-side (registered in
     // src/components/mdx.tsx).
     remarkPlugins: [remarkMdxMermaid],
+    // The 7 README badges (index.mdx) are external images; fumadocs' default
+    // remark-image plugin fetches each one at build time to compute intrinsic
+    // width/height for next/image, with no retry, and hard-fails the whole
+    // static export on any fetch error (see docs/dev/diagnosis/
+    // docs-site-badge-fetch-flake.md — observed live on shields.io 408s,
+    // PR #66). `onError: 'hide'` drops just the failing image from that build
+    // instead of failing it; `onError: 'ignore'` was tried and rejected — it
+    // leaves a dimension-less <img> in the tree, which next/image then fails
+    // on separately (missing required width/height).
+    remarkImageOptions: { onError: 'hide' },
   },
 });

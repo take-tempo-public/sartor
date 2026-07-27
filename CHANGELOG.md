@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: docs-site badge-fetch build flake (`fix/docs-site-badge-fetch-flake`)
+
+Resolves carry-forward ledger item 8. The `docs-site/` static-export build
+fetched every README badge (7, all external images) over HTTP at build time
+to compute intrinsic width/height for `next/image`, with no retry — a single
+timeout from any badge host (observed on shields.io, PR #66, `408 Request
+Timeout`, twice in a row) hard-failed the entire Turbopack build
+(`docs/dev/diagnosis/docs-site-badge-fetch-flake.md`). `docs-site/source.config.ts`
+now passes `remarkImageOptions: { onError: 'hide' }` to fumadocs' remark-image
+plugin, so a fetch failure drops just that one badge from the build instead of
+failing it. Verified against the real, reproduced failure (badge pointed at an
+unreachable host, build still succeeds, other 6 badges unaffected) — not just
+against the success case. No new dependency.
+
 ### Fixed: corpus-reload scroll flake, mode C — Chromium scroll anchoring (`fix/ux-scroll-wizard-rail-flake`, round 7)
 
 Resolves carry-forward ledger item 2. `test_corpus_reload_preserves_scroll_position`
