@@ -23,7 +23,7 @@ import blueprints.generation as bgen
 
 
 @pytest.fixture
-def app_with_stubs(tmp_path, monkeypatch):
+def app_with_stubs(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app against a tmp_path-isolated DB + filesystem; stub LLM
     calls + document writers on the generation blueprint (Sprint 8.3c). Seeds an
     iteration-0 context for user 'alice' that mirrors what /api/analyze +
@@ -36,14 +36,13 @@ def app_with_stubs(tmp_path, monkeypatch):
     lazy-imported from `analyzer` inside the route, so it is stubbed there. The
     DB-path monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate
     seam — the corpus-persist test seeds rows into that same tmp DB.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of implicit first-route init_db().
     """
-    db_file = tmp_path / "cl.sqlite"
+    from tests.conftest import _fresh_migrated_db
 
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="cl.sqlite")
 
     from app import create_app
     from config import Config

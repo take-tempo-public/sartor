@@ -14,7 +14,7 @@ import pytest
 
 
 @pytest.fixture
-def persona_app(tmp_path, monkeypatch):
+def persona_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app on a fresh sqlite DB + temp tree (Sprint 8.3e).
 
     The persona/preview routes moved to blueprints/templates.py and read
@@ -25,16 +25,19 @@ def persona_app(tmp_path, monkeypatch):
     the Config-derived paths + the moved resolver helpers (each wrapped in an app
     context, since they now read current_app.config) so the existing test bodies
     keep referencing `persona_app.app` / `.BASE_DIR` / `._resolve_*` unchanged.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` (a copy of the migrated template) instead of a
+    per-test alembic run — the copy carries the same canonical bundled-row
+    seed data tests assert counts against.
     """
     import types
 
-    db_file = tmp_path / "personas.sqlite"
+    from tests.conftest import _fresh_migrated_db
 
-    import db.session as db_session_mod
-
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="personas.sqlite"
+    )
 
     from app import create_app
     from config import Config
@@ -44,11 +47,9 @@ def persona_app(tmp_path, monkeypatch):
     cfg.bundled_personas_dir.mkdir(parents=True, exist_ok=True)
     (cfg.configs_dir / "alice.config").write_text("{}", encoding="utf-8")
 
-    # Materialize the schema. The seed migration populates the canonical bundled
-    # rows — tests using bundled rows assert their counts against this baseline.
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     import blueprints.templates as templates_mod
 

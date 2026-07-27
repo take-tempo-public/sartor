@@ -86,24 +86,27 @@ class TestCreateUser:
 
 
 @pytest.fixture
-def roster_app(tmp_path, monkeypatch):
+def roster_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory app wired to a fresh sqlite DB — candidate_roster reads Candidate
     + Application rows, so (unlike ``users_app`` above) this fixture also points
     ``db.session`` at a temp DB, mirroring ``test_application_routes.py``'s
-    ``app_app`` fixture."""
-    import db.session as db_session_mod
+    ``app_app`` fixture.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
     from app import create_app
     from config import Config
     from db.session import init_db
+    from tests.conftest import _fresh_migrated_db
 
-    db_file = tmp_path / "roster.sqlite"
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="roster.sqlite"
+    )
 
     cfg = Config(base_dir=tmp_path)
     app = create_app(cfg)
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     return types.SimpleNamespace(app=app, configs_dir=cfg.configs_dir)
 
