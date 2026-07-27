@@ -20,7 +20,7 @@ import blueprints.analysis as ban
 
 
 @pytest.fixture
-def db_app(tmp_path, monkeypatch):
+def db_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app against a temp DB + temp config dir.
 
     Returns the Flask app so tests can use app.test_client() and seed candidate
@@ -30,13 +30,16 @@ def db_app(tmp_path, monkeypatch):
     monkeypatch (db.session.DEFAULT_DB_PATH) is a distinct, legitimate seam.
     Provisioning threads `configs_dir` from the injected Config, so no separate
     `onboarding.corpus_import.CONFIGS_DIR` monkeypatch is needed.
-    """
-    # Ensure DB lives in tmp_path and gets a fresh schema for this test
-    import db.session as db_session
 
-    monkeypatch.setattr(db_session, "DEFAULT_DB_PATH", tmp_path / "test.sqlite")
-    db_session._engine = None
-    db_session._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` (a copy of the session-scoped migrated template)
+    instead of a per-test alembic run. `_seed_db_candidate`'s own
+    `init_db(db_path)` call (below) now hits the pre-registered path and
+    just returns False — cheap, unchanged behavior.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="test.sqlite")
 
     from app import create_app
     from config import Config

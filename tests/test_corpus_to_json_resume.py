@@ -42,19 +42,21 @@ import pytest
 
 
 @pytest.fixture
-def session(tmp_path, monkeypatch):
-    """Fresh in-memory DB so each test can seed without bleed."""
-    db_file = tmp_path / "corpus.sqlite"
+def session(tmp_path, monkeypatch, _migrated_template_db):
+    """Fresh in-memory DB so each test can seed without bleed.
 
-    import db.session as db_session_mod
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="corpus.sqlite"
+    )
 
     from db.session import get_session, init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
     s = get_session()
     yield s
     s.close()

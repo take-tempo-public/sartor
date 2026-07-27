@@ -1,5 +1,6 @@
 """Shared pytest fixtures."""
 
+import shutil
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -68,6 +69,42 @@ def _migrated_template_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
         engine.dispose()
 
     return template
+
+
+def _fresh_migrated_db(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    _migrated_template_db: Path,
+    *,
+    filename: str = "test.sqlite",
+) -> Path:
+    """Copy the session-scoped migrated template into `tmp_path` and point
+    `db.session` at it — the per-test half of the PX-44 rollout
+    (`test/fixture-scoping-rollout`), factored out once the pilot's
+    hand-duplicated 4-line dance (`dup_app`, `memory_app`) needed a 3rd+
+    caller. See `_migrated_template_db`'s docstring for the two traps this
+    closes (path-set memoization, WAL sidecar).
+
+    Callers still do their own `create_app(...)` call and
+    `assert init_db(db_file) is False` skip-proof right after — those vary
+    per file (extra Config kwargs, extra seeding) so they stay inline
+    rather than folded into this helper.
+    """
+    db_file = tmp_path / filename
+    assert db_file != _migrated_template_db, "must never point a test at the shared template"
+    shutil.copy2(_migrated_template_db, db_file)
+
+    import db.session as db_session_mod
+
+    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
+    db_session_mod._engine = None
+    db_session_mod._SessionLocal = None
+    # Mandatory pre-register: `init_db` only skips the alembic chain when the
+    # resolved path is already in this set — it never inspects DB state, so
+    # without this line the first route to call bare `init_db()` re-migrates
+    # the copy from scratch, silently erasing the fixture's whole purpose.
+    db_session_mod._initialized_paths.add(db_file.resolve())
+    return db_file
 
 
 @pytest.fixture()
