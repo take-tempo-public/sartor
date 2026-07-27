@@ -25,7 +25,7 @@ import pytest
 
 
 @pytest.fixture
-def races_app(tmp_path, monkeypatch):
+def races_app(tmp_path, monkeypatch, _migrated_template_db):
     """Factory-built app with both analysis_bp and generation_bp routes live.
 
     Stubs `blueprints.analysis.clarify_iteration` and
@@ -33,15 +33,25 @@ def races_app(tmp_path, monkeypatch):
     the route, so patched on the `analyzer` module per the established
     pattern in `tests/test_cover_letter_detached.py`) so both slow routes run
     without network calls. `/api/save-edits` needs no LLM stub — it has none.
+
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of implicit first-route init_db(). This
+    file races two concurrent HTTP requests against the same DB FILE, not a
+    shared connection — the copy mechanism only changes how that one file
+    got to alembic head, not the concurrency shape under test. Verified via
+    a before/after flake-rate comparison (see commit message), not assumed.
     """
     import analyzer as _analyzer
     import blueprints.analysis as ban
     import blueprints.generation as bgen
     from app import create_app
     from config import Config
+    from tests.conftest import _fresh_migrated_db
 
     monkeypatch.setattr(ban, "_get_client", lambda: object())
     monkeypatch.setattr(bgen, "_get_client", lambda: object())
+
+    _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="races.sqlite")
 
     app = create_app(Config(base_dir=tmp_path))
     app.config["TESTING"] = True
