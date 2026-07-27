@@ -20,21 +20,24 @@ import pytest
 
 
 @pytest.fixture
-def app_with_data(tmp_path, monkeypatch):
+def app_with_data(tmp_path, monkeypatch, _migrated_template_db):
     """Fresh DB so we can call `_apply_chosen_summary` against a real
     SummaryItem row. The helper moved to `blueprints/generation.py` (Sprint
     8.3c); it operates on the context_set dict + DB only (no app context), so
-    the fixture just sets up the tmp DB and returns the blueprint module."""
-    db_file = tmp_path / "apply.sqlite"
-    import db.session as db_session_mod
+    the fixture just sets up the tmp DB and returns the blueprint module.
 
-    monkeypatch.setattr(db_session_mod, "DEFAULT_DB_PATH", db_file)
-    db_session_mod._engine = None
-    db_session_mod._SessionLocal = None
+    PX-44 rollout (`test/fixture-scoping-rollout`): DB seeded via
+    `_fresh_migrated_db` instead of a per-test alembic run.
+    """
+    from tests.conftest import _fresh_migrated_db
+
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="apply.sqlite"
+    )
 
     from db.session import init_db
 
-    init_db(db_file)
+    assert init_db(db_file) is False, "expected the pre-registered copy to skip alembic"
 
     import blueprints.generation as bgen
 
