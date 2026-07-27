@@ -1,5 +1,18 @@
 # Diagnosis — scroll-flake "mode C": wizard-rail smooth-scroll corrupts an unrelated later baseline
 
+> **Status: FIXED, round 7 (O-19).** `html, body { overflow-anchor: none; }`
+> in `static/style.css`, landed after both F-8 JS-timing attempts failed.
+> A/B against the REAL target test, same session/machine: fix arm **0/20**
+> failures (6-loader saturation) + **0/12** (unsaturated), vs. control arm
+> **6/20** failures in the same session (same `dy==dh` signature: `300->369`,
+> `369->1368`, `416->485`, `300->306`). Full UX suite shows 1 unrelated
+> failure with the fix applied AND 1 unrelated (different) failure on
+> baseline with no fix at all — confirmed pre-existing suite-level
+> flakiness, not a regression from this change (see O-19 for the full
+> attribution trail). Read O-19 for the details; the history below (O-1
+> through F-8) remains the evidence record for how this was found and why
+> six other framings died first.
+>
 > **Status: no fix. Read O-9/O-10/O-11 AND O-18 before anything else here.**
 >
 > **What is observed:** when the corpus list's second-stage layout lands,
@@ -744,6 +757,75 @@ execute, and each reason string names the specific finding (F-4, O-15/F-7)
 that demoted it. If a later round re-establishes the wizard render as
 load-bearing, **remove the markers — do not edit the asserts.**
 
+### O-19 — round 7 (document/`body`-level `overflow-anchor: none`) FIXES the real target test; full attribution trail for the one full-suite failure
+
+**Branch:** `fix/ux-scroll-wizard-rail-flake` (round 7, this session). Per the
+round-7 pre-registration above, the untested candidate — `overflow-anchor:
+none` at the document/`body` level, not `.corpus-experience-list` (F-6's
+wrong subtree) — was implemented (`static/style.css`, right after the
+existing `html { color-scheme: dark; }` rule) and A/B'd directly against the
+real target test, same machine/session, using the existing
+`scratchpad/capture_scroll_phase1b.sh` harness at the O-18 calibration
+(6 loaders, 0.75x this machine's 8 logical cores):
+
+| condition | n | failed | shapes seen |
+|---|---|---|---|
+| control (no fix), 6 loaders | 20 | **6** (30%) | `300->369`, `369->1368`, `416->485`, `300->369` (x2), `300->306` — same `dy≈dh` family as every prior round |
+| fix applied, 6 loaders | 20 | **0** | — |
+| fix applied, 0 loaders (unsaturated, matching F-8 attempt 2's own methodology) | 12 | **0** | — |
+
+Control armed at a HIGHER rate this session (30%) than O-18's 2/14
+calibration run — expected run-to-run variance at this mechanism's known
+probabilistic rate, and if anything a stronger self-guard that the
+session's calibration was genuinely live (same discipline as O-14's "PROBE
+DID NOT ARM" catch, run in the other direction: a *high* control rate is
+just as informative a liveness check as a low one, provided the shapes match
+history, which they do).
+
+**Full-suite attribution (the one place this needed extra care).** A single
+`pytest -m ux` run with the fix applied showed `1 failed, 128 passed, 1
+xfailed, 1 xpassed` — the failure was
+`test_scroll_spy_attributes_overlapping_refresh_corpus_calls`, a test in the
+SAME file, which made it worth checking directly rather than assuming
+unrelated (per C-7 — plausibility that it's "probably fine" is not evidence
+either way). Attribution sequence, each a separate step so a kill mid-run
+couldn't leave the tree in a mixed state:
+
+1. Ran the single failing test 8x in isolation on the FIX tree: **8/8
+   passed.**
+2. `git stash` the CSS change, ran the same test 8x in isolation on the
+   UNFIXED baseline: **8/8 passed.** Not reliably broken by the fix, not
+   reliably broken without it either — the single full-suite failure looked
+   like ordinary suite-level flakiness, not a targeted regression.
+3. To check that directly: ran the FULL `pytest -m ux` suite a second time
+   on the UNFIXED baseline (`git stash` the CSS change again, full suite,
+   `git stash pop` to restore). Result: `1 failed, 128 passed` again — but a
+   COMPLETELY DIFFERENT, unrelated test failed this time:
+   `test_surgical_refinement_network_failure_surfaces_error_with_retry`
+   (`test_20260708_review_surface_and_flows.py`), a network-failure/retry
+   modal test with no connection to scroll, `refreshCorpus`, or anything
+   this branch touches.
+
+**Conclusion:** both the fix run and the no-fix-at-all run produced the
+exact same shape of result — one single, different, seemingly-unrelated
+test failing per full-suite pass — which is the suite's known pre-existing
+background flake rate (matching `reference-cpu-saturation-flake-repro`'s own
+closing note: "residual CI flakiness... different compose/skills test each
+run... the durable answer is a scoped `--reruns`, not more per-test
+chasing"), not something round 7's CSS change introduced. This is
+structurally expected, not just observed-and-hoped: `overflow-anchor: none`
+touches no JavaScript timing, ordering, or capture/restore code at all, so
+it has no mechanism by which it could affect an unrelated test's own timing.
+
+**One CSS-safety note for the record, not a blocker:** this fix is
+Chromium-only in its guaranteed effect (`tests/ux/conftest.py` launches
+`pw.chromium.launch()` — this closes the flake for the test suite
+completely). For real users on engines that don't implement scroll
+anchoring, the rule is a no-op; on engines that do but handle
+`overflow-anchor` differently, this is unverified — out of scope for closing
+this flake, worth a line in a future cross-browser pass, not worth blocking
+this fix on.
+
 ---
 
 ## Falsified
@@ -988,6 +1070,39 @@ mechanism — diminishing return once the mechanism itself is precise).
 attempted here** — left for explicit owner direction before implementing,
 per this branch's own scope (investigation, not `fix/*`).
 
+**Round 7 (PRE-REGISTERED, not yet run).** All three round-6 arms are
+negative and both F-8 shapes (protecting `refreshMergeSuggestions()`'s own
+growth via capture/restore timing, either independently-captured or
+awaited-and-passed-down) are falsified — that whole class is now a bad bet,
+including a third capture-timing variant (early synchronous capture,
+paper-traced, not implemented) that would additionally regress the existing
+"Loading… placeholder shrink" protection by self-invalidating
+`refreshCorpus()`'s own restore via the ordinal most-recent-wins rule
+(`app.js:5601-5630`). The one candidate from the original list never
+attempted is `overflow-anchor: none` at the document/`body` level (F-6 tried
+it on `.corpus-experience-list` only, and failed there specifically because
+that element never grows — O-12). **Prediction, stated before running:** if
+the real target test's `dy == dh` shifts vanish under an A/B against this
+CSS change (n>=20 per arm, 6-loader calibration, same session), scroll
+anchoring is confirmed AND suppressed at its source; if they survive
+unchanged with the rule verified present in the served file (same
+discriminator O-11 used), the fix is refuted and must be reverted, recorded
+as F-9. **This goes straight at the REAL target test, not the synthetic
+probe** — see the correction below.
+
+**Correction to round 5's own text (superseded, kept for the record but do
+not follow it):** the two-step text immediately below says to A/B any
+document/`body`-level `overflow-anchor: none` placement against the probe
+BEFORE promoting to the real test. That instruction is now known-dead:
+O-13, O-14, O-16, and O-17 collectively showed the probe never reproduces a
+shift in any arm (0 shifts in 31 armed runs combined) — it arms reliably but
+the mechanism it's meant to measure never fires on it, for reasons this
+branch never resolved (see `## Inferred`). Testing round 7 against the
+probe first would be a guaranteed-green measurement that means nothing,
+exactly the trap O-13's own text warns about. Round 7 skips the probe and
+goes straight at the real test, the same way both F-8 attempts correctly
+did.
+
 **Superseded — round 5's original two-step text follows for the record.**
 Two things must happen, in this order, and the first is not optional:
 
@@ -1038,23 +1153,23 @@ rounded rate alone.
 
 ## The fix
 
-**Not yet found — no fix has landed on any branch.** Two attempts based on
-option #3 below were built, tested against the real target test, and
-BOTH FALSIFIED (F-8) — see that entry for the full data. The mechanism is
-precise (O-18), but precision did not make the fix easy: attempt 2 measured
-4/10 failures with NO saturation, worse than the ~1-in-6 rate the original
-defect shows UNDER saturation. Do not build on the reduced-motion framing
-(F-3), the second-render/late-render framing (F-4), the clamp framing
-(F-5), or either shape of option #3 below without a mechanism for the
-overlapping-invocation problem F-8 exposed.
+**FIXED, round 7 (O-19).** `html, body { overflow-anchor: none; }` in
+`static/style.css`. Two attempts based on option #3 below were built first,
+tested against the real target test, and BOTH FALSIFIED (F-8) — see that
+entry for the full data; that whole class (protecting
+`refreshMergeSuggestions()`'s own growth via JS capture/restore timing) is a
+dead end. The candidate that landed is option #1 at the document/`body`
+scope (F-6 only tried it on the wrong subtree) — see O-19 for the full A/B
+and the full-suite attribution trail that cleared it of an apparent,
+unrelated full-suite failure.
 
 Candidate shapes, in order of how surgical they seemed BEFORE F-8 —
-**#1 and #3 have both been tried and REFUTED; #2 is the only genuinely
-untested candidate remaining:**
+**#1 landed (O-19); #3 tried and REFUTED (F-8); #2 was never attempted and
+is now moot:**
 
-1. ~~`overflow-anchor: none` on the corpus list container.~~ **TRIED,
-   FALSIFIED (O-11/F-6), reverted.** The document/`body`-level placement
-   is untested.
+1. `overflow-anchor: none` on the corpus list container — **TRIED,
+   FALSIFIED (O-11/F-6), reverted** at that scope. **The document/`body`-level
+   placement — TRIED, FIXED (O-19), landed.**
 2. **Untested.** Reserve the list's height before the cards' second-stage
    layout lands, so the document does not grow above the anchor at all —
    this is the only remaining candidate from the original list that has

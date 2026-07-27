@@ -106,6 +106,21 @@
 
 html { color-scheme: dark; }
 
+/* fix/ux-scroll-wizard-rail-flake, round 7 (docs/dev/diagnosis/
+   ux-scroll-wizard-rail-flake.md, O-9/O-12/O-18, F-6's own registered
+   next step). Chromium scroll anchoring silently re-adjusts window.scrollY
+   by exactly the document's growth (dy == dh) whenever #mergeSuggestionsList
+   (templates/index.html:748) grows late, outside any capture/restore
+   window. F-6 tried opting out .corpus-experience-list and failed because
+   that element never grows (O-12) -- the growth, and the anchor node the
+   viewport actually locks onto, live elsewhere. This app already layers its
+   own explicit scroll-preservation system underneath native anchoring
+   (_captureScrollY/_restoreScrollY, app.js:5530-5599) -- that system's own
+   comments already treat anchoring purely as a hazard to survive, never as
+   a behavior anything relies on. Disabling it document-wide removes the
+   hazard at its source instead of racing it. */
+html, body { overflow-anchor: none; }
+
 body {
   background: var(--bg-0);
   color: var(--fg-0);
