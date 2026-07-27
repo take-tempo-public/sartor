@@ -515,7 +515,21 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 
 #### Open
 
-_Rendered open count: **8** (**net −1** this entry — `fix/ux-scroll-wizard-rail-flake`
+_Rendered open count: **7** (**net −1** this entry — `fix/docs-site-badge-fetch-flake`,
+2026-07-27: **RESOLVED item 8** (the docs-site badge-fetch build flake) —
+`docs-site/source.config.ts` now passes `remarkImageOptions: { onError: 'hide' }` to
+fumadocs' remark-image plugin, so a badge-image fetch timeout drops just that one badge
+from the build instead of hard-failing the whole static export. Verified against the real
+reproduced failure, not just in theory: pulled the actual PR #66 CI failure logs
+(`gh run` `30108437723` / `30108426345`), then reproduced the same failure locally by
+pointing the CI badge at an unreachable host and confirmed the build now succeeds with
+that badge silently absent (the other 6 badges unaffected). The plausible alternative
+`onError: 'ignore'` was tried and rejected — empirically, it leaves a dimension-less
+`<img>` in the tree, which `next/image` then fails on separately (missing required
+width/height), trading one build failure for another. Full detail:
+`docs/dev/diagnosis/docs-site-badge-fetch-flake.md`. Re-counted the actual `- [ ] **`
+bullets rather than trusting arithmetic: 7, confirmed.
+Prior to that: **8** (**net −1** this entry — `fix/ux-scroll-wizard-rail-flake`
 round 7, 2026-07-26: **RESOLVED item 2** (the mode-C scroll-anchoring flake) —
 `html, body { overflow-anchor: none; }` in `static/style.css`, A/B'd against the real
 target test (0/20 + 0/12 failures vs. control's 6/20 in the same session) after two prior
@@ -2244,24 +2258,37 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       the ceiling is ~8-10 and the reduction sprint remains overdue. Revised in place same day by
       `docs/compose-rewrite-dial`; **no net count change** — one item, better understood.)_
 
-- [ ] **`docs-site/`'s static-export build fetches a live `shields.io` CI-badge image at build
-      time with no retry/timeout handling — a repeat of the same failure class as the
-      already-resolved TypeScript-detection outage below, different root cause.** Observed on
-      PR #66 (`feat/context-structure-review-skill`): the **non-required** "Project docs -> MDX,
-      build static export, publish" check failed identically twice in a row —
-      `content/docs/index.mdx`'s remark-image plugin tries to fetch
+#### Resolved
+
+- [x] **`docs-site/`'s static-export build fetches a live `shields.io` CI-badge image at build
+      time with no retry/timeout handling — RESOLVED** on `fix/docs-site-badge-fetch-flake`,
+      2026-07-27. Was: observed on PR #66 (`feat/context-structure-review-skill`): the
+      **non-required** "Project docs -> MDX, build static export, publish" check failed
+      identically twice in a row — `content/docs/index.mdx`'s remark-image plugin tries to
+      fetch
       `https://img.shields.io/github/actions/workflow/status/take-tempo-public/sartor/ci.yml?branch=main&label=CI`
       to compute the badge's image dimensions at build time, and `shields.io` returned a `408
       Request Timeout` both attempts. Confirmed unrelated to that branch's own changes (zero
-      `docs-site/` diff). Not merge-blocking today (this check is not in `main`'s required
-      six — `Lint/type-check/test ×3`, `UX/a11y/PDF`, `Analyze (js-ts)`, `Analyze (python)` —
-      per `gh api repos/.../branches/main/protection/required_status_checks`), but every future
-      PR's docs-site check will flake the same way until fixed: either self-host the badge SVG,
-      point it at a source that doesn't need dimension-probing, or make `remark-image` skip/retry
-      on fetch failure rather than hard-failing the whole build. _(discovered: v1.1.0 stream,
-      2026-07-24, `feat/context-structure-review-skill`; open count 8 → 9.)_
-
-#### Resolved
+      `docs-site/` diff). Not merge-blocking (this check is not in `main`'s required six), but
+      would have recurred on every future PR until fixed.
+      **Fix shipped:** `docs-site/source.config.ts` now passes
+      `remarkImageOptions: { onError: 'hide' }` to fumadocs' remark-image plugin — a fetch
+      failure now drops just that one badge from the build instead of hard-failing the whole
+      static export. Applies uniformly to all 7 README badges (same code path); local
+      screenshot images are unaffected (separate, non-network code path).
+      **Verified against the real reproduced failure, not just in theory:** pulled the actual
+      PR #66 CI failure logs (`gh run view 30108437723`/`30108426345 --log-failed`) as direct
+      evidence, then reproduced the same failure locally (pointed the CI badge at an
+      unreachable host) and confirmed the build now succeeds with that badge silently absent
+      from `out/docs/index.html` while the other 6 badges render normally with their real
+      fetched dimensions.
+      **The plausible alternative `onError: 'ignore'` was tried and rejected — empirically,
+      not by assumption:** it leaves a dimension-less `<img>` in the tree (confirmed via a
+      direct `node`-driven run of the installed `remark` + `fumadocs-core/mdx-plugins`
+      packages against the real badge URL shape), which `next/image` then fails on
+      separately (missing required `width`/`height`) — trading one build failure for another
+      rather than fixing anything. Full detail:
+      `docs/dev/diagnosis/docs-site-badge-fetch-flake.md`.
 
 - [x] **`GET /corpus/merge-suggestions` costs ~6.9s on an ORDINARY 8-role corpus and returns
       an empty list — RESOLVED** on `fix/merge-suggestions-cost`, 2026-07-25. Was: filed
