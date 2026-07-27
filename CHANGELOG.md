@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: fast-lane fixture-scoping rollout (`test/fixture-scoping-rollout`)
+
+Generalizes the `test/fixture-scoping` pilot above from 2 files to the full
+suite. PX-44's refactor half, now fully landed (carry-forward ledger's
+2026-07 efficiency review: 3 of 20 rows remaining → 2). Dev-infra only, no
+user-visible behavior change.
+
+- `tests/conftest.py`: new `_fresh_migrated_db` helper factors out the
+  pilot's hand-duplicated copy/monkeypatch/register block, so 46 fixtures
+  share one implementation instead of each re-inlining it.
+- 44 test files converted mechanically; 2 more (`test_app_security.py`,
+  `test_context_write_races.py`) converted with individual scrutiny — the
+  latter got a dedicated before/after flake-rate check (15 runs each side,
+  0/30 failures both ways) since it races two concurrent requests against
+  the same DB file.
+- One new exclusion found mid-rollout: `test_bundled_templates.py` directly
+  tests `init_db()`'s own migration behavior, so it stays on the real
+  per-test alembic run (same rationale as the already-excluded
+  `test_db_session.py`).
+- Full fast-lane run (chunked, 2055 passed/1 skipped/1 failed) confirmed
+  identical pass count to `main`; the 1 failure is the wiki-freshness gate
+  crossing its 75-file threshold on this branch's own file-touch volume, not
+  a functional regression. This session's own timing microbenchmark:
+  `init_db` 84.4ms → `copy2` 1.0ms median (98.8% reduction) — see the perf
+  doc's "Rollout result" section for full detail.
+
 ### Fixed: docs-site badge-fetch build flake (`fix/docs-site-badge-fetch-flake`)
 
 Resolves carry-forward ledger item 8. The `docs-site/` static-export build

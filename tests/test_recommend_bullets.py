@@ -23,7 +23,9 @@ def rec_app(tmp_path, monkeypatch, _migrated_template_db):
 
     from tests.conftest import _fresh_migrated_db
 
-    db_file = _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="rec.sqlite")
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="rec.sqlite"
+    )
 
     from app import create_app
     from config import Config

@@ -24,7 +24,9 @@ def app_app(tmp_path, monkeypatch, _migrated_template_db):
     import blueprints.applications as applications_bp_mod
     from tests.conftest import _fresh_migrated_db
 
-    db_file = _fresh_migrated_db(tmp_path, monkeypatch, _migrated_template_db, filename="apps.sqlite")
+    db_file = _fresh_migrated_db(
+        tmp_path, monkeypatch, _migrated_template_db, filename="apps.sqlite"
+    )
 
     from app import create_app
     from config import Config
