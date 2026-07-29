@@ -15,6 +15,10 @@
 > [The fix](#the-fix) for the mechanism and [Acceptance bar](#acceptance-bar) for what's
 > confirmed vs. still open (CI, multi-run, `--reruns`-free evidence).
 > **Branch:** `fix/ux-scroll-position-flake`
+> **2026-07-28:** new, unattributed observations logged at the end of
+> [Acceptance bar](#acceptance-bar) (O-12, O-13) — a different load-generation vector
+> (process/resource contention, not CPU busy-loop) and a previously-untested call site of the
+> same primitive. Not chased here; filed as `docs/dev/work/items/0019`.
 
 <!-- Keep ## Observed (facts with artifacts) strictly apart from ## Inferred (hypothesis).
      Conflating them is the failure this document exists to prevent (charter C-7). -->
@@ -668,3 +672,49 @@ not count — and neither does green from a fix validated only against passing r
   (different mechanism, different fix — see the Inferred §3 precision note) but is real enough to
   be worth a deliberate, separate pickup rather than fading from view now that this chip is closed;
   see the Carry-forward ledger note.
+
+> **⚠ New observations, 2026-07-28 (`chore/work-item-tracking`), NOT yet investigated —
+> logged per charter C-8, filed as a work item for a dedicated follow-on rather than chased
+> here.** Encountered incidentally while diagnosing an unrelated quality-gate performance
+> problem, not from a deliberate scroll-flake campaign. Keeping these strictly in `## Observed`
+> shape (facts with artifacts), not extending `## Inferred` — no mechanism claim is made.
+
+### O-12. The O-10 regression test itself failed twice, both times under confirmed resource
+### contention — and passed 5/5 once that contention was removed
+
+`test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (the O-10 deterministic
+reproduction, which forces exact event ordering by construction rather than relying on
+CPU-load timing) failed twice today, in two different runs:
+- Once during a `pytest tests/ux -n 2` run (deliberate 2-worker parallelism — contention by
+  design): `before=59 after=306`.
+- Once during a run later found to have overlapped in wall-clock time with a separate,
+  concurrently-running full-suite pytest invocation (unintentional contention from running two
+  heavy background test processes at once): `before=59 after=0`.
+
+Both runs were also later found to be sharing the machine with two **orphaned `python app.py`
+processes** (a Werkzeug reloader parent/child pair) left running from earlier in the session —
+unrelated to any of today's test invocations, killed with owner confirmation once found. After
+killing them, the identical test was re-run **5/5 clean, in isolation** (`23-43s` each, no
+failures). This does not prove the orphaned server *caused* the two failures — no per-run
+attribution was captured before killing it — but it is consistent with resource contention
+(CPU, and/or something port/process-related) being sufficient to perturb this specific
+deterministic construction, which is a **new load-generation vector** distinct from every
+campaign in this document so far (all of which used pure CPU busy-loop workers, never
+concurrent real pytest/Playwright processes or a stray dev server).
+
+### O-13. A different, previously-untested call site of the same shared primitive failed once,
+### in a run believed genuinely uncontended
+
+`test_compose_reload_preserves_scroll_position` — the `loadComposition` call site
+(`app.js:7036`) of the same `_captureScrollY`/`_restoreScrollY` primitive this document's fix
+patches — failed once, `before=400 after=796`, during this session's final `python -m
+scripts.gate` run. At the time this specific step ran, no other heavy process was intentionally
+or (as far as could be confirmed) unintentionally running concurrently. **Neither O-10 nor O-11
+exercises this call site** — both constructions are written directly against `refreshCorpus`'s
+capture/restore only. One sample is not enough to attribute this to the already-documented
+mode-C residual (or to anything else) — logged as a fact, not a conclusion.
+
+**Filed as `docs/dev/work/items/0019` for a dedicated investigation** — see the board. This
+document is not being reopened/re-chased as part of that filing; whoever picks up the item
+should read this document in full first, per its own established discipline (Observed/Inferred
+separation, no conflating mechanisms from n=1).

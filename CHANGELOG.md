@@ -13,6 +13,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: structured work-item tracking + real quality-gate fix (`chore/work-item-tracking`)
+
+Replaces the prose Carry-forward ledger's per-item current-state reconstruction
+cost (one row needed 16 chronological updates across 197 lines to learn "2
+remain") with structured files, vendored from the sister project `spolia`
+(which built and proved the design first, explicitly anticipating this repo
+would want it — see `docs/dev/work/SCHEMA.md`). Charter W-1.4 amended with a
+single written rationale line (a working-model clause, not constitutional —
+no full C-0…C-9 ceremony needed).
+
+- `docs/dev/work/SCHEMA.md` + `scripts/work_items.py`: TOML-frontmatter item
+  files, a generated `BOARD.md` (never hand-edited), `check`/`board`
+  subcommands. One addition beyond spolia's schema: an optional `depends_on`
+  field for peer-level sequencing (spolia only has an upward `epic` pointer).
+- 18 live items filed (`docs/dev/work/items/`): the 12 pre-existing carry-forward/
+  release-arc items, plus 6 real defects found exercising the annotate/bootstrap
+  workflow this session (a bootstrap-overwrite data-loss bug, a judge
+  parse-failure silently scoring as 0, a fixture/annotation JD mismatch, and
+  others — see the board).
+- `RELEASE_CHECKLIST.md`/`RELEASE_ARC.md`: migrated items marked inline with a
+  pointer to their new file; history preserved, not deleted.
+- `tests/test_work_items.py`: 44 tests vendored + adapted (incl. a `depends_on`
+  class and the two real-backlog bridge tests).
+
+**Real fix, not just tooling:** running the actual gate surfaced that
+`docs/dev/work/items/0001` ("quality gate unrunnable by an agent") was never
+actually a mystery kill — the full suite's real runtime is ~30min as of today
+(was ~13min on 2026-07-14; test count only grew ~8% in that time). `-n auto`
+(pytest-xdist, new dependency) now parallelizes the non-UX tier in
+`scripts/gate.py` (437s vs. ~700s+ serial call-time, zero new failures,
+verified against PX-44's DB-isolation work). The UX/Playwright tier is
+deliberately kept serial — tested with `-n 2` and it reproduced 5 real
+CPU-saturation timing flakes (the same class `docs/dev/diagnosis/
+ux-scroll-position-flake.md` already diagnosed for the serial case); running
+two heavy Playwright processes concurrently on this machine reliably induces
+that flake class. Also found and killed (owner-confirmed) two orphaned
+`python app.py` processes left running from earlier in the session —
+carry-forward ledger item 20's exact documented failure class, directly
+reproduced: killing them turned a repeatedly-failing scroll-position test
+into 5/5 clean isolated passes.
+
+- `pyproject.toml`: new `pytest-xdist>=3.5,<4.0` dev dependency.
+- `scripts/gate.py`: pytest step split into `pytest -m "not ux" -n auto` +
+  `pytest -m ux` (serial), plus a `work_items check` step.
+
 ### Added: fast-lane fixture-scoping rollout (`test/fixture-scoping-rollout`)
 
 Generalizes the `test/fixture-scoping` pilot above from 2 files to the full

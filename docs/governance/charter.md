@@ -296,10 +296,23 @@ paragraph.
    so branch ownership is gate-backed, not vigilance-backed.
 4. **W-1.4 — Carry-forward discipline.** Tracked-deferred observations (flaky tests,
    drift spotted, process friction, deferred sub-decisions) live in **one** cumulative
-   open ledger (`../dev/RELEASE_CHECKLIST.md`'s Carry-forward section), not scattered
-   per-branch notes; every handoff renders the full still-open subset, not just the
-   authoring session's own additions; at **~8–10 open items**, a reduction sprint is
-   flagged rather than left to grow unbounded.
+   open backlog, not scattered per-branch notes; every handoff renders the full
+   still-open subset, not just the authoring session's own additions; at **~8–10 open
+   items**, a reduction sprint is flagged rather than left to grow unbounded. **Live**
+   items are tracked as structured files under `../dev/work/items/` (schema:
+   `../dev/work/SCHEMA.md`), rendered as `../dev/work/BOARD.md`; `../dev/RELEASE_CHECKLIST.md`'s
+   Carry-forward section retains its Resolved/historical archive and now points at the
+   board for current state rather than restating it inline. *[src: relocated
+   2026-07-28, owner-directed, `chore/work-item-tracking` — single written rationale
+   line per this section's own D-1…D-7/W-1/W-2 amendment rule (no full C-0…C-9
+   ceremony; W-1.4 is a working-model clause, not constitutional). Vendored from
+   `spolia`'s `docs/dev/work/` system, built and proved there first. Trigger: the prose
+   ledger's own per-item current-state cost had become the dominant friction — e.g. one
+   row needing 16 chronological update-entries across 197 lines to learn "2 remain."
+   **Owner note, not yet acted on:** once this system is implemented, used, and
+   settled into practice, reconsider promoting this clause's own tracking to the full
+   C-0…C-9 amendment ceremony rather than leaving it at the lighter W-clause bar
+   indefinitely.]*
 
 **Posture.** W-1.1–W-1.3 are the construction that makes parallel sessions safe *if*
 run; they are not, by themselves, a standing authorization to run them. The **operative

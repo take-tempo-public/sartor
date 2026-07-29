@@ -505,15 +505,27 @@ Authoritative branch sequence + acceptance: [`RELEASE_ARC.md`](RELEASE_ARC.md)
 ### Carry-forward ledger
 
 > **One physical authoritative home** for tracked-deferred observations (charter
-> [W-1](../governance/charter.md) "carry-forward discipline"). The **Open** subset is
-> *cumulative* — every handoff renders it in full, not just the closing session's items,
-> so nothing falls out of attention; at **~8–10 open items**, schedule a reduction sprint.
-> **Resolved** items are kept with their resolution for the record (git holds the full
-> diff); each keeps the stream it was discovered in. (Consolidated 2026-06-15 from the
-> former per-stream "Discovered during the v1.0.x stream" sections — one home, not
-> scattered subsections joined by pointers.)
+> [W-1](../governance/charter.md) "carry-forward discipline"). **As of
+> 2026-07-28 (`chore/work-item-tracking`), LIVE items are tracked as structured
+> files under [`docs/dev/work/items/`](work/) and rendered at
+> [`docs/dev/work/BOARD.md`](work/BOARD.md) — that board is now the authoritative
+> current-state source, not the prose below.** The `#### Open` section below is
+> retained as historical narrative (each migrated item is marked inline with a
+> pointer to its new file) rather than deleted outright — deleting ~1,700 lines
+> of chronological evidence in one pass carried more risk than value. New
+> tracked-deferred observations should be filed as work items, not appended
+> here. **Resolved** items below are unaffected by this change — they stay
+> exactly where they are, kept with their resolution for the record (git holds
+> the full diff). (Consolidated 2026-06-15 from the former per-stream
+> "Discovered during the v1.0.x stream" sections — one home, not scattered
+> subsections joined by pointers.)
 
 #### Open
+
+> **Superseded 2026-07-28 — see [`docs/dev/work/BOARD.md`](work/BOARD.md) for
+> current live-item state.** Everything below this notice is historical
+> narrative, kept for its chronological evidence value; each of the 7 items
+> migrated to a work item is marked inline. Do not add new items here.
 
 _Rendered open count: **7** (**net −1** this entry — `fix/docs-site-badge-fetch-flake`,
 2026-07-27: **RESOLVED item 8** (the docs-site badge-fetch build flake) —
@@ -781,7 +793,9 @@ Lane UX progress note was truncated mid-sentence). Both are corrected in place a
 reduction sprint now has a concrete, ordered, individual-branch plan — not just a pile of open
 items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
 
-- [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** — the full
+- [ ] **The quality gate is unrunnable by an agent — which makes it unenforceable** —
+      **MIGRATED to [`docs/dev/work/items/0001-gate-unrunnable-by-agent.md`](work/items/0001-gate-unrunnable-by-agent.md)** —
+      history below kept for the record. the full
       `python -m scripts.gate` takes **~13 minutes**; an agent's shell commands are hard-capped
       at **10**. So the project's single definition of "green" — the thing AGENTS.md,
       CONTRIBUTING.md and CI all point at — **cannot be executed by its primary developer**.
@@ -1291,7 +1305,9 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       `overflow-anchor: none` closed the defect first and is structurally simpler (one CSS
       property, no JS timing at all).
 
-- [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** — the wordmark
+- [ ] **Wordmark sweep owed on `docs/wiki/` + `docs/dev/reviews/`** —
+      **MIGRATED to [`docs/dev/work/items/0002-wordmark-sweep.md`](work/items/0002-wordmark-sweep.md)** —
+      history below kept for the record. the wordmark
       rule (`sartor.` only when standing alone; **`Sartor`** in sentences) is now a
       durable rule in [`doc-style-guide.md`](doc-style-guide.md), and the
       **user-facing surface was swept** on `chore/scorecard-and-docs-voice` (39
@@ -1394,7 +1410,10 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       pins the new exclusion. Verified against this repo's actual HEAD via
       `python scripts/wiki_freshness.py` (see lane report for before/after counts).
 
-- [ ] **PyPI wheel not installable — data files not packaged** — **RESOLVED-PENDING-PUBLISH
+- [ ] **PyPI wheel not installable — data files not packaged** —
+      **The still-open [HUMAN] remainder MIGRATED to
+      [`docs/dev/work/items/0003-human-github-toggles.md`](work/items/0003-human-github-toggles.md)**
+      — history below kept for the record. **RESOLVED-PENDING-PUBLISH
       2026-07-07 (`fix/packaging-install`); left open only for the still-blocked
       `[HUMAN]` publish prerequisite below.** `create_app()` did `Flask(__name__)`, so an
       installed (non-editable) wheel looked for `templates/` next to the `app.py` module in
@@ -1439,7 +1458,9 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       this fix's anchored scope — small, not yet ledgered as its own row. The PyPI `[HUMAN]`
       Trusted Publisher / GHCR blocker above stays open (unrelated, gated on the repo rename).
 
-- [ ] **In-app rendered citation viewer (deferred)** — the avatar's numbered citations
+- [ ] **In-app rendered citation viewer (deferred)** —
+      **MIGRATED to [`docs/dev/work/items/0004-in-app-citation-viewer.md`](work/items/0004-in-app-citation-viewer.md)** —
+      history below kept for the record. the avatar's numbered citations
       (Sprint 7.8d, `feat/avatar-citation-format`) link to their source **on GitHub** (wiki
       pages on `main`, code lines pinned to the unit `sha`). An **in-app** viewer — a route
       serving the wiki/source rendered in-shell so a citation opens *inside* sartor. instead
@@ -1455,7 +1476,10 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       **→ Reaffirmed (2026-07-23, ledger walk-through, `fix/panel-css-cascade-residuals`):**
       owner confirms no friction signal has shown up since — stays deferred, unchanged.
 
-- [ ] **Grounding / hallucination metric — calibrated layers (B)** — the deterministic
+- [ ] **Grounding / hallucination metric — calibrated layers (B)** —
+      **MIGRATED to [`docs/dev/work/items/0005-grounding-calibration-persistence-gap.md`](work/items/0005-grounding-calibration-persistence-gap.md)**
+      (re-found independently 2026-07-28, same bug, still open) — history below kept
+      for the record. the deterministic
       label-free **L0** slice shipped (`eval/grounding-metric-l0`:
       `hardening.compute_fabricated_specifics` + `hardening.assemble_source_union`, a
       `groundedness` composite riding every eval record). The **calibrated model-based
@@ -1777,7 +1801,11 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       staged commitments (mypy `--strict` ratchet, ratchet-then-block gate hardness,
       skills/hooks packaging coherence) are now done.
 
-- [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** — witness-only
+- [ ] **2026-07 efficiency review — PX-37..PX-56 aggregate** —
+      **The 2 still-open rows MIGRATED to
+      [`docs/dev/work/items/0006-px39-real-corpus-baseline.md`](work/items/0006-px39-real-corpus-baseline.md) (PX-39)
+      and [`0007-px46-memory-consolidation.md`](work/items/0007-px46-memory-consolidation.md) (PX-46)**
+      — history below kept for the record. witness-only
       four-area efficiency review (agent-process DX / runtime / docs-wiki /
       tests-CI) at pin `4196d0c`: 42 register findings (14 adversarially
       verified: 4 CONFIRMED / 9 WEAKENED / 1 REFUTED-dropped) → 20 banded
@@ -2243,7 +2271,9 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       picked — stays out of scope. Tool grant unchanged (method widened, not
       capability). Full detail: `CHANGELOG.md` `[Unreleased]` Governance entry.
 
-- [ ] **Compose-time rewrite latitude — the "generate but don't invent" dial** — filed
+- [ ] **Compose-time rewrite latitude — the "generate but don't invent" dial** —
+      **MIGRATED to [`docs/dev/work/items/0008-compose-rewrite-dial.md`](work/items/0008-compose-rewrite-dial.md)** —
+      history below kept for the record. filed
       2026-07-21 (`docs/v110-endgame-scope`), **substantially revised the same day**
       (`docs/compose-rewrite-dial`) after an owner-led analysis replaced the original framing.
       **Full findings + design context: [`COMPOSE_REWRITE_DIAL.md`](COMPOSE_REWRITE_DIAL.md)** —
