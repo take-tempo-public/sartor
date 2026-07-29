@@ -31,3 +31,17 @@ workflow once the tuning phase opens.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking (migrated, with the Microsoft-JD-exclusion update folded in)
+
+### 2026-07-28 — item 6 (PX-39) closed; this item's evidence path is now empty, not just JD-excluded
+
+Owner directive: keep `depends_on = [6]` and `status = blocked` — do not
+re-scope on this branch. Item 6 closed using zero-spend historical telemetry,
+not a fresh paid run, so the "same paid runs yield both PX-39's deliverable
+and a side-by-side" premise in `COMPOSE_REWRITE_DIAL.md`'s own "What would
+validate this" section never happened — no side-by-side was produced,
+independent of the Microsoft-JD exclusion already noted above. Corrected
+`COMPOSE_REWRITE_DIAL.md:157-166` in place (original reasoning struck through
+and kept for context). The owner's separate annotation material for
+`/tune-from-annotations` (see that doc's "Where further material lands")
+remains the likely real evidence channel — still the owner's call, not
+decided here.

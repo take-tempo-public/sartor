@@ -16,7 +16,10 @@
 > the snippet in [Provenance](#provenance). **This window predates both the
 > Sonnet-5 model upgrade (2026-07-05) and the frozen-composition
 > re-architecture (2026-07-06) — see [Population eras](#population-eras-px-39--read-every-number-above-against-its-era)
-> before citing any number below as "current."**
+> before citing any number below as "current."** A second, later batch (128
+> records, real owner usage 2026-07-06 → 2026-07-28) was appended
+> 2026-07-28 specifically to compute the [Era 4 baseline](#era-4-real-corpus-baseline-2026-07-28)
+> below — see that section for its own provenance.
 
 ---
 
@@ -119,7 +122,8 @@ to:
 |---|---|---|---|
 | **1. Pre-split** (single Sonnet-4.6 `analyze` call) | ended 2026-06-01 | **DEFUNCT** | 86 s synthetic / 104 s real (`analyze` p50, table above) |
 | **2. Split + Sonnet 4.6** | 2026-06-01 → 2026-07-05 | **DEFUNCT** | 67–69 s synthetic `analyze` p50 (table above); **69.7 s p50 / 84.6 s p95** real split-pair latency, n=78 runs (`docs/dev/reviews/2026-07-efficiency/verification-log.md` F-run-03 — summed per `run_id` across the whole `analyze`+`generate` split pair, Sonnet 4.6, evidence pin `4196d0c` 2026-07-03) |
-| **3. Split + Sonnet 5** | 2026-07-05 → present | **CURRENT** | synthetic anchor pipeline p50 only (below) — **real-corpus p50/p95 not yet measured**, see [Open item](#open-item-real-corpus-sonnet-5-baseline) |
+| **3. Split + Sonnet 5** | 2026-07-05 → present | **CURRENT (model)** | synthetic anchor pipeline p50 only (below). Real-corpus baseline superseded by Era 4 — see below; this era's own metric (`analyze`+`generate` summed per `run_id`) can no longer be filled, because the pipeline-shape change one day later retired `generate()` from the dominant real-corpus path. |
+| **4. Frozen composition + compose-time drafting** | 2026-07-06 → present | **CURRENT (pipeline shape)** | real-corpus baseline below — see [Era 4](#era-4-real-corpus-baseline-2026-07-28). Orthogonal to Era 3: Era 3 tracks the *model* cutover (still Sonnet 5 today); Era 4 tracks the *pipeline-shape* cutover that landed one day later (`fix/compose-frozen-composition`, merged 2026-07-06) — they overlap almost entirely in time but answer different questions. Era 4 is the one that matters for "what does a real application cost/take now," because it is defined by which calls actually fire. |
 
 **Era 3's only measurement so far (synthetic anchor, already committed —
 no new spend required to cite it):** `evals/results/baseline_v1.json`
@@ -175,29 +179,96 @@ Phases 3/4 + the doc-grounded avatar): `draft_positioning_summary`,
 log, so these need no script change to surface once real telemetry exists —
 fold them into the same table refresh that closes the open item below.
 
-### Open item: real-corpus Sonnet-5 baseline
+### Era 4: real-corpus baseline (2026-07-28)
 
-**Not yet measured — do not fabricate or infer this number.** This branch
-(`perf/db-baseline`) ran in an isolated git worktree with **no `.api_key`
-file and no `ANTHROPIC_API_KEY`** in the environment (both checked, neither
-present) — the billed Anthropic API this measurement requires could not be
-spent from here. Method for whoever runs this next, on a clone/environment
-with credentials configured:
+**Closes the Era-3 Open Item (formerly "real-corpus Sonnet-5 baseline") —
+but not with the number that item asked for.** That item wanted `analyze` +
+`generate` summed per `run_id`, matching Era 2's methodology. That metric no
+longer has a subject: since `fix/compose-frozen-composition` (merged
+2026-07-06), a corpus-mode application that reaches Compose and clicks
+"Save and continue" never calls `generate()` for the résumé body at all
+(`blueprints/generation.py:817-828`, "Charter C-6: zero LLM for the résumé
+body") — tailoring moved to Compose-time drafting calls instead
+(`draft_positioning_summary`, `draft_gap_fill_bullets`, `suggest_skills`).
+13 of the 15 real Sonnet-5-era application runs measured below take this
+path. Trying to fill Era 2's old cell would either come up empty for most
+real traffic or silently mix two structurally different pipelines into one
+number — so Era 4 defines a new metric instead of forcing the old one.
+
+**New metric: total LLM wall-clock and cost per completed application,
+summed across every call sharing a `run_id`** (all call kinds, not just
+`analyze`+`generate`) — this is what a user actually experiences, and it
+survives future pipeline reshaping without going stale the way a
+call-kind-specific sum does. Two paths exist depending on whether the
+application reached Compose's freeze step or not:
+
+| Path | n | wall-clock p50 | range | cost/application p50 |
+|---|---|---|---|---|
+| **Frozen** (Compose → deterministic assemble, no `generate` call) | 13 | **109.3 s** | 96.6–151.0 s | **$0.2508** |
+| **Legacy** (`generate()` still fires) | 2 | *(not published — see below)* | 86.2 s / 163.9 s | *(not published)* |
+
+**Mandatory caveats — read before citing either row:**
+
+- **Single-user traffic.** All 15 runs are the owner's own usage (`robert`
+  persona), pre-1.1-tag — sartor. has had no other users yet. This is a
+  founding baseline, not a population measurement. **Re-measure once the 1.1
+  tag opens real user traffic**, and revisit whether n is still this small.
+- **n=13 (frozen) supports a p50, not a p95.** Era 2's 84.6 s p95 rested on
+  n=78. A p95 needs roughly that scale; nowhere close yet.
+  **n=2 (legacy) supports neither a p50 nor a range statistic** — the two
+  observations are reported as raw numbers, deliberately not averaged into a
+  fake percentile.
+- **109.3 s is not comparable to Era 2's 69.7 s.** Different call sets
+  (frozen path sums `analyze_extraction` + `analyze_synthesis` + `clarify` +
+  `draft_summary`/`draft_gap_fill`/etc.; Era 2 summed exactly two calls),
+  different model. Do not read the gap as a regression.
+- **Traffic taxonomy.** The log carries three population classes:
+  `eval:*` (synthetic harness), `bootstrap:*` (annotation-bootstrap harness),
+  and bare usernames (live/real usage). Both harness prefixes are excluded
+  from this baseline — "real" means neither, not just "not `eval:*`" (see
+  the eval-vs-live traffic note below).
+- **2 additional analyze-only sessions excluded as incomplete** — the user
+  started analyze but did not continue to Compose or generate, so there is
+  no "application" to measure a total for.
+- **Zero new spend.** Every record was already paid for as ordinary app
+  usage 2026-07-06 → 2026-07-28; nothing was run for this measurement.
+
+**Provenance:** owner-run real usage, copied as pure per-call metadata (no
+prompt/response text — see the 13-field schema at `analyzer.py:1235-1251`)
+into this project's own gitignored `logs/llm_calls.jsonl` on 2026-07-28.
+Reproduce with:
 
 ```bash
-# A FEW real (non-eval:*) analyze -> clarify -> generate runs against a real
-# corpus (the app's normal flow, or evals/runner.py --suite real if a real
-# fixture is seeded) populate logs/llm_calls.jsonl, then:
-python -m scripts.perf_baseline --log logs/llm_calls.jsonl
-# Segment by model (analyzer.py logs "model" per record — analyzer.py:1225)
-# and, once frozen-composition traffic exists, by frozen-vs-fallback path.
+python - <<'PY'
+import json, collections, re, statistics as st
+from hardening import compute_call_cost
+rows = [json.loads(l) for l in open("logs/llm_calls.jsonl", encoding="utf-8") if l.strip()]
+byrun = collections.defaultdict(list)
+for r in rows:
+    if r.get("run_id"):
+        byrun[r["run_id"]].append(r)
+HEX12 = re.compile(r"^[0-9a-f]{12}$")
+INCOMPLETE = {"88e6ea834311", "a061590e6edd"}  # analyze-only, abandoned
+sel = {
+    rid: recs for rid, recs in byrun.items()
+    if HEX12.match(rid) and rid not in INCOMPLETE
+    and {(x.get("username") or "") for x in recs} == {"robert"}
+    and any(x.get("model") == "claude-sonnet-5" for x in recs)
+}
+legacy, frozen = [], []
+for rid, recs in sel.items():
+    kinds = {x.get("call") for x in recs}
+    lat = sum(x.get("latency_ms") or 0 for x in recs)
+    cost = sum(compute_call_cost(x) for x in recs)
+    (legacy if "generate" in kinds else frozen).append((rid, lat, cost))
+for name, d in (("frozen", frozen), ("legacy", legacy)):
+    L = sorted(x[1] for x in d)
+    print(name, "n=", len(d), "p50=", st.median(L) / 1000 if len(L) >= 3 else "n/a")
+PY
 ```
 
-Target: the smallest n that yields a usable p50/p95 (a handful of runs, not
-a full corpus sweep) — should stay well under $1 per the project's own
-eval-smoke cost precedent (~$0.35–0.40 for a full synthetic smoke run).
-Report the exact cost + wall-clock alongside the numbers, same as every
-other measurement in this file.
+**Open for next round:** p95 for the frozen path, once traffic accumulates
+post-1.1. Not blocking — flagged so it doesn't get forgotten.
 
 ---
 
@@ -404,9 +475,11 @@ A perf story with three things that went sideways and were caught in telemetry i
 
 | Number | Source |
 |---|---|
-| All latency / token / cost figures | `logs/llm_calls.jsonl`, 1,824 records, 2026-05-06 → 2026-06-02 |
+| All latency / token / cost figures (Eras 1–3) | `logs/llm_calls.jsonl`, 1,824 records, 2026-05-06 → 2026-06-02 |
+| Era 4 baseline figures | `logs/llm_calls.jsonl`, +128 records appended 2026-07-28, real usage 2026-07-06 → 2026-07-28, `username=robert` |
 | Synthetic segment | `username=eval:{data-scientist-junior,pm-senior,sre-mid-level}` |
-| Real segment | `username ∈ {robert, testuser, demo}` |
+| Real segment (Eras 1–3) | `username ∈ {robert, testuser, demo}` |
+| Harness (non-real) segments | `username` prefixed `eval:` (synthetic) or `bootstrap:` (annotation harness) — neither counts toward a real-corpus baseline |
 | `analyze` 103 s / −34% headline | [`R1_PHASE2_RESULTS.md`](R1_PHASE2_RESULTS.md) (real-scale baseline) |
 | Streaming perceived-latency claim | `CHANGELOG.md` [1.0.1] "Added — Performance (R2 streaming)" |
 | Quality recovery + gate | [`../evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md) 2026-05-30 → 2026-06-02 |

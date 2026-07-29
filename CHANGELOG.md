@@ -13,6 +13,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: architecture docs + real-corpus baseline (`docs/pipeline-truth-and-era4-baseline`)
+
+Resuming PX-39 (work item 6) surfaced that `docs/architecture.md`'s three
+Mermaid diagrams and prose still described the pipeline shape from *before*
+`fix/compose-frozen-composition` (merged 2026-07-06) — missing the
+Compose-time Sonnet drafting calls (`draft_positioning_summary`,
+`draft_gap_fill_bullets`), the freeze step (`approved_composition`), and the
+frozen-vs-legacy branch at Generate. Fixed all three diagrams + surrounding
+prose; `docs/wiki/pages/pipeline-stages.md` and `llm-call-catalog.md` were
+already accurate and served as the source.
+
+PX-39 itself closed with a different deliverable than filed: its planned
+metric (`analyze`+`generate` summed per `run_id`, matching Era 2) has no
+subject on 13 of 15 real Sonnet-5-era runs, because the frozen-composition
+path never calls `generate()`. Defined a new **Era 4** in
+`docs/dev/perf/PERFORMANCE_HISTORY.md` instead — total LLM wall-clock + cost
+per completed application, summed per `run_id` — using zero-spend historical
+telemetry (128 records, owner's own real usage 2026-07-06 → 2026-07-28,
+copied into this project's gitignored `logs/llm_calls.jsonl`): frozen path
+n=13, p50=109.3s, $0.2508/application; legacy path n=2, reported as raw
+observations (86.2s/163.9s), no p50 published at that sample size. Single-user
+traffic, pre-1.1-tag — flagged for re-measurement once real users arrive.
+
+Also closed the eval-vs-live traffic doc contradiction (work item 17) across
+three files (`PERFORMANCE_HISTORY.md`'s self-contradiction, `RELEASE_ARC.md`
+step 12's now-dead harness prescription, `COMPOSE_REWRITE_DIAL.md`'s stale
+"same paid runs" evidence premise for item 8), and corrected `SECURITY.md`'s
+description of `logs/llm_calls.jsonl` (metadata only, no prompt/response
+text — it never carried what that file claimed).
+
+Three new work items filed from what the pipeline trace surfaced: a legacy
+`generate()` path still reachable by skipping Compose (item 20, owner flagged
+as "not appropriate behavior"), an LLM call invisible to telemetry (item 21,
+`check_refinement_scope`), and four call kinds with real call sites but zero
+logged rows ever (item 22).
+
+- `docs/architecture.md`: all three Mermaid diagrams + prose refreshed;
+  "Sonnet 4.6" labels corrected to Sonnet 5 throughout; source-of-truth
+  pointer corrected from `app.py` (zero routes since 8.3h) to `blueprints/`.
+- `docs/dev/perf/PERFORMANCE_HISTORY.md`: new Era 4 section; Era-3 status
+  reframed; provenance table updated.
+- `docs/dev/RELEASE_ARC.md`, `docs/dev/COMPOSE_REWRITE_DIAL.md`,
+  `SECURITY.md`, `docs/wiki/pages/llm-call-catalog.md`,
+  `docs/wiki/pages/pipeline-stages.md`: corrected as above.
+- `docs/dev/work/items/`: 0006, 0017 closed; 0008 updated (append-only);
+  0020, 0021, 0022 filed. `BOARD.md` regenerated — now at the 10-item open
+  ceiling (charter W-1.4 reduction-sprint threshold).
+- No production code changed.
+
 ### Added: structured work-item tracking + real quality-gate fix (`chore/work-item-tracking`)
 
 Replaces the prose Carry-forward ledger's per-item current-state reconstruction

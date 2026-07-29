@@ -150,13 +150,16 @@ All user data stays on your machine in:
   JSON chains
 - `db/resume.sqlite` — the structured corpus + applications +
   iteration history
-- `logs/llm_calls.jsonl` — LLM telemetry (request bodies + responses)
+- `logs/llm_calls.jsonl` — LLM call telemetry (per-call metadata only:
+  model, token counts, latency, username, `prompt_version`, status — no
+  request or response text; see `analyzer.py`'s `_emit_call_log` for the
+  exact 13-field schema)
 
 All of these directories are gitignored. **Do not commit them.**
-The `output/context_*.json` chain and `logs/llm_calls.jsonl`
-contain your full résumé text, every job description you've
-analyzed, and the LLM's responses including your candidate
-identity — treat them as sensitive on disk.
+The `output/context_*.json` chain contains your full résumé text, every
+job description you've analyzed, and the LLM's responses including your
+candidate identity — treat it as sensitive on disk. `logs/llm_calls.jsonl`
+is lower-sensitivity (metadata only) but still gitignored by default.
 
 ## Reporting a vulnerability
 

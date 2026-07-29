@@ -21,22 +21,44 @@
 ## System overview
 
 Sartor is a local-first Flask app that tailors résumés and
-optional cover letters to specific job descriptions. The
-pipeline is **two-or-more LLM calls in sequence**, each gated by
-a human review or curation step:
+optional cover letters to specific job descriptions. Analyze and
+Clarify establish JD strategy and candidate detail; **all résumé
+tailoring happens at Compose** (Sonnet 5 drafting against the JD
+and corpus); final assembly is deterministic once Compose is
+frozen — zero LLM calls for the résumé body (P1 hardening
+boundary, charter C-6):
 
 1. **Analyze** *(two-pass)* — Haiku 4.5 extraction (JD signals,
    keywords, typed hidden_qualities) → Sonnet 5 synthesis
-   (comparison, suggestions, overall strategy)
+   (comparison, suggestions, overall strategy). Produces strategy
+   + keywords only — analyze does **not** select bullets.
 2. **Clarify** *(optional, Haiku)* — surfaces real-but-undocumented
    candidate experience
-3. **Recommend** (Haiku) — selects best bullets + summary variants
-   for the JD; runs in parallel
-4. **Generate** (Sonnet) — produces the tailored résumé markdown,
-   honoring user curation
-5. **Iterate** *(optional, repeatable)* — clarify-iteration + new
-   generate per round; child context files chain via `parent_context_path`
-6. **Generate cover letter** *(optional, Sonnet)* — against the
+3. **Compose** — `recommend_bullets` (Haiku) proposes an advisory
+   bullet shortlist; a deterministic resolver
+   (`(recommended ∪ added ∪ pinned ∪ accepted_generated) − excluded`,
+   `corpus_to_json_resume.py:225`) decides the authoritative set,
+   with the user's pins/excludes/adds always winning. Sonnet 5
+   drafts JD-tailored content: `draft_positioning_summary`
+   (summary) and `draft_gap_fill_bullets` (new bullet proposals,
+   accept/retire), plus Haiku `recommend_skills`/`suggest_skills`.
+   User curates, then **"Save and continue" freezes** the
+   composition into `approved_composition` — deterministic from
+   that point on.
+4. **Generate** — if Compose was frozen: **zero LLM calls**, the
+   résumé body assembles directly from `approved_composition`.
+   If the user reached this step without freezing — still a live
+   path today, not yet closed off (see the wizard-rail gap noted
+   below the diagram) — it falls back to the legacy Sonnet
+   `generate()` call instead.
+5. **Surgical refinement** *(optional, corpus mode)* — Sonnet
+   drafts a reworded bullet (`draft_surgical_refinement`, no new
+   facts permitted); accepting loops back to Compose rather than
+   re-invoking Generate.
+6. **Iterate** *(optional, repeatable)* — clarify-iteration + a
+   new Generate pass per round (same frozen/legacy branch as
+   step 4); child context files chain via `parent_context_path`
+7. **Generate cover letter** *(optional, Sonnet)* — against the
    finalized résumé, with the same refine/iterate affordances
 
 Full sequence diagram — rendered inline below (the single source; see [The four canonical diagrams](#the-four-canonical-diagrams)).
@@ -47,25 +69,35 @@ Full sequence diagram — rendered inline below (the single source; see [The fou
 %% Shows the LLM calls that can fire across a single application,
 %% the Flask route that triggers each, and which model is used.
 %% analyze() is a TWO-PASS call: Haiku 4.5 extraction (JD signals) feeds
-%% a Sonnet 4.6 synthesis pass (the analyze→generate cache writer). Sonnet
-%% 4.6 also handles generate / iterate_clarify / generate_cover_letter;
-%% Haiku 4.5 handles clarify and the structured-recommendation calls
-%% (recommend, recommend_summary, critique_proposal,
-%% promote_clarification_to_bullet).
+%% a Sonnet 5 synthesis pass (the analyze→generate cache writer) — it
+%% produces strategy + keywords only, never bullet selection.
+%% All résumé TAILORING happens at Compose: recommend_bullets (Haiku)
+%% proposes an advisory shortlist; draft_positioning_summary and
+%% draft_gap_fill_bullets (both Sonnet 5) draft JD-tailored content;
+%% recommend_skills/suggest_skills (Haiku) handle skills. "Save and
+%% continue" freezes the composition (approved_composition) —
+%% Generate then assembles the résumé body with ZERO LLM calls
+%% (Charter C-6). A user who reaches Generate without freezing still
+%% falls back to the legacy generate() Sonnet call (see the alt
+%% branch below) — this is a known live gap, not a documented design.
+%% draft_surgical_refinement (Sonnet 5) handles post-generate rewording
+%% and loops back to Compose rather than re-calling Generate.
 %% 
 %% Renders natively on GitHub Markdown and in any Mermaid live editor.
-%% Source: analyzer.py + app.py route map (verified 2026-05-25;
-%% two-pass analyze + clarify→Haiku updated 2026-06-02, R1 Phase 2 / v1.0.3).
+%% Source: analyzer.py + blueprints/ route map (re-verified 2026-07-28
+%% against the frozen-composition + Compose-time-drafting architecture;
+%% originally verified 2026-05-25, two-pass analyze + clarify→Haiku
+%% updated 2026-06-02, R1 Phase 2 / v1.0.3).
 
 sequenceDiagram
     accTitle: Sartor apply-run pipeline sequence
-    accDescr: Sequence diagram of one full apply-run across Analyze, optional Clarify, Compose, Template preview, Generate, optional repeatable Iterate, and optional Cover letter generation. Shows the user, the static/app.js frontend, Flask app.py, analyzer.py, the heavy-reasoning and structured-selection LLM tiers, the SQLite database, and the on-disk output directory, with the Flask route and analyzer call each step triggers.
+    accDescr: Sequence diagram of one full apply-run across Analyze, optional Clarify, Compose (bullet shortlist, Compose-time Sonnet drafting, freeze), Template preview, Generate (frozen deterministic assemble vs legacy LLM fallback), optional surgical refinement looping back to Compose, optional repeatable Iterate, and optional Cover letter generation. Shows the user, the static/app.js frontend, the Flask blueprints, analyzer.py, the heavy-reasoning and structured-selection LLM tiers, the SQLite database, and the on-disk output directory, with the Flask route and analyzer call each step triggers.
     autonumber
     participant U as User
     participant FE as Frontend<br/>(static/app.js)
-    participant APP as Flask app.py
+    participant APP as Flask blueprints
     participant ANL as analyzer.py
-    participant SO as Sonnet 4.6
+    participant SO as Sonnet 5
     participant HK as Haiku 4.5
     participant DB as SQLite<br/>(db/resume.sqlite)
     participant FS as Disk<br/>(output/&#60;user&#62;/)
@@ -101,55 +133,89 @@ sequenceDiagram
     FE->>APP: POST /api/answer-clarifications
     APP->>FS: merge answers into context
 
-    Note over U,FS: Step 3 — Compose (recommend + curate)
-    FE->>APP: POST /api/applications/&#60;id&#62;/recommend
+    Note over U,FS: Step 3 — Compose (bullet shortlist + LLM tailoring + curation + freeze)
+    FE->>APP: POST /api/applications/&#60;id&#62;/recommend (auto)
     APP->>ANL: recommend_bullets(ctx)
-    ANL->>HK: call_kind="recommend" (~5s)
-    HK-->>ANL: bullet_ids[] per experience
+    ANL->>HK: call_kind="recommend" (~8s)
+    HK-->>ANL: bullet_ids[] per experience (advisory shortlist only)
     ANL-->>APP: recommendations
     APP->>FS: write llm_recommendations to context
-    FE->>APP: POST /api/applications/&#60;id&#62;/recommend-summary
-    APP->>ANL: recommend_summaries(ctx)
-    ANL->>HK: call_kind="recommend_summary" (~3s)
-    HK-->>ANL: summary_item_id
-    ANL-->>APP: rec
-    APP->>FS: write llm_summary_recommendation
-    U->>FE: pin/exclude/add bullets, pick summary
+    FE->>APP: POST /api/applications/&#60;id&#62;/draft-summary (auto, once)
+    APP->>ANL: draft_positioning_summary(ctx, jd)
+    ANL->>SO: call_kind="draft_summary"
+    SO-->>ANL: drafted two-sentence summary
+    ANL-->>APP: draft
+    APP->>FS: write composition_overrides.summary_text
+    FE->>APP: POST /api/applications/&#60;id&#62;/draft-gap-fill (auto, once)
+    APP->>ANL: draft_gap_fill_bullets(ctx, jd)
+    ANL->>SO: call_kind="draft_gap_fill"
+    SO-->>ANL: proposed new bullets, JD-driven + corpus-grounded
+    ANL-->>APP: proposals
+    APP->>FS: write llm_gap_fill_proposals (transient — accept creates a pending Bullet)
+    FE->>APP: POST .../recommend-skills or /suggest-skills (auto or user "Suggest")
+    APP->>ANL: recommend_skills / suggest_skills
+    ANL->>HK: call_kind="recommend_skill" / "suggest_skill"
+    HK-->>ANL: skill ordering / proposed new skills (pending review)
+    U->>FE: pin/exclude/add bullets, accept/retire gap-fill, approve skills
     FE->>APP: POST /api/applications/&#60;id&#62;/composition
-    APP->>FS: write composition_overrides
+    APP->>FS: write composition_overrides (deterministic resolver — see step overview above)
+    U->>FE: click SAVE AND CONTINUE
+    FE->>APP: POST .../composition {freeze:true}
+    APP->>DB: freeze_approved_composition()
+    Note over DB: deterministic JSON Resume snapshot + work_provenance<br/>(no LLM — corpus_to_json_resume.py:349)
+    DB-->>APP: approved_composition
+    APP->>FS: write approved_composition to context
 
     Note over U,FS: Step 4 — Template (live preview, no LLM)
     U->>FE: select persona
     FE->>APP: GET /api/applications/&#60;id&#62;/preview?template_id=N
-    APP->>DB: build_json_resume_from_corpus()
+    APP->>DB: approved_composition if frozen, else build_json_resume_from_corpus()
     DB-->>APP: JSON Resume v1.0 doc
     APP-->>FE: rendered HTML
-    FE-->>U: iframe shows live preview
+    FE-->>U: iframe shows live preview (byte-identical to eventual download)
 
     Note over U,FS: Step 5 — Generate
     U->>FE: click GENERATE
     FE->>APP: POST /api/generate
-    APP->>ANL: generate(ctx, with_cover_letter=False)
-    ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
-    SO-->>ANL: {resume_content, changes_summary}
-    ANL-->>APP: parsed
+    alt frozen — Compose was completed (the common path)
+        APP->>APP: _assemble_from_frozen_composition(frozen_doc)
+        Note over APP: Charter C-6: ZERO LLM calls for the résumé body.<br/>markdown + selected_bullets derived from approved_composition.work_provenance
+        APP->>FS: write resume_*.docx / .pdf / .md directly from the JSON Resume doc
+    else legacy — user reached Generate without freezing (still a live path today, see note below diagram)
+        APP->>ANL: generate(ctx, with_cover_letter=False)
+        ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
+        SO-->>ANL: {resume_content, changes_summary}
+        ANL-->>APP: parsed
+        APP->>FS: write resume_*.docx / .pdf / .md
+    end
     APP->>FS: save_iteration_context() → context_*_iter1.json
-    APP->>FS: write resume_*.docx / .pdf / .md
     APP->>DB: write generated output back onto the iter-0 ApplicationRun
     APP-->>FE: paths + previews
     FE-->>U: Step 6 panel with downloads
 
+    Note over U,FS: Step 5b — Surgical refinement (optional, corpus mode — loops back to Compose)
+    U->>FE: select résumé text, request a targeted rewrite
+    FE->>APP: POST /api/validate-refinement
+    APP->>ANL: check_refinement_scope() — Haiku, direct client.messages.create (no call_kind, no telemetry row)
+    FE->>APP: POST /api/applications/&#60;id&#62;/draft-refinement
+    APP->>ANL: draft_surgical_refinement(ctx, jd)
+    ANL->>SO: call_kind="draft_surgical_refinement"
+    SO-->>ANL: reworded bullet (no new facts permitted)
+    U->>FE: accept
+    FE->>APP: POST /api/applications/&#60;id&#62;/accept-refinement
+    APP->>FS: write accepted bullet (deterministic)
+    APP-->>FE: wizardGoTo(3) — back to Compose
+    Note over FE: does NOT re-invoke /api/generate
+
     Note over U,FS: Step 6 — Iterate (optional, repeatable)
-    U->>FE: edit preview, click REFINE / ITERATE CLARIFY
+    U->>FE: edit preview, click ITERATE CLARIFY
     FE->>APP: POST /api/iterate-clarify
     APP->>ANL: clarify_iteration(ctx, edits, signals)
     ANL->>SO: call_kind="iterate_clarify" (~14s)
     SO-->>ANL: 3-5 follow-up questions
     APP->>FS: append to clarification_questions
-    U->>FE: submit answers
-    FE->>APP: POST /api/generate (again)
-    APP->>ANL: generate(ctx with iter≥1)
-    ANL->>SO: call_kind="generate" again
+    U->>FE: submit answers, click GENERATE again
+    FE->>APP: POST /api/generate (again — same frozen/legacy branch as Step 5)
     Note over APP: child context: parent_context_path chain
 
     Note over U,FS: Optional — Cover letter
@@ -175,24 +241,30 @@ also carries `accTitle`/`accDescr` a11y directives for screen readers.
 
 | Diagram | Source | Purpose |
 |---|---|---|
-| Pipeline (§System overview, above) | `analyzer.py` + `app.py` route map | One full apply-run, sequence-diagram view |
+| Pipeline (§System overview, above) | `analyzer.py` + `blueprints/` route map | One full apply-run, sequence-diagram view |
 | Persistence (§Persistence model) | `db/models.py` | DB tables + FK relationships + cascade behavior |
 | Data flow (§context_set lifecycle) | `hardening.py` + route handlers | `context_set` lifecycle across iterations |
-| LLM routing (§LLM routing + cost) | `analyzer.py` `_call_llm` sites + `docs/dev/perf/PERF_ANALYZE.md` | Which route fires which model, with cost / latency |
+| LLM routing (§LLM routing + cost) | `analyzer.py` `_call_llm` sites + `docs/wiki/pages/llm-call-catalog.md` | Which route fires which model, with cost / latency |
 
 All four render natively on GitHub in a fenced `mermaid` block, and
 parse cleanly by every modern LLM. Use a local Mermaid live editor
-(`mermaid.live`) to preview changes before commit.
+(`mermaid.live`) to preview changes before commit. `app.py` carries zero
+`@app.route` handlers as of v1.0.8 (8.3h) — every route lives on a domain
+blueprint (see [Module map](#module-map) below), so `blueprints/` is this
+table's route-map source, not `app.py`.
 
-> **Known staleness (2026-07-07, F-22).** The fenced diagrams above still
-> label the heavy-reasoning tier "Sonnet 4.6" — the running system uses
-> **Sonnet 5** (`claude-sonnet-5`); Haiku 4.5 labels are still correct. The
-> prose in "LLM routing + cost" below has the corrected wording. A full
-> diagram content refresh (fixing the model-version labels themselves) is
-> scheduled for the v1.0.9 docs-site epic
-> ([`docs/dev/documentation-architecture.md`](dev/documentation-architecture.md));
-> until then, treat model names inside the fenced diagrams as illustrative,
-> not authoritative.
+> **Resolved 2026-07-28 (was: "Known staleness," 2026-07-07, F-22).** The
+> prior note here covered only the model-version labels ("Sonnet 4.6" vs the
+> running `claude-sonnet-5`) — those are now fixed inline throughout this
+> file. The larger issue found on the same pass: all four diagrams
+> (and this file's prose) still described the pipeline shape from *before*
+> `fix/compose-frozen-composition` (merged 2026-07-06) — missing the
+> Compose-time Sonnet drafting calls (`draft_positioning_summary`,
+> `draft_gap_fill_bullets`), the freeze step (`approved_composition`), and
+> the frozen-vs-legacy branch at Generate. That structural gap is fixed as
+> of this edit; `docs/wiki/pages/pipeline-stages.md` and
+> `docs/wiki/pages/llm-call-catalog.md` were already accurate and served as
+> the source for this refresh.
 
 ---
 
@@ -456,18 +528,25 @@ Highlights:
 Full picture — rendered inline below.
 
 ```mermaid
-%% LLM routing — every _call_llm site in analyzer.py, with model
-%% assignment and cache-prefix usage.
+%% LLM routing — every _call_llm / _call_llm_streaming site in analyzer.py,
+%% with model assignment and cache-prefix usage.
 %% 
-%% Source: analyzer.py `_call_llm(...)` invocations + the SONNET_MODEL
-%% / HAIKU_MODEL constants. Cost / latency numbers from
-%% docs/dev/perf/PERF_ANALYZE.md (real production data across 83+ runs);
-%% two-pass analyze + clarify→Haiku figures from
-%% docs/dev/perf/R1_PHASE2_RESULTS.md (R1 Phase 2 / v1.0.3, 2026-06-02).
+%% Source: analyzer.py `_call_llm(...)` / `_call_llm_streaming(...)`
+%% invocations + the SONNET_MODEL / HAIKU_MODEL constants (re-derived
+%% 2026-07-28 — see docs/wiki/pages/llm-call-catalog.md for the full,
+%% continuously-maintained table this diagram summarizes). Cost / latency
+%% numbers below are illustrative (pre-Sonnet-5, small-n) — see
+%% docs/dev/perf/PERFORMANCE_HISTORY.md's Era 4 section for the current
+%% real-corpus baseline.
 %% 
 %% Two model tiers:
-%%   - Sonnet 4.6: heavy reasoning, JSON-structured output, costlier
-%%   - Haiku 4.5:  structured selection / classification, cheap, fast
+%%   - Sonnet 5: heavy reasoning, JSON-structured output, costlier
+%%   - Haiku 4.5: structured selection / classification, cheap, fast
+%% 
+%% generate's route is CONDITIONAL: it only fires when Compose was not
+%% frozen (approved_composition absent) — the common path assembles the
+%% résumé body deterministically with zero LLM calls. See the "System
+%% overview" sequence diagram above for the frozen/legacy branch.
 %% 
 %% A call uses the "cached_user_prefix" trick when it can re-use a long
 %% static user-message block across attempts within the same run (the
@@ -477,27 +556,39 @@ Full picture — rendered inline below.
 %% EXTRACTION_SYSTEM_PROMPT (separate cache pool). The clarify variants
 %% override the system prompt, so they pay one extra cache-miss on the
 %% system block.
+%% 
+%% check_refinement_scope (Haiku) is deliberately NOT in this diagram —
+%% it calls client.messages.create directly, bypassing _call_llm, so it
+%% has no call_kind and produces no logs/llm_calls.jsonl row.
 
 graph LR
     accTitle: Sartor LLM call routing and cost tiers
-    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning model subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter) and a structured-selection model subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences), each labeled with p50 latency and median output tokens, connected from the Flask route that triggers it, with a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
-    subgraph SO[Sonnet 4.6 — heavy reasoning]
+    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
+    subgraph SO[Sonnet 5 — heavy reasoning]
         direction TB
-        A1[analyze_synthesis<br/>p50 = 58 s<br/>median out: 2600 tok<br/>cache writer]
-        A3[iterate_clarify<br/>p50 = 14 s<br/>median out: 665 tok]
-        A4[generate<br/>p50 = 50 s<br/>median out: 2268 tok]
-        A5[generate_cover_letter<br/>p50 = 17 s<br/>median out: 732 tok]
+        A1[analyze_synthesis<br/>cache writer<br/>strategy + keywords only]
+        A3[iterate_clarify]
+        A4[generate<br/>CONDITIONAL — only when<br/>Compose was not frozen]
+        A5[generate_cover_letter]
+        A6[draft_summary<br/>Compose-time drafting]
+        A7[draft_gap_fill<br/>Compose-time drafting]
+        A8[draft_surgical_refinement<br/>post-generate reword, no new facts]
     end
 
     subgraph HK[Haiku 4.5 — structured selection]
         direction TB
-        A0[analyze_extraction<br/>p50 = 10 s<br/>median out: 1100 tok]
-        A2[clarify<br/>p50 = 7.5 s<br/>median out: 630 tok]
-        H1[recommend bullets<br/>p50 = 5 s<br/>median out: 417 tok]
-        H2[recommend_summary<br/>p50 = 3 s<br/>median out: 164 tok]
-        H3[critique_proposal<br/>p50 = 5 s<br/>median out: 387 tok]
-        H4[promote_clarification_to_bullet<br/>per-promotion]
+        A0[analyze_extraction]
+        A2[clarify]
+        H1[recommend<br/>bullet shortlist — advisory only]
+        H2[recommend_summary]
+        H3[critique_proposal]
+        H4[promote_clarification_to_bullet]
         H5[extract_experiences<br/>onboarding/corpus_import]
+        H6[recommend_skill]
+        H7[suggest_skill]
+        H8[suggest_skill_from_corpus]
+        H9[recommend_experience_summary]
+        H10[avatar_answer<br/>doc-grounded assistant]
     end
 
     %% Routes that fire each call
@@ -505,54 +596,76 @@ graph LR
     R_AN --> A1
     R_CL[/POST /api/clarify/] --> A2
     R_IT[/POST /api/iterate-clarify/] --> A3
-    R_GE[/POST /api/generate/] --> A4
+    R_GE[/POST /api/generate/] -.->|frozen: zero-LLM assemble instead| DET[deterministic assemble<br/>from approved_composition]
+    R_GE -->|legacy: not frozen| A4
     R_CO[/POST /api/generate-cover-letter/] --> A5
 
     R_RC[/POST /api/applications/&lt;id&gt;/recommend/] --> H1
     R_RS[/POST /api/applications/&lt;id&gt;/recommend-summary/] --> H2
+    R_DS[/POST /api/applications/&lt;id&gt;/draft-summary/] --> A6
+    R_DG[/POST /api/applications/&lt;id&gt;/draft-gap-fill/] --> A7
+    R_DR[/POST /api/applications/&lt;id&gt;/draft-refinement/] --> A8
+    R_RSK[/POST /api/applications/&lt;id&gt;/recommend-skills/] --> H6
+    R_SSK[/POST /api/applications/&lt;id&gt;/suggest-skills/] --> H7
+    R_SSC[/POST /api/users/&lt;u&gt;/corpus/skills/suggest-from-corpus/] --> H8
+    R_RES[/POST /api/applications/&lt;id&gt;/recommend-experience-summaries/] --> H9
     R_PC[/POST /api/proposals/&lt;id&gt;/critique/] --> H3
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
     R_IM[/POST /api/users/&lt;u&gt;/corpus/ingest-resume/] --> H5
+    R_AV[/POST /api/assistant/ask/] --> H10
 
     %% Cache-prefix usage. analyze_synthesis (A1) runs under the shared
     %% SYSTEM_PROMPT, so its cached prefix [SYSTEM_PROMPT][corpus+resume]
     %% is byte-identical to generate's — synthesis WRITES the prefix and
-    %% generate READS it. The Haiku analyze_extraction pass (A0) uses its
-    %% own EXTRACTION_SYSTEM_PROMPT (separate cache pool). clarify variants
-    %% override the system prompt, reusing the heavy user prefix.
+    %% generate READS it (only on the legacy/not-frozen branch). The Haiku
+    %% analyze_extraction pass (A0) uses its own EXTRACTION_SYSTEM_PROMPT
+    %% (separate cache pool). clarify variants override the system prompt,
+    %% reusing the heavy user prefix.
     classDef cached fill:#0f172a,stroke:#10b981,color:#d1fae5
     classDef nocache fill:#0f172a,stroke:#ef4444,color:#fecaca
+    classDef det fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe
 
     class A1,A4 cached
-    class A0,A2,A3,A5,H1,H2,H3,H4,H5 nocache
+    class A0,A2,A3,A5,A6,A7,A8,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10 nocache
+    class DET det
 
     %% Legend (rendered as a subgraph that visually clarifies the colors)
     subgraph Legend["legend"]
         L1[green border = uses cached_user_prefix]:::cached
         L2[red border = no cache prefix, cache_read=0]:::nocache
+        L3[blue = deterministic, no LLM]:::det
     end
 
     %% Retry attribution — every call kind has a sibling "<kind>_retry"
     %% call_kind for dashboard breakdowns. Implementation:
-    %% analyzer.py:_parse_or_retry() line 730 sets the retry call_kind.
+    %% analyzer.py `_parse_or_retry()` / `_parse_or_retry_streaming()`.
 ```
 
 *(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/llm-routing.mmd` copy was retired to remove the two-copy sync-drift risk.)*
-Latency data from real production usage in
-[`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md).
+This diagram carries no per-call latency numbers as of 2026-07-28 (the prior
+ones were pre-Sonnet-5 synthetic figures, removed rather than left stale).
+[`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md) is the original
+analyze-latency audit that motivated the R1 split (historical); for current
+real-corpus latency/cost, see
+[`docs/dev/perf/PERFORMANCE_HISTORY.md`](dev/perf/PERFORMANCE_HISTORY.md)'s
+Era 4 section.
 
 **Sonnet 5** (`claude-sonnet-5`) handles heavy reasoning:
-`analyze_synthesis`, `iterate_clarify`, `generate`,
-`generate_cover_letter`. These calls produce large JSON
-responses. `analyze` is now a **two-pass** call — a Haiku
-extraction pass feeds the Sonnet synthesis pass (combined
-p50 ~67.7 s, down from ~103 s as a single Sonnet call).
+`analyze_synthesis`, `iterate_clarify`, `generate` (legacy/not-frozen
+path only), `generate_cover_letter`, and the three Compose-time
+drafting calls — `draft_summary`, `draft_gap_fill`,
+`draft_surgical_refinement`. These calls produce large JSON
+responses. `analyze` is a **two-pass** call — a Haiku
+extraction pass feeds the Sonnet synthesis pass.
 
 **Haiku 4.5** (`claude-haiku-4-5-20251001`) handles structured
 selection / classification: `analyze_extraction` (JD signals),
 `clarify`, `recommend` (bullets), `recommend_summary`,
-`critique_proposal`, `promote_clarification_to_bullet`,
-`extract_experiences`. ~5-second median, ~$0.002 per call.
+`recommend_skill`, `suggest_skill`, `suggest_skill_from_corpus`,
+`recommend_experience_summary`, `critique_proposal`,
+`promote_clarification_to_bullet`, `extract_experiences`, and
+`avatar_answer` (the doc-grounded assistant). Full table with
+route + call site: [`docs/wiki/pages/llm-call-catalog.md`](wiki/pages/llm-call-catalog.md).
 
 **Cache prefix.** `analyze_synthesis` and `generate` share a heavy
 cached user prefix (corpus + résumé blocks): synthesis runs under
@@ -605,12 +718,21 @@ Full data-flow diagram, rendered inline below.
 %% A NEW timestamped child file is written on every /api/generate so
 %% the parent_context_path chain is the iteration audit trail.
 %% 
+%% Compose-time drafting (draft-summary, draft-gap-fill) writes into the
+%% SAME iter-0 context as recommend/recommend-summary — no new context
+%% file per Compose action. Freezing ("Save and continue") writes
+%% approved_composition into that same file; it is the gate /api/generate
+%% checks to decide the frozen (zero-LLM) vs legacy (Sonnet generate())
+%% branch.
+%% 
 %% Source: hardening.py (ContextSet TypedDict, save_iteration_context),
-%% app.py route handlers, CLAUDE.md "context_set lifecycle" diagram.
+%% blueprints/ route handlers, corpus_to_json_resume.py (freeze_approved_composition,
+%% build_json_resume_from_corpus), blueprints/generation.py (_frozen_composition,
+%% _assemble_from_frozen_composition).
 
 flowchart TD
     accTitle: Sartor context_set lifecycle data flow
-    accDescr: Flowchart of the context_set JSON artifact's lifecycle from analyze through clarify, recommend, composition, generate, iterate, and cover-letter generation, showing on-disk context and output files as rectangles, Flask routes as rounded nodes, LLM-touching steps highlighted, and deterministic Python merge/save steps, including the parent_context_path chain linking each generated iteration to its parent.
+    accDescr: Flowchart of the context_set JSON artifact's lifecycle from analyze through clarify, Compose (recommend, Compose-time Sonnet drafting, curation, freeze), generate (frozen deterministic assemble vs legacy LLM fallback, decided by whether approved_composition is present), iterate, and cover-letter generation, showing on-disk context and output files as rectangles, Flask routes as rounded nodes, LLM-touching steps highlighted, and deterministic Python merge/save steps, including the parent_context_path chain linking each generated iteration to its parent.
     %% On-disk artifacts (rectangles)
     %% Routes (rounded)
     %% LLM-touching nodes (yellow)
@@ -637,40 +759,59 @@ flowchart TD
     M2 --> CTX0
 
     CTX0 --> R3[/POST /api/applications/&lt;id&gt;/recommend/]:::route
-    R3 --> LLM3{{recommend_bullets<br/>Haiku 4.5}}:::llm
+    R3 --> LLM3{{recommend_bullets<br/>Haiku 4.5<br/>advisory shortlist only}}:::llm
     LLM3 --> M3[merge llm_recommendations]:::det
     M3 --> CTX0
-    CTX0 --> R3A[/POST /api/applications/&lt;id&gt;/recommend-summary/]:::route
-    R3A --> LLM3A{{recommend_summary<br/>Haiku 4.5}}:::llm
-    LLM3A --> M3A[merge llm_summary_recommendation]:::det
-    M3A --> CTX0
+    CTX0 --> R3B[/POST /api/applications/&lt;id&gt;/draft-summary/]:::route
+    R3B --> LLM3B{{draft_positioning_summary<br/>Sonnet 5}}:::llm
+    LLM3B --> M3B[merge composition_overrides.summary_text]:::det
+    M3B --> CTX0
+    CTX0 --> R3C[/POST /api/applications/&lt;id&gt;/draft-gap-fill/]:::route
+    R3C --> LLM3C{{draft_gap_fill_bullets<br/>Sonnet 5}}:::llm
+    LLM3C --> M3C[merge llm_gap_fill_proposals<br/>transient — accept/retire]:::det
+    M3C --> CTX0
 
-    CTX0 --> R4[/POST /api/applications/&lt;id&gt;/composition<br/>user pins / excludes / adds/]:::route
-    R4 --> M4[merge composition_overrides]:::det
+    CTX0 --> R4[/POST /api/applications/&lt;id&gt;/composition<br/>user pins / excludes / adds / accept-gap-fill/]:::route
+    R4 --> M4[merge composition_overrides<br/>deterministic resolver owns final bullet set]:::det
     M4 --> CTX0
+    CTX0 --> R4F[/POST .../composition freeze=true<br/>Save and continue/]:::route
+    R4F --> FRZ[freeze_approved_composition<br/>deterministic — Charter C-6]:::det
+    FRZ --> CTXF[(context.approved_composition<br/>+ work_provenance)]:::onDisk
 
-    CTX0 --> R5[/POST /api/generate/]:::route
-    R5 --> ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
-    ACS --> LLM4{{generate<br/>Sonnet 4.6}}:::llm
-    LLM4 --> SIC[save_iteration_context<br/>writes NEW child file]:::det
-    LLM4 --> RUNDB[persist_corpus_generation<br/>resume md + bullets/titles → run row]:::det
+    CTXF --> R5[/POST /api/generate/]:::route
+    CTX0 --> R5
+    R5 --> DEC{approved_composition<br/>present?}:::route
+    DEC -->|yes: frozen, common path| ASM[_assemble_from_frozen_composition<br/>ZERO LLM for résumé body]:::det
+    ASM --> SIC[save_iteration_context<br/>writes NEW child file]:::det
+    ASM --> RUNDB[persist_corpus_generation<br/>resume md + bullets/titles → run row]:::det
+    DEC -->|no: legacy — Compose skipped,<br/>a known live gap, see prose above| ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
+    ACS --> LLM4{{generate<br/>Sonnet 5}}:::llm
+    LLM4 --> SIC
+    LLM4 --> RUNDB
     SIC --> CTX1[(output/&lt;u&gt;/context_TS_iter1.json<br/>parent_context_path → iter 0)]:::onDisk
     SIC --> ARTOUT[(output/&lt;u&gt;/resume_TS.docx /<br/>.pdf / .md / .jsonresume.json)]:::onDisk
+
+    CTX1 --> R5R[/POST /api/applications/&lt;id&gt;/draft-refinement/<br/>surgical refinement, corpus mode/]:::route
+    R5R --> LLM3D{{draft_surgical_refinement<br/>Sonnet 5<br/>no new facts}}:::llm
+    LLM3D --> R5RA[/POST .../accept-refinement/]:::route
+    R5RA --> M3D[merge accepted bullet]:::det
+    M3D --> CTX0
+    %% Note: this loops back to Compose (CTX0) — it does NOT re-invoke /api/generate.
 
     CTX1 --> R6{Iterate?}:::route
     R6 -->|/api/save-edits| M5[merge edited_resume_text / edited_cover_letter_text<br/>NO iteration advance]:::det
     M5 --> CTX1
     R6 -->|/api/iterate-clarify| CIS[compute_iteration_signals<br/>verb diversity + grounding + edits]:::det
-    CIS --> LLM5{{clarify_iteration<br/>Sonnet 4.6}}:::llm
+    CIS --> LLM5{{clarify_iteration<br/>Sonnet 5}}:::llm
     LLM5 --> M6[append iter_qN questions]:::det
     M6 --> CTX1
-    R6 -->|/api/generate again| ACS2[_apply_chosen_summary]:::det
-    ACS2 --> LLM6{{generate iter ≥ 1<br/>Sonnet 4.6<br/>historical_resumes block}}:::llm
+    R6 -->|/api/generate again — same frozen/legacy branch as above| ACS2[_apply_chosen_summary or<br/>_assemble_from_frozen_composition]:::det
+    ACS2 --> LLM6{{generate iter ≥ 1<br/>Sonnet 5<br/>historical_resumes block<br/>legacy branch only}}:::llm
     LLM6 --> SIC2[save_iteration_context]:::det
     SIC2 --> CTX2[(output/&lt;u&gt;/context_TS_iter2.json<br/>parent_context_path → iter 1)]:::onDisk
 
     CTX2 --> R7{Cover letter?}:::route
-    R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 4.6}}:::llm
+    R7 -->|/api/generate-cover-letter| LLM7{{generate_cover_letter<br/>Sonnet 5}}:::llm
     LLM7 --> AROUTCL[(output/&lt;u&gt;/cover_TS.docx /<br/>.pdf / .md)]:::onDisk
     LLM7 --> CLDB[persist_cover_letter_md<br/>cover-letter md → same run row]:::det
 
@@ -692,6 +833,12 @@ Key invariants:
 - **Run ID propagation.** The same 12-hex `run_id` (minted in
   `/api/analyze`) propagates through every LLM call so
   `logs/llm_calls.jsonl` correlates the entire session.
+- **Freeze is the fork point.** `approved_composition` (written by
+  `freeze_approved_composition`, deterministic) is what `/api/generate`
+  checks to decide its branch. Present → zero LLM calls for the résumé
+  body. Absent — because the user reached Generate without going through
+  Compose's "Save and continue" — → the legacy Sonnet `generate()` call
+  fires instead. Both are live paths today.
 
 ---
 
@@ -741,10 +888,11 @@ without these guards. Don't bypass it.
 
 ## Test discipline
 
-`ruff`, `mypy`, `pytest` are the minimum bar. All three must
-pass before any commit lands. The eval harness
-(`python evals/runner.py --suite synthetic`) is label-gated CI
-because it costs ~$1.50 per full run.
+`python -m scripts.gate` (ruff check + ruff format --check + mypy +
+pytest, the same steps CI runs) is the minimum bar and must pass before
+any commit lands. The eval harness (`python evals/runner.py --suite
+synthetic`) is label-gated CI — ~$0.30-0.40 per full run under Sonnet 5
+(down from ~$1.50 pre-Sonnet-5; see `evals/TUNING_LOG.md`).
 
 When a prompt changes, bump `PROMPT_VERSION` in the same commit
 so the eval dashboard can attribute score changes correctly.
