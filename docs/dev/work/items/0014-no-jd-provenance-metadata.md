@@ -23,3 +23,14 @@ JD(s) per run would close both gaps together.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking
+
+### 2026-07-29 — item 11 closed; only partially overlaps with this item
+
+Item 11's fix (`fix/bootstrap-annotation-overwrite`) adds RUN provenance — a
+timestamped `bootstrap-<ts>.json` filename, surfaced as `bootstrap_file` in
+the bootstrap SSE `done` event and the server log line. That answers "which
+generation," not "which job posting": this item's actual gap (JD name/company
+by title, in `evals/results/*.jsonl` and the bootstrap artifacts themselves)
+is untouched. `depends_on = [11]` no longer applies mechanically (11 is
+closed) — this item still needs its own manifest/naming work naming the JD(s)
+per run.

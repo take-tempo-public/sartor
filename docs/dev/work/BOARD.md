@@ -2,12 +2,11 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 10 / 10 ceiling** | Blocked 4 | Deferred 4 | Watching 4 | Epics 0 | Closed 4
+**Open 9 / 10 ceiling** | Blocked 4 | Deferred 4 | Watching 4 | Epics 0 | Closed 5
 
 ## Open
 
 - **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
-- **11** -- Bootstrap run overwrites prior annotation work with no merge or versioning (`agent`) -- Every /api/annotation/bootstrap call overwrites bootstrap.json wholesale - no merge, no versioning, no history.
 - **12** -- Judge JSON-parse failure silently scores as 0, indistinguishable from a real failing grade (`agent`) -- _grade coerces a judge parse failure into score=0 instead of null/error - a crash reads as 'worst possible quality'.
 - **13** -- Collate picks an anchor jd.txt that doesn't match its own fixture's annotations (`agent`) -- Fixture's jd.txt (Zoox) has zero overlap with annotations.json's 32 bullets (100% Faros) - eval graded the wrong target. [depends on: 11]
 - **14** -- No JD-identifying metadata anywhere in bootstrap/eval artifacts (`agent`) -- Eval result records only fixture/fixture_hash, no JD name - had to open jd.txt prose to learn what a run graded. [depends on: 11]
@@ -42,9 +41,10 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 
 None.
 
-## Closed (4)
+## Closed (5)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
+- 11 -- Bootstrap run overwrites prior annotation work with no merge or versioning (Fixed on fix/bootstrap-annotation-overwrite: every run now writes a never-colliding bootstrap-<timestamp>.json (bootstrap.json kept only as a disposable latest-mirror for backward compat); reads pin to whatever annotations.json's own bootstrap_source names, when it still exists, so a later run can no longer even semantically hijack an in-progress annotation's cluster_index. Reproduced live first (docs/dev/diagnosis/bootstrap-annotation-overwrite.md) with a new regression test, tests/test_annotation_routes.py::TestBootstrapStream::test_second_run_does_not_destroy_first_runs_bootstrap, which fails on the pre-fix code and passes after.)
 - 17 -- PERFORMANCE_HISTORY.md and RELEASE_ARC.md contradict on eval-vs-live traffic source (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline). Wider than filed: PERFORMANCE_HISTORY.md's self-contradiction was removed by replacing the whole Open Item section with the new Era 4 section; RELEASE_ARC.md:1358 (step 12) got a RESOLVED note explaining the harness method never could have worked (evals/runner.py hardcodes eval: at 5 call sites and uses it as its own cost-attribution key); COMPOSE_REWRITE_DIAL.md:157-166 also assumed the harness method and got corrected (item 8's evidence premise). Also widened the taxonomy beyond eval:/non-eval: to a 3-way eval:/bootstrap:/live split, documented in PERFORMANCE_HISTORY.md's Era 4 caveats.)
 - 26 -- Push to GitHub + verify public URLs resolve (Found already satisfied in practice, never reconciled in the old doc. git remote -v confirms origin = https://github.com/take-tempo-public/sartor.git (both fetch and push), and PRs are actively merging through it (e.g. PR #75, #76). pyproject.toml:139-142 Homepage/Repository/Issues/Changelog all point at the same real, public take-tempo-public/sartor repo. The v1.0.1-era checklist row (RELEASE_CHECKLIST.md:3593-3602) was simply never checked off after the push actually happened.)

@@ -453,6 +453,93 @@ class TestBootstrapStream:
         # Pasted JDs persisted for later collate → jd.txt.
         assert (fixture_dir / "jds" / "kafka_backend.txt").exists()
 
+    def test_second_run_does_not_destroy_first_runs_bootstrap(self, ann_app, monkeypatch):
+        """Regression for item 11 (docs/dev/work/items/0011): every bootstrap run
+        wrote the SAME fixed bootstrap.json path unconditionally, with no read-
+        existing-and-merge step anywhere in the route. Running the pipeline twice
+        for the same fixture slug — e.g. re-running with grounding scorers on, or
+        just testing a JD tweak — silently destroyed the prior run's clusters,
+        orphaning any cluster_index values a saved annotations.json (real,
+        expensive human-verdicted work) still pointed at.
+
+        This test drives the real SSE route twice against the same slug and
+        asserts the first run's own generation is still recoverable on disk
+        afterward — it fails before the item-11 fix (only the second run's
+        content exists anywhere) and passes after (the first run's content
+        survives under its own versioned filename).
+        """
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        import evals.bootstrap as bootstrap_mod
+
+        def _pipeline_returning(bullet_text):
+            def _fake_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
+                per_jd = []
+                for i, (name, _text) in enumerate(jds):
+                    per_jd.append(
+                        {
+                            "jd_file": name,
+                            "run_id": f"run{i}",
+                            "analysis": {},
+                            "clarification_questions": [],
+                            "clarification_reasoning": "",
+                            "generated_resume": "",
+                            "generated_cover_letter": "",
+                            "bullets": [bullet_text],
+                            "skills": ["Python"],
+                        }
+                    )
+                return per_jd, "corpus source text"
+
+            return _fake_pipeline
+
+        client = ann_app.app.test_client()
+
+        monkeypatch.setattr(
+            bootstrap_mod, "run_pipeline_over_jd_texts", _pipeline_returning("First run bullet")
+        )
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={"username": "alice", "jds": [{"name": "jd-a", "text": "JD A text"}]},
+        )
+        assert resp.status_code == 200
+        assert "event: done" in resp.get_data(as_text=True)
+        fixture_dir = ann_app.ANNOTATION_ROOT / "alice-bootstrap"
+        first_doc = json.loads((fixture_dir / "bootstrap.json").read_text(encoding="utf-8"))
+        assert first_doc["dedup"]["bullets"]["clusters"][0]["representative"] == "First run bullet"
+
+        # A human annotates the first run's output — the expensive work item 11
+        # protects. Saved via the real save route, same as the UI would.
+        annotated = _complete_doc(ann_app)
+        save_resp = client.post("/api/annotation/fixture/alice/alice-bootstrap", json=annotated)
+        assert save_resp.status_code == 200
+
+        # Re-run the pipeline for the same fixture slug (e.g. a grounding-scorer
+        # toggle, or just testing a JD tweak) — this must never destroy what the
+        # annotation above still depends on.
+        monkeypatch.setattr(
+            bootstrap_mod, "run_pipeline_over_jd_texts", _pipeline_returning("Second run bullet")
+        )
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={"username": "alice", "jds": [{"name": "jd-b", "text": "JD B text"}]},
+        )
+        assert resp.status_code == 200
+        assert "event: done" in resp.get_data(as_text=True)
+
+        preserved = [
+            p
+            for p in fixture_dir.glob("bootstrap*.json")
+            if json.loads(p.read_text(encoding="utf-8"))["dedup"]["bullets"]["clusters"][0][
+                "representative"
+            ]
+            == "First run bullet"
+        ]
+        assert preserved, (
+            "the first bootstrap run's clusters are gone after the second run — "
+            "the annotations.json saved against them now points at reclustered, "
+            "unrelated data (item 11)"
+        )
+
     def test_rejects_empty_jds(self, ann_app):
         client = ann_app.app.test_client()
         resp = client.post("/api/annotation/bootstrap", json={"username": "alice", "jds": []})

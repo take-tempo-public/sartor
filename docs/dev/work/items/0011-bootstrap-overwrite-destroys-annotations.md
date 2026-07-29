@@ -3,9 +3,10 @@ schema = 1
 id = 11
 kind = "item"
 title = "Bootstrap run overwrites prior annotation work with no merge or versioning"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-refs = ["blueprints/diagnostics.py:817-820"]
+resolution = "Fixed on fix/bootstrap-annotation-overwrite: every run now writes a never-colliding bootstrap-<timestamp>.json (bootstrap.json kept only as a disposable latest-mirror for backward compat); reads pin to whatever annotations.json's own bootstrap_source names, when it still exists, so a later run can no longer even semantically hijack an in-progress annotation's cluster_index. Reproduced live first (docs/dev/diagnosis/bootstrap-annotation-overwrite.md) with a new regression test, tests/test_annotation_routes.py::TestBootstrapStream::test_second_run_does_not_destroy_first_runs_bootstrap, which fails on the pre-fix code and passes after."
+refs = ["blueprints/diagnostics.py:_resolve_bootstrap_path", "blueprints/diagnostics.py:_new_bootstrap_path", "docs/dev/diagnosis/bootstrap-annotation-overwrite.md"]
 summary = "Every /api/annotation/bootstrap call overwrites bootstrap.json wholesale - no merge, no versioning, no history."
 ```
 
@@ -36,3 +37,18 @@ angle — a provenance-bearing naming scheme would likely fix both together.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking
+
+### 2026-07-29 — closed on fix/bootstrap-annotation-overwrite
+
+The original `robert-bootstrap` fixture cited above no longer exists in this
+clone (`evals/fixtures/real/` is gitignored real user data, since rotated) —
+its exact numbers could not be re-verified, so the fix was proven instead
+with a fresh, on-demand live reproduction (see the diagnosis doc). Item 14's
+"same underlying gap" note above turned out to be only partially true: this
+fix adds RUN provenance (a timestamped filename, surfaced in the bootstrap
+SSE `done` event as `bootstrap_file`) but not JD-NAME provenance (company/
+role) — item 14 remains open, unresolved by this fix. Item 13 (anchor-JD
+selection) is also untouched — `pick_anchor_jd`'s widest-cluster-span
+heuristic is unchanged; this fix only guarantees collate reads the bootstrap
+version an annotation was actually built from, not that anchor selection
+matches what the annotation data represents.

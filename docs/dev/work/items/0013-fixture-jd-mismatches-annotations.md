@@ -25,3 +25,16 @@ pick independently from whatever's left in `jds/`.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking
+
+### 2026-07-29 — item 11 closed; this item is NOT resolved by that fix
+
+Checked during item 11's fix on `fix/bootstrap-annotation-overwrite`:
+`pick_anchor_jd`'s widest-cluster-span heuristic (`evals/annotation.py:587-606`)
+is unchanged. Item 11 only guarantees collate reads the exact bootstrap
+version an annotation was built from — it says nothing about whether that
+bootstrap's anchor-JD choice matches what the annotation data actually
+covers when a bootstrap run spans multiple JDs. Still needs its own fix:
+validate/derive the anchor from JD coverage in the annotation data itself,
+not independently from cluster span. `depends_on = [11]` no longer applies
+mechanically (11 is closed) but the design dependency (11's provenance-pinning
+was a precondition for reasoning about this correctly) is satisfied.

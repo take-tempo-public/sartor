@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -90,10 +91,62 @@ def _jd_filename(name: str) -> str:
     return safe_name
 
 
+def _read_json_doc(path: Path) -> dict[str, Any] | None:
+    """Read a JSON object from path. None if absent or malformed."""
+    if not path.exists():
+        return None
+    try:
+        return cast("dict[str, Any]", json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _new_bootstrap_path(fixture_dir: Path) -> Path:
+    """Allocate a fresh, never-colliding ``bootstrap-<timestamp>.json`` path.
+
+    Item 11: every bootstrap run gets its OWN file — a later run must never
+    destroy an earlier one an in-progress ``annotations.json`` still points
+    at. Collision-disambiguated (rare: two runs inside the same UTC second).
+    """
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    candidate = fixture_dir / f"bootstrap-{stamp}.json"
+    n = 1
+    while candidate.exists():
+        candidate = fixture_dir / f"bootstrap-{stamp}-{n}.json"
+        n += 1
+    return candidate
+
+
+def _resolve_bootstrap_path(fixture_dir: Path) -> Path | None:
+    """Resolve which bootstrap doc this fixture's routes should read.
+
+    Pinned to whatever ``annotations.json``'s own ``bootstrap_source`` names,
+    when that file still exists — that is what its ``cluster_index`` values
+    actually key into, so a later bootstrap run (which always gets its own
+    ``bootstrap-<timestamp>.json``; see ``_new_bootstrap_path``) can never
+    silently misalign an in-progress annotation (item 11). Falls back to the
+    newest ``bootstrap-*.json``, then the legacy ``bootstrap.json`` mirror,
+    when there's no annotation yet or its pin no longer exists.
+    """
+    ann_path = fixture_dir / "annotations.json"
+    if ann_path.exists():
+        ann_doc = _read_json_doc(ann_path)
+        source = (ann_doc or {}).get("bootstrap_source")
+        if source:
+            pinned = Path(source)
+            if pinned.exists() and _within(pinned, fixture_dir):
+                return pinned
+    candidates = sorted(fixture_dir.glob("bootstrap-*.json"))
+    if candidates:
+        return candidates[-1]
+    legacy = fixture_dir / "bootstrap.json"
+    return legacy if legacy.exists() else None
+
+
 def _load_bootstrap_doc(fixture_dir: Path) -> dict[str, Any] | None:
-    """Read a fixture's bootstrap.json. None if absent or malformed."""
-    bootstrap_path = fixture_dir / "bootstrap.json"
-    if not bootstrap_path.exists():
+    """Read the fixture's current bootstrap doc — see `_resolve_bootstrap_path`."""
+    bootstrap_path = _resolve_bootstrap_path(fixture_dir)
+    if bootstrap_path is None:
         return None
     try:
         return cast("dict[str, Any]", json.loads(bootstrap_path.read_text(encoding="utf-8")))
@@ -207,8 +260,9 @@ def annotation_load(username: str, slug: str) -> ResponseReturnValue:
     fixture_dir = _annotation_fixture_path(slug, annotation_root)
     if fixture_dir is None or not _within(fixture_dir, annotation_root):
         return jsonify({"error": "Invalid fixture slug"}), 400
-    bootstrap = _load_bootstrap_doc(fixture_dir)
-    if bootstrap is None:
+    bootstrap_path = _resolve_bootstrap_path(fixture_dir)
+    bootstrap = _read_json_doc(bootstrap_path) if bootstrap_path else None
+    if bootstrap is None or bootstrap_path is None:
         return jsonify({"error": "No bootstrap.json for this fixture"}), 404
 
     from evals.annotation import (
@@ -223,7 +277,7 @@ def annotation_load(username: str, slug: str) -> ResponseReturnValue:
     else:
         doc = build_annotation_template(
             bootstrap,
-            bootstrap_source=str(fixture_dir / "bootstrap.json"),
+            bootstrap_source=str(bootstrap_path),
         )
     return jsonify(
         {
@@ -255,7 +309,7 @@ def annotation_save(username: str, slug: str) -> ResponseReturnValue:
     fixture_dir = _annotation_fixture_path(slug, annotation_root)
     if fixture_dir is None or not _within(fixture_dir, annotation_root):
         return jsonify({"error": "Invalid fixture slug"}), 400
-    if not (fixture_dir / "bootstrap.json").exists():
+    if _resolve_bootstrap_path(fixture_dir) is None:
         return jsonify({"error": "No bootstrap.json for this fixture"}), 404
     doc = request.get_json(silent=True)
     if not isinstance(doc, dict):
@@ -393,8 +447,9 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     fixture_dir = _annotation_fixture_path(slug, annotation_root)
     if fixture_dir is None or not _within(fixture_dir, annotation_root):
         return jsonify({"error": "Invalid fixture slug"}), 400
-    bootstrap = _load_bootstrap_doc(fixture_dir)
-    if bootstrap is None:
+    bootstrap_path = _resolve_bootstrap_path(fixture_dir)
+    bootstrap = _read_json_doc(bootstrap_path) if bootstrap_path else None
+    if bootstrap is None or bootstrap_path is None:
         return jsonify({"error": "No bootstrap.json for this fixture"}), 404
 
     seed_path = fixture_dir / "seed.json"
@@ -442,7 +497,6 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     # Render representatives exactly as build_bootstrap_document does, so the
     # returned nli/minicheck lists stay index-aligned with dedup.bullets.clusters.
     reps_md = "\n".join(f"- {c.get('representative', '')}" for c in clusters)
-    bootstrap_path = fixture_dir / "bootstrap.json"
     ann_path = fixture_dir / "annotations.json"
 
     def stream() -> Iterator[str]:
@@ -814,10 +868,15 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                     "pip install -e '.[eval-grounding]' — see CONTRIBUTING.md)."
                 )
             fixture_dir.mkdir(parents=True, exist_ok=True)
-            (fixture_dir / "bootstrap.json").write_text(
-                json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
+            # Item 11: never overwrite a prior run's clusters — every run gets its
+            # own versioned file, never destroying one an in-progress
+            # annotations.json still points at (see _resolve_bootstrap_path). The
+            # bootstrap.json mirror is kept only for backward compatibility with
+            # tooling that reads the legacy fixed name; it is disposable.
+            payload = json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
+            new_bootstrap_path = _new_bootstrap_path(fixture_dir)
+            new_bootstrap_path.write_text(payload, encoding="utf-8")
+            (fixture_dir / "bootstrap.json").write_text(payload, encoding="utf-8")
             # Persist the corpus snapshot so the fixture is runnable by
             # `runner.py --suite real --seed …/seed.json` and so the grounding backfill
             # can score against the exact corpus this bootstrap was built from.
@@ -834,7 +893,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
             grounded = doc.get("grounding_signals") is not None
             logger.info(
                 "Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
-                slug,
+                new_bootstrap_path.name,
                 doc["jd_count"],
                 doc["dedup"]["bullets"]["cluster_count"],
                 grounded,
@@ -850,6 +909,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                     "bullet_clusters": doc["dedup"]["bullets"]["cluster_count"],
                     "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
                     "grounded": grounded,
+                    "bootstrap_file": new_bootstrap_path.name,
                 },
             )
         except GeneratorExit:
