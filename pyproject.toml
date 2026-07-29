@@ -95,6 +95,14 @@ dev = [
     # Inert unless `--reruns` is passed, so the strict `quality`/`gate` pytest is
     # unaffected (it never passes the flag).
     "pytest-rerunfailures>=14,<17",
+    # Parallel test execution (docs/dev/work/items/0001-gate-unrunnable-by-agent.md):
+    # the full gate's real runtime is ~30min as of 2026-07-28 (2233 non-skip tests),
+    # long enough that a foreground/short-timeout agent call always gets cut off
+    # before completion, independent of any environment-level kill. `-n auto` in
+    # scripts/gate.py's pytest step is the fix; PX-44's migrated-template-DB
+    # isolation work (test/fixture-scoping-rollout) already made the DB-touching
+    # fixtures safe for concurrent workers.
+    "pytest-xdist>=3.5,<4.0",
     # Ruff is EXACT-pinned (not a range) so local and CI format identically: ruff does not
     # guarantee formatter-output stability even across patch releases, so a range let 5 files
     # silently drift under a newer formatter (carry-forward ledger, cleared on
