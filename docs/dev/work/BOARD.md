@@ -2,19 +2,20 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 9 / 10 ceiling** | Blocked 4 | Deferred 2 | Watching 3 | Epics 0 | Closed 1
+**Open 10 / 10 ceiling** | Blocked 4 | Deferred 2 | Watching 3 | Epics 0 | Closed 3
 
 ## Open
 
-- **6** -- PX-39 real-corpus Sonnet-5 baseline (`agent`) -- Measure real-corpus Sonnet-5 latency/cost - 72 non-eval records already exist in E2E telemetry, zero new spend.
 - **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
 - **11** -- Bootstrap run overwrites prior annotation work with no merge or versioning (`agent`) -- Every /api/annotation/bootstrap call overwrites bootstrap.json wholesale - no merge, no versioning, no history.
 - **12** -- Judge JSON-parse failure silently scores as 0, indistinguishable from a real failing grade (`agent`) -- _grade coerces a judge parse failure into score=0 instead of null/error - a crash reads as 'worst possible quality'.
 - **13** -- Collate picks an anchor jd.txt that doesn't match its own fixture's annotations (`agent`) -- Fixture's jd.txt (Zoox) has zero overlap with annotations.json's 32 bullets (100% Faros) - eval graded the wrong target. [depends on: 11]
 - **14** -- No JD-identifying metadata anywhere in bootstrap/eval artifacts (`agent`) -- Eval result records only fixture/fixture_hash, no JD name - had to open jd.txt prose to learn what a run graded. [depends on: 11]
 - **15** -- Suggested skills split mid-parenthetical into separate entries (`agent`) -- e.g. 'Eval Framework Design (LLM-as-judge' and 'rubric-based)' saved as two separate skill entries - a comma-split bug.
-- **17** -- PERFORMANCE_HISTORY.md and RELEASE_ARC.md contradict on eval-vs-live traffic source (`agent`) -- PERFORMANCE_HISTORY asks for non-eval:* runs; RELEASE_ARC step 12 prescribes the harness, which DOES carry that prefix. [depends on: 6]
 - **19** -- UX-suite flakiness solution sprint - mode-C residual + newly observed instances (`agent`) -- Scheduled sprint: mode-C's own-flagged ~17% residual, plus 3 newly observed single-sample UX flakes from 2026-07-28.
+- **20** -- Legacy generate() reachable via wizard rail without freezing Compose (`user`) -- Step 5 wizard rail gates only on a context path - skipping Compose still runs the retired full-LLM generate().
+- **21** -- check_refinement_scope LLM call invisible to telemetry (`agent`) -- check_refinement_scope bypasses _call_llm - no call_kind, no telemetry row, cost invisible to logs/llm_calls.jsonl.
+- **22** -- recommend_skill/suggest_skill/recommend_experience_summary/draft_surgical_refinement never logged despite being called (`agent`) -- 4 call kinds have real call sites but zero logged rows ever - dead paths or an instrumentation gap, not yet known.
 
 ## Blocked
 
@@ -38,6 +39,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 
 None.
 
-## Closed (1)
+## Closed (3)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
+- 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
+- 17 -- PERFORMANCE_HISTORY.md and RELEASE_ARC.md contradict on eval-vs-live traffic source (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline). Wider than filed: PERFORMANCE_HISTORY.md's self-contradiction was removed by replacing the whole Open Item section with the new Era 4 section; RELEASE_ARC.md:1358 (step 12) got a RESOLVED note explaining the harness method never could have worked (evals/runner.py hardcodes eval: at 5 call sites and uses it as its own cost-attribution key); COMPOSE_REWRITE_DIAL.md:157-166 also assumed the harness method and got corrected (item 8's evidence premise). Also widened the taxonomy beyond eval:/non-eval: to a 3-way eval:/bootstrap:/live split, documented in PERFORMANCE_HISTORY.md's Era 4 caveats.)

@@ -112,7 +112,11 @@ also pass `cached_user_prefix=""` because there is no long static block worth ca
 ([`analyzer.py:_call_llm`](../../../analyzer.py)) `[synthesis]`.
 Only `analyze_synthesis` and `generate` ride the heavy corpus-prefix cache — see
 [`architecture.md`](../../architecture.md) §"LLM routing + cost" for the green/red
-cache map and real p50 latencies.
+cache map. That diagram deliberately carries no per-call latency numbers as of
+2026-07-28 — the prior figures were pre-Sonnet-5 synthetic measurements and were
+removed rather than left to mislead; for current real-corpus latency/cost, see
+[`docs/dev/perf/PERFORMANCE_HISTORY.md`](../../dev/perf/PERFORMANCE_HISTORY.md)'s
+Era 4 baseline `[synthesis]`.
 
 The deterministic/LLM boundary (which modules may make these calls), the
 `PROMPT_VERSION`-bump discipline, and the prompt-override A/B primitive are

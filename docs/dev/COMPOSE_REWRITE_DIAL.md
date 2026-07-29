@@ -156,14 +156,26 @@ source union, add a category-2-aware signal, or accept and annotate the divergen
 
 ## What would validate this before any dial moves
 
-The PX-39 real-corpus baseline (`RELEASE_ARC.md` step 12) is already scheduled to run
+**Update (2026-07-28): the premise below is now false — read this note first.**
+PX-39 (`RELEASE_ARC.md` step 12, work item 6) closed using zero-spend
+historical telemetry, not a fresh paid run — so no "same paid runs" ever
+happened, and no side-by-side was produced. Separately, the owner had already
+directed that the Microsoft JD stay excluded from PX-39 regardless (not
+app-generated, not a fair pipeline comparison). This item's evidence path
+needs a different source; the owner has separate annotation material for the
+normal `/tune-from-annotations` workflow (see "Where further material lands"
+below) — that is the likely real channel, not a PX-39 side-by-side. Item 8
+stays blocked pending the owner's direction on which path to use. The original
+(now superseded) reasoning is kept below for context, not as a live plan.
+
+~~The PX-39 real-corpus baseline (`RELEASE_ARC.md` step 12) is already scheduled to run
 real analyze→clarify→generate cycles against the owner's real corpus. **If one of
 those runs uses this JD against this corpus**, the same paid runs yield both PX-39's
 latency/cost deliverable *and* a side-by-side: what current verbatim-selection
 produces from these exact inputs, versus the artifact that actually cleared the bar.
 
 That comparison is the evidence that would justify (or kill) this work — which keeps
-it off the n=1 overfitting trap. **Evidence first, then the dial.**
+it off the n=1 overfitting trap. **Evidence first, then the dial.**~~
 
 ## Where further material lands
 
