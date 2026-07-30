@@ -42,3 +42,57 @@ entries.
 ## Updates
 
 ### 2026-07-29 — filed, split from epic 19
+
+### 2026-07-30 — dedicated resource-contention campaign run, inconclusive (`fix/ux-restore-scroll-y-resource-contention`)
+
+Built a dedicated load harness (distinct from every prior CPU-busy-loop campaign) and ran the
+target test 8x each under: no deliberate load (ambient only), a genuine concurrent unrelated
+`pytest -m "not ux" -n auto` process, and an idle orphaned same-project `python app.py`
+server. Full detail: `docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md`.
+
+Result: 23/24 passed overall; the one failure (`before=59 after=306`, matching O-12's exact
+landing value) occurred in the ambient-only arm, NOT either constructed contention arm — even
+though both constructed arms independently confirmed real added load (test durations up to
+~2.5-4x baseline). Neither tested vector clearly reproduces or amplifies the failure at n=8.
+
+Not yet tested: O-12 occurrence 1's actual literal vector (`pytest tests/ux/regression/test_20260708_busy_states_and_chip.py -n 2`
+— the SAME suite file under xdist, a second concurrent Playwright/werkzeug pair in-process —
+qualitatively different from an external unrelated process or an idle server). Dossier
+recommends instrumenting the `_restoreScrollY` rAF callback's fire-time directly as the next
+step, independent of load vector, over further blind contention campaigns.
+
+### 2026-07-30 (same day, cont'd) — `-n 2`-within-suite vector CONFIRMED elevated (owner-directed next step)
+
+Ran the previously-untested vector: pytest-xdist `-n 2` on a 4-test subset of the same file
+(target + 3 others exercising the same primitive), narrower than O-12 occurrence 1's full-tree
+`-n 2` for cost reasons (disclosed in the dossier, not silently narrowed). 8 iterations:
+**target test 6 passed / 2 failed (25%)** — the highest rate of any vector tested, versus 0/8
+for both external-process vectors from the same session. Failures: `before=59 after=291` and
+`before=59 after=306` (the second is byte-identical to O-12 occurrence 1's own logged value).
+A secondary, already-known failure class (`#panelCorpus` load-timeout, O-8) also recurred 3/8
+times on a different test in the subset — unrelated mechanism, not chased.
+
+**This falsifies "generic resource contention" as the explanation** (the two heavier,
+confirmed-real-load vectors produced zero target failures) and narrows it to something
+specific about a second concurrent Playwright/werkzeug pair in the same process tree. Still no
+PROVEN mechanism — the dossier's `## Falsification` section lays out the next step (instrument
+the `_restoreScrollY` rAF callback's fire-time directly, now runnable against a ~25%-reliable
+repro instead of blind) before any fix is attempted.
+
+### 2026-07-30 (same day, cont'd) — instrumented re-run, caught a THIRD failure mode instead
+
+Hand-traced `_restoreScrollY`'s actual current implementation (`static/app.js:5601-5630`)
+before instrumenting: the generation-mismatch check has no fixed time budget, and this test's
+own `scrollTo(0,300)` bumps the generation BEFORE the stale restore is even scheduled — so the
+docstring's "races a fixed margin" framing doesn't hold up under direct code reading. Wired
+the file's existing scroll-spy suite (previously used by sibling tests, not this one) into the
+target test and re-ran the confirmed `-n 2` vector 16x (4 batches).
+
+Result: 15 passed / 1 failed. The failure was NOT the `after != before` shape this dossier has
+been chasing — it was the test's OWN setup assertion (`before > 0`) failing, `before=0`,
+meaning the page hadn't grown its usual small scrollable amount by the time `scrollTo(0,300)`
+ran. A new, real, unexplained failure mode, earlier in the sequence than everything examined
+so far. Also unresolved: the instrumented failure rate (1/16) was well below the
+un-instrumented rate for the identical vector (2/8) — possibly small-sample noise, possibly a
+probe effect from the spy's own overhead. Full detail:
+`docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md` `## Round 2`.

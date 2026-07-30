@@ -1330,7 +1330,25 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         seed_exp_with_bullets(cid, company=f"Company {i}")
     install_llm_stubs(ux_app, monkeypatch)
 
+    # INSTRUMENT (charter C-7, fix/ux-restore-scroll-y-resource-contention):
+    # this test had NO scroll-mutation visibility at all -- reusing the same
+    # spy suite sibling tests in this file already use, rather than building a
+    # new one, per the current app.js _restoreScrollY (5601-5630): the
+    # abandon check is `ordinal !== _scrollCaptureOrdinal || scrollGen !==
+    # _scrollInterruptGen`, and this test's own scrollTo(0,300) below bumps
+    # scrollGen BEFORE the stale fetch is ever released -- so the mismatch is
+    # already established before _restoreScrollY is even scheduled, making
+    # the abandon check's OWN timing not the obvious race window the
+    # docstring above assumes. A failure whose `after` lands well above
+    # `before` (not near 0, the stale capture's own value) looks more
+    # consistent with the already-documented mode-C/D scroll-anchoring shape
+    # (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md) than with the
+    # generation-mismatch check actually failing -- this spy settles which.
+    page.add_init_script(_SCROLL_SPY_JS)
+
     BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
     UserPickerPage(page, live_server).select("alice")
 
     # Hold open the FIRST /experiences fetch -- the tab click below fires
@@ -1376,6 +1394,8 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     page.wait_for_timeout(150)  # let the stale _restoreScrollY's first tick run (and abandon)
     after = page.evaluate("() => window.scrollY")
     print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "stale-restore-after", after, before)
     assert after == before, (
         f"the stale invocation's restore was not correctly abandoned: it overwrote "
         f"the later scroll ({before} -> {after}). Mechanism #2 (docs/dev/diagnosis/"
