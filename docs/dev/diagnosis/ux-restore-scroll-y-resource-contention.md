@@ -461,6 +461,50 @@ passing test in the same commit as the fix, and the fix is A/B'd against the rea
 under the `-n2` vector in a loop (per `feedback-ab-fix-against-real-test-not-just-instrument`:
 8-10+ runs each arm), not just against the repro.
 
+**R3-4 — fix implemented (2026-07-30, owner-approved option 1 in-session).**
+`switchTopTab` bumps a module-global `_navGen`; `onUserSelect` snapshots it before its first
+await and computes `superseded` after its last; when superseded it skips the landing trio
+(`_armHelpTour`/`_activateTab`/`_maybeFireTourStop`) and calls `wizardInit({scroll:false})`,
+which threads through to `_wizardRender(opts)` gating only the `scrollIntoView` — all state
+work (iteration reset, applications/personas refresh, rail init) still runs. Every other
+`_wizardRender`/`wizardInit` caller passes nothing and keeps the scroll. Validation so far:
+repro test 3/3 PASS post-fix (terminal state `y=300, corpusVisible=True` — was 3/3 FAIL at
+`y=306, corpusVisible=False` pre-fix, same session, same machine); smart-landing regression
+tests 4/4 PASS (`test_20260612_corpus_first_landing.py` both directions + CTA,
+`test_20260612_logo_home_route.py` goHome). A/B against the real O-10 test under the `-n2`
+vector: control arm = this session's pre-fix batches (16 runs, 1 target failure of the
+273-family, R3-1/R3-2); fixed arm in progress, results below.
+
+**R3-5 — fixed-arm batch A (8 runs, 2026-07-30): the upward family is gone; a SECOND PHASE of
+the same writer surfaced.** Target: 6 passed / 2 failed — but neither failure is the
+273/291/306 shape (0/8 upward). Both are **downward**: RUN 1 `59 → 0` (`sh=2101` at read —
+byte-identical shape to the historical O-12 occurrence 2 / cross-item-review row #7, which
+that review had labeled "stale-restore-shaped") and RUN 8 `59 → 31` (`sh=2170`, mid-flight
+toward 0). Both spy timelines show the same structure, **observed**:
+
+- `_wizardRender`'s smooth `scrollIntoView(#panelJD)` fired **before** the corpus click this
+  time — legitimately: nothing was superseded yet, so the R3-4 guard correctly did not gate
+  it (RUN 1 t=2322, tailor visible, h=1206);
+- after the corpus click hid the Tailor tab (h back to 959), `y` drifted 0 → 59 with **no
+  attributed API write** (59 = `959 - 900`, the corpus tab's own maxScroll);
+- in RUN 1, after the test's `scrollTo(0,300)` (wrapped, gen 1→2), `y` landed at **0** with
+  **no attributed API write** between them; the stale restore fired later and abandoned
+  correctly on the gen mismatch (1≠2) — mechanism #2 correct in both runs, again.
+
+**Inferred (labeled):** the only animation in flight is the wizard smooth scroll, so the
+unattributed 0→59 drift and the 0-ward motion after the test's own scroll are that animation
+persisting **across the tab navigation** — clamped to the new small geometry first, then
+(consistent with, not proven) retargeted toward its now-hidden element's zeroed position,
+overriding the test's explicit scroll. Two consequences: (1) the R3-4 guard fixes only the
+"tail fires after navigation" phase; a smooth animation *launched before* the navigation
+survives it and is the residual failure mode; (2) the historical `59→0` capture (O-12 occ 2)
+and the review's row-#7 "stale-restore-shaped" label now have a demonstrated alternative
+writer — that label should not be built on.
+
+Also observed: `before=59` has a **third** road — in these runs `y` was already 59 from the
+clamped animation drift *before* the test's `scrollTo(0,300)` ran. Fixed-arm log:
+`scratchpad/contention_n2_r3_fixed_batchA_20260730.log` (+ `.reads`), gitignored.
+
 ---
 
 ## Acceptance bar

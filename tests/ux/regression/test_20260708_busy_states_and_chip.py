@@ -1461,16 +1461,6 @@ _LANDING_REPRO_READ_JS = r"""
 
 
 @pytest.mark.ux
-@pytest.mark.xfail(
-    strict=False,
-    reason="Deterministic reproduction of a REAL, unfixed defect (item 29, "
-    "docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md Round 3): "
-    "the user-select handler's async tail applies its smart-landing decision "
-    "(_activateTab + wizardInit's smooth scrollIntoView, app.js:431/441/7063) "
-    "after the user has already navigated away, flipping the tab back to "
-    "Tailor and stomping the scroll position. Flip this to a plain test in "
-    "the same commit as the fix.",
-)
 def test_smart_landing_tail_defers_to_user_navigation(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:

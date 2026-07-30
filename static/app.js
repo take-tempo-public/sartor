@@ -413,6 +413,7 @@ async function onUserSelect() {
   const userSummary = document.getElementById('panelUserSummary');
   if (userSummary) userSummary.textContent = username;
   currentUser = username;
+  const navGenAtStart = _navGen;  // item 29: detect explicit navigation during the awaits below
   await loadConfig();
   show('panelApplications');           // prep the Tailor tab's landing panel
   // F-23: default the applications list to a collapsed short summary too — it
@@ -427,18 +428,27 @@ async function onUserSelect() {
   // lazy-loads the corpus; switchTopTab('tailor', …) is a no-op when already
   // active but keeps the routing explicit.
   const landing = await _landingTab();
-  if (landing === 'corpus') _armHelpTour();  // empty corpus ⇒ new-user onboarding
-  _activateTab(landing);
-  // F-06: explain the jump the moment it happens — a brand-new (or still-empty)
-  // user gets routed away from where they clicked, onto Career corpus, with no
-  // transition line. Once-ever (cb_help_seen), tour-armed users only, and
-  // _maybeFireTourStop already no-ops when another modal is up.
-  if (landing === 'corpus') _maybeFireTourStop('tourCorpusLanding', null);
+  // Item 29 (docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md
+  // Round 3): if the user explicitly switched tabs while the awaits above were
+  // in flight, this landing decision is stale — applying it would flip the tab
+  // out from under them and smooth-scroll the viewport away (the observed
+  // 273/291/306 failure family). Gate only the navigation side effects; the
+  // state work below still runs.
+  const superseded = _navGen !== navGenAtStart;
+  if (!superseded) {
+    if (landing === 'corpus') _armHelpTour();  // empty corpus ⇒ new-user onboarding
+    _activateTab(landing);
+    // F-06: explain the jump the moment it happens — a brand-new (or still-empty)
+    // user gets routed away from where they clicked, onto Career corpus, with no
+    // transition line. Once-ever (cb_help_seen), tour-armed users only, and
+    // _maybeFireTourStop already no-ops when another modal is up.
+    if (landing === 'corpus') _maybeFireTourStop('tourCorpusLanding', null);
+  }
   _resetIterationState();
   setStatus('READY');
   refreshApplications();
   _loadPersonaOptions();
-  wizardInit();
+  wizardInit({ scroll: !superseded });
 }
 
 // Reset all iteration-loop state. Called when switching users or starting a
@@ -3569,7 +3579,16 @@ let _corpusExperiences = [];
 // invisible unless this box is ticked.
 let _corpusShowRetired = false;
 
+// Navigation generation (item 29, docs/dev/diagnosis/
+// ux-restore-scroll-y-resource-contention.md Round 3): bumped on every top-tab
+// activation so a slow async tail (onUserSelect's smart landing) can detect
+// that an explicit navigation superseded it and skip its stale side effects —
+// the same staleness-check shape as the scroll-restore ordinal/generation
+// checks (mechanism #2).
+let _navGen = 0;
+
 function switchTopTab(name, btn) {
+  _navGen++;
   document.querySelectorAll('.top-tab-btn').forEach(b => {
     b.classList.toggle('active', b === btn);
     b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
@@ -6939,13 +6958,13 @@ const _WIZARD_STEP_LABELS = {
   6: 'Download',
 };
 
-function wizardInit() {
+function wizardInit(opts) {
   const rail = document.getElementById('wizardRail');
   if (rail) rail.classList.remove('hidden');
   // Reveal the "Start new tailoring" action alongside the rail.
   document.getElementById('wizardRailActions')?.classList.remove('hidden');
   _wizardStep = 1;
-  _wizardRender();
+  _wizardRender(opts);
   _wizardStampHistory(1);  // PX-22: baseline history entry so Back from step 2 lands on step 1
   // Reveal the floating bottom statusbar once the wizard engages.
   const sb = document.getElementById('cbStatusbar');
@@ -7013,7 +7032,7 @@ function _renderGenerateStepCopy() {
 function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
 function wizardBack() { wizardGoTo(Math.max(1, _wizardStep - 1)); }
 
-function _wizardRender() {
+function _wizardRender(opts) {
   // Show only the active step's panel(s); keep User/Applications/Config
   // visible as ambient context (they aren't wizard steps).
   const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
@@ -7060,7 +7079,12 @@ function _wizardRender() {
   if (sbStep)  sbStep.textContent  = `Step ${_wizardStep} of 6`;
   if (sbLabel) sbLabel.textContent = _WIZARD_STEP_LABELS[_wizardStep] || '';
   const active = document.getElementById((_WIZARD_PANELS[_wizardStep] || [])[0]);
-  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Item 29: a render on behalf of a superseded flow ({scroll:false}) must not
+  // move a viewport the user has explicitly taken elsewhere; every other
+  // caller passes nothing and keeps the scroll-to-active-panel behavior.
+  if (active && !(opts && opts.scroll === false)) {
+    active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   _fireWizardTourStop();  // KW3: first time this step's panel is shown
 }
 
