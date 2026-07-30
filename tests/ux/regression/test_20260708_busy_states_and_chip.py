@@ -1422,6 +1422,14 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         f"\n[chip2-experiment-stale-restore] before={before} after={after} "
         f"before_read={before_read} after_read={after_read}"
     )
+    # Under pytest-xdist a PASSING test's stdout is not reliably forwarded to
+    # the master log, and the cross-item review's experiment needs pass-run
+    # geometry too -- append it to a durable file when the campaign asks.
+    # Written only after BOTH reads completed, so it cannot shift their timing.
+    read_log = os.environ.get("SCROLL_READ_LOG")
+    if read_log:
+        with open(read_log, "a", encoding="utf-8") as fh:
+            fh.write(f"stale-restore before_read={before_read} after_read={after_read}\n")
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "stale-restore-after", after, before)
     assert after == before, (
