@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 8 / 10 ceiling** | Blocked 4 | Deferred 4 | Watching 4 | Epics 0 | Closed 6
+**Open 13 / 10 ceiling -- OVER** | Blocked 4 | Deferred 4 | Watching 4 | Epics 1 | Closed 6
 
 ## Open
 
@@ -10,7 +10,6 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **13** -- Collate picks an anchor jd.txt that doesn't match its own fixture's annotations (`agent`) -- Fixture's jd.txt (Zoox) has zero overlap with annotations.json's 32 bullets (100% Faros) - eval graded the wrong target. [depends on: 11]
 - **14** -- No JD-identifying metadata anywhere in bootstrap/eval artifacts (`agent`) -- Eval result records only fixture/fixture_hash, no JD name - had to open jd.txt prose to learn what a run graded. [depends on: 11]
 - **15** -- Suggested skills split mid-parenthetical into separate entries (`agent`) -- e.g. 'Eval Framework Design (LLM-as-judge' and 'rubric-based)' saved as two separate skill entries - a comma-split bug.
-- **19** -- UX-suite flakiness solution sprint - mode-C residual + newly observed instances (`agent`) -- Scheduled sprint: mode-C's own-flagged ~17% residual, plus 3 newly observed single-sample UX flakes from 2026-07-28.
 - **20** -- Legacy generate() reachable via wizard rail without freezing Compose (`user`) -- Step 5 wizard rail gates only on a context path - skipping Compose still runs the retired full-LLM generate().
 - **21** -- check_refinement_scope LLM call invisible to telemetry (`agent`) -- check_refinement_scope bypasses _call_llm - no call_kind, no telemetry row, cost invisible to logs/llm_calls.jsonl.
 - **22** -- recommend_skill/suggest_skill/recommend_experience_summary/draft_surgical_refinement never logged despite being called (`agent`) -- 4 call kinds have real call sites but zero logged rows ever - dead paths or an instrumentation gap, not yet known.
@@ -38,7 +37,15 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 
 ## Epics
 
-None.
+### 19 -- UX-suite flakiness solution sprint - mode-C residual + newly observed instances (open)
+
+Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not one mechanism, see children.
+
+- **27** -- Mode C scroll residual: wizard smooth-scroll races refreshCorpus's baseline capture (`agent`) -- Mode C residual (~17%/attempt): _wizardRender smooth-scroll races refreshCorpus's scroll baseline read.
+- **28** -- O-13: loadComposition scroll-restore call site fails once, untested by O-10/O-11 (`agent`) -- O-13: test_compose_reload_preserves_scroll_position failed once at loadComposition, a call site O-10/O-11 don't cover.
+- **29** -- O-12/O-14: the O-10 regression test itself fails under resource contention (`agent`) -- O-10's own regression test fails 4x under contention (CPU load, -n2, cross-project procs); 5/5 in isolation.
+- **30** -- Keyboard-reorder test: one wait_for_load_state 30s timeout, uncontended, no diagnosis (`agent`) -- test_keyboard_reorder_persists_and_reset_reverts: one Playwright 30s wait_for_load_state timeout; single sample.
+- **31** -- Surgical-refinement network-retry test: assertion flake, one isolated-clean rerun so far (`agent`) -- test_surgical_refinement_network_failure_surfaces_error_with_retry: assertion flake under -n2 and once serial.
 
 ## Closed (6)
 

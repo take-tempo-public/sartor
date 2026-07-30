@@ -1,17 +1,14 @@
 ```toml
 schema = 1
 id = 19
-kind = "item"
+kind = "epic"
 title = "UX-suite flakiness solution sprint - mode-C residual + newly observed instances"
 status = "open"
 decision_owner = "agent"
 refs = [
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
-  "tests/ux/regression/test_20260708_busy_states_and_chip.py",
-  "tests/ux/regression/test_20260604_bullet_drag_reorder.py",
-  "tests/ux/regression/test_20260708_review_surface_and_flows.py",
 ]
-summary = "Scheduled sprint: mode-C's own-flagged ~17% residual, plus 3 newly observed single-sample UX flakes from 2026-07-28."
+summary = "Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not one mechanism, see children."
 ```
 
 Owner-directed 2026-07-28: "make sure you add any discoveries to the documentation of this
@@ -87,3 +84,18 @@ one sample, not a diagnosis.
 **Owner direction (2026-07-29): this item must be solved before the v1.1.0 cut.** Item 10
 (`chore/release-v1.1.0`) now lists `19` in `depends_on` to make this explicit and enforced by
 the schema's sequencing semantics, rather than left as a same-priority parallel `open` item.
+
+### 2026-07-29 — promoted to epic, split into 5 children, per explicit owner direction
+
+Owner confirmed (on `chore/ux-flake-epic-split`, handling the `fix/eval-judge-parse-failure`
+handoff's recommendation) that this item's own "explicitly not one mechanism" framing above
+should become 5 separately tracked children rather than one sprint branch: items 27-31, one per
+candidate in the "Explicitly not one mechanism" list above (27 = candidate 1 / mode C's own
+residual, 28 = candidate 2 / O-13, 29 = candidate 3 / O-12+O-14, 30 = candidate 4 / keyboard
+reorder, 31 = candidate 5 / network-failure retry). This item's `kind` changed to `"epic"`;
+`refs` trimmed to the diagnosis doc only since the per-test-file refs now live on the relevant
+child. Per schema §4, this epic cannot close while any child is non-terminal — item 10's
+existing `depends_on = [3, 6, 7, 9, 19]` therefore still gates the v1.1.0 cut correctly on all
+five investigations closing, with no further edit needed there. Next step (not decided this
+branch): which child to instrument first — a separate decision, deferred to whichever session
+opens the first `fix/*` branch against one of these children.
