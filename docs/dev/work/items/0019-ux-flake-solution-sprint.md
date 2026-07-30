@@ -99,3 +99,13 @@ existing `depends_on = [3, 6, 7, 9, 19]` therefore still gates the v1.1.0 cut co
 five investigations closing, with no further edit needed there. Next step (not decided this
 branch): which child to instrument first — a separate decision, deferred to whichever session
 opens the first `fix/*` branch against one of these children.
+
+### 2026-07-30 — child 27 closed as already-resolved (stale filing, not new work)
+
+`fix/ux-mode-c-scroll-residual` found that candidate 1 (item 27) had already been root-caused
+and fixed on a separate branch, `fix/ux-scroll-wizard-rail-flake` (merged `27d349b`/`90e495d`,
+2026-07-26) — three days before this epic's own filing (2026-07-28) and four before the split
+(2026-07-29). Neither filing cross-referenced that dossier. See item 27's own Updates for the
+full evidence chain and live re-verification. Epic 19 stays open — items 28-31 remain
+non-terminal — but the "oldest, best-understood" candidate closed with no code change, not by
+being solved on this branch.
