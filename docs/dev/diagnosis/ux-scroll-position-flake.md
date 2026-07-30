@@ -19,6 +19,10 @@
 > [Acceptance bar](#acceptance-bar) (O-12, O-13) — a different load-generation vector
 > (process/resource contention, not CPU busy-loop) and a previously-untested call site of the
 > same primitive. Not chased here; filed as `docs/dev/work/items/0019`.
+> **2026-07-29:** a fourth occurrence, same test as O-12, logged as O-14 — confirmed unrelated
+> to the unrelated branch's own diff it surfaced on (stash-based A/B), and widens O-12's
+> "resource contention" to a cross-project concurrent-load vector. Not chased here either;
+> item 0019 now blocks the v1.1.0 cut (item 10), per owner direction.
 
 <!-- Keep ## Observed (facts with artifacts) strictly apart from ## Inferred (hypothesis).
      Conflating them is the failure this document exists to prevent (charter C-7). -->
@@ -718,3 +722,49 @@ mode-C residual (or to anything else) — logged as a fact, not a conclusion.
 document is not being reopened/re-chased as part of that filing; whoever picks up the item
 should read this document in full first, per its own established discipline (Observed/Inferred
 separation, no conflating mechanisms from n=1).
+
+### O-14. A fourth occurrence, next day, during an unrelated branch's gate run — confirmed
+### unrelated to that branch's own diff, and widens O-12's "resource contention" to a
+### cross-project load vector
+
+Logged 2026-07-29, per explicit owner direction to consolidate every encounter of this flake
+for whoever picks up item 0019, on `fix/eval-judge-parse-failure` (an unrelated dashboard/eval
+fix). Not chased further here — same discipline as O-12/O-13.
+
+`test_restore_scroll_y_stale_invocation_overwrites_later_scroll` (the same O-10/O-12 test)
+failed during `python -m scripts.gate`'s `pytest -m ux` step — a normal, full, serial run (not
+deliberate `-n 2`, and this step ran alone, immediately after `pytest -m "not ux" -n auto`
+completed as a prior gate step in the same invocation): `before=59 after=306`. Same failure
+family as O-12 (a stale-invocation-overwrite shape, not mode C's `300 -> 369`).
+
+**Stash-based A/B, to rule out that branch's own diff:** with `fix/eval-judge-parse-failure`'s
+entire diff (`dashboard/routes.py` + `tests/test_dashboard_routes.py` — an unrelated eval-results
+dashboard fix, nothing touching scroll/JS) removed from the working tree via `git stash`, the
+identical test was re-run 4 times, serially, one at a time, on the clean base commit
+(`aa338d6` + one unrelated doc/ledger commit): **1 passed, 3 failed** (one logged failure:
+`before=59 after=273` — again the stale-invocation shape, a different landing value each time,
+consistent with O-2's "race with a variable-timing scroller"). The failure rate is materially
+unchanged with or without that branch's diff present — directly rules out any interaction with
+it.
+
+**Process check, at time of investigation:** `Get-Process -Name python,pythonw` (PowerShell)
+found **no** orphaned sartor `python app.py`/reloader processes — the specific vector O-12's
+second occurrence implicated. It did find two unrelated, concurrently-running `python.exe`
+processes the entire time, both under `C:\Dev\spolia\.venv\Scripts\python.exe` — a different
+project entirely, not an artifact of this session or this repo. This is a variant of O-12's
+"resource contention" finding, not a repeat of it: not an orphaned same-project server this
+time, but genuine **concurrent load from an unrelated project** on the same shared machine.
+
+**Operational note, not a test-flake finding:** two separate attempts to capture a clean,
+single, uncontended full `pytest -m ux` run — specifically to get a fairer read than a tight
+back-to-back single-test repeat loop, which may itself generate contention (rapid
+browser/dev-server churn) unlike anything in this document's existing campaigns — were each
+killed by this environment's own independent background-task-management mechanism before
+producing any test output (once during a process-listing command, once during pytest's own
+collection phase, before a single test ran). This is a separately-documented instability in
+this operating environment, unrelated to the test suite itself, but it materially raised the
+cost of gathering additional clean full-suite samples this session — worth knowing before
+planning a dedicated instrumentation campaign for item 0019 in a similar environment.
+
+**Net:** this occurrence corroborates O-12 (same test, same failure family, contention-associated)
+rather than establishing a new mechanism — logged here for consolidation, not as a new claim.

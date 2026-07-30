@@ -66,3 +66,24 @@ before reading the existing diagnosis doc in full and deciding with the owner wh
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking, per explicit owner direction
+
+### 2026-07-29 — new evidence on candidates #3 and #5, owner directs v1.1.0-blocking priority
+
+During `fix/eval-judge-parse-failure` (an unrelated dashboard/eval fix)'s quality gate,
+candidate #3 (`test_restore_scroll_y_stale_invocation_overwrites_later_scroll`) recurred a
+fourth time, logged as O-14 in `docs/dev/diagnosis/ux-scroll-position-flake.md`. New this
+time: a stash-based A/B confirmed it is unrelated to that branch's own diff (fails at the same
+rate with the diff entirely absent), and the process check found no orphaned same-project
+server (ruling out O-12's specific second-occurrence vector) but did find genuine concurrent
+load from an unrelated project's python processes on the same machine — widening "resource
+contention" to a cross-project vector, not just an orphaned sartor server or deliberate `-n 2`.
+
+Candidate #5 (`test_surgical_refinement_network_failure_surfaces_error_with_retry`) also
+recurred once, in the same gate run (not under deliberate `-n 2` this time — a plain serial
+`pytest -m ux` run), and **passed cleanly on an immediate isolated rerun** — the first
+isolation data point for this candidate (previously "not yet reproduced in isolation"); still
+one sample, not a diagnosis.
+
+**Owner direction (2026-07-29): this item must be solved before the v1.1.0 cut.** Item 10
+(`chore/release-v1.1.0`) now lists `19` in `depends_on` to make this explicit and enforced by
+the schema's sequencing semantics, rather than left as a same-priority parallel `open` item.
