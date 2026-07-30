@@ -122,3 +122,19 @@ vector until an `after != before` failure lands with it attached. If `scrollHeig
 render-sequencing question, not restore-ordering or anchoring. Full detail, including the
 full cross-item timeline table and item 28/30/31 cross-checks:
 `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`.
+
+### 2026-07-30 (cont'd 2) — mechanism observed and deterministically reproduced; fix direction owner-gated
+
+`fix/ux-restore-scroll-y-resource-contention` (round 3, reused branch name) ran the review's
+falsification experiment. Batch 2 RUN 9 captured the historical failure shape
+(`before=59 after=273`) with geometry: `scrollHeight=1206` at the read — exactly the
+predicted band — and the spy timeline showed the writer directly: the user-select handler's
+async tail applying its stale smart-landing decision after the user navigated away —
+`_activateTab('tailor')` re-flips the visible tab (document collapses to 1206) and
+`wizardInit()` → `_wizardRender()`'s smooth `scrollIntoView(#panelJD)` (app.js:431/441/7063)
+animates y toward the clamped `maxScroll=306`; `273`/`291` are mid-flight samples. The stale
+restore abandoned correctly — capture/restore is NOT the defect. A deterministic repro
+(`test_smart_landing_tail_defers_to_user_navigation`, 3/3, xfail until fixed) is committed.
+Fix direction is an owner decision (user-visible behavior); candidates + acceptance bar in
+the dossier's `## The fix`. Dossier: `docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md`
+Round 3 (R3-0 … R3-3).

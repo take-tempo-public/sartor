@@ -1,10 +1,18 @@
 # Diagnosis — O-10 regression test (`test_restore_scroll_y_stale_invocation_overwrites_later_scroll`) fails under resource contention
 
-> **Status:** hypothesis only — a specific vector (pytest-xdist `-n 2` WITHIN the ux suite,
-> reproducing a second concurrent Playwright/werkzeug pair in-process) reliably elevates the
-> failure rate (2/8, 25%) above every other tested vector (0/8 each). This is a reproduction,
-> not yet a proven mechanism. Do not build a fix on this dossier alone — see `## Falsification`
-> for the next step that would actually prove it.
+> **Status (updated 2026-07-30, Round 3): MECHANISM OBSERVED AND DETERMINISTICALLY
+> REPRODUCED.** The writer behind the `273`/`291`/`306` family is the user-select handler's
+> async tail applying a stale smart-landing decision after the user has navigated away:
+> `_activateTab('tailor')` re-flips the visible tab (document collapses to the Tailor tab's
+> 1206px) and `wizardInit()` → `_wizardRender()`'s smooth
+> `scrollIntoView(#panelJD, {block:'start'})` (`static/app.js:431/441/7063`) animates `y`
+> toward the clamped `maxScroll` (`306 = 1206 - 900`); `273`/`291` are mid-flight samples of
+> that animation. Seen in a captured `-n2` failure's spy timeline (R3-2) and forced 3/3 by a
+> committed deterministic reproduction (R3-3,
+> `test_smart_landing_tail_defers_to_user_navigation`, xfail until fixed). The scroll
+> capture/restore mechanism itself is NOT the defect — the stale restore abandoned correctly
+> in the captured failure. **The fix is an owner decision** (user-visible app behavior): see
+> `## The fix`.
 > **⚠ Corrected by the cross-item review (`fix/ux-scroll-flake-cross-item-review`,
 > `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`).** `## Round 2`'s "looks more like
 > the already-documented mode-C/D scroll-anchoring shape... bleeding into this test" inference is
@@ -349,6 +357,47 @@ itself sampling a scroll animation mid-flight (the RUN 9 timeline shows the test
 `scrollTo(0,300)` produced its scroll-event ~75ms later, animation-shaped), but **this is an
 inference, not verified** — logged like round 1's `before=300` outlier.
 
+**R3-3 — deterministic reproduction, 3/3 (2026-07-30), committed as
+`test_smart_landing_tail_defers_to_user_navigation` (xfail until fixed).** Code trace from
+R3-2's stack: the select handler (`static/app.js:~416-441`) awaits `loadConfig()` then
+`_landingTab()` — which fetches `/api/users/<u>/experiences` (`app.js:2479`) — before running
+`_activateTab(landing)` (line 431) and `wizardInit()` (line 441); the UX page-object's
+`select()` returns without waiting for that tail (`ui_pages/user_picker.py:23-31`). The repro
+holds that landing fetch open (one-shot hold installed BEFORE the select — the corpus tab's
+own later `/experiences` fetch passes through), lets the "user" click onto the Corpus tab and
+scroll to 300 on a healthy fully-grown page, then releases. All 3 runs terminated in the
+identical state: `before={y:300, corpusVisible:True}` →
+`after={y:306, sh:1206, corpusVisible:False, tailorHeight:1027}`.
+
+The repro run's own spy timeline adds two clarifying observations:
+
+- **The tab flip alone moved `y` before any scroll API ran:** between the release and the
+  `scrollIntoView` call, `y` went 300 → 59 with **no spy-attributed write** — the browser's
+  own clamp during the document collapse (5590 → 1206 recorded; consistent with a transient
+  ~959px state mid-flip, `959 - 900 = 59`, though the intermediate height itself was not
+  logged — that last step is inference). The wizard smooth-scroll then animated 59 → 273 →
+  306. The historical `59` constant appears twice in this family for two different reasons,
+  both geometry: the small-page clamp at the before read (R3-0), and the shrink-clamp during
+  the tab flip (here).
+- **In this ordering the corpus restore ran legitimately and correctly** (`scrollTo(0,0)` by
+  the settle tick at `app.js:5618`, twice, before the test's own scroll — generation unbumped
+  at schedule time, so no mismatch existed). The repro isolates the select-tail writer; the
+  O-10 contention failures are that same writer landing inside the O-10 test's read window,
+  where the held refreshCorpus makes the stale restore abandon instead (R3-2). In neither
+  ordering is the capture/restore mechanism the defect.
+
+**Item-27 relationship, stated precisely:** round 7's F-7 falsified the wizard-rail
+attribution **for `test_corpus_reload...`** (that test's failures were anchoring, fixed by
+`overflow-anchor: none`). It did not — and could not — rule the wizard smooth-scroll out as
+a writer elsewhere; in the O-10 test it is now the directly observed writer. No contradiction
+with item 27's closure; the two items share render-timing sensitivity, not a mechanism.
+
+**Item-28 pointer (not investigated, per scope):** item 28's single `loadComposition` sample
+(`before=400 after=796`) now has a concrete first check for whoever picks it up: was a
+`_wizardRender` `scrollIntoView` (or another select/landing-tail write) in flight at its read
+moment, on the Tailor/Compose tab's own geometry? Not extended here — different call site,
+one sample, per the cross-item review's own scope rule.
+
 ---
 
 ## Falsification
@@ -386,8 +435,31 @@ against a captured failure rather than blind, once one lands:
 
 ## The fix
 
-Not applicable yet — no mechanism has been proven. Do not build a fix on this dossier alone
-(see `## Status` above).
+**Mechanism proven (Round 3) — fix not yet built; the direction is an owner decision**
+(user-visible app behavior, failure-pattern 5c / AGENTS.md sign-off rule). The defect, stated
+from evidence: the user-select handler's async tail applies its smart-landing decision and
+wizard-render scroll unconditionally, even when the user has explicitly navigated to another
+tab after selecting — a lost-update on navigation, the same *class* of staleness the scroll
+mechanism #2 already solves for restores (a generation check at apply time).
+
+Candidate directions (owner to choose; none implemented):
+
+1. **Navigation-generation guard on the select tail** (recommended): stamp a navigation
+   generation when the select handler starts; bump it in `switchTopTab` on any explicit
+   user tab activation; the tail re-checks before `_activateTab(landing)` + `wizardInit()`
+   and skips both when superseded. Mirrors mechanism #2's shape; fixes the real-user path
+   (a fast user clicking a tab right after selecting on a slow network hits exactly this).
+2. **Scope `_wizardRender`'s scrollIntoView to when the Tailor tab is visible** — narrower;
+   would stop the scroll stomp but still let the stale `_activateTab('tailor')` flip the tab
+   out from under the user.
+3. **Test-side accommodation only** — reject unless the owner reads this as not-a-defect:
+   the repro shows the app overriding an explicit user navigation, which reads as a real UX
+   defect, not a test artifact.
+
+Acceptance: `test_smart_landing_tail_defers_to_user_navigation` flips from xfail to a plain
+passing test in the same commit as the fix, and the fix is A/B'd against the real O-10 test
+under the `-n2` vector in a loop (per `feedback-ab-fix-against-real-test-not-just-instrument`:
+8-10+ runs each arm), not just against the repro.
 
 ---
 
