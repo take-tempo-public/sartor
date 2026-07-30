@@ -240,13 +240,19 @@ def _score_over_time(records: list[dict[str, Any]]) -> dict[str, Any]:
 
     Records lacking a prompt_version are filtered out (they predate the
     schema-v2 migration; including them would put points on the chart with
-    no actionable attribution). Returned shape:
+    no actionable attribution). judge_error records are also filtered out —
+    their score is a crashed-grader placeholder (0), not a real graded
+    value, and plotting it would read as a quality regression that never
+    happened. Returned shape:
         {labels: [iso_timestamp], datasets: [{label: rubric, data: [score]}]}
     """
     typed_records = [
         r
         for r in records
-        if r.get("prompt_version") and isinstance(r.get("score"), (int, float)) and r.get("rubric")
+        if r.get("prompt_version")
+        and isinstance(r.get("score"), (int, float))
+        and r.get("rubric")
+        and r.get("status") != "judge_error"
     ]
     typed_records.sort(key=lambda r: r.get("timestamp", ""))
 
@@ -284,7 +290,8 @@ def _rubric_fixture_heatmap(records: list[dict[str, Any]]) -> dict[str, Any]:
 
     Renders as an HTML/CSS table in the template (color = hsl(120 *
     score/5, 60%, 30%)) — green for pass, red for fail. Cells with no
-    record show as empty.
+    record, or whose most recent record is a judge_error (crashed-grader
+    placeholder score, not a real grade), show as empty.
     """
     latest: dict[tuple[str, str], dict[str, Any]] = {}
     for r in records:
@@ -305,7 +312,11 @@ def _rubric_fixture_heatmap(records: list[dict[str, Any]]) -> dict[str, Any]:
         cells = []
         for fixture in fixtures:
             cell_record = latest.get((rubric, fixture))
-            if cell_record is None or not isinstance(cell_record.get("score"), (int, float)):
+            if (
+                cell_record is None
+                or not isinstance(cell_record.get("score"), (int, float))
+                or cell_record.get("status") == "judge_error"
+            ):
                 cells.append({"score": None, "color": "#1a1a20"})
             else:
                 score = cell_record["score"]

@@ -119,6 +119,32 @@ class TestScoreOverTime:
         assert out["datasets"] == []
         assert out["labels"] == []
 
+    def test_judge_error_record_excluded_from_trend(self):
+        # _grade's in-function json.JSONDecodeError path (evals/runner.py)
+        # tags status="judge_error" but leaves score=0 (not None) — this is
+        # the common case where Haiku responds with unparseable text. That
+        # 0 must not be plotted as a real quality score on the trend line,
+        # indistinguishable from a genuine 0/5 rubric failure.
+        records = [
+            {
+                "rubric": "grounding",
+                "score": 0,
+                "status": "judge_error",
+                "prompt_version": "v1",
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "rubric": "grounding",
+                "score": 4.5,
+                "prompt_version": "v1",
+                "timestamp": "2026-05-02T00:00:00Z",
+            },
+        ]
+        out = _score_over_time(records)
+        grounding = next(d for d in out["datasets"] if d["label"] == "grounding")
+        scores = [pt["y"] for pt in grounding["data"]]
+        assert 0 not in scores
+
 
 class TestRubricFixtureHeatmap:
     def test_takes_most_recent_per_pair(self):
@@ -176,6 +202,25 @@ class TestRubricFixtureHeatmap:
         # Score 0 → hue 0 (red); score 5 → hue 120 (green)
         assert "hsl(0 " in cells[0]["color"]
         assert "hsl(120 " in cells[1]["color"]
+
+    def test_judge_error_record_rendered_as_empty_not_red(self):
+        # Same mechanism as TestScoreOverTime.test_judge_error_record_excluded_from_trend:
+        # _grade's in-function json.JSONDecodeError path leaves score=0 with
+        # status="judge_error". The heatmap must not color this cell hard
+        # red (hsl(0 ...)) — that's visually identical to a genuine 0/5
+        # rubric failure.
+        records = [
+            {
+                "rubric": "grounding",
+                "fixture": "A",
+                "score": 0,
+                "status": "judge_error",
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
+        ]
+        out = _rubric_fixture_heatmap(records)
+        cell = out["rows"][0]["cells"][0]
+        assert cell["score"] is None
 
 
 class TestFailureModeFrequency:
