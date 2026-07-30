@@ -3,7 +3,8 @@ schema = 1
 id = 29
 kind = "item"
 title = "O-12/O-14: the O-10 regression test itself fails under resource contention"
-status = "open"
+status = "closed"
+resolution = "Mechanism observed and fixed 2026-07-30 (fix/ux-restore-scroll-y-resource-contention round 3): the writer was the user-select handler's async tail (stale smart-landing _activateTab + wizardInit smooth scrollIntoView) plus, phase 2, that smooth animation surviving an explicit tab switch. Two-phase fix (owner-approved): _navGen guard on the select tail; switchTopTab cancels in-flight animations via raw _scrollRestoreNative.scrollTo (no gen bump). Two deterministic regression tests flipped FAIL->PASS 3/3; 16/16 clean -n2 fixed-arm runs vs 25% pre-fix. Capture/restore mechanism confirmed NOT at fault. Dossier: docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md Round 3."
 decision_owner = "agent"
 epic = 19
 refs = [
@@ -138,3 +139,15 @@ restore abandoned correctly — capture/restore is NOT the defect. A determinist
 Fix direction is an owner decision (user-visible behavior); candidates + acceptance bar in
 the dossier's `## The fix`. Dossier: `docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md`
 Round 3 (R3-0 … R3-3).
+
+### 2026-07-30 (cont'd 3) — fixed and closed
+
+Both fix phases landed on `fix/ux-restore-scroll-y-resource-contention` (owner-approved
+in-session, each phase separately): the `_navGen` navigation-generation guard on
+`onUserSelect`'s tail, and the in-flight smooth-scroll cancel in `switchTopTab` (raw
+`_scrollRestoreNative.scrollTo`, no gen bump). Validation: phase-1 repro
+(`test_smart_landing_tail_defers_to_user_navigation`) and phase-2 bench
+(`test_tab_switch_cancels_inflight_smooth_scroll`) each flipped FAIL→PASS 3/3;
+fixed-arm `-n2` A/B 16/16 clean vs 25% pre-fix control (dossier R3-4…R3-8). The
+mode-C-adjacent inference history is fully resolved: `59`, `273/291/306`, and `0/31` all
+turned out to be geometry (clamps + one smooth animation), not restore-logic defects.

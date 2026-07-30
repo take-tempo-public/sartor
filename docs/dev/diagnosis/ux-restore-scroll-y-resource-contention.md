@@ -11,8 +11,11 @@
 > committed deterministic reproduction (R3-3,
 > `test_smart_landing_tail_defers_to_user_navigation`, xfail until fixed). The scroll
 > capture/restore mechanism itself is NOT the defect — the stale restore abandoned correctly
-> in the captured failure. **The fix is an owner decision** (user-visible app behavior): see
-> `## The fix`.
+> in the captured failure. **FIXED (2026-07-30, both phases owner-approved in-session):**
+> phase 1 = navigation-generation guard on the select tail (`_navGen`); phase 2 =
+> `switchTopTab` cancels in-flight smooth-scroll animations via the raw
+> `_scrollRestoreNative.scrollTo` (no gen bump). Validated: two deterministic tests flipped
+> FAIL→PASS 3/3 each, and 16/16 clean fixed-arm `-n2` runs vs. a 25% pre-fix rate (R3-8).
 > **⚠ Corrected by the cross-item review (`fix/ux-scroll-flake-cross-item-review`,
 > `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`).** `## Round 2`'s "looks more like
 > the already-documented mode-C/D scroll-anchoring shape... bleeding into this test" inference is
@@ -504,6 +507,69 @@ writer — that label should not be built on.
 Also observed: `before=59` has a **third** road — in these runs `y` was already 59 from the
 clamped animation drift *before* the test's `scrollTo(0,300)` ran. Fixed-arm log:
 `scratchpad/contention_n2_r3_fixed_batchA_20260730.log` (+ `.reads`), gitignored.
+
+**R3-6 — phase 2 design (owner-approved in-session: cancel on tab switch via the raw
+`_scrollRestoreNative.scrollTo`, no interrupt-gen bump, empirically verified first).**
+Evidence constraint the implementation must respect: RUN 1's timeline shows the test's own
+*instant, effectively same-position* `scrollTo(0,300)` (clamped to 59, `y` already 59)
+preceding the animation's `y=0` write — so a same-position instant scroll **may not abort a
+running smooth scroll in this Chromium**; the cancel primitive must be proven against a
+deterministic bench before being trusted, not assumed from spec reading. Bench = a
+deterministic phase-2 repro: select (no holds) → wait for the spy to record `wizardInit`'s
+`scrollIntoView` launch → immediately click Corpus → `scrollTo(0,300)` → read → settle
+1200ms → read again; pre-fix expectation `after != before` (the persisting animation), with
+the cancel in `switchTopTab` the assertion `after == before` must hold. If the same-position
+raw call fails the bench, escalate within the same no-gen-bump constraint (explicit
+`behavior:'instant'` form, then a ±1px instant pair) until the bench passes — the bench, not
+the spec text, decides. *(Results appended below as they land.)*
+
+**R3-6 results (2026-07-30).** Two findings, then the fix:
+
+- **The choreographed contention-ordering repro does not reproduce un-contended: 3/3 PASS.**
+  (Launch signal → immediate corpus click → cards wait → scroll → 1200ms settle → read.)
+  Negative result recorded as data: un-contended, the animation completes before the read
+  window opens — consistent with the downward family having only ever been captured under
+  `-n2` load. That test form was discarded for the same-task bench below.
+- **Bench (`test_tab_switch_cancels_inflight_smooth_scroll`): same-task launch + switch,
+  Candidate-memory target (no capture/restore of its own to mask writes). Pre-fix 3/3 FAIL
+  with `y=50` exactly** — the animation deterministically survives the switch and completes.
+  **Post-fix 3/3 PASS with `y=0` exactly** — the raw same-position
+  `_scrollRestoreNative.scrollTo(window.scrollX, window.scrollY)` in `switchTopTab` DOES
+  abort the in-flight smooth scroll in this Chromium, proven in the fix's exact form. (Why
+  RUN 1's wrapped, clamped-same-position `scrollTo(0,300)` did not visibly abort the
+  animation there remains **unexplained** — not needed for this fix, and not claimed.)
+
+Post-fix serial re-validation: phase-1 repro + smart-landing (both directions + CTA) + goHome
+= 5/5 PASS. System-level A/B for the downward family: fixed-arm batch B under the `-n2`
+vector (control for downward = batch A's 2/8), results below.
+
+**R3-7 — fixed-arm batch B (`-n2`, both phases in place, 2026-07-30): 10/10 clean, zero
+failures of any shape.** The harness call was killed by the environment's 600s cap mid-RUN-11
+(runs are slower fixed-arm, 37-102s each; a timeout artifact, disclosed — not a test result),
+so 10 complete runs count. Target: 10/10 `after=59 == before=59`, every after-read at healthy
+grown geometry (`sh=2101/2170/5590`, 20 cards); neighbors also 10/10 (the O-8 timeout class
+did not recur in this batch either). Log:
+`scratchpad/contention_n2_r3_fixed_batchB_20260730.log` (+ `.reads`), gitignored.
+
+**Process incident, disclosed (and why three runs are excluded):** killing a background Bash
+call in this environment (timeout or stop) kills only the top process — **the `bash` loop
+survives and keeps spawning pytest runs**. Batch B's loop continued past its kill (RUN 11,
+12), and a follow-up batch C launched meanwhile, briefly producing **two concurrent ux pytest
+runs** — the exact condition this campaign's own process note forbids. All loops and pytest
+trees were found (`Win32_Process`), tree-killed, and verified gone before any further runs.
+Excluded from every tally: B-RUN-11 (killed mid-run), B-RUN-12 (completed but off-vector —
+overlapped batch C's RUN 1, 4 workers not 2), C-RUN-1 (killed mid-run). Remaining iterations
+were run **foreground** in cap-sized batches.
+
+**R3-8 — fixed-arm batches D+E (foreground, 3+3, 2026-07-30): 6/6 clean.** Target reads all
+`after=59 == before=59` at grown geometry. **Final fixed-arm A/B: 16/16 valid runs, zero
+target failures of any shape** (0 upward, 0 downward; neighbors clean throughout) vs. the
+pre-fix control's 25% historical rate (2/8 un-instrumented, round 1) and 1 captured failure
+in 16 instrumented runs (R3-1/R3-2), and vs. phase-1-only's 2/8 downward (batch A):
+P(0/16 | p=0.25) ≈ 0.01. Combined with both deterministic flips (phase-1 repro 3/3
+FAIL→PASS, phase-2 bench 3/3 FAIL→PASS), the two-phase fix is validated against the real
+test, in a loop, per the acceptance bar. Logs:
+`scratchpad/contention_n2_r3_fixed_batch{D,E}_20260730.log` (+ `.reads`), gitignored.
 
 ---
 

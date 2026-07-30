@@ -3589,6 +3589,14 @@ let _navGen = 0;
 
 function switchTopTab(name, btn) {
   _navGen++;
+  // Item 29 phase 2 (dossier R3-5/R3-6): an explicit navigation also cancels
+  // any in-flight smooth-scroll animation — one launched legitimately BEFORE
+  // the switch would otherwise keep moving the viewport after it (observed
+  // under -n2 contention: y drifting to 0/31 with no attributed API write).
+  // Deliberately the RAW scrollTo, not the wrapped one: cancelling must not
+  // bump _scrollInterruptGen, so pending capture/restore semantics are
+  // untouched. Verified by test_tab_switch_cancels_inflight_smooth_scroll.
+  _scrollRestoreNative.scrollTo(window.scrollX, window.scrollY);
   document.querySelectorAll('.top-tab-btn').forEach(b => {
     b.classList.toggle('active', b === btn);
     b.setAttribute('aria-selected', b === btn ? 'true' : 'false');

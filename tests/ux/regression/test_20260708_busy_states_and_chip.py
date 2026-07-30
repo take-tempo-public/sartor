@@ -1565,6 +1565,76 @@ def test_smart_landing_tail_defers_to_user_navigation(
 
 
 @pytest.mark.ux
+def test_tab_switch_cancels_inflight_smooth_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase-2 deterministic bench (item 29, dossier Round 3 R3-5/R3-6): an
+    explicit tab switch must cancel any in-flight smooth-scroll animation --
+    fixed-arm batch A showed a wizard smooth scroll launched legitimately
+    BEFORE a navigation surviving it and moving the viewport afterward
+    (`59 -> 0` / `59 -> 31`, no attributed API write). A choreographed repro of
+    that exact contention ordering does not reproduce un-contended (3/3 pass:
+    the animation completes before the read window opens -- consistent with the
+    downward family appearing only under `-n2` load), so this bench removes
+    timing entirely: launch a smooth scroll and call `switchTopTab` in the SAME
+    JS task, guaranteeing the animation is in flight at switch time, then
+    require the viewport to stay frozen. The target tab is Candidate memory,
+    which -- unlike Corpus -- has no scroll capture/restore of its own
+    (`_memoryTabActivated` only fetches and renders), so nothing masks a
+    surviving animation's writes. The fix under test: `switchTopTab` cancels
+    in-flight animations via the raw `_scrollRestoreNative` path (no
+    interrupt-generation bump, so pending capture/restore semantics are
+    untouched).
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    # Let the select tail (and its own wizardInit smooth scroll) fully settle,
+    # then normalize to a known position.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(1200)
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.wait_for_timeout(150)
+    assert page.evaluate("() => window.scrollY") == 0, "bench setup: could not normalize y"
+
+    # Same task: start a smooth scroll toward y=50 (small enough that no
+    # tab-height clamp interferes: every tab's maxScroll here is >= 59), then
+    # immediately switch tabs. The animation is in flight by construction --
+    # zero timing sensitivity.
+    page.evaluate(
+        r"""
+        () => {
+          window.scrollTo({ top: 50, behavior: 'smooth' });
+          switchTopTab('memory', document.getElementById('topTabMemory'));
+        }
+        """
+    )
+    # A 50px smooth scroll completes in well under 900ms; whatever survives
+    # the switch has finished by now.
+    page.wait_for_timeout(900)
+    y = page.evaluate("() => window.scrollY")
+    print(f"\n[tab-switch-cancel-bench] y_after_900ms={y}")
+    if y != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "tab-switch-cancel", y, 0)
+    assert y == 0, (
+        f"a smooth-scroll animation survived the explicit tab switch and moved "
+        f"the viewport afterward (y={y}): switchTopTab must cancel in-flight "
+        f"scroll animations (dossier Round 3 R3-5/R3-6)"
+    )
+
+
+@pytest.mark.ux
 def test_restore_scroll_y_ordinal_defers_to_newer_capture(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
