@@ -253,7 +253,56 @@ earlier in the sequence (around the `#topTabCorpus` click and the page's height 
 
 ---
 
+## Round 3 — height-at-read instrument (the cross-item review's falsification experiment)
+
+**Design (2026-07-30, before any runs — recorded per C-8).** Runs the experiment specified in
+`docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md` `## Falsification`, which supersedes
+this dossier's own `## Falsification` plan below (rAF tick-timing): a height-clamp race would
+not need rAF timing to explain it, and one more field on an existing read is cheaper than new
+timing instrumentation.
+
+**Instrument** (committed as this branch's first commit, per C-7): the two bare
+`window.scrollY` reads in `test_restore_scroll_y_stale_invocation_overwrites_later_scroll`
+(the `before` read after `scrollTo(0, 300)`, and the final `after` read) are replaced by a
+single-evaluate `_READ_SCROLL_STATE_JS` returning `{y, sh (documentElement.scrollHeight),
+ih (window.innerHeight), cards (rendered corpus-card count)}` — geometry at the same instant
+as the scroll read, one round-trip, no change to the test's timing shape (round 2 observed an
+unexplained rate drop with the spy attached, so probe weight matters). Both dicts print on
+**every** run, pass or fail — a passing run's height at the `after` read is equally
+informative (it should be fully grown, not in the ~1170-1210 band). The `before > 0` setup
+assert also now carries the geometry dict, so a recurrence of round 2's third failure mode
+(`before=0`) arrives with its height attached instead of opaque.
+
+**Vector:** the confirmed `-n2`-within-suite reproduction, unchanged — same 4 nodeids from
+`test_20260708_busy_states_and_chip.py` under `-n 2 -v --tb=short`. The original
+`capture_contention_n2.sh` was session-local scratchpad and did not survive the previous
+session; it was recreated mechanically from this dossier's own `## Observed` description of it
+(4 fixed nodeids, two-per-worker `load` scheduling), not reconstructed from memory.
+
+**Decision tree (the review doc's, restated):** a `291`/`306`/`273`-shaped failure with `sh`
+in ~1170-1210 at the `after` read → clamp hypothesis confirmed, fix target becomes
+render-sequencing; `sh` fully grown (or any other value) on such a failure → clamp hypothesis
+dead, widen the instrument, do not guess a third theory.
+
+**Results:** *(appended per batch as they land)*
+
+**R3-0 — single isolation run (instrument shakedown, 2026-07-30):** PASSED, 23s, with:
+`before_read={'y': 59, 'sh': 959, 'ih': 900, 'cards': 0}`
+`after_read={'y': 59, 'sh': 5590, 'ih': 900, 'cards': 20}`.
+Two things now **observed** (previously only back-derived in the review's R-3):
+(1) at the `before` read the document is exactly `959`px tall with **zero** cards rendered, so
+`scrollTo(0, 300)` clamps to `959 - 900 = 59` — the historically-constant `before=59` **is
+itself the max-scroll clamp in action**, directly seen for the first time; (2) on a passing
+run, by the final `after` read the page has grown well out of the ~1170-1210 band (`sh=5590`,
+all 20 cards attached) — matching the review's prediction for what a pass should look like.
+
+---
+
 ## Falsification
+
+> **⚠ Superseded by Round 3 above** (per the cross-item review's own `## Falsification`) —
+> the rAF tick-timing instrument described here was not built; the height-at-read experiment
+> replaced it. Kept for the record.
 
 **Still not run — round 2's instrumentation did not happen to catch the target shape** (see
 `## Round 2` above; it caught a different, third failure mode instead). A reliable-enough

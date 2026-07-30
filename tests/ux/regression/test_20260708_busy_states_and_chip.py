@@ -312,6 +312,24 @@ _HEIGHT_ATTRIBUTION_JS = r"""
 })();
 """
 
+# One evaluate, one round-trip: scroll position AND document geometry read at
+# the same instant. The cross-item review (docs/dev/diagnosis/
+# ux-scroll-flake-cross-item-review.md "## Falsification") found that no
+# capture in the whole scroll-flake family ever logged scrollHeight at the
+# moment of a before/after read -- the exact datum its transient-max-scroll-
+# clamp hypothesis needs. Reading y and geometry in a single call keeps the
+# probe shape identical to the bare `window.scrollY` read it replaces (Round 2
+# of docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md observed an
+# unexplained rate drop with the spy attached, so no extra round-trips).
+_READ_SCROLL_STATE_JS = r"""
+() => ({
+  y: window.scrollY,
+  sh: document.documentElement.scrollHeight,
+  ih: window.innerHeight,
+  cards: document.querySelectorAll('#corpusExperienceList .corpus-card').length,
+})
+"""
+
 
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
@@ -1339,11 +1357,13 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     # scrollGen BEFORE the stale fetch is ever released -- so the mismatch is
     # already established before _restoreScrollY is even scheduled, making
     # the abandon check's OWN timing not the obvious race window the
-    # docstring above assumes. A failure whose `after` lands well above
-    # `before` (not near 0, the stale capture's own value) looks more
-    # consistent with the already-documented mode-C/D scroll-anchoring shape
-    # (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md) than with the
-    # generation-mismatch check actually failing -- this spy settles which.
+    # docstring above assumes. The mode-C/D scroll-anchoring reading this
+    # comment originally floated for `after` well above `before` is FALSIFIED
+    # (docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md: the anchoring
+    # fix, 27d349b, predates every capture in the family); the live hypothesis
+    # is a transient max-scroll clamp hit while the corpus DOM is still
+    # mid-render, which is why both scroll reads below capture document
+    # geometry (_READ_SCROLL_STATE_JS) at the same instant as y.
     page.add_init_script(_SCROLL_SPY_JS)
 
     BasePage(page, live_server).load()
@@ -1381,8 +1401,12 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     # id=1 is now suspended mid-refreshCorpus, holding its stale (near-0)
     # capture. Establish the position a real user/test actually wants.
     page.evaluate("() => window.scrollTo(0, 300)")
-    before = page.evaluate("() => window.scrollY")
-    assert before > 0, "test setup didn't actually scroll the page (page too short?)"
+    before_read = page.evaluate(_READ_SCROLL_STATE_JS)
+    before = before_read["y"]
+    assert before > 0, (
+        f"test setup didn't actually scroll the page (page too short?) -- "
+        f"geometry at read: {before_read}"
+    )
 
     # Release id=1: it completes, renders, and fires its OWN _restoreScrollY
     # with the stale value it captured before `before` was ever set.
@@ -1392,8 +1416,12 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         timeout=15_000,
     )
     page.wait_for_timeout(150)  # let the stale _restoreScrollY's first tick run (and abandon)
-    after = page.evaluate("() => window.scrollY")
-    print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
+    after_read = page.evaluate(_READ_SCROLL_STATE_JS)
+    after = after_read["y"]
+    print(
+        f"\n[chip2-experiment-stale-restore] before={before} after={after} "
+        f"before_read={before_read} after_read={after_read}"
+    )
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "stale-restore-after", after, before)
     assert after == before, (
