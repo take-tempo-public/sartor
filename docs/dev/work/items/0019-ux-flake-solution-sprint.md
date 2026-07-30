@@ -109,3 +109,17 @@ and fixed on a separate branch, `fix/ux-scroll-wizard-rail-flake` (merged `27d34
 full evidence chain and live re-verification. Epic 19 stays open — items 28-31 remain
 non-terminal — but the "oldest, best-understood" candidate closed with no code change, not by
 being solved on this branch.
+
+### 2026-07-30 — cross-item review (owner-directed pause on the per-item approach)
+
+`fix/ux-scroll-flake-cross-item-review` read all three scroll-family diagnosis docs together
+(the original, item 27's own, and item 29's own) rather than continuing item 29 in isolation.
+Finding: item 29's dossier had inferred its `291`/`306` landing values might be the
+already-fixed mode-C/D anchoring mechanism (item 27) bleeding into a different test — that
+inference is **falsified by dated git evidence**, not merely unconfirmed: the anchoring fix
+(`27d349b`, 2026-07-26) predates every capture it was applied to by 2-4 days, and was
+independently re-verified effective on the same day (2026-07-30) as this branch's own campaign.
+A different, untested hypothesis (a transient max-scroll clamp hit while the corpus DOM is
+still mid-render) fits the observed values better and comes with a concrete next instrument.
+Full detail: `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`. No item closed; item 29
+gets a corrected, sharper next step (see its own Updates); items 28/30/31 unchanged.

@@ -5,6 +5,14 @@
 > failure rate (2/8, 25%) above every other tested vector (0/8 each). This is a reproduction,
 > not yet a proven mechanism. Do not build a fix on this dossier alone — see `## Falsification`
 > for the next step that would actually prove it.
+> **⚠ Corrected by the cross-item review (`fix/ux-scroll-flake-cross-item-review`,
+> `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`).** `## Round 2`'s "looks more like
+> the already-documented mode-C/D scroll-anchoring shape... bleeding into this test" inference is
+> **falsified** — the document-level anchoring fix (`27d349b`, 2026-07-26) was already live and
+> confirmed effective in every tree this branch's captures ran against (all dated 2026-07-30).
+> That mechanism cannot explain the `291`/`306`/`273` landing values. The cross-item review
+> proposes a different, untested hypothesis (a transient max-scroll clamp hit mid-render) and a
+> concrete next instrument — read it before continuing this dossier.
 > **Branch:** `fix/ux-restore-scroll-y-resource-contention`
 
 ---
@@ -208,6 +216,14 @@ this test (it seeds the SAME 20-near-identical-company corpus shape that trigger
 suggestion growth elsewhere in this file) than a regression of the generation-mismatch check
 itself. This reframing is itself only an inference — see `## Inferred` above, not upgraded to
 fact.
+
+> **⚠ Falsified by the cross-item review.** The document-level `overflow-anchor: none` fix
+> (`27d349b`, 2026-07-26) that produces the mode-C/D `dy == dh` shape was already merged and
+> confirmed still effective on 2026-07-30 (the same day these captures ran) — four days before
+> the earliest capture this reframing was based on. The mode-C/D bleed-in explanation is
+> **ruled out by dated git evidence**, not merely unconfirmed. See
+> `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md` for the corrected analysis and a
+> different, untested hypothesis (a transient max-scroll clamp) that fits the observed values.
 
 **Result: 15 passed / 1 failed / 16.** The single failure was NOT the `after != before` shape
 this instrument was built to explain — it was a THIRD, previously-undocumented failure mode:

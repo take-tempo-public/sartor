@@ -96,3 +96,29 @@ so far. Also unresolved: the instrumented failure rate (1/16) was well below the
 un-instrumented rate for the identical vector (2/8) — possibly small-sample noise, possibly a
 probe effect from the spy's own overhead. Full detail:
 `docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md` `## Round 2`.
+
+### 2026-07-30 (cont'd) — cross-item review corrects the mode-C/D bleed-in inference; new hypothesis + concrete next step
+
+`fix/ux-scroll-flake-cross-item-review` (a deliberate pause on the per-item approach, reading
+this dossier alongside the original and item 27's own) found Round 2's "looks more like the
+already-documented mode-C/D scroll-anchoring shape... bleeding into this test" inference is
+**falsified**: the document-level anchoring fix (`27d349b`, 2026-07-26) was already merged and
+re-verified effective on 2026-07-30 (the same day this test's captures ran), 2-4 days before
+every capture the inference was based on. That mechanism cannot explain `291`/`306`/`273`.
+
+New hypothesis, evidence-linked but untested: `before=59`/`after=306` back-calculate
+(`scrollHeight - 900`) to document heights `959` and `1206` — both exact matches to heights
+already logged elsewhere in the record (the corpus tab's just-entered height, and the flat
+height of doc1's mode-B captures / doc2's isolated instrument) — consistent with a transient
+max-scroll **clamp** hit while this test's held-open-fetch construction keeps the corpus DOM in
+a small, partially-rendered state, not a restore-ordering or anchoring defect. `291`/`273` are
+close-but-not-identical, consistent with a still-settling height rather than one fixed value.
+
+**Concrete next step (supersedes the previous "instrument the rAF callback" plan):** capture
+`documentElement.scrollHeight` at the moment of the final `after` read (the spy suite already
+wired in for Round 2 can carry this — it just needs the field), re-run the confirmed `-n2`
+vector until an `after != before` failure lands with it attached. If `scrollHeight` is in the
+~1170-1210 range at that moment, the clamp hypothesis is confirmed and the fix target becomes a
+render-sequencing question, not restore-ordering or anchoring. Full detail, including the
+full cross-item timeline table and item 28/30/31 cross-checks:
+`docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`.
