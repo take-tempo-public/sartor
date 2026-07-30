@@ -296,6 +296,59 @@ itself the max-scroll clamp in action**, directly seen for the first time; (2) o
 run, by the final `after` read the page has grown well out of the ~1170-1210 band (`sh=5590`,
 all 20 cards attached) — matching the review's prediction for what a pass should look like.
 
+**R3-1 — batch 1, `-n2` vector ×4 (2026-07-30):** 4/4 passed, ~28-31s per iteration, geometry
+**byte-identical across all 4 runs** to R3-0's (`before: sh=959/cards=0`,
+`after: sh=5590/cards=20`). No failure yet. Ambient state at launch, disclosed as in round 1:
+the owner's e2e clone's werkzeug parent/child pair on port 5000 present throughout (untouched);
+port 5099 clean; no other python processes. Log:
+`scratchpad/contention_n2_r3_batch1_20260730.log` (+ `.reads`), gitignored.
+
+**R3-2 — batch 2, `-n2` vector ×12 (2026-07-30): THE TARGET FAILURE CAPTURED WITH GEOMETRY
+AND A FULL SPY TIMELINE.** Tally: target 11 passed / 1 failed (RUN 9); one neighbor failure
+(RUN 1, `test_restore_scroll_y_loses_to_post_restore_growth`, `wait_for_selector` 15000ms
+timeout — the already-documented O-8 load-timeout class, not the target mechanism). Log:
+`scratchpad/contention_n2_r3_batch2_20260730.log` (+ `.reads`), gitignored.
+
+RUN 9, the target shape (`before=59 after=273` — byte-identical to O-14's stash-A/B value):
+
+```
+before_read={'y': 59,  'sh': 959,  'ih': 900, 'cards': 0}
+after_read ={'y': 273, 'sh': 1206, 'ih': 900, 'cards': 20}
+```
+
+`sh=1206` at the moment of the after read — **exactly** the ~1170-1210 band the cross-item
+review's decision tree names, and exactly the value its R-3 arithmetic back-derived. The spy
+timeline (12 events, full dump in the log) shows the writer directly:
+
+```
+t=2651.6  window.scrollTo [0,300]        (the test's own call; h=959 → lands clamped)
+t=2726.8  scroll-event y=59              (the clamp: 959-900=59)
+t=2824.9  scrollIntoView #panelJD.cb-panel {behavior:smooth, block:start}
+          by: ... at _wizardRender (app.js:7063)          ← h=1206 at this instant
+t=2878.9  height-change 959→1206 (tall: tab-tailor 1027, main 1027)
+t=2891.3  _restoreScrollY-scheduled (stale capture: ordinal=1, scrollGen=0)
+t=2981.5  _restoreScrollY-fired    (same stale identity — and NO write follows it)
+t=3111.7  scroll-event y=273             ← the test's after read lands here
+t=3271.6  scroll-event y=306             ← animation completes at maxScroll = 1206-900
+```
+
+**Directly observed, not inferred:** (1) the stale `_restoreScrollY` **abandoned correctly**
+— it fired and wrote nothing; mechanism #2 is not the defect. (2) The writer that moved
+`y` 59→273→306 is `_wizardRender`'s smooth `scrollIntoView(#panelJD, {block:'start'})`
+(`static/app.js:7063` via the wrapped `Element.scrollIntoView` at `app.js:5595`), fired at
+the transient `h=1206`, animating toward a target that clamps to `maxScroll=306`. (3) The
+test's after read sampled the animation **mid-flight** at 273; y continued to 306 after the
+read. The recurring historical `306` is the completed animation; `273`/`291` are mid-flight
+samples of the same animation.
+
+**Secondary data from the passing runs (recorded, not chased):** the after-read pass heights
+are **bimodal** — `sh=2170` (6 runs) vs `sh=5590` (5 runs), same 20 cards — two different
+growth stages both reading as a pass since `y` stays untouched at 59. And RUN 10 passed with
+a new outlier `before=5` (`sh=959` at both reads, `after=5`): consistent with the before read
+itself sampling a scroll animation mid-flight (the RUN 9 timeline shows the test's own
+`scrollTo(0,300)` produced its scroll-event ~75ms later, animation-shaped), but **this is an
+inference, not verified** — logged like round 1's `before=300` outlier.
+
 ---
 
 ## Falsification
