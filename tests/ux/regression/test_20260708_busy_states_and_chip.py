@@ -330,6 +330,23 @@ _READ_SCROLL_STATE_JS = r"""
 })
 """
 
+# Same shape as _READ_SCROLL_STATE_JS (one evaluate, geometry at the same
+# instant as y — kept as a SEPARATE constant rather than widening that one,
+# whose probe weight is calibrated for the contention test above per Round
+# 2's rate-drop concern, docs/dev/diagnosis/
+# ux-restore-scroll-y-resource-contention.md). Counts Compose cards, not
+# corpus cards -- item 28 (docs/dev/diagnosis/
+# ux-compose-reload-scroll-restore.md), the loadComposition() call site O-13
+# never had ANY geometry read attached to it.
+_READ_COMPOSE_SCROLL_STATE_JS = r"""
+() => ({
+  y: window.scrollY,
+  sh: document.documentElement.scrollHeight,
+  ih: window.innerHeight,
+  cards: document.querySelectorAll('#composeList .compose-experience-card').length,
+})
+"""
+
 
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
@@ -531,27 +548,64 @@ def test_compose_reload_preserves_scroll_position(
     + rebuilds #composeList — the owner's "scrolls to top" report. Seed enough
     experiences that the list is genuinely scrollable, scroll down, trigger a
     reload via the JS entry point itself (deterministic — no dependency on a
-    specific card's on-screen position), and assert the position survives."""
+    specific card's on-screen position), and assert the position survives.
+
+    INSTRUMENT (charter C-7, fix/ux-compose-reload-scroll-restore, item 28 --
+    docs/dev/diagnosis/ux-compose-reload-scroll-restore.md). This test had NO
+    scroll-mutation visibility at all (O-13's single historical failure,
+    before=400 after=796, carries no geometry or spy data). Reusing the same
+    spy suite the O-10/O-12/O-14 test above already uses, per the same
+    load-order rule (_SCROLL_SPY_NAMED_HOOKS_JS / _WIZARD_RENDER_SPY_JS /
+    _HEIGHT_ATTRIBUTION_JS must be injected via page.evaluate AFTER load,
+    never add_init_script -- see the comment above _SCROLL_SPY_NAMED_HOOKS_JS).
+    _wizardRender's smooth scrollIntoView (app.js:7093-7095) is the ungated
+    writer item 29 proved for a different call site; it is NOT gated by
+    either of item 29's fixes on this path (dossier's '## Observed') -- the
+    wizard-render spy is included so a live invocation would show directly in
+    the timeline rather than being inferred after the fact.
+    """
     cid = seed_user(ux_app, "alice")
     for i in range(8):
         seed_exp_with_bullets(cid, company=f"Company {i}")
     install_llm_stubs(ux_app, monkeypatch)
 
+    page.add_init_script(_SCROLL_SPY_JS)
+
     BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_WIZARD_RENDER_SPY_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
     UserPickerPage(page, live_server).select("alice")
     WizardJobPage(page, live_server).open().analyze(_JD)
     WizardComposePage(page, live_server).open()
 
     page.evaluate("() => window.scrollTo(0, 400)")
-    before = page.evaluate("() => window.scrollY")
-    assert before > 0, "test setup didn't actually scroll the page"
+    before_read = page.evaluate(_READ_COMPOSE_SCROLL_STATE_JS)
+    before = before_read["y"]
+    assert before > 0, (
+        f"test setup didn't actually scroll the page -- geometry at read: {before_read}"
+    )
 
     page.evaluate("() => loadComposition()")
     page.wait_for_selector(Compose.SETTLED, state="attached", timeout=15_000)
     # _restoreScrollY runs on a requestAnimationFrame after the terminal
     # render — give the browser one frame to paint before reading it back.
     page.wait_for_timeout(100)
-    after = page.evaluate("() => window.scrollY")
+    after_read = page.evaluate(_READ_COMPOSE_SCROLL_STATE_JS)
+    after = after_read["y"]
+    print(
+        f"\n[compose-reload-scroll] before={before} after={after} "
+        f"before_read={before_read} after_read={after_read}"
+    )
+    # Durable under -n2 (pytest-xdist doesn't reliably forward a PASSING
+    # test's stdout) -- written only after BOTH reads, so it cannot shift
+    # their timing. Same pattern as the O-10/O-12/O-14 test above.
+    read_log = os.environ.get("SCROLL_READ_LOG")
+    if read_log:
+        with open(read_log, "a", encoding="utf-8") as fh:
+            fh.write(f"compose-reload before_read={before_read} after_read={after_read}\n")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "compose-reload-after", after, before)
     assert after == before, f"scroll position not preserved: {before} -> {after}"
 
 
