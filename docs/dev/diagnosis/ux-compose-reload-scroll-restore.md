@@ -202,6 +202,42 @@ them) for 16-24 iterations.
   path) means a clean run cannot be attributed to that fix. Take the close/extend decision to
   the owner.
 
+### Campaign results (2026-07-30)
+
+Shakedown (single isolation run, before the campaign): **PASSED**, `before_read={'y': 400,
+'sh': 5391, 'ih': 900, 'cards': 9}` / `after_read=` identical — fully-grown geometry, not in
+any clamp band. Confirms the probe itself does not perturb the test.
+
+**Batch A (`capture_contention_n2.sh 4`, foreground, 2026-07-30): 4/4 clean, all four
+nodeids.** Item 28's own reads, byte-identical across all 4 runs:
+`before_read={'y': 400, 'sh': 5391, 'ih': 900, 'cards': 9}` /
+`after_read={'y': 400, 'sh': 5391, 'ih': 900, 'cards': 9}`. Log:
+`scratchpad/contention_n2_item28_batchA_20260730.log` (+ `.reads`), gitignored. Ambient state
+at launch: the owner's e2e clone's werkzeug parent/child pair present (untouched, confirmed
+via `Get-CimInstance Win32_Process` before starting); no other python/pytest/bash processes.
+
+**Batches B, C, D (3 × 4 iterations, foreground, 2026-07-30): 12/12 clean, every one of the
+16 total runs' all-four-nodeids pytest invocation reporting `4 passed` — zero failures
+anywhere, target or neighbor, across the whole 16-run sample.** Item 28's own geometry stayed
+byte-identical to batch A on every single run, all 16: `before_read={'y': 400, 'sh': 5391,
+'ih': 900, 'cards': 9}` / `after_read=` the same. Logs:
+`scratchpad/contention_n2_item28_batch{B,C,D}_20260730.log` (+ `.reads`), gitignored.
+Process hygiene checked after every batch (`Get-CimInstance Win32_Process` filtered to this
+project): clean teardown each time, no leaked bash/pytest trees. (One unrelated process tree
+observed after batch A — a separate `C:\Dev\spolia` project's own `scripts/gate.py`/pytest
+run, a different repository entirely, not touched.) No kills were needed this campaign — every
+batch completed within the foreground call.
+
+**Net (16/16, zero failures, byte-identical geometry throughout):** this is a stronger clean
+result than item 29's own fixed-arm campaign (which needed 16 runs across two process
+incidents to reach the same tally). It is evidence that this call site did not reproduce O-13
+under the confirmed vector, in this sample — **not** evidence that item 29's fix protects it,
+per `## Observed`'s structural finding that the fix cannot reach this path. Both disclosed
+confounds from the decision tree above still apply: the spy-attached rate-drop item 29's Round
+2 saw (possible, unquantified, suppression here too) and the fact that a clean run cannot be
+attributed to a fix that does not touch this code path. **Reported to the owner as a data
+point; the close/extend decision is theirs, not made here.**
+
 ---
 
 ## The fix
