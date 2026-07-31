@@ -50,6 +50,20 @@ stranding mid-onboard. `goHome` deselects the user, then re-resolves through the
 `_landingTab` (the single source of truth for "home") so the logo click and a cold start
 show the same view.
 
+**Detecting stale landings during async flows.** While `onUserSelect`
+([`app.js:onUserSelect`](../../../static/app.js)) awaits for config and landing
+computation, an explicit user navigation (tab click calling
+[`switchTopTab`](../../../static/app.js)) can race ahead. To prevent the stale
+landing decision from flip-flopping the tab back out from under the user, `onUserSelect`
+snapshots a navigation-generation counter ([`_navGen`](../../../static/app.js))
+before the awaits and checks it after; if an explicit tab switch bumped the counter
+during the awaits, the stale side effects (`_armHelpTour`, `_activateTab`,
+`_maybeFireTourStop`) are skipped but state work continues ([`app.js:onUserSelect`](../../../static/app.js)
+`[synthesis]`). `switchTopTab` also cancels any in-flight smooth-scroll animation by
+invoking the raw scroll primitive ([`_scrollRestoreNative.scrollTo`](../../../static/app.js))
+to prevent viewport drift when an explicit navigation is issued while a smooth scroll
+from a prior action is still animating `[synthesis]`.
+
 ## The six wizard steps
 
 [`app.js:_WIZARD_PANELS`](../../../static/app.js) is the step→panel map, and
@@ -67,8 +81,11 @@ show the same view.
 Step 1 spans two panels because the user reviews the analysis before advancing.
 [`app.js:_wizardRender`](../../../static/app.js) shows only the active step's panels and
 hides the rest, recomputes the rail's done/active/upcoming classes + connector ink-trail,
-mirrors `Step N of 6 · <label>` into the floating bottom statusbar, and scrolls the active
-panel into view. Forward motion is gated by
+mirrors `Step N of 6 · <label>` into the floating bottom statusbar, and — except when
+called with `{scroll:false}` — scrolls the active panel into view ([`app.js:_wizardRender`](../../../static/app.js))
+`[synthesis]`. The `scroll` option suppresses the scroll-to-active-panel behavior when a stale
+landing decision would otherwise move the viewport away from where the user has explicitly
+navigated ([`wizardInit`](../../../static/app.js) / [`_wizardRender`](../../../static/app.js) opts param). Forward motion is gated by
 [`app.js:_wizardReachable`](../../../static/app.js): step ≥ 2 needs a successful analysis
 (`lastContextPath`), step 6 needs a generation (`lastResumePath`) `[synthesis]`.
 [`app.js:wizardGoTo`](../../../static/app.js) lazy-loads on entry — `loadComposition()` on

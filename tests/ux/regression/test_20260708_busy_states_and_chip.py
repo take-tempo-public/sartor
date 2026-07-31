@@ -312,6 +312,24 @@ _HEIGHT_ATTRIBUTION_JS = r"""
 })();
 """
 
+# One evaluate, one round-trip: scroll position AND document geometry read at
+# the same instant. The cross-item review (docs/dev/diagnosis/
+# ux-scroll-flake-cross-item-review.md "## Falsification") found that no
+# capture in the whole scroll-flake family ever logged scrollHeight at the
+# moment of a before/after read -- the exact datum its transient-max-scroll-
+# clamp hypothesis needs. Reading y and geometry in a single call keeps the
+# probe shape identical to the bare `window.scrollY` read it replaces (Round 2
+# of docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md observed an
+# unexplained rate drop with the spy attached, so no extra round-trips).
+_READ_SCROLL_STATE_JS = r"""
+() => ({
+  y: window.scrollY,
+  sh: document.documentElement.scrollHeight,
+  ih: window.innerHeight,
+  cards: document.querySelectorAll('#corpusExperienceList .corpus-card').length,
+})
+"""
+
 
 def _dump_scroll_spy(page: Page, phase: str, value: object, before: object = None) -> None:
     """Print the full scroll-mutation timeline captured by ``_SCROLL_SPY_JS`` +
@@ -1339,11 +1357,13 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     # scrollGen BEFORE the stale fetch is ever released -- so the mismatch is
     # already established before _restoreScrollY is even scheduled, making
     # the abandon check's OWN timing not the obvious race window the
-    # docstring above assumes. A failure whose `after` lands well above
-    # `before` (not near 0, the stale capture's own value) looks more
-    # consistent with the already-documented mode-C/D scroll-anchoring shape
-    # (docs/dev/diagnosis/ux-scroll-wizard-rail-flake.md) than with the
-    # generation-mismatch check actually failing -- this spy settles which.
+    # docstring above assumes. The mode-C/D scroll-anchoring reading this
+    # comment originally floated for `after` well above `before` is FALSIFIED
+    # (docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md: the anchoring
+    # fix, 27d349b, predates every capture in the family); the live hypothesis
+    # is a transient max-scroll clamp hit while the corpus DOM is still
+    # mid-render, which is why both scroll reads below capture document
+    # geometry (_READ_SCROLL_STATE_JS) at the same instant as y.
     page.add_init_script(_SCROLL_SPY_JS)
 
     BasePage(page, live_server).load()
@@ -1381,8 +1401,12 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     # id=1 is now suspended mid-refreshCorpus, holding its stale (near-0)
     # capture. Establish the position a real user/test actually wants.
     page.evaluate("() => window.scrollTo(0, 300)")
-    before = page.evaluate("() => window.scrollY")
-    assert before > 0, "test setup didn't actually scroll the page (page too short?)"
+    before_read = page.evaluate(_READ_SCROLL_STATE_JS)
+    before = before_read["y"]
+    assert before > 0, (
+        f"test setup didn't actually scroll the page (page too short?) -- "
+        f"geometry at read: {before_read}"
+    )
 
     # Release id=1: it completes, renders, and fires its OWN _restoreScrollY
     # with the stale value it captured before `before` was ever set.
@@ -1392,8 +1416,20 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         timeout=15_000,
     )
     page.wait_for_timeout(150)  # let the stale _restoreScrollY's first tick run (and abandon)
-    after = page.evaluate("() => window.scrollY")
-    print(f"\n[chip2-experiment-stale-restore] before={before} after={after}")
+    after_read = page.evaluate(_READ_SCROLL_STATE_JS)
+    after = after_read["y"]
+    print(
+        f"\n[chip2-experiment-stale-restore] before={before} after={after} "
+        f"before_read={before_read} after_read={after_read}"
+    )
+    # Under pytest-xdist a PASSING test's stdout is not reliably forwarded to
+    # the master log, and the cross-item review's experiment needs pass-run
+    # geometry too -- append it to a durable file when the campaign asks.
+    # Written only after BOTH reads completed, so it cannot shift their timing.
+    read_log = os.environ.get("SCROLL_READ_LOG")
+    if read_log:
+        with open(read_log, "a", encoding="utf-8") as fh:
+            fh.write(f"stale-restore before_read={before_read} after_read={after_read}\n")
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "stale-restore-after", after, before)
     assert after == before, (
@@ -1401,6 +1437,200 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
         f"the later scroll ({before} -> {after}). Mechanism #2 (docs/dev/diagnosis/"
         f"ux-scroll-position-flake.md '## The fix') should have detected the "
         f"generation mismatch and no-op'd -- this is a regression."
+    )
+
+
+# Geometry + tab-visibility read for the late-smart-landing repro below. Its
+# extra fields (which tab is actually visible) are what distinguish "the
+# corpus DOM grew" from "the select tail flipped the tab back to Tailor" --
+# deliberately NOT added to _READ_SCROLL_STATE_JS, whose probe weight in the
+# contention test above is calibrated (dossier Round 2's rate-drop concern).
+_LANDING_REPRO_READ_JS = r"""
+() => ({
+  y: window.scrollY,
+  sh: document.documentElement.scrollHeight,
+  ih: window.innerHeight,
+  cards: document.querySelectorAll('#corpusExperienceList .corpus-card').length,
+  corpusVisible: (() => {
+    const p = document.getElementById('panelCorpus');
+    return !!(p && p.offsetParent !== null);
+  })(),
+  tailorHeight: (document.getElementById('tab-tailor') || {}).offsetHeight || 0,
+})
+"""
+
+
+@pytest.mark.ux
+def test_smart_landing_tail_defers_to_user_navigation(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Deterministic reproduction of the Round 3 RUN-9 capture (item 29) --
+    no contention needed. The user-select handler (app.js ~:416-441) awaits
+    loadConfig() then _landingTab() before applying `_activateTab(landing)`
+    and `wizardInit()`; `_landingTab()` fetches /api/users/<u>/experiences
+    (app.js:2479). Holding that FIRST /experiences fetch open suspends the
+    tail exactly where `-n2` contention delays it naturally. The test then
+    does what the O-10 contention failures' timelines show the harness doing:
+    navigates to the Corpus tab (whose own refreshCorpus /experiences fetch
+    passes through the one-shot hold untouched) and scrolls. Releasing the
+    held fetch lets the stale tail run: observed in the RUN-9 spy timeline as
+    _activateTab('tailor') re-flipping the visible tab (document height ->
+    1206, the Tailor tab's height) and _wizardRender's
+    scrollIntoView(#panelJD, {behavior:'smooth', block:'start'}) animating y
+    toward the clamped maxScroll (306 = 1206-900; 273/291 are mid-flight
+    samples of the same animation). Wanted behavior, asserted below: an
+    explicit user navigation supersedes the async landing decision -- the
+    Corpus tab stays visible and the scroll position holds.
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+
+    # One-shot hold on the FIRST /experiences fetch. Installed BEFORE the user
+    # select, so it captures _landingTab()'s smart-landing fetch, not the
+    # corpus tab's refreshCorpus fetch (same URL, later).
+    page.evaluate(
+        r"""
+        () => {
+          const real = window.fetch;
+          window.__releaseExperiencesFetch = null;
+          window.fetch = (...a) => {
+            const url = String(a[0] || '');
+            if (url.includes('/experiences') && !window.__releaseExperiencesFetch) {
+              const p = real(...a);
+              return new Promise((resolve, reject) => {
+                window.__releaseExperiencesFetch = () => p.then(resolve, reject);
+              });
+            }
+            return real(...a);
+          };
+        }
+        """
+    )
+    UserPickerPage(page, live_server).select("alice")
+    page.wait_for_function(
+        "() => typeof window.__releaseExperiencesFetch === 'function'", timeout=15_000
+    )
+
+    # The user's explicit navigation, while the select tail is suspended:
+    # onto the Corpus tab, scrolled to 300.
+    page.click("#topTabCorpus")
+    page.wait_for_function(
+        "() => document.querySelectorAll('#corpusExperienceList .corpus-card').length >= 20",
+        timeout=15_000,
+    )
+    page.evaluate("() => window.scrollTo(0, 300)")
+    page.wait_for_timeout(200)  # settle our own scroll (RUN 9 showed it lands ~75ms late)
+    before_read = page.evaluate(_LANDING_REPRO_READ_JS)
+    before = before_read["y"]
+    assert before > 0 and before_read["corpusVisible"], (
+        f"test setup failed -- expected a scrolled, visible Corpus tab before the "
+        f"release; got {before_read}"
+    )
+
+    # Release the landing fetch: the suspended select tail now runs with its
+    # stale decision. 700ms covers the smooth-scroll animation window (RUN 9:
+    # release->final scroll-event was ~380ms).
+    page.evaluate("() => window.__releaseExperiencesFetch()")
+    page.wait_for_timeout(700)
+    after_read = page.evaluate(_LANDING_REPRO_READ_JS)
+    after = after_read["y"]
+    print(
+        f"\n[late-landing-repro] before={before} after={after} "
+        f"before_read={before_read} after_read={after_read}"
+    )
+    read_log = os.environ.get("SCROLL_READ_LOG")
+    if read_log:
+        with open(read_log, "a", encoding="utf-8") as fh:
+            fh.write(f"late-landing before_read={before_read} after_read={after_read}\n")
+    if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "late-landing-after", after, before)
+    assert after_read["corpusVisible"], (
+        f"the select handler's stale smart-landing decision overrode the user's "
+        f"explicit navigation: the Corpus tab was flipped back to Tailor after "
+        f"release (tailorHeight={after_read['tailorHeight']}, sh={after_read['sh']})"
+    )
+    assert after == before, (
+        f"the select tail's wizard render moved the scroll position the user set "
+        f"({before} -> {after}, sh={after_read['sh']}): _wizardRender's smooth "
+        f"scrollIntoView fired against a navigation it should have known was "
+        f"superseded (see the dossier's Round 3 timeline)"
+    )
+
+
+@pytest.mark.ux
+def test_tab_switch_cancels_inflight_smooth_scroll(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase-2 deterministic bench (item 29, dossier Round 3 R3-5/R3-6): an
+    explicit tab switch must cancel any in-flight smooth-scroll animation --
+    fixed-arm batch A showed a wizard smooth scroll launched legitimately
+    BEFORE a navigation surviving it and moving the viewport afterward
+    (`59 -> 0` / `59 -> 31`, no attributed API write). A choreographed repro of
+    that exact contention ordering does not reproduce un-contended (3/3 pass:
+    the animation completes before the read window opens -- consistent with the
+    downward family appearing only under `-n2` load), so this bench removes
+    timing entirely: launch a smooth scroll and call `switchTopTab` in the SAME
+    JS task, guaranteeing the animation is in flight at switch time, then
+    require the viewport to stay frozen. The target tab is Candidate memory,
+    which -- unlike Corpus -- has no scroll capture/restore of its own
+    (`_memoryTabActivated` only fetches and renders), so nothing masks a
+    surviving animation's writes. The fix under test: `switchTopTab` cancels
+    in-flight animations via the raw `_scrollRestoreNative` path (no
+    interrupt-generation bump, so pending capture/restore semantics are
+    untouched).
+    """
+    cid = seed_user(ux_app, "alice")
+    for i in range(20):
+        seed_exp_with_bullets(cid, company=f"Company {i}")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    page.evaluate(_HEIGHT_ATTRIBUTION_JS)
+    UserPickerPage(page, live_server).select("alice")
+
+    # Let the select tail (and its own wizardInit smooth scroll) fully settle,
+    # then normalize to a known position.
+    page.wait_for_function(
+        "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
+        timeout=15_000,
+    )
+    page.wait_for_timeout(1200)
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.wait_for_timeout(150)
+    assert page.evaluate("() => window.scrollY") == 0, "bench setup: could not normalize y"
+
+    # Same task: start a smooth scroll toward y=50 (small enough that no
+    # tab-height clamp interferes: every tab's maxScroll here is >= 59), then
+    # immediately switch tabs. The animation is in flight by construction --
+    # zero timing sensitivity.
+    page.evaluate(
+        r"""
+        () => {
+          window.scrollTo({ top: 50, behavior: 'smooth' });
+          switchTopTab('memory', document.getElementById('topTabMemory'));
+        }
+        """
+    )
+    # A 50px smooth scroll completes in well under 900ms; whatever survives
+    # the switch has finished by now.
+    page.wait_for_timeout(900)
+    y = page.evaluate("() => window.scrollY")
+    print(f"\n[tab-switch-cancel-bench] y_after_900ms={y}")
+    if y != 0 or os.environ.get("SCROLL_SPY_ALWAYS"):
+        _dump_scroll_spy(page, "tab-switch-cancel", y, 0)
+    assert y == 0, (
+        f"a smooth-scroll animation survived the explicit tab switch and moved "
+        f"the viewport afterward (y={y}): switchTopTab must cancel in-flight "
+        f"scroll animations (dossier Round 3 R3-5/R3-6)"
     )
 
 

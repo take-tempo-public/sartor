@@ -925,3 +925,33 @@ resolve to existing files.
 above, not a fresh full-repo coverage sweep.
 
 **ERROR count: 0. WARN count: 0. Gate verdict: PASS.**
+
+---
+
+## 2026-07-30 — /wiki-self-update (diff pass, `00c109a7…` → `65b0f88`)
+
+**Branch:** `fix/ux-restore-scroll-y-resource-contention` (close-out checkpoint trigger — the
+75-file freshness gate blocked the merge). **Window:** 75 changed source files across 5 merged
+branches + this branch; owner authorized a one-run cap raise to 18 (affected-page union 15).
+
+**Sources driving page work:** `static/app.js` (`_navGen` navigation guard, `switchTopTab`
+smooth-scroll cancel, `wizardInit`/`_wizardRender` opts — item 29), `scripts/gate.py`
+(`-n auto` non-UX tier, `work_items check` step), `dashboard/routes.py` (`judge_error`
+exclusion), `blueprints/diagnostics.py` (run-cancel heartbeat), NEW `scripts/work_items.py`.
+
+**Pages changed (3):** `frontend-wizard` (stale-landing guard + scroll-cancel subsection,
+`{scroll:false}` opts; cites re-anchored), `code-module-map` (`gate.py` step list updated;
+new `scripts/work_items.py` entry citing `docs/dev/work/SCHEMA.md` per D5),
+`diagnostics-console` (SSE cancel line re-anchors; `judge_error` exclusion detail).
+**Pages verified no-edit (12):** `using-sartor`, `route-surface`, `pipeline-stages`,
+`tailoring-a-resume`, `career-corpus`, `managing-users`, `troubleshooting`, `cover-letters`,
+`downloading-your-documents`, `editing-and-refining`, `importing-your-experience`,
+`recruiter-pipeline-tab` — symbol-anchored cites or out-of-scope claims. No new page for the
+work-item system (SCHEMA.md is authoritative; cite-don't-restate).
+
+**Auditor catch-rate:** 1 catch / 3 pages audited (a `work_items.py:board` anchor naming a
+subcommand, not a symbol — re-anchored to `render_board`). Orchestrator lint additionally
+caught 6 cite-form errors (line numbers in link targets) in `frontend-wizard`, fixed
+mechanically.
+
+**/wiki-lint: ERROR 0 / WARN 0. Gate verdict: PASS.** Checkpoint advanced to `65b0f88`.

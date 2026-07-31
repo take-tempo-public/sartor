@@ -13,6 +13,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: stale smart-landing no longer overrides user navigation (`fix/ux-restore-scroll-y-resource-contention`, item 29)
+
+The user-select handler's async tail (`onUserSelect` → smart landing →
+`wizardInit`) applied its landing decision unconditionally — even when the
+user had already switched tabs while its fetches were in flight — flipping
+the visible tab back and smooth-scrolling the viewport away
+(`_wizardRender`'s `scrollIntoView`). This was the observed mechanism behind
+the O-10 regression test's contention flake family (`after=273/291/306`),
+captured with a spy timeline + geometry and reproduced deterministically
+before the fix (dossier: `docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md`,
+Round 3). Fixed with a navigation-generation guard: `switchTopTab` bumps
+`_navGen`; a select tail that finds itself superseded skips
+`_activateTab`/tour-arming and renders the wizard rail without the
+scroll-to-panel (`wizardInit({scroll:false})`). A second phase closed the
+residual: a smooth-scroll animation launched *before* the navigation was
+observed surviving it (moving the viewport with no API write), so
+`switchTopTab` now also cancels any in-flight smooth scroll via the raw
+pre-wrap scroll primitive (no interrupt-generation bump — pending
+capture/restore semantics untouched). The scroll capture/restore mechanism
+itself was confirmed NOT at fault in every captured failure. Validated by two
+new deterministic regression tests
+(`test_smart_landing_tail_defers_to_user_navigation`,
+`test_tab_switch_cancels_inflight_smooth_scroll`), each flipped FAIL→PASS by
+its phase of the fix, plus 16/16 clean `-n 2` contention runs vs. a 25%
+pre-fix failure rate.
+
 ### Fixed: architecture docs + real-corpus baseline (`docs/pipeline-truth-and-era4-baseline`)
 
 Resuming PX-39 (work item 6) surfaced that `docs/architecture.md`'s three

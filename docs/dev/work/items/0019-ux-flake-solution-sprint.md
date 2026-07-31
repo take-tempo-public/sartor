@@ -123,3 +123,13 @@ A different, untested hypothesis (a transient max-scroll clamp hit while the cor
 still mid-render) fits the observed values better and comes with a concrete next instrument.
 Full detail: `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`. No item closed; item 29
 gets a corrected, sharper next step (see its own Updates); items 28/30/31 unchanged.
+
+### 2026-07-30 — child item 29 closed (mechanism observed, two-phase fix landed)
+
+`fix/ux-restore-scroll-y-resource-contention` round 3 closed item 29: the writer behind the
+O-12/O-14 family was the user-select tail's stale smart-landing (tab flip + wizard smooth
+scroll) plus that smooth animation surviving an explicit tab switch — geometry, not
+restore-logic, end to end. Epic children remaining: 28 (has a concrete inherited first
+check — see its Updates), 30, 31. The O-8 `#panel*` visibility-timeout load class recurred
+once during this branch's gate (test_compose_skills_card_drop_persists, 2/2 clean isolated)
+— logged as the known class, no new item.

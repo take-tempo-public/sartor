@@ -28,3 +28,11 @@ exists yet.
 ## Updates
 
 ### 2026-07-29 — filed, split from epic 19
+
+### 2026-07-30 — concrete first check inherited from item 29's resolution
+
+Item 29's writer is now observed (`docs/dev/diagnosis/ux-restore-scroll-y-resource-contention.md`
+Round 3): a stale user-select tail (`_activateTab` + `_wizardRender`'s smooth scrollIntoView).
+First check for THIS item, when picked up: was the same select/landing-tail write in flight at
+O-13's read moment, on the Tailor/Compose tab's own geometry? Not investigated — one sample,
+different call site, per the cross-item review's scope rule.

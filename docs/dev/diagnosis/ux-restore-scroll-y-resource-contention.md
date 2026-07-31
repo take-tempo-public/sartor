@@ -1,10 +1,21 @@
 # Diagnosis — O-10 regression test (`test_restore_scroll_y_stale_invocation_overwrites_later_scroll`) fails under resource contention
 
-> **Status:** hypothesis only — a specific vector (pytest-xdist `-n 2` WITHIN the ux suite,
-> reproducing a second concurrent Playwright/werkzeug pair in-process) reliably elevates the
-> failure rate (2/8, 25%) above every other tested vector (0/8 each). This is a reproduction,
-> not yet a proven mechanism. Do not build a fix on this dossier alone — see `## Falsification`
-> for the next step that would actually prove it.
+> **Status (updated 2026-07-30, Round 3): MECHANISM OBSERVED AND DETERMINISTICALLY
+> REPRODUCED.** The writer behind the `273`/`291`/`306` family is the user-select handler's
+> async tail applying a stale smart-landing decision after the user has navigated away:
+> `_activateTab('tailor')` re-flips the visible tab (document collapses to the Tailor tab's
+> 1206px) and `wizardInit()` → `_wizardRender()`'s smooth
+> `scrollIntoView(#panelJD, {block:'start'})` (`static/app.js:431/441/7063`) animates `y`
+> toward the clamped `maxScroll` (`306 = 1206 - 900`); `273`/`291` are mid-flight samples of
+> that animation. Seen in a captured `-n2` failure's spy timeline (R3-2) and forced 3/3 by a
+> committed deterministic reproduction (R3-3,
+> `test_smart_landing_tail_defers_to_user_navigation`, xfail until fixed). The scroll
+> capture/restore mechanism itself is NOT the defect — the stale restore abandoned correctly
+> in the captured failure. **FIXED (2026-07-30, both phases owner-approved in-session):**
+> phase 1 = navigation-generation guard on the select tail (`_navGen`); phase 2 =
+> `switchTopTab` cancels in-flight smooth-scroll animations via the raw
+> `_scrollRestoreNative.scrollTo` (no gen bump). Validated: two deterministic tests flipped
+> FAIL→PASS 3/3 each, and 16/16 clean fixed-arm `-n2` runs vs. a 25% pre-fix rate (R3-8).
 > **⚠ Corrected by the cross-item review (`fix/ux-scroll-flake-cross-item-review`,
 > `docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md`).** `## Round 2`'s "looks more like
 > the already-documented mode-C/D scroll-anchoring shape... bleeding into this test" inference is
@@ -253,7 +264,150 @@ earlier in the sequence (around the `#topTabCorpus` click and the page's height 
 
 ---
 
+## Round 3 — height-at-read instrument (the cross-item review's falsification experiment)
+
+**Design (2026-07-30, before any runs — recorded per C-8).** Runs the experiment specified in
+`docs/dev/diagnosis/ux-scroll-flake-cross-item-review.md` `## Falsification`, which supersedes
+this dossier's own `## Falsification` plan below (rAF tick-timing): a height-clamp race would
+not need rAF timing to explain it, and one more field on an existing read is cheaper than new
+timing instrumentation.
+
+**Instrument** (committed as this branch's first commit, per C-7): the two bare
+`window.scrollY` reads in `test_restore_scroll_y_stale_invocation_overwrites_later_scroll`
+(the `before` read after `scrollTo(0, 300)`, and the final `after` read) are replaced by a
+single-evaluate `_READ_SCROLL_STATE_JS` returning `{y, sh (documentElement.scrollHeight),
+ih (window.innerHeight), cards (rendered corpus-card count)}` — geometry at the same instant
+as the scroll read, one round-trip, no change to the test's timing shape (round 2 observed an
+unexplained rate drop with the spy attached, so probe weight matters). Both dicts print on
+**every** run, pass or fail — a passing run's height at the `after` read is equally
+informative (it should be fully grown, not in the ~1170-1210 band). The `before > 0` setup
+assert also now carries the geometry dict, so a recurrence of round 2's third failure mode
+(`before=0`) arrives with its height attached instead of opaque.
+
+**Vector:** the confirmed `-n2`-within-suite reproduction, unchanged — same 4 nodeids from
+`test_20260708_busy_states_and_chip.py` under `-n 2 -v --tb=short`. The original
+`capture_contention_n2.sh` was session-local scratchpad and did not survive the previous
+session; it was recreated mechanically from this dossier's own `## Observed` description of it
+(4 fixed nodeids, two-per-worker `load` scheduling), not reconstructed from memory.
+
+**Decision tree (the review doc's, restated):** a `291`/`306`/`273`-shaped failure with `sh`
+in ~1170-1210 at the `after` read → clamp hypothesis confirmed, fix target becomes
+render-sequencing; `sh` fully grown (or any other value) on such a failure → clamp hypothesis
+dead, widen the instrument, do not guess a third theory.
+
+**Results:** *(appended per batch as they land)*
+
+**R3-0 — single isolation run (instrument shakedown, 2026-07-30):** PASSED, 23s, with:
+`before_read={'y': 59, 'sh': 959, 'ih': 900, 'cards': 0}`
+`after_read={'y': 59, 'sh': 5590, 'ih': 900, 'cards': 20}`.
+Two things now **observed** (previously only back-derived in the review's R-3):
+(1) at the `before` read the document is exactly `959`px tall with **zero** cards rendered, so
+`scrollTo(0, 300)` clamps to `959 - 900 = 59` — the historically-constant `before=59` **is
+itself the max-scroll clamp in action**, directly seen for the first time; (2) on a passing
+run, by the final `after` read the page has grown well out of the ~1170-1210 band (`sh=5590`,
+all 20 cards attached) — matching the review's prediction for what a pass should look like.
+
+**R3-1 — batch 1, `-n2` vector ×4 (2026-07-30):** 4/4 passed, ~28-31s per iteration, geometry
+**byte-identical across all 4 runs** to R3-0's (`before: sh=959/cards=0`,
+`after: sh=5590/cards=20`). No failure yet. Ambient state at launch, disclosed as in round 1:
+the owner's e2e clone's werkzeug parent/child pair on port 5000 present throughout (untouched);
+port 5099 clean; no other python processes. Log:
+`scratchpad/contention_n2_r3_batch1_20260730.log` (+ `.reads`), gitignored.
+
+**R3-2 — batch 2, `-n2` vector ×12 (2026-07-30): THE TARGET FAILURE CAPTURED WITH GEOMETRY
+AND A FULL SPY TIMELINE.** Tally: target 11 passed / 1 failed (RUN 9); one neighbor failure
+(RUN 1, `test_restore_scroll_y_loses_to_post_restore_growth`, `wait_for_selector` 15000ms
+timeout — the already-documented O-8 load-timeout class, not the target mechanism). Log:
+`scratchpad/contention_n2_r3_batch2_20260730.log` (+ `.reads`), gitignored.
+
+RUN 9, the target shape (`before=59 after=273` — byte-identical to O-14's stash-A/B value):
+
+```
+before_read={'y': 59,  'sh': 959,  'ih': 900, 'cards': 0}
+after_read ={'y': 273, 'sh': 1206, 'ih': 900, 'cards': 20}
+```
+
+`sh=1206` at the moment of the after read — **exactly** the ~1170-1210 band the cross-item
+review's decision tree names, and exactly the value its R-3 arithmetic back-derived. The spy
+timeline (12 events, full dump in the log) shows the writer directly:
+
+```
+t=2651.6  window.scrollTo [0,300]        (the test's own call; h=959 → lands clamped)
+t=2726.8  scroll-event y=59              (the clamp: 959-900=59)
+t=2824.9  scrollIntoView #panelJD.cb-panel {behavior:smooth, block:start}
+          by: ... at _wizardRender (app.js:7063)          ← h=1206 at this instant
+t=2878.9  height-change 959→1206 (tall: tab-tailor 1027, main 1027)
+t=2891.3  _restoreScrollY-scheduled (stale capture: ordinal=1, scrollGen=0)
+t=2981.5  _restoreScrollY-fired    (same stale identity — and NO write follows it)
+t=3111.7  scroll-event y=273             ← the test's after read lands here
+t=3271.6  scroll-event y=306             ← animation completes at maxScroll = 1206-900
+```
+
+**Directly observed, not inferred:** (1) the stale `_restoreScrollY` **abandoned correctly**
+— it fired and wrote nothing; mechanism #2 is not the defect. (2) The writer that moved
+`y` 59→273→306 is `_wizardRender`'s smooth `scrollIntoView(#panelJD, {block:'start'})`
+(`static/app.js:7063` via the wrapped `Element.scrollIntoView` at `app.js:5595`), fired at
+the transient `h=1206`, animating toward a target that clamps to `maxScroll=306`. (3) The
+test's after read sampled the animation **mid-flight** at 273; y continued to 306 after the
+read. The recurring historical `306` is the completed animation; `273`/`291` are mid-flight
+samples of the same animation.
+
+**Secondary data from the passing runs (recorded, not chased):** the after-read pass heights
+are **bimodal** — `sh=2170` (6 runs) vs `sh=5590` (5 runs), same 20 cards — two different
+growth stages both reading as a pass since `y` stays untouched at 59. And RUN 10 passed with
+a new outlier `before=5` (`sh=959` at both reads, `after=5`): consistent with the before read
+itself sampling a scroll animation mid-flight (the RUN 9 timeline shows the test's own
+`scrollTo(0,300)` produced its scroll-event ~75ms later, animation-shaped), but **this is an
+inference, not verified** — logged like round 1's `before=300` outlier.
+
+**R3-3 — deterministic reproduction, 3/3 (2026-07-30), committed as
+`test_smart_landing_tail_defers_to_user_navigation` (xfail until fixed).** Code trace from
+R3-2's stack: the select handler (`static/app.js:~416-441`) awaits `loadConfig()` then
+`_landingTab()` — which fetches `/api/users/<u>/experiences` (`app.js:2479`) — before running
+`_activateTab(landing)` (line 431) and `wizardInit()` (line 441); the UX page-object's
+`select()` returns without waiting for that tail (`ui_pages/user_picker.py:23-31`). The repro
+holds that landing fetch open (one-shot hold installed BEFORE the select — the corpus tab's
+own later `/experiences` fetch passes through), lets the "user" click onto the Corpus tab and
+scroll to 300 on a healthy fully-grown page, then releases. All 3 runs terminated in the
+identical state: `before={y:300, corpusVisible:True}` →
+`after={y:306, sh:1206, corpusVisible:False, tailorHeight:1027}`.
+
+The repro run's own spy timeline adds two clarifying observations:
+
+- **The tab flip alone moved `y` before any scroll API ran:** between the release and the
+  `scrollIntoView` call, `y` went 300 → 59 with **no spy-attributed write** — the browser's
+  own clamp during the document collapse (5590 → 1206 recorded; consistent with a transient
+  ~959px state mid-flip, `959 - 900 = 59`, though the intermediate height itself was not
+  logged — that last step is inference). The wizard smooth-scroll then animated 59 → 273 →
+  306. The historical `59` constant appears twice in this family for two different reasons,
+  both geometry: the small-page clamp at the before read (R3-0), and the shrink-clamp during
+  the tab flip (here).
+- **In this ordering the corpus restore ran legitimately and correctly** (`scrollTo(0,0)` by
+  the settle tick at `app.js:5618`, twice, before the test's own scroll — generation unbumped
+  at schedule time, so no mismatch existed). The repro isolates the select-tail writer; the
+  O-10 contention failures are that same writer landing inside the O-10 test's read window,
+  where the held refreshCorpus makes the stale restore abandon instead (R3-2). In neither
+  ordering is the capture/restore mechanism the defect.
+
+**Item-27 relationship, stated precisely:** round 7's F-7 falsified the wizard-rail
+attribution **for `test_corpus_reload...`** (that test's failures were anchoring, fixed by
+`overflow-anchor: none`). It did not — and could not — rule the wizard smooth-scroll out as
+a writer elsewhere; in the O-10 test it is now the directly observed writer. No contradiction
+with item 27's closure; the two items share render-timing sensitivity, not a mechanism.
+
+**Item-28 pointer (not investigated, per scope):** item 28's single `loadComposition` sample
+(`before=400 after=796`) now has a concrete first check for whoever picks it up: was a
+`_wizardRender` `scrollIntoView` (or another select/landing-tail write) in flight at its read
+moment, on the Tailor/Compose tab's own geometry? Not extended here — different call site,
+one sample, per the cross-item review's own scope rule.
+
+---
+
 ## Falsification
+
+> **⚠ Superseded by Round 3 above** (per the cross-item review's own `## Falsification`) —
+> the rAF tick-timing instrument described here was not built; the height-at-read experiment
+> replaced it. Kept for the record.
 
 **Still not run — round 2's instrumentation did not happen to catch the target shape** (see
 `## Round 2` above; it caught a different, third failure mode instead). A reliable-enough
@@ -284,8 +438,138 @@ against a captured failure rather than blind, once one lands:
 
 ## The fix
 
-Not applicable yet — no mechanism has been proven. Do not build a fix on this dossier alone
-(see `## Status` above).
+**Mechanism proven (Round 3) — fix not yet built; the direction is an owner decision**
+(user-visible app behavior, failure-pattern 5c / AGENTS.md sign-off rule). The defect, stated
+from evidence: the user-select handler's async tail applies its smart-landing decision and
+wizard-render scroll unconditionally, even when the user has explicitly navigated to another
+tab after selecting — a lost-update on navigation, the same *class* of staleness the scroll
+mechanism #2 already solves for restores (a generation check at apply time).
+
+Candidate directions (owner to choose; none implemented):
+
+1. **Navigation-generation guard on the select tail** (recommended): stamp a navigation
+   generation when the select handler starts; bump it in `switchTopTab` on any explicit
+   user tab activation; the tail re-checks before `_activateTab(landing)` + `wizardInit()`
+   and skips both when superseded. Mirrors mechanism #2's shape; fixes the real-user path
+   (a fast user clicking a tab right after selecting on a slow network hits exactly this).
+2. **Scope `_wizardRender`'s scrollIntoView to when the Tailor tab is visible** — narrower;
+   would stop the scroll stomp but still let the stale `_activateTab('tailor')` flip the tab
+   out from under the user.
+3. **Test-side accommodation only** — reject unless the owner reads this as not-a-defect:
+   the repro shows the app overriding an explicit user navigation, which reads as a real UX
+   defect, not a test artifact.
+
+Acceptance: `test_smart_landing_tail_defers_to_user_navigation` flips from xfail to a plain
+passing test in the same commit as the fix, and the fix is A/B'd against the real O-10 test
+under the `-n2` vector in a loop (per `feedback-ab-fix-against-real-test-not-just-instrument`:
+8-10+ runs each arm), not just against the repro.
+
+**R3-4 — fix implemented (2026-07-30, owner-approved option 1 in-session).**
+`switchTopTab` bumps a module-global `_navGen`; `onUserSelect` snapshots it before its first
+await and computes `superseded` after its last; when superseded it skips the landing trio
+(`_armHelpTour`/`_activateTab`/`_maybeFireTourStop`) and calls `wizardInit({scroll:false})`,
+which threads through to `_wizardRender(opts)` gating only the `scrollIntoView` — all state
+work (iteration reset, applications/personas refresh, rail init) still runs. Every other
+`_wizardRender`/`wizardInit` caller passes nothing and keeps the scroll. Validation so far:
+repro test 3/3 PASS post-fix (terminal state `y=300, corpusVisible=True` — was 3/3 FAIL at
+`y=306, corpusVisible=False` pre-fix, same session, same machine); smart-landing regression
+tests 4/4 PASS (`test_20260612_corpus_first_landing.py` both directions + CTA,
+`test_20260612_logo_home_route.py` goHome). A/B against the real O-10 test under the `-n2`
+vector: control arm = this session's pre-fix batches (16 runs, 1 target failure of the
+273-family, R3-1/R3-2); fixed arm in progress, results below.
+
+**R3-5 — fixed-arm batch A (8 runs, 2026-07-30): the upward family is gone; a SECOND PHASE of
+the same writer surfaced.** Target: 6 passed / 2 failed — but neither failure is the
+273/291/306 shape (0/8 upward). Both are **downward**: RUN 1 `59 → 0` (`sh=2101` at read —
+byte-identical shape to the historical O-12 occurrence 2 / cross-item-review row #7, which
+that review had labeled "stale-restore-shaped") and RUN 8 `59 → 31` (`sh=2170`, mid-flight
+toward 0). Both spy timelines show the same structure, **observed**:
+
+- `_wizardRender`'s smooth `scrollIntoView(#panelJD)` fired **before** the corpus click this
+  time — legitimately: nothing was superseded yet, so the R3-4 guard correctly did not gate
+  it (RUN 1 t=2322, tailor visible, h=1206);
+- after the corpus click hid the Tailor tab (h back to 959), `y` drifted 0 → 59 with **no
+  attributed API write** (59 = `959 - 900`, the corpus tab's own maxScroll);
+- in RUN 1, after the test's `scrollTo(0,300)` (wrapped, gen 1→2), `y` landed at **0** with
+  **no attributed API write** between them; the stale restore fired later and abandoned
+  correctly on the gen mismatch (1≠2) — mechanism #2 correct in both runs, again.
+
+**Inferred (labeled):** the only animation in flight is the wizard smooth scroll, so the
+unattributed 0→59 drift and the 0-ward motion after the test's own scroll are that animation
+persisting **across the tab navigation** — clamped to the new small geometry first, then
+(consistent with, not proven) retargeted toward its now-hidden element's zeroed position,
+overriding the test's explicit scroll. Two consequences: (1) the R3-4 guard fixes only the
+"tail fires after navigation" phase; a smooth animation *launched before* the navigation
+survives it and is the residual failure mode; (2) the historical `59→0` capture (O-12 occ 2)
+and the review's row-#7 "stale-restore-shaped" label now have a demonstrated alternative
+writer — that label should not be built on.
+
+Also observed: `before=59` has a **third** road — in these runs `y` was already 59 from the
+clamped animation drift *before* the test's `scrollTo(0,300)` ran. Fixed-arm log:
+`scratchpad/contention_n2_r3_fixed_batchA_20260730.log` (+ `.reads`), gitignored.
+
+**R3-6 — phase 2 design (owner-approved in-session: cancel on tab switch via the raw
+`_scrollRestoreNative.scrollTo`, no interrupt-gen bump, empirically verified first).**
+Evidence constraint the implementation must respect: RUN 1's timeline shows the test's own
+*instant, effectively same-position* `scrollTo(0,300)` (clamped to 59, `y` already 59)
+preceding the animation's `y=0` write — so a same-position instant scroll **may not abort a
+running smooth scroll in this Chromium**; the cancel primitive must be proven against a
+deterministic bench before being trusted, not assumed from spec reading. Bench = a
+deterministic phase-2 repro: select (no holds) → wait for the spy to record `wizardInit`'s
+`scrollIntoView` launch → immediately click Corpus → `scrollTo(0,300)` → read → settle
+1200ms → read again; pre-fix expectation `after != before` (the persisting animation), with
+the cancel in `switchTopTab` the assertion `after == before` must hold. If the same-position
+raw call fails the bench, escalate within the same no-gen-bump constraint (explicit
+`behavior:'instant'` form, then a ±1px instant pair) until the bench passes — the bench, not
+the spec text, decides. *(Results appended below as they land.)*
+
+**R3-6 results (2026-07-30).** Two findings, then the fix:
+
+- **The choreographed contention-ordering repro does not reproduce un-contended: 3/3 PASS.**
+  (Launch signal → immediate corpus click → cards wait → scroll → 1200ms settle → read.)
+  Negative result recorded as data: un-contended, the animation completes before the read
+  window opens — consistent with the downward family having only ever been captured under
+  `-n2` load. That test form was discarded for the same-task bench below.
+- **Bench (`test_tab_switch_cancels_inflight_smooth_scroll`): same-task launch + switch,
+  Candidate-memory target (no capture/restore of its own to mask writes). Pre-fix 3/3 FAIL
+  with `y=50` exactly** — the animation deterministically survives the switch and completes.
+  **Post-fix 3/3 PASS with `y=0` exactly** — the raw same-position
+  `_scrollRestoreNative.scrollTo(window.scrollX, window.scrollY)` in `switchTopTab` DOES
+  abort the in-flight smooth scroll in this Chromium, proven in the fix's exact form. (Why
+  RUN 1's wrapped, clamped-same-position `scrollTo(0,300)` did not visibly abort the
+  animation there remains **unexplained** — not needed for this fix, and not claimed.)
+
+Post-fix serial re-validation: phase-1 repro + smart-landing (both directions + CTA) + goHome
+= 5/5 PASS. System-level A/B for the downward family: fixed-arm batch B under the `-n2`
+vector (control for downward = batch A's 2/8), results below.
+
+**R3-7 — fixed-arm batch B (`-n2`, both phases in place, 2026-07-30): 10/10 clean, zero
+failures of any shape.** The harness call was killed by the environment's 600s cap mid-RUN-11
+(runs are slower fixed-arm, 37-102s each; a timeout artifact, disclosed — not a test result),
+so 10 complete runs count. Target: 10/10 `after=59 == before=59`, every after-read at healthy
+grown geometry (`sh=2101/2170/5590`, 20 cards); neighbors also 10/10 (the O-8 timeout class
+did not recur in this batch either). Log:
+`scratchpad/contention_n2_r3_fixed_batchB_20260730.log` (+ `.reads`), gitignored.
+
+**Process incident, disclosed (and why three runs are excluded):** killing a background Bash
+call in this environment (timeout or stop) kills only the top process — **the `bash` loop
+survives and keeps spawning pytest runs**. Batch B's loop continued past its kill (RUN 11,
+12), and a follow-up batch C launched meanwhile, briefly producing **two concurrent ux pytest
+runs** — the exact condition this campaign's own process note forbids. All loops and pytest
+trees were found (`Win32_Process`), tree-killed, and verified gone before any further runs.
+Excluded from every tally: B-RUN-11 (killed mid-run), B-RUN-12 (completed but off-vector —
+overlapped batch C's RUN 1, 4 workers not 2), C-RUN-1 (killed mid-run). Remaining iterations
+were run **foreground** in cap-sized batches.
+
+**R3-8 — fixed-arm batches D+E (foreground, 3+3, 2026-07-30): 6/6 clean.** Target reads all
+`after=59 == before=59` at grown geometry. **Final fixed-arm A/B: 16/16 valid runs, zero
+target failures of any shape** (0 upward, 0 downward; neighbors clean throughout) vs. the
+pre-fix control's 25% historical rate (2/8 un-instrumented, round 1) and 1 captured failure
+in 16 instrumented runs (R3-1/R3-2), and vs. phase-1-only's 2/8 downward (batch A):
+P(0/16 | p=0.25) ≈ 0.01. Combined with both deterministic flips (phase-1 repro 3/3
+FAIL→PASS, phase-2 bench 3/3 FAIL→PASS), the two-phase fix is validated against the real
+test, in a loop, per the acceptance bar. Logs:
+`scratchpad/contention_n2_r3_fixed_batch{D,E}_20260730.log` (+ `.reads`), gitignored.
 
 ---
 
