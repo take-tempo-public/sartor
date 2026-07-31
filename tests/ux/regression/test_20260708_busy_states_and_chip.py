@@ -117,10 +117,10 @@ _SCROLL_SPY_JS = r"""
 # silently clobbered when app.js's own top-level declarations execute
 # moments later. (app.js already relies on this exact ordering itself:
 # onUserSelect is declared at app.js:394 and unconditionally reassigned at
-# app.js:5511-5512, and that reassignment is in effect before the `change`
+# app.js:5676, and that reassignment is in effect before the `change`
 # listener bound at app.js:46 can ever fire.)
 #
-# _restoreScrollY (app.js:5491-5493) is a fire-and-forget
+# _restoreScrollY (app.js:5637-5657) is a fire-and-forget
 # requestAnimationFrame — refreshCorpus never awaits it, so its promise
 # resolves (and this wrapper's `finally` marks the invocation closed) a
 # full microtask-drain before the rAF actually fires. Reading the
@@ -214,10 +214,10 @@ _SCROLL_SPY_NAMED_HOOKS_JS = r"""
 #
 # Same post-load `page.evaluate` injection rule as _SCROLL_SPY_NAMED_HOOKS_JS
 # (see that constant's comment): `_wizardRender` is a top-level *function
-# declaration* (app.js:6974), so it is a genuine window-scoped global and
+# declaration* (app.js:7043), so it is a genuine window-scoped global and
 # reassigning `window._wizardRender` does rebind the identifier its own
-# in-app callers resolve. `_wizardStep` (`let`, app.js:6874) and
-# `_WIZARD_PANELS` (`const`, app.js:6878) are NOT window properties — they
+# in-app callers resolve. `_wizardStep` (`let`, app.js:6943) and
+# `_WIZARD_PANELS` (`const`, app.js:6947) are NOT window properties — they
 # live in the global *lexical* environment — so they are read here by bare
 # identifier, which a classic script evaluated later can still resolve.
 # ---------------------------------------------------------------------------
@@ -715,8 +715,8 @@ def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
     unrelated to this one, Inferred Sec3 there).
 
     Isolates whether `_wizardRender`'s own `scrollIntoView({behavior:
-    'smooth'})` (app.js:7021, fired by `wizardInit()` -- app.js:6906 --
-    which `onUserSelect()` -- app.js:441 -- calls as its LAST statement,
+    'smooth'})` (app.js:7093-7095, fired by `wizardInit()` -- app.js:6969 --
+    which `onUserSelect()` -- app.js:451 -- calls as its LAST statement,
     itself the tail of an async chain: loadConfig -> _landingTab ->
     _activateTab -> refreshApplications -> _loadPersonaOptions ->
     wizardInit) can still be mid-animation when an UNRELATED later explicit
@@ -770,7 +770,7 @@ def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "wizard-only-after", after, before)
     assert after == before, (
-        f"_wizardRender's own scrollIntoView (app.js:7021) creeps an "
+        f"_wizardRender's own scrollIntoView (app.js:7093-7095) creeps an "
         f"unrelated later baseline with ZERO refreshCorpus / corpus-reload "
         f"involvement: {before} -> {after}. Confirms mode C is a pure "
         f"wizard-render / native-smooth-scroll race, structurally "
@@ -808,12 +808,12 @@ def test_wizard_render_firing_after_baseline_creeps_it(
     a "residual, still-settling" animation implies.
 
     This experiment tests the reverse: does a `_wizardRender()` call (the
-    same real production function, app.js:6974, called directly the same way
+    same real production function, app.js:7043, called directly the same way
     Chip 2's tests called `_captureScrollY`/`_restoreScrollY` directly)
     firing AFTER an explicit baseline is already established creep that
     baseline away? Rationale for trying this ordering: under CPU load,
     wizardInit()'s OWN async chain (onUserSelect -> loadConfig ->
-    _landingTab -> ... -> wizardInit -> _wizardRender, app.js:394-441) could
+    _landingTab -> ... -> wizardInit -> _wizardRender, app.js:394-451) could
     plausibly be delayed past the point the corpus test has already clicked
     the tab and established its own scrollTo(0,300) baseline -- i.e.
     late-arriving, not residual-from-earlier.
@@ -873,7 +873,7 @@ def test_wizard_render_firing_after_baseline_creeps_it(
     if after != before or os.environ.get("SCROLL_SPY_ALWAYS"):
         _dump_scroll_spy(page, "reversed-order-after", after, before)
     assert after == before, (
-        f"a _wizardRender() call (app.js:6974) firing AFTER an explicit "
+        f"a _wizardRender() call (app.js:7043) firing AFTER an explicit "
         f"baseline creeps that baseline away within a 350ms read window: "
         f"{before} -> {after}. Confirms mode C's mechanism requires the "
         f"wizard render to fire LATE (after the baseline is set), not "
@@ -905,7 +905,7 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
     Admissible as an instrument only because the ordering it forces is
     directly OBSERVED in the wild (dossier O-6: control run1 and fix run4
     both captured it), and because it drives the REAL production render path
-    (`refreshMergeSuggestions`, app.js:5212) rather than simulating growth.
+    (`refreshMergeSuggestions`, app.js:5253) rather than simulating growth.
 
     What round 5 step 0 established (dossier O-12), and why this test targets
     merge suggestions rather than the corpus cards: the +25054px that moves
@@ -938,7 +938,7 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
     # event), so without this the chain's own _landingTab() can land after our
     # click and switch the tab back out from under the probe — observed once as
     # a `dh=+0 (1206 -> 1206)` self-guard trip, the tailor tab's height. The
-    # wizard's scrollIntoView is the chain's last observable act (app.js:441 ->
+    # wizard's scrollIntoView is the chain's last observable act (app.js:451 ->
     # wizardInit -> _wizardRender), so the spy seeing it means the chain is done.
     page.wait_for_function(
         "() => (window.__scrollSpy || []).some(e => e.source === 'scrollIntoView')",
@@ -1006,7 +1006,7 @@ def test_merge_suggestions_growth_shifts_scroll_deterministically(
         )
     assert before > 0, "probe setup didn't actually scroll the page"
 
-    # Re-render through the REAL production path (app.js:5212). Playwright
+    # Re-render through the REAL production path (app.js:5253). Playwright
     # awaits the returned promise, so the fetch + render have completed.
     # In the "tight" arm this is a second, idempotent call — the first was
     # already kicked above; this one just guarantees a settled end state.
@@ -1168,7 +1168,7 @@ def test_merge_suggestions_growth_during_active_restore_loop_shifts_scroll(
     growth probe above.
 
     Every prior probe calls `refreshMergeSuggestions()` standalone, so no
-    `_captureScrollY`/`_restoreScrollY` (app.js:5601-5630) settle loop is
+    `_captureScrollY`/`_restoreScrollY` (app.js:5628-5657) settle loop is
     ever running while the growth lands. In the wild failing run the
     dossier captured, that rAF loop was still actively ticking around the
     baseline moment (O-13's third listed candidate). This probe starts the
@@ -1299,7 +1299,7 @@ def test_restore_scroll_y_loses_to_post_restore_growth(
     once the fix landed (charter C-7; diagnosis dossier O-9's mechanism,
     distilled to its essential shape, docs/dev/diagnosis/ux-scroll-position-
     flake.md "## The fix"). Calls the REAL _captureScrollY / _restoreScrollY
-    primitives (app.js:5480-5591) directly, then schedules a synthetic
+    primitives (app.js:5600-5657) directly, then schedules a synthetic
     page-growth (a tall filler prepended to <body>, matching O-6's "content
     inserted above the anchor pushes scroll down" scroll-anchoring shape) in
     the animation frame immediately AFTER _restoreScrollY's own first rAF --
@@ -1405,7 +1405,7 @@ def test_restore_scroll_y_stale_invocation_overwrites_later_scroll(
     # INSTRUMENT (charter C-7, fix/ux-restore-scroll-y-resource-contention):
     # this test had NO scroll-mutation visibility at all -- reusing the same
     # spy suite sibling tests in this file already use, rather than building a
-    # new one, per the current app.js _restoreScrollY (5601-5630): the
+    # new one, per the current app.js _restoreScrollY (5637-5657): the
     # abandon check is `ordinal !== _scrollCaptureOrdinal || scrollGen !==
     # _scrollInterruptGen`, and this test's own scrollTo(0,300) below bumps
     # scrollGen BEFORE the stale fetch is ever released -- so the mismatch is
@@ -1522,7 +1522,7 @@ def test_smart_landing_tail_defers_to_user_navigation(
     no contention needed. The user-select handler (app.js ~:416-441) awaits
     loadConfig() then _landingTab() before applying `_activateTab(landing)`
     and `wizardInit()`; `_landingTab()` fetches /api/users/<u>/experiences
-    (app.js:2479). Holding that FIRST /experiences fetch open suspends the
+    (app.js:2490). Holding that FIRST /experiences fetch open suspends the
     tail exactly where `-n2` contention delays it naturally. The test then
     does what the O-10 contention failures' timelines show the harness doing:
     navigates to the Corpus tab (whose own refreshCorpus /experiences fetch
