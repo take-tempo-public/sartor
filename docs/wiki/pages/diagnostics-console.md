@@ -92,11 +92,13 @@ runtime CDN; lazy-init on open):
   merge-block gate, watch Δ<−0.3, else ok), per-rubric pass rate (≥4.0)
   ([`_per_rubric_pass_rate`](../../../dashboard/routes.py)), score trend
   ([`_score_over_time`](../../../dashboard/routes.py), one line per rubric, points
-  attributed by `prompt_version`), the (rubric × fixture) HSL heatmap
-  ([`_rubric_fixture_heatmap`](../../../dashboard/routes.py)), top-20 failure
+  attributed by `prompt_version`; excludes `status == "judge_error"` records so
+  grader crashes do not chart as 0-scores), the (rubric × fixture) HSL heatmap
+  ([`_rubric_fixture_heatmap`](../../../dashboard/routes.py); cells with
+  `judge_error` render empty), top-20 failure
   modes ([`_failure_mode_frequency`](../../../dashboard/routes.py)), and the
   quality-vs-latency Pareto scatter
-  ([`_pareto_data`](../../../dashboard/routes.py)).
+  ([`_pareto_data`](../../../dashboard/routes.py))
 - **Groundedness** — the L0 score over time, deduped one-point-per-run
   ([`_groundedness_trend`](../../../dashboard/routes.py) via
   [`_dedup_by_run`](../../../dashboard/routes.py)) plus the latest run's
@@ -188,13 +190,13 @@ parallel with paid runs `[synthesis]`.
 
 **Run cancellation (disconnect-as-cancel):** Each SSE route polls its result queue
 with a [`_HEARTBEAT_INTERVAL_S`](../../../blueprints/diagnostics.py) `5`-second timeout
-instead of blocking forever on `queue.get()` (lines 487, 754, 980, 1186),
+instead of blocking forever on `queue.get()` (lines 541, 808, 1040, 1246),
 yielding a plain SSE comment line (`: heartbeat\n\n`) when the timeout expires.
 Without periodic yields, a closed tab is invisible to Werkzeug until the blocking
 worker call finishes — with the heartbeat, a disconnect is noticed within 5 seconds
 `[synthesis]`. When the client closes the fetch or clicks the Cancel button (both fire
 `GeneratorExit` into the generator), each SSE route wraps its stream body in
-`try/except GeneratorExit` (lines 553–560, 855–862, 1024–1032, 1238–1246) to
+`try/except GeneratorExit` (lines 607–614, 915–922, 1084–1092, 1298–1306) to
 capture the disconnect, set a `threading.Event(cancel_event)`, and pass
 `cancel_check=cancel_event.is_set` into its evals-layer call
 ([`run_grounding_signals`](../../../blueprints/diagnostics.py),
@@ -202,7 +204,7 @@ capture the disconnect, set a `threading.Event(cancel_event)`, and pass
 [`run_suite`](../../../blueprints/diagnostics.py) for both eval and tune) so worker
 threads can short-circuit their loops on cancellation `[synthesis]`. The
 `tune_run_stream` route has an additional optimization: its baseline-then-candidate
-worker checks `if not cancel_event.is_set()` (line 1161) before starting the expensive
+worker checks `if not cancel_event.is_set()` (line 1221) before starting the expensive
 candidate run, so a disconnect during baseline skips the candidate entirely rather than
 launching a second full paid run the client gave up on `[synthesis]`. Cancellation is
 signalled by client disconnect rather than a separate `POST /cancel` route because
