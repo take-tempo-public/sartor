@@ -450,10 +450,15 @@ suite.
 
 - **Mechanism check (done):** P1 re-run 2/2 clean post-fix (`timed_out=False`, ~5.5-5.7s) —
   deterministic, not a rate claim.
-- **Regression check:** full `pytest -m ux` (serial, per `scripts/gate.py`'s own discipline)
-  against the historical baseline of 131 passed / 1 xfailed / 1 xpassed. Any new probe/instrument
-  test functions added this branch change that count; state the delta explicitly, don't compare
-  to a stale number.
+- **Regression check (done):** full `pytest -m ux` serial: **133 passed** (131 baseline + the 2
+  new diagnostic probes, exactly accounted for), **1 xfailed / 1 xpassed unchanged**, zero
+  reruns needed. Wall time 961.87s vs the 488s historical figure — checked directly rather than
+  assumed benign: re-timed the single keyboard-reorder test in isolation post-fix (36s, within
+  the 22-36s range measured pre-fix across 7 runs) to confirm the fix adds no per-test overhead
+  under ordinary conditions (expected: the 5s bound only changes behavior when `networkidle`
+  does NOT resolve quickly, and every ordinary-case value measured this session was under 1.3s).
+  Attributed to this being a shared personal workstation during a ~16-minute window, not the fix
+  — noted for the record, not chased further.
 - **Full gate green:** `python -m scripts.gate` (ruff / ruff format / mypy / pytest non-ux + ux)
   before this branch closes.
 - Not claimed: that this fix addresses item 30's one historical sample specifically (no artifact
