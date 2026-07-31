@@ -416,14 +416,47 @@ the next thing to probe) and report back before proceeding, rather than picking 
 
 ## The fix
 
-_Not yet — no experiment above has run._
+**Scope decision (owner, 2026-07-31):** harness-only. A parallel app-side investigation (should
+`_wizardRender` cancel the live-preview iframe navigation on leaving Step 4?) found no existing
+cancellation mechanism for wizard-step transitions anywhere (the one precedent, `_navGen` +
+`switchTopTab`, is scoped to top-level tab switches — item 29, `static/app.js:3588-3612` — and
+does not reach wizard-step transitions at all), and a plausible benefit to the current behavior
+(faster re-entry to Step 4 if the user briefly navigates away and back). No production code path
+anywhere waits on or times out because of this iframe; the 30s ceiling exists ONLY inside the
+test harness's `_wait_settled()`. Scoped the fix there.
+
+**`ui_pages/wizard_compose.py::_wait_settled`** — the `networkidle` call is explicitly documented
+in its own docstring as "a cheap pre-drain of unrelated in-flight XHRs," not the settle gate
+(`Compose.SETTLED` is). It was nonetheless allowed to block for Playwright's full 30s default,
+with nothing bounding its worst case — exactly what P1 (O-15) exploited. Bounded it to a new
+`_NETWORKIDLE_PREDRAIN_MS = 5_000` (chosen with ~4x headroom over the worst ordinary-case value
+measured across 7 baseline runs, O-12/O-13's `1.263s` outlier) and wrapped it in
+`contextlib.suppress(PlaywrightTimeoutError)` — a timeout there is now treated as "the pre-drain
+didn't finish in time, proceed anyway," not a test failure. `Compose.SETTLED`'s own wait — the
+actual authoritative settle condition — is completely unchanged, keeps its full
+`DEFAULT_TIMEOUT_MS` (15s) budget, and is what genuinely protects test correctness.
+
+**Verified against the mechanism P1 proved, not just the repro:** re-ran P1 twice against the
+fixed code. Both runs: `timed_out=False`, `elapsed_s=5.5` and `5.7` (bounded by the new 5s
+pre-drain cap, then the real settle gate resolves normally since the iframe stall never touched
+the actual Compose render). The stall mechanism is fully deterministic (not a race), so — unlike
+a probabilistic flake — a small number of clean runs is adequate evidence the specific mechanism
+is closed; see `## Acceptance bar` for the separate regression check across the ordinary-case
+suite.
 
 ---
 
 ## Acceptance bar
 
-_To be filled in once a mechanism is proven. Provisionally: whatever fix lands must be A/B'd
-against the real test in a loop (8-10+ runs per arm, per
-`feedback-ab-fix-against-real-test-not-just-instrument`), reporting counts and a probability,
-never a bare rate — and `python -m scripts.gate` must stay green with the historical UX
-baseline (131 passed / 1 xfailed / 1 xpassed) intact or the delta explicitly stated._
+- **Mechanism check (done):** P1 re-run 2/2 clean post-fix (`timed_out=False`, ~5.5-5.7s) —
+  deterministic, not a rate claim.
+- **Regression check:** full `pytest -m ux` (serial, per `scripts/gate.py`'s own discipline)
+  against the historical baseline of 131 passed / 1 xfailed / 1 xpassed. Any new probe/instrument
+  test functions added this branch change that count; state the delta explicitly, don't compare
+  to a stale number.
+- **Full gate green:** `python -m scripts.gate` (ruff / ruff format / mypy / pytest non-ux + ux)
+  before this branch closes.
+- Not claimed: that this fix addresses item 30's one historical sample specifically (no artifact
+  ties that sample to this mechanism — O-1). What is claimed: a real, demonstrated vulnerability
+  (P1) is now closed, with the exact same shape (a Playwright ~30s timeout inside
+  `_wait_settled`) no longer reachable via this call site.

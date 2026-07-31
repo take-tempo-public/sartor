@@ -8,10 +8,21 @@ persistence round-trip.
 
 from __future__ import annotations
 
+import contextlib
+
 from playwright.sync_api import Locator, expect
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from ui_pages.base import DEFAULT_TIMEOUT_MS, LLM_TIMEOUT_MS, BasePage
 from ui_pages.selectors import Compose, Wizard
+
+# Item 30 (docs/dev/diagnosis/ux-keyboard-reorder-timeout.md): bounds the
+# "cheap pre-drain" wait in _wait_settled below. Ordinary cost measured at
+# 0.016-1.263s across 7 baseline runs (dossier O-12/O-13); ~4x headroom over
+# the worst of those, an order of magnitude below Compose.SETTLED's own
+# DEFAULT_TIMEOUT_MS budget, and two orders of magnitude below the Playwright
+# default this replaces.
+_NETWORKIDLE_PREDRAIN_MS = 5_000
 
 
 class WizardComposePage(BasePage):
@@ -67,12 +78,20 @@ class WizardComposePage(BasePage):
         ``networkidle`` + hand-rolled marker-stability poll, which could settle on a
         non-terminal render in the window between a firing pass and its reload (the
         Compose flaky-test class — e.g. the positioning-pin clobber).  ``networkidle``
-        is kept as a cheap pre-drain of unrelated in-flight XHRs.
+        is kept as a cheap pre-drain of unrelated in-flight XHRs — bounded to
+        ``_NETWORKIDLE_PREDRAIN_MS`` and swallowed on timeout (item 30,
+        docs/dev/diagnosis/ux-keyboard-reorder-timeout.md): it is explicitly NOT the
+        settle gate, so it must never be allowed to consume the Playwright default
+        30s waiting on unrelated background traffic this method has no reason to
+        care about (e.g. the Step-4 live-preview iframe navigation — a capability
+        probe confirmed a slow/stalled load there can otherwise produce exactly that
+        30s hang). The real settle gate below keeps its own full timeout unchanged.
         """
         self.page.wait_for_selector(
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
-        self.page.wait_for_load_state("networkidle")
+        with contextlib.suppress(PlaywrightTimeoutError):
+            self.page.wait_for_load_state("networkidle", timeout=_NETWORKIDLE_PREDRAIN_MS)
         self.page.wait_for_selector(Compose.SETTLED, state="attached", timeout=DEFAULT_TIMEOUT_MS)
 
     def wait_cards(self) -> WizardComposePage:
