@@ -1,8 +1,8 @@
 # Diagnosis — `loadComposition()`'s scroll-restore fails once, untested by any prior scroll-flake fix
 
-> **Status:** hypothesis only — one historical sample (O-13), no dossier existed before this
-> branch. Item 29's fix is confirmed (by code read, not by mechanism proof) to NOT reach this
-> call site.
+> **Status:** NOT reproduced — closed on a 24-run campaign, not on a proven mechanism. The
+> `## Inferred` hypothesis below was never confirmed OR definitively killed; it stays on record
+> for a future occurrence, not built upon.
 > **Branch:** `fix/ux-compose-reload-scroll-restore`
 
 ---
@@ -257,10 +257,29 @@ theirs.**
 
 ## The fix
 
-_Not applicable yet — no experiment has been run on this branch._
+**Not applicable — closed as not-reproduced, owner-directed (2026-07-31), not as fixed.**
+This is a deliberately different closure shape from item 29's: no writer was ever caught in a
+spy timeline, so nothing was gated or cancelled. The dossier and its instrument stay in place
+as the citable record and reusable probe if O-13 recurs — the geometry-invariance finding
+below is the concrete reason a future occurrence would be easy to re-investigate quickly (the
+instrument already exists, and item 29's own writer/fix pattern is the first thing to check
+again).
 
 ---
 
 ## Acceptance bar
 
-_Not applicable yet._
+**Closure bar met, stated plainly:** one historical sample (O-13, `before=400 after=796`,
+no instrumentation) opened this item. A 24-run campaign under the confirmed `-n2`-within-suite
+vector — the same vector that raised item 29's own target test's failure rate to 25% — produced
+**zero** failures of any kind (target or neighbor) across all 24 runs, with item 28's own
+geometry read completely invariant (`sh=5391, cards=9` at both `before` and `after`, every
+single run — no jitter at all). That invariance, not just the zero-failure count, is the
+substance of the bar: it means this call site's page is reliably fully-grown by the time
+`loadComposition()` fires in this test's construction, unlike item 29's corpus-tab test where
+the analogous read routinely lands mid-render. Two confounds are disclosed, not resolved, and
+this closure does not claim to have resolved them: (1) item 29's own Round 2 saw an unexplained
+failure-rate drop with the scroll spy attached, so a clean instrumented sample understates the
+true bare-probe failure rate by an unquantified amount; (2) 24 clean runs cannot rule out a
+much lower true rate than item 29's ~25% — it can only bound it well below that. This is closed
+as "not reproduced at a materially concerning rate, on real evidence," not as "proven absent."
