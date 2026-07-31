@@ -222,6 +222,61 @@ across all 131 tests (488s / 131 ≈ 3.7s/test average) but a single isolated te
 pays in full. Relevant for Commit 2 (baseline campaign): compare per-reach sub-wait timings,
 not total wall time, across isolated-vs-suite runs.
 
+### O-12. Baseline batch (2026-07-31, 3 more isolated runs): reach 7's `networkidle` is consistently ~15-20x every other reach
+
+`for i in 1 2 3; do KEYBOARD_REORDER_SETTLE_LOG=... python -m pytest <nodeid> -v --tb=short; done`,
+durable side channel (`scratchpad/keyboard_reorder_baseline_20260731.log.reads`). All 3 PASSED.
+Wall time 31s/25s/22s (the shakedown's 130s was one-time cold-start overhead — chromium binary
+verification / OS disk-cache priming on this session's first-ever pytest invocation; these three
+runs did not repeat it).
+
+**Reach 7 `networkidle_s` across all 4 runs so far (shakedown + this batch): `0.609, 0.571, 0.561,
+0.567`** — mean 0.577s, spread under 5%. Every other reach in every run: `0.016`–`0.053`s. Reach 7
+is test line 77 (`compose.reload()`), the statement immediately after `WizardTemplatePage(page,
+live_server).open()` at line 76 — **exactly the H1 call site** (O-4). No other reach shows
+anything like this elevation, in any of the 4 runs.
+
+**What this is and is not evidence of:** this is a real, reproducible, structural cost — not
+noise, and not (yet) a hang. 0.577s is ~2% of the 30s budget, nowhere near a timeout under these
+ordinary conditions (fast local machine, stubbed LLM calls, tiny 1-experience corpus, cold
+werkzeug thread pool otherwise idle). It sharpens H1 from "a plausible code-read mechanism" to
+"a measured, consistently-reproducing structural cost at the exact predicted call site" — the
+open question P1 (`## Falsification`) is now specifically "does this SAME cost scale to 30s
+under adversity (slower I/O, a larger corpus, a colder cache, contention)," not "does this call
+site have any elevated cost at all" (answered: yes, every time).
+
+### O-13. Second baseline batch (3 more runs, 6 total in the durable log) confirms O-12 and surfaces one distinct, non-repeating anomaly at reach 1
+
+Full per-run `networkidle_s`, all 12 reaches, all 6 loop-batch runs (durable log, not stdout):
+
+```
+run 1: [0.033, 0.024, 0.024, 0.021, 0.021, 0.02,  0.571, 0.025, 0.025, 0.027, 0.027, 0.028]
+run 2: [0.031, 0.024, 0.025, 0.026, 0.022, 0.018, 0.561, 0.016, 0.018, 0.017, 0.017, 0.017]
+run 3: [0.03,  0.028, 0.019, 0.019, 0.02,  0.019, 0.567, 0.022, 0.024, 0.021, 0.026, 0.023]
+run 4: [0.083, 0.029, 0.023, 0.019, 0.022, 0.023, 0.583, 0.027, 0.023, 0.024, 0.027, 0.025]
+run 5: [1.263, 0.03,  0.023, 0.022, 0.021, 0.023, 0.561, 0.023, 0.023, 0.021, 0.027, 0.024]
+run 6: [0.035, 0.032, 0.028, 0.028, 0.027, 0.023, 0.567, 0.02,  0.024, 0.023, 0.024, 0.022]
+```
+
+Reach 7 (index 6): `0.571, 0.561, 0.567, 0.583, 0.561, 0.567` — the same tight, consistent
+elevation as O-12, now confirmed across 7 total runs (shakedown + 6). No other reach repeats
+this pattern in any run.
+
+**Run 5, reach 1: `networkidle_s = 1.263`** — a single occurrence, ~30-40x every other run's
+reach 1 (`0.03`–`0.083`s elsewhere) and ~2x reach 7's own consistent value. Reach 1 is the
+FIRST `_wait_settled()` call in the test, inside `open()`'s `_wait_loaded()` — reached right
+after `#btnSkipFromAnalysis` fires `_fireRecommendThenCompose()` (`static/app.js:1487-1531`:
+`POST /api/applications/<id>/recommend` then `wizardGoTo(3)` → `loadComposition()`), a
+DIFFERENT call site from reach 7's. This does **not** repeat in the other 6 runs, so it is
+recorded as a single anomaly, not a pattern — but it is a real, artifact-backed data point
+(4.2% of the 30s budget), not noise to discard. It does not by itself implicate any of H1/H2/H3
+(reach 1 predates the Step-4 iframe navigation that H1 needs), but it is consistent with the
+general shape all three hypotheses share: an occasional, load-sensitive network round-trip
+landing badly.
+
+**Wall time, both batches (6 runs): 31s, 25s, 22s, 29s, 23s, 22s** — all far under the
+shakedown's 130s, confirming that figure was one-time cold-start cost (O-11).
+
 ---
 
 ## Falsified
