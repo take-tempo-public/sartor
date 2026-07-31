@@ -133,3 +133,14 @@ restore-logic, end to end. Epic children remaining: 28 (has a concrete inherited
 check — see its Updates), 30, 31. The O-8 `#panel*` visibility-timeout load class recurred
 once during this branch's gate (test_compose_skills_card_drop_persists, 2/2 clean isolated)
 — logged as the known class, no new item.
+
+### 2026-07-31 — child item 28 closed (not reproduced, 24-run campaign)
+
+`fix/ux-compose-reload-scroll-restore` instrumented the previously-bare
+`test_compose_reload_preserves_scroll_position` (geometry read + scroll-spy stack, new dossier
+`docs/dev/diagnosis/ux-compose-reload-scroll-restore.md`), confirmed by direct code read that
+item 29's fix does not reach this call site, then ran a 24-iteration campaign under the same
+`-n2`-within-suite vector that elevated item 29's own target test to 25%: zero failures, fully
+invariant geometry every run. Owner-directed close on that evidence — not proven fixed, not
+proven absent; disclosed confounds on record in the dossier's `## Acceptance bar`. Epic
+children remaining: 30, 31.
