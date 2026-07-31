@@ -1,8 +1,8 @@
 # Diagnosis — keyboard-reorder test hit a Playwright 30s timeout, once, never reproduced since
 
-> **Status:** hypothesis only. No root cause proven; no reproduction achieved yet on this
-> branch. This document's job so far is closing an evidence gap in the item's own filing,
-> establishing the exact call path, and pre-registering falsification experiments.
+> **Status:** mechanism capability-proven (H1, O-15), not confirmed as the historical cause —
+> the original failure left no artifact to check against (O-1). H2 falsified (F-1). Fix not
+> yet designed or applied; awaiting owner direction on approach (harness sequencing vs. other).
 > **Branch:** `fix/ux-keyboard-reorder-timeout`
 
 ---
@@ -277,11 +277,59 @@ landing badly.
 **Wall time, both batches (6 runs): 31s, 25s, 22s, 29s, 23s, 22s** — all far under the
 shakedown's 130s, confirming that figure was one-time cold-start cost (O-11).
 
+### O-14. P2 ran: H2 settles quickly with a small, bounded hit count — as predicted
+
+`test_diagnostic_p2_forced_draft_summary_400_vs_compose_cascade`, forcing `POST **/draft-summary`
+to 400 on every attempt via `page.route()` (overriding the stub). **Result:
+`elapsed_s=6.5 composition_get_count=2`.** No hang, no growth in `GET /composition` calls beyond
+the two legitimate ones (the initial load + the one re-check after the forced-failing background
+fire returns). Matches O-5/O-6/O-7's code-read prediction exactly: a failure releases the latch
+and stops, it does not recurse.
+
+### O-15. P1 ran: H1 is capability-proven — a real `networkidle` `TimeoutError`, at ~30s, at the exact predicted call site
+
+`test_diagnostic_p1_stalled_live_preview_iframe_vs_compose_reload_networkidle`, stalling
+`**/static/vendor/paged.polyfill.js` indefinitely via `page.route()` (request confirmed
+intercepted before proceeding), then calling `compose.reload()` (the equivalent of test line 77).
+**Result: `timed_out=True elapsed_s=31.1`** — a genuine `playwright.sync_api.TimeoutError` raised
+from `WizardComposePage._wait_settled()`'s `networkidle` wait, at almost exactly Playwright's 30s
+default (31.1s including the ~1s poll-loop overhead to confirm the probe armed). This is the
+**same symptom** (a Playwright ~30s timeout inside `_wait_settled`), at the **same call site**
+(the reach immediately after `WizardTemplatePage.open()`), via the **mechanism O-4/O-12/O-13
+already measured as a consistent, non-zero structural cost** at that exact reach on every
+ordinary run.
+
+**What this proves and does not prove:** H1 is now **capability-proven** — `WizardTemplatePage.open()`
+not awaiting the live-preview iframe navigation it triggers is a real, demonstrated pathway from
+"the polyfill load takes unusually long" to "the next `_wait_settled()` call times out at 30s,"
+with no other change needed. It does **not** prove this specific mechanism produced item 30's one
+historical sample — no artifact from that sample survives to check (O-1). The honest scope: H1 is
+now the leading, evidence-backed candidate (a demonstrated capability at the right call site,
+matching the right symptom), not a confirmed identification of that one incident's cause.
+
 ---
 
 ## Falsified
 
-_(Nothing yet — this branch has run no experiments against the live application.)_
+### F-1 — H2 (unbounded/slow Compose cascade retry)
+
+**Killed by O-14 and O-5/O-6/O-7.** Direct code read found the cascade's failure paths do not
+recurse and the one historically-cited failure trigger is already fixed; the capability probe
+(P2) confirms this empirically — forcing repeated failures still settles in 6.5s with a bounded
+hit count. Originally drafted more alarmingly ("an unbounded network loop by construction")
+before the closer code read in `## Observed`; that overstated framing is itself recorded here as
+a discarded, plausible-sounding first pass, per this repo's own "include your own discarded
+fixes" discipline — it was never committed as fact anywhere, so this is the correction, not a
+retraction of a prior claim.
+
+### F-2 — H3 (it was never `networkidle`, e.g. one of the `expect_response` waits)
+
+**Not formally probed, but sidelined by O-15.** P1 demonstrates a real, sufficient mechanism at
+the `networkidle` call specifically, reproducing the documented symptom exactly. H3 remains
+theoretically possible for some OTHER occurrence, and the wide instrument (commit 1) still
+captures which wait raises if this ever recurs live — but with H1 now capability-proven, there is
+no remaining reason to invest further in H3 without new evidence pointing at it (C-7: do not
+chase a third theory once one is confirmed sufficient).
 
 ---
 

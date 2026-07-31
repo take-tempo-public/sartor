@@ -21,7 +21,8 @@ import time
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import Page, Request, Response
+from playwright.sync_api import Page, Request, Response, Route
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from tests.ux.stubs import install_llm_stubs
@@ -280,3 +281,127 @@ def test_pointer_drag_reorders(
         compose.drag_below(_K8S, _SYNCS)
     assert compose.bullet_texts()[0].startswith("Attended"), "drag did not reorder"
     assert compose.has_custom_order()
+
+
+# ---------------------------------------------------------------------------
+# DIAGNOSTIC PROBES (item 30, docs/dev/diagnosis/ux-keyboard-reorder-timeout.md
+# `## Falsification`). These are NOT regression coverage for the reorder
+# feature -- they are one-shot capability experiments answering "CAN this
+# mechanism alone produce a 30s networkidle hang," pre-registered before
+# running. Each OBSERVES and reports; neither asserts a specific hypothesis
+# outcome, since that is exactly what is unknown going in (asserting one
+# direction would conflate "the probe ran" with "the theory won"). Disposition
+# (kept as permanent regression coverage, converted to a documented negative
+# result, or removed) is decided from the outcome in the dossier, not here.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_diagnostic_p1_stalled_live_preview_iframe_vs_compose_reload_networkidle(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Falsification P1 for item 30 hypothesis H1.
+
+    Baseline (dossier O-12/O-13) already shows the reach immediately after
+    `WizardTemplatePage.open()` -- which fires an unawaited live-preview
+    iframe navigation loading a 921KB `paged.polyfill.js` -- consistently
+    taking ~15-20x every sibling reach's `networkidle` wait (~0.57s vs
+    ~0.02-0.04s), on every one of 7 ordinary runs. This probe asks whether
+    that SAME mechanism, made artificially slow via `page.route()` (never
+    resolving the polyfill request -- deterministic, unlike relying on real
+    load time), can push it all the way to Playwright's 30s default timeout.
+
+    Pre-registered in the dossier:
+    - Raises `TimeoutError` on `networkidle`: H1 is capability-proven -- the
+      fix target is a harness/POM sequencing gap (`WizardTemplatePage.open()`
+      not awaiting the iframe it triggers), not a product defect.
+    - Returns normally: either `networkidle` does not count this iframe's
+      sub-resources the way expected, or panel-switching aborts the
+      navigation. The dossier records which, from `elapsed`.
+    """
+    compose = _reach_compose(page, live_server, ux_app, monkeypatch)
+    assert compose.bullet_texts()[0].startswith(_K8S)
+
+    held: list[Route] = []
+    page.route("**/static/vendor/paged.polyfill.js", lambda route: held.append(route))
+
+    WizardTemplatePage(page, live_server).open()
+    for _ in range(100):
+        if held:
+            break
+        page.wait_for_timeout(50)
+    assert held, "probe did not arm -- the polyfill request was never intercepted"
+
+    t0 = time.monotonic()
+    timed_out = False
+    try:
+        compose.reload()
+    except PlaywrightTimeoutError:
+        timed_out = True
+    elapsed = round(time.monotonic() - t0, 1)
+
+    result = f"P1 RESULT: timed_out={timed_out} elapsed_s={elapsed}"
+    print(f"\n[p1-probe] {result}")
+    log_path = os.environ.get("KEYBOARD_REORDER_SETTLE_LOG")
+    if log_path:
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"{result}\n")
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_diagnostic_p2_forced_draft_summary_400_vs_compose_cascade(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Falsification P2 for item 30 hypothesis H2.
+
+    Direct code read (dossier O-5/O-6/O-7) found `loadComposition`'s cascade
+    recurses ONLY on a background fire's success -- a draft-summary failure
+    releases a latch but does not itself call `loadComposition` again, and
+    the one historically-cited failure trigger (a torn context-file read) is
+    already fixed and regression-tested. This probe forces `draft-summary` to
+    400 on every attempt (overriding the stub, which otherwise always
+    succeeds) and asks whether the resulting page load ever comes close to a
+    network hang, or settles quickly with an empty draft as the code read
+    predicts.
+
+    Pre-registered in the dossier:
+    - `GET /composition` hit count grows unboundedly, or total elapsed
+      approaches 30s: H2 is capability-proven after all -- re-open with real
+      numbers, discard the "dead" framing below.
+    - Settles quickly with a small, bounded hit count (expected): H2 stays
+      dead as stated in `## Inferred`.
+    """
+    composition_gets = {"count": 0}
+
+    def _force_400(route: Route) -> None:
+        route.fulfill(status=400, content_type="application/json", body='{"error": "forced by P2"}')
+
+    def _count_composition_gets(route: Route) -> None:
+        if route.request.method == "GET":
+            composition_gets["count"] += 1
+        route.continue_()
+
+    page.route("**/draft-summary", _force_400)
+    page.route("**/composition*", _count_composition_gets)
+
+    t0 = time.monotonic()
+    compose = _reach_compose(page, live_server, ux_app, monkeypatch)
+    bullets = compose.bullet_texts()
+    elapsed = round(time.monotonic() - t0, 1)
+
+    assert bullets, "compose never rendered any bullets -- probe broke setup unexpectedly"
+
+    result = f"P2 RESULT: elapsed_s={elapsed} composition_get_count={composition_gets['count']}"
+    print(f"\n[p2-probe] {result}")
+    log_path = os.environ.get("KEYBOARD_REORDER_SETTLE_LOG")
+    if log_path:
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"{result}\n")
