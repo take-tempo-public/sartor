@@ -1,8 +1,9 @@
 # Diagnosis — keyboard-reorder test hit a Playwright 30s timeout, once, never reproduced since
 
-> **Status:** mechanism capability-proven (H1, O-15), not confirmed as the historical cause —
-> the original failure left no artifact to check against (O-1). H2 falsified (F-1). Fix not
-> yet designed or applied; awaiting owner direction on approach (harness sequencing vs. other).
+> **Status:** mechanism capability-proven (H1, O-15) and FIXED. Not confirmed as item 30's
+> historical cause — the original failure left no artifact to check against (O-1). H2 falsified
+> (F-1). App-side alternative investigated and rejected (owner-directed, harness-only scope).
+> Item 30 closed 2026-07-31 on this evidence — see `docs/dev/work/items/0030-...md`.
 > **Branch:** `fix/ux-keyboard-reorder-timeout`
 
 ---
