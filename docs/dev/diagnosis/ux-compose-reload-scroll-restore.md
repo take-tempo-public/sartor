@@ -228,15 +228,30 @@ observed after batch A — a separate `C:\Dev\spolia` project's own `scripts/gat
 run, a different repository entirely, not touched.) No kills were needed this campaign — every
 batch completed within the foreground call.
 
-**Net (16/16, zero failures, byte-identical geometry throughout):** this is a stronger clean
-result than item 29's own fixed-arm campaign (which needed 16 runs across two process
-incidents to reach the same tally). It is evidence that this call site did not reproduce O-13
-under the confirmed vector, in this sample — **not** evidence that item 29's fix protects it,
-per `## Observed`'s structural finding that the fix cannot reach this path. Both disclosed
-confounds from the decision tree above still apply: the spy-attached rate-drop item 29's Round
-2 saw (possible, unquantified, suppression here too) and the fact that a clean run cannot be
-attributed to a fix that does not touch this code path. **Reported to the owner as a data
-point; the close/extend decision is theirs, not made here.**
+**Batches E, F (2 × 4 iterations, foreground, 2026-07-30, extending the sample per owner
+direction): 8/8 clean, same `4 passed` shape, same byte-identical item-28 geometry as every
+prior batch.** Logs: `scratchpad/contention_n2_item28_batch{E,F}_20260730.log` (+ `.reads`),
+gitignored. Process hygiene clean after both batches.
+
+**Final tally: 24/24 runs, zero failures anywhere (target or any of the 3 neighbors), across
+6 foreground batches with no process incidents.** Item 28's own read is the identical
+`{'y': 400, 'sh': 5391, 'ih': 900, 'cards': 9}` at both `before` and `after`, on every single
+one of the 24 runs — no variance at all, not even the kind of run-to-run jitter item 29's own
+campaign saw in its passing-run heights (bimodal `sh=2170`/`sh=5590`). That invariance is
+itself informative: this call site's page is fully grown and geometrically stable by the time
+`loadComposition()` fires in this construction, unlike item 29's corpus-tab test where the
+`before` read routinely lands mid-render.
+
+**Net:** 24/24 is a materially stronger sample than the historical n=1 (O-13) this item was
+opened on. It is evidence that this call site does not reproduce under the confirmed vector at
+a rate anywhere near item 29's pre-fix ~25% — **not** evidence that item 29's fix protects it
+(the dossier's `## Observed` already established the fix cannot reach this path), and not
+proof the underlying mechanism is absent (a rate this low, if real, would need a much larger
+sample to distinguish from zero). The disclosed confounds stand: item 29's Round 2 spy-attached
+rate-drop (possible suppression here too, unquantified) and the geometry invariance above
+(this test's own construction may simply not create the transient-height window item 29's test
+does). **Reported to the owner as a stronger data point; the close/extend decision remains
+theirs.**
 
 ---
 
