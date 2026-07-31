@@ -144,3 +144,25 @@ item 29's fix does not reach this call site, then ran a 24-iteration campaign un
 invariant geometry every run. Owner-directed close on that evidence — not proven fixed, not
 proven absent; disclosed confounds on record in the dossier's `## Acceptance bar`. Epic
 children remaining: 30, 31.
+
+### 2026-07-31 (same day, cont'd) — child item 30 closed (capability-proven mechanism, fixed)
+
+`fix/ux-keyboard-reorder-timeout` first found the item's own filing had drifted: the
+`wait_for_load_state` specificity was an unsourced narrowing one document downstream of the
+original record, which said only "a plain Playwright 30s timeout" — no traceback for the
+failure exists anywhere in the repo. Wide instrument (all three `_wait_settled` sub-waits, full
+network census) never caught a live recurrence in 7 baseline runs, but found one reach
+consistently ~15-20x every sibling's cost on every run. Two pre-registered deterministic
+capability probes: the Compose-cascade-retry candidate came back dead (a code-read correction —
+its failure paths don't recurse, confirmed empirically); the live-preview-iframe candidate was
+confirmed — a stalled iframe load reproduces the exact symptom, a genuine `networkidle`
+`TimeoutError` at ~31s, at the exact flagged call site. An app-side alternative (cancel the
+iframe nav on leaving Step 4) was investigated and rejected (no existing mechanism reaches
+wizard-step transitions; would trade away a plausible pre-load benefit for no product-side win).
+Fixed in the harness: `ui_pages/wizard_compose.py::_wait_settled` bounds the pre-drain wait to
+5s instead of leaving it open to Playwright's 30s default; the real settle gate is unchanged.
+Verified against the proven mechanism (not just the repro) and a full clean `pytest -m ux` run.
+Not claimed as confirmed proof of item 30's one historical sample's cause — no artifact from
+that sample survives to check — but the demonstrated vulnerability with the identical symptom
+is closed. Dossier: `docs/dev/diagnosis/ux-keyboard-reorder-timeout.md`. Epic children
+remaining: 31.
