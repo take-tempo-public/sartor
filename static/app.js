@@ -403,6 +403,8 @@ async function onUserSelect() {
     if (userSummary) userSummary.textContent = '';
     hideAllPanels();
     _resetIterationState();
+    // Item 31: no async cascade follows on this branch — already settled.
+    document.getElementById('userSelect')?.setAttribute('data-user-select-ready', '1');
     return;
   }
   // A user is selected → the box now holds data, so allow it to be tucked away.
@@ -413,7 +415,15 @@ async function onUserSelect() {
   const userSummary = document.getElementById('panelUserSummary');
   if (userSummary) userSummary.textContent = username;
   currentUser = username;
+  // Item 31 (docs/dev/diagnosis/ux-surgical-refinement-network-retry-flake.md):
+  // cleared for the duration of this cascade so a test-harness settle wait
+  // (UserPickerPage.select, ui_pages/selectors.py's UserPicker.SELECT_READY)
+  // can't false-positive on a stale "ready" left over from a PRIOR selection.
+  // Cleared synchronously before the first await below, so it is gone before
+  // any external poll could observe a stale true.
+  document.getElementById('userSelect').removeAttribute('data-user-select-ready');
   const navGenAtStart = _navGen;  // item 29: detect explicit navigation during the awaits below
+  const statusGenAtStart = _statusGen;  // item 31: detect a newer status write during the awaits below
   await loadConfig();
   show('panelApplications');           // prep the Tailor tab's landing panel
   // F-23: default the applications list to a collapsed short summary too — it
@@ -444,8 +454,25 @@ async function onUserSelect() {
     // _maybeFireTourStop already no-ops when another modal is up.
     if (landing === 'corpus') _maybeFireTourStop('tourCorpusLanding', null);
   }
-  _resetIterationState();
-  setStatus('READY');
+  // Item 31 (docs/dev/diagnosis/ux-surgical-refinement-network-retry-flake.md):
+  // this tail can resolve AFTER a different action already set a more
+  // meaningful status (e.g. a refinement's ERROR) and recorded its own
+  // history entry while these awaits were still in flight — capability-
+  // proven via a deterministic page.route() probe. `_statusGen` bumps on
+  // every setStatus() call; if one already happened since this cascade
+  // started, a newer, more specific status already superseded the generic
+  // "you're all set" this tail was about to write, so skip both the status
+  // write and the history reset (which would otherwise wipe the record of
+  // whatever just happened).
+  if (_statusGen === statusGenAtStart) {
+    _resetIterationState();
+    setStatus('READY');
+  }
+  // Both awaits above (loadConfig, _landingTab) have resolved -- the race
+  // window this branch's items above guard against is closed. Set LAST, so a
+  // harness wait on this attribute can't observe it before the guard above
+  // has already run.
+  document.getElementById('userSelect').setAttribute('data-user-select-ready', '1');
   refreshApplications();
   _loadPersonaOptions();
   wizardInit({ scroll: !superseded });
@@ -3451,7 +3478,16 @@ function _toSentence(s) {
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
+// Status generation (item 31, docs/dev/diagnosis/
+// ux-surgical-refinement-network-retry-flake.md): bumped on every setStatus()
+// call so a slow async tail (onUserSelect's cascade) can detect that a newer,
+// more specific status already superseded it and skip its own stale write —
+// same staleness-check shape as _navGen (item 29), applied to the status/
+// history axis _navGen's own comment says it deliberately does not cover.
+let _statusGen = 0;
+
 function setStatus(text) {
+  _statusGen++;
   const pill = document.getElementById('statusPill');
   // .cb-status-text is the dedicated label child of the sartor. status
   // pill. The whole pill was migrated from .cb-pill to .cb-status in

@@ -3,12 +3,13 @@ schema = 1
 id = 19
 kind = "epic"
 title = "UX-suite flakiness solution sprint - mode-C residual + newly observed instances"
-status = "open"
+status = "closed"
+resolution = "All 5 children closed 2026-07-31 (spanning 27-31): 27 already-fixed-before-filing (no code change); 28 not-reproduced (24-run campaign, owner-directed close); 29 mechanism observed + two-phase fix landed; 30 capability-proven mechanism + harness fix landed; 31 (last child) capability-proven mechanism + two-phase app+harness fix landed. Not one mechanism, as the original filing itself predicted -- five independent investigations, five different dispositions. Unblocks item 10's depends_on = [3, 6, 7, 9, 19] (still gated on 3/6/7/9)."
 decision_owner = "agent"
 refs = [
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
 ]
-summary = "Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not one mechanism, see children."
+summary = "Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not one mechanism, see children. CLOSED."
 ```
 
 Owner-directed 2026-07-28: "make sure you add any discoveries to the documentation of this
@@ -166,3 +167,30 @@ Not claimed as confirmed proof of item 30's one historical sample's cause — no
 that sample survives to check — but the demonstrated vulnerability with the identical symptom
 is closed. Dossier: `docs/dev/diagnosis/ux-keyboard-reorder-timeout.md`. Epic children
 remaining: 31.
+
+### 2026-07-31 (same day, cont'd) — child item 31 closed, epic 19 closed (last child)
+
+`fix/ux-surgical-refinement-network-retry-flake` first corrected this epic's own filing: the
+"-n 2 contention" attribution on item 31's first occurrence was an unsourced downstream
+narrowing (added by this epic's own split filing, `6bb7d47`) — both surviving artifacts confirm
+plain serial runs, the same drift shape item 30 found for `wait_for_load_state`. A direct code
+read of `onUserSelect`/`setStatus` (`static/app.js`) produced a specific candidate mechanism —
+a stale async tail's `setStatus('READY')` clobbering a more meaningful status set while it was
+still in flight — and a deterministic `page.route()` capability probe confirmed it on the first
+run, reproducing the exact historical pill text (`"ready"`) byte-for-byte; a reverse control
+confirmed the race is necessary, not just sufficient. Two-phase fix (owner-approved, same
+pattern item 29 used): an app-side `_statusGen` generation guard (mirrors item 29's own
+`_navGen`) plus a harness settle contract (`UserPicker.SELECT_READY`, mirrors `data-compose-ready`)
+so `UserPickerPage.select()` waits for the real cascade instead of just the `<select>` value.
+One collateral regression (item 29's own `test_smart_landing_tail_defers_to_user_navigation`,
+which relied on the old narrow contract to hold part of the cascade open on purpose) found and
+fixed. Full `pytest -m ux` clean (136 passed, 2 xfailed, zero reruns); full gate green. Dossier:
+`docs/dev/diagnosis/ux-surgical-refinement-network-retry-flake.md`.
+
+**Epic 19 closes here — item 31 was the last open child.** Final disposition across all five:
+27 already-fixed-before-filing (no code change); 28 not-reproduced (owner-directed close); 29
+mechanism observed, two-phase fix; 30 capability-proven mechanism, harness fix; 31
+capability-proven mechanism, two-phase app+harness fix. The epic's own original framing —
+"explicitly not one mechanism, do not conflate them" — held throughout: five independent
+investigations, five different dispositions, zero shared root cause. Unblocks one of item 10's
+five `depends_on` entries (still gated on 3, 6, 7, 9).
