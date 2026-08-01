@@ -42,7 +42,7 @@ from tests.ux import stubs as ux_stubs
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from tests.ux.stubs import install_llm_stubs
 from ui_pages import BasePage, UserPickerPage, WizardClarifyPage, WizardComposePage, WizardJobPage
-from ui_pages.selectors import Compose, Wizard
+from ui_pages.selectors import Compose, UserPicker, Wizard
 
 _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres."
 
@@ -1567,7 +1567,20 @@ def test_smart_landing_tail_defers_to_user_navigation(
         }
         """
     )
-    UserPickerPage(page, live_server).select("alice")
+    # NOT UserPickerPage.select() -- item 31 (docs/dev/diagnosis/
+    # ux-surgical-refinement-network-retry-flake.md) hardened it to wait for
+    # onUserSelect's full cascade (UserPicker.SELECT_READY), which would
+    # deadlock here: this test holds part of that same cascade
+    # (_landingTab's /experiences fetch) open on purpose, by design, to
+    # reproduce the exact suspended-tail state item 29 documented. Drives the
+    # raw value-only wait select() used before that hardening instead.
+    page.wait_for_selector(UserPicker.SELECT, timeout=15_000)
+    page.select_option(UserPicker.SELECT, "alice")
+    page.wait_for_function(
+        "(u) => document.getElementById('userSelect').value === u",
+        arg="alice",
+        timeout=15_000,
+    )
     page.wait_for_function(
         "() => typeof window.__releaseExperiencesFetch === 'function'", timeout=15_000
     )

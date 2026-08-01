@@ -20,6 +20,14 @@ class UserPicker:
 
     PANEL = "#panelUser"
     SELECT = "#userSelect"
+    # Settle signal (item 31, docs/dev/diagnosis/ux-surgical-refinement-network-
+    # retry-flake.md): onUserSelect() (static/app.js) clears this on #userSelect
+    # synchronously before its first await, and sets it after both awaited
+    # round-trips (loadConfig, _landingTab) have resolved and the status/history
+    # tail has run — so a *present* marker proves the full selection cascade
+    # reached its terminal state, not just that the <select>'s value updated.
+    # Consumed by UserPickerPage.select().
+    SELECT_READY = "#userSelect[data-user-select-ready]"
     NEW_USER_LINK = "text=New user"
     NEW_USER_FORM = "#newUserForm"
     NEW_USERNAME = "#newUsername"

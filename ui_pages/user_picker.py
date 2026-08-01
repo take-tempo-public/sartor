@@ -21,13 +21,21 @@ class UserPickerPage(BasePage):
         )
 
     def select(self, username: str) -> None:
-        """Select an existing user and wait for the dropdown to reflect it."""
+        """Select an existing user and wait for onUserSelect's cascade to settle.
+
+        Item 31 (docs/dev/diagnosis/ux-surgical-refinement-network-retry-flake.md):
+        the `<select>`'s own value updates synchronously, before `onUserSelect()`
+        has even started its two awaited round-trips (`loadConfig`, `_landingTab`) —
+        waiting only on the value let callers race ahead of that cascade, which a
+        deterministic capability probe proved CAN clobber a status/history write
+        that starts and finishes while the cascade is still in flight. Waiting on
+        `UserPicker.SELECT_READY` (`data-user-select-ready`) instead waits for the
+        cascade's actual terminal state, not just the DOM value updating.
+        """
         self.page.wait_for_selector(UserPicker.SELECT, timeout=DEFAULT_TIMEOUT_MS)
         self.page.select_option(UserPicker.SELECT, username)
-        self.page.wait_for_function(
-            "(u) => document.getElementById('userSelect').value === u",
-            arg=username,
-            timeout=DEFAULT_TIMEOUT_MS,
+        self.page.wait_for_selector(
+            UserPicker.SELECT_READY, state="attached", timeout=DEFAULT_TIMEOUT_MS
         )
 
     def create(self, username: str, name: str, email: str = "") -> None:

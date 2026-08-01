@@ -34,7 +34,7 @@ from playwright.sync_api import Page, Route
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from ui_pages import BasePage, CorpusPage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Corpus
+from ui_pages.selectors import Corpus, UserPicker
 
 
 @pytest.mark.ux
@@ -233,13 +233,28 @@ def test_diagnostic_p1_late_tail_release_vs_status_race(
     `_landingTab()` round trip) run to completion — and check whether the pill
     still reads `ready` once the tail's write actually lands.
 
-    Pre-registered in the dossier:
+    Pre-registered in the dossier (pre-fix run):
     - If `post_release_status` becomes `'ready'` (the exact string recovered
       from the two historical failure artifacts): H is capability-proven — a
       late-arriving tail CAN clobber the error state.
     - If `post_release_status` still contains `'error'`: the last-writer-wins
       mechanism as understood is wrong, or another guard exists. Record the
       full `__statusLog` — it will show why.
+    Pre-fix result: capability-proven (dossier `## Falsification`).
+
+    Kept in place post-fix as a deterministic fix-verification probe: waits
+    on `UserPicker.SELECT_READY` (not a `'READY'` log entry — the app-side
+    guard, static/app.js `_statusGen`, now deliberately SKIPS that write when
+    a newer status already landed, so a wait keyed to the write itself would
+    hang forever on fixed code) for "the tail reached its terminal state,
+    whether or not it wrote," then checks the pill is still `'error'`.
+
+    Deliberately does NOT use `UserPickerPage.select()` to reach this state —
+    the harness fix on this branch (`ui_pages/selectors.py`
+    `UserPicker.SELECT_READY`) hardened it to wait for the FULL cascade,
+    which would deadlock against this probe holding part of that same
+    cascade open on purpose. This probe drives the raw pre-fix primitive
+    instead (value-only wait) to reconstruct the vulnerable caller shape.
     """
     held: list[Route] = []
 
@@ -251,7 +266,13 @@ def test_diagnostic_p1_late_tail_release_vs_status_race(
     seed_user(ux_app, "alice")
     BasePage(page, live_server).load()
     page.evaluate(_STATUS_LOG_JS)
-    UserPickerPage(page, live_server).select("alice")
+    page.wait_for_selector(UserPicker.SELECT, timeout=DEFAULT_TIMEOUT_MS)
+    page.select_option(UserPicker.SELECT, "alice")
+    page.wait_for_function(
+        "(u) => document.getElementById('userSelect').value === u",
+        arg="alice",
+        timeout=DEFAULT_TIMEOUT_MS,
+    )
 
     for _ in range(100):
         if held:
@@ -271,9 +292,7 @@ def test_diagnostic_p1_late_tail_release_vs_status_race(
 
     for route in held:
         route.continue_()
-    page.wait_for_function(
-        "() => window.__statusLog.some(e => e.text === 'READY')", timeout=DEFAULT_TIMEOUT_MS
-    )
+    page.wait_for_selector(UserPicker.SELECT_READY, state="attached", timeout=DEFAULT_TIMEOUT_MS)
     post_release_status = (page.locator("#statusPill").text_content() or "").strip().lower()
     log = page.evaluate("() => window.__statusLog")
 

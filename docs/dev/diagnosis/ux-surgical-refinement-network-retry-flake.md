@@ -299,17 +299,45 @@ report back before proceeding, rather than guessing again.
 
 ## The fix
 
-_Not yet written — pending the falsification experiment above. If P1 confirms, two candidate
-placements exist with a real governance difference (harness-only settle contract in
-`ui_pages/user_picker.py` vs. an app-side generation/in-flight guard on the `onUserSelect` tail,
-which would be a genuine user-visible product fix, not just a test-harness one) — this is an
-owner-gated choice per the plan, not a unilateral pick._
+**Scope decision (owner, 2026-07-31): both, two-phase — same pattern item 29 used.**
+
+**Phase 1 — app-side guard (`static/app.js`).** A new `_statusGen` counter, bumped on every
+`setStatus()` call, mirrors item 29's own `_navGen` idiom (its comment already distinguishes
+"navigation side effects" from "the state work below," explicitly leaving the latter
+ungated — this closes exactly that gap). `onUserSelect()` captures `statusGenAtStart` before its
+two awaits; if any `setStatus()` call has landed by the time the tail is ready to write, a newer,
+more specific status already superseded the generic "you're all set," so both `setStatus('READY')`
+and `_resetIterationState()` (which would otherwise wipe the refinement-history entry O-7 flagged)
+are skipped. This is a genuine product fix, independent of any test: a real user hitting this
+timing window would previously have had a real failure silently overwritten back to "Ready" — the
+exact class of bug this pill exists to prevent (this test file's own header comment, `#5`).
+
+**Phase 2 — harness settle contract (`ui_pages/`).** `UserPickerPage.select()` previously waited
+only for `#userSelect`'s value to update (O-4) — satisfied before `onUserSelect()`'s awaits even
+start. A new `data-user-select-ready` marker (`static/app.js`, cleared synchronously at the top of
+`onUserSelect()` before its first `await`, set after both awaits resolve and the Phase-1 guard has
+run) gives `UserPicker.SELECT_READY` (`ui_pages/selectors.py`) a real terminal-state signal, mirroring
+the established `data-compose-ready` idiom (`ui_pages/wizard_compose.py`). `select()` now waits on
+it instead of the bare value. Scoped to `select()` only — `create()` and `select_from_roster()`
+also route through `onUserSelect()` (confirmed by direct read) but are unverified by any test on
+this branch, so left untouched rather than extending an unverified fix to unverified call paths.
+
+**Verification note:** re-running P1 post-fix (same probe, same commit sequence) serves as a
+deterministic fix-verification: `pre_release_status='error' post_release_status='error'`, with
+`__statusLog` showing NO `'READY'` entry at all — the guard suppressed the write entirely, not
+just raced it back in time. P1 had to be adjusted to poll `SELECT_READY` instead of a `'READY'`
+log entry post-fix, since the fixed code deliberately never writes that entry in this scenario —
+confirmed by first trying the old wait and getting a real timeout, not by assuming.
 
 ---
 
 ## Acceptance bar
 
-_To be finalized once the fix is chosen. Provisionally: the target test passes 8-10+ consecutive
-runs under both plain serial execution and the `-n 2` vector (correcting O-2's now-known-wrong
-premise, this should be validated fresh rather than assumed necessary), plus a full clean
-`pytest -m ux` run with zero reruns, plus `python -m scripts.gate` green._
+- P1 capability probe: pre-fix reproduces the exact historical symptom; post-fix, the pill stays
+  `'error'` and the guard is confirmed to suppress the write (not just outrun it). **Met.**
+- P2 reverse control holds both pre- and post-fix. **Met.**
+- The real target test, `test_surgical_refinement_network_failure_surfaces_error_with_retry`,
+  10/10 clean serial runs, zero reruns (this loop mainly confirms no regression — the mechanism's
+  natural base rate is too low for a 10-run loop to characterize either way; P1 is the load-bearing
+  evidence for the fix itself). **Met.**
+- Full `pytest -m ux` clean, zero reruns. Full `python -m scripts.gate` green.
