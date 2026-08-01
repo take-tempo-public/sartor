@@ -117,16 +117,27 @@ def _new_bootstrap_path(fixture_dir: Path) -> Path:
     return candidate
 
 
-def _resolve_bootstrap_path(fixture_dir: Path) -> Path | None:
+def _resolve_bootstrap_pin(fixture_dir: Path) -> tuple[Path | None, str | None]:
     """Resolve which bootstrap doc this fixture's routes should read.
 
-    Pinned to whatever ``annotations.json``'s own ``bootstrap_source`` names,
-    when that file still exists — that is what its ``cluster_index`` values
-    actually key into, so a later bootstrap run (which always gets its own
-    ``bootstrap-<timestamp>.json``; see ``_new_bootstrap_path``) can never
-    silently misalign an in-progress annotation (item 11). Falls back to the
-    newest ``bootstrap-*.json``, then the legacy ``bootstrap.json`` mirror,
-    when there's no annotation yet or its pin no longer exists.
+    Returns ``(path, stale_reason)``. Pinned to whatever ``annotations.json``'s own
+    ``bootstrap_source`` names, when that file still exists — that is what its
+    ``cluster_index`` values actually key into, so a later bootstrap run (which
+    always gets its own ``bootstrap-<timestamp>.json``; see ``_new_bootstrap_path``)
+    can never silently misalign an in-progress annotation (item 11). Falls back to
+    the newest ``bootstrap-*.json``, then the legacy ``bootstrap.json`` mirror, when
+    there's no annotation yet or its pin no longer exists.
+
+    Item 11's fix only ever checked that the pinned PATH exists — never that its
+    CONTENT still matches what the annotation was built from. A later run
+    overwriting that same path in place (the pre-item-11 collision shape) still
+    resolved silently, which is what produced item 13's real Zoox/Faros fixture
+    mismatch. When the annotation carries a ``bootstrap_fingerprint``, this now
+    verifies the resolved file's current content against it and fails CLOSED on a
+    mismatch — ``stale_reason`` is set and ``path`` is ``None``, rather than falling
+    through to the newest ``bootstrap-*.json``, since silently substituting a
+    different bootstrap is exactly the failure this guards against. Annotations
+    predating this field (no ``bootstrap_fingerprint`` recorded) are unaffected.
     """
     ann_path = fixture_dir / "annotations.json"
     if ann_path.exists():
@@ -135,12 +146,28 @@ def _resolve_bootstrap_path(fixture_dir: Path) -> Path | None:
         if source:
             pinned = Path(source)
             if pinned.exists() and _within(pinned, fixture_dir):
-                return pinned
+                expected_fp = (ann_doc or {}).get("bootstrap_fingerprint")
+                if expected_fp:
+                    from evals.annotation import fingerprint as _bootstrap_fingerprint
+
+                    if _bootstrap_fingerprint(pinned) != expected_fp:
+                        return None, (
+                            f"annotations.json's bootstrap_source ({pinned.name}) still "
+                            "exists but its content no longer matches the fingerprint "
+                            "recorded when the annotation was built"
+                        )
+                return pinned, None
     candidates = sorted(fixture_dir.glob("bootstrap-*.json"))
     if candidates:
-        return candidates[-1]
+        return candidates[-1], None
     legacy = fixture_dir / "bootstrap.json"
-    return legacy if legacy.exists() else None
+    return (legacy, None) if legacy.exists() else (None, None)
+
+
+def _resolve_bootstrap_path(fixture_dir: Path) -> Path | None:
+    """Plain-path convenience wrapper — see ``_resolve_bootstrap_pin``."""
+    path, _stale_reason = _resolve_bootstrap_pin(fixture_dir)
+    return path
 
 
 def _load_bootstrap_doc(fixture_dir: Path) -> dict[str, Any] | None:
@@ -359,7 +386,10 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
     fixture_dir = _annotation_fixture_path(slug, annotation_root)
     if fixture_dir is None or not _within(fixture_dir, annotation_root):
         return jsonify({"error": "Invalid fixture slug"}), 400
-    bootstrap = _load_bootstrap_doc(fixture_dir)
+    bootstrap_path, stale_reason = _resolve_bootstrap_pin(fixture_dir)
+    if stale_reason:
+        return jsonify({"error": "Stale bootstrap pin", "detail": stale_reason}), 409
+    bootstrap = _read_json_doc(bootstrap_path) if bootstrap_path else None
     if bootstrap is None:
         return jsonify({"error": "No bootstrap.json for this fixture"}), 404
     ann_path = fixture_dir / "annotations.json"
@@ -369,6 +399,7 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
     from evals.annotation import (
         build_improvement_brief,
         collate_expected,
+        ensure_anchor_covered_by_annotations,
         pick_anchor_jd,
         validate_annotations,
     )
@@ -379,13 +410,22 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
     except ValueError as exc:
         return jsonify({"error": "Annotations failed validation", "detail": str(exc)}), 400
 
-    expected = collate_expected(annotations, bootstrap)
-    brief = build_improvement_brief(annotations, bootstrap)
-
     # Anchor JD text → jd.txt (best-effort; the wrapper saves pasted JDs in jds/,
     # normalized via _jd_filename — resolve the anchor name the SAME way so the
     # lookup can't miss when the raw name didn't already end in .txt).
     anchor_name = pick_anchor_jd(bootstrap)
+    if anchor_name:
+        try:
+            ensure_anchor_covered_by_annotations(anchor_name, annotations)
+        except ValueError as exc:
+            return (
+                jsonify({"error": "Anchor JD not represented in annotations", "detail": str(exc)}),
+                409,
+            )
+
+    expected = collate_expected(annotations, bootstrap)
+    brief = build_improvement_brief(annotations, bootstrap)
+
     anchor_src = (fixture_dir / "jds" / _jd_filename(anchor_name)) if anchor_name else None
     jd_written = False
     if anchor_src is not None and _within(anchor_src, annotation_root) and anchor_src.exists():

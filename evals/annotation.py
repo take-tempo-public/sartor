@@ -49,6 +49,7 @@ The produced fixture runs immediately:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import re
@@ -440,6 +441,14 @@ def _skill_item_template(index: int, cluster: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def fingerprint(path: Path) -> str:
+    """Content fingerprint of ``path`` — sha256 hex[:12], newline-normalized via
+    text-mode read (matches ``scripts/verify_doc_template.py``'s convention; a
+    separate copy here rather than a cross-boundary import, since ``evals/`` must
+    not depend on ``scripts/``)."""
+    return hashlib.sha256(path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()[:12]
+
+
 def build_annotation_template(
     bootstrap_doc: dict[str, Any],
     *,
@@ -453,7 +462,21 @@ def build_annotation_template(
     ``rating`` blank for a human to fill. Deterministic and LLM-free. The emitted
     skeleton is intentionally NOT valid per ``validate_annotations`` (blank
     verdicts) until annotated — that is the fill-me signal.
+
+    When ``bootstrap_source`` names a readable file, also stamps a
+    ``bootstrap_fingerprint`` of its content — later collate-time reads use this to
+    detect a pin whose target was silently overwritten in place (item 13's root
+    cause: item 11's fix pins reads to this path, but only checks that the path
+    exists, never that its content still matches). Best-effort: an unreadable or
+    empty source leaves the field blank rather than raising, so a caller passing a
+    placeholder path (or none at all) is unaffected.
     """
+    bootstrap_fingerprint = ""
+    if bootstrap_source:
+        try:
+            bootstrap_fingerprint = fingerprint(Path(bootstrap_source))
+        except OSError:
+            bootstrap_fingerprint = ""
     nli_list, mc_list = _grounding_by_index(bootstrap_doc)
     bullet_clusters = bootstrap_doc.get("dedup", {}).get("bullets", {}).get("clusters", [])
     skill_clusters = bootstrap_doc.get("dedup", {}).get("skills", {}).get("clusters", [])
@@ -482,6 +505,7 @@ def build_annotation_template(
     return {
         "annotation_schema_version": ANNOTATION_SCHEMA_VERSION,
         "bootstrap_source": bootstrap_source,
+        "bootstrap_fingerprint": bootstrap_fingerprint,
         "candidate_username": bootstrap_doc.get("candidate_username", ""),
         "prompt_version": bootstrap_doc.get("prompt_version", ""),
         "bullets": bullets,
@@ -604,6 +628,33 @@ def pick_anchor_jd(bootstrap_doc: dict[str, Any], override: str | None = None) -
         return sorted(jd for jd, n in counts.items() if n == best_count)[0]
     per_jd = bootstrap_doc.get("per_jd", [])
     return per_jd[0].get("jd_file", "") if per_jd else ""
+
+
+def ensure_anchor_covered_by_annotations(anchor_name: str, annotations_doc: dict[str, Any]) -> None:
+    """Raise ``ValueError`` unless ``anchor_name`` is represented in the annotation
+    data being collated alongside it.
+
+    Fail-closed collate-time guard (item 13): a real fixture was found whose
+    collated ``jd.txt`` (picked by ``pick_anchor_jd`` from one bootstrap doc) shared
+    zero JD overlap with its ``annotations.json`` ground truth (built from a
+    different bootstrap doc that had since been overwritten) — the eval graded one
+    JD's output against a different JD's human-vetted expectations, with nothing to
+    catch it. Scoped to bullet ``jd_files`` only, mirroring ``pick_anchor_jd``'s own
+    bullet-cluster-only scope. When the annotation data was actually built from the
+    bootstrap doc ``pick_anchor_jd`` just read, the anchor name is byte-identical to
+    a bullet's ``jd_files`` entry (``_bullet_item_template`` copies it verbatim from
+    the same cluster) — so this is a plain membership check, no normalization
+    needed. A mismatch here almost always means the annotations were built from a
+    different (often superseded) bootstrap than the one collate just read.
+    """
+    covered = {jd for item in annotations_doc.get("bullets", []) for jd in item.get("jd_files", [])}
+    if anchor_name in covered:
+        return
+    raise ValueError(
+        f"anchor JD {anchor_name!r} is not represented in this annotation data "
+        f"(annotations cover: {sorted(covered)!r}); refusing to collate a fixture "
+        "whose jd.txt would not match its own expected.json ground truth"
+    )
 
 
 def _scorer_disagreements(annotations_doc: dict[str, Any]) -> list[str]:
@@ -836,6 +887,7 @@ def _cmd_collate(
     if not anchor_name:
         logger.error("could not determine an anchor JD (no bullet clusters and empty per_jd)")
         return 1
+    ensure_anchor_covered_by_annotations(anchor_name, annotations_doc)
     anchor_src = jd_dir / anchor_name
     if not anchor_src.is_file():
         logger.error("anchor JD %s not found in --jd-dir %s", anchor_name, jd_dir.as_posix())
