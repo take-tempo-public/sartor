@@ -34,3 +34,15 @@ by title, in `evals/results/*.jsonl` and the bootstrap artifacts themselves)
 is untouched. `depends_on = [11]` no longer applies mechanically (11 is
 closed) — this item still needs its own manifest/naming work naming the JD(s)
 per run.
+
+### 2026-08-01 — item 13 closed; concrete motivating case for this item
+
+Item 13 (`fix/eval-fixture-jd-annotation-mismatch`) closed a real fixture whose
+`jd.txt` (Zoox) and `annotations.json` (100% Faros) described two different JDs —
+undetectable without opening the raw JD prose, exactly this item's gap. That fix
+added `bootstrap_fingerprint` to `annotations.json` (content-verification, not
+identification) and a collate-time guard that rejects an unrepresented anchor, but
+neither writes a human-readable JD name/company anywhere a person or a dashboard
+could glance at. This item's own fix (a manifest field naming the JD(s) per run)
+would have surfaced the original mismatch immediately, before any guard was needed
+— worth weighing when this item is picked up. Not resolved by item 13; still open.

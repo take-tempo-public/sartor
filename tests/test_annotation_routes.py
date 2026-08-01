@@ -367,6 +367,72 @@ class TestCollate:
         assert body["jd_written"] is True
         assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior backend JD body."
 
+    def test_rejects_anchor_not_represented_in_annotations(self, ann_app):
+        """Item 13: a real fixture was found whose collated jd.txt (Zoox) shared zero
+        JD overlap with its annotations.json ground truth (100% Faros) -- the eval
+        graded one JD's output against a different JD's human-vetted expectations.
+        Root-caused to item 11's bootstrap-pinning fix trusting a stale
+        ``bootstrap_source`` pin (see TestBootstrapPinIntegrity below), but nothing
+        ALSO independently checked collate's output for internal consistency -- so
+        collate happily wrote a mismatched fixture regardless of how the wrong
+        bootstrap got read. This reproduces that shape directly: annotations whose
+        bullets are entirely tagged with a JD the bootstrap being collated doesn't
+        contain at all (mirrors the real artifact: bootstrap 100% one JD tag,
+        annotations 100% a disjoint JD tag).
+        """
+        fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        doc = _complete_doc(ann_app)
+        for item in doc["bullets"]:
+            item["jd_files"] = ["a-different-jd.txt"]
+        (fixture_dir / "annotations.json").write_text(json.dumps(doc), encoding="utf-8")
+        (fixture_dir / "jds").mkdir()
+        (fixture_dir / "jds" / "jd1.txt").write_text("Senior PM JD body.", encoding="utf-8")
+
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/collate")
+
+        assert resp.status_code == 409
+        body = resp.get_json()
+        assert "jd1.txt" in body["detail"]
+        assert not (fixture_dir / "expected.json").exists()
+        assert not (fixture_dir / "jd.txt").exists()
+
+
+class TestBootstrapPinIntegrity:
+    def test_stale_pin_content_is_not_silently_reused(self, ann_app):
+        """Item 13 (root cause): item 11's fix pins bootstrap reads to whatever
+        ``annotations.json``'s own ``bootstrap_source`` names, but only checks that
+        the pinned PATH still exists -- never that its CONTENT still matches what the
+        annotation was actually built from. A later run overwriting that same path in
+        place (the pre-item-11 collision shape) is exactly what produced the real
+        Zoox/Faros mismatch: the pin still resolved, silently, to the swapped
+        content. A resolver that fails closed on a content mismatch must not return
+        that path at all.
+        """
+        import hashlib
+
+        import blueprints.diagnostics as diagnostics_mod
+
+        fixture_dir, bootstrap_doc = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        original_text = json.dumps(bootstrap_doc)
+        original_fingerprint = hashlib.sha256(original_text.encode("utf-8")).hexdigest()[:12]
+
+        ann_doc = _complete_doc(ann_app)
+        ann_doc["bootstrap_source"] = str(fixture_dir / "bootstrap.json")
+        ann_doc["bootstrap_fingerprint"] = original_fingerprint
+        (fixture_dir / "annotations.json").write_text(json.dumps(ann_doc), encoding="utf-8")
+
+        # A later run overwrites the SAME path in place with different-JD content.
+        swapped = {**bootstrap_doc, "per_jd": [{"jd_file": "other-jd.txt", "run_id": "r2"}]}
+        (fixture_dir / "bootstrap.json").write_text(json.dumps(swapped), encoding="utf-8")
+
+        resolved = diagnostics_mod._resolve_bootstrap_path(fixture_dir)
+        assert resolved is None, (
+            "pin target's content no longer matches the fingerprint recorded when the "
+            "annotation was built -- must fail closed, not silently resolve to the "
+            "swapped content"
+        )
+
 
 # --- path containment helpers ----------------------------------------------
 

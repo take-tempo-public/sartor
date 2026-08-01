@@ -425,6 +425,24 @@ class TestTemplate:
         assert q["question_id"] == "q1"
         assert q["question_text"] == "Tell me about X"
 
+    def test_bootstrap_fingerprint_blank_when_source_unreadable(self) -> None:
+        # "bs.json" (used above) never exists on disk — best-effort, no crash.
+        t = annotation.build_annotation_template(_bootstrap_doc(), bootstrap_source="bs.json")
+        assert t["bootstrap_fingerprint"] == ""
+
+    def test_bootstrap_fingerprint_blank_when_no_source_given(self) -> None:
+        t = annotation.build_annotation_template(_bootstrap_doc())
+        assert t["bootstrap_fingerprint"] == ""
+
+    def test_bootstrap_fingerprint_stamped_from_real_source(self, tmp_path: Path) -> None:
+        bootstrap_path = tmp_path / "bootstrap.json"
+        bootstrap_path.write_text("hello world", encoding="utf-8")
+        t = annotation.build_annotation_template(
+            _bootstrap_doc(), bootstrap_source=str(bootstrap_path)
+        )
+        assert t["bootstrap_fingerprint"] == annotation.fingerprint(bootstrap_path)
+        assert t["bootstrap_fingerprint"] != ""
+
 
 # ---------------------------------------------------------------------------
 # Collation → expected.json fixture (matches _load_fixture's field set).
@@ -556,6 +574,23 @@ class TestPickAnchorJd:
         bs = _bootstrap_doc()
         bs["dedup"]["bullets"]["clusters"] = []
         assert annotation.pick_anchor_jd(bs) == "a.txt"
+
+
+class TestEnsureAnchorCoveredByAnnotations:
+    """Item 13's fail-closed guard: collate must refuse an anchor JD that isn't
+    represented in the annotation data being collated alongside it."""
+
+    def test_anchor_represented_does_not_raise(self) -> None:
+        annotation.ensure_anchor_covered_by_annotations("a.txt", _annotations_doc())
+
+    def test_anchor_not_represented_raises(self) -> None:
+        with pytest.raises(ValueError, match="not represented"):
+            annotation.ensure_anchor_covered_by_annotations("zoox.txt", _annotations_doc())
+
+    def test_error_names_what_annotations_actually_cover(self) -> None:
+        # _annotations_doc()'s bullets span a.txt and b.txt only.
+        with pytest.raises(ValueError, match=r"a\.txt.*b\.txt|b\.txt.*a\.txt"):
+            annotation.ensure_anchor_covered_by_annotations("zoox.txt", _annotations_doc())
 
 
 # ---------------------------------------------------------------------------
