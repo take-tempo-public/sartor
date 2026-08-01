@@ -84,6 +84,7 @@ from hardening import (  # noqa: E402
     compute_top_third_density,
     compute_verb_diversity,
     extract_company_terms,
+    extract_jd_label,
     extract_keywords,
 )
 from parser import parse_resume  # noqa: E402
@@ -187,12 +188,21 @@ def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict[str, An
     if resume_path is not None:
         h.update(resume_path.read_bytes())
     h.update((fixture_dir / "expected.json").read_bytes())
+    # F-14: computed once and reused at every downstream record-write site —
+    # never re-derived per rubric. Prefer a value already stamped into
+    # expected.json (a collated real fixture — see annotation.collate_expected)
+    # over re-deriving from the header text, so the anchor's own resolved
+    # label wins; fall back to deriving fresh for synthetic/legacy fixtures.
+    # NOT included in the hash above — fixture_hash must stay a pure function
+    # of file bytes so existing baseline joins hold.
+    jd_label = expected.get("jd_label") or extract_jd_label(jd)
     return {
         "name": fixture_dir.name,
         "jd": jd,
         "resume_path": resume_path,
         "expected": expected,
         "hash": h.hexdigest(),
+        "jd_label": jd_label,
     }
 
 
@@ -728,6 +738,7 @@ def _run_iteration_phase(
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "eval",
             "fixture": fixture["name"],
+            "jd_label": fixture["jd_label"],
             "rubric": rubric_path.stem,
             "score": None,
             "reasons": [
@@ -817,6 +828,7 @@ def _run_iteration_phase(
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "eval",
             "fixture": fixture["name"],
+            "jd_label": fixture["jd_label"],
             "rubric": rubric_path.stem,
             "score": None,
             "reasons": [f"clarify_iteration failed: {iter_error}"],
@@ -853,6 +865,7 @@ def _run_iteration_phase(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "source": "eval",
         "fixture": fixture["name"],
+        "jd_label": fixture["jd_label"],
         "rubric": rubric_path.stem,
         "score": grade.get("score"),
         "reasons": grade.get("reasons", []),
@@ -1287,6 +1300,7 @@ def run_suite(
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                             "source": "eval",
                             "fixture": fixture["name"],
+                            "jd_label": fixture["jd_label"],
                             "rubric": None,
                             "score": None,
                             "status": "pipeline_error",
@@ -1476,6 +1490,7 @@ def run_suite(
                                 "timestamp": datetime.now(timezone.utc).isoformat(),
                                 "source": "eval",
                                 "fixture": fixture["name"],
+                                "jd_label": fixture["jd_label"],
                                 "rubric": rubric_path.stem,
                                 "score": None,
                                 "reasons": [f"clarify step failed: {clarify_error}"],
@@ -1633,6 +1648,7 @@ def run_suite(
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "source": "eval",
                     "fixture": fixture["name"],
+                    "jd_label": fixture["jd_label"],
                     "rubric": rubric_path.stem,
                     "score": _score,
                     "reasons": grade.get("reasons", []),
@@ -1734,6 +1750,7 @@ def run_suite(
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "source": "eval",
                         "fixture": fixture["name"],
+                        "jd_label": fixture["jd_label"],
                         "rubric": "eval_composite",
                         "score": eval_composite,
                         "run_id": run_id,

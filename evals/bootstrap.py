@@ -63,6 +63,7 @@ from analyzer import (  # noqa: E402
 from db.build_context import build_context_set_from_db  # noqa: E402
 from evals.grounding_signals import extract_bullets  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
+from hardening import extract_jd_label  # noqa: E402
 
 if TYPE_CHECKING:
     import anthropic
@@ -287,6 +288,18 @@ def build_bootstrap_document(
         "prompt_version": effective_prompt_version(),
         "jaccard_threshold": threshold,
         "jd_count": len(per_jd),
+        # F-14: a glanceable index of every JD this run covered, so a human
+        # doesn't have to scroll past per-JD analysis/résumé blobs to see
+        # what the run was about. Pure projection of per_jd — .get() chains
+        # so a hand-built per_jd record without jd_label degrades to "".
+        "jd_labels": [
+            {
+                "jd_file": rec.get("jd_file", ""),
+                "title": (rec.get("jd_label") or {}).get("title", ""),
+                "company": (rec.get("jd_label") or {}).get("company", ""),
+            }
+            for rec in per_jd
+        ],
         "per_jd": per_jd,
         "dedup": {
             "bullets": {
@@ -389,6 +402,9 @@ def run_pipeline_over_jd_texts(
 
         run_id = uuid.uuid4().hex[:12]
         username_tag = f"bootstrap:{Path(jd_name).stem}"
+        # Deterministic and free — computed before the paid calls so a
+        # mid-run cancel still leaves a label on every completed JD (F-14).
+        jd_label = extract_jd_label(jd_text)
         logger.info("JD %s: building context + running pipeline (run_id=%s)", jd_name, run_id)
         _emit("jd_start", jd_file=jd_name, index=index, total=total, run_id=run_id)
 
@@ -429,6 +445,7 @@ def run_pipeline_over_jd_texts(
         per_jd.append(
             {
                 "jd_file": jd_name,
+                "jd_label": jd_label,
                 "run_id": run_id,
                 "analysis": analysis,
                 "clarification_questions": clar_questions,

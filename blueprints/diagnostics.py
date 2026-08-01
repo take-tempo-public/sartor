@@ -423,7 +423,7 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
                 409,
             )
 
-    expected = collate_expected(annotations, bootstrap)
+    expected = collate_expected(annotations, bootstrap, anchor_name=anchor_name)
     brief = build_improvement_brief(annotations, bootstrap)
 
     anchor_src = (fixture_dir / "jds" / _jd_filename(anchor_name)) if anchor_name else None
@@ -441,11 +441,17 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
         json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     brief_path.write_text(brief, encoding="utf-8")
+    # F-14: this is the exact moment item 13's Zoox/Faros mismatch became
+    # durable — surfacing the anchor's human-readable label here, next to its
+    # filename, puts a JD's identity in front of a person right at collate
+    # time. Descriptive only, never a substitute for the guard above.
     logger.info(
-        "Collated fixture %s: %d must_keywords, %d forbidden_inventions",
+        "Collated fixture %s: %d must_keywords, %d forbidden_inventions (anchor JD %s, %r)",
         slug,
         len(expected.get("must_keywords", [])),
         len(expected.get("forbidden_inventions", [])),
+        anchor_name,
+        expected.get("jd_label"),
     )
     return jsonify(
         {
@@ -454,6 +460,7 @@ def annotation_collate(username: str, slug: str) -> ResponseReturnValue:
             "brief_path": str(brief_path),
             "jd_written": jd_written,
             "anchor_jd": anchor_name,
+            "anchor_jd_label": expected.get("jd_label"),
             "must_keywords": len(expected.get("must_keywords", [])),
             "forbidden_inventions": len(expected.get("forbidden_inventions", [])),
             "run_command": (
@@ -931,10 +938,19 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                 if _within(jd_file, annotation_root):
                     jd_file.write_text(text, encoding="utf-8")
             grounded = doc.get("grounding_signals") is not None
+            # F-14: a human-readable summary alongside the run stats, so a
+            # server-log reader knows which JDs this run covered without
+            # opening the bootstrap file — company preferred, title as
+            # fallback, "?" only when extract_jd_label found neither.
+            jd_label_summary = ", ".join(
+                (entry.get("company") or entry.get("title") or "?")
+                for entry in doc.get("jd_labels", [])
+            )
             logger.info(
-                "Bootstrap wrapper wrote %s (%d JDs, %d bullet clusters, grounded=%s)",
+                "Bootstrap wrapper wrote %s (%d JDs [%s], %d bullet clusters, grounded=%s)",
                 new_bootstrap_path.name,
                 doc["jd_count"],
+                jd_label_summary,
                 doc["dedup"]["bullets"]["cluster_count"],
                 grounded,
             )
@@ -950,6 +966,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
                     "skill_clusters": doc["dedup"]["skills"]["cluster_count"],
                     "grounded": grounded,
                     "bootstrap_file": new_bootstrap_path.name,
+                    "jd_labels": doc.get("jd_labels", []),
                 },
             )
         except GeneratorExit:

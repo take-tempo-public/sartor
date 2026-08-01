@@ -26,6 +26,7 @@ from hardening import (
     compute_verb_diversity,
     context_transaction,
     extract_company_terms,
+    extract_jd_label,
     extract_keywords,
     save_context_set,
     strip_cover_letter_block,
@@ -131,6 +132,119 @@ class TestExtractCompanyTerms:
 
     def test_empty_input(self):
         assert extract_company_terms("") == frozenset()
+
+
+class TestExtractJdLabel:
+    """F-14 — best-effort deterministic (title, company) identification from a
+    JD's own header text. Sibling to extract_company_terms; that function must
+    stay byte-identical (see test_extract_company_terms_unchanged_for_committed_fixtures)."""
+
+    SYNTHETIC_DIR = Path(__file__).parent.parent / "evals" / "fixtures" / "synthetic"
+
+    @pytest.mark.parametrize(
+        "slug,expected",
+        [
+            (
+                "data-scientist-junior",
+                {"title": "Junior Data Scientist", "company": "Borealis Labs"},
+            ),
+            (
+                "pm-senior",
+                {
+                    "title": "Senior Product Manager, Provider Workflows",
+                    "company": "Atrium Health Platform",
+                },
+            ),
+            (
+                "sre-mid-level",
+                {"title": "Senior Site Reliability Engineer", "company": "Lattice Cloud"},
+            ),
+        ],
+    )
+    def test_committed_synthetic_headers(self, slug, expected):
+        jd_text = (self.SYNTHETIC_DIR / slug / "jd.txt").read_text(encoding="utf-8")
+        assert extract_jd_label(jd_text) == expected
+
+    def test_title_at_company_single_line(self):
+        jd = "Senior Backend Engineer at Acme Robotics\nMore prose here."
+        assert extract_jd_label(jd) == {
+            "title": "Senior Backend Engineer",
+            "company": "Acme Robotics",
+        }
+
+    def test_company_first_then_title(self):
+        # The LinkedIn-paste shape from item 13's own motivating case.
+        jd = "Zoox\nSenior Software Engineer, Perception\nFoster City, CA · 2 weeks ago"
+        assert extract_jd_label(jd) == {
+            "title": "Senior Software Engineer, Perception",
+            "company": "Zoox",
+        }
+
+    def test_labeled_fields_win(self):
+        jd = "Job Title: Data Engineer\nCompany: Initech\nMore prose that would otherwise win."
+        assert extract_jd_label(jd) == {"title": "Data Engineer", "company": "Initech"}
+
+    def test_title_line_never_becomes_company(self):
+        jd = "Senior Site Reliability Engineer\n\nKubernetes and Prometheus daily."
+        result = extract_jd_label(jd)
+        assert result["company"] == ""
+        assert result["title"] == "Senior Site Reliability Engineer"
+
+    def test_hyphenated_title_not_split(self):
+        jd = "Full-Stack Engineer\nAcme — Remote"
+        assert extract_jd_label(jd) == {"title": "Full-Stack Engineer", "company": "Acme"}
+
+    def test_non_ascii_company_misses_rather_than_misreads_location(self):
+        # Ørsted fails the ASCII-only _CAP_SEQ check; the fallback must NOT
+        # pick "Copenhagen" (a location) as a wrong-but-confident company.
+        jd = "Software Engineer\nØrsted — Copenhagen"
+        result = extract_jd_label(jd)
+        assert result["title"] == "Software Engineer"
+        assert result["company"] == ""
+
+    def test_body_prose_never_scanned(self):
+        header = ["We are hiring for a great role."] * 6
+        body = ["About Acme Corp"] + ["More filler text goes here."] * 13
+        jd = "\n".join(header + body)
+        assert extract_jd_label(jd) == {"title": "", "company": ""}
+
+    def test_empty_and_whitespace_input(self):
+        assert extract_jd_label("") == {"title": "", "company": ""}
+        assert extract_jd_label("   \n\n   ") == {"title": "", "company": ""}
+
+    def test_fails_open_never_raises(self):
+        candidates = (
+            "!!! ??? ...",
+            "x" * 10_000,
+            json.dumps({"a": 1, "b": [1, 2, 3]}),
+            "Ørsted — Zürich",
+        )
+        for jd in candidates:
+            result = extract_jd_label(jd)
+            assert set(result.keys()) == {"title", "company"}
+            assert isinstance(result["title"], str)
+            assert isinstance(result["company"], str)
+
+    def test_output_is_bounded(self):
+        jd = "Job Title: " + ("A" * 500) + "\nCompany: " + ("B" * 500)
+        result = extract_jd_label(jd)
+        assert len(result["title"]) <= 120
+        assert len(result["company"]) <= 120
+        assert "\n" not in result["title"]
+        assert "\n" not in result["company"]
+
+    def test_extract_company_terms_unchanged_for_committed_fixtures(self):
+        """Guards the no-refactor decision: extract_company_terms feeds
+        eval keyword scoring (baselined in baseline_v1.json) and must not
+        drift as a side effect of adding extract_jd_label."""
+        expected = {
+            "data-scientist-junior": frozenset({"borealis labs", "borealis"}),
+            "pm-senior": frozenset({"atrium health platform", "atrium"}),
+            "sre-mid-level": frozenset({"lattice cloud"}),
+        }
+        for slug, want in expected.items():
+            jd_text = (self.SYNTHETIC_DIR / slug / "jd.txt").read_text(encoding="utf-8")
+            assert extract_company_terms(jd_text) == want
 
 
 class TestKeywordOverlapCleaning:

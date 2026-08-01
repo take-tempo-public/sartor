@@ -470,6 +470,12 @@ def build_annotation_template(
     exists, never that its content still matches). Best-effort: an unreadable or
     empty source leaves the field blank rather than raising, so a caller passing a
     placeholder path (or none at all) is unaffected.
+
+    Also carries ``jd_labels`` straight through from ``bootstrap_doc`` (F-14) —
+    a human-readable (title, company) per JD, so a person opening this file
+    doesn't have to cross-reference ``bootstrap_source`` to know what postings
+    it covers. Descriptive only: never treat label agreement as verification —
+    that stays ``ensure_anchor_covered_by_annotations``'s job, keyed on ``jd_file``.
     """
     bootstrap_fingerprint = ""
     if bootstrap_source:
@@ -508,6 +514,10 @@ def build_annotation_template(
         "bootstrap_fingerprint": bootstrap_fingerprint,
         "candidate_username": bootstrap_doc.get("candidate_username", ""),
         "prompt_version": bootstrap_doc.get("prompt_version", ""),
+        # F-14: mirrors the bootstrap doc's own jd_labels index verbatim — no
+        # re-derivation, so this can never drift from what bootstrap.py wrote.
+        # Empty for a bootstrap doc predating F-14 (no such key on disk).
+        "jd_labels": bootstrap_doc.get("jd_labels", []),
         "bullets": bullets,
         "skills": skills,
         "clarification_ratings": clarification_ratings,
@@ -542,6 +552,8 @@ def _dedup_preserve_order(values: list[str], *, casefold: bool = True) -> list[s
 def collate_expected(
     annotations_doc: dict[str, Any],
     bootstrap_doc: dict[str, Any],
+    *,
+    anchor_name: str = "",
 ) -> dict[str, Any]:
     """Collate a completed annotations.json into an expected.json fixture dict.
 
@@ -558,6 +570,11 @@ def collate_expected(
     - ``min_*_score``: from ``annotations.min_scores`` if present, else
       ``DEFAULT_MIN_SCORES``.
     - ``notes``: the annotator notes plus a one-line provenance stamp.
+    - ``jd_label`` (F-14): the anchor JD's (title, company), looked up from
+      ``bootstrap_doc["jd_labels"]`` by ``anchor_name`` (typically
+      ``pick_anchor_jd``'s result). Blank when ``anchor_name`` is unset or
+      unmatched — this fixture-level field is descriptive only, never a
+      substitute for ``ensure_anchor_covered_by_annotations``'s ``jd_file`` check.
     """
     validate_annotations(annotations_doc)
 
@@ -590,6 +607,13 @@ def collate_expected(
     )
     notes = f"{annotator_notes}\n\n{provenance}" if annotator_notes else provenance
 
+    jd_label = {"title": "", "company": ""}
+    if anchor_name:
+        for entry in bootstrap_doc.get("jd_labels", []):
+            if entry.get("jd_file") == anchor_name:
+                jd_label = {"title": entry.get("title", ""), "company": entry.get("company", "")}
+                break
+
     return {
         "candidate_name": candidate,
         "must_keywords": must_keywords,
@@ -600,6 +624,7 @@ def collate_expected(
         "min_tone_score": min_scores["tone"],
         "min_clarification_quality_score": min_scores["clarification_quality"],
         "notes": notes,
+        "jd_label": jd_label,
     }
 
 
@@ -899,7 +924,7 @@ def _cmd_collate(
     jd_path = _guard(fixture_dir / "jd.txt")
     brief_path = _guard(bootstrap_path.parent / "improvement_brief.md")
 
-    expected = collate_expected(annotations_doc, bootstrap_doc)
+    expected = collate_expected(annotations_doc, bootstrap_doc, anchor_name=anchor_name)
     brief = build_improvement_brief(annotations_doc, bootstrap_doc)
 
     fixture_dir.mkdir(parents=True, exist_ok=True)
@@ -911,11 +936,12 @@ def _cmd_collate(
     brief_path.write_text(brief, encoding="utf-8")
 
     logger.info(
-        "collated fixture %s: %d must_keywords, %d forbidden_inventions (anchor JD %s) → %s",
+        "collated fixture %s: %d must_keywords, %d forbidden_inventions (anchor JD %s, %r) → %s",
         slug,
         len(expected["must_keywords"]),
         len(expected["forbidden_inventions"]),
         anchor_name,
+        expected["jd_label"],
         fixture_dir.as_posix(),
     )
     logger.info("improvement brief → %s", brief_path.as_posix())

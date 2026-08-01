@@ -93,6 +93,8 @@ def _normalize_eval_record(r: dict[str, Any]) -> dict[str, Any]:
     # deterministic_metrics.groundedness; default to {} so the groundedness
     # helpers never KeyError and instead fall through to their empty-state.
     r.setdefault("deterministic_metrics", {})
+    # F-14: records predating the JD-label field have neither key.
+    r.setdefault("jd_label", {"title": "", "company": ""})
     return r
 
 

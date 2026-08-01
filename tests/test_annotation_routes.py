@@ -293,6 +293,9 @@ class TestCollate:
         assert body["must_keywords"] == 1  # "Python"
         assert body["forbidden_inventions"] == 1  # \$5M\b
         assert body["jd_written"] is True
+        # F-14: _seed_bootstrap's hand-written doc predates jd_labels entirely
+        # (no top-level key at all) — the back-compat case resolves to blank.
+        assert body["anchor_jd_label"] == {"title": "", "company": ""}
         assert (fixture_dir / "expected.json").exists()
         assert (fixture_dir / "improvement_brief.md").exists()
         assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior PM JD body."
@@ -300,12 +303,41 @@ class TestCollate:
         # collate_expected lowercases skill keywords (case-insensitive coverage).
         assert "python" in expected["must_keywords"]
         assert r"\$5M\b" in expected["forbidden_inventions"]
+        assert expected["jd_label"] == {"title": "", "company": ""}
         # Regression for diagnostics-round2 #11: the printed run_command must target
         # the SAME single fixture the "Run this fixture" button posts — without
         # --fixture, --seed doesn't restrict which fixtures run and the CLI globs
         # every real fixture (crashing in _load_fixture on missing jd.txt).
         assert "--fixture alice-bootstrap" in body["run_command"]
         assert "evals/fixtures/real/alice-bootstrap/seed.json" in body["run_command"]
+
+    def test_anchor_jd_label_in_response_when_bootstrap_has_labels(self, ann_app):
+        """F-14: when the bootstrap doc carries jd_labels (the post-fix shape),
+        collate resolves the anchor's own label into both the response and
+        expected.json — the human-readable counterpart to anchor_jd."""
+        fixture_dir, doc = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        doc["jd_labels"] = [
+            {"jd_file": "jd1.txt", "title": "Senior Product Manager", "company": "Atrium Health"}
+        ]
+        (fixture_dir / "bootstrap.json").write_text(json.dumps(doc), encoding="utf-8")
+        annotations = _complete_doc(ann_app)
+        (fixture_dir / "annotations.json").write_text(json.dumps(annotations), encoding="utf-8")
+        (fixture_dir / "jds").mkdir()
+        (fixture_dir / "jds" / "jd1.txt").write_text("Senior PM JD body.", encoding="utf-8")
+
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/collate")
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["anchor_jd_label"] == {
+            "title": "Senior Product Manager",
+            "company": "Atrium Health",
+        }
+        expected = json.loads((fixture_dir / "expected.json").read_text(encoding="utf-8"))
+        assert expected["jd_label"] == {
+            "title": "Senior Product Manager",
+            "company": "Atrium Health",
+        }
 
     def test_anchor_jd_resolves_when_raw_name_lacks_txt_suffix(self, ann_app, monkeypatch):
         """Regression for diagnostics-round2 #15: the bootstrap wrapper's writer
@@ -518,6 +550,54 @@ class TestBootstrapStream:
         assert bootstrap_doc["candidate_username"] == "alice"
         # Pasted JDs persisted for later collate → jd.txt.
         assert (fixture_dir / "jds" / "kafka_backend.txt").exists()
+
+    def test_done_event_carries_jd_labels(self, ann_app, monkeypatch):
+        """F-14: the route's own jd_labels projection (built inside
+        build_bootstrap_document, unmonkeypatched here) reaches the SSE `done`
+        frame — the label-bearing counterpart to the label-free fake above,
+        which proves the route still tolerates a legacy per_jd shape."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+        def _fake_pipeline(client, session, username, jds, *, progress=None, cancel_check=None):
+            per_jd = []
+            for i, (name, _text) in enumerate(jds):
+                per_jd.append(
+                    {
+                        "jd_file": name,
+                        "jd_label": {"title": f"Title {i}", "company": f"Company {i}"},
+                        "run_id": f"run{i}",
+                        "analysis": {},
+                        "clarification_questions": [],
+                        "clarification_reasoning": "",
+                        "generated_resume": "",
+                        "generated_cover_letter": "",
+                        "bullets": [f"Did {name} work"],
+                        "skills": ["Python"],
+                    }
+                )
+            return per_jd, "corpus source text"
+
+        import evals.bootstrap as bootstrap_mod
+
+        monkeypatch.setattr(bootstrap_mod, "run_pipeline_over_jd_texts", _fake_pipeline)
+
+        client = ann_app.app.test_client()
+        resp = client.post(
+            "/api/annotation/bootstrap",
+            json={
+                "username": "alice",
+                "jds": [{"name": "kafka backend", "text": "JD one"}],
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        done_line = next(
+            ln for ln in body.splitlines() if ln.startswith("data: ") and "jd_labels" in ln
+        )
+        done_payload = json.loads(done_line[len("data: ") :])
+        assert done_payload["jd_labels"] == [
+            {"jd_file": "kafka backend", "title": "Title 0", "company": "Company 0"}
+        ]
 
     def test_second_run_does_not_destroy_first_runs_bootstrap(self, ann_app, monkeypatch):
         """Regression for item 11 (docs/dev/work/items/0011): every bootstrap run

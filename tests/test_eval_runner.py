@@ -49,6 +49,8 @@ class TestNormalizeEvalRecord:
         assert out["prompt_version"] == ""
         assert out["failed_rules"] == []
         assert out["reasons"] == []
+        # F-14: records predating the JD-label field default to blank.
+        assert out["jd_label"] == {"title": "", "company": ""}
 
     def test_existing_fields_retained(self):
         out = _normalize_eval_record(
@@ -1399,3 +1401,155 @@ class TestZeroResultGuard:
         monkeypatch.setattr(runner, "run_suite", _raise)
         rc = runner.main(["--suite", "real", "--fixture", "broken-fixture"])
         assert rc == 1
+
+
+class TestJdLabelOnRecords:
+    """F-14: every eval-result record carries jd_label, computed once per
+    fixture in _load_fixture and reused — never re-derived per rubric. The
+    two judge-INPUT payloads (_iteration_payload, the main grading payload)
+    must NEVER carry it — that would change the graded prompt and silently
+    invalidate baseline_v1.json (schema_version==3 equality gate)."""
+
+    def _stub_pipeline(self, runner, monkeypatch, tmp_path):
+        monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path)
+        monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "baseline_v1.json")
+        monkeypatch.setattr(runner, "analyze", lambda *a, **k: {"overall_strategy": "ok"})
+        monkeypatch.setattr(runner, "clarify", lambda *a, **k: {"questions": [], "reasoning": ""})
+        monkeypatch.setattr(
+            runner,
+            "generate",
+            lambda *a, **k: {
+                "resume_content": "- Led a project\n- Built a system",
+                "cover_letter_content": "Dear team,",
+            },
+        )
+        monkeypatch.setattr(
+            runner,
+            "_grade",
+            lambda *a, **k: {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"},
+        )
+        monkeypatch.setattr(
+            runner,
+            "_score_distinctiveness",
+            lambda *a, **k: {"score": 4.0, "summary": "ok"},
+        )
+
+    def _records(self, out_path) -> list[dict]:
+        return [
+            json.loads(ln) for ln in out_path.read_text(encoding="utf-8").splitlines() if ln.strip()
+        ]
+
+    def test_every_record_carries_jd_label(self, tmp_path, monkeypatch):
+        """subset="full" over all 3 committed synthetic fixtures. sre-mid-level
+        has iteration_scenarios but the generic generate() stub's text doesn't
+        contain the scripted edit_target_substring, so this run also exercises
+        the scenario_misaligned record (site :740) for free."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+        from hardening import extract_jd_label
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        result = run_suite(suite="synthetic", subset="full", out_dir=tmp_path, client=MagicMock())
+        records = self._records(result.out_path)
+        assert records  # sanity: the run actually wrote something
+
+        expected_by_fixture = {
+            slug: extract_jd_label(
+                (Path("evals/fixtures/synthetic") / slug / "jd.txt").read_text(encoding="utf-8")
+            )
+            for slug in ("data-scientist-junior", "pm-senior", "sre-mid-level")
+        }
+        for rec in records:
+            assert "jd_label" in rec, rec
+            assert rec["jd_label"] == expected_by_fixture[rec["fixture"]]
+        assert any(r.get("status") == "scenario_misaligned" for r in records)
+
+    def test_pipeline_error_record_carries_jd_label(self, tmp_path, monkeypatch):
+        """generate() raising hits the outer pipeline_error record (site :1299)."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+        from hardening import extract_jd_label
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+
+        def boom(*a, **k):
+            raise RuntimeError("simulated generate failure")
+
+        monkeypatch.setattr(runner, "generate", boom)
+        result = run_suite(
+            suite="synthetic",
+            subset="smoke",
+            fixture_name="sre-mid-level",
+            out_dir=tmp_path,
+            client=MagicMock(),
+        )
+        records = self._records(result.out_path)
+        assert records
+        assert all(r["status"] == "pipeline_error" for r in records)
+        jd_text = Path("evals/fixtures/synthetic/sre-mid-level/jd.txt").read_text(encoding="utf-8")
+        for rec in records:
+            assert rec["jd_label"] == extract_jd_label(jd_text)
+
+    def test_clarify_failure_record_carries_jd_label(self, tmp_path, monkeypatch):
+        """clarify() raising is non-fatal; the clarification_quality rubric's
+        skip-the-judge record (site :1488) still carries jd_label."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+        from hardening import extract_jd_label
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+
+        def boom(*a, **k):
+            raise RuntimeError("simulated clarify failure")
+
+        monkeypatch.setattr(runner, "clarify", boom)
+        result = run_suite(
+            suite="synthetic",
+            subset="full",
+            fixture_name="sre-mid-level",
+            out_dir=tmp_path,
+            client=MagicMock(),
+        )
+        records = self._records(result.out_path)
+        cq = [r for r in records if r["rubric"] == "clarification_quality"]
+        assert len(cq) == 1
+        assert cq[0]["status"] == "pipeline_error"
+        jd_text = Path("evals/fixtures/synthetic/sre-mid-level/jd.txt").read_text(encoding="utf-8")
+        assert cq[0]["jd_label"] == extract_jd_label(jd_text)
+
+    def test_jd_label_absent_from_judge_payload(self, tmp_path, monkeypatch):
+        """Anti-regression for the highest-risk mistake in this change: jd_label
+        must never reach the material sent to the judge, or baseline_v1.json's
+        scores silently stop being comparable."""
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        captured_payloads: list[dict] = []
+
+        def spying_grade(client, rubric_path, payload, **k):
+            captured_payloads.append(payload)
+            return {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"}
+
+        monkeypatch.setattr(runner, "_grade", spying_grade)
+        run_suite(suite="synthetic", subset="full", out_dir=tmp_path, client=MagicMock())
+
+        assert captured_payloads  # sanity
+        for payload in captured_payloads:
+            assert "jd_label" not in payload
+
+    def test_fixture_hash_is_bytes_only(self, tmp_path, monkeypatch):
+        """jd_label must never enter fixture_hash — it stays a pure function of
+        file bytes so existing baseline joins hold."""
+        import hashlib
+
+        from evals.runner import _load_fixture
+
+        fixture_dir = Path("evals/fixtures/synthetic/sre-mid-level")
+        loaded = _load_fixture(fixture_dir)
+
+        h = hashlib.sha256()
+        h.update((fixture_dir / "jd.txt").read_bytes())
+        h.update((fixture_dir / "resume.md").read_bytes())
+        h.update((fixture_dir / "expected.json").read_bytes())
+        assert loaded["hash"] == h.hexdigest()
