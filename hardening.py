@@ -342,6 +342,22 @@ _COMPANY_PATTERNS = (
     re.compile(rf"^({_CAP_SEQ})[ \t]*[—–-]+[ \t]", re.MULTILINE),
 )
 
+# extract_jd_label constants (F-14). Kept separate from the extract_company_terms
+# patterns above so that function's eval-scoring behavior (compute_keyword_overlap,
+# baselined in baseline_v1.json) never shifts as a side effect of tuning the label.
+_LABEL_HEADER_LINES = 6  # identity lives at the top; further down is duty prose
+_LABEL_MAX_CHARS = 120  # bound so a pathological line can't bloat a JSONL/SSE frame
+
+_LABEL_FIELD_TITLE = re.compile(r"^(?:job\s+)?title\s*[:：]\s*(.+)$", re.IGNORECASE)
+_LABEL_FIELD_COMPANY = re.compile(
+    r"^(?:company|employer|organi[sz]ation)\s*[:：]\s*(.+)$", re.IGNORECASE
+)
+_LABEL_TITLE_AT_COMPANY = re.compile(
+    rf"^(?P<title>.{{2,}}?)[ \t]+(?:at|@)[ \t]+(?P<company>{_CAP_SEQ})$"
+)
+# Separator needs whitespace on BOTH sides so "Full-Stack Engineer" never splits.
+_LABEL_SEPARATOR = re.compile(r"^(?P<left>.+?)[ \t]+[—–|-][ \t]+(?P<right>.+)$")
+
 # Standard ATS-friendly section headings
 ATS_HEADINGS = {
     "summary",
@@ -480,6 +496,11 @@ def extract_company_terms(jd_text: str) -> frozenset[str]:
     are rejected outright (title lines share the header zone with the
     company line). Returns lowercased terms; any miss simply leaves the
     score at prior behavior (fail-open).
+
+    Sibling: `extract_jd_label` below reuses these same constants for a
+    display-cased (title, company) identification label, but is a separate
+    scan — this function feeds `compute_keyword_overlap` and is baselined in
+    `evals/baseline_v1.json`; do not merge the two or its scores will shift.
     """
     if not jd_text:
         return frozenset()
@@ -505,6 +526,167 @@ def extract_company_terms(jd_text: str) -> frozenset[str]:
             continue
         terms.add(" ".join(words))
     return frozenset(terms)
+
+
+def _label_clean(s: str) -> str:
+    """Collapse whitespace and strip separator cruft/length for a label field."""
+    cleaned = re.sub(r"\s+", " ", s or "").strip().strip(" ,;|-–—")
+    return cleaned[:_LABEL_MAX_CHARS].strip()
+
+
+def _label_words(s: str) -> list[str]:
+    return [w for w in (t.lower().strip(".,") for t in s.split()) if w and w != "&"]
+
+
+def _label_is_header_ish(line: str) -> bool:
+    """True for a plausible header/title line; false for JD body prose."""
+    if not line or len(line) > _LABEL_MAX_CHARS or line[-1] in ".!?:":
+        return False
+    if ". " in line or len(line.split()) > 14 or line[0] in "-*•":
+        return False
+    first = line.split()[0].lower().strip(".,:")
+    return first not in JD_BOILERPLATE_WORDS and first not in STOP_WORDS
+
+
+def _label_is_company_like(cand: str) -> bool:
+    """Same rejection `extract_company_terms` applies above — no title/boilerplate words."""
+    words = _label_words(cand)
+    if not words or any(w in _TITLE_NOUNS or w in JD_BOILERPLATE_WORDS for w in words):
+        return False
+    return any(w not in _COMPANY_NOISE and w not in STOP_WORDS for w in words)
+
+
+def extract_jd_label(jd_text: str) -> dict[str, str]:
+    """Best-effort deterministic (title, company) identification for a JD posting.
+
+    F-14: bootstrap/eval artifacts (bootstrap.json, annotations.json,
+    evals/results/*.jsonl) had nothing naming the job posting a run graded —
+    only a filename or content hash. This derives a display-cased label from
+    the JD's own header (its first `_LABEL_HEADER_LINES` non-blank lines only —
+    never the body, so it stays cheap and never picks up a duty-bullet company
+    mention). Deliberately body-text-derived rather than filename-derived:
+    `jd_file` is `secure_filename(user-typed)` in the browser bootstrap path or
+    a bare filename in the CLI path — neither reliably names the posting, but
+    the posting's own text does.
+
+    Title resolves before company (company-first misreads a title with no
+    recognized title noun, e.g. "Machine Learning Practitioner", as a company).
+    Each field is independently `""` on a miss — this is descriptive metadata,
+    not a correctness signal, so it is **fail-open by design** and must never
+    feed a fail-closed check (see `ensure_anchor_covered_by_annotations`,
+    which stays keyed on `jd_file`, not this label — two different JDs at the
+    same company would trivially "agree" on a label).
+
+    Known limits, accepted because a wrong-but-present label still identifies
+    the run: ASCII-only capitalization detection (non-Latin company names miss
+    on company; title still resolves independently), and a multi-word title
+    with no word from the curated title-noun list can be misread as a company
+    (see above). Returns `{"title": "", "company": ""}` on empty input; never
+    raises.
+    """
+    if not jd_text:
+        return {"title": "", "company": ""}
+    lines = [ln.strip() for ln in jd_text.splitlines() if ln.strip()][:_LABEL_HEADER_LINES]
+    if not lines:
+        return {"title": "", "company": ""}
+
+    title = ""
+    company = ""
+    claimed: set[int] = set()
+
+    # Phase A — explicit labeled fields ("Job Title:" / "Company:"), the
+    # unambiguous case (ATS/board exports).
+    for i, line in enumerate(lines):
+        if not title:
+            m = _LABEL_FIELD_TITLE.match(line)
+            if m:
+                title = _label_clean(m.group(1))
+                claimed.add(i)
+                continue
+        if not company:
+            m = _LABEL_FIELD_COMPANY.match(line)
+            if m:
+                company = _label_clean(m.group(1))
+                claimed.add(i)
+
+    # Phase B — "<title> at <Company>" on one line; fills both from one match.
+    if not title or not company:
+        for i, line in enumerate(lines):
+            if i in claimed:
+                continue
+            m = _LABEL_TITLE_AT_COMPANY.match(line)
+            if m and _label_is_company_like(m.group("company")):
+                if not title:
+                    title = _label_clean(m.group("title"))
+                if not company:
+                    company = _label_clean(m.group("company"))
+                claimed.add(i)
+                break
+
+    # Phase C — title: first unclaimed header-ish line carrying title vocabulary.
+    if not title:
+        for i, line in enumerate(lines):
+            if i in claimed:
+                continue
+            if _label_is_header_ish(line) and any(w in _TITLE_NOUNS for w in _label_words(line)):
+                title = _label_clean(line)
+                claimed.add(i)
+                break
+
+    # Phase D — company, over unclaimed lines, fixed priority order.
+    if not company:
+        # D.1 — " — "-style split: only the LEFT side is tried as company (the
+        # observed "Company — Location" convention). The right side is deliberately
+        # NOT tried as a company fallback — for a non-ASCII company name the left
+        # fails _CAP_SEQ (ASCII-only), and a location on the right (e.g. "Ørsted
+        # — Copenhagen") would otherwise be misread as the company: a wrong pick
+        # is worse than the documented miss-stays-blank contract.
+        for i, line in enumerate(lines):
+            if i in claimed:
+                continue
+            m = _LABEL_SEPARATOR.match(line)
+            if not m:
+                continue
+            left, right = m.group("left").strip(), m.group("right").strip()
+            if re.fullmatch(_CAP_SEQ, left) and _label_is_company_like(left):
+                company = _label_clean(left)
+                claimed.add(i)
+                break
+            # Left isn't a company; if a title isn't set yet and either side
+            # reads as one, take it — still bounded to this claimed line.
+            if not title:
+                for side in (left, right):
+                    if _label_is_header_ish(side) and any(
+                        w in _TITLE_NOUNS for w in _label_words(side)
+                    ):
+                        title = _label_clean(side)
+                        claimed.add(i)
+                        break
+    if not company:
+        # D.2 — a line that IS a short capitalized sequence on its own (the
+        # classic "Company\nTitle..." paste shape).
+        for i, line in enumerate(lines):
+            if i in claimed:
+                continue
+            if re.fullmatch(_CAP_SEQ, line) and _label_is_company_like(line):
+                company = _label_clean(line)
+                claimed.add(i)
+                break
+    if not company:
+        # D.3 — the same signal phrases extract_company_terms uses, scoped to
+        # the header zone only (never the JD body).
+        header_text = "\n".join(lines)
+        for pattern in _COMPANY_PATTERNS:
+            m = pattern.search(header_text)
+            if m and _label_is_company_like(m.group(1)):
+                company = _label_clean(m.group(1))
+                break
+
+    # Phase E — title fallback: line 1, if still unclaimed and header-ish.
+    if not title and 0 not in claimed and _label_is_header_ish(lines[0]):
+        title = _label_clean(lines[0])
+
+    return {"title": title, "company": company}
 
 
 def compute_keyword_overlap(

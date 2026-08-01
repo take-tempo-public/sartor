@@ -502,9 +502,13 @@ representatives against the corpus source as a second, model-based check.
   "prompt_version": "<PROMPT_VERSION at run time>",
   "jaccard_threshold": 0.75,
   "jd_count": 3,
+  "jd_labels": [
+    {"jd_file": "kafka-backend.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"}
+  ],
   "per_jd": [
     {
       "jd_file": "kafka-backend.txt",
+      "jd_label": {"title": "Senior Backend Engineer", "company": "Acme Robotics"},
       "run_id": "…",
       "analysis": { },
       "clarification_questions": [{"id": "", "text": "", "kind": ""}],
@@ -527,6 +531,14 @@ representatives against the corpus source as a second, model-based check.
 
 The output lives under the gitignored `evals/fixtures/real/` tree (it carries
 real PII); a `_within` write-path guard refuses to emit it anywhere else.
+
+`jd_label` (F-14) is a best-effort, deterministic `(title, company)`
+identification of the posting, derived from `jd.txt`'s own header text via
+`hardening.extract_jd_label` — so a human doesn't have to open raw JD prose to
+know what a run covered. `jd_labels` is a top-level projection of every
+`per_jd[].jd_label`, for glanceability without scrolling past the
+analysis/résumé blobs. Descriptive only — never a substitute for `jd_file`
+identity checks.
 
 ---
 
@@ -596,8 +608,12 @@ reusing the existing rubric vocabulary (`jd_pandering`, `invented_metric`,
 {
   "annotation_schema_version": 1,
   "bootstrap_source": "<path to the bootstrap.json this annotates>",
+  "bootstrap_fingerprint": "<sha256[:12] of bootstrap_source's content at template-build time>",
   "candidate_username": "<carried from bootstrap.json>",
   "prompt_version": "<carried — what was annotated>",
+  "jd_labels": [
+    {"jd_file": "a.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"}
+  ],
   "bullets": [
     {
       "cluster_index": 0,                  // index into dedup.bullets.clusters
@@ -633,14 +649,23 @@ unknown `failed_rules` slug, a `fix` without an `honest_rewrite`, or a
 half-collated. A freshly emitted template (blank verdicts) is intentionally
 invalid until you fill it in.
 
+`bootstrap_fingerprint` (item 13) content-verifies the `bootstrap_source` pin at
+read time — collate refuses to trust a path whose target was silently
+overwritten in place, instead of trusting path-existence alone. `jd_labels`
+(F-14) is carried straight through from the bootstrap doc — never
+re-derived — so a human opening this file sees every JD's identity without
+cross-referencing `bootstrap_source`.
+
 ### What collation produces
 
 - **`evals/fixtures/real/<slug>/expected.json`** — the exact field set
   `_load_fixture` reads: `candidate_name`, `must_keywords` (lowercased
   `keep`-skill reps), `forbidden_inventions` (the `fabricated` patterns, regex
-  case preserved), `min_*_score` (from `min_scores` or the README defaults), and a
-  provenance `notes` stamp. Plus the anchor `jd.txt`, so the fixture runs under
-  `--suite real --seed`.
+  case preserved), `min_*_score` (from `min_scores` or the README defaults), a
+  provenance `notes` stamp, and `jd_label` (F-14) — the anchor JD's own
+  `(title, company)`, resolved by matching the anchor's `jd_file` against the
+  bootstrap doc's `jd_labels`. Plus the anchor `jd.txt`, so the fixture runs
+  under `--suite real --seed`.
 - **`evals/fixtures/real/<candidate>/improvement_brief.md`** — fabrication
   patterns (widest-JD-span first), `fix` rewrites as `NOT OK → OK` worked-example
   seeds, omissions, clarification ratings (weakest first), and a **scorer
@@ -808,15 +833,16 @@ To include a new rubric in the smoke subset, edit `_select_rubrics()` in `evals/
 
 ## Interpreting results
 
-Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
+Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "score_max": 5.0,
   "timestamp": "2026-05-09T23:46:57.472+00:00",
   "source": "eval",
   "fixture": "data-scientist-junior",
+  "jd_label": {"title": "Junior Data Scientist", "company": "Borealis Labs"},
   "rubric": "grounding",
   "score": 4.8,
   "reasons": [
@@ -827,24 +853,36 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
   "failed_rules": [],
   "status": "ok",
   "prompt_version": "2026-05-09.1",
+  "run_id": "a1b2c3d4e5f6",
   "deterministic_metrics": {
     "verb_diversity":      {"unique_verbs": 12, "total_bullets": 12, "diversity_ratio": 1.0,  "top_repeated": []},
     "specificity_density": {"total_bullets": 12, "bullets_with_metric": 1, "density": 0.083, "metric_count": 1},
     "grounding_overlap":   {"overlap_ratio": 0.21, "matched_ngrams": 138, "total_ngrams": 664, "missing_samples": ["..."], "n": 3}
   },
   "cost_usd": 0.1179,
-  "pipeline_latency_ms": 130212
+  "pipeline_latency_ms": 130212,
+  "anchor_version": "anchor-v1",
+  "suite": "synthetic",
+  "fixture_hash": "9f8e7d6c5b4a3210…",
+  "rubric_version": "2026-05-09.1",
+  "model_snapshots": {"sonnet": "claude-sonnet-5", "haiku_judge": "claude-haiku-4-5-20251001"},
+  "baseline_comparison": {"prev_score": 4.6, "delta": 0.2, "is_regression": false, "is_improvement": true},
+  "phase_latencies_ms": {"analyze": 4200, "clarify": 2100, "generate": 5300},
+  "grounding_signals": null,
+  "eval_mode": "generate"
 }
 ```
 
 | Field | Meaning |
 |---|---|
-| `schema_version` | `1` = legacy integer-score records; `2` = float-score records with deterministic_metrics. Dashboard normalizes both. |
+| `schema_version` | `1` = legacy integer-score records; `2` = float-score records with deterministic_metrics; `3` = adds `fixture_hash`/`anchor_version`/`suite`/`rubric_version`/`model_snapshots`/`baseline_comparison`/`phase_latencies_ms`/`grounding_signals`. Dashboard normalizes all three. |
 | `score_max` | Always `5.0` for current rubrics; here for forward-compat if a future rubric adopts a different scale. |
+| `fixture` | The fixture directory's basename — a slug, not the JD's identity. See `jd_label`. |
+| `jd_label` | (F-14) Best-effort `{title, company}` naming the job posting this run graded — derived deterministically from `jd.txt`'s header via `hardening.extract_jd_label`. Blank fields on a miss; never gates anything. |
 | `score` | 0.0–5.0 per the rubric's scale. Compared against `expected.json:min_{rubric}_score` |
 | `reasons` | Specific quoted evidence the judge cited. Each reason should reference a phrase from the generated artifact |
 | `failed_rules` | Machine-friendly slugs from the rubric's vocabulary. Useful for grepping across many runs |
-| `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw) |
+| `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw), `scenario_misaligned` (iteration_quality's scripted edit didn't land this run) |
 | `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. |
 | `eval_mode` | `"generate"` (default — `analyzer.generate()`, the LLM path) or `"assemble"` (F-11 — the deterministic Compose → freeze → assemble path). See [Assembled runs](#assembled-runs---mode-assemble-f-11). `assemble`-mode records always carry `baseline_comparison: null` and are excluded from the regression gate. |
 | `run_id` | 12-hex UUID shared by the analyze + generate calls that produced this output. Match against `logs/llm_calls.jsonl` to find the specific LLM calls behind any graded result. |
@@ -853,6 +891,14 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 2):
 | `deterministic_metrics.grounding_overlap` | 3-gram overlap between generated and source. **`missing_samples`** is the actionable signal for fabrication detection, not the ratio. See `hardening.compute_grounding_overlap`. |
 | `cost_usd` | Sum of all `analyze` + `generate` calls for this fixture, derived from `logs/llm_calls.jsonl` via `hardening.compute_call_cost`. |
 | `pipeline_latency_ms` | End-to-end pipeline time excluding judge calls. |
+| `anchor_version` | Which `evals/anchors/` snapshot this run graded against (`suite="anchor"` runs only carry a real value; otherwise the current fixture tree). |
+| `suite` | `"synthetic"`, `"real"`, `"anchor"`, or `"exploration"` — which fixture tree produced this fixture. |
+| `fixture_hash` | sha256 of `jd.txt` + resume file + `expected.json` bytes — pins exactly which fixture content this record graded. Never includes `jd_label` (label derivation must not change what a rerun would hash). |
+| `rubric_version` | The rubric file's own version marker, if the rubric declares one; `null` otherwise. |
+| `model_snapshots` | The Sonnet/Haiku model IDs in effect for this run — `hardening.MODEL_PRICING`'s keys, so a cost figure can always be traced to the pricing that produced it. |
+| `baseline_comparison` | `null` for `assemble` mode or when no prior baseline exists; otherwise `{prev_score, delta, is_regression, is_improvement}` against `baseline_v1.json`. |
+| `phase_latencies_ms` | Per-phase wall-clock breakdown (`analyze`/`clarify`/`generate`/…) of `pipeline_latency_ms`. |
+| `grounding_signals` | `null` unless the run used `--grounding-signals`; otherwise the MiniCheck/NLI scorer output for this fixture. |
 
 The dashboard at `/_dashboard` reads `evals/results/*.jsonl`, normalizes legacy records, and renders four aggregations described in [How to read the dashboard](#how-to-read-the-dashboard) below.
 

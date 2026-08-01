@@ -443,6 +443,36 @@ class TestTemplate:
         assert t["bootstrap_fingerprint"] == annotation.fingerprint(bootstrap_path)
         assert t["bootstrap_fingerprint"] != ""
 
+    def test_jd_labels_blank_for_legacy_bootstrap(self) -> None:
+        # _bootstrap_doc() predates F-14 — no top-level jd_labels key at all.
+        t = annotation.build_annotation_template(_bootstrap_doc())
+        assert "jd_labels" not in _bootstrap_doc()
+        assert t["jd_labels"] == []
+
+    def test_jd_labels_carried_through_from_bootstrap(self) -> None:
+        bs = _bootstrap_doc()
+        bs["jd_labels"] = [
+            {"jd_file": "a.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"},
+            {"jd_file": "b.txt", "title": "Frontend Engineer", "company": "Initech"},
+        ]
+        t = annotation.build_annotation_template(bs)
+        assert t["jd_labels"] == bs["jd_labels"]
+
+    def test_template_with_jd_labels_still_validates(self) -> None:
+        """An additive top-level key must not trip the fail-closed validator."""
+        bs = _bootstrap_doc()
+        bs["jd_labels"] = [
+            {"jd_file": "a.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"},
+        ]
+        t = annotation.build_annotation_template(bs)
+        for b in t["bullets"]:
+            b["verdict"] = "keep"
+        for s in t["skills"]:
+            s["verdict"] = "keep"
+        for r in t["clarification_ratings"]:
+            r["rating"] = 3
+        annotation.validate_annotations(t)  # no raise
+
 
 # ---------------------------------------------------------------------------
 # Collation → expected.json fixture (matches _load_fixture's field set).
@@ -489,7 +519,31 @@ class TestCollateExpected:
             "min_tone_score",
             "min_clarification_quality_score",
             "notes",
+            "jd_label",
         }
+
+    def test_jd_label_blank_without_anchor_name(self) -> None:
+        # _bootstrap_doc() predates F-14 (no top-level jd_labels either) — the
+        # anchor-unset AND legacy-doc cases collapse to the same blank result.
+        exp = annotation.collate_expected(_annotations_doc(), _bootstrap_doc())
+        assert exp["jd_label"] == {"title": "", "company": ""}
+
+    def test_jd_label_resolved_from_anchor_name(self) -> None:
+        bs = _bootstrap_doc()
+        bs["jd_labels"] = [
+            {"jd_file": "a.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"},
+            {"jd_file": "b.txt", "title": "Frontend Engineer", "company": "Initech"},
+        ]
+        exp = annotation.collate_expected(_annotations_doc(), bs, anchor_name="a.txt")
+        assert exp["jd_label"] == {"title": "Senior Backend Engineer", "company": "Acme Robotics"}
+
+    def test_jd_label_blank_when_anchor_name_unmatched(self) -> None:
+        bs = _bootstrap_doc()
+        bs["jd_labels"] = [
+            {"jd_file": "a.txt", "title": "Senior Backend Engineer", "company": "Acme Robotics"},
+        ]
+        exp = annotation.collate_expected(_annotations_doc(), bs, anchor_name="missing.txt")
+        assert exp["jd_label"] == {"title": "", "company": ""}
 
     def test_forbidden_inventions_compile(self) -> None:
         import re

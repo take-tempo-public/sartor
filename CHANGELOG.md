@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: JD-identifying metadata in bootstrap/eval artifacts (`feat/jd-provenance-metadata`, item 14)
+
+Eval result records (`evals/results/*.jsonl`) and bootstrap/annotation artifacts
+carried no field naming the job posting a run graded — only a fixture slug or a
+filename. Item 13's fixture (a real case: `jd.txt` was Zoox, `annotations.json`
+was 100% Faros — two different JDs, undetectable without opening raw prose) was
+the concrete motivating case. Added `hardening.extract_jd_label()`, a
+deterministic, header-bound `(title, company)` extractor (sibling to
+`extract_company_terms`, which stays byte-identical to protect its baselined
+eval-scoring behavior). The derived `jd_label` is stamped once per JD in
+`evals/bootstrap.py` (plus a top-level `jd_labels` index), carried through
+`evals/annotation.py`'s annotation template and `expected.json` (resolved for
+the anchor JD), and threaded onto all 7 eval-result record sites in
+`evals/runner.py` — explicitly excluded from the 2 judge-input payloads (would
+have changed graded prompts and silently invalidated `baseline_v1.json`) and
+from `fixture_hash` (must stay a pure function of file bytes). Also surfaced in
+the bootstrap SSE `done` event/log line and the collate route's response/log —
+the collate log now names the anchor JD's label at exactly the moment item 13's
+mismatch would have been visible on sight. No schema-version bumps (additive
+field, mirroring item 13's own `bootstrap_fingerprint` precedent).
+
 ### Fixed: stale smart-landing no longer overrides user navigation (`fix/ux-restore-scroll-y-resource-contention`, item 29)
 
 The user-select handler's async tail (`onUserSelect` → smart landing →

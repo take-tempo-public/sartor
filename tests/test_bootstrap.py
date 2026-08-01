@@ -283,6 +283,7 @@ class TestBuildBootstrapDocument:
             "prompt_version",
             "jaccard_threshold",
             "jd_count",
+            "jd_labels",
             "per_jd",
             "dedup",
             "grounding_signals",
@@ -339,6 +340,35 @@ class TestBuildBootstrapDocument:
         assert doc["dedup"]["bullets"]["cluster_count"] == 3
         assert doc["dedup"]["skills"]["cluster_count"] == 3
 
+    def test_jd_labels_projects_per_jd(self) -> None:
+        """F-14: jd_labels is a pure projection of per_jd, same order, so the
+        top-level summary can never drift from the records it summarizes."""
+        doc = bootstrap.build_bootstrap_document(
+            self._per_jd(),
+            username="alex",
+            seed_path="seed.json",
+            threshold=0.75,
+            corpus_source="CORPUS",
+            grounding_fn=None,
+        )
+        assert [e["jd_file"] for e in doc["jd_labels"]] == [r["jd_file"] for r in doc["per_jd"]]
+        assert len(doc["jd_labels"]) == doc["jd_count"]
+
+    def test_jd_labels_tolerates_records_without_label(self) -> None:
+        # _per_jd() intentionally carries no "jd_label" key — the pre-F-14 shape,
+        # and the shape any hand-built per_jd list in an existing test still has.
+        doc = bootstrap.build_bootstrap_document(
+            self._per_jd(),
+            username="alex",
+            seed_path="seed.json",
+            threshold=0.75,
+            corpus_source="CORPUS",
+            grounding_fn=None,
+        )
+        for entry in doc["jd_labels"]:
+            assert entry["title"] == ""
+            assert entry["company"] == ""
+
 
 class TestPipelineOrchestration:
     def _patch_pipeline(self, monkeypatch, *, clarify_raises: bool = False) -> None:
@@ -388,6 +418,28 @@ class TestPipelineOrchestration:
         assert per_jd[0]["analysis"]["essential_skills"] == ["python"]
         # corpus source captured once from the synthesized résumé (one seed)
         assert "Polaris" in corpus_source
+
+    def test_per_jd_records_carry_jd_label(self, db_session, monkeypatch, tmp_path) -> None:
+        """F-14: jd_label is derived from the JD's own header text, computed
+        once per JD regardless of what the (stubbed) pipeline calls return."""
+        _seed_candidate(db_session)
+        seed = export_seed(db_session, candidate_username="alex")
+        self._patch_pipeline(monkeypatch)
+
+        jd_a = tmp_path / "kafka.txt"
+        jd_a.write_text("Senior Backend Engineer\nAcme Robotics — Remote", encoding="utf-8")
+        jd_b = tmp_path / "frontend.jd"
+        jd_b.write_text("Frontend Engineer\nInitech — Hybrid", encoding="utf-8")
+
+        client = anthropic.Anthropic(api_key="test-key")
+        with seeded_session(seed) as (session, username):
+            per_jd, _src = bootstrap.run_pipeline_over_jds(client, session, username, [jd_a, jd_b])
+
+        assert per_jd[0]["jd_label"] == {
+            "title": "Senior Backend Engineer",
+            "company": "Acme Robotics",
+        }
+        assert per_jd[1]["jd_label"] == {"title": "Frontend Engineer", "company": "Initech"}
 
     def test_clarify_failure_is_non_fatal(self, db_session, monkeypatch, tmp_path) -> None:
         _seed_candidate(db_session)
