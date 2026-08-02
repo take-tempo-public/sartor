@@ -63,6 +63,9 @@ _BULLET_RE = re.compile(r"^-\s+(.+?)\s*$")
 # by ` · ` (sartor. brand), `, `, or one-per-line bullets.
 _SKILLS_SPLIT_RE = re.compile(r"\s*[·•|,]\s+")
 
+_BRACKET_OPEN = "(["
+_BRACKET_CLOSE = ")]"
+
 # ATS character scrub (owner-decided policy, fix/output-identity-and-dates):
 # `[ ] { } " `` (backtick) are stripped outright — ATS parsers routinely choke
 # on stray brackets/braces/quotes/backticks in résumé text. `<` / `>` are
@@ -466,6 +469,42 @@ def _split_h3_header(text: str) -> tuple[str, str, str, str]:
 
 
 # ---------------------------------------------------------------------
+# Shared split primitive — public (also used by evals.bootstrap)
+# ---------------------------------------------------------------------
+
+
+def split_outside_brackets(text: str, delim_re: re.Pattern[str]) -> list[str]:
+    """Split `text` on `delim_re`, ignoring delimiters nested inside `()` / `[]`.
+
+    Used wherever a free-text list (skills, keywords) is comma/pipe/middot-
+    split: a delimiter inside a parenthetical or bracketed group (e.g.
+    "Eval Framework Design (LLM-as-judge, rubric-based)") must not fragment
+    the entry it belongs to. `delim_re` must not contain capturing groups —
+    its pattern is embedded into an internal alternation.
+
+    A stray closing bracket with no matching opener is ignored rather than
+    letting tracked depth go negative (which would otherwise mask every
+    later delimiter). An unclosed opening bracket makes the remainder of
+    `text` one trailing token — the same "give up gracefully" behavior a
+    plain split has on malformed input, just scoped to the tail instead of
+    the whole string.
+    """
+    scan = re.compile(r"(?P<_b>[()\[\]])|(?P<_d>" + delim_re.pattern + r")")
+    parts: list[str] = []
+    start = 0
+    depth = 0
+    for m in scan.finditer(text):
+        bracket = m.group("_b")
+        if bracket:
+            depth = max(0, depth + (1 if bracket in _BRACKET_OPEN else -1))
+        elif depth == 0:
+            parts.append(text[start : m.start()])
+            start = m.end()
+    parts.append(text[start:])
+    return parts
+
+
+# ---------------------------------------------------------------------
 # Skills
 # ---------------------------------------------------------------------
 
@@ -497,7 +536,11 @@ def _parse_skills(body: list[str]) -> list[dict[str, Any]]:
             if ":" in text:
                 # Grouped form
                 group, items = text.split(":", 1)
-                keywords = [k.strip() for k in re.split(r"\s*,\s*", items) if k.strip()]
+                keywords = [
+                    k.strip()
+                    for k in split_outside_brackets(items, re.compile(r"\s*,\s*"))
+                    if k.strip()
+                ]
                 skills.append({"name": group.strip(), "keywords": keywords})
             else:
                 skills.append({"name": text})
@@ -507,7 +550,7 @@ def _parse_skills(body: list[str]) -> list[dict[str, Any]]:
     text = " ".join(line.strip() for line in body if line.strip())
     if not text:
         return []
-    items = [s.strip() for s in _SKILLS_SPLIT_RE.split(text) if s.strip()]
+    items = [s.strip() for s in split_outside_brackets(text, _SKILLS_SPLIT_RE) if s.strip()]
     return [{"name": item} for item in items]
 
 

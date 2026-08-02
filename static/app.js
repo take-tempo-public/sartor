@@ -597,6 +597,29 @@ function _goToCareerCorpusFromSettings() {
   switchTopTab('corpus', document.getElementById('topTabCorpus'));
 }
 
+// Split a comma-separated free-text field into entries, ignoring commas
+// nested inside `()` / `[]` — mirrors json_resume.split_outside_brackets
+// (Python) so "Eval Framework Design (LLM-as-judge, rubric-based)" survives
+// the Settings save round trip as one skill, not two.
+function _splitOutsideBrackets(value) {
+  const parts = [];
+  let start = 0;
+  let depth = 0;
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (ch === '(' || ch === '[') {
+      depth += 1;
+    } else if (ch === ')' || ch === ']') {
+      depth = Math.max(0, depth - 1);
+    } else if (ch === ',' && depth === 0) {
+      parts.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(value.slice(start));
+  return parts;
+}
+
 async function saveConfig() {
   const config = {
     name: document.getElementById('cfgName').value,
@@ -608,8 +631,8 @@ async function saveConfig() {
     ...(currentConfig.included_resumes !== undefined
       ? { included_resumes: currentConfig.included_resumes }
       : {}),
-    skills: document.getElementById('cfgSkills').value.split(',').map(s => s.trim()).filter(Boolean),
-    certifications: document.getElementById('cfgCerts').value.split(',').map(s => s.trim()).filter(Boolean),
+    skills: _splitOutsideBrackets(document.getElementById('cfgSkills').value).map(s => s.trim()).filter(Boolean),
+    certifications: _splitOutsideBrackets(document.getElementById('cfgCerts').value).map(s => s.trim()).filter(Boolean),
     education_summary: document.getElementById('cfgEducation').value,
     notes: document.getElementById('cfgNotes').value,
   };

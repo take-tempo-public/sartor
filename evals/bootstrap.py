@@ -64,6 +64,7 @@ from db.build_context import build_context_set_from_db  # noqa: E402
 from evals.grounding_signals import extract_bullets  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import extract_jd_label  # noqa: E402
+from json_resume import split_outside_brackets  # noqa: E402
 
 if TYPE_CHECKING:
     import anthropic
@@ -193,7 +194,10 @@ def _split_skill_line(line: str) -> list[str]:
     first "skill". The colon is required immediately adjacent to the bold
     close so a genuinely bolded skill token with no label colon (e.g.
     ``**Kubernetes**, Go``) is left untouched. Finally splits on commas /
-    semicolons / pipes / middots. Returns trimmed, non-empty parts.
+    semicolons / pipes / middots, ignoring any that fall inside a
+    parenthetical or bracketed group (e.g. ``Eval Framework Design
+    (LLM-as-judge, rubric-based)`` stays one skill, not two). Returns
+    trimmed, non-empty parts.
     """
     line = re.sub(r"^[-*•]\s+", "", line)
     line = re.sub(
@@ -201,7 +205,7 @@ def _split_skill_line(line: str) -> list[str]:
         "",
         line,
     )
-    return [p.strip() for p in re.split(r"[,;|·•]", line) if p.strip()]
+    return [p.strip() for p in split_outside_brackets(line, re.compile(r"[,;|·•]")) if p.strip()]
 
 
 def _extract_skills(resume_md: str) -> list[str]:

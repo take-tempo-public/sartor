@@ -232,6 +232,74 @@ class TestExtractSkills:
         md = "## Skills\n**Kubernetes**, Go"
         assert bootstrap._extract_skills(md) == ["**Kubernetes**", "Go"]
 
+    def test_skill_with_internal_comma_in_parenthetical_not_split(self) -> None:
+        # item 15: a comma inside a parenthetical must not become a delimiter.
+        md = "## Skills\nEval Framework Design (LLM-as-judge, rubric-based), Go"
+        assert bootstrap._extract_skills(md) == [
+            "Eval Framework Design (LLM-as-judge, rubric-based)",
+            "Go",
+        ]
+
+    def test_multiple_parenthetical_skills_all_preserved(self) -> None:
+        # item 15's own four cited examples, driven through the real entry point.
+        md = (
+            "## Skills\nEval Framework Design (LLM-as-judge, rubric-based), "
+            "Retrieval Systems (hybrid search, reciprocal-rank fusion), "
+            "Cross-Functional Leadership (Engineering, Design, QA), "
+            "Roadmap & KPI Ownership (NPS, engagement, retention)"
+        )
+        assert bootstrap._extract_skills(md) == [
+            "Eval Framework Design (LLM-as-judge, rubric-based)",
+            "Retrieval Systems (hybrid search, reciprocal-rank fusion)",
+            "Cross-Functional Leadership (Engineering, Design, QA)",
+            "Roadmap & KPI Ownership (NPS, engagement, retention)",
+        ]
+
+    def test_bracketed_skill_with_internal_comma_not_split(self) -> None:
+        md = "## Skills\nGo [x, y], Rust"
+        assert bootstrap._extract_skills(md) == ["Go [x, y]", "Rust"]
+
+
+class TestSplitSkillLine:
+    """Direct coverage of `_split_skill_line` — previously only exercised
+    transitively through `_extract_skills`.
+    """
+
+    def test_simple_comma_split_unaffected(self) -> None:
+        assert bootstrap._split_skill_line("Python, Kubernetes, Go") == [
+            "Python",
+            "Kubernetes",
+            "Go",
+        ]
+
+    def test_other_delimiters_still_split_outside_parens(self) -> None:
+        assert bootstrap._split_skill_line("Python; Go | Rust") == [
+            "Python",
+            "Go",
+            "Rust",
+        ]
+
+    def test_comma_inside_parens_preserved(self) -> None:
+        assert bootstrap._split_skill_line(
+            "Eval Framework Design (LLM-as-judge, rubric-based), Go"
+        ) == ["Eval Framework Design (LLM-as-judge, rubric-based)", "Go"]
+
+    def test_nested_parens_preserved(self) -> None:
+        assert bootstrap._split_skill_line("A (b (c, d) e), F") == [
+            "A (b (c, d) e)",
+            "F",
+        ]
+
+    def test_stray_closing_paren_does_not_hide_later_commas(self) -> None:
+        # Robustness against malformed input: a stray `)` must not push the
+        # tracked depth negative and swallow the rest of the line.
+        assert bootstrap._split_skill_line("Python), Go") == ["Python)", "Go"]
+
+    def test_unbalanced_opening_paren_swallows_rest_of_line(self) -> None:
+        # No worse than the pre-fix behavior — a genuinely malformed line still
+        # produces one leftover token rather than raising.
+        assert bootstrap._split_skill_line("Python (advanced, Go") == ["Python (advanced, Go"]
+
 
 class TestBuildBootstrapDocument:
     def _per_jd(self) -> list[dict]:

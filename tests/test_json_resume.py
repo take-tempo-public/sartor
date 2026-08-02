@@ -12,6 +12,8 @@ rather than raising.
 
 from __future__ import annotations
 
+import re
+
 from json_resume import (
     SCHEMA_URI,
     apply_identity_override,
@@ -19,6 +21,7 @@ from json_resume import (
     format_month_year,
     md_to_json_resume,
     scrub_ats_unsafe,
+    split_outside_brackets,
 )
 
 # ---------------------------------------------------------------------
@@ -246,6 +249,66 @@ class TestSkills:
         md = "# Jane Doe\n\n## Skills\n"
         doc = md_to_json_resume(md)
         assert doc["skills"] == []
+
+    def test_comma_inside_parenthetical_not_split(self):
+        # item 15: a comma-list skill whose name itself contains a comma
+        # inside parens must survive as one skill, not fragment.
+        md = (
+            "# Jane Doe\n\n## Skills\n"
+            "Eval Framework Design (LLM-as-judge, rubric-based), "
+            "Retrieval Systems (hybrid search, reciprocal-rank fusion)\n"
+        )
+        doc = md_to_json_resume(md)
+        names = [s["name"] for s in doc["skills"]]
+        assert names == [
+            "Eval Framework Design (LLM-as-judge, rubric-based)",
+            "Retrieval Systems (hybrid search, reciprocal-rank fusion)",
+        ]
+
+    def test_grouped_bullet_form_comma_inside_parenthetical_not_split(self):
+        md = "# Jane Doe\n\n## Skills\n- Languages: Python (3.11, 3.12), Go\n"
+        doc = md_to_json_resume(md)
+        assert doc["skills"][0]["keywords"] == ["Python (3.11, 3.12)", "Go"]
+
+
+# ---------------------------------------------------------------------
+# split_outside_brackets — the shared depth-aware split primitive
+# ---------------------------------------------------------------------
+
+
+class TestSplitOutsideBrackets:
+    def test_no_brackets_behaves_like_plain_split(self):
+        got = split_outside_brackets("a, b, c", re.compile(r",\s*"))
+        assert got == ["a", "b", "c"]
+
+    def test_comma_inside_parens_not_split(self):
+        got = split_outside_brackets(
+            "Eval Framework Design (LLM-as-judge, rubric-based), Go",
+            re.compile(r",\s*"),
+        )
+        assert got == ["Eval Framework Design (LLM-as-judge, rubric-based)", "Go"]
+
+    def test_comma_inside_square_brackets_not_split(self):
+        got = split_outside_brackets("Go [x, y], Rust", re.compile(r",\s*"))
+        assert got == ["Go [x, y]", "Rust"]
+
+    def test_nested_parens(self):
+        got = split_outside_brackets("A (b (c, d) e), F", re.compile(r",\s*"))
+        assert got == ["A (b (c, d) e)", "F"]
+
+    def test_stray_closing_bracket_does_not_go_negative_depth(self):
+        got = split_outside_brackets("Python), Go", re.compile(r",\s*"))
+        assert got == ["Python)", "Go"]
+
+    def test_unbalanced_opening_bracket_swallows_rest_of_string(self):
+        got = split_outside_brackets("Python (advanced, Go", re.compile(r",\s*"))
+        assert got == ["Python (advanced, Go"]
+
+    def test_whitespace_required_delimiter_pattern_is_honored(self):
+        # json_resume's single-paragraph pattern requires trailing whitespace —
+        # the shared helper must not override a caller's own delimiter semantics.
+        got = split_outside_brackets("a,b", re.compile(r"\s*[·•|,]\s+"))
+        assert got == ["a,b"]
 
 
 # ---------------------------------------------------------------------
