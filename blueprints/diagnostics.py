@@ -261,6 +261,7 @@ def annotation_fixtures() -> ResponseReturnValue:
                     "candidate_username": doc.get("candidate_username", ""),
                     "prompt_version": doc.get("prompt_version", ""),
                     "jd_count": doc.get("jd_count", 0),
+                    "jd_labels": doc.get("jd_labels", []),
                     "bullet_clusters": (dedup.get("bullets", {}) or {}).get("cluster_count", 0),
                     "skill_clusters": (dedup.get("skills", {}) or {}).get("cluster_count", 0),
                     "has_annotations": (entry / "annotations.json").exists(),

@@ -98,7 +98,7 @@
     .detail-body .chart-box canvas { max-height: 300px; }
     /* The Calls (throughput) detail is the widest table; wrap its cells so it
        can never reintroduce a horizontal scrollbar on a narrow viewport. */
-    .detail[data-detail="throughput"] td { word-break: break-word; }
+    .detail[data-detail="throughput"] td, .detail[data-detail="recent"] td { word-break: break-word; }
 
     /* Tables (scoped) */
     .cb-dash table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
@@ -117,6 +117,10 @@
     table.heatmap th { background: var(--bg-2); color: var(--brand); font-weight: 500; }
     table.heatmap td.cell { color: #fff; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
     table.heatmap td.cell.empty { color: var(--fg-2); background: var(--bg-2) !important; font-style: italic; }
+    /* F-14 JD label gloss (heatmap header + baseline-health fixture cell).
+       max-width/ellipsis is load-bearing: table.heatmap is width:auto with no
+       overflow-x wrapper, so an unclamped label would inflate every column. */
+    .jd-label { display: block; font-size: 0.72rem; color: var(--fg-2); font-weight: 400; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* Trace waterfall */
     .wf-row { display: grid; grid-template-columns: 9rem 1fr 5rem; align-items: center; gap: 0.6rem; padding: 0.2rem 0; font-size: 0.8rem; }
@@ -370,6 +374,11 @@
       <span class="k">pareto verdict</span>
       <span class="v" style="font-size:1rem">{% if pareto.summary %}<span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span>{% else %}—{% endif %}</span>
       <span class="sub">{% if pareto.summary %}{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}{% else %}needs ≥2 versions{% endif %}</span>
+    </button>
+    <button class="tile" data-detail="recent" data-title="Recent eval records">
+      <span class="k">recent evals</span>
+      <span class="v">{{ eval_results|length }}</span>
+      <span class="sub">fixture · rubric · score, newest first</span>
     </button>
   </div>
   {% endif %}
@@ -818,7 +827,7 @@
       <thead><tr><th>fixture</th><th>rubric</th><th class="num">score</th><th class="num">baseline</th><th class="num">Δ</th><th>status</th></tr></thead>
       <tbody>
       {% for row in baseline_health.rows %}
-        <tr><td>{{ row.fixture }}</td><td>{{ row.rubric }}</td><td class="num">{{ "%.2f"|format(row.score) }}</td>
+        <tr><td>{{ row.fixture }}{% set lbl = fixture_labels.get(row.fixture) %}{% if lbl %}<span class="jd-label" title="{{ lbl }}">{{ lbl }}</span>{% endif %}</td><td>{{ row.rubric }}</td><td class="num">{{ "%.2f"|format(row.score) }}</td>
           <td class="num">{{ "%.2f"|format(row.baseline_mean) }}</td>
           <td class="num {% if row.delta < 0 %}fail{% endif %}">{{ "%+.2f"|format(row.delta) }}</td>
           <td><span class="badge {{ row.status }}">{{ row.status }}</span></td></tr>
@@ -848,7 +857,7 @@
   <div class="detail" data-detail="heatmap">
     {% if heatmap.fixtures %}
     <table class="heatmap">
-      <thead><tr><th>rubric \ fixture</th>{% for f in heatmap.fixtures %}<th>{{ f }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th>rubric \ fixture</th>{% for f in heatmap.fixtures %}<th>{{ f }}{% set lbl = fixture_labels.get(f) %}{% if lbl %}<span class="jd-label" title="{{ lbl }}">{{ lbl }}</span>{% endif %}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for row in heatmap.rows %}
         <tr><th>{{ row.rubric }}</th>
@@ -890,6 +899,26 @@
     <div class="chart-box"><canvas id="chart-latency-trend" data-chart="latency-trend"></canvas></div>
     <div class="chart-box"><canvas id="chart-cost-trend" data-chart="cost-trend"></canvas></div>
     {% else %}<p class="empty">No <code class="short">eval_composite</code> records yet. Run <code class="short">python evals/runner.py --suite anchor</code>.</p>{% endif %}
+  </div>
+
+  <div class="detail" data-detail="recent">
+    <p class="legend">Most recent 200 eval records, newest first.</p>
+    {% if eval_results %}
+    <table>
+      <thead><tr><th>timestamp</th><th>fixture</th><th>jd label</th><th>rubric</th><th class="num">score</th><th>prompt v</th><th>run</th><th>status</th><th>failed rules</th></tr></thead>
+      <tbody>
+      {% for r in eval_results %}
+        <tr>
+          <td>{{ r.timestamp }}</td><td>{{ r.fixture }}</td><td>{{ r.jd_label_display }}</td><td>{{ r.rubric }}</td>
+          <td class="num {% if r.score is none %}{% elif r.score >= 4.0 %}pass{% else %}fail{% endif %}">{{ "%.1f"|format(r.score) if r.score is not none else "—" }}</td>
+          <td>{{ r.prompt_version }}</td><td><code class="short">{{ r.run_id or "—" }}</code></td>
+          <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
+          <td>{{ (r.failed_rules or [])|join(", ") }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="empty">No eval records.</p>{% endif %}
   </div>
 
   <div class="detail" data-detail="groundedness">
@@ -1714,6 +1743,24 @@
   }
 
   // ---- fixtures ----
+  // F-14 JD label join, shared by the fixture dropdown and the collate result
+  // (renderCollateResult). Mirrors _jd_label_display (dashboard/routes.py) —
+  // the payload crosses the wire as JSON so this can't be a single Python rule.
+  function jdLabelText(l) {
+    return (l && [l.title, l.company].filter(Boolean).join(' · ')) || '';
+  }
+
+  // A bootstrap can cover >1 JD (jd_labels is a list); there is no single
+  // "the" identity to show until an anchor is resolved at collate time, so a
+  // multi-JD fixture gets a count + names rather than singling one out.
+  function jdLabelsSummary(labels) {
+    if (!labels || !labels.length) return '';
+    if (labels.length === 1) return jdLabelText(labels[0]);
+    var names = labels.map(function (l) { return (l && (l.company || l.title)) || '?'; });
+    var extra = names.length > 2 ? ', +' + (names.length - 2) : '';
+    return labels.length + ' JDs: ' + names.slice(0, 2).join(', ') + extra;
+  }
+
   function loadFixtures() {
     return fetch(API + '/fixtures').then(jsonRes).then(function (res) {
       var sel = $('fixtureSelect'); var cur = sel.value;
@@ -1721,7 +1768,8 @@
       var list = (res.d && res.d.fixtures) || [];
       list.forEach(function (f) {
         var o = el('option'); o.value = f.slug; o.dataset.candidate = f.candidate_username || '';
-        o.textContent = f.slug + ' (' + f.bullet_clusters + 'b / ' + f.skill_clusters + 's' + (f.has_annotations ? ' · annotated' : '') + ')';
+        var label = jdLabelsSummary(f.jd_labels);
+        o.textContent = f.slug + ' (' + f.bullet_clusters + 'b / ' + f.skill_clusters + 's' + (f.has_annotations ? ' · annotated' : '') + ')' + (label ? ' — ' + label : '');
         sel.appendChild(o);
       });
       $('fixtureEmpty').hidden = list.length > 0;
@@ -1881,6 +1929,10 @@
   function renderCollateResult(d) {
     var box = $('annCollateResult'); if (!box) return;
     box.hidden = false; box.innerHTML = '';
+    // Item 32: name the anchor JD right here, next to its filename — this is
+    // the exact moment item 13's Zoox/Faros mismatch became durable.
+    var anchorLabel = jdLabelText(d.anchor_jd_label);
+    if (anchorLabel) box.appendChild(el('div', 'sub', 'Anchor JD: ' + anchorLabel));
     if (d.run_command) {
       box.appendChild(el('div', 'sub', 'Run from a terminal:'));
       var cmd = el('code', 'short'); cmd.textContent = d.run_command; box.appendChild(cmd);

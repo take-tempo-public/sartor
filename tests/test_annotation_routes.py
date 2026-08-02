@@ -154,6 +154,23 @@ class TestFixturesList:
         assert f["bullet_clusters"] == 2
         assert f["skill_clusters"] == 1
         assert f["has_annotations"] is False
+        # Item 32 (F-14 dashboard rendering): key present even on a doc that
+        # predates jd_labels, so the JS never sees `undefined`.
+        assert f["jd_labels"] == []
+
+    def test_jd_labels_echoed_verbatim_from_bootstrap(self, ann_app):
+        # Item 32: the route must not re-derive a label — it echoes whatever
+        # the bootstrap doc already carries, same contract as the SSE `done`
+        # event (blueprints/diagnostics.py) and build_annotation_template
+        # (evals/annotation.py).
+        fixture_dir, doc = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
+        doc["jd_labels"] = [{"jd_file": "jd1.txt", "title": "Senior PM", "company": "Acme"}]
+        (fixture_dir / "bootstrap.json").write_text(json.dumps(doc), encoding="utf-8")
+        client = ann_app.app.test_client()
+        resp = client.get("/api/annotation/fixtures")
+        assert resp.status_code == 200
+        f = resp.get_json()["fixtures"][0]
+        assert f["jd_labels"] == [{"jd_file": "jd1.txt", "title": "Senior PM", "company": "Acme"}]
 
     def test_empty_when_no_fixtures(self, ann_app):
         client = ann_app.app.test_client()

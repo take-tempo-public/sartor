@@ -26,6 +26,7 @@ _BOOTSTRAP = {
     "prompt_version": "2026-06-06.1",
     "jaccard_threshold": 0.75,
     "jd_count": 1,
+    "jd_labels": [{"jd_file": "jd1.txt", "title": "Senior PM", "company": "Acme Robotics"}],
     "per_jd": [
         {
             "jd_file": "jd1.txt",
@@ -93,8 +94,12 @@ def test_annotation_tab_save_and_collate(page: Page, live_server: str, ux_app: M
     dash.activate_tab("annotate")
     expect(dash.active_pane("annotate")).to_be_visible()
 
-    # The seeded bootstrap shows up in the picker (blank option + the fixture).
+    # The seeded bootstrap shows up in the picker (blank option + the fixture),
+    # its option text naming the JD (item 32, F-14).
     expect(dash.fixture_select().locator("option")).to_have_count(2)
+    expect(dash.fixture_select().locator("option").nth(1)).to_contain_text(
+        "Senior PM · Acme Robotics"
+    )
     dash.select_fixture("alice-bootstrap")
 
     # Editor renders the two bullet clusters + one skill cluster.
@@ -111,12 +116,15 @@ def test_annotation_tab_save_and_collate(page: Page, live_server: str, ux_app: M
     expect(dash.status()).to_contain_text("Saved")
     assert (fixture_dir / "annotations.json").exists()
 
-    # Collate → expected.json + improvement_brief.md + jd.txt.
+    # Collate → expected.json + improvement_brief.md + jd.txt, and the anchor
+    # JD's identity rendered right next to the result (item 32, F-14) — the
+    # exact moment item 13's Zoox/Faros mismatch would have been visible.
     dash.collate()
     expect(dash.status()).to_contain_text("Collated")
     assert (fixture_dir / "expected.json").exists()
     assert (fixture_dir / "improvement_brief.md").exists()
     assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior PM JD body."
+    expect(page.locator("#annCollateResult")).to_contain_text("Senior PM · Acme Robotics")
 
 
 @pytest.mark.ux

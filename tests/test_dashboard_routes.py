@@ -7,6 +7,7 @@ when no eval results exist (graceful degradation).
 
 from __future__ import annotations
 
+import json
 from typing import ClassVar
 
 import pytest
@@ -16,7 +17,9 @@ from dashboard.routes import (
     _cost_by_call_kind,
     _dedup_by_run,
     _failure_mode_frequency,
+    _fixture_jd_labels,
     _groundedness_trend,
+    _jd_label_display,
     _latest_groundedness_detail,
     _pareto_data,
     _per_rubric_pass_rate,
@@ -221,6 +224,79 @@ class TestRubricFixtureHeatmap:
         out = _rubric_fixture_heatmap(records)
         cell = out["rows"][0]["cells"][0]
         assert cell["score"] is None
+
+
+class TestJdLabelDisplay:
+    def test_both_fields(self):
+        assert _jd_label_display({"title": "Senior PM", "company": "Acme"}) == "Senior PM · Acme"
+
+    def test_company_only(self):
+        assert _jd_label_display({"title": "", "company": "Acme"}) == "Acme"
+
+    def test_title_only(self):
+        assert _jd_label_display({"title": "Senior PM", "company": ""}) == "Senior PM"
+
+    def test_both_blank(self):
+        assert _jd_label_display({"title": "", "company": ""}) == ""
+
+    def test_none(self):
+        assert _jd_label_display(None) == ""
+
+    def test_non_dict_string(self):
+        # A malformed record could carry jd_label as a bare string. Without the
+        # isinstance guard, Jinja's `.title` would resolve to str.title (a
+        # method), not a KeyError — this must degrade to "", not crash or leak
+        # a bound-method repr into the page.
+        assert _jd_label_display("Acme") == ""
+
+    def test_whitespace_only_fields(self):
+        assert _jd_label_display({"title": "  ", "company": " "}) == ""
+
+    def test_missing_keys(self):
+        assert _jd_label_display({}) == ""
+
+
+class TestFixtureJdLabels:
+    def test_most_recent_non_blank_wins_over_newer_blank(self):
+        records = [
+            {
+                "fixture": "A",
+                "jd_label": {"title": "Senior PM", "company": "Acme"},
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "fixture": "A",
+                "jd_label": {"title": "", "company": ""},
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
+        ]
+        assert _fixture_jd_labels(records) == {"A": "Senior PM · Acme"}
+
+    def test_newer_label_evicts_older_label(self):
+        records = [
+            {
+                "fixture": "A",
+                "jd_label": {"title": "", "company": "Acme"},
+                "timestamp": "2026-05-01T00:00:00Z",
+            },
+            {
+                "fixture": "A",
+                "jd_label": {"title": "", "company": "Initech"},
+                "timestamp": "2026-05-09T00:00:00Z",
+            },
+        ]
+        assert _fixture_jd_labels(records) == {"A": "Initech"}
+
+    def test_records_without_jd_label_key_do_not_raise(self):
+        # The raw dict shape every other test class in this file already uses.
+        records = [{"fixture": "A", "rubric": "grounding", "score": 4.0}]
+        assert _fixture_jd_labels(records) == {}
+
+    def test_record_without_fixture_skipped(self):
+        assert _fixture_jd_labels([{"jd_label": {"title": "", "company": "Acme"}}]) == {}
+
+    def test_empty_records(self):
+        assert _fixture_jd_labels([]) == {}
 
 
 class TestFailureModeFrequency:
@@ -479,36 +555,158 @@ class TestParetoData:
         assert out["summary"]["classification"] == "Dominated"
 
 
+@pytest.fixture
+def dash_client(tmp_path, monkeypatch):
+    """A Flask test client wired to empty tmp_path log/results dirs.
+
+    Tests write JSONL/baseline files into ``results_dir`` before GETting, so
+    the same fixture serves both the empty-state and populated-render tests.
+    """
+    from flask import Flask
+
+    from dashboard import routes as dashboard_routes
+
+    results_dir = tmp_path / "results"
+    monkeypatch.setattr(dashboard_routes, "LLM_LOG", tmp_path / "no.jsonl")
+    monkeypatch.setattr(dashboard_routes, "EVAL_RESULTS_DIR", results_dir)
+
+    app = Flask(__name__)
+    app.register_blueprint(dashboard_routes.dashboard_bp, url_prefix="/dashboard")
+
+    with app.test_client() as client:
+        yield client, results_dir
+
+
 class TestIndexRoute:
     """Smoke test the route renders cleanly when there's nothing to display."""
 
-    def test_index_renders_with_no_data(self, tmp_path, monkeypatch):
-        from flask import Flask
+    def test_index_renders_with_no_data(self, dash_client):
+        client, _results_dir = dash_client
+        resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        # Empty-states explain what populates each panel (Sprint 6.5 education
+        # rewrite — feat/education-diagnostics-annotate): pipeline (no log
+        # file yet), quality, and groundedness.
+        assert "Nothing to chart yet" in body
+        assert "No eval scores yet" in body
+        assert "No groundedness scores yet" in body
+        # The throughput detail block still carries its own empty-state.
+        assert "No call records" in body
+        # Chart.js is vendored locally — assert the local tag AND no external CDN.
+        assert "vendor/chart.umd.min.js" in body
+        assert "cdn.jsdelivr.net" not in body
 
-        from dashboard import routes as dashboard_routes
 
-        # Point both data sources at empty paths
-        monkeypatch.setattr(dashboard_routes, "LLM_LOG", tmp_path / "no.jsonl")
-        monkeypatch.setattr(dashboard_routes, "EVAL_RESULTS_DIR", tmp_path / "results")
+class TestIndexRoutePopulated:
+    """The route renders POPULATED eval records (item 32's F-14 jd_label surfaces).
 
-        app = Flask(__name__)
-        app.register_blueprint(dashboard_routes.dashboard_bp, url_prefix="/dashboard")
+    Prior to this class, no test rendered the template with real eval data —
+    TestIndexRoute only exercised the empty-state path.
+    """
 
-        with app.test_client() as client:
-            resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
-            assert resp.status_code == 200
-            body = resp.get_data(as_text=True)
-            # Empty-states explain what populates each panel (Sprint 6.5 education
-            # rewrite — feat/education-diagnostics-annotate): pipeline (no log
-            # file yet), quality, and groundedness.
-            assert "Nothing to chart yet" in body
-            assert "No eval scores yet" in body
-            assert "No groundedness scores yet" in body
-            # The throughput detail block still carries its own empty-state.
-            assert "No call records" in body
-            # Chart.js is vendored locally — assert the local tag AND no external CDN.
-            assert "vendor/chart.umd.min.js" in body
-            assert "cdn.jsdelivr.net" not in body
+    def test_jd_labels_render_and_blank_labels_degrade_cleanly(self, dash_client):
+        client, results_dir = dash_client
+        results_dir.mkdir()
+        records = [
+            {
+                "schema_version": 3,
+                "source": "eval",
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.5,
+                "status": "ok",
+                "prompt_version": "2026-06-06.1",
+                "run_id": "r1",
+                "timestamp": "2026-06-06T12:00:00Z",
+                "failed_rules": [],
+                "jd_label": {"title": "Senior PM", "company": "Acme"},
+            },
+            {
+                # No baseline entry for this (fixture, rubric) — exercises the
+                # blank-jd_label path on a SECOND fixture so the count assertion
+                # below actually proves absence, not just presence.
+                "schema_version": 3,
+                "source": "eval",
+                "fixture": "eng-staff",
+                "rubric": "tone",
+                "score": 3.0,
+                "status": "ok",
+                "prompt_version": "2026-06-06.1",
+                "run_id": "r2",
+                "timestamp": "2026-06-05T12:00:00Z",
+                "failed_rules": [],
+                "jd_label": {"title": "", "company": ""},
+            },
+        ]
+        (results_dir / "seed.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
+        )
+        (results_dir / "baseline_v1.json").write_text(
+            json.dumps(
+                {
+                    "baseline_id": "v1",
+                    "prompt_version": "2026-06-06.1",
+                    "fixtures": {"pm-senior": {"grounding": {"mean": 4.6}}},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+
+        # Surfaces 1 & 2: the labeled fixture's span, stable because we own
+        # that markup.
+        assert '<span class="jd-label" title="Senior PM · Acme">Senior PM · Acme</span>' in body
+        # Blank degradation, gated NUMERICALLY: pm-senior appears on both the
+        # heatmap <th> and the baseline-health row = 2. eng-staff has no
+        # baseline entry (so no health row) and a blank label (so no heatmap
+        # span) — a positive-substring check alone couldn't prove that.
+        assert body.count('class="jd-label"') == 2
+
+        # Surface 3: the restored recent-eval table, both rows present —
+        # labeled and blank-degraded (empty cell, not a stray separator).
+        assert 'data-detail="recent"' in body
+        assert "<td>Senior PM · Acme</td>" in body
+        recent_start = body.index('<div class="detail" data-detail="recent">')
+        recent_block = body[recent_start : recent_start + 2000]
+        assert "<td>eng-staff</td><td></td>" in recent_block
+
+    def test_non_eval_record_sharing_the_results_dir_does_not_crash(self, dash_client):
+        # A real repro, not a hypothetical: evals/results/*.jsonl can hold
+        # reports from OTHER tools (a vector_before_after_*.jsonl comparison
+        # run) that share the directory but carry no "fixture"/"score" at
+        # all. Every other aggregation already gates on a truthy fixture; the
+        # restored table renders raw records directly and must not 500 on
+        # Jinja's Undefined when it meets one.
+        client, results_dir = dash_client
+        results_dir.mkdir()
+        records = [
+            {"kind": "vector_before_after", "mean_delta": 0.3, "top_k": 5},
+            {
+                "schema_version": 3,
+                "source": "eval",
+                "fixture": "pm-senior",
+                "rubric": "grounding",
+                "score": 4.5,
+                "status": "ok",
+                "prompt_version": "2026-06-06.1",
+                "run_id": "r1",
+                "timestamp": "2026-06-06T12:00:00Z",
+                "failed_rules": [],
+            },
+        ]
+        (results_dir / "vector_before_after_seed.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8"
+        )
+
+        resp = client.get("/dashboard/", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+        assert "<td>pm-senior</td>" in body
+        assert "vector_before_after" not in body
 
 
 def _make_grounded(

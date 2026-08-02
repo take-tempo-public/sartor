@@ -30,6 +30,7 @@ _GROUNDED_RECORD = {
     "run_id": "uxrun01",
     "timestamp": "2026-06-06T12:00:00Z",
     "failed_rules": [],
+    "jd_label": {"title": "Senior PM", "company": "Acme Robotics"},
     "deterministic_metrics": {
         "groundedness": {
             "layers": ["L0"],
@@ -140,12 +141,21 @@ def test_dashboard_console_tabs_and_drawer(
     dash.close_detail()
     expect(dash.detail_panel_open()).to_have_count(0)
 
-    # Quality → health tile drawer shows the baseline comparison row.
+    # Quality → health tile drawer shows the baseline comparison row + the
+    # F-14 jd_label gloss on the fixture (item 32).
     dash.activate_tab("quality")
     expect(dash.active_pane("quality")).to_be_visible()
     dash.open_tile("health")
     expect(dash.detail_panel_open()).to_be_visible()
     expect(dash.detail_body()).to_contain_text("grounding")
+    expect(dash.detail_body()).to_contain_text("Senior PM · Acme Robotics")
+    dash.close_detail()
+
+    # Quality → the restored recent-eval table (item 32) survives the
+    # openDetail move from #detailStore and carries the same jd_label.
+    dash.open_tile("recent")
+    expect(dash.detail_panel_open()).to_be_visible()
+    expect(dash.detail_body()).to_contain_text("Senior PM · Acme Robotics")
     dash.close_detail()
 
     # Groundedness → the marquee surface: flagged-samples evidence in the drawer.
