@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: skill names with an internal comma no longer split mid-parenthetical (`fix/skill-line-parenthetical-split`, item 15)
+
+A skill like `Eval Framework Design (LLM-as-judge, rubric-based)` was silently
+fragmented into two broken entries wherever a comma-separated skills line was
+parsed — `evals/bootstrap.py`'s bootstrap/annotation extractor,
+`json_resume.py`'s preview/PDF/DOCX skills parser (both the single-paragraph
+and grouped-bullet shapes), and `static/app.js`'s Settings save round trip,
+which corrupted a candidate's persisted `skills`/`certifications` config on
+every save whenever an existing entry had an internal comma. Item 15's own
+filing had guessed the cause was in `suggest_skills`'s LLM-output parsing —
+that function only `.strip()`s each proposed name and could not have produced
+the symptom; the real defect was a bracket-blind delimiter split present at
+all three sites above, independent of any LLM call. Fixed with one shared
+depth-aware split primitive, `json_resume.split_outside_brackets` (Python)
+plus a mirrored `_splitOutsideBrackets` (JS), so a comma nested inside `()`/`[]`
+is no longer treated as a separator; each call site keeps its own existing
+delimiter regex otherwise unchanged. Full evidence chain:
+`docs/dev/diagnosis/skill-line-parenthetical-split.md`.
+
 ### Added: `jd_label` rendered across the diagnostics dashboard (`feat/jd-label-dashboard-rendering`, item 32)
 
 Item 14 stamped a deterministic `(title, company)` JD label onto every eval
