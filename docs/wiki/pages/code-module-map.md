@@ -49,7 +49,7 @@ who lives where.
 
 | Module | Job | Anchor |
 |---|---|---|
-| [`analyzer.py`](../../../analyzer.py) | **All LLM calls**; system-prompt family; response parsing + retry. The only module that opens the raw Anthropic client (`.stream` in `_call_llm_streaming`, plus one focused `.create` in `check_refinement_scope`). | [`analyzer.py:_call_llm`](../../../analyzer.py), [`analyzer.py:_parse_or_retry`](../../../analyzer.py), [`analyzer.py:SYSTEM_PROMPT`](../../../analyzer.py), [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py) |
+| [`analyzer.py`](../../../analyzer.py) | **All LLM calls**; system-prompt family; response parsing + retry. The only module that opens the raw Anthropic client (`.stream` in `_call_llm_streaming` — every call site, including `check_refinement_scope`, funnels through it as of item 21). | [`analyzer.py:_call_llm`](../../../analyzer.py), [`analyzer.py:_parse_or_retry`](../../../analyzer.py), [`analyzer.py:SYSTEM_PROMPT`](../../../analyzer.py), [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py) |
 
 The public verbs — [`analyze`](../../../analyzer.py),
 [`clarify`](../../../analyzer.py), [`clarify_iteration`](../../../analyzer.py),

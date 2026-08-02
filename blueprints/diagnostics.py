@@ -1168,7 +1168,7 @@ def tune_run_stream() -> ResponseReturnValue:
     route never edits `analyzer.py`; it only surfaces the delta + candidate text.
 
     Input JSON: `prompt_overrides` ({CONSTANT_NAME: candidate_text}, required, one of
-    the eight `analyzer._BASE_SYSTEM_PROMPTS` keys) + the same `suite`/`subset`/
+    the registered `analyzer._BASE_SYSTEM_PROMPTS` keys) + the same `suite`/`subset`/
     `grounding_signals` (and optional `slug`+`username` seed mode) as `/api/eval/run`.
 
     PAID (Sonnet + Haiku) — ~2× a single run (the UI confirm() surfaces the band). All

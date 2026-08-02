@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: `check_refinement_scope` now emits telemetry like every other LLM call (`fix/refinement-scope-check-telemetry`, item 21)
+
+`check_refinement_scope` — the Haiku classifier behind `POST /api/validate-refinement`
+— opened its own `client.messages.create` directly, bypassing `_call_llm`/
+`_parse_or_retry`. It was the one LLM call site in `analyzer.py` with no `call_kind`,
+so its cost, latency, and error rate were invisible to `logs/llm_calls.jsonl`, `/bench`,
+and every `/_dashboard` view — and its outages produced zero signal anywhere. Fixed by
+routing it through `_parse_or_retry` like every other Haiku call site, via a new
+`RefinementScopeResponse` model and a named, registered `SCOPE_CHECK_SYSTEM_PROMPT`.
+Threaded an optional `max_tokens` kwarg through `_call_llm`/`_call_llm_streaming`/
+`_parse_or_retry` (default `MAX_TOKENS`, identical for all existing call sites) so this
+call keeps its original 128-token cap. Fail-open behavior is unchanged — an outage or
+unparseable response still returns `{"valid": true}` — but now also produces a
+`status="error"` telemetry row instead of vanishing silently. Also closed a related gap
+found during diagnosis: `tests/ux/stubs.py`'s `install_llm_stubs` never stubbed this
+call, so every UX refinement flow was silently exercising only the fail-open path
+(`_get_client` stubs to `None`, caught by the function's own `except`); confirmed by
+execution, not just code-reading, per the diagnosis dossier. Full evidence chain:
+`docs/dev/diagnosis/refinement-scope-check-telemetry.md`.
+
 ### Fixed: skill names with an internal comma no longer split mid-parenthetical (`fix/skill-line-parenthetical-split`, item 15)
 
 A skill like `Eval Framework Design (LLM-as-judge, rubric-based)` was silently
