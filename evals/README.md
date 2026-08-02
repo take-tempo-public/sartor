@@ -904,7 +904,7 @@ The dashboard at `/_dashboard` reads `evals/results/*.jsonl`, normalizes legacy 
 
 ### Deterministic post-generation metrics — ideal ranges
 
-These ride along on every eval result and surface in the dashboard's recent-eval table. They're cheap to compute, LLM-free, and orthogonal to the LLM-judged scores — use them as a sanity check on the rubric verdicts.
+These ride along on every eval result's `deterministic_metrics` block. They're cheap to compute, LLM-free, and orthogonal to the LLM-judged scores — use them as a sanity check on the rubric verdicts. Not yet rendered as dashboard columns (item 32 restored the recent-eval table for fixture/rubric/score/status, not these three) — read the raw `evals/results/*.jsonl` record.
 
 | Metric | Healthy range | Action when out of range |
 |---|---|---|
@@ -926,7 +926,7 @@ Five views, top to bottom:
    - **Score over time by rubric** (line chart): each point's tooltip labels its `prompt_version`. Use this to attribute score swings to specific prompt revisions.
    - **Rubric × fixture heatmap**: shows the most-recent score per (rubric, fixture) pair. Color is `hsl(120 * score/5, 60%, 30%)` — red for fail, green for pass. Hover for `prompt_version` and timestamp.
    - **Top failure modes** table: top-20 `failed_rules` slugs by record count (per-record dedup). The first two or three slugs tell you what the next prompt iteration should target.
-4. **Eval Results — Recent**: per-rubric verdict rows including `prompt_version`, score, status, failed_rules. Most recent 200.
+4. **Eval Results — Recent**: per-rubric verdict rows including `prompt_version`, score, status, failed_rules, and (F-14, item 32) the fixture's `jd_label`. Most recent 200. Deleted in the v1.0.5 tabbed-console redesign (`edde81d`) and restored by item 32 as the Quality tab's "recent evals" tile.
 
 When a tuning iteration is in progress: read the heatmap to find the red cell, the failure-mode table to identify the slug class, and the failing record's `deterministic_metrics.grounding_overlap.missing_samples` for the specific phrases to rule out in the next prompt edit. Then bump `PROMPT_VERSION`, re-run, and watch the score-over-time chart confirm the move.
 
@@ -1051,7 +1051,7 @@ Several enhancements are scoped but not yet built:
 |---|---|
 | [`analyzer.py:SYSTEM_PROMPT`](../analyzer.py) | The persona + ALWAYS/NEVER rules the eval ultimately measures |
 | [`analyzer.py:_call_llm`](../analyzer.py) | Shared instrumentation; eval traffic appears in `logs/llm_calls.jsonl` with `username="eval:{fixture}"` |
-| [`dashboard/routes.py`](../dashboard/routes.py) | Reads `evals/results/*.jsonl` for the dashboard's bottom table |
+| [`dashboard/routes.py`](../dashboard/routes.py) | Reads `evals/results/*.jsonl` for the Quality tab's aggregations (heatmap, baseline health, score trend, recent-eval table) |
 | [`agents/eval-judge.md`](../agents/eval-judge.md) | Interactive subagent variant of the grading function |
 | [`agents/prompt-archaeologist.md`](../agents/prompt-archaeologist.md) | Failure-triage subagent for failed rubrics |
 | [`commands/eval.md`](../commands/eval.md) | Slash-command wrapper around `runner.py` |

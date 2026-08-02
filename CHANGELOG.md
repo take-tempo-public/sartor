@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `jd_label` rendered across the diagnostics dashboard (`feat/jd-label-dashboard-rendering`, item 32)
+
+Item 14 stamped a deterministic `(title, company)` JD label onto every eval
+result and bootstrap/annotation artifact, but no dashboard surface displayed
+it — a person using only `/_dashboard` still couldn't see a JD's identity
+without opening a file. Rendered on five surfaces: the rubric × fixture
+heatmap header and the baseline-health fixture cell (both via a new shared
+`dashboard.routes._fixture_jd_labels`, so the two tables can never disagree
+on the same fixture's label), a recent-eval table restored after being
+deleted in the v1.0.5 tabbed-console redesign (`edde81d` — item 32's own
+filing named this table by stale line numbers, corrected during the
+branch), the Annotate tab's collate result (`anchor_jd_label`, computed by
+item 14 but never displayed), and the fixture picker dropdown (widened
+`GET /api/annotation/fixtures` to echo `jd_labels` verbatim). Restoring the
+table surfaced a real, pre-existing landmine: `evals/results/*.jsonl` can
+hold reports from unrelated tools (a `vector_before_after_*.jsonl`
+comparison run) that share the directory but carry no `fixture`/`score` at
+all — every other aggregation already filtered on a truthy fixture, but the
+restored table's raw per-record rendering was the first surface to touch
+individual records directly, and it 500'd on Jinja's `Undefined` instead of
+silently skipping the record. Fixed at the same filter point, with a
+regression test using the exact record shape. `evals/README.md` corrected
+in the same pass (two claims describing the deleted table as if it still
+existed).
+
 ### Added: JD-identifying metadata in bootstrap/eval artifacts (`feat/jd-provenance-metadata`, item 14)
 
 Eval result records (`evals/results/*.jsonl`) and bootstrap/annotation artifacts

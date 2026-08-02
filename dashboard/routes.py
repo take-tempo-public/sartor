@@ -17,6 +17,7 @@ not fetched from a CDN.
 from __future__ import annotations
 
 import contextlib
+import itertools
 import json
 import logging
 from collections import Counter, defaultdict
@@ -335,6 +336,39 @@ def _rubric_fixture_heatmap(records: list[dict[str, Any]]) -> dict[str, Any]:
         rows.append({"rubric": rubric, "cells": cells})
 
     return {"rubrics": rubrics, "fixtures": fixtures, "rows": rows}
+
+
+def _jd_label_display(label: object) -> str:
+    """Join an F-14 {"title": str, "company": str} dict into one display string.
+
+    `_normalize_eval_record`'s setdefault fills a MISSING jd_label key but
+    never coerces a present malformed one — a record carrying "jd_label": "Acme"
+    would otherwise reach Jinja as a bare string, where `.title` resolves to
+    Python's str.title method. Blank fields (or a non-dict) render as "".
+    """
+    if not isinstance(label, dict):
+        return ""
+    parts = [str(label.get("title", "")).strip(), str(label.get("company", "")).strip()]
+    return " · ".join(p for p in parts if p)
+
+
+def _fixture_jd_labels(records: list[dict[str, Any]]) -> dict[str, str]:
+    """Most-recent non-blank jd_label display string per fixture.
+
+    A single shared map (rather than each of heatmap/health capturing labels
+    inside their own loops) so the two tables can never disagree on the same
+    fixture's label — they apply different record filters, so independently
+    "latest per fixture" is not guaranteed to pick the same record.
+    """
+    latest: dict[str, dict[str, Any]] = {}
+    for r in records:
+        fixture = r.get("fixture")
+        if not fixture or not _jd_label_display(r.get("jd_label")):
+            continue
+        prev = latest.get(fixture)
+        if prev is None or r.get("timestamp", "") > prev.get("timestamp", ""):
+            latest[fixture] = r
+    return {fixture: _jd_label_display(r.get("jd_label")) for fixture, r in latest.items()}
 
 
 def _failure_mode_frequency(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -989,6 +1023,7 @@ def index() -> ResponseReturnValue:
     rubric_pass_rate = _per_rubric_pass_rate(eval_results)
     score_trend = _score_over_time(eval_results)
     heatmap = _rubric_fixture_heatmap(eval_results)
+    fixture_labels = _fixture_jd_labels(eval_results)
     failure_modes = _failure_mode_frequency(eval_results)
     pareto = _pareto_data(eval_results)
 
@@ -1012,7 +1047,16 @@ def index() -> ResponseReturnValue:
     return render_template(
         "dashboard.html",
         calls=list(reversed(filtered_calls))[:200],  # most recent 200
-        eval_results=list(reversed(eval_results))[:200],
+        # `evals/results/*.jsonl` can hold non-eval reports from other tools
+        # (e.g. a vector_before_after_*.jsonl comparison run) that share the
+        # directory but lack "fixture"/"score" entirely — every other
+        # aggregation below already gates on a truthy fixture; this is the one
+        # place that renders individual records directly, so it needs the same
+        # gate rather than crashing on an Undefined attribute in the template.
+        eval_results=[
+            dict(r, jd_label_display=_jd_label_display(r.get("jd_label")))
+            for r in itertools.islice((r for r in reversed(eval_results) if r.get("fixture")), 200)
+        ],
         summary=summary,
         filters={"since": since, "user": user, "model": model},
         users=users,
@@ -1022,6 +1066,7 @@ def index() -> ResponseReturnValue:
         rubric_pass_rate=rubric_pass_rate,
         score_trend=score_trend,
         heatmap=heatmap,
+        fixture_labels=fixture_labels,
         failure_modes=failure_modes,
         pareto=pareto,
         groundedness_trend=groundedness_trend,

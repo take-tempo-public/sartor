@@ -30,6 +30,7 @@ Scope notes:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -242,10 +243,40 @@ def test_axe_compose_and_template_stubbed(
     _assert_clean(found)
 
 
+# A minimal populated record + baseline so the Quality tab's heatmap/health
+# tiles exist and open — the tab loop below has never scanned them before
+# (item 32 probe): `{% if not eval_results %}` gates the whole Quality bento,
+# and `.js #detailStore { display:none }` means axe excludes every detail
+# block unless its tile is explicitly opened first.
+_AXE_EVAL_RECORD = {
+    "schema_version": 3,
+    "source": "eval",
+    "fixture": "pm-senior",
+    "rubric": "grounding",
+    "score": 4.5,
+    "status": "ok",
+    "prompt_version": "2026-06-06.1",
+    "run_id": "axerun01",
+    "timestamp": "2026-06-06T12:00:00Z",
+    "failed_rules": [],
+}
+_AXE_BASELINE = {
+    "baseline_id": "v1.0.2_axe",
+    "prompt_version": "2026-05-24.4",
+    "fixtures": {"pm-senior": {"grounding": {"mean": 4.6}}},
+}
+
+
 @pytest.mark.ux
 @pytest.mark.a11y
 @pytest.mark.slow
-def test_axe_dashboard_console(page: Page, live_server: str, ux_app: ModuleType) -> None:
+def test_axe_dashboard_console(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     """Each /_dashboard tab (Tuning holds the `#tuneCandidate` textarea).
 
     Seeds a candidate so the auto-populated `#bsUser` / `#tuneUser`
@@ -253,6 +284,14 @@ def test_axe_dashboard_console(page: Page, live_server: str, ux_app: ModuleType)
     in their *revealed + populated* state — the real control with its label,
     asterisk, and options — not just an empty placeholder."""
     seed_user(ux_app, "alice")  # GET /api/users → ["alice"] populates the dropdowns
+
+    from dashboard import routes as dash_routes
+
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    (results_dir / "seed.jsonl").write_text(json.dumps(_AXE_EVAL_RECORD) + "\n", encoding="utf-8")
+    (results_dir / "baseline_v1.json").write_text(json.dumps(_AXE_BASELINE), encoding="utf-8")
+    monkeypatch.setattr(dash_routes, "EVAL_RESULTS_DIR", results_dir)
 
     dash = DashboardConsolePage(page, live_server).load()
 
@@ -274,6 +313,20 @@ def test_axe_dashboard_console(page: Page, live_server: str, ux_app: ModuleType)
         elif tab == "tuning":
             dash.reveal_details_for(Dashboard.TUNE_USER)
             page.wait_for_selector(f"{Dashboard.TUNE_USER} option[value='alice']", state="attached")
+        elif tab == "quality":
+            # Item 32 probe: open the two tiles this branch will annotate with
+            # jd_label — the only way to get axe to scan them at all (see the
+            # module note above).
+            dash.open_tile("heatmap")
+            page.wait_for_selector(Dashboard.DETAIL_PANEL_OPEN, state="visible")
+            found["dashboard:quality:heatmap"] = _axe_serious(page)
+            dash.close_detail()
+            page.wait_for_selector(Dashboard.DETAIL_PANEL_OPEN, state="hidden")
+            dash.open_tile("health")
+            page.wait_for_selector(Dashboard.DETAIL_PANEL_OPEN, state="visible")
+            found["dashboard:quality:health"] = _axe_serious(page)
+            dash.close_detail()
+            page.wait_for_selector(Dashboard.DETAIL_PANEL_OPEN, state="hidden")
         found[f"dashboard:{tab}"] = _axe_serious(page)
 
     # Sprint 6.5 education — scan the ported #helpModal in its OPEN state. The tab
