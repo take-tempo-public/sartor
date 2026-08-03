@@ -110,8 +110,13 @@ the counts)._
   `recommend_experience_summary` (`:3513`), `recommend_skill` (`:3734`), `suggest_skill`
   (`:3957`), `suggest_skill_from_corpus` (`:4058`), `promote_clarification_to_bullet`
   (`:4151`), `draft_summary` (`:4262`), `draft_gap_fill` (`:4394`),
-  `draft_surgical_refinement` (`:4544`) — 19 literals, 21 call sites (two duplicated: the
-  analyze pair each fire from two branches of the same function).
+  `draft_surgical_refinement` (`:4544`) — 19 literals, 22 call sites in `analyzer.py`
+  (three duplicated: `analyze_extraction`, `analyze_synthesis`, and `generate` each fire
+  from two branches of their respective functions) — 20 literals / 23 call sites
+  repo-wide including `extract_experiences`. Cross-checked against an AST walk of every
+  `ast.Call` keyword `call_kind=` argument repo-wide (excluding `tests/`), which agrees
+  exactly with this hand count; that walk becomes the committed, machine-checked
+  inventory gate in this branch's next commit.
 
 - **O-9 — two call kinds beyond the item's four have zero rows in the log:**
   `suggest_skill_from_corpus` (`analyzer.py:4058`, function `suggest_skills_from_corpus`
