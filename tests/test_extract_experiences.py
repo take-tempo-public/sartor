@@ -3,14 +3,30 @@
 The LLM call itself is mocked — we test the prompt shape, response parsing,
 and the deterministic normalization layer (date validation, tag cleanup,
 has_outcome detection, malformed-bullet drop, etc.).
+
+Item 33: the end-to-end tests below drive the real `extract_experiences` /
+`extract_experiences_and_skills` entry points, which reach the real
+`_call_llm_streaming` -> `analyzer._emit_call_log` funnel. Before
+`tests/conftest.py`'s `_default_llm_log_path` autouse fixture existed, none of
+these 9 tests redirected `LOG_PATH`, so every run appended 9 synthetic rows
+(`input_tokens=100, output_tokens=50, latency_ms=0`) to the developer's real
+`logs/llm_calls.jsonl` — measured at 71.1% of the entire real log by the time
+this was caught (`docs/dev/diagnosis/extract-experiences-telemetry-pollution.md`).
+`_real_log_line_count_unchanged` below is the same independent guard already used
+by `tests/test_call_kind_telemetry.py` / `tests/test_call_kind_route_telemetry.py`
+for this identical failure mode — duplicated rather than promoted to `conftest.py`
+for the same reason those two give (still cheaper than a cross-file fixture for a
+handful of lines).
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import anthropic
+import pytest
 
 from analyzer import HAIKU_MODEL
 from onboarding.extract_experiences import (
@@ -21,6 +37,21 @@ from onboarding.extract_experiences import (
     extract_experiences,
     extract_experiences_and_skills,
 )
+
+REAL_LOG_PATH = Path(__file__).resolve().parent.parent / "logs" / "llm_calls.jsonl"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _real_log_line_count_unchanged():
+    """Fails loud if anything in this module ever again writes to the developer's
+    real telemetry log, regardless of which test or call site is responsible."""
+    before = REAL_LOG_PATH.read_text(encoding="utf-8").count("\n") if REAL_LOG_PATH.exists() else 0
+    yield
+    after = REAL_LOG_PATH.read_text(encoding="utf-8").count("\n") if REAL_LOG_PATH.exists() else 0
+    assert after == before, (
+        f"logs/llm_calls.jsonl grew during tests/test_extract_experiences.py "
+        f"({before} -> {after} lines)."
+    )
 
 
 def _make_valid_response() -> dict:
