@@ -384,6 +384,21 @@ def fake_clarify_iteration(
     }
 
 
+def fake_check_refinement_scope(client: Any, note: str) -> dict[str, Any]:
+    """Deterministic in-scope verdict for the refinement scope-check gate
+    (`/api/validate-refinement`). Unstubbed, this call previously reached the
+    real `check_refinement_scope` with a `None` client (`_get_client` is
+    stubbed to `lambda: None` below), which fails open via its own
+    `except Exception` — so every UX refinement flow was already exercising
+    only the fail-open path, silently. Now that `check_refinement_scope`
+    routes through `_call_llm`'s telemetry funnel (item 21), that same `None`
+    client would instead append a `status="error"` row to whatever
+    `logs/llm_calls.jsonl` the test process resolves — the developer's real
+    file, if not redirected. Stubbing here keeps the UX suite offline AND
+    keeps the real telemetry log free of test noise."""
+    return {"valid": True}
+
+
 def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
     """Make every analyzer entry point the wizard can hit deterministic +
     offline. Apply before navigating."""
@@ -405,6 +420,7 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     # `_get_client` from the blueprint module → patch THERE.
     monkeypatch.setattr(generation_bp_mod, "_get_client", lambda: None)
     monkeypatch.setattr(generation_bp_mod, "generate_streaming", fake_generate_streaming)
+    monkeypatch.setattr(generation_bp_mod, "check_refinement_scope", fake_check_refinement_scope)
     # The diagnostics seam (annotation/bootstrap/eval/tune) moved to
     # blueprints/diagnostics.py (Sprint 8.3h — the last seam; app.py no longer imports
     # `_get_client`): the bootstrap route resolves it from that module → patch THERE.

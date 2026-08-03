@@ -61,18 +61,19 @@ drafting calls (`draft_summary`, `draft_gap_fill`, `draft_surgical_refinement`) 
 | `promote_clarification_to_bullet` | [`analyzer.py` promote helper](../../../analyzer.py) | Turns a confirmed clarification into a bullet. |
 | `extract_experiences` | [`onboarding/extract_experiences.py:extract_experiences`](../../../onboarding/extract_experiences.py) | Onboarding/corpus résumé ingest — **lives outside `analyzer.py`** `[synthesis]`. |
 | `avatar_answer` | [`avatar_answer_streaming`](../../../analyzer.py) | **Memory/recall subsystem only** — the doc-grounded assistant, answering questions over a `recall.Context` (not a `context_set`). Avatar-prompt revisions track a separate source constant [`AVATAR_PROMPT_VERSION`](../../../analyzer.py); telemetry still stamps `PROMPT_VERSION` — see [[prompt-version-discipline]] `[synthesis]`. |
+| `check_refinement_scope` | [`check_refinement_scope`](../../../analyzer.py) | Fail-open scope classifier for a free-text refinement note (`POST /api/validate-refinement`). Fixed item 21 (2026-08-02): now routes through `_parse_or_retry` like every other Haiku call, with a `max_tokens=128` cap (the shared helper's `max_tokens` kwarg, defaulting to `MAX_TOKENS` for every other call site) and a named `SCOPE_CHECK_SYSTEM_PROMPT` `[synthesis]`. |
 
 Watch the function-name vs. `call_kind` drift in the recommend family: the functions
 are plural (`recommend_bullets`, `recommend_summaries`, …) but the `call_kind` strings
 are singular and `recommend_bullets` emits the bare `"recommend"` kind
 ([`analyzer.py:recommend_bullets`](../../../analyzer.py)) `[synthesis]`.
 
-One Haiku call sits deliberately **outside** this funnel and so carries no `call_kind`:
-the fail-open refinement-scope classifier
-[`analyzer.py:check_refinement_scope`](../../../analyzer.py) (hardcoded
-[`analyzer.py:SCOPE_CHECK_MODEL`](../../../analyzer.py)) opens its own
-`client.messages.create` with no telemetry, caching, or retry — the lone by-design
-exception, detailed in [[deterministic-llm-boundary]] `[synthesis]`.
+Every Haiku call now reaches `_emit_call_log` through the shared funnel — as of
+item 21 (2026-08-02), `check_refinement_scope` was the last exception and is no
+longer one. Its own outer `except Exception` fail-open contract (an outage or
+unparseable response still returns `{"valid": true}`) is unchanged; the difference
+is that outage now ALSO produces a `status="error"` telemetry row instead of
+vanishing silently — see [[deterministic-llm-boundary]] `[synthesis]`.
 
 ## The two-pass analyze (the cache-defining detail)
 

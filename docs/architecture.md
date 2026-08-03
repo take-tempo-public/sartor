@@ -196,7 +196,9 @@ sequenceDiagram
     Note over U,FS: Step 5b — Surgical refinement (optional, corpus mode — loops back to Compose)
     U->>FE: select résumé text, request a targeted rewrite
     FE->>APP: POST /api/validate-refinement
-    APP->>ANL: check_refinement_scope() — Haiku, direct client.messages.create (no call_kind, no telemetry row)
+    APP->>ANL: check_refinement_scope()
+    ANL->>HK: call_kind="check_refinement_scope" (max_tokens=128)
+    HK-->>ANL: {valid, reason?}
     FE->>APP: POST /api/applications/&#60;id&#62;/draft-refinement
     APP->>ANL: draft_surgical_refinement(ctx, jd)
     ANL->>SO: call_kind="draft_surgical_refinement"
@@ -557,13 +559,9 @@ Full picture — rendered inline below.
 %% override the system prompt, so they pay one extra cache-miss on the
 %% system block.
 %% 
-%% check_refinement_scope (Haiku) is deliberately NOT in this diagram —
-%% it calls client.messages.create directly, bypassing _call_llm, so it
-%% has no call_kind and produces no logs/llm_calls.jsonl row.
-
 graph LR
     accTitle: Sartor LLM call routing and cost tiers
-    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
+    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer, check_refinement_scope), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
     subgraph SO[Sonnet 5 — heavy reasoning]
         direction TB
         A1[analyze_synthesis<br/>cache writer<br/>strategy + keywords only]
@@ -589,6 +587,7 @@ graph LR
         H8[suggest_skill_from_corpus]
         H9[recommend_experience_summary]
         H10[avatar_answer<br/>doc-grounded assistant]
+        H11[check_refinement_scope<br/>fail-open, max_tokens=128]
     end
 
     %% Routes that fire each call
@@ -613,6 +612,7 @@ graph LR
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
     R_IM[/POST /api/users/&lt;u&gt;/corpus/ingest-resume/] --> H5
     R_AV[/POST /api/assistant/ask/] --> H10
+    R_VR[/POST /api/validate-refinement/] --> H11
 
     %% Cache-prefix usage. analyze_synthesis (A1) runs under the shared
     %% SYSTEM_PROMPT, so its cached prefix [SYSTEM_PROMPT][corpus+resume]
@@ -626,7 +626,7 @@ graph LR
     classDef det fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe
 
     class A1,A4 cached
-    class A0,A2,A3,A5,A6,A7,A8,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10 nocache
+    class A0,A2,A3,A5,A6,A7,A8,H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,H11 nocache
     class DET det
 
     %% Legend (rendered as a subgraph that visually clarifies the colors)
@@ -663,9 +663,11 @@ selection / classification: `analyze_extraction` (JD signals),
 `clarify`, `recommend` (bullets), `recommend_summary`,
 `recommend_skill`, `suggest_skill`, `suggest_skill_from_corpus`,
 `recommend_experience_summary`, `critique_proposal`,
-`promote_clarification_to_bullet`, `extract_experiences`, and
-`avatar_answer` (the doc-grounded assistant). Full table with
-route + call site: [`docs/wiki/pages/llm-call-catalog.md`](wiki/pages/llm-call-catalog.md).
+`promote_clarification_to_bullet`, `extract_experiences`,
+`avatar_answer` (the doc-grounded assistant), and
+`check_refinement_scope` (fail-open refinement-note classifier,
+`max_tokens=128`). Full table with route + call site:
+[`docs/wiki/pages/llm-call-catalog.md`](wiki/pages/llm-call-catalog.md).
 
 **Cache prefix.** `analyze_synthesis` and `generate` share a heavy
 cached user prefix (corpus + résumé blocks): synthesis runs under

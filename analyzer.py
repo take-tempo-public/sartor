@@ -376,6 +376,17 @@ class PromoteBulletResponse(_LLMResponse):
     pattern_kind: Any
 
 
+class RefinementScopeResponse(_LLMResponse):
+    """`check_refinement_scope()` output — binary in/out-of-scope verdict.
+
+    `reason` is optional: the model may omit it on `valid: true`, and the
+    JS caller (`static/app.js`) supplies its own default wording when absent.
+    """
+
+    valid: bool
+    reason: str | None = None
+
+
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
@@ -1139,6 +1150,7 @@ def _call_llm_streaming(
     run_id: str = "",
     system_prompt: str = "",
     model: str | None = None,
+    max_tokens: int = MAX_TOKENS,
 ) -> Iterator[str | _StreamDone]:
     """Streaming generator yielding text deltas, then a final `_StreamDone`.
 
@@ -1167,6 +1179,12 @@ def _call_llm_streaming(
     The optional `model` argument lets cheap structured-output calls (e.g.
     extract_experiences) opt into Haiku for cost without bypassing this
     helper's caching + telemetry machinery. Defaults to SONNET_MODEL.
+
+    The optional `max_tokens` argument lets a call with a known-small output
+    shape (e.g. check_refinement_scope's binary classification) cap the
+    response well below the shared MAX_TOKENS ceiling, so a degenerate
+    response fails fast instead of running to the analyze()-sized default.
+    Defaults to MAX_TOKENS — identical to every existing call site.
     """
     effective_model = model or SONNET_MODEL
     user_content: list[dict[str, Any]] = []
@@ -1208,7 +1226,7 @@ def _call_llm_streaming(
         # tier, and the value is constant per call, so prompt caching is intact.
         stream_kwargs: dict[str, Any] = {
             "model": effective_model,
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": max_tokens,
             "system": [
                 {
                     "type": "text",
@@ -1282,6 +1300,7 @@ def _call_llm(
     run_id: str = "",
     system_prompt: str = "",
     model: str | None = None,
+    max_tokens: int = MAX_TOKENS,
 ) -> str:
     """Non-streaming wrapper — drain `_call_llm_streaming` and return the accumulated text.
 
@@ -1298,6 +1317,7 @@ def _call_llm(
         run_id=run_id,
         system_prompt=system_prompt,
         model=model,
+        max_tokens=max_tokens,
     ):
         if isinstance(item, _StreamDone):
             final_text = item.text
@@ -1414,6 +1434,7 @@ def _parse_or_retry(
     max_attempts: int = 2,
     system_prompt: str = "",
     model: str | None = None,
+    max_tokens: int = MAX_TOKENS,
     validation_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Parse an LLM JSON response, retrying once with the validation error appended on parse failure or missing required keys.
@@ -1436,6 +1457,7 @@ def _parse_or_retry(
         run_id=run_id,
         system_prompt=system_prompt,
         model=model,
+        max_tokens=max_tokens,
     )
     for attempt in range(max_attempts):
         try:
@@ -2820,7 +2842,7 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
     )
 
 
-SCOPE_CHECK_MODEL = "claude-haiku-4-5-20251001"
+SCOPE_CHECK_SYSTEM_PROMPT = "You are a strict scope classifier. Respond with JSON only."
 
 
 def check_refinement_scope(client: anthropic.Anthropic, note: str) -> dict[str, Any]:
@@ -2853,18 +2875,18 @@ Respond with valid JSON only — no markdown, no explanation outside the JSON:
 {{"valid": false, "reason": "one sentence explaining what specifically is not allowed"}} if not."""
 
     try:
-        msg = client.messages.create(
-            model=SCOPE_CHECK_MODEL,
+        return _parse_or_retry(
+            client,
+            prompt,
+            cached_user_prefix="",  # one-shot; cache benefit is small
+            response_model=RefinementScopeResponse,
+            call_kind="check_refinement_scope",
+            username="",
+            run_id="",
+            model=HAIKU_MODEL,
             max_tokens=128,
-            system="You are a strict scope classifier. Respond with JSON only.",
-            messages=[{"role": "user", "content": prompt}],
+            system_prompt=_resolve_system_prompt("SCOPE_CHECK_SYSTEM_PROMPT"),
         )
-        raw = getattr(msg.content[0], "text", "").strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1]
-        if raw.endswith("```"):
-            raw = raw.rsplit("```", 1)[0]
-        return cast("dict[str, Any]", json.loads(raw.strip()))
     except Exception as e:
         # Fail open — scope check failure must never block refinement
         logger.warning("scope check failed, failing open: %s", e)
@@ -4557,6 +4579,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "SUGGEST_SKILLS_SYSTEM_PROMPT": SUGGEST_SKILLS_SYSTEM_PROMPT,
     "SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT": SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT,
     "PROMOTE_CLARIFICATION_SYSTEM_PROMPT": PROMOTE_CLARIFICATION_SYSTEM_PROMPT,
+    "SCOPE_CHECK_SYSTEM_PROMPT": SCOPE_CHECK_SYSTEM_PROMPT,
 }
 
 

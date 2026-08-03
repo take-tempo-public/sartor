@@ -46,14 +46,16 @@ sits on top of `_call_llm`, adding JSON-parse + Pydantic-validate + one retry.
 So the call graph is a funnel: the public verbs (analyze, generate, clarify,
 recommend, …) reach the network through this one helper `[synthesis]`.
 
-**The one exception** is the fail-open refinement-scope classifier
-[`analyzer.py:check_refinement_scope`](../../../analyzer.py), which opens its own
-`client.messages.create(...)` with a hardcoded
-[`analyzer.py:SCOPE_CHECK_MODEL`](../../../analyzer.py) and deliberately bypasses
-the funnel — so it gets no telemetry, no prompt caching, and no parse/retry. It
-still lives **inside** `analyzer.py`, so the P1 boundary (no LLM call outside
-`analyzer.py`) holds; what it skips is the funnel's conveniences, not the boundary
-`[synthesis]`.
+**No exceptions remain** as of item 21 (2026-08-02). The fail-open refinement-scope
+classifier [`analyzer.py:check_refinement_scope`](../../../analyzer.py) used to open
+its own `client.messages.create(...)` with a hardcoded model constant, bypassing the
+funnel entirely — no telemetry, no prompt caching, no parse/retry. It now calls
+`_parse_or_retry` like every other Haiku call site, with a `max_tokens=128` kwarg
+(the shared helper's per-call output cap, defaulting to `MAX_TOKENS` everywhere
+else) and a named, registered `SCOPE_CHECK_SYSTEM_PROMPT`. Its fail-open contract is
+unchanged — `except Exception` still returns `{"valid": true}` on any failure — but
+an outage now also produces a `status="error"` telemetry row instead of vanishing
+silently `[synthesis]`.
 
 Funnelling through one door is what makes the boundary *enforceable* rather than
 aspirational: caching, telemetry, model selection, and retry are defined once and
