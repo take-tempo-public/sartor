@@ -47,3 +47,23 @@ opened for an unrelated reason.
 ## Updates
 
 ### 2026-08-02 — filed during fix/refinement-scope-check-telemetry
+
+### 2026-08-03 — magnitude corrected (measured on `fix/never-logged-call-kinds`)
+
+**This item's own "low-severity dev-experience noise" characterization understated the
+cumulative effect** — the per-run rate (~9 rows/run) filed above is still accurate, but
+`logs/` is gitignored and never truncated, so those per-run rows have accumulated across
+every session since this bug was introduced. Direct measurement (2026-08-03): of 4403
+rows in the real `logs/llm_calls.jsonl`, **3132 (71.1%) carry the exact synthetic shape**
+(`call="extract_experiences"`, `input_tokens=100`, `output_tokens=50`, `latency_ms=0`) —
+not a small, easily-filtered fraction, but the majority of the entire file. This
+materially distorts `/bench` and any `/_dashboard` view that aggregates by call kind or
+totals across the log (both currently treat the file as ground truth with no filter for
+this shape).
+
+**Proposed, not implemented (out of scope for the branch that measured this):** a single
+repo-wide autouse fixture in `tests/conftest.py` redirecting `analyzer.LOG_PATH` (and/or
+`_emit_call_log`) for every test in the suite, rather than a per-file fixture repeated
+each time this shape recurs (it has now recurred three times: `test_refinement_scope.py`'s
+own first draft, this item, and the corpus-blueprint gap filed as item 34). A single
+conftest-level guard would close all three at once.

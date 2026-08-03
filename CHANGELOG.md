@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Verified: `recommend_experience_summary`/`draft_surgical_refinement` telemetry gap was real but not broken (`fix/never-logged-call-kinds`, item 22)
+
+Item 22 claimed four `call_kind`s (`recommend_skill`, `suggest_skill`,
+`recommend_experience_summary`, `draft_surgical_refinement`) had real call sites but zero
+rows in `logs/llm_calls.jsonl`. Investigation found the claim wrong in two directions:
+`recommend_skill`/`suggest_skill`'s rows exist but were imported from a separate instance
+after filing (an append-order analysis identified the exact 128-row backdated block);
+`recommend_experience_summary`/`draft_surgical_refinement` were genuinely never logged —
+proven, not assumed, via three tiers of falsification (an inventory-complete capability
+probe covering all six affected call kinds, route-level reachability tests, and a live
+click-through against a real running app) — because their own preconditions
+(2+ role-intro variants on one experience; a frozen `approved_composition`) had simply
+never existed on this machine. **No `analyzer.py` change** — the funnel, routes, and
+frontend dispatch all work correctly. `tests/ux/stubs.py` gains a
+`draft_surgical_refinement` stub (prophylactic, the same shape item 21 fixed for
+`check_refinement_scope` — no observed leak, just a latent gap closed before it could
+become one). Full evidence chain: `docs/dev/diagnosis/never-logged-call-kinds.md`.
+
 ### Fixed: `check_refinement_scope` now emits telemetry like every other LLM call (`fix/refinement-scope-check-telemetry`, item 21)
 
 `check_refinement_scope` — the Haiku classifier behind `POST /api/validate-refinement`
