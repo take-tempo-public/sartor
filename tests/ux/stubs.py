@@ -384,6 +384,34 @@ def fake_clarify_iteration(
     }
 
 
+def fake_draft_surgical_refinement(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
+    """Item 22 — prophylactic, not a fix for an observed leak: no UX test
+    currently reaches `POST /draft-refinement` with a gate-satisfying state
+    (`_submitSurgicalRefinement` requires `_composeApplicationId` set and an
+    accepted `/validate-refinement` call first; the UX suite's flows abort
+    before either — see `docs/dev/diagnosis/never-logged-call-kinds.md` O-10).
+    Stubbed anyway, matching item 21's `fake_check_refinement_scope` shape:
+    unstubbed, a future UX test reaching this route under `install_llm_stubs`
+    (client=`None`, per `_get_client` below) would hit `draft_surgical_refinement`'s
+    real body, which is NOT wrapped in a fail-open `except` the way
+    `check_refinement_scope` is — `.messages.stream()` on `None` raises
+    `AttributeError` inside `_call_llm_streaming`, uncaught by the route's
+    `APIConnectionError`/`LLMResponseError` handlers (`blueprints/applications.py`),
+    producing a 500 and a `status="error"` row in whatever `logs/llm_calls.jsonl`
+    the test process resolves. Deterministic no-op response, matching the
+    real function's own no-note/no-composition/no-jd short-circuit shape."""
+    return {
+        "target_kind": "none",
+        "experience_id": None,
+        "supersedes_bullet_id": None,
+        "text": "",
+        "pattern_kind": None,
+        "rationale": "stub: no real refinement review was performed.",
+    }
+
+
 def fake_check_refinement_scope(client: Any, note: str) -> dict[str, Any]:
     """Deterministic in-scope verdict for the refinement scope-check gate
     (`/api/validate-refinement`). Unstubbed, this call previously reached the
@@ -442,3 +470,8 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     # routes → patch on the analyzer module, like recommend_bullets).
     monkeypatch.setattr(analyzer, "recommend_skills", fake_recommend_skills)
     monkeypatch.setattr(analyzer, "suggest_skills", fake_suggest_skills)
+    # Item 22 — draft_surgical_refinement is also imported locally inside its
+    # route (blueprints/applications.py) → patch on the analyzer module, same
+    # seam as the three above. Prophylactic (O-10): no UX test reaches this
+    # today (see fake_draft_surgical_refinement's own docstring).
+    monkeypatch.setattr(analyzer, "draft_surgical_refinement", fake_draft_surgical_refinement)
