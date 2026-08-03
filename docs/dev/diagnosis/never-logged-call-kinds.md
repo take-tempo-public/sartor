@@ -1,8 +1,10 @@
 # Diagnosis — four `call_kind`s in `analyzer.py` never appear in `logs/llm_calls.jsonl`
 
-> **Status:** hypothesis only. Two of the item's four named kinds are already resolved by
-> artifact below (proven-working, not proven-broken); the other two remain open pending the
-> committed probes and live click-through this branch will run.
+> **Status:** root cause PROVEN — explanation (a) confirmed for all four named kinds
+> (real, correct routes, never previously exercised in a gate-satisfying state), plus
+> two additional never-listed kinds (`suggest_skill_from_corpus`,
+> `promote_clarification_to_bullet`) whose disposition is unchanged (real, correct,
+> simply not yet exercised on this machine). No `analyzer.py` change.
 > **Branch:** `fix/never-logged-call-kinds`
 
 ---
@@ -274,31 +276,89 @@ confirm your theory by hiding its rivals"):
 Each outcome will be appended to this section, dated, as it actually runs — this is the
 pre-registration, not the result.
 
+**RAN, 2026-08-03 — all three tiers, in order:**
+
+1. **Tier 1** (`tests/test_call_kind_telemetry.py`): 7/7 tests passed, first attempt, zero
+   reruns — the inventory gate (20 literals, exactly matching EXPECTED_CALL_KINDS) and all
+   six per-kind probes (`recommend_skill`, `suggest_skill`, `recommend_experience_summary`,
+   `draft_surgical_refinement`, `suggest_skill_from_corpus`,
+   `promote_clarification_to_bullet`). **b1 dead for all six, b6 dead** (no unreviewed
+   member of the class found).
+2. **Tier 2** (`tests/test_call_kind_route_telemetry.py`): 2/2 tests passed, first attempt,
+   zero reruns. Both routes reached the real analyzer function through the real funnel and
+   produced a real `_emit_call_log` row. **b2 dead** for both kinds.
+3. **Tier 3 — live click-through**, `python app.py --port 5099`, real `.api_key`,
+   `SARTOR_DEMO` unset, candidate `testuser` (the dev/test persona — NOT the real
+   `robert` candidate). Preflight: two real `ExperienceSummaryItem` rows inserted on
+   `testuser`'s current experience (`experience_id=1`, "Polaris Cognition") — the first
+   such rows this database has ever held (O-5). Then, against application 7
+   (`output/testuser/context_20260522_190451.json`, pre-existing empty
+   `composition_overrides`, no `approved_composition`):
+   - `POST /api/applications/7/composition {"freeze": true, ...}` → `approved_composition`
+     appeared in the context file for the first time (confirmed by direct read
+     before/after) — the first frozen composition this database has ever held (O-6).
+   - `POST /api/applications/7/draft-refinement` with a real note → **200**, a real
+     Sonnet proposal (`target_kind: "bullet"`, a genuinely-drafted sharpened bullet
+     citing only facts already in the frozen doc).
+   - `POST /api/applications/7/recommend-experience-summaries` → **200**, a real Haiku
+     recommendation picking between the two just-inserted variants with a JD-grounded
+     rationale.
+   - `logs/llm_calls.jsonl`: 4403 → **4405** lines. The two new rows:
+     `draft_surgical_refinement` (`claude-sonnet-5`, `input_tokens=4211`,
+     `output_tokens=174`, `latency_ms=4016`, `status=ok`, cost `$0.019683`) and
+     `recommend_experience_summary` (`claude-haiku-4-5-20251001`, `input_tokens=2360`,
+     `output_tokens=192`, `latency_ms=3127`, `status=ok`). Both `run_id=e23f7a98da6b`.
+   - `/_dashboard` (followed the `/_dashboard` → `/_dashboard/` redirect): both kinds
+     appear 6× each across the cost table (`draft_surgical_refinement`: 1 call,
+     `$0.01968`), the reliability table (0 errors, 0.0%), and the per-run latency
+     waterfall — with **zero aggregator code changes**.
+   - Dev server torn down cleanly: the Werkzeug reloader's actual worker
+     (`python3.13.exe`, a grandchild of the launching `nohup`) was found via
+     `Get-CimInstance Win32_Process` and killed alongside its parent and the nohup
+     wrapper; `curl` against the port afterward confirmed connection refused.
+
+**Outcome: explanation (a) CONFIRMED for all four of the item's named kinds** (plus the two
+O-8 additions, whose disposition — real, correct, unexercised — is identical, though their
+own live click-through is deferred as out of this branch's UI-surface scope). **b3
+dead** (the frontend, once the UI/API state actually satisfies the gate, does issue the
+request). **b4/b5 did not fire** (a row appeared both times). Item 22 closes on this
+resolution; `analyzer.py` is unchanged.
+
 ---
 
 ## The fix
 
-_Not written yet — pending the Falsification experiments above. Expected outcome per the
-pre-branch evidence: no `analyzer.py` change; `tests/ux/stubs.py` gains a
-`draft_surgical_refinement` stub (I-4, prophylactic — see `## Acceptance bar`)._
+**No `analyzer.py` change** — confirmed by all three tiers above: the funnel, the routes,
+and the frontend dispatch all work correctly. The only production-adjacent change on this
+branch is `tests/ux/stubs.py` gaining a `draft_surgical_refinement` stub (I-4,
+prophylactic, not a fix for an observed leak — see `## Acceptance bar`). The remaining
+changes are the two new committed test files (the falsification instrument itself) and
+documentation: item 22's own filing corrected to name the two kinds that were genuinely
+never logged (plus the two O-8 additions), the two adjacent findings filed separately
+(item 33's real magnitude, a new item for the corpus `_get_client` gap), and this dossier.
 
 ---
 
 ## Acceptance bar
 
-- Tier 1's per-kind probes and inventory gate pass, first attempt, no reruns.
-- Tier 2's two route-level probes pass, first attempt, no reruns.
+- Tier 1's per-kind probes and inventory gate pass, first attempt, no reruns. **Met** —
+  7/7 passed.
+- Tier 2's two route-level probes pass, first attempt, no reruns. **Met** — 2/2 passed.
 - Tier 3 produces two real priced rows (`recommend_experience_summary`,
   `draft_surgical_refinement`) in `logs/llm_calls.jsonl`, each with non-zero
   `input_tokens`/`output_tokens`/`latency_ms` and a `model` matching a
   `hardening.MODEL_PRICING` key, both visible in `/_dashboard`'s cost-by-call-kind and
-  reliability tables with **no aggregator code change** (mirrors item 21's bar).
+  reliability tables with **no aggregator code change** (mirrors item 21's bar). **Met** —
+  see the `## Falsification` RAN entry above for the exact rows and dashboard counts.
 - `wc -l logs/llm_calls.jsonl` before vs. after every test run in this branch (Tier 1 and
   Tier 2 specifically) shows **zero** added rows — any test driving the real
   `_call_llm_streaming` redirects both `analyzer._emit_call_log` and `analyzer.LOG_PATH` via
   an autouse fixture (this exact pollution has happened twice already in this repo: item 21,
-  item 33).
+  item 33). **Met** — 4403 unchanged across both test files' runs and the full UX suite;
+  only Tier 3's own deliberate live run added the two expected rows (4403 → 4405).
 - `python -m scripts.gate` green, zero reruns (a rerun-masked PASS is not evidence — C-7).
+  **Pending** — run before this branch closes.
 - Item 22's filing corrected: stale `refs` refreshed to current line numbers (O-4), and its
   four-kind list narrowed to the two actually-unlogged kinds, with a note on the two
-  resolved-by-artifact kinds and the two additional unlisted kinds (O-9).
+  resolved-by-artifact kinds and the two additional unlisted kinds (O-9). **Pending** —
+  next commit.
