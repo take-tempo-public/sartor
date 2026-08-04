@@ -138,7 +138,7 @@ subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is super
 15. Item 42 — dotx/mht template-format investigation (post-1.1).
 16. Item 43 — approved-fonts expansion (post-1.1, per-font verification).
 
-**Watching (6):**
+**Watching (7):**
 17. Item 2 — wordmark sweep, opportunistic only; the D1/D4 wordmark lint MUST inherit its
     exclusions (`docs/wiki/`, `docs/dev/reviews/`).
 18. Item 16 — `evals/runner.py --suite real` non-functional.
@@ -148,6 +148,13 @@ subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is super
     explicit A3 step before any new corpus UX test lands).
 22. Item 44 — `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`
     rerun-exhausted on docs-only PR #98; one CI sample, watching.
+23. **Item 46 — `test_reader_never_observes_a_partial_file`'s CONTROL arm flaked on
+    PR #99 (NEW, this session).** The py3.13 leg failed `assert naive` — the naive
+    writer did not tear, so the harness refused a vacuous pass. The subject assertion
+    (`assert not atomic`) never fired. Same commit passed py3.11/py3.12 and passed
+    locally on 3.13.14. **Do not "fix" it by weakening the control** — the control is
+    what makes the subject assertion mean anything. Needs its own `fix/*` with an
+    instrumented reproduction if it recurs.
 
 Also standing, not a numbered item: the 12 genuinely wiki-relevant files with accumulated
 drift since the last real ingest (listed in the item-35 handoff) — picked up piecemeal by
