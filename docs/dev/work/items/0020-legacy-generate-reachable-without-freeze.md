@@ -4,7 +4,8 @@ id = 20
 kind = "item"
 title = "Legacy generate() reachable via wizard rail without freezing Compose"
 status = "open"
-decision_owner = "user"
+decision_owner = "agent"
+epic = 36
 refs = [
   "static/app.js:6958-6965",
   "static/app.js:7002-7011",
@@ -40,3 +41,11 @@ for the owner's direction rather than picking an approach here.
 ## Updates
 
 ### 2026-07-28 — filed during docs/pipeline-truth-and-era4-baseline, per owner's "not appropriate behavior" framing
+
+### 2026-08-04 — owner direction captured; folded into Final March epic A (sprint A2)
+
+The decision this item was waiting on is made: the owner-approved Final March plan
+(`RELEASE_ARC.md` §"v1.1.0 Final March", sign-off via the kickoff PR) directs
+hard-gating the Step-5 wizard rail on frozen composition — corpus-mode users go
+through Compose. `decision_owner` flipped to agent accordingly; executed as part of
+sprint A2 on its own `fix/*` branch with the usual evidence dossier.

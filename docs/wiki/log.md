@@ -955,3 +955,16 @@ caught 6 cite-form errors (line numbers in link targets) in `frontend-wizard`, f
 mechanically.
 
 **/wiki-lint: ERROR 0 / WARN 0. Gate verdict: PASS.** Checkpoint advanced to `65b0f88`.
+
+---
+
+## 2026-08-04 — scoped close-out relevance check (`chore/v11-march-kickoff`)
+
+**Branch:** `chore/v11-march-kickoff` (per-branch close-out check, AGENTS.md wiki-relevance
+step). **Branch diff:** 17 files; one classifies wiki-relevant (`docs/dev/RELEASE_ARC.md` —
+additive: new §"v1.1.0 Final March" + a Phase-5 update note; no existing section edited).
+
+**Pages verified no-edit (6):** `engineering-workstreams`, `excellence-walk`,
+`governance-extraction`, plus `index.md`/`log.md`/`SCHEMA.md` pointers — every RELEASE_ARC
+cite anchors to §Phase 4.5/4.7/4.8/4.9 or the post-public 1.1.x section, none of which this
+branch's additive edit touched. No page edit needed; checked, not skipped.

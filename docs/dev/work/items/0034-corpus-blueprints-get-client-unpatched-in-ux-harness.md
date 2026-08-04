@@ -5,6 +5,7 @@ kind = "item"
 title = "Corpus blueprints' _get_client is never patched in the UX test harness"
 status = "watching"
 decision_owner = "agent"
+epic = 36
 refs = [
   "blueprints/corpus/skills.py:29",
   "blueprints/corpus/proposals.py:22",
@@ -23,3 +24,10 @@ Latent today: a grep of `tests/ux/` found no test currently reaching either rout
 ## Updates
 
 ### 2026-08-03 — filed during fix/never-logged-call-kinds
+
+### 2026-08-04 — folded into Final March epic A (sprint A3)
+
+Sprint A3 (`feat/role-summary-drafting`) adds UX coverage in exactly the corpus
+area this gap makes dangerous, so the fix — extending the `install_llm_stubs`
+autouse `_get_client` patch to the corpus blueprints — is an explicit A3 step
+before any new UX test lands. Latent until then; status stays watching.

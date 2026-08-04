@@ -2,19 +2,17 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 2 / 10 ceiling** | Blocked 4 | Deferred 4 | Watching 5 | Epics 1 | Closed 20
+**Open 3 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 5 | Epics 6 | Closed 20
 
 ## Open
 
-- **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
-- **20** -- Legacy generate() reachable via wizard rail without freezing Compose (`user`) -- Step 5 wizard rail gates only on a context path - skipping Compose still runs the retired full-LLM generate().
+None.
 
 ## Blocked
 
 - **3** -- [HUMAN] GitHub toggles: repo rename, PyPI Trusted Publisher, GHCR visibility, enforce_admins (`user`) -- Repo rename to take-tempo-public/sartor gates PyPI Trusted Publisher + GHCR visibility; enforce_admins still false. [blocked on: owner-only GitHub settings actions, no repo file changes; enforce_admins is a standing open decision]
 - **5** -- Grounding-score persistence gap blocks calibrated L1/L2 metric layers (`agent`) -- First diagnosed 2026-07-09 on robert-bootstrap; independently re-found 2026-07-28 on the SAME fixture, still unfixed. [blocked on: the annotate-flow scorer never writes NLI/MiniCheck scores back into the fixture's annotations.json]
 - **8** -- Compose-time rewrite latitude - the 'generate but don't invent' dial (`user`) -- Design doc landed (COMPOSE_REWRITE_DIAL.md); nothing built yet - read it before touching refinement/grounding code. [depends on: 6] [blocked on: evidence-gated on the PX-39 real-corpus run producing a comparison; owner has now excluded the Microsoft JD from that run]
-- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
 ## Deferred
 
@@ -22,6 +20,9 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **7** -- PX-46 selective memory consolidation (`user`) -- Selective, not wholesale, memory consolidation - present the list, act only after explicit approval. [blocked on: owner sign-off on the keep/consolidate/delete list required first - judged irreversible if botched]
 - **24** -- Template-preview fidelity spike (T2) - multi-column/paging out of reach (`user`) -- In-app preview is single-column (python-docx limit); multi-column/paging fidelity needs a spike, never scheduled. [blocked on: not yet scheduled; needs a product-priority decision on investing in the spike before any code work starts]
 - **25** -- app.run(threaded=True) governance decision - deliberately deferred (`user`) -- Single-threaded app.run() freezes the app during a diagnostics run; making it threaded is an owner-gated C-1 call. [blocked on: owner governance call not yet made; touches the C-1-sensitive loopback-bind area, deliberately kept out of the diagnostics epic and every branch since]
+- **41** -- Domain-vocabulary library for Compose drafting (`user`) -- Local lexicons (design, SWE, business, startup) so Compose drafting uses the JD domain's language and conventions. [blocked on: post-1.1.0 - owner scheduled this for 1.1.x investigation, not the Final March]
+- **42** -- Template-format investigation - dotx/mht import, locked exact-preview ATS set (`user`) -- Investigate dotx/mht as import formats and lock a small set of bullet-proof ATS templates with exact-preview fidelity. [blocked on: post-1.1.0 - owner scheduled a template epic for a 1.1.x sprint]
+- **43** -- Approved-fonts list expansion beyond Arial/Calibri/Georgia (`user`) -- v1.1.0 ships an approved-fonts list of Arial, Calibri, Georgia (sprint B2); verified additions considered later. [blocked on: post-1.1.0 - additions only after per-font ATS verification, owner-gated]
 
 ## Watching
 
@@ -29,7 +30,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **16** -- evals/runner.py --suite real is non-functional - no fixtures exist (`user`) -- No jd.txt/expected.json under evals/fixtures/real/ anywhere in this project - --suite real exits 1, zero LLM spend.
 - **18** -- Large judge-score variance between back-to-back runs of the same fixture (`agent`) -- Same fixture, 68s apart: tone 3.2->2.1, clarification_quality 3.2->3.8, composite 4.06->3.89 - n=2, uncharacterized.
 - **23** -- analyzer.py split (prompts.py + client.py seams) - design-first, deferred (`user`) -- PX-52, WATCH: extract prompts.py/client.py when prompt work next opens the file, not a standalone refactor.
-- **34** -- Corpus blueprints' _get_client is never patched in the UX test harness (`agent`) -- install_llm_stubs patches _get_client on 4 blueprints but not the corpus ones - real API risk if ever hit.
+- **44** -- CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR (`agent`) -- Failed all 3 CI attempts on docs-only PR #98 (3==2 restore-fired, late 3rd _restoreScrollY); not an item-27-31 test.
 
 ## Epics
 
@@ -42,6 +43,37 @@ Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not on
 - **29** -- O-12/O-14: the O-10 regression test itself fails under resource contention (`agent`) -- O-10's own regression test fails 4x under contention (CPU load, -n2, cross-project procs); 5/5 in isolation.
 - **30** -- Keyboard-reorder test: one Playwright 30s timeout, uncontended, no diagnosis (`agent`) -- test_keyboard_reorder_persists_and_reset_reverts: one Playwright 30s timeout; single sample.
 - **31** -- Surgical-refinement network-retry test: assertion flake, one isolated-clean rerun so far (`agent`) -- test_surgical_refinement_network_failure_surfaces_error_with_retry: assertion flake, twice serial (corrected).
+
+### 36 -- Final March epic A - main-app function + UX (open)
+
+Corpus polish + soft-retire; compose wait gate + bullet editing; role-summary drafting; prior-apps move.
+
+- **20** -- Legacy generate() reachable via wizard rail without freezing Compose (`agent`) -- Step 5 wizard rail gates only on a context path - skipping Compose still runs the retired full-LLM generate().
+- **34** -- Corpus blueprints' _get_client is never patched in the UX test harness (`agent`) -- install_llm_stubs patches _get_client on 4 blueprints but not the corpus ones - real API risk if ever hit.
+
+### 37 -- Final March epic B - rendering + ATS correctness (blocked)
+
+Template companion staleness, education discipline, font capture; MM/YYYY dates, month hard block, approved fonts.
+
+No children filed yet.
+
+### 38 -- Final March epic C - diagnostics console (blocked)
+
+Run-lock gaps, sticky tabs, wait-state idioms; per-run drill-down modal; lay copy + info bubbles on every module.
+
+No children filed yet.
+
+### 39 -- Final March epic D - documentation + information architecture (blocked)
+
+IA research + design; full user/dev docs split; user + dev content; screenshots, links, doc-governance lints.
+
+- **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
+
+### 40 -- Final March epic E - the public v1.1.0 cut (blocked)
+
+Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; owner toggles during the epic.
+
+- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
 ## Closed (20)
 

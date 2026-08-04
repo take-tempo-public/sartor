@@ -19,3 +19,11 @@ one of those files is next edited for another reason.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking (migrated, not new)
+
+### 2026-08-04 — constraint recorded for the Final March wordmark lint
+
+The Final March (epic 39, sprints D1/D4) designs and implements a mechanical
+wordmark lint. Per the adversarial review of that plan: the lint MUST inherit this
+item's exclusions (`docs/wiki/`, `docs/dev/reviews/`) or it goes red on the ~107
+deliberately-unswept legacy files this item exists to leave alone. The sweep
+itself stays opportunistic — this item's status is unchanged.
