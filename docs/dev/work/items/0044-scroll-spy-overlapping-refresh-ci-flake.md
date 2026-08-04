@@ -3,7 +3,7 @@ schema = 1
 id = 44
 kind = "item"
 title = "CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR"
-status = "watching"
+status = "open"
 decision_owner = "agent"
 refs = [
   "tests/ux/regression/test_20260708_busy_states_and_chip.py",
@@ -35,3 +35,40 @@ to schedule its own `fix/*` investigation.
 ## Updates
 
 ### 2026-08-04 — filed during chore/v11-march-kickoff (CI observation on this branch's own PR)
+
+### 2026-08-04 — RECURRED on PR #99; escalation signal fired; status watching -> open
+
+Second occurrence, on `feat/consumer-enumeration-gate` (PR #99, run
+30943537217/job/92107687397). This is exactly the condition the original filing named
+as the escalation trigger: *"if it blocks a march PR again, that is the escalation
+signal to schedule its own `fix/*` investigation."* Status raised to `open`.
+
+**Same signature as PR #98, confirmed by comparing the event lists rather than by
+memory** — 3 `_restoreScrollY-fired` events instead of 2, and the extra one is an
+`ordinal: 2, scheduledDuring: [2]` event landing *after* the `ordinal: 3` event:
+
+```
+t=470.9  ordinal 1  scheduledDuring [1]
+t=518.8  ordinal 3  scheduledDuring [2, 3]
+t=596.9  ordinal 2  scheduledDuring [2]     <-- late, out of order
+assert 3 == 2
+```
+
+PR #98's instance had the same inversion with a ~46ms lag; this one is ~78ms.
+
+**Rerun-exhausted again — all 3 attempts failed** (`2 rerun` + final `FAILED`; the job
+log carries the explicit `needed a retry (2 of 3 attempts failed)` warning). Under C-7
+that is a genuine failure signal, not a retry lottery. Two rerun-exhausted occurrences
+in two consecutive PRs is hard to reconcile with the "~42% single-attempt" rate the
+original filing assumed — if that rate held, three consecutive failures would be ~7%,
+twice in a row ~0.5%. **Either the per-attempt rate is materially higher than believed,
+or something changed.** That arithmetic is itself a finding and should be the
+investigation's starting point rather than an assumption carried forward.
+
+**Neither PR could plausibly be the cause.** #98 was docs-only. #99 touches no JS, no
+CSS, no Jinja template, and nothing under `ui_pages/` — verified with
+`git diff --name-only origin/main..HEAD` (26 files, none of those categories). Both PRs
+also passed the same UX tier locally: #99's local gate ran `pytest -m ux` to
+137 passed / 1 xfailed / 1 xpassed with **zero reruns**.
+
+Still **not** patched around here, per the original filing's own instruction.

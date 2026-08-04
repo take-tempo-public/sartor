@@ -1,10 +1,16 @@
 <!-- provenance: schema=1 session=c3ba9dbf-3e17-4441-b1ee-e159ed045e62 branch=feat/consumer-enumeration-gate commit=6ee2f70 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-08-04 -->
 
-# Agent handoff: after `feat/consumer-enumeration-gate` (C-10 shipped; next: epic A, sprint A1)
+# Agent handoff: after `feat/consumer-enumeration-gate` (C-10 built, **PR #99 OPEN and unmerged**; next: item 44 investigation)
 
-**Branch to create:** `epic/a-app-core` off `main`, then `fix/experience-soft-retire` off it
-(sprint A1's first branch — see "First move")
+**Branch to create:** `fix/ux-scroll-spy-overlapping-refresh` off `main`
 **Base branch:** `main`
+
+> **READ THIS FIRST — this is not a normal "branch merged, carry on" handoff.**
+> PR #99 (`feat/consumer-enumeration-gate`) is **open, green except one check, and
+> deliberately NOT merged.** The owner chose to stop and fix the blocking CI flake
+> (item 44) before landing it. **Do not merge #99, do not prune its branch, and do not
+> start sprint A1.** Your branch is the item-44 investigation. #99 lands after the gate
+> it depends on is trustworthy again.
 
 ---
 
@@ -52,26 +58,30 @@ session-model prescriptions, and every sprint brief with its adversarial-review 
 - ~~`fix/wiki-freshness-relevance-classification`~~ ✓ — item 35, gate measurement fixed (PR #97)
 - ~~`fix/extract-experiences-telemetry-pollution`~~ ✓ — item 33, telemetry pollution (PR #96)
 - ~~`chore/v11-march-kickoff`~~ ✓ — march plan + board filing (PR #98)
-- ~~`feat/consumer-enumeration-gate`~~ ✓ — this branch; charter **C-10** + the
-  `require-consumer-enumeration` guard. **Owner-directed insert**, not a march sprint — it
-  landed ahead of A1 deliberately so A1 inherits the gate its own brief was hand-written to
-  follow.
-- **`fix/experience-soft-retire`** ← next (sprint A1, first branch; Opus session)
-- `feat/corpus-polish` ← A1's second branch, its own session after the fix lands
-- A2–A4, then epics B–E ← do not start any of these on the A1 branches
+- `feat/consumer-enumeration-gate` — this branch; charter **C-10** + the
+  `require-consumer-enumeration` guard. **Owner-directed insert**, not a march sprint.
+  **PR #99 OPEN, NOT MERGED** — blocked by item 44's flake, held at owner direction.
+- **`fix/ux-scroll-spy-overlapping-refresh`** ← next (item 44; this handoff's branch)
+- `feat/consumer-enumeration-gate` PR #99 ← merges once item 44 is fixed and its UX check
+  passes honestly (not by re-running until green)
+- `fix/experience-soft-retire` ← sprint A1's first branch, AFTER the above
+- `feat/corpus-polish`, then A2–A4, then epics B–E
 
-Do NOT start A2 (compose UX), A3 (role-summary drafting), or A4 (prior-apps move) on an A1
-branch — each is its own sprint session per the march cadence, and the march briefs in
-RELEASE_ARC bound each one. Do not touch epics B–E work at all yet.
+**Do NOT start sprint A1 on this branch.** The march is paused one branch short of it:
+A1's brief depends on the C-10 gate that #99 carries, and #99 depends on item 44. The
+order is item 44 → merge #99 → A1. Do not touch epics B–E work at all yet.
 
 ---
 
 ## What just landed on `main`
 
-**Not yet merged at authoring time** — this branch's PR follows this handoff's commit.
-`main` is at `0bc01e1` (PR #98). Charter **C-10** — "enumerate consumers before changing a
-contract" — ships here as reach + teeth. **No product behavior changed:** no route, no
-prompt, no model, no migration, no new dependency.
+**Nothing landed. `main` is still at `0bc01e1` (PR #98).** PR #99 is open with this
+branch's work and is deliberately unmerged — see the banner at the top. What follows
+describes what is *sitting in that PR*, not what is on `main`.
+
+Charter **C-10** — "enumerate consumers before changing a contract" — as reach + teeth.
+**No product behavior changed:** no route, no prompt, no model, no migration, no new
+dependency.
 
 - **New guard** `scripts/enforcement/guards/require_consumer_enumeration.py` — blocks
   `Edit`/`Write` to a gated surface until `docs/dev/blast-radius/<branch-slug>.md` has a
@@ -92,7 +102,11 @@ prompt, no model, no migration, no new dependency.
   rule 6 (inside the verbatim block — it now reaches every future handoff by construction);
   `AGENTS.md`, `CLAUDE.md`, `enforcement.md` §C2, `CHANGELOG.md`;
   `wiki/pages/governance-extraction.md` re-anchored C-7…C-9 → C-7…C-10.
-- **Gate:** `python -m scripts.gate` green (ruff · ruff format · mypy · pytest).
+- **Local gate:** `python -m scripts.gate` green with **zero reruns** — ruff, ruff format
+  (333), mypy (348), pytest 2230 passed/1 skipped, `pytest -m ux` **137 passed**.
+- **CI on PR #99:** everything green *except* `UX / a11y / PDF (Playwright, py3.12)`,
+  which is item 44's flake, rerun-exhausted. An earlier run also hit item 46's flake on
+  py3.13; that leg passed on the next run.
 
 **The gate blocked its own author mid-branch, and the block was resolved by enumerating,
 not bypassing** — recorded as Surface 5 in
@@ -107,7 +121,7 @@ importers each, but non-test fan-in of 2 and 4, below threshold).
 **Adaptation note (same as predecessors):** `docs/dev/work/BOARD.md`'s full still-open
 subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is superseded.
 
-**Open (4 / 10 ceiling):**
+**Open (5 / 10 ceiling):**
 1. Epic 36 — Final March epic A (active stream; this handoff's next move).
 2. Item 9 — visual-assets refresh (now epic D, sprint D4 — deliberately last-but-one).
 3. Item 20 — legacy `generate()` reachable via wizard rail (now epic A, sprint A2; owner
@@ -119,6 +133,17 @@ subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is super
    **the plan gate stays OPEN into the next session** — observed directly at this session's
    start (marker mtime 07:54 naming a 06:16 plan, freshness test passing). Needs its own
    `fix/*` and a C-7 dossier: the mechanism is evidenced, the fix shape is not.
+5. **Item 44 — scroll-spy overlapping-refresh flake, ESCALATED `watching` → `open` this
+   session.** `test_scroll_spy_attributes_overlapping_refresh_corpus_calls` blocked a
+   **second** consecutive PR (#98 docs-only, #99 governance-only), **rerun-exhausted both
+   times** (3/3 attempts). Same signature each time: 3 `_restoreScrollY-fired` events
+   instead of 2, the extra being an `ordinal: 2` landing *after* `ordinal: 3`. The
+   original filing named exactly this as its escalation trigger. **Two rerun-exhausted
+   runs back to back does not fit the assumed ~42% per-attempt rate** (that would be ~0.5%
+   for both) — so either the rate is materially worse than believed or something changed,
+   and that arithmetic is the investigation's starting point, not a carried-forward
+   assumption. Needs its own `fix/*` with the `ux-scroll-position-flake.md` rigor. **Do
+   not patch around it in a march sprint.**
 
 **Blocked (3 + the sequenced epics):**
 5. Item 3 — [HUMAN] GitHub toggles (repo rename, PyPI Trusted Publisher, GHCR,
@@ -138,7 +163,7 @@ subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is super
 15. Item 42 — dotx/mht template-format investigation (post-1.1).
 16. Item 43 — approved-fonts expansion (post-1.1, per-font verification).
 
-**Watching (7):**
+**Watching (6):**
 17. Item 2 — wordmark sweep, opportunistic only; the D1/D4 wordmark lint MUST inherit its
     exclusions (`docs/wiki/`, `docs/dev/reviews/`).
 18. Item 16 — `evals/runner.py --suite real` non-functional.
@@ -146,9 +171,7 @@ subset is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is super
 20. Item 23 — PX-52 analyzer.py split, WATCH disposition.
 21. Item 34 — corpus blueprints' `_get_client` unpatched in the UX harness (now epic A — an
     explicit A3 step before any new corpus UX test lands).
-22. Item 44 — `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`
-    rerun-exhausted on docs-only PR #98; one CI sample, watching.
-23. **Item 46 — `test_reader_never_observes_a_partial_file`'s CONTROL arm flaked on
+22. **Item 46 — `test_reader_never_observes_a_partial_file`'s CONTROL arm flaked on
     PR #99 (NEW, this session).** The py3.13 leg failed `assert naive` — the naive
     writer did not tear, so the harness refused a vacuous pass. The subject assertion
     (`assert not atomic`) never fired. Same commit passed py3.11/py3.12 and passed
@@ -162,13 +185,18 @@ per-branch close-out checks, or all at once if a session deliberately runs
 `/wiki-self-update`. Item 19 (UX-flake solution sprint) remains open on the board inside
 the release chain via item 10's `depends_on` — schedule it before epic E at the latest.
 
-Open-only count is 4 — below the ~8–10 reduction-sprint threshold.
+Open-only count is 5 — below the ~8–10 reduction-sprint threshold, but note two of the
+five (44, 45) are enforcement/CI-infrastructure defects found this session, not product
+work. Item 44 in particular is now **blocking the PR channel itself**, which makes it a
+sequencing question for the owner rather than a background watch.
 
-**C-10 note for the next session:** the gate is live now. Sprint A1 touches `db/models.py`
-and `db/migrations/` — **both gated** — so A1's first act after its diagnosis dossier is
-`docs/dev/blast-radius/experience-soft-retire.md`. That is not extra work: A1's brief
-already required exactly this audit (RELEASE_ARC §Final March, epic A, item 3). The guard
-makes it non-optional instead of dependent on reading the brief carefully.
+**C-10 note:** the gate is live **on the `feat/consumer-enumeration-gate` branch only** —
+it is not on `main` until PR #99 merges. Your item-44 branch, cut from `main`, will not
+have it. When #99 does land, sprint A1 inherits it: A1 touches `db/models.py` and
+`db/migrations/` (both gated), so its first act after the diagnosis dossier is
+`docs/dev/blast-radius/experience-soft-retire.md`. Not extra work — A1's brief already
+required exactly that audit (RELEASE_ARC §Final March, epic A, item 3); the guard just
+makes it non-optional.
 
 **Interim posture on item 45:** never ride a plan-approval marker you did not earn. If one
 exists at session start, it is stale from the last PR merge — `EnterPlanMode` → write the
@@ -178,62 +206,78 @@ plan → `ExitPlanMode`.
 
 ## What this branch should build
 
-Sprint A1 of the Final March, first branch: `fix/experience-soft-retire`.
+**Item 44 — `test_scroll_spy_attributes_overlapping_refresh_corpus_calls`.** Branch:
+`fix/ux-scroll-spy-overlapping-refresh` off `main`. This is a `fix/*`, so
+`require-evidence-before-fix` will block production edits until
+`docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md` has a filled-in `## Observed`.
 
-1. **Reproduce the defect first (C-7):** soft-retiring a 0-bullet experience role silently
-   no-ops — `Experience` has no retired column (`db/models.py:88-108`);
-   `DELETE /api/experiences/<id>` only cascades `is_active=0` to bullets
-   (`blueprints/corpus/experiences.py:236-263`; the update at `:256` matches 0 rows,
-   returns 200, toasts "Retired 0 bullet(s)"). Write the dossier at
-   `docs/dev/diagnosis/experience-soft-retire.md` before any production edit.
-2. **Then the C-10 dossier** at `docs/dev/blast-radius/experience-soft-retire.md` — the
-   `require-consumer-enumeration` guard blocks `db/models.py` and `db/migrations/**` until
-   its `## Consumers` section names the surface being edited. Start from
-   `docs/dev/blast-radius/TEMPLATE.md`. This is step 4's audit, done first and written
-   down, which is the whole point of the ordering.
-3. **Fix:** experience-level retired flag + Alembic migration — native `ADD COLUMN` per the
-   `db/migrations/versions/0011_experience_title_is_active.py` precedent, never
-   `batch_alter_table` on this parent (FK-cascade trap). Route + list filtering + an
-   unretire affordance in the corpus UI (`deleteExperience`, `static/app.js:5499-5511`;
-   `_renderCorpusDetail`, `static/app.js:4945-4976`).
-4. **Blast-radius filtering** (adversarial-review amendment — this is most of the work):
-   audit every unfiltered `session.query(Experience)` consumer; at minimum
-   `corpus_to_json_resume.py:176-181` (a retired empty role otherwise still renders into
-   REAL generated output) and the curation suggestion queries
-   (`blueprints/corpus/curation.py:162,341,417`); decide-and-document each site (filter vs
-   deliberately include).
-5. **Tests:** the 0-bullet retire path end-to-end (retires visibly, excluded from generated
-   output, unretire restores), migration up/down on a copy.
+**This is a C-7 investigation, not a patch.** The first commit is the instrument or the
+reproduction — never the fix.
 
-Scope is bounded to sprint A1's `fix/experience-soft-retire` bullet in `RELEASE_ARC.md`
-§"v1.1.0 Final March" (Epic A). Do not expand beyond what is listed there — the corpus
-layout work (section order, education rows, skills compaction, role-card order) is
-`feat/corpus-polish`, the NEXT session's branch.
+1. **Read the two prior filings before instrumenting anything.**
+   `docs/dev/work/items/0044-scroll-spy-overlapping-refresh-ci-flake.md` (both
+   occurrences, with the event lists) and `docs/dev/diagnosis/ux-scroll-position-flake.md`
+   (the rigor bar; this test is a sixth candidate in that settle/restore family, NOT one
+   of epic 19's five closed children 27–31).
+2. **Start from the arithmetic, not the assumption.** The original filing assumed a ~42%
+   per-attempt failure rate. Two rerun-exhausted runs back to back (3/3 failures, twice)
+   would be ~0.5% under that rate. So either the rate is materially worse than believed
+   or something changed between #98 and #99. **Establish the real per-attempt rate first**
+   — `reference-rerun-masking-chronic-flake` is the method (measure per-ATTEMPT, never
+   per-run). A local loop under CPU saturation is the cheap instrument
+   (`reference-cpu-saturation-flake-repro`; recalibrate the load PER TEST).
+3. **The observed signature, both times:** 3 `_restoreScrollY-fired` events instead of 2,
+   the extra being an `ordinal: 2, scheduledDuring: [2]` landing *after* the
+   `ordinal: 3, scheduledDuring: [2,3]` event (~46ms late on #98, ~78ms on #99). A
+   late-arriving ordinal-2 restore that should have been superseded by ordinal 3 is the
+   thing to explain. Treat that as the symptom, not the mechanism — reading it as
+   "obviously a stale-generation guard gap" is a hypothesis and belongs under
+   `## Inferred`.
+4. **Scope the instrument wider than the hypothesis** (C-7 rule 4). The rival explanations
+   include a genuine `scrollGen` supersede-check gap, a `_markComposeBgReload` counter
+   race, and plain CI-runner scheduling. An instrument narrowed to one will confirm it by
+   hiding the others.
+5. **Do not weaken the assertion to make it pass.** `assert len(fired) == 2` is the
+   invariant; relaxing it to `>= 2` or adding a sleep converts a flaky-but-honest test
+   into a permanently green meaningless one. Same rule item 46 carries for the torn-read
+   control arm.
+
+**Then, and only then:** re-run PR #99's checks. If the UX job passes honestly, merge #99
+(`gh pr merge 99 --merge`, never `--squash`/`--rebase`), then sprint A1 begins.
+
+Scope is bounded to item 44. Do **not** also take item 45 or 46 on this branch — one
+branch, one item. Do not start sprint A1.
 
 ---
 
 ## First move
 
-**Owner, at launch: set `/model opus`** (march prescription for sprint A1) and approve the
-session plan when asked — one click, per the sprint-session cadence.
+**Owner, at launch: set `/model opus`** — this is an evidence-first flake investigation in
+the settle/restore family, the most expensive category this project has (epic 19 ran five
+children before closing). Approve the session plan when asked.
+
+**The pointer you were given cites `feat/consumer-enumeration-gate`, NOT `main`** — because
+PR #99 never merged. That is expected, not corruption. Do not "correct" it to `main`; the
+check script verifies the branch ref and will pass as given.
 
 Agent: FIRST action is `python scripts/check_handoff_pointer.py "<the pointer line you were
 given>"`; once it passes, consume this file
 (`python scripts/verify_doc_template.py docs/dev/handoffs/feat-consumer-enumeration-gate.md
 docs/dev/AGENT_HANDOFF_TEMPLATE.md --event consumed --agent <agent>`). Then read
-`RELEASE_ARC.md` §"v1.1.0 Final March" + `docs/dev/work/BOARD.md`. Then create
-`epic/a-app-core` off `main`, create `fix/experience-soft-retire` off it, write a plan at
+`docs/dev/work/items/0044-scroll-spy-overlapping-refresh-ci-flake.md` and
+`docs/dev/diagnosis/ux-scroll-position-flake.md`. Then create
+`fix/ux-scroll-spy-overlapping-refresh` off `main`, write a plan at
 `~/.claude/plans/<slug>.md`, and show it to the user before touching any code.
-**Do not code first.**
+**Do not code first. The first commit is the instrument, never the fix.**
 
 **Do not trust a pre-existing plan-approval marker** (carry-forward item 45). If
-`~/.claude/plans/.approved-<project-key>` exists when you start, it is stale from the last
-PR-channel merge, not approval for your work — earn a fresh one via `EnterPlanMode` → plan
-→ `ExitPlanMode`.
+`~/.claude/plans/.approved-<project-key>` exists when you start, it is stale — the
+PR-channel merge no longer wipes it — and it is NOT approval for your work. Earn a fresh
+one via `EnterPlanMode` → write the plan → `ExitPlanMode`.
 
-Close-out reminder for that session: the sprint branch merges into `epic/a-app-core` as the
-session's FINAL act (after the full close-out checklist); never edit production code on the
-epic branch itself.
+**Do not merge or prune PR #99 / `feat/consumer-enumeration-gate`.** It is the branch this
+handoff lives on. It merges only after item 44 is fixed and its UX check passes without
+needing a retry.
 
 ---
 
