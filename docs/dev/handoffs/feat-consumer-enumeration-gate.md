@@ -1,16 +1,16 @@
 <!-- provenance: schema=1 session=c3ba9dbf-3e17-4441-b1ee-e159ed045e62 branch=feat/consumer-enumeration-gate commit=6ee2f70 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-08-04 -->
 
-# Agent handoff: after `feat/consumer-enumeration-gate` (C-10 built, **PR #99 OPEN and unmerged**; next: item 44 investigation)
+# Agent handoff: after `feat/consumer-enumeration-gate` (C-10 merged; next: item 44, then the enforcement-layer pipeline)
 
 **Branch to create:** `fix/ux-scroll-spy-overlapping-refresh` off `main`
 **Base branch:** `main`
 
-> **READ THIS FIRST — this is not a normal "branch merged, carry on" handoff.**
-> PR #99 (`feat/consumer-enumeration-gate`) is **open, green except one check, and
-> deliberately NOT merged.** The owner chose to stop and fix the blocking CI flake
-> (item 44) before landing it. **Do not merge #99, do not prune its branch, and do not
-> start sprint A1.** Your branch is the item-44 investigation. #99 lands after the gate
-> it depends on is trustworthy again.
+> **READ THIS FIRST — the march is paused; your branch is NOT sprint A1.**
+> Five enforcement/CI-layer defects and directives surfaced in one session, and the owner
+> scheduled them ahead of the march. **Do not start sprint A1** (`fix/experience-soft-retire`)
+> until items 44, 45 and the two owner directives below are addressed or explicitly
+> deferred with the owner. Your branch is the **item-44 investigation** — a C-7
+> evidence-first flake diagnosis, not a patch.
 
 ---
 
@@ -58,30 +58,27 @@ session-model prescriptions, and every sprint brief with its adversarial-review 
 - ~~`fix/wiki-freshness-relevance-classification`~~ ✓ — item 35, gate measurement fixed (PR #97)
 - ~~`fix/extract-experiences-telemetry-pollution`~~ ✓ — item 33, telemetry pollution (PR #96)
 - ~~`chore/v11-march-kickoff`~~ ✓ — march plan + board filing (PR #98)
-- `feat/consumer-enumeration-gate` — this branch; charter **C-10** + the
-  `require-consumer-enumeration` guard. **Owner-directed insert**, not a march sprint.
-  **PR #99 OPEN, NOT MERGED** — blocked by item 44's flake, held at owner direction.
+- ~~`feat/consumer-enumeration-gate`~~ ✓ — charter **C-10** + the
+  `require-consumer-enumeration` guard (PR #99). **Owner-directed insert**, not a march
+  sprint.
 - **`fix/ux-scroll-spy-overlapping-refresh`** ← next (item 44; this handoff's branch)
-- `feat/consumer-enumeration-gate` PR #99 ← merges once item 44 is fixed and its UX check
-  passes honestly (not by re-running until green)
-- `fix/experience-soft-retire` ← sprint A1's first branch, AFTER the above
+- Then, in the owner's stated order: deterministic CI-wait wrapper → verify-don't-assume
+  Bash guard → item 45 → item 46 (all four detailed below)
+- `fix/experience-soft-retire` ← sprint A1's first branch, only AFTER the above
 - `feat/corpus-polish`, then A2–A4, then epics B–E
 
-**Do NOT start sprint A1 on this branch.** The march is paused one branch short of it:
-A1's brief depends on the C-10 gate that #99 carries, and #99 depends on item 44. The
-order is item 44 → merge #99 → A1. Do not touch epics B–E work at all yet.
+**The march is deliberately paused.** A single session surfaced five enforcement/CI-layer
+problems (items 44, 45, 46 plus two owner directives), which the owner read as a signal
+that this layer is where attention belongs before more product work lands. Do not touch
+epics B–E at all yet, and do not start A1 without checking in.
 
 ---
 
 ## What just landed on `main`
 
-**Nothing landed. `main` is still at `0bc01e1` (PR #98).** PR #99 is open with this
-branch's work and is deliberately unmerged — see the banner at the top. What follows
-describes what is *sitting in that PR*, not what is on `main`.
-
-Charter **C-10** — "enumerate consumers before changing a contract" — as reach + teeth.
-**No product behavior changed:** no route, no prompt, no model, no migration, no new
-dependency.
+PR #99, merged after all required checks went green. Charter **C-10** — "enumerate
+consumers before changing a contract" — as reach + teeth. **No product behavior changed:**
+no route, no prompt, no model, no migration, no new dependency.
 
 - **New guard** `scripts/enforcement/guards/require_consumer_enumeration.py` — blocks
   `Edit`/`Write` to a gated surface until `docs/dev/blast-radius/<branch-slug>.md` has a
@@ -104,9 +101,9 @@ dependency.
   `wiki/pages/governance-extraction.md` re-anchored C-7…C-9 → C-7…C-10.
 - **Local gate:** `python -m scripts.gate` green with **zero reruns** — ruff, ruff format
   (333), mypy (348), pytest 2230 passed/1 skipped, `pytest -m ux` **137 passed**.
-- **CI on PR #99:** everything green *except* `UX / a11y / PDF (Playwright, py3.12)`,
-  which is item 44's flake, rerun-exhausted. An earlier run also hit item 46's flake on
-  py3.13; that leg passed on the next run.
+- **CI on PR #99:** green on the third run. The first hit item 46's flake (py3.13), the
+  second hit item 44's (rerun-exhausted), the third was clean. **That history is the
+  reason items 44 and 46 exist — do not read the final green as "the tests are fine."**
 
 **The gate blocked its own author mid-branch, and the block was resolved by enumerating,
 not bypassing** — recorded as Surface 5 in
@@ -185,18 +182,27 @@ per-branch close-out checks, or all at once if a session deliberately runs
 `/wiki-self-update`. Item 19 (UX-flake solution sprint) remains open on the board inside
 the release chain via item 10's `depends_on` — schedule it before epic E at the latest.
 
-Open-only count is 5 — below the ~8–10 reduction-sprint threshold, but note two of the
-five (44, 45) are enforcement/CI-infrastructure defects found this session, not product
-work. Item 44 in particular is now **blocking the PR channel itself**, which makes it a
-sequencing question for the owner rather than a background watch.
+Open-only count is 5 — below the ~8–10 reduction-sprint threshold. But the composition
+matters more than the count here: **two of the five (44, 45) are enforcement/CI-infrastructure
+defects found in a single session**, and two further owner directives (deterministic
+CI-wait, verify-don't-assume guard) came out of the same session without board items yet.
+That is five enforcement-layer problems from one branch. The owner read it as a signal to
+pause the march and work this layer — which is why this handoff points at item 44 rather
+than sprint A1.
 
-**C-10 note:** the gate is live **on the `feat/consumer-enumeration-gate` branch only** —
-it is not on `main` until PR #99 merges. Your item-44 branch, cut from `main`, will not
-have it. When #99 does land, sprint A1 inherits it: A1 touches `db/models.py` and
+**C-10 note:** the gate is live on `main` now. Your item-44 branch will have it, though it
+is unlikely to fire — `static/app.js` and `tests/**` are not gated. It *will* fire on the
+verify-don't-assume guard work (directive 2): adding a surface means editing
+`scripts/enforcement/blast_radius.py`, which is itself gated, so that branch writes
+`docs/dev/blast-radius/<slug>.md` first. That is the gate working as designed, not an
+obstacle — see this branch's own dossier, Surface 5, where it blocked its author for
+exactly that reason.
+
+When sprint A1 eventually runs, it inherits the gate too: A1 touches `db/models.py` and
 `db/migrations/` (both gated), so its first act after the diagnosis dossier is
 `docs/dev/blast-radius/experience-soft-retire.md`. Not extra work — A1's brief already
-required exactly that audit (RELEASE_ARC §Final March, epic A, item 3); the guard just
-makes it non-optional.
+required that audit (RELEASE_ARC §Final March, epic A, item 3); the guard just makes it
+non-optional.
 
 **Interim posture on item 45:** never ride a plan-approval marker you did not earn. If one
 exists at session start, it is stale from the last PR merge — `EnterPlanMode` → write the
@@ -242,11 +248,49 @@ reproduction — never the fix.
    into a permanently green meaningless one. Same rule item 46 carries for the torn-read
    control arm.
 
-**Then, and only then:** re-run PR #99's checks. If the UX job passes honestly, merge #99
-(`gh pr merge 99 --merge`, never `--squash`/`--rebase`), then sprint A1 begins.
-
 Scope is bounded to item 44. Do **not** also take item 45 or 46 on this branch — one
-branch, one item. Do not start sprint A1.
+branch, one item.
+
+---
+
+### The queue behind item 44 (owner-directed, 2026-08-04 — plan these, don't start them here)
+
+Two of these are **owner directives issued verbally at the end of the C-10 session** and
+have no board item yet; file them as items when you pick them up. Both are also in agent
+memory (`project-deterministic-ci-wait-governance`,
+`project-verify-dont-assume-enforcement-gap`) with fuller design sketches.
+
+1. **Deterministic CI-wait wrapper.** *"the wrapping and check process should be
+   deterministic"* — stop agents burning wall-clock on hand-rolled watchers. Two 30-minute
+   `Monitor` watches on PR #99 emitted **zero** events while a required check was red;
+   the silence read as health. **`gh pr checks <n> --watch --required --fail-fast` already
+   exists** (gh 2.96.0) and should be the basis. Shape it like `scripts/gate.py` did for
+   "gate green": one script that is the single definition of "the PR is green," printing
+   the failing job's `--log-failed` tail so there is no second round-trip, and
+   **structurally unable to exit silent**. Must distinguish required from advisory checks
+   (this repo has both), and must not let *green-after-retries* look identical to *green*
+   (charter C-7 rule 3 applied to the wrapper).
+2. **Verify-don't-assume PreToolUse Bash guard.** Block a Bash command that invokes a
+   binary **not on PATH** — split on `|`/`&&`/`;`, take each segment's leading token, drop
+   builtins, `shutil.which` the rest. This would have caught the root cause instantly: the
+   `jq` **binary** does not exist on this machine (`gh --jq` works — gh embeds gojq).
+   - **Efficiency constraint:** do NOT add a 4th standalone Bash hook. `.claude/settings.json`
+     wires three separate `PreToolUse`/`Bash` entries today, each spawning its own Python
+     process on **every** Bash call; Edit|Write was consolidated behind
+     `hooks/edit-write-dispatcher.sh` (PX-37) but Bash never was. Build
+     `hooks/bash-dispatcher.sh` and fold all four in — the dominant cost is process spawn,
+     not the check.
+   - **Scope it honestly (C-0):** this closes ONE deterministically-detectable slice —
+     missing binaries. It does **not** enforce "verify, never assume" in general, and must
+     not be written up as if it does. A hook cannot separate a verified claim from a
+     plausible one; `evidence.has_observed_evidence` already concedes exactly this in its
+     own docstring ("a ceremony check, not a truth check"), as does C-10's path-level
+     guard. A guard that *sounds* like it enforces the principle is worse than none,
+     because it licenses the belief that assumptions are now caught.
+3. **Item 45** — plan-approval marker survives a PR-channel merge.
+4. **Item 46** — torn-read control-arm flake.
+
+Then sprint A1. **Do not start A1 without checking in with the owner first.**
 
 ---
 
@@ -255,10 +299,6 @@ branch, one item. Do not start sprint A1.
 **Owner, at launch: set `/model opus`** — this is an evidence-first flake investigation in
 the settle/restore family, the most expensive category this project has (epic 19 ran five
 children before closing). Approve the session plan when asked.
-
-**The pointer you were given cites `feat/consumer-enumeration-gate`, NOT `main`** — because
-PR #99 never merged. That is expected, not corruption. Do not "correct" it to `main`; the
-check script verifies the branch ref and will pass as given.
 
 Agent: FIRST action is `python scripts/check_handoff_pointer.py "<the pointer line you were
 given>"`; once it passes, consume this file
@@ -275,9 +315,10 @@ docs/dev/AGENT_HANDOFF_TEMPLATE.md --event consumed --agent <agent>`). Then read
 PR-channel merge no longer wipes it — and it is NOT approval for your work. Earn a fresh
 one via `EnterPlanMode` → write the plan → `ExitPlanMode`.
 
-**Do not merge or prune PR #99 / `feat/consumer-enumeration-gate`.** It is the branch this
-handoff lives on. It merges only after item 44 is fixed and its UX check passes without
-needing a retry.
+**When you wait on CI, use `gh pr checks <n> --watch --required --fail-fast`** — not a
+hand-rolled poll loop, and never a pipe to the `jq` binary (it does not exist here; use
+`gh --jq`). This is the friction directive 1 above exists to fix; don't reproduce it while
+fixing it.
 
 ---
 
