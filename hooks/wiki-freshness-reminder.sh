@@ -44,8 +44,18 @@ if [ -z "$SHA" ]; then
   exit 0  # sentinel — silent until the first ingest establishes a baseline
 fi
 
-# Count tracked files changed since the baseline, excluding the wiki itself.
-CHANGED=$(git -C "$ROOT" diff --name-only "$SHA" HEAD 2>/dev/null | grep -vE '^docs/wiki/' | grep -c .)
+# Count tracked files changed since the baseline that are wiki-relevant (shares the
+# same classification as scripts/wiki_freshness.py's merge-blocking gate, via
+# scripts/wiki_relevance.py — a bare `docs/wiki/`-only bash filter previously
+# undercounted-in-one-direction (missed docs-site/) and overcounted-in-the-other
+# (counted process/provenance churn as drift); see
+# docs/dev/diagnosis/wiki-freshness-relevance-classification.md).
+CHANGED=$(git -C "$ROOT" diff --name-only "$SHA" HEAD 2>/dev/null | python3 -c "
+import sys
+sys.path.insert(0, '$ROOT')
+from scripts.wiki_relevance import is_wiki_relevant
+print(sum(1 for line in sys.stdin if line.strip() and is_wiki_relevant(line.strip())))
+" 2>/dev/null)
 if [ "${CHANGED:-0}" -eq 0 ]; then
   exit 0
 fi

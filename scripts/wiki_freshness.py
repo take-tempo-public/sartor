@@ -44,6 +44,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from scripts.wiki_relevance import is_wiki_relevant
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 _SHA_RE = re.compile(r"[0-9a-f]{40}")
@@ -81,12 +83,16 @@ def last_ingest_sha(repo_root: Path = REPO_ROOT) -> str | None:
 
 
 def drift_count(repo_root: Path = REPO_ROOT, sha: str | None = None) -> int | None:
-    """Tracked files changed since the checkpoint, excluding `docs/wiki/` and `docs-site/`.
+    """Tracked files changed since the checkpoint that are wiki-relevant per
+    `scripts.wiki_relevance.is_wiki_relevant` (which itself always excludes
+    `docs/wiki/` and `docs-site/` — the artifact and its L3 projection, never a wiki
+    source; Carry-forward ledger #1, `docs-site/` over-count).
 
-    `docs-site/` is the Fumadocs static export — an L3 *projection* of the wiki (like
-    `docs/wiki/` itself), not a wiki source. Its churn (generated/build-adjacent files)
-    must not count as wiki drift, so it is excluded alongside `docs/wiki/` (Carry-forward
-    ledger #1, `docs-site/` over-count).
+    Process/provenance/test-infrastructure churn (session handoffs, the provenance
+    ledger, per-item work filings, evidence dossiers, test files, etc.) is excluded
+    too — none of it is ever cited by a wiki page, and counting it produced two prior
+    false-positive gate trips before this filter existed
+    (`docs/dev/diagnosis/wiki-freshness-relevance-classification.md`).
 
     None when there is no real baseline (see `last_ingest_sha`) or the git diff itself fails
     (not a git checkout, checkpoint SHA not reachable) — callers treat None as "can't judge,
@@ -100,9 +106,7 @@ def drift_count(repo_root: Path = REPO_ROOT, sha: str | None = None) -> int | No
     if result.returncode != 0:
         return None
     return sum(
-        1
-        for line in result.stdout.splitlines()
-        if line.strip() and not line.startswith("docs/wiki/") and not line.startswith("docs-site/")
+        1 for line in result.stdout.splitlines() if line.strip() and is_wiki_relevant(line.strip())
     )
 
 

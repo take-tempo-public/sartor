@@ -259,7 +259,13 @@ damaged text instead of saying so (see
    written on `main` at session start when the incoming handoff pointer was
    consumed) **committed on this branch** — folded into an early commit, never
    left untracked and never given its own dedicated branch/PR (see
-   `docs/dev/prov/SPEC.md` §5 step 3); **any dev server or
+   `docs/dev/prov/SPEC.md` §5 step 3); **wiki-relevance check** — if this branch's
+   own diff touches any path `scripts/wiki_relevance.py` (`is_wiki_relevant()`)
+   classifies as wiki-relevant, run a scoped `/wiki-self-update` against just this
+   branch's own diff and commit the wiki edit now, before opening the PR (same
+   "committed before merge" discipline as memory/CHANGELOG, never a follow-up PR);
+   if the touched file needed no page edit, say so explicitly rather than silently
+   skipping the check; **any dev server or
    long-lived background process started this session terminated** before closing the
    window (check with `tasklist`/equivalent — an agent's own orphaned processes are
    exactly the failure mode carry-forward ledger item 20 documents). "Done" is the output
