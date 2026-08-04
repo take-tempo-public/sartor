@@ -823,14 +823,16 @@ class TestGitHookAdapter:
 
 
 class TestEditWriteDispatcher:
-    """PX-37: require-feature-branch, require-evidence-before-fix, block-secrets,
-    validate-context, and route-security-lint all run in one process, and every
-    blocked guard's messages appear — proving there's no short-circuit."""
+    """PX-37: require-feature-branch, require-evidence-before-fix,
+    require-consumer-enumeration, block-secrets, validate-context, and
+    route-security-lint all run in one process, and every blocked guard's messages
+    appear — proving there's no short-circuit."""
 
-    def test_guard_order_is_exactly_the_five_edit_write_guards(self) -> None:
+    def test_guard_order_is_exactly_the_edit_write_guards(self) -> None:
         assert set(claude_dispatcher._GUARD_ORDER) == {
             "require-feature-branch",
             "require-evidence-before-fix",
+            "require-consumer-enumeration",
             "block-secrets",
             "validate-context",
             "route-security-lint",

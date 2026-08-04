@@ -968,3 +968,28 @@ additive: new §"v1.1.0 Final March" + a Phase-5 update note; no existing sectio
 `governance-extraction`, plus `index.md`/`log.md`/`SCHEMA.md` pointers — every RELEASE_ARC
 cite anchors to §Phase 4.5/4.7/4.8/4.9 or the post-public 1.1.x section, none of which this
 branch's additive edit touched. No page edit needed; checked, not skipped.
+
+---
+
+## 2026-08-04 — scoped close-out relevance check (`feat/consumer-enumeration-gate`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff** (per `scripts/wiki_relevance.py`): `AGENTS.md`,
+`CLAUDE.md`, `docs/governance/charter.md`, `docs/governance/enforcement.md`,
+`docs/dev/AGENT_HANDOFF_TEMPLATE.md`. Everything else this branch touches classifies
+irrelevant — `scripts/` (mixed, none of the new files are in `RELEVANT_OVERRIDES`),
+`tests/`, `hooks/`, `docs/dev/work/`, `CHANGELOG.md`, and the new
+`docs/dev/blast-radius/` prefix this branch adds to `IRRELEVANT_PREFIXES`.
+
+**Page edited (1):** `governance-extraction` — its §"Working model (W-1/W-2) + amendment
+ceremony" named the charter's clause tail as **C-7…C-9**, which this branch's C-10
+amendment drifts. Updated to C-7…C-10 with the new clause's one-line gloss. The page's
+own grounding rule (clauses are not restated here; `charter.md` is the durable home) is
+preserved — the edit is to the enumeration, not to the clause text.
+
+**Pages verified no-edit:** the remaining 18 pages matching `AGENTS.md`/`CLAUDE.md`/
+governance cites reference them for the deterministic-LLM boundary, PROMPT_VERSION
+discipline, route surface, and module map — none of which this branch touches. C-10 adds
+a clause and a guard; it changes no product behavior, no route, no prompt, and no module
+boundary. Checked, not skipped.

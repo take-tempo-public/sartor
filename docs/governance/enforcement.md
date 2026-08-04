@@ -98,6 +98,21 @@ which is where the judgment belongs (the same witness-vs-blocker split as §D).
 | **F-gov-07 — remove the contradictory hand-create hint** | `check-plan-approved.sh` printed `New-Item -Force … .approved`, teaching the agent to hand-create the very marker the never-hand-create rule forbids (AGENTS.md + memory). DEBUFF: delete those hint lines; the failure message says "Write a plan and call ExitPlanMode." and stops. The fix is *removing* an instruction, not adding enforcement. | F-gov-07 (DEBUFF) | **lands this branch — PX-28** |
 | **route-security-lint scope** | hook is `app.py`-only; dark on blueprints. Extend the matcher when blueprint routes land (already a RELEASE_ARC task); scope SECURITY.md to app.py-resident routes. **Not** load-bearing today (the one blueprint route is localhost-gated, read-only, builds no path from input). | F-arch-03 (WEAKENED → P2/P3), F-sec-05 | **owed — v1.0.8** |
 
+### C2. C-10 — enumerate consumers before changing a contract
+
+| Gate | What it runs | Why it must be a gate | Ship state |
+|---|---|---|---|
+| **`require-consumer-enumeration` PreToolUse guard** | [`../../scripts/enforcement/guards/require_consumer_enumeration.py`](../../scripts/enforcement/guards/require_consumer_enumeration.py) — blocks `Edit`/`Write` to a gated surface until `docs/dev/blast-radius/<branch-slug>.md` has a `## Consumers` section *naming that surface* | The advisory form already existed and the repo converged on the discipline by hand three times — each time caught by a person, never a mechanism. The failure mode is an agent judging mid-change that this change is small enough to skip it, which is exactly what a rule may not leave to judgment (the C-7 precedent) | **SHIPPED** — gated by [`../../tests/test_consumer_enumeration_gate.py`](../../tests/test_consumer_enumeration_gate.py) |
+| **Gated-surface registry audit** | [`../../tests/test_blast_radius_classification.py`](../../tests/test_blast_radius_classification.py) — dual check over [`../../scripts/enforcement/blast_radius.py`](../../scripts/enforcement/blast_radius.py): `stale` (a registered path that no longer exists) **and** `offenders` (a module crossing `FAN_IN_THRESHOLD` non-test importers that is neither gated nor explicitly acknowledged) | A curated list with only a stale check rots in the *safe* direction and gives false confidence; the offenders half is what forces a decision when the codebase grows a new widely-consumed helper. Mirrors `SANCTIONED_EGRESS_FILES` / `wiki_relevance` | **SHIPPED** — it rejected two wrong entries on its first run |
+
+**Stated limits (C-0 — named, not silently upgraded to "enforced"):** the guard is
+path-level, so it cannot distinguish a signature change from a comment fix inside the
+same file; and the computed offenders audit covers first-party **Python** import fan-in
+only, leaving JS, Jinja templates and CSS curation-only — so the `loadComposition()`
+incident that motivates C-10 sits in that blind spot. There is also no CI backstop:
+"was a dossier written before the edit" leaves no server-side artifact to check, unlike
+`ci_backstop.py`'s secret scan.
+
 ### D. Rules that stay witness / best-effort by design (do NOT gate)
 
 | Rule | Enforcement | Why it stays soft |

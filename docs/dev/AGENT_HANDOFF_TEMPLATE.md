@@ -219,6 +219,25 @@ handoff-corruption events this rule exists for were an agent reconstructing
 damaged text instead of saying so (see
 `docs/dev/handoff-integrity-design.md` §2).
 
+**6. Enumerate consumers before changing a contract (charter C-10).** Before
+implementing any change to a **schema, a shared contract, or a widely-consumed
+helper**, enumerate its consumers **grep-complete** — the whole tree, and every
+name the thing goes by (symbol, string form, re-export, raw-SQL column, template
+selector) — and **decide-and-document each site before the first edit.**
+- **The ordering is the mechanism.** An enumeration written afterwards is a
+  description of what you did. Written first, it is the thing that tells you the
+  change is bigger than you thought.
+- **A site you skip deliberately gets a written reason** under `## Deferred`. The
+  same site skipped silently is a defect the next person finds.
+- **Treat any hand-maintained consumer list as stale until you re-derive it** — it
+  rots in *both* directions, naming sites already fixed and omitting sites that
+  are not.
+- The `require-consumer-enumeration` hook blocks edits to a gated surface (registry:
+  `scripts/enforcement/blast_radius.py`) until
+  `docs/dev/blast-radius/<branch-slug>.md` has a `## Consumers` section naming that
+  surface. There is no escape hatch. That dossier's directory and `tests/**` stay
+  writable, so the way through is always open: **write down who consumes it.**
+
 ---
 
 ## Hard constraints (copy verbatim — do not shorten)

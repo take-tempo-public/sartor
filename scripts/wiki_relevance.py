@@ -44,6 +44,7 @@ IRRELEVANT_PREFIXES = frozenset(
         "docs/dev/handoffs/",  # session handoffs — process record
         "docs/dev/ledger/",  # provenance ledger — process record
         "docs/dev/diagnosis/",  # evidence dossiers — process record
+        "docs/dev/blast-radius/",  # C-10 consumer enumerations — process record
         "docs/dev/reviews/",  # review archive — provenance model, never ingested
         "docs/dev/prov/",  # provenance spec — process meta, not wiki-cited
         "docs/dev/work/items/",  # per-item filings — BOARD.md is generated FROM these

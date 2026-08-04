@@ -69,9 +69,15 @@ def section(text: str, heading: str) -> str:
     return match.group("body").strip() if match else ""
 
 
-def _substantive(body: str) -> str:
+def substantive(body: str) -> str:
     """Strip the parts of a section that anyone gets for free: comments, sub-headings,
-    template placeholders, blank lines. What survives is what the author actually wrote."""
+    template placeholders, blank lines. What survives is what the author actually wrote.
+
+    Public because the C-10 consumer-enumeration gate
+    (`guards/require_consumer_enumeration.py`) applies the identical "did you actually
+    write something, or just `cp` the template" test to its own `## Consumers` section.
+    One implementation, so the two gates cannot drift apart on what counts as filled in.
+    """
     body = _HTML_COMMENT_RE.sub("", body)
     kept = [
         line
@@ -102,10 +108,10 @@ def has_observed_evidence(text: str, template: str = "") -> bool:
     own guidance prose would otherwise clear the character floor on its own, and a gate that
     a `cp` satisfies is theater. (Found by hand-testing this function — it did exactly that.)
     """
-    observed = _substantive(section(text, "Observed"))
+    observed = substantive(section(text, "Observed"))
     if len(observed) < _MIN_EVIDENCE_CHARS:
         return False
-    return not (template and observed == _substantive(section(template, "Observed")))
+    return not (template and observed == substantive(section(template, "Observed")))
 
 
 def replay_text(text: str) -> str:
@@ -116,6 +122,6 @@ def replay_text(text: str) -> str:
     parts = [
         f"## {name}\n\n{body}"
         for name in REPLAY_SECTIONS
-        if (body := section(text, name)) and _substantive(body)
+        if (body := section(text, name)) and substantive(body)
     ]
     return "\n\n".join(parts)

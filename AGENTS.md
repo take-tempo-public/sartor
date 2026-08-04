@@ -101,6 +101,41 @@ Worked example (and the day it cost):
 [`docs/dev/diagnosis/compose-summary-draft-settle-hole.md`](docs/dev/diagnosis/compose-summary-draft-settle-hole.md);
 failure pattern **5f** in [`docs/dev/AGENT_FAILURE_PATTERNS.md`](docs/dev/AGENT_FAILURE_PATTERNS.md).
 
+### Enumerate consumers before changing a contract (charter C-10) — read this before you change anything shared
+
+**Before implementing any change to a schema, a shared contract, or a widely-consumed
+helper, enumerate its consumers (grep-complete) and decide-and-document each site
+BEFORE the first edit.**
+
+- **The ordering is the mechanism.** An enumeration written afterwards describes what
+  you did. Written first, it is what tells you the change is bigger than you thought.
+- **Grep-complete means every name the thing goes by** — the symbol, its string form,
+  its re-export/alias, the raw-SQL column, the template selector. A name you did not
+  search for is a consumer you did not find. Negative results are findings: record them.
+- **A site skipped deliberately gets a written reason** under `## Deferred`; skipped
+  silently, it is a defect someone else finds later.
+- **Any hand-maintained consumer list is stale until re-derived.** It rots in *both*
+  directions — see `docs/dev/diagnosis/compose-unawaited-reloads.md` Fact 4, where
+  `RELEASE_CHECKLIST.md` named a site already fixed and omitted two that were not.
+
+A `require-consumer-enumeration` PreToolUse guard enforces this: an edit to a gated
+surface is blocked until `docs/dev/blast-radius/<branch-slug>.md` has a `## Consumers`
+section **naming that surface**. The gated-surface registry — and the reason each entry
+is on it — is [`scripts/enforcement/blast_radius.py`](scripts/enforcement/blast_radius.py);
+start from [`docs/dev/blast-radius/TEMPLATE.md`](docs/dev/blast-radius/TEMPLATE.md).
+**There is no escape hatch, and none is needed** — the dossier's own directory and
+`tests/**` stay writable, so the way through is always to write down who consumes it.
+
+Worked example, and the day it cost: `be48fec` fixed the un-awaited `loadComposition()`
+contract at **5 call sites**; a later session's grep found **9 more** untouched, plus 3
+it excluded on purpose and said why
+([`docs/dev/diagnosis/compose-unawaited-reloads.md`](docs/dev/diagnosis/compose-unawaited-reloads.md)).
+
+**Known limits** (stated, not papered over — C-0): the guard is path-level, so it cannot
+tell a signature change from a comment fix in the same file; and the computed audit
+covers first-party Python import fan-in only, so JS, Jinja templates and CSS are
+curation-only — the `loadComposition()` case above is itself in that blind spot.
+
 ### Branch before code changes
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.
@@ -201,7 +236,7 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 
 ## What NOT to do
 
-*The binding form of several rules below is in [`docs/governance/charter.md`](docs/governance/charter.md) (deterministic boundary C-6, no-invention C-3, minimal deps D-1, the security gate C-1); this list is the operational mirror — the charter governs on conflict.*
+*The binding form of several rules below is in [`docs/governance/charter.md`](docs/governance/charter.md) (deterministic boundary C-6, no-invention C-3, minimal deps D-1, the security gate C-1, consumer enumeration C-10); this list is the operational mirror — the charter governs on conflict.*
 
 - Do not call `docx.Document()` without a template — output won't match the original's style.
 - Do not invent numbers, titles, or dates in LLM output — grounding check is the enforcement.
@@ -210,4 +245,5 @@ Dashboard for trends + heatmap + failure-mode clustering: visit `http://localhos
 - Do not add features or refactor beyond what was asked — minimal targeted edits only.
 - Do not call an LLM from any file in the deterministic-boundary list under "Architecture at a glance" (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py`) — those are deterministic by design.
 - Do not introduce a new dependency without adding it to `pyproject.toml` AND updating `CHANGELOG.md`.
+- Do not change a schema, a shared contract, or a widely-consumed helper before enumerating its consumers grep-complete and deciding each site — charter C-10, enforced by `require-consumer-enumeration`.
 - Do not bypass the `route-security-lint`, `require-feature-branch`, or `ruff-changed` PreToolUse hooks without explicit authorization documented in the commit message.

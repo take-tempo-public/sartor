@@ -214,6 +214,42 @@ advisory at launch (design decision iv,
 here as an honest gap under this clause's own claims discipline (C-0), not silently upgraded to
 "enforced."]*
 
+**C-10 — Enumerate consumers before changing a contract.** Before implementing any change
+to a **schema, a shared contract, or a widely-consumed helper**, its consumers are enumerated
+**grep-complete** — the whole tree, and every name the thing goes by (symbol, string form,
+re-export, raw-SQL column, template selector) — and **each site is decided and documented
+before the first edit**. Three binding rules follow. (1) **The enumeration precedes the
+edit.** Written afterwards it is a description of what you did; written first it is what
+tells you the change is bigger than you thought — the ordering *is* the mechanism. (2) **A
+site excluded deliberately is recorded with its reason**; the same site excluded silently is
+a defect someone else finds later. (3) **A hand-maintained consumer list is assumed stale
+until re-derived** — it rots in both directions, naming sites already fixed and omitting
+sites that are not. **No escape hatch** — and none is needed, since the dossier's own
+directory and `tests/**` stay writable, so the way through is always to write down who
+consumes it. *[src: adopted 2026-08-04, owner-directed, from friction — the repo had
+already converged on this discipline by hand three times, caught by a person each time,
+never by a mechanism: `../dev/diagnosis/compose-unawaited-reloads.md` (commit `be48fec`
+fixed the un-awaited `loadComposition()` contract at 5 call sites; a later session's grep
+found 9 more untouched (Fact 3), 3 further sites deliberately excluded (Fact 5), and
+`RELEASE_CHECKLIST.md`'s own enumeration was stale in both directions (Fact 4));
+`../dev/diagnosis/extract-experiences-telemetry-pollution.md` (item 33 — call sites that
+never redirected telemetry); and `../dev/RELEASE_ARC.md`'s sprint-A1 brief, whose
+blast-radius audit existed only because an adversarial review amended it in. Enforced by the
+`require-consumer-enumeration` PreToolUse guard
+([`../../scripts/enforcement/guards/require_consumer_enumeration.py`](../../scripts/enforcement/guards/require_consumer_enumeration.py))
+over `docs/dev/blast-radius/<branch-slug>.md`, with the gated-surface registry in
+[`../../scripts/enforcement/blast_radius.py`](../../scripts/enforcement/blast_radius.py);
+gated by [`../../tests/test_consumer_enumeration_gate.py`](../../tests/test_consumer_enumeration_gate.py)
+and [`../../tests/test_blast_radius_classification.py`](../../tests/test_blast_radius_classification.py).
+**Stated limits under this clause's own C-0 discipline:** the guard is path-level, so it
+cannot distinguish a signature change from a comment fix in the same file; the computed
+offenders audit covers first-party **Python** import fan-in only, leaving JS, Jinja
+templates and CSS curation-only — which means the very `loadComposition()` incident that
+motivates this clause sits in that blind spot. Neither gap is silently upgraded to
+"enforced." This clause completes the C-7/C-8/C-9 family on the remaining axis: C-7 makes
+the evidence exist, C-8 makes it survive the context window, C-9 makes its carrier
+verifiable, C-10 makes the **scope** of a change knowable before it is made.]*
+
 ### Defaults (binding until changed; changeable in normal flow with a written rationale)
 
 - **D-1 — Minimal dependencies.** New dep = `pyproject.toml` + `CHANGELOG.md` +
@@ -355,12 +391,12 @@ wording adapted from the 2026-06 review draft §"W-2"; `../wiki/pages/governance
 
 ## Amendment ceremony
 
-This charter is itself amended under the ceremony below — C-7, C-8, C-9, and this
+This charter is itself amended under the ceremony below — C-7, C-8, C-9, C-10, and this
 Working-model section were each added this way; the ceremony was practiced by
 convention (a dated `[src: adopted …, owner-directed, from …]` tag on each) before it
 was written down as its own rule here.
 
-Amending a **constitutional clause (C-0…C-9)** requires, in order:
+Amending a **constitutional clause (C-0…C-10)** requires, in order:
 
 1. a dated amendment entry **in this document** — the `[src: adopted <date>,
    owner-directed, from <trigger>]` tag with rationale — following the same clauses
