@@ -225,13 +225,20 @@ reproduction — never the fix.
    occurrences, with the event lists) and `docs/dev/diagnosis/ux-scroll-position-flake.md`
    (the rigor bar; this test is a sixth candidate in that settle/restore family, NOT one
    of epic 19's five closed children 27–31).
-2. **Start from the arithmetic, not the assumption.** The original filing assumed a ~42%
-   per-attempt failure rate. Two rerun-exhausted runs back to back (3/3 failures, twice)
-   would be ~0.5% under that rate. So either the rate is materially worse than believed
-   or something changed between #98 and #99. **Establish the real per-attempt rate first**
-   — `reference-rerun-masking-chronic-flake` is the method (measure per-ATTEMPT, never
-   per-run). A local loop under CPU saturation is the cheap instrument
-   (`reference-cpu-saturation-flake-repro`; recalibrate the load PER TEST).
+2. **The per-attempt rate is already measured — start from it, don't re-derive it.**
+   Checked across all 4 CI runs on PR #99 by grepping for `RERUN` rather than trusting
+   `gh pr checks`: **this test failed at least one attempt on 4 of 4 runs** (3/3, 3/3,
+   1/3, 1/3 — 8 failed attempts in 12). That is ~67% per attempt, not the ~42% the
+   original filing assumed. **The two runs reported as `pass` had each needed a retry**;
+   `gh pr checks` reports bucket=`pass` for a fail-then-pass, which is exactly the C-7
+   rule-3 masking the charter warns about — and it fooled the previous session
+   (me) once before it was caught. Table in item 44's third update.
+   - **Consequence: reproduction should be EASY.** At ~67% a local loop reproduces in a
+     handful of runs; you do not need the CPU-saturation trick
+     (`reference-cpu-saturation-flake-repro`) as a first move. **If it does not reproduce
+     locally at that rate, that gap is itself the finding** — it points at a
+     CI-environment factor rather than a code race, and rules out a whole class of
+     hypotheses cheaply.
 3. **The observed signature, both times:** 3 `_restoreScrollY-fired` events instead of 2,
    the extra being an `ordinal: 2, scheduledDuring: [2]` landing *after* the
    `ordinal: 3, scheduledDuring: [2,3]` event (~46ms late on #98, ~78ms on #99). A
@@ -270,6 +277,15 @@ memory (`project-deterministic-ci-wait-governance`,
    **structurally unable to exit silent**. Must distinguish required from advisory checks
    (this repo has both), and must not let *green-after-retries* look identical to *green*
    (charter C-7 rule 3 applied to the wrapper).
+   - **This last point is not theoretical — it already cost accuracy in the session that
+     filed this.** `gh pr checks` reports bucket=`pass` for a fail-then-pass, and two of
+     PR #99's runs were reported green here while item 44's test had failed an attempt in
+     each. The wrapper MUST grep the job log for `RERUN` / `needed a retry` and surface it,
+     or it reproduces the exact masking it is meant to prevent.
+   - **The repo already emits the signal and nobody reads it:** the ux tier prints
+     `[ux] rerun-rate alarm: N test(s) needed a retry this run` into the job log on every
+     affected run. It has been landing unread. Route that alarm into the wrapper's output
+     rather than building a second mechanism.
 2. **Verify-don't-assume PreToolUse Bash guard.** Block a Bash command that invokes a
    binary **not on PATH** — split on `|`/`&&`/`;`, take each segment's leading token, drop
    builtins, `shutil.which` the rest. This would have caught the root cause instantly: the

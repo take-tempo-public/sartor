@@ -72,3 +72,35 @@ also passed the same UX tier locally: #99's local gate ran `pytest -m ux` to
 137 passed / 1 xfailed / 1 xpassed with **zero reruns**.
 
 Still **not** patched around here, per the original filing's own instruction.
+
+### 2026-08-04 — per-attempt rate measured across 4 CI runs: it fails on EVERY run
+
+Checked every CI run on PR #99 for `RERUN` markers rather than trusting the
+`gh pr checks` bucket. **The two runs reported as `pass` had each needed a retry** —
+`gh pr checks` reports bucket=`pass` for a fail-then-pass, exactly the C-7 rule-3 masking
+the charter warns about. Full record:
+
+| Run | UX result | Attempts failed |
+|---|---|---|
+| PR #98 (30924821284) | FAIL | 3 of 3 |
+| PR #99 run 2 (30943537217) | FAIL | 3 of 3 |
+| PR #99 run 3 (30953100089) | reported `pass` | **1 of 3** |
+| PR #99 run 4 (30955415008) | reported `pass` | **1 of 3** |
+
+**This test has failed at least one attempt on every CI run for which we have data
+(4/4).** The original filing's assumed ~42% per-attempt rate is not merely wrong, it is
+optimistic — 8 failed attempts across 12 gives ~67%, and the two 3/3 exhaustions are
+entirely unremarkable at that rate rather than the ~0.5% coincidence the previous update
+computed. **Supersede that arithmetic; do not carry it forward.** The only thing keeping
+this test nominally green is `--reruns 2`.
+
+Two consequences for the investigation:
+
+1. **Reproduction should be easy, not hard.** At ~67% per attempt this is not a rare
+   race — a local loop should reproduce it within a handful of runs, with no CPU-saturation
+   trick needed. If it does NOT reproduce locally at that rate, that difference is itself
+   the finding (points at a CI-environment factor, not a code race).
+2. **The repo's own rerun-rate alarm already fires** (`[ux] rerun-rate alarm: 1 test(s)
+   needed a retry this run`) and was landing in the job log unread on every run. Whatever
+   surfaces that alarm is not reaching a human or an agent. Worth folding into the
+   deterministic-CI-wait work rather than treating as separate.
