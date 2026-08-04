@@ -99,7 +99,7 @@ BLOCKER_HOOKS = frozenset(
     }
 )
 
-# The five Edit|Write rules that run INSIDE edit-write-dispatcher.sh rather than
+# The Edit|Write rules that run INSIDE edit-write-dispatcher.sh rather than
 # shipping their own standalone file. block-secrets is here even though it ALSO
 # keeps its own hooks/block-secrets.sh file — that file backs the separate
 # Bash-matcher wiring (secret-scanning on Bash commands), untouched by this
@@ -109,6 +109,7 @@ DISPATCHED_GUARD_NAMES = frozenset(
     {
         "require-feature-branch",
         "require-evidence-before-fix",
+        "require-consumer-enumeration",
         "block-secrets",
         "validate-context",
         "route-security-lint",
@@ -259,9 +260,9 @@ def test_dispatcher_delegates_to_claude_dispatcher() -> None:
     assert "scripts/enforcement/adapters/claude_dispatcher.py" in text
 
 
-def test_dispatcher_guard_list_is_exactly_the_five() -> None:
+def test_dispatcher_guard_list_matches_the_dispatched_names() -> None:
     """The dispatcher's internal guard list is this file's other source of truth
-    for the five rules PX-37 folded out of their own standalone .sh files."""
+    for the rules PX-37 folded out of their own standalone .sh files."""
     assert set(claude_dispatcher._GUARD_ORDER) == DISPATCHED_GUARD_NAMES
 
 

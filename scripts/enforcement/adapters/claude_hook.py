@@ -14,9 +14,10 @@ Invoked by a thin wrapper in root `hooks/` naming its own guard (so
 
 Since PX-37 (`chore/hook-dispatcher`), only `block-merge-to-main` and
 `ruff-changed` still ship their own such wrapper (`hooks/block-merge-to-main.sh`,
-`hooks/ruff-changed.sh` — both Bash-matcher only). The five Edit|Write guards
-(`require-feature-branch`, `require-evidence-before-fix`, `block-secrets`,
-`validate-context`, `route-security-lint`) run instead via `dispatch()`, called
+`hooks/ruff-changed.sh` — both Bash-matcher only). The six Edit|Write guards
+(`require-feature-branch`, `require-evidence-before-fix`,
+`require-consumer-enumeration`, `block-secrets`, `validate-context`,
+`route-security-lint`) run instead via `dispatch()`, called
 from `claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry —
 this module's per-guard CLI (`main()`, below) stays in place for those two and
 for direct guard-module callers (`git_hook.py`, `ci_backstop.py`).
@@ -39,6 +40,7 @@ if str(_REPO_ROOT) not in sys.path:
 from scripts.enforcement.guards import (  # noqa: E402
     block_merge_to_main,
     block_secrets,
+    require_consumer_enumeration,
     require_evidence_before_fix,
     require_feature_branch,
     route_security_lint,
@@ -50,6 +52,7 @@ from scripts.enforcement.guards.result import GuardResult  # noqa: E402
 _GUARD_NAMES = (
     "require-feature-branch",
     "require-evidence-before-fix",
+    "require-consumer-enumeration",
     "block-merge-to-main",
     "block-secrets",
     "route-security-lint",
@@ -72,6 +75,8 @@ def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
         return require_feature_branch.claude_check(payload)
     if name == "require-evidence-before-fix":
         return require_evidence_before_fix.claude_check(payload)
+    if name == "require-consumer-enumeration":
+        return require_consumer_enumeration.claude_check(payload)
     if name == "block-merge-to-main":
         return block_merge_to_main.claude_check(payload)
     if name == "block-secrets":

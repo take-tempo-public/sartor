@@ -91,6 +91,17 @@ hooks for any agent writing code here:
   `docs/**`, `tests/**` and `*.md` stay writable, so the way through is
   always to write down what you saw. Start from
   [`docs/dev/diagnosis/TEMPLATE.md`](docs/dev/diagnosis/TEMPLATE.md).
+- `require-consumer-enumeration` — blocks `Edit`/`Write` to a **gated
+  surface** (schema / shared contract / widely-consumed helper — registry +
+  per-entry rationale in [`scripts/enforcement/blast_radius.py`](scripts/enforcement/blast_radius.py))
+  until `docs/dev/blast-radius/<branch-slug>.md` has a `## Consumers` section
+  **naming that surface** (charter **C-10**). **No escape hatch, and none is
+  needed:** the dossier's own directory and `tests/**` stay writable, so the way
+  through is always to write down who consumes it. Start from
+  [`docs/dev/blast-radius/TEMPLATE.md`](docs/dev/blast-radius/TEMPLATE.md).
+  Unlike `require-evidence-before-fix` it fires on **every** branch type (schema
+  changes land on `feat/*`, not `fix/*`) and does **not** blanket-exempt `*.md`
+  (the handoff template and the SCHEMA docs *are* contracts).
 - `restore-evidence` (SessionStart) — replays the current `fix/*`
   branch's `## Observed` + `## Falsified` into every fresh context,
   **including the one rebuilt after a compaction** (charter **C-8**).

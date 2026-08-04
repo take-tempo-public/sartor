@@ -116,6 +116,23 @@ canonical text of a `<!-- verbatim -->` section **would** block a stale handoff.
 | 3 | This branch's own new handoff | **Written from the amended template** — so it validates against it by construction |
 | 4 | `docs/dev/AGENT_HANDOFF_TEMPLATE.md` structural headings | **No change** — rule 6 goes *inside* the existing `## Binding rules` body; no new `##` heading, so the structural-heading check is untouched |
 
+### Surface 5 — `scripts/enforcement/blast_radius.py` (the registry itself)
+
+Added mid-branch **because the gate blocked the edit that needed it.** Tightening
+`ACKNOWLEDGED_NOT_GATED` is a change to what the gate fires on, i.e. a contract change,
+and the dossier did not yet name this file. That block was the guard working, on its
+author, unprompted — recorded here rather than smoothed over.
+
+Enumeration: `grep -rn "blast_radius" --include=*.py --include=*.sh --include=*.md
+--include=*.json .` → 2 consumer files (the rest are self-references inside the module
+and prose mentions).
+
+| # | Site | Decision |
+|---|---|---|
+| 1 | `scripts/enforcement/guards/require_consumer_enumeration.py:54` — `from …blast_radius import Surface, classify` | **No change** — only `Surface` and `classify()` are consumed; both signatures are untouched by a registry-membership edit |
+| 2 | `tests/test_blast_radius_classification.py:31` — imports the module and reads `GATED`, `GATED_PREFIXES`, `ACKNOWLEDGED_NOT_GATED`, `FAN_IN_THRESHOLD`, `classify` | **Update** — `test_no_stale_acknowledgements` is what rejected the two bad entries; it passes once they are removed. No test edit needed, only the registry. |
+| 3 | `scripts/enforcement/blast_radius.py:167` — its own `GATED` self-entry | **No change** — the module gates itself on purpose |
+
 ### Surface 4 — `wiki_relevance.py`
 
 | # | Site | Decision |

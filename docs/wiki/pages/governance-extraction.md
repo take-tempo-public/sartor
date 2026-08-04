@@ -94,8 +94,9 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
 ## Working model (W-1/W-2) + amendment ceremony — landed 2026-07-23
 
 The charter grew past its original C-0…C-6 clause set: `charter.md` now carries
-**C-7…C-9** (evidence-before-mechanism, durable-before-deep, corrupted-input-is-a-
-blocked-gate) and a full **"Working model (W-1/W-2)"** section — [`charter.md`
+**C-7…C-10** (evidence-before-mechanism, durable-before-deep, corrupted-input-is-a-
+blocked-gate, enumerate-consumers-before-changing-a-contract) and a full
+**"Working model (W-1/W-2)"** section — [`charter.md`
 §Working model](../../governance/charter.md#working-model-w-1w-2) — plus a formal
 **Amendment ceremony** section governing how the charter itself changes. Per this
 page's own grounding rule, the clauses are not restated here; the durable home is

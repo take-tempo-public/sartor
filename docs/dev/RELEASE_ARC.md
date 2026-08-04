@@ -1655,6 +1655,17 @@ Five epics, **A→E, strictly sequential**, closing the remaining work between v
 and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stabilizes
 (D, so screenshots/diagrams/copy are written once), release last (E).
 
+> **Owner-directed insert before A1 — `feat/consumer-enumeration-gate` (2026-08-04).**
+> One non-march branch landed between the kickoff and sprint A1, at the owner's
+> direction: charter **C-10** ("enumerate consumers before changing a contract") and its
+> `require-consumer-enumeration` guard. It is sequenced *ahead* of A1 deliberately —
+> A1's own brief (Epic A below, item 3) carries a hand-written blast-radius audit that
+> only exists because an adversarial reviewer amended it in, and C-10 turns that
+> one-off instruction into a standing gate. **Consequence for A1:** `db/models.py` and
+> `db/migrations/**` are now gated surfaces, so A1 writes
+> `docs/dev/blast-radius/experience-soft-retire.md` before its first schema edit. Not
+> extra work — the same audit, done first and written down.
+
 ### Cadence + process (binding for every march session)
 
 - **One sprint = one branch = one session**, owned end-to-end (charter W-1.3), with

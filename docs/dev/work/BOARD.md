@@ -2,11 +2,11 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 3 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 5 | Epics 6 | Closed 20
+**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 5 | Epics 6 | Closed 20
 
 ## Open
 
-None.
+- **45** -- Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session (`agent`) -- cleanup-plan-on-merge fires only on local `git merge --no-ff`; close-out moved to `gh pr merge`, so the marker survives.
 
 ## Blocked
 

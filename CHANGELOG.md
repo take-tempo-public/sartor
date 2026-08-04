@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: charter C-10 — enumerate consumers before changing a contract (`feat/consumer-enumeration-gate`)
+
+Before implementing any change to a schema, a shared contract, or a widely-consumed
+helper, its consumers must now be enumerated grep-complete and each site decided and
+documented **before the first edit**. Previously advisory-by-omission; the repo had
+converged on the discipline by hand three times and a person caught it every time, never
+a mechanism — `docs/dev/diagnosis/compose-unawaited-reloads.md` (commit `be48fec` fixed
+the un-awaited `loadComposition()` contract at 5 call sites; a later session's grep found
+9 more untouched, 3 further sites deliberately excluded, and `RELEASE_CHECKLIST.md`'s own
+enumeration was stale in *both* directions), item 33's un-redirected telemetry call
+sites, and sprint A1's blast-radius audit, which existed only because an adversarial
+review amended it in.
+
+Ships as reach **and** teeth: a new `require-consumer-enumeration` PreToolUse guard
+(`scripts/enforcement/guards/require_consumer_enumeration.py`) blocks edits to a gated
+surface until `docs/dev/blast-radius/<branch-slug>.md` carries a `## Consumers` section
+*naming that surface*; a new binding rule 6 in `docs/dev/AGENT_HANDOFF_TEMPLATE.md`'s
+verbatim block carries it into every future handoff by construction. The gated-surface
+registry (`scripts/enforcement/blast_radius.py`) is built from a measured AST import
+fan-in walk rather than intuition, and is kept honest by a `stale` + `offenders` dual
+check (`tests/test_blast_radius_classification.py`) mirroring `SANCTIONED_EGRESS_FILES` —
+which rejected two wrong entries on its first run. Unlike `require-evidence-before-fix`
+it fires on every branch type and does not blanket-exempt `*.md`, because the handoff
+template and the SCHEMA docs *are* contracts. No escape hatch; the dossier's own
+directory and `tests/**` stay writable. The branch validated the gate on itself — the
+guard blocked its own author mid-change, and the block was resolved by enumerating, not
+bypassing (`docs/dev/blast-radius/consumer-enumeration-gate.md`, Surface 5).
+
+**Stated limits (C-0):** the guard is path-level and cannot distinguish a signature
+change from a comment fix in the same file; the computed audit covers first-party Python
+import fan-in only, leaving JS/Jinja/CSS curation-only — so the `loadComposition()`
+incident that motivates the clause is itself in that blind spot. No new dependency.
+
 ### Fixed: fake-client tests no longer pollute the real telemetry log by default (`fix/extract-experiences-telemetry-pollution`, item 33)
 
 `tests/test_extract_experiences.py`'s 9 fake-client end-to-end tests drove the real
