@@ -1602,6 +1602,13 @@ spine (WS-2-full's other half) stays **post-public** — not needed to claim str
 > the cut. The branches below are retained for that final verification; their build
 > halves are done in v1.0.8.
 
+> **Update (2026-08-04):** the remaining path to this tag is now governed by the
+> **v1.1.0 Final March** section below — five owner-approved epics (A–E) closing all
+> remaining functional, UX, rendering, diagnostics, documentation, and release work.
+> The Branches table below is retained for history; its work is absorbed into the
+> march (`release/visual-assets` → sprint D4, fresh-clone re-verify and
+> `chore/release-v1.1.0` (item 10) → sprint E1).
+
 ### Branches
 
 | Branch | Depends on | Key work |
@@ -1632,6 +1639,248 @@ spine (WS-2-full's other half) stays **post-public** — not needed to claim str
   untyped body at once but will surface real new errors to fix first. Either way,
   scope the scan to the v1.0.5 diff, not the whole pre-existing surface.
 - **User judges it showcase-ready**
+
+---
+
+## v1.1.0 Final March (2026-08-04 — owner-approved epic sequence)
+
+> Owner-approved 2026-08-04; the PR that lands this section is the dated sign-off
+> record for the sequence, the cadence, and the session-model prescriptions below.
+> Live status lives on `docs/dev/work/BOARD.md` (epics 36–40); board items point here
+> rather than restating scope (work-item SCHEMA rule). Adversarially reviewed before
+> adoption: one process reviewer and one technical reviewer, both instructed to
+> refute; every surviving finding is folded into the briefs below.
+
+Five epics, **A→E, strictly sequential**, closing the remaining work between v1.0.9
+and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stabilizes
+(D, so screenshots/diagrams/copy are written once), release last (E).
+
+### Cadence + process (binding for every march session)
+
+- **One sprint = one branch = one session**, owned end-to-end (charter W-1.3), with
+  the full per-branch close-out checklist — no lightened ceremony. The sprint branch
+  merges into its epic integration branch as the session's **final act**; the next
+  session starts from the epic branch with the owner's plan-approval click.
+- Epic integration branches: `epic/a-app-core`, `epic/b-render-ats`,
+  `epic/c-diagnostics`, `epic/d-docs-ia`, `epic/e-release`. March branch names never
+  contain `main`/`master` as a word (the merge guard matches command text, not the
+  merge target). **No production-code edits ever happen on an `epic/*` branch** —
+  integration fixes get their own `fix/*` branch + diagnosis dossier; epic-branch
+  merge commits resolve conflicts textually only, generated files by regeneration.
+- **One PR per epic** to `main`; the owner reviews and merges. PR staleness is
+  resolved with `gh pr update-branch` (server-side), never a local merge naming main.
+- Gate runs: backgrounded `python -m scripts.gate` with a ≥40-minute budget (or the
+  `-m "not ux"` / `-m ux` split whose union is the full suite). An isolated UX flake
+  that passes on a single re-run is recorded (both results) but is not a gate
+  failure and is never patched around — item 19 owns the flake work.
+- Discoveries are **filed, never chased** mid-sprint; release-blocking discoveries
+  stop the session and surface to the owner. Hook blocks, gate failures after two
+  honest attempts, or intent ambiguity: stop, write state durably, surface.
+- Before each epic's PR: an **adversarial diff review** (reviewer instructed to
+  refute) over the epic's full diff; conflicts with owner decisions surface rather
+  than self-resolve.
+- The wiki-relevance close-out check runs **per sprint branch** (the AGENTS.md
+  step), keeping cumulative freshness drift far from the gate threshold.
+- Implementation may be delegated to subagents with precise briefs; the owning
+  session **reads the full diff of every subagent contribution before committing**
+  (W-1 posture: direct line-level verification).
+
+### Session models
+
+The owner sets `/model` at each session launch; every march handoff's **First move**
+names the next sprint's prescription. Epic-end adversarial reviews run as Opus
+subagents regardless of session model.
+
+| Sprint | Model | Why |
+|---|---|---|
+| A1 | Opus | schema migration + retired-role blast-radius audit |
+| A2 | Opus | compose settle-contract risk + item 20 evidence fix |
+| A3 | Opus | new LLM call end-to-end: prompt, eval, telemetry |
+| A4 | Sonnet | mechanical move + handler/test rewrite |
+| B1 | Opus | evidence-first render tracing across three pipelines |
+| B2 | Sonnet | mechanical formats/validation/tests |
+| C1 | Sonnet | small, fully specified fixes |
+| C2 | Sonnet | bounded endpoint + modal |
+| C3 | Opus | lay-reader copy quality is the deliverable |
+| D1 | Opus | IA design + research |
+| D2 | Sonnet | scripted moves + classification/projection/link updates |
+| D3 | Opus | user/dev documentation content |
+| D4 | Sonnet | assets + lint implementation |
+| E1 | Opus | public-cut integrity |
+
+### Epic A — `epic/a-app-core` (board 36): main-app function + UX
+
+Opens with an end-user-UX-expert read-only audit of the surfaces in scope (findings:
+small + in-scope → folded into sprints; everything else → filed).
+
+- **A1 — corpus polish** (`feat/corpus-polish` + `fix/experience-soft-retire`).
+  Corpus section reorder to Summary → Work Experience → Education → Skills
+  (`templates/index.html:700-845`; roles currently render last); education-row
+  reorder arrows moved right, parallel with Edit/Retire (`static/app.js:4392-4439`);
+  skills rows compacted on the `.pipeline-row` pattern (`static/app.js:254-283`);
+  role-card order titles → summary → bullets (`static/app.js:4945-4976`).
+  Soft-retire fix, evidence-first: `Experience` has no retired column
+  (`db/models.py:88-108`) — retire cascades only to bullets
+  (`blueprints/corpus/experiences.py:256`), so a 0-bullet role no-ops silently.
+  Fix = experience-level retired flag + migration (native ADD COLUMN per the
+  `0011_*` precedent, no `batch_alter_table` on this parent), **plus filtering the
+  unfiltered Experience consumers** — `corpus_to_json_resume.py:176-181` (a retired
+  empty role otherwise still renders into generated output) and the curation/
+  application query sites. Accept: 0-bullet role visibly retires, is excluded from
+  generated output, can be unretired.
+- **A2 — compose/tailor UX** (`feat/compose-wait-ux` + the item 20 fix branch).
+  "Composing…" wait gate reusing `_setBusy` + the analyze streaming-panel pattern,
+  held until the post-`loadComposition` background volley settles — **audit every
+  `_markComposeBgReload` call site (9)** and the UX suite's `data-compose-ready`
+  contract BEFORE changing settle semantics. Strengthen "Updating suggestions" +
+  post-clarify busy states; replace the Skills-card emoji pin/x with the word-button
+  idiom (`static/app.js:7943,7950`); extend in-place Edit to all suggested bullets
+  (today only `is_pending_review` bullets have it, `static/app.js:8825-8844`).
+  Item 20 (owner direction captured at march sign-off): hard-gate the Step-5 wizard
+  rail on frozen composition.
+- **A3 — role-summary JD-fitting** (`feat/role-summary-drafting`). New batched
+  drafting call `draft_experience_summaries` (one call for all included roles, never
+  per-role), grounded like the other drafting calls with
+  `hardening.assemble_source_union` widened to match; `PROMPT_VERSION` bump in the
+  same commit. UI parity: per-role summary card in Compose — edit in place,
+  keep/reject, save-to-corpus as pending intro variant
+  (`recommend_experience_summaries` at `analyzer.py:3414` stays the selector).
+  New-call-kind checklist: `EXPECTED_CALL_KINDS` in
+  `tests/test_call_kind_telemetry.py`, a never-logged-kind probe, a
+  `tests/ux/stubs.py` stub, pricing keys; extend the UX-harness `_get_client`
+  autouse patch to the corpus blueprints (item 34). Eval: corpus-mode drafting is
+  not covered by `--suite synthetic` — add a targeted fixture; baseline before, run
+  after.
+- **A4 — prior applications → Pipeline** (`feat/prior-apps-pipeline`). Remove the
+  Tailor applications panel (`templates/index.html:172-208`,
+  `static/app.js:6147-6264`); rewrite `_renderPipelineRow`'s `activate()`
+  (`static/app.js:263-277`) to open the shared detail modal **in place** — today it
+  tab-switches to Tailor first, and
+  `tests/ux/regression/test_20260707_recruiter_roster_pipeline.py:135-146` pins that
+  behavior and must be rewritten with it. Update `ui_pages/` and any copy
+  referencing the panel.
+
+### Epic B — `epic/b-render-ats` (board 37): rendering + ATS correctness
+
+- **B1 — template rendering bugs** (two `fix/*` branches, evidence-first).
+  Stale imported-template companions: previews clone `classic.html` at import time
+  and the regen guard checks only the `.docx` mtime
+  (`docx_to_persona_html.py:438-444`), freezing pre-2026-07-09 companions without
+  the `date_range` global (the "– Present" loss). Fix = skeleton-version stamp in
+  `.persona.json` + regenerate on mismatch (deterministic). Education discipline:
+  **verify the repro live first** (reported docx behavior conflicts with the code
+  trace — the docx writer never reads `studyType`, `generator.py:883-896`); then
+  render `studyType` in the `classic`/`spacious` skeletons, the docx education
+  block, and the markdown round-trip; render-both — never flip the documented
+  `area`/`studyType` inversion (`corpus_to_json_resume.py:855-878`) without a data
+  audit. Also close the docx font-name capture gap (`_capture_proto` captures
+  bold/size but not `run.font.name`, `generator.py:498-514`).
+- **B2 — ATS conformance** (`feat/ats-conformance`). Dates to `MM/YYYY` with the
+  en-dash range separator retained (`MM/YYYY – MM/YYYY`, current role `– Present`)
+  via the single canonical helper (`json_resume.py:582-616`); update
+  `test_resume_date_formatting`, `test_render_parity`, and
+  `tests/test_pdf_render.py:123`. Month **hard block** at generate time for any
+  included experience role with year-only dates (education exempt — owner decision),
+  with a "month needed" corpus badge, month-required create/edit validation
+  (`blueprints/corpus/experiences.py:118-122,214-220`), **and import-path
+  surfacing**: onboarding import creates year-only roles with no validation or
+  warning (`onboarding/extract_experiences.py:85`,
+  `onboarding/corpus_import.py:670-677`) — the import summary must report "N roles
+  need month precision and will block generation" so users are never stranded by
+  roles they never hand-edited. Approved fonts [Arial, Calibri, Georgia]: audit
+  bundled templates, set the docx Normal-style font explicitly, map off-list
+  imported fonts to the closest approved with a visible notice. Structural tests:
+  single column, no tables/text boxes/headers/footers in output docx, standard
+  headings only.
+
+### Epic C — `epic/c-diagnostics` (board 38): diagnostics console
+
+Opens with an end-user-UX-expert audit of the console.
+
+- **C1 — fixes** (`fix/dashboard-run-lock-gaps` + `feat/dashboard-polish`).
+  Lock-gate the real Collate button (`annCollate`, absent from `LOCK_BTN_IDS`,
+  `dashboard/templates/dashboard.html:1388`); sticky `.dash-tabs`; correct the
+  false "Read-only observability" header (`dashboard.html:230` — Tuning and
+  Annotate are read-write); opaque + pulsing run-in-progress banner; port the main
+  app's `.btn-pending` / `cb-status-pulse-strong` wait-state idioms into the
+  dashboard (currently zero animation) for every wait state.
+- **C2 — per-run observability** (`feat/run-detail-modal`). New
+  `GET /_dashboard/api/run/<run_id>` on the same blueprint (inherits the localhost
+  guard via `dashboard_bp.before_request`): one bounded JSONL pass returning that
+  run's waterfall/spans and per-call latency/cost/errors (reuse the existing
+  `_run_trace`/`_reliability`/`_cost_by_call_kind` internals). Run ids clickable →
+  composite modal; error-rate rows clickable → recent error records with messages.
+- **C3 — copy + progressive discovery** (`feat/dashboard-copy-discovery`). Every
+  module on every tab gets an on-screen one-line lay summary + a `_DASH_HELP` info
+  bubble (the registry + `data-help` pattern needs entries + copy only). Quality-tab
+  prose rewritten for lay readers; p50/p95/median/mean and filter-scoping
+  explainers; the full Annotate on-screen instruction set: bootstrap steps
+  (including the no-cost-confirm warning — JD count is the only spend control),
+  fixture-slug reuse semantics, the optional DeBERTa/MiniCheck grounding scorers
+  (what they are, the Hugging Face download, why optional, why free), multi-JD
+  guidance with annotation-volume expectations, verdict semantics
+  (keep/fix/omit/fabricated), `honest_rewrite` requirement, `forbidden_pattern`
+  regex guidance with examples, `failed_rules` slugs and purpose, and
+  what "Run this fixture (real --seed)" and "Score grounding" do. Doc-page links
+  from bubbles are wired in D4 once the pages exist.
+
+### Epic D — `epic/d-docs-ia` (board 39): documentation + information architecture
+
+Opens with DX-expert + technical-writer audits (plus the `ux-onboarding-designer`
+subagent on user docs). Runs after all UI epics so assets are produced once.
+
+- **D1 — research + IA design** (`feat/docs-ia-design`). Best-practices research
+  (end-user onboarding, developer-experience onboarding, open-source docs
+  conventions, docs-governance-as-code), digested with citations into a design doc.
+  Target tree for the full user/dev split: `docs/user/` (zero-technical-knowledge
+  product docs) vs `docs/dev/` (everything else), two onboarding ladders (user
+  first; dev builds on it). Link policy: historical artifacts (handoffs, diagnosis,
+  ledger, reviews) are never rewritten; live docs are updated by script; a
+  link-check gate is added. Governance uplift design: wordmark lint, banned-words
+  lint, audience-tag lint, dead-link check as hooks/CI plus a doc-writing skill —
+  the wordmark lint **must inherit item 2's exclusions** (`docs/wiki/`,
+  `docs/dev/reviews/`) or it goes red on ~107 legacy files.
+- **D2 — the mechanical split** (`feat/docs-split`). File moves land WITH, in the
+  same commits: `scripts/wiki_relevance.py` classification updates (its audit test
+  fails on any unclassified or vanished top-level entry),
+  `scripts/project_docs_to_mdx.py` audience fallback-table updates (28 of 30 L1
+  docs rely on the hardcoded path table), `meta.json` two-tier nav (User guide /
+  Developer), and a scripted link-rewrite over source markdown
+  (`docs/architecture.md` alone has ~101 inbound referencing files; the vision.md
+  move once broke ~490 refs). Entry gate: run `python scripts/wiki_freshness.py`
+  first and clear elevated drift with `/wiki-self-update` BEFORE the split.
+- **D3 — content** (`feat/user-docs` + `feat/dev-docs`). User path: assumes no
+  technical knowledge; every user choice answers what it does / why you'd use it /
+  how / what to expect; the profile Notes directive field documented; progressive-
+  discovery copy for main-app bubbles. Dev path: builds on the user path; per-tab
+  diagnostics documentation with Mermaid flow diagrams + tables matching C3's
+  on-screen copy; module-map refresh; the new governance hooks/skills documented.
+- **D4 — assets + enforcement** (`feat/docs-assets-enforcement`). Full screenshot
+  regeneration (item 9) + README hero wiring; diagram refresh; wire C3's bubble
+  "Learn more" links to their doc pages; in-app ↔ docs-site link integrity;
+  implement the D1 lints/hooks + doc-writing skill; wiki self-update + wiki-lint
+  green; assistant audience gating re-verified against the new tree.
+
+### Epic E — `epic/e-release` (board 40): the public cut
+
+- **E1 — `chore/release-v1.1.0`** (item 10). Version 1.0.9 → 1.1.0; CHANGELOG
+  `[Unreleased]` → `[1.1.0]` with the D-7.4 CVE-disclosure line (explicit "none" if
+  none). Pre-tag gates all green: `python -m scripts.gate`; eval smoke;
+  `/wiki-lint`; `compliance-witness`; fresh-clone install + run re-verify; the
+  `check_untyped_defs` type-scan (tag criteria above). Owner `[HUMAN]` steps (item
+  3) execute during this epic: repo rename, PyPI Trusted Publisher, GHCR,
+  `enforce_admins`. Tag `v1.1.0` → `release.yml` publishes (OIDC + Sigstore);
+  verify `pip install sartor` from PyPI; create the GitHub Release with notes
+  (`release.yml` does not create one). Local-dev install path stays documented.
+
+### Post-1.1 backlog (filed as board items 41–43; not scheduled)
+
+- **41** — domain-vocabulary library for Compose (design/SWE/business/startup
+  lexicons as local data; no compose-time research — latency, and only LLM requests
+  may leave the system).
+- **42** — template-format investigation: dotx/mht import; a small locked set of
+  exact-preview ATS formats.
+- **43** — approved-fonts list expansion, post-verification.
 
 ---
 

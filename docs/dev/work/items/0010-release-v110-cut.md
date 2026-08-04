@@ -5,6 +5,7 @@ kind = "item"
 title = "chore/release-v1.1.0 - version bump, CHANGELOG cut, tag"
 status = "blocked"
 decision_owner = "user"
+epic = 40
 depends_on = [3, 6, 7, 9, 19]
 blocked_on = "everything else landing first, plus the owner's explicit go"
 refs = ["RELEASE_ARC.md step 17"]
@@ -26,3 +27,10 @@ it (activates the D-7.4 disclosure gate); cut + push tag `v1.1.0`.
 `fix/eval-judge-parse-failure`, that item 19 (UX-suite flakiness solution sprint) must be
 solved before v1.1.0, not just scheduled alongside it. See item 19's own 2026-07-29 update and
 `docs/dev/diagnosis/ux-scroll-position-flake.md` O-14 for the evidence that prompted this.
+
+### 2026-08-04 — folded into Final March epic E (sprint E1)
+
+This item is the terminal step of epic 40; its mechanics are unchanged. The march
+adds the pre-tag gate list (eval smoke, wiki-lint, compliance-witness, fresh-clone
+re-verify, the type-scan) and the post-tag steps (PyPI publish verification,
+`gh release create`) around it — see `RELEASE_ARC.md` §"v1.1.0 Final March" epic E.

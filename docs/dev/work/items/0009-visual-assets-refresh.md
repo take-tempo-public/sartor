@@ -5,6 +5,7 @@ kind = "item"
 title = "release/visual-assets refresh - stale screenshots"
 status = "open"
 decision_owner = "agent"
+epic = 39
 refs = ["RELEASE_ARC.md step 15", "scripts/capture_screenshots.py"]
 summary = "10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in."
 ```
@@ -20,3 +21,9 @@ coverage, which is what let staleness accumulate silently for ~7 weeks.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking (migrated, not new)
+
+### 2026-08-04 — folded into Final March epic D (sprint D4)
+
+Executed as sprint D4 of epic 39, deliberately last-but-one in the march so the
+screenshots capture the post-A/B/C UI exactly once. README hero wiring rides the
+same sprint.
