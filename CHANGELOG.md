@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: fake-client tests no longer pollute the real telemetry log by default (`fix/extract-experiences-telemetry-pollution`, item 33)
+
+`tests/test_extract_experiences.py`'s 9 fake-client end-to-end tests drove the real
+`_call_llm_streaming` → `_emit_call_log` funnel without redirecting telemetry, appending
+synthetic rows (`input_tokens=100, output_tokens=50, latency_ms=0`) to the developer's
+real `logs/llm_calls.jsonl` on every run — measured at 71.1% (3132/4403 rows) of the
+entire real log by the time this was caught. Fixed with a repo-wide `autouse` fixture in
+`tests/conftest.py` (`_default_llm_log_path`) that redirects `analyzer.LOG_PATH` to a
+per-test `tmp_path` by default for every test in the suite, closing this class of gap for
+this file and any future fake-client test file that omits its own redirect — tests that
+need `_emit_call_log`'s real write behavior (`test_analyzer_model_selection.py`,
+`test_demo_mode.py`) simply override the default via their own `monkeypatch.setattr`,
+unaffected. A module-scoped `_real_log_line_count_unchanged` guard (the same pattern
+already used in `test_call_kind_telemetry.py`/`test_call_kind_route_telemetry.py`) was
+added to `test_extract_experiences.py` so any future regression fails loudly; confirmed
+it actually catches the bug via a deliberate RED check before restoring the fix. Full
+evidence chain: `docs/dev/diagnosis/extract-experiences-telemetry-pollution.md`.
+
 ### Verified: `recommend_experience_summary`/`draft_surgical_refinement` telemetry gap was real but not broken (`fix/never-logged-call-kinds`, item 22)
 
 Item 22 claimed four `call_kind`s (`recommend_skill`, `suggest_skill`,

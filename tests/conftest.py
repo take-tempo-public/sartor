@@ -13,6 +13,26 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
+@pytest.fixture(autouse=True)
+def _default_llm_log_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redirect `analyzer.LOG_PATH` to a per-test tmp file by default, for every
+    test in the suite.
+
+    Item 33: 9 fake-client tests in `test_extract_experiences.py` drove the real
+    `_call_llm_streaming` -> `_emit_call_log` funnel without redirecting anything,
+    appending synthetic rows to the developer's real `logs/llm_calls.jsonl` on
+    every run (measured at 71.1% of the entire real log). `_emit_call_log` reads
+    `LOG_PATH` from the module's globals at call time, so redirecting it here is
+    enough to close the gap for this file and any future one, without touching
+    `_emit_call_log` itself — tests that need its real write behavior
+    (`test_analyzer_model_selection.py`, `test_demo_mode.py`) apply their own
+    `monkeypatch.setattr(analyzer, "LOG_PATH", ...)` afterward, which simply wins.
+    """
+    import analyzer
+
+    monkeypatch.setattr(analyzer, "LOG_PATH", tmp_path / "llm_calls.jsonl")
+
+
 @pytest.fixture(scope="session")
 def _migrated_template_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A file-backed SQLite migrated to alembic head, built exactly ONCE per session.

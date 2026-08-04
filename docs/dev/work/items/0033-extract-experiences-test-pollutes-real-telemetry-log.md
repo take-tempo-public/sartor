@@ -3,12 +3,15 @@ schema = 1
 id = 33
 kind = "item"
 title = "tests/test_extract_experiences.py writes fake rows into the real logs/llm_calls.jsonl"
-status = "watching"
+status = "closed"
+resolution = "Fixed on fix/extract-experiences-telemetry-pollution: a repo-wide autouse tests/conftest.py fixture (_default_llm_log_path) redirects analyzer.LOG_PATH to a per-test tmp_path by default for every test in the suite, closing this class of gap for test_extract_experiences.py's 9 call sites AND any future fake-client test file that omits its own redirect. Chose to redirect LOG_PATH rather than _emit_call_log itself because tests/test_analyzer_model_selection.py and tests/test_demo_mode.py need _emit_call_log's real file-write behavior (they redirect LOG_PATH themselves, which simply overrides the conftest default via monkeypatch's normal chaining). test_extract_experiences.py itself needed no code changes -- it now inherits the safe default. Added a module-scoped _real_log_line_count_unchanged guard (same pattern already used in test_call_kind_telemetry.py / test_call_kind_route_telemetry.py) so any future regression fails loudly; confirmed it actually catches the bug via a deliberate RED check (temporarily disabling the conftest fixture reproduced the exact 9-row growth, 4405 -> 4414). Full non-UX suite (2197 passed) and UX suite (137 passed) both confirmed zero real-log growth post-fix. Evidence chain: docs/dev/diagnosis/extract-experiences-telemetry-pollution.md -- which also discloses a cleanup-script mistake during verification that irreversibly deleted 3,132 historical pollution rows (shape-only match instead of timestamp+shape); user-directed to leave as-is since every removed row was confirmed test noise, and to record the risk in memory for future sessions."
 decision_owner = "agent"
 refs = [
   "tests/test_extract_experiences.py",
   "tests/test_refinement_scope.py",
+  "tests/conftest.py:_default_llm_log_path",
   "docs/dev/diagnosis/refinement-scope-check-telemetry.md",
+  "docs/dev/diagnosis/extract-experiences-telemetry-pollution.md",
 ]
 summary = "9 tests drive extract_experiences without redirecting LOG_PATH - appends fake rows to the real telemetry log."
 ```
@@ -67,3 +70,14 @@ repo-wide autouse fixture in `tests/conftest.py` redirecting `analyzer.LOG_PATH`
 each time this shape recurs (it has now recurred three times: `test_refinement_scope.py`'s
 own first draft, this item, and the corpus-blueprint gap filed as item 34). A single
 conftest-level guard would close all three at once.
+
+### 2026-08-03 — fixed and closed (`fix/extract-experiences-telemetry-pollution`)
+
+Implemented exactly the proposal above: `tests/conftest.py`'s new
+`_default_llm_log_path` autouse fixture redirects `analyzer.LOG_PATH` to a per-test
+`tmp_path` for every test by default. This closes item 33's own shape (the non-UX
+`tests/conftest.py` funnel); item 34's shape (the UX-harness `install_llm_stubs`
+funnel — a different mechanism, and a real-API-call risk rather than a log-pollution
+one) is untouched and remains its own open item. Full evidence chain, the RED-check
+proof, and a disclosed cleanup-script incident during verification:
+`docs/dev/diagnosis/extract-experiences-telemetry-pollution.md`.
