@@ -13,6 +13,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `scripts/ci_wait.py` — one deterministic definition of "the PR is green" (`feat/ci-wait-wrapper`)
+
+Waiting for CI was the last close-out step every session re-implemented by hand, and two
+hand-rolled watchers had already failed in the same expensive way. `scripts/ci_wait.py`
+does for "the PR is green" what `scripts/gate.py` (PX-55) did for "gate green": one script,
+one definition, invoked as `python -m scripts.ci_wait [<pr>]`. AGENTS.md close-out step 4
+and the handoff template's verbatim close-out block now name it, and forbid hand-rolled
+watchers.
+
+Two observed failures set the requirements:
+
+1. **A silent watcher reads as a healthy one.** Two 30-minute `Monitor` watches on PR #99
+   ran to completion emitting **zero** events while a required check was already red — ~1
+   hour lost, and the silence read as "still running, all fine." Contributing: there is no
+   system `jq` binary on this machine, and `gh pr checks` exits *nonzero* on failure, so the
+   common `gh pr checks … | jq … || echo '[]'` shape discards the real output at precisely
+   the moment it carries the failure. The wrapper therefore parses `--json` with Python's
+   own `json` (never `jq`, not even `gh --jq`), treats a nonzero `gh` exit as *data* rather
+   than an error, and prints exactly one terminal `ci-wait: <VERDICT> (exit N)` line from a
+   `finally` block — silence is made structurally impossible, since silence is the defect.
+
+2. **Green-after-retries was indistinguishable from green.** The ux tier has printed
+   `[ux] rerun-rate alarm: N test(s) needed a retry this run` since `feat/rerun-rate-alarm`,
+   and **nothing read it** — charter **C-7** rule 3 going unenforced at the point of use.
+   Confirmed directly rather than assumed: on PR #99's ux job (`92148736760`)
+   `gh pr checks 99 --required` reports bucket `pass` while that job's own log records
+   `2 attempt(s) failed` for the scroll-spy test. The wrapper scans the required runs' logs
+   and routes that **existing** alarm into its verdict rather than building a second
+   mechanism.
+
+Exit codes: **0** all required green with zero absorbed reruns · **1** a required check
+failed (printing that job's `--log-failed` tail, so the traceback needs no second
+round-trip) · **2** wrapper error, *including a rerun scan that could not complete* — an
+unverifiable scan must never read as clean · **3** green-but-reruns-absorbed · **8** still
+pending at the deadline. Exit 3 is owner-selected: it applies C-7 rule 3 at the wrapper
+boundary **without** disturbing CI's deliberately report-only rerun policy (owner decision
+2026-07-20) — the build still passes; the caller is simply told the difference. Required
+and advisory checks are partitioned, so `pip-audit`, the docs deploy, and the label-gated
+smoke eval are reported but never gate.
+
+Verified end-to-end against real historical PRs, which is the A/B: PR #100 → `GREEN`
+(exit 0); PR #99 → **identical `pass` buckets** but `GREEN WITH RERUNS` (exit 3), naming
+the test and its 2-of-3 failed attempts. Deadline, error, and `--no-rerun-scan` paths each
+confirmed to print a terminal line. Log fetches dedupe by **run**, not job — measured
+2026-08-05, a 4-job 2.88 MB run log takes 4.7 s against 4.4 s for a single 133 KB job log,
+so the cost is per-request, and the six required checks' three runs cost three round-trips
+where per-job scanning would cost six.
+
+`tests/test_ci_wait.py` covers the exit-code matrix, the bare `/runs/<id>` link CodeQL emits
+(no job log — reported, never skipped silently), a **negative control** on a clean log so
+the scanner cannot pass vacuously, and an emitter↔scanner **drift contract test** that reads
+`tests/ux/conftest.py` as text and asserts the format strings it prints are the ones these
+regexes match. No new dependency. Consumer enumeration for the gated handoff-template edit:
+`docs/dev/blast-radius/ci-wait-wrapper.md`.
+
 ### Fixed: the UX scroll-spy settle gate leaked a pending restore, flaking every CI run (`fix/ux-scroll-spy-overlapping-refresh`, item 44)
 
 `test_scroll_spy_attributes_overlapping_refresh_corpus_calls` failed at least one attempt
