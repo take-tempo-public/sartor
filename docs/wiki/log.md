@@ -1037,3 +1037,37 @@ is its own schema prose, not a claim about close-out. Both inspected, not assume
 
 **Not a governance change.** Charter clauses are untouched — C-7 rule 3 is *applied* by
 the new wrapper, not amended, so no `[[charter]]`-bearing page needed a revision.
+
+---
+
+## 2026-08-05 — scoped close-out relevance check (`feat/enforcement-first-governance`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 4** —
+[`../../AGENTS.md`](../../AGENTS.md), [`../governance/charter.md`](../governance/charter.md),
+[`../dev/AGENT_HANDOFF_TEMPLATE.md`](../dev/AGENT_HANDOFF_TEMPLATE.md), and
+[`../dev/work/SCHEMA.md`](../dev/work/SCHEMA.md). Classifier run over the branch's committed
+diff (16 files), not eyeballed.
+
+**Pages edited (2), both because this branch FALSIFIED a claim they carried:**
+
+1. [`pages/governance-extraction.md`](pages/governance-extraction.md) — said the charter
+   "now carries **C-7…C-10**". It carries C-7…C-12 as of this branch. Corrected, and the two
+   new clause names added to the parenthetical. The page's own grounding rule (do not restate
+   clauses here; the charter is the durable home) is respected — only the range and the names
+   changed.
+2. [`pages/code-module-map.md`](pages/code-module-map.md) — the `scripts/work_items.py` row
+   described a validator and board generator. It now also carries the **C-11 closure bar**,
+   which is a materially different role: it is the one C-11/C-12 mechanism that binds *every*
+   agent, because it runs in `gate.py` and CI rather than as a Claude Code hook. Anchor
+   updated to `_CLOSURE_BAR_GRANDFATHERED` so the cite points at the new behaviour.
+
+**Pages verified no-edit:** [`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) (its
+close-out mention is about the wiki loop's own trigger, unchanged);
+[`pages/deterministic-llm-boundary.md`](pages/deterministic-llm-boundary.md) and
+[`pages/prompt-version-discipline.md`](pages/prompt-version-discipline.md) (cite C-6 and the
+`PROMPT_VERSION` rule respectively — neither touched). Inspected, not assumed.
+
+**This IS a governance change**, unlike the previous two close-out checks — which is exactly
+why two pages needed correcting rather than none.
