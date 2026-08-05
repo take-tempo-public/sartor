@@ -13,6 +13,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Governance: charter **C-11** (enforcement before discipline) + **C-12** (declare the gap), with four mechanisms (`feat/enforcement-first-governance`)
+
+**Owner-directed, from measured failure.** The governing posture changes: **a constraint
+with no mechanism that fails closed is not a constraint** — it is a prediction about the
+model's future good behavior, and this project measured that prediction and found it false.
+New governance now defaults to a **gate**; prose discipline is the exception and is labeled
+*unenforced* where used.
+
+The measurement, all from this repo's own record: **~20 merged branches on UX-suite flakes
+in 40 days** (2026-06-27 → 2026-08-04), one branch merged **three times** over the same
+flake; **item 30 recurring in CI five days after closure**, visible only because
+`scripts/ci_wait.py` read the job log while `gh pr checks` reported the run clean; **three
+of epic 19's five closures resting on weaker evidence than they claimed** (27
+already-fixed-before-filing, 28 *not reproduced*, 30 on a fix its own text called "not
+confirmed as the historical cause"), the one that came back being one of the three; and
+**seven bespoke synchronization primitives across 79 occurrences in 14 files**, accreted one
+per flake with no single owner. C-7, C-8 and C-10 already said most of the right things and
+did not hold, because each left the decisive moment to the model's judgment.
+
+- **C-11 — Enforcement before discipline.** The **first** time a failure mode is recognized
+  as a recurrence, the response is a mechanism that fails closed, authored on that branch. A
+  note, a memory, a ledger row, or a new prose rule is **not compliant on its own**. Where no
+  mechanism is possible, the gap is declared explicitly and surfaced to the owner.
+- **C-12 — Declare the gap; never fill it.** Information the session no longer holds is
+  surfaced as **missing** before anything depends on it. Compaction and context loss are
+  data-loss events **to be announced**. "I no longer have this" is a required output.
+
+**Four mechanisms, each riding a gate that already blocks:**
+
+1. **Closure bar** (`scripts/work_items.py`, runs in `scripts/gate.py` **and** CI, so it
+   binds every agent). `status = "closed"` needs a falsifiable `verified_by` artifact — a
+   test path, gate, guard, or CI run id — or a `closure_exception` **naming the owner**. And
+   an item carrying `resolution` while *not* closed (i.e. reopened) needs a `guardrail`
+   naming the mechanism authored in response, or a `guardrail_deferred` saying plainly that
+   none was. Proven against the real backlog: the reopen rule fired on exactly items 19 and
+   30. Grandfathering is finite and **closed** — the 19 pre-adoption ids are pinned by a test,
+   so adding one requires editing that test in the same diff.
+2. **Observed-citation floor** (`scripts/enforcement/evidence.py` + the
+   `require-evidence-before-fix` guard). A `## Observed` section that clears the character
+   floor but cites *nothing* now blocks the production edit.
+3. **Compaction disclosure** (`scripts/enforcement/adapters/claude_context_hook.py`). Closes
+   a verified gap: `restore_evidence()` keyed off a `fix/*` dossier and returned `""`
+   otherwise, so a compaction on a `feat/*`/`chore/*` branch injected **nothing**. Now
+   PreCompact writes a durable `compacted` receipt to the session ledger, and
+   SessionStart(`compact`) always injects an information-loss declaration.
+4. **Handoff must answer C-11** (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`). A new required
+   section, `## Recurrences observed this session → guardrail authored`. No validator change
+   was needed — `verify_doc_template.py` already demands every `##` heading in relative
+   order, so a session cannot produce a compliant handoff without answering the question.
+
+**Stated limits, up front (C-0).** None of this detects invention. M2 and M4 enforce *shape*
+— a fabricated run id passes both. `verified_by` is not existence-checked. `closure_exception`
+is a real escape, deliberately **named and attributed** rather than silent; routine use is
+itself the signal, and it is visible in the diff. And M2/M3 are Claude Code hooks, so they do
+**not** bind Codex/Cursor/Aider — only M1 (gate + CI) binds every agent. The honest claim is
+that an unsourced assertion becomes non-committable, **not** that a dishonest one becomes
+impossible.
+
+No new dependency. Consumer enumeration re-derived on this branch (not copied):
+`docs/dev/blast-radius/enforcement-first-governance.md`.
+
 ### Added: `scripts/ci_wait.py` — one deterministic definition of "the PR is green" (`feat/ci-wait-wrapper`)
 
 Waiting for CI was the last close-out step every session re-implemented by hand, and two
