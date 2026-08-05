@@ -6,6 +6,7 @@ title = "Keyboard-reorder test: one Playwright 30s timeout, uncontended, no diag
 status = "watching"
 resolution = "Not confirmed as the historical cause (no traceback ever existed for the one 2026-07-28 sample -- docs/dev/diagnosis/ux-keyboard-reorder-timeout.md O-1), but a real, capability-proven vulnerability with the exact same symptom (a ~30s timeout inside WizardComposePage._wait_settled) was found and fixed 2026-07-31 (fix/ux-keyboard-reorder-timeout): _wait_settled's networkidle wait -- documented as a cheap pre-drain, not the settle gate -- was unbounded and could be blocked by an unrelated, unawaited live-preview iframe load (proven via a deterministic page.route() stall, O-15). Bounded to 5s (contextlib.suppress on timeout); the real settle gate is unaffected. Full ux suite clean post-fix (133 passed, 1 xfailed/1 xpassed unchanged, zero reruns)."
 decision_owner = "agent"
+guardrail = "scripts/ci_wait.py (exit 3 on absorbed reruns) is what made this recurrence visible at all -- gh pr checks reported the run clean; scripts/work_items.py's C-11 closure bar now refuses to re-close this item without a falsifiable verified_by artifact. NEITHER fixes the flake -- the investigation is open and unguarded, stated here rather than implied."
 epic = 19
 refs = [
   "tests/ux/regression/test_20260604_bullet_drag_reorder.py",

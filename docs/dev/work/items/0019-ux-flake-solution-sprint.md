@@ -6,6 +6,7 @@ title = "UX-suite flakiness solution sprint - mode-C residual + newly observed i
 status = "open"
 resolution = "All 5 children closed 2026-07-31 (spanning 27-31): 27 already-fixed-before-filing (no code change); 28 not-reproduced (24-run campaign, owner-directed close); 29 mechanism observed + two-phase fix landed; 30 capability-proven mechanism + harness fix landed; 31 (last child) capability-proven mechanism + two-phase app+harness fix landed. Not one mechanism, as the original filing itself predicted -- five independent investigations, five different dispositions. Unblocks item 10's depends_on = [3, 6, 7, 9, 19] (still gated on 3/6/7/9)."
 decision_owner = "agent"
+guardrail = "Charter C-11 + the closure bar in scripts/work_items.py: a child of this epic can no longer be closed on prose alone, which is how 27/28/30 closed on weaker evidence than they claimed. Plus scripts/ci_wait.py exit 3, which is why child 30's recurrence was seen. The flake CLASS itself remains unguarded -- no mechanism prevents the next one, only the next premature closure."
 refs = [
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
 ]
