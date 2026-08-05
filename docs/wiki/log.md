@@ -1009,3 +1009,31 @@ and `CHANGELOG.md`. Classifier run over the full committed + working diff, not e
 classifier surfaced no relevant source. The branch changes no product behavior, no route,
 no prompt, no module boundary, and no governance clause — `static/app.js` is untouched and
 the defect was in the test harness, not the app. Checked, not skipped.
+
+---
+
+## 2026-08-05 — scoped close-out relevance check (`feat/ci-wait-wrapper`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../AGENTS.md`](../../AGENTS.md) and
+[`../dev/AGENT_HANDOFF_TEMPLATE.md`](../dev/AGENT_HANDOFF_TEMPLATE.md). Classifier run over
+the branch's committed diff, not eyeballed. (`scripts/ci_wait.py`, `tests/test_ci_wait.py`,
+`CHANGELOG.md`, `docs/dev/blast-radius/`, and `docs/dev/ledger/` all classify irrelevant.)
+
+**Pages edited (1):** [`pages/code-module-map.md`](pages/code-module-map.md) — added
+`scripts/ci_wait.py` to the "Build and tooling infrastructure" table. It is a genuine
+sibling of the `scripts/gate.py` row already there: gate.py is the single definition of
+"gate green", ci_wait.py the single definition of "the PR is green", and the map would
+have been silently incomplete without it. The trailing `[synthesis]` sentence gained a
+clause distinguishing it from the CI-invoked scripts — it *reads* CI rather than running
+inside it.
+
+**Pages verified no-edit (2):**
+[`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) mentions branch close-out only as
+the wiki loop's own trigger, which is unchanged; the wiki [`SCHEMA.md`](SCHEMA.md) match
+is its own schema prose, not a claim about close-out. Both inspected, not assumed.
+
+**Not a governance change.** Charter clauses are untouched — C-7 rule 3 is *applied* by
+the new wrapper, not amended, so no `[[charter]]`-bearing page needed a revision.

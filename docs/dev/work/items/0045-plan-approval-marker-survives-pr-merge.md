@@ -51,3 +51,17 @@ move on finding a stale approval is `EnterPlanMode` → write the plan →
 ## Updates
 
 ### 2026-08-04 — filed during feat/consumer-enumeration-gate (found while planning)
+
+Filed with the three observations above, on the branch that found it.
+
+### 2026-08-05 — third independent confirmation (`feat/ci-wait-wrapper`)
+
+Confirmed again at session start, before any edit: `~/.claude/plans/.approved-C--Dev-sartor`
+was present (mtime 2026-08-04 16:53) in a session that had never called `ExitPlanMode`, and
+PR #100 had merged through `gh pr merge --merge` in between. That is now **three consecutive
+sessions** finding a live stale marker, so this is the steady state rather than a one-off.
+
+The interim posture held: the marker was **not ridden** — this session ran `EnterPlanMode` →
+wrote the plan → `ExitPlanMode` and earned a fresh one. No change to the diagnosis or the
+proposed fix shape; recorded only to stop the recurrence count being re-derived by the next
+session that trips over it.
