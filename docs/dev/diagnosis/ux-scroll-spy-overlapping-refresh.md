@@ -212,6 +212,34 @@ of magnitude below display rate on an idle many-core dev box, so a 4-core CI run
 cores between a threaded Flask server, headless Chromium and pytest has ample room to be
 slower still — widening exactly the window O-7 describes.
 
+### O-12. CI confirms it — first run in five with no failed attempt, verified in the job log rather than the bucket
+
+PR #100, run `30968745766`, ux job `92188295433`. Checked the way O-1 says to check, by
+grepping the job log rather than trusting `gh pr checks`:
+
+```
+RERUN markers:                      0
+"needed a retry" / rerun-rate alarm: 0
+test_scroll_spy_attributes_overlapping_refresh_corpus_calls  PASSED [ 87%]
+test_settle_gate_clears_the_timeline_without_leaking_a_pending_restore  PASSED [ 86%]
+= 138 passed, 1 skipped, 2202 deselected, 1 xfailed, 1 xpassed in 244.81s =
+```
+
+**Run history for this test, all five CI runs on record:**
+
+| Run | Attempts failed |
+|---|---|
+| PR #98 (30924821284) | 3 of 3 |
+| PR #99 run 2 (30943537217) | 3 of 3 |
+| PR #99 run 3 (30953100089) | 1 of 3 |
+| PR #99 run 4 (30955415008) | 1 of 3 |
+| **PR #100 (30968745766)** | **0 of 1** |
+
+8 failed attempts in 12 before the fix; 0 in 1 after. **Scope this honestly:** one clean run
+is one sample, and at the pre-fix ~67% per-attempt rate a single clean attempt would occur by
+chance about a third of the time. It is confirmation, not proof — which is why the acceptance
+bar asks for more than one run, and why a second sample is being taken deliberately (below).
+
 ---
 
 ## Falsified

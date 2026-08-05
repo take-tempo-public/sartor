@@ -3,15 +3,16 @@ schema = 1
 id = 44
 kind = "item"
 title = "CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR"
-status = "open"
+status = "closed"
 decision_owner = "agent"
+resolution = "2026-08-04, fix/ux-scroll-spy-overlapping-refresh (PR #100): test-harness defect, no production code changed. The spy timeline was cleared on refreshCorpus-exit, which by construction precedes that same invocation's fire-and-forget _restoreScrollY-fired, so a leftover record was counted as a third event. Fixed by gating the clear on -fired too, in a shared _settle_and_clear_spy_timeline() helper; assert len(fired) == 2 unchanged. Reproduced deterministically (it never reproduced locally: 20/20 pass). CI run 30968745766: PASSED first attempt, zero RERUN markers in the job log -- first clean run in five."
 refs = [
   "tests/ux/regression/test_20260708_busy_states_and_chip.py",
   "docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md",
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
   "https://github.com/take-tempo-public/sartor/actions/runs/30924821284/job/92044338685",
 ]
-summary = "PROVEN harness defect: the clear was gated on refreshCorpus-exit, which precedes that invocation's own -fired. Fixed."
+summary = "CLOSED: harness defect, clear was gated on refreshCorpus-exit which precedes that invocation's own -fired. CI clean."
 ```
 
 Observed 2026-08-04 on PR #98 (`chore/v11-march-kickoff`, a docs-only diff — zero
@@ -152,3 +153,27 @@ is unchanged. No production code changed.
 CI's ~67% per attempt), so the rate lottery was not an available instrument; and headless
 Chromium in this harness runs at **~11-13fps**, which makes a frame-count delay a
 non-portable unit and gives the CI-cadence explanation room to be real.
+
+### 2026-08-04 — CLOSED on CI evidence (PR #100)
+
+Run `30968745766`, ux job `92188295433`. Verified in the **job log**, not the `gh pr checks`
+bucket — the bucket is what misreported two PR #99 runs:
+
+```
+RERUN markers:                       0
+"needed a retry" / rerun-rate alarm:  0
+test_scroll_spy_attributes_overlapping_refresh_corpus_calls  PASSED [ 87%]
+= 138 passed, 1 skipped, 2202 deselected, 1 xfailed, 1 xpassed in 244.81s =
+```
+
+**First clean run in five** (PR #98: 3/3 attempts failed; #99 run 2: 3/3; #99 run 3: 1/3;
+#99 run 4: 1/3; #100: 0/1).
+
+**Scoped honestly:** one clean run is one sample, and at the pre-fix ~67% per-attempt rate a
+single clean attempt would happen by chance roughly a third of the time. What makes this
+closure sound is not the sample alone — it is that the mechanism was *proven* by deterministic
+reproduction and A/B before the fix was written, with three rivals falsified. A second CI
+sample was taken deliberately from this closing commit's own pre-merge run.
+
+Item 47 tracks the one thing not done: sibling tests in the same family were not audited for
+the same settle-gate hole.

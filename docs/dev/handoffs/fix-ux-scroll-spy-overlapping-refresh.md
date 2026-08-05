@@ -1,14 +1,14 @@
 <!-- provenance: schema=1 session=f67c3bb5-c93f-40f0-993c-118c4a2034f6 branch=fix/ux-scroll-spy-overlapping-refresh commit=19cc263 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-08-04 -->
 
-# Agent handoff: after `fix/ux-scroll-spy-overlapping-refresh` (item 44 fixed; next: the deterministic CI-wait wrapper)
+# Agent handoff: after `fix/ux-scroll-spy-overlapping-refresh` (item 44 fixed AND closed; next: the deterministic CI-wait wrapper)
 
 **Branch to create:** `feat/ci-wait-wrapper` off `main`
 **Base branch:** `main`
 
 > **READ THIS FIRST — the march is still paused, and your branch is still not sprint A1.**
-> Item 44 is fixed but **cannot be closed until CI confirms it** (see "What just landed").
-> Your branch is owner-directive 1: the deterministic CI-wait wrapper. Do not start sprint
-> A1 (`fix/experience-soft-retire`) without checking in with the owner first.
+> Item 44 is **closed on CI evidence** — you inherit no unfinished business from it. Your
+> branch is owner-directive 1: the deterministic CI-wait wrapper. Do not start sprint A1
+> (`fix/experience-soft-retire`) without checking in with the owner first.
 
 ---
 
@@ -114,10 +114,17 @@ move was to investigate `_restoreScrollY`'s supersede guard — which is working
   (137 + the new probe) /1 xfailed/1 xpassed, `work_items check` passed. **Zero `RERUN`
   markers and zero `[ux] rerun-rate alarm` lines** in the whole log.
 
-**Item 44 is deliberately still `open`.** The defining property of this flake is that it does
-not appear locally, so a local green proves little. **Close it only on a green CI run with no
-`RERUN` for this test** — and check the job log directly, because `gh pr checks` reported
-bucket `pass` for two PR #99 runs in which this test had failed an attempt.
+- **CI confirmed it, and item 44 is CLOSED.** PR #100, run `30968745766`, ux job
+  `92188295433`. Verified in the **job log**, not the `gh pr checks` bucket — the bucket is
+  exactly what misreported two PR #99 runs: **0 `RERUN` markers, 0 rerun-rate alarm lines**,
+  and `test_scroll_spy_attributes_overlapping_refresh_corpus_calls` **PASSED on its first
+  attempt**. That is the **first clean run in five** (#98: 3/3 attempts failed; #99 run 2:
+  3/3; #99 run 3: 1/3; #99 run 4: 1/3; #100: 0/1).
+  - **Scoped honestly:** one clean run is one sample, and at the pre-fix ~67% per-attempt
+    rate a single clean attempt happens by chance about a third of the time. What makes the
+    closure sound is not the sample — it is that the mechanism was *proven* by deterministic
+    reproduction and A/B **before** the fix was written, with three rivals falsified. A second
+    sample was taken deliberately from the closing commit's own pre-merge CI run.
 
 **Operational note (cost the session ~15min):** the first `scripts.gate` run was **killed** at
 56% of the ux tier by this environment's background-task management. Free RAM was 2.07GB and
@@ -135,10 +142,8 @@ failed is an absent exit-code line** — always append one after the command, ou
 **Adaptation note (same as predecessors):** `docs/dev/work/BOARD.md`'s full still-open subset
 is rendered below; `RELEASE_CHECKLIST.md`'s Carry-forward ledger is superseded.
 
-**Open (2 / 10 ceiling):**
-1. **Item 44 — scroll-spy overlapping-refresh flake. FIXED on this branch, NOT yet closed.**
-   Awaiting CI confirmation, per above. Flip to closed only on a green run with no `RERUN`.
-2. Item 45 — plan-approval marker survives a PR-channel merge.
+**Open (1 / 10 ceiling):**
+1. Item 45 — plan-approval marker survives a PR-channel merge.
    `hooks/cleanup-plan-on-merge.sh:21-29` fires only when the Bash command text contains all
    three of `git merge`, `--no-ff`, `Merge made by`; close-out uses `gh pr merge <n> --merge`,
    which contains none of them. **Confirmed again this session** — a stale
@@ -221,12 +226,11 @@ given>"`; once it passes, consume this file
 (`python scripts/verify_doc_template.py docs/dev/handoffs/fix-ux-scroll-spy-overlapping-refresh.md
 docs/dev/AGENT_HANDOFF_TEMPLATE.md --event consumed --agent <agent>`).
 
-**Then, before anything else: check whether item 44's CI run went green and close it if so.**
-That is this branch's unfinished business and it is one command plus a status flip, not a
-project. If it went red, that is a finding — reopen the dossier at
-`docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md` "Still open" §1, which states plainly
-that one mechanism was proven and fixed but that whether it was the *only* contributor is a
-claim only CI can settle.
+**You inherit no unfinished business.** Item 44 is closed on CI evidence and the board is
+regenerated. If the scroll-spy test ever flakes again, do not re-open item 44 blind — read
+`docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md` "Still open" first, which states
+plainly that one mechanism was proven and fixed and that a second contributor was never
+excluded. Item 47 is the most likely place to look.
 
 Then create `feat/ci-wait-wrapper` off `main`, write a plan at `~/.claude/plans/<slug>.md`,
 and show it to the user before touching any code. **Do not code first.**

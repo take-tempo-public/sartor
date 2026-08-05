@@ -44,10 +44,17 @@ in `docs/dev/diagnosis/ux-scroll-position-flake.md`. The probe carries a control
 caught its own first version passing **vacuously** when the hold never released (the O-4
 inert-instrument trap). Full record: `docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md`.
 
-**Stated limits (C-0):** one mechanism is proven and fixed; whether it was the *only*
-contributor is a claim only CI can settle, since the flake does not appear locally. Sibling
-tests in this family that clear the timeline on `refreshCorpus-exit` were not audited on this
-branch. No new dependency.
+**CI confirmation:** PR #100 (run `30968745766`) — the test **passed on its first attempt**
+with **zero `RERUN` markers** in the ux job log, the first clean run in five. Verified by
+reading the job log, not the `gh pr checks` bucket, which had reported `pass` for two PR #99
+runs in which this test had failed an attempt.
+
+**Stated limits (C-0):** one clean run is one sample — at the pre-fix ~67% per-attempt rate a
+single clean attempt occurs by chance about a third of the time. The closure rests on the
+mechanism having been *proven* by deterministic reproduction and A/B before the fix was
+written, with three rivals falsified, not on the sample alone. Whether a *second* contributor
+exists was never excluded. Sibling tests in this family that clear the timeline on
+`refreshCorpus-exit` were not audited (item 47). No new dependency.
 
 ### Added: charter C-10 — enumerate consumers before changing a contract (`feat/consumer-enumeration-gate`)
 
