@@ -3,14 +3,16 @@ schema = 1
 id = 44
 kind = "item"
 title = "CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR"
-status = "open"
+status = "closed"
 decision_owner = "agent"
+resolution = "2026-08-04, fix/ux-scroll-spy-overlapping-refresh (PR #100): test-harness defect, no production code changed. The spy timeline was cleared on refreshCorpus-exit, which by construction precedes that same invocation's fire-and-forget _restoreScrollY-fired, so a leftover record was counted as a third event. Fixed by gating the clear on -fired too, in a shared _settle_and_clear_spy_timeline() helper; assert len(fired) == 2 unchanged. Reproduced deterministically (it never reproduced locally: 20/20 pass). CI run 30968745766: PASSED first attempt, zero RERUN markers in the job log -- first clean run in five."
 refs = [
   "tests/ux/regression/test_20260708_busy_states_and_chip.py",
+  "docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md",
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
   "https://github.com/take-tempo-public/sartor/actions/runs/30924821284/job/92044338685",
 ]
-summary = "Failed all 3 CI attempts on docs-only PR #98 (3==2 restore-fired, late 3rd _restoreScrollY); not an item-27-31 test."
+summary = "CLOSED: harness defect, clear was gated on refreshCorpus-exit which precedes that invocation's own -fired. CI clean."
 ```
 
 Observed 2026-08-04 on PR #98 (`chore/v11-march-kickoff`, a docs-only diff — zero
@@ -104,3 +106,74 @@ Two consequences for the investigation:
    needed a retry this run`) and was landing in the job log unread on every run. Whatever
    surfaces that alarm is not reaching a human or an agent. Worth folding into the
    deterministic-CI-wait work rather than treating as separate.
+
+### 2026-08-04 — CORRECTION: the updates above name the wrong event as the anomaly
+
+Filed from `fix/ux-scroll-spy-overlapping-refresh`. Full record:
+`docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md`.
+
+**The two updates above are wrong on this specific point, and the error was propagated into
+the outgoing handoff.** They describe the anomaly as *"the extra being an `ordinal: 2`
+landing after `ordinal: 3`"*. Reading this filing's own recorded table again:
+
+```
+t=470.9  ordinal 1  scheduledDuring [1]
+t=518.8  ordinal 3  scheduledDuring [2, 3]
+t=596.9  ordinal 2  scheduledDuring [2]
+```
+
+- The spy's `_rcCounter` is a closure variable that the timeline clear does **not** reset,
+  and the Corpus tab click's own fire-and-forget `refreshCorpus` consumes id 1. So the two
+  invocations the test tracks are ids **2 and 3**.
+- `assert len(enters) == 2` passes in every recorded failure — the failure is always the
+  *next* assertion. So both tracked invocations are present and accounted for.
+- The `t=596.9` row (`ordinal 2`, singleton `scheduledDuring [2]`) is exactly what the
+  test's final assertion **requires**: `assert last_fired["scheduledDuring"] == [id_a]`.
+  Invocation A is the one whose `/experiences` fetch is deliberately held open, so it
+  *must* restore last. **That row is the designed behaviour, not the defect.**
+- The genuine extra is `t=470.9` — `ordinal 1 / scheduledDuring [1]` — from the tab-click
+  invocation, which the test is not tracking at all.
+
+**Why it matters:** a session starting from the inherited framing would investigate
+`_restoreScrollY`'s ordinal/scrollGen supersede guard (`static/app.js:5703`), which the
+evidence shows is working correctly. That is a wrong and expensive starting point.
+
+**Root cause (proven, reproduced deterministically).** A test-harness defect. The test
+cleared the spy timeline after waiting for `refreshCorpus-exit`; the instrument's own
+header has recorded since Chip 1a that `_restoreScrollY` is a fire-and-forget rAF which
+`refreshCorpus` never awaits, so the invocation is marked closed *"a full microtask-drain
+before the rAF actually fires."* The tab click's restore therefore lands in the
+freshly-emptied timeline and is counted as a third event.
+
+**Fixed** by gating the clear on that invocation's own `_restoreScrollY-fired` as well as
+its `-exit`, in a shared `_settle_and_clear_spy_timeline()` helper. `assert len(fired) == 2`
+is unchanged. No production code changed.
+
+**Also measured here, worth carrying:** it does not reproduce locally at all (20/20 pass vs
+CI's ~67% per attempt), so the rate lottery was not an available instrument; and headless
+Chromium in this harness runs at **~11-13fps**, which makes a frame-count delay a
+non-portable unit and gives the CI-cadence explanation room to be real.
+
+### 2026-08-04 — CLOSED on CI evidence (PR #100)
+
+Run `30968745766`, ux job `92188295433`. Verified in the **job log**, not the `gh pr checks`
+bucket — the bucket is what misreported two PR #99 runs:
+
+```
+RERUN markers:                       0
+"needed a retry" / rerun-rate alarm:  0
+test_scroll_spy_attributes_overlapping_refresh_corpus_calls  PASSED [ 87%]
+= 138 passed, 1 skipped, 2202 deselected, 1 xfailed, 1 xpassed in 244.81s =
+```
+
+**First clean run in five** (PR #98: 3/3 attempts failed; #99 run 2: 3/3; #99 run 3: 1/3;
+#99 run 4: 1/3; #100: 0/1).
+
+**Scoped honestly:** one clean run is one sample, and at the pre-fix ~67% per-attempt rate a
+single clean attempt would happen by chance roughly a third of the time. What makes this
+closure sound is not the sample alone — it is that the mechanism was *proven* by deterministic
+reproduction and A/B before the fix was written, with three rivals falsified. A second CI
+sample was taken deliberately from this closing commit's own pre-merge run.
+
+Item 47 tracks the one thing not done: sibling tests in the same family were not audited for
+the same settle-gate hole.

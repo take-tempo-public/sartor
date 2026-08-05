@@ -13,6 +13,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the UX scroll-spy settle gate leaked a pending restore, flaking every CI run (`fix/ux-scroll-spy-overlapping-refresh`, item 44)
+
+`test_scroll_spy_attributes_overlapping_refresh_corpus_calls` failed at least one attempt
+on **4 of 4** CI runs for which data exists (~67% per attempt; 8 failed attempts in 12) and
+rerun-exhausted two consecutive PRs — #98, docs-only, and #99, governance-only, neither of
+which could plausibly have caused it. Only `--reruns 2` kept it nominally green, and at that
+rate a full run fails ~30% of the time, so every PR in the repo was paying the tax.
+
+The defect was in the **test harness, not the app** — no production code changed. The test
+cleared the scroll-spy timeline after waiting for `refreshCorpus-exit`, but the instrument's
+own header has recorded since Chip 1a that `_restoreScrollY` is a fire-and-forget
+`requestAnimationFrame` that `refreshCorpus` never awaits, so an invocation is marked closed
+*"a full microtask-drain before the rAF actually fires."* The Corpus tab click's own restore
+therefore landed in the freshly-emptied timeline and was counted as a third event against the
+two invocations the test tracks. Fixed by gating the clear on that invocation's own
+`_restoreScrollY-fired` as well, in a shared `_settle_and_clear_spy_timeline()` helper.
+`assert len(fired) == 2` is unchanged — no `>= 2`, no tolerance, no added sleep.
+
+**Item 44's own filing named the wrong event**, and the error had propagated into the
+outgoing handoff: the "late `ordinal 2` after `ordinal 3`" it described is what the test's
+final assertion *requires* (invocation A's fetch is held open, so it must restore last). The
+real intruder was an `ordinal 1 / scheduledDuring [1]` record from an untracked invocation.
+Corrected in place, because the inherited framing would have sent the next session hunting a
+supersede guard that is working correctly.
+
+It does not reproduce locally at all (20/20 pass), so the ordering is forced by construction
+in a new probe rather than chased through a rate lottery — the method that closed O-10/O-11
+in `docs/dev/diagnosis/ux-scroll-position-flake.md`. The probe carries a control arm, which
+caught its own first version passing **vacuously** when the hold never released (the O-4
+inert-instrument trap). Full record: `docs/dev/diagnosis/ux-scroll-spy-overlapping-refresh.md`.
+
+**CI confirmation:** PR #100 (run `30968745766`) — the test **passed on its first attempt**
+with **zero `RERUN` markers** in the ux job log, the first clean run in five. Verified by
+reading the job log, not the `gh pr checks` bucket, which had reported `pass` for two PR #99
+runs in which this test had failed an attempt.
+
+**Stated limits (C-0):** one clean run is one sample — at the pre-fix ~67% per-attempt rate a
+single clean attempt occurs by chance about a third of the time. The closure rests on the
+mechanism having been *proven* by deterministic reproduction and A/B before the fix was
+written, with three rivals falsified, not on the sample alone. Whether a *second* contributor
+exists was never excluded. Sibling tests in this family that clear the timeline on
+`refreshCorpus-exit` were not audited (item 47). No new dependency.
+
 ### Added: charter C-10 — enumerate consumers before changing a contract (`feat/consumer-enumeration-gate`)
 
 Before implementing any change to a schema, a shared contract, or a widely-consumed
