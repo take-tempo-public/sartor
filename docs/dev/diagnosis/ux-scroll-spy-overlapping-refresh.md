@@ -235,10 +235,24 @@ test_settle_gate_clears_the_timeline_without_leaking_a_pending_restore  PASSED [
 | PR #99 run 4 (30955415008) | 1 of 3 |
 | **PR #100 (30968745766)** | **0 of 1** |
 
-8 failed attempts in 12 before the fix; 0 in 1 after. **Scope this honestly:** one clean run
-is one sample, and at the pre-fix ~67% per-attempt rate a single clean attempt would occur by
-chance about a third of the time. It is confirmation, not proof — which is why the acceptance
-bar asks for more than one run, and why a second sample is being taken deliberately (below).
+**Second sample, taken deliberately** — PR #100 run `30969183138`, ux job `92189607826`
+(the closing commit's own pre-merge run): same result, `0` `RERUN` markers, `0` alarms, both
+`test_scroll_spy_attributes_overlapping_refresh_corpus_calls` and the new probe **PASSED on
+first attempt**, `138 passed … 1 xfailed, 1 xpassed`.
+
+**Net: 8 failed attempts in 12 before the fix; 0 in 2 after.** At the pre-fix ~67%
+per-attempt rate, two consecutive clean attempts would occur by chance ~11% of the time —
+suggestive, not decisive on its own.
+
+**What actually carries the closure is not the sample count.** It is that the mechanism was
+reproduced deterministically and A/B'd *before* the fix was written (O-10), with three rivals
+falsified. The CI runs corroborate; they were never going to prove it, because no feasible
+number of green runs distinguishes "fixed" from "got lucky" as cheaply as one forced
+reproduction does.
+
+*(On the obvious regress — every commit that records a CI result triggers another CI run.
+Further green runs are the **merge gate**, not additional evidence, and are deliberately not
+chronicled here. This is the stopping point.)*
 
 ---
 
