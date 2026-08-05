@@ -1839,6 +1839,182 @@ def test_scroll_spy_hooks_fire_for_known_perturbers(
     )
 
 
+# ---------------------------------------------------------------------------
+# INSTRUMENT (charter C-7, board item 44). Forces the ONE ordering item 44's
+# recorded CI timelines are consistent with but never actually pinned down:
+# invocation 1's `_restoreScrollY-fired` record landing AFTER the timeline was
+# cleared, so it is counted against the two invocations a later test tracks.
+#
+# Holds ONLY the first `_restoreScrollY` call's own rAFs, by swapping
+# `requestAnimationFrame` for the synchronous body of that single call. Playwright's
+# polling (`wait_for_function` polls on rAF) is scheduled outside that window and
+# keeps its normal cadence — this instrument manipulates the RELATIVE ordering of
+# the two, and slowing both equally would manipulate nothing.
+#
+# This models the degraded-frame-cadence regime a 4-core `ubuntu-latest` runner
+# exhibits while running a threaded Flask server + headless Chromium + pytest at
+# once, without depending on real load timing (the same "force it by construction
+# rather than by luck" method that closed O-10/O-11 in
+# docs/dev/diagnosis/ux-scroll-position-flake.md).
+# ---------------------------------------------------------------------------
+_RESTORE_HOLD_MS = 800
+"""Wall-clock hold applied to invocation 1's restore rAFs by the item-44 probe.
+
+Long enough to comfortably outlast the settle gate's clear round-trip (measured at
+~140-250ms on this machine), short enough that the fixed gate — which waits the hold
+out by design — stays far inside its own 15s timeout.
+"""
+
+
+_SCROLL_SPY_HOLD_FIRST_RESTORE_RAF_JS = r"""
+(holdMs) => {
+  const inner = window._restoreScrollY;
+  if (!inner) { window.__holdFirstRestoreError = '_restoreScrollY missing at hold time'; return; }
+  // Control-arm bookkeeping. A probe that asserts "nothing leaked" is worthless
+  // unless it can also prove there was something to leak and that the forced
+  // ordering was actually achieved — the O-4 inert-instrument trap in
+  // docs/dev/diagnosis/ux-scroll-position-flake.md, where an uninvoked arrow
+  // function made every dump read "0 events" for an entire session.
+  window.__holdStats = {engaged: false, calls: 0, scheduledAt: null, releasedAt: null, ticks: 0};
+  let armed = true;
+  window._restoreScrollY = function (...a) {
+    window.__holdStats.calls++;
+    if (!armed) return inner.apply(this, a);
+    armed = false;
+    window.__holdStats.engaged = true;
+    window.__holdStats.scheduledAt = performance.now();
+    const realRaf = window.requestAnimationFrame.bind(window);
+    // Wall-clock, not a frame count. Frame cadence is exactly the variable this
+    // instrument cannot assume: headless Chromium was measured at ~11-13fps here,
+    // where a 20-frame hold runs ~1.8s, while the same count is ~330ms at 60fps.
+    // The hold has to reliably outlast the clear round-trip, so bound it in the
+    // units the clear is measured in.
+    window.requestAnimationFrame = (cb) => realRaf((ts) => {
+      const until = performance.now() + holdMs;
+      const step = (t2) => {
+        window.__holdStats.ticks++;
+        if (performance.now() >= until) {
+          window.__holdStats.releasedAt = performance.now();
+          cb(t2);
+        } else { realRaf(step); }
+      };
+      step(ts);
+    });
+    try { return inner.apply(this, a); }
+    finally { window.requestAnimationFrame = realRaf; }
+  };
+}
+"""
+
+
+def _settle_and_clear_spy_timeline(page: Page) -> None:
+    """Wait out the Corpus tab click's own fire-and-forget ``refreshCorpus``, then
+    clear the timeline — so that invocation is not conflated with the ones the
+    calling test is actually examining.
+
+    The gate this waits on is load-bearing, not incidental. ``refreshCorpus-exit``
+    is NOT sufficient: ``_SCROLL_SPY_NAMED_HOOKS_JS``'s own header records that
+    ``_restoreScrollY`` is a fire-and-forget ``requestAnimationFrame`` which
+    ``refreshCorpus`` never awaits, so the invocation is marked closed "a full
+    microtask-drain before the rAF actually fires". Clearing on ``-exit`` therefore
+    leaves that invocation's ``_restoreScrollY-fired`` record still pending, free to
+    land in the freshly-emptied timeline and be counted against a later test's
+    invocations. That is board item 44.
+    """
+    page.wait_for_function(
+        """() => {
+          const spy = window.__scrollSpy || [];
+          return spy.some(e => e.source === 'refreshCorpus-exit')
+              && spy.some(e => e.source === '_restoreScrollY-fired');
+        }""",
+        timeout=15_000,
+    )
+    page.evaluate("() => { window.__clearAt = performance.now(); window.__scrollSpy = []; }")
+
+
+@pytest.mark.ux
+def test_settle_gate_clears_the_timeline_without_leaking_a_pending_restore(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """C-7 falsification probe for board item 44.
+
+    Isolates the leak itself: no overlapping invocations, no assertions about
+    ordering or attribution — just "after the settle gate clears the timeline, is
+    the timeline actually clear, or does a restore scheduled before the clear still
+    land after it?"
+
+    Deliberately narrower than the test it explains
+    (``test_scroll_spy_attributes_overlapping_refresh_corpus_calls``) so that a
+    failure here cannot be confused with a supersede-guard or attribution defect:
+    nothing in this test schedules a second capture, so ``_restoreScrollY``'s
+    ordinal/scrollGen guard (``static/app.js:5703``) has nothing to supersede and
+    cannot be implicated either way.
+    """
+    cid = seed_user(ux_app, "alice")
+    seed_exp_with_bullets(cid, company="Company 0")
+    install_llm_stubs(ux_app, monkeypatch)
+
+    page.add_init_script(_SCROLL_SPY_JS)
+    BasePage(page, live_server).load()
+    page.evaluate(_SCROLL_SPY_NAMED_HOOKS_JS)
+    UserPickerPage(page, live_server).select("alice")
+    # Arm AFTER user-select and BEFORE the tab click, so the held call is
+    # unambiguously the tab click's own fire-and-forget refreshCorpus (id 1).
+    page.evaluate(_SCROLL_SPY_HOLD_FIRST_RESTORE_RAF_JS, _RESTORE_HOLD_MS)
+    page.click("#topTabCorpus")
+    page.wait_for_selector("#panelCorpus", state="visible", timeout=15_000)
+    expect(page.locator("#corpusExperienceList .corpus-card")).to_have_count(1, timeout=15_000)
+
+    _settle_and_clear_spy_timeline(page)
+
+    # Comfortably longer than the 800ms hold, so a leaked record has certainly
+    # landed by the time it is read. A pass here means "no record arrived", never
+    # "the read was too early" — and the releasedAt control below proves which.
+    page.wait_for_timeout(2_500)
+
+    assert page.evaluate("() => window.__holdFirstRestoreError || null") is None
+    stats = page.evaluate("() => window.__holdStats || null")
+    clear_at = page.evaluate("() => window.__clearAt || null")
+    timeline = page.evaluate("() => window.__scrollSpy || []")
+    # Always dump, never only on failure: a silently-inert instrument reads
+    # exactly like a genuine negative result otherwise (O-4).
+    print(f"\n[item-44 probe] holdStats={stats} clearAt={clear_at}")
+    print(f"[item-44 probe] post-clear timeline ({len(timeline)} events): {timeline}")
+
+    # --- CONTROL ARM: prove the forced ordering actually happened ------------
+    # Without these, `leaked == []` below passes vacuously whenever the hold
+    # failed to engage — proving nothing while looking like a clean result.
+    assert stats is not None, "hold instrument never installed — nothing was measured"
+    assert stats["engaged"], (
+        "the hold never engaged: _restoreScrollY was not called during the armed "
+        f"window, so no restore was ever pending and this test proves nothing "
+        f"about leakage: {stats}"
+    )
+    assert stats["releasedAt"] is not None, (
+        f"the held rAF never ran — the hold outlived the test, so whether a record "
+        f"would have leaked is untested, not disproven: {stats}"
+    )
+    assert clear_at is not None, "the settle gate never cleared the timeline"
+    assert stats["releasedAt"] - stats["scheduledAt"] >= _RESTORE_HOLD_MS, (
+        "the hold did not actually delay anything — the record was free to land "
+        "before the clear on its own, so a clean result below would say nothing "
+        f"about the gate: held for {stats['releasedAt'] - stats['scheduledAt']:.1f}ms, "
+        f"expected >= {_RESTORE_HOLD_MS}ms"
+    )
+    # Deliberately NOT asserted: whether releasedAt precedes clearAt. That ordering
+    # is exactly what the settle gate decides, and therefore what this test measures
+    # rather than requires — asserting it would hard-code the pre-fix behaviour and
+    # the test could never go green. Printed above for the record.
+
+    # --- SUBJECT -------------------------------------------------------------
+    leaked = _spy_events(page, "_restoreScrollY-fired")
+    assert leaked == [], (
+        "a _restoreScrollY scheduled BEFORE the timeline was cleared landed AFTER "
+        f"it, leaving {len(leaked)} stale record(s) in a timeline the caller is "
+        f"entitled to treat as empty: {leaked}"
+    )
+
+
 @pytest.mark.ux
 def test_scroll_spy_attributes_overlapping_refresh_corpus_calls(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
@@ -1872,11 +2048,7 @@ def test_scroll_spy_attributes_overlapping_refresh_corpus_calls(
     # real flaky test documents) must settle BEFORE the deliberate overlap
     # below, and the timeline cleared, so it isn't conflated with the two
     # invocations this test is actually examining.
-    page.wait_for_function(
-        "() => (window.__scrollSpy || []).some(e => e.source === 'refreshCorpus-exit')",
-        timeout=15_000,
-    )
-    page.evaluate("() => { window.__scrollSpy = []; }")
+    _settle_and_clear_spy_timeline(page)
 
     # Fire both invocations from ONE evaluate call, back-to-back and
     # unawaited, so they genuinely overlap rather than just running fast in
