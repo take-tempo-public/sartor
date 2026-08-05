@@ -297,13 +297,30 @@ def _report_failures(blocking: Sequence[Check], tail_lines: int) -> None:
             print(f"    {line}")
 
 
+def _announce(pr_args: list[str], target: str) -> None:
+    """Print the required-check preview. Best-effort — never fatal.
+
+    This runs in the wrapper's **primary** use: immediately after `gh pr create`, when a
+    PR can legitimately have no check runs registered yet and `gh pr checks` reports
+    nothing. Its only job is to show the caller what is about to be watched, so a failure
+    here must not abort before `--watch` (which waits for checks to appear) has even
+    started. The authoritative read is the post-watch query in `_run`, which *is* fatal.
+    """
+    try:
+        required = _gh_checks(pr_args, required=True)
+    except (RuntimeError, ValueError) as exc:
+        print(f"ci-wait: no required checks registered yet on {target} - watching anyway")
+        print(f"    ({exc})")
+        return
+    print(f"ci-wait: watching {len(required)} required check(s) on {target}")
+    _print_checks("required", required)
+
+
 def _run(args: argparse.Namespace) -> int:
     pr_args: list[str] = [str(args.pr)] if args.pr else []
     target = f"PR #{args.pr}" if args.pr else "the current branch's PR"
 
-    required = _gh_checks(pr_args, required=True)
-    print(f"ci-wait: watching {len(required)} required check(s) on {target}")
-    _print_checks("required", required)
+    _announce(pr_args, target)
 
     timeout_s = args.timeout_minutes * 60.0
     watch_cmd = [
