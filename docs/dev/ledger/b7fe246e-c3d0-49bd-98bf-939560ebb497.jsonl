@@ -3,3 +3,4 @@
 {"event": "compacted", "session": "unknown", "branch": "feat/enforcement-first-governance", "trigger": "unknown", "ts": "2026-08-05T22:31:03Z"}
 {"event": "compacted", "session": "unknown", "branch": "feat/enforcement-first-governance", "trigger": "unknown", "ts": "2026-08-05T22:36:59Z"}
 {"event": "generated", "doc": "docs/dev/handoffs/feat-enforcement-first-governance.md", "session": "b7fe246e-c3d0-49bd-98bf-939560ebb497", "branch": "feat/enforcement-first-governance", "commit": "77d837c", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-05T23:33:40Z", "fingerprint": "34c24298a7bc"}
+{"event": "generated", "doc": "docs/dev/handoffs/feat-enforcement-first-governance.md", "session": "b7fe246e-c3d0-49bd-98bf-939560ebb497", "branch": "feat/enforcement-first-governance", "commit": "1ddc892", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-05T23:42:00Z", "fingerprint": "23bc38e58067"}

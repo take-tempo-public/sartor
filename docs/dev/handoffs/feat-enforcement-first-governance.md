@@ -144,6 +144,10 @@ is now unblocked: both halves of its precondition are met), item 5, item 8, epic
   proven… no instrumented run was made."** Do not weaken the control.
 - Item 47 — sibling scroll-spy settle-gate audit, still never done.
 - Item 48 — ux CI job 14m49s vs a ~5m1s baseline; green, zero reruns, uncharacterized.
+- **Item 49 (NEW)** — the suite leaves `personas/bundled/tmp*.html` in a **tracked**
+  directory, and a `git add -A` swept one into a commit here (caught pre-push, removed).
+  Contained by a `.gitignore` rule; **the leak's source is undiagnosed** and the filename-based
+  suspicion recorded in the item is explicitly a guess, not a finding.
 
 Open-only count is 2, under the reduction-sprint threshold. **But the honest signal is not
 the count** — it is that the flake backlog (19/30/46/47/48) has now survived ~40 days and
@@ -156,6 +160,11 @@ how the *next* one must be handled, and nothing more.
 
 **Four recurrences. Two got mechanisms; two did not, and that is stated plainly rather than
 left implied — which is exactly what C-11 requires of a null answer.**
+
+*(A fifth item — the `personas/bundled/tmp*.html` leak, item 49 — was a **first sighting**,
+not a recurrence, so C-11 did not oblige a mechanism. It got one anyway: a `.gitignore` rule,
+proven with `git check-ignore`. Recorded here because the owner's directive is "on the first
+instance," which is a **stricter** bar than the clause's own floor.)*
 
 1. **Closing an item on evidence weaker than the closure claimed.** Recognized as a
    recurrence, not a first sighting: item 30 recurred in CI five days after closure, and
