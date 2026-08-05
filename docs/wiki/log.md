@@ -993,3 +993,19 @@ governance cites reference them for the deterministic-LLM boundary, PROMPT_VERSI
 discipline, route surface, and module map — none of which this branch touches. C-10 adds
 a clause and a guard; it changes no product behavior, no route, no prompt, and no module
 boundary. Checked, not skipped.
+
+---
+
+## 2026-08-04 — scoped close-out relevance check (`fix/ux-scroll-spy-overlapping-refresh`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): none.** Every path
+this branch touches classifies irrelevant — `tests/` (the only code change; the fix is in
+the UX regression harness), `docs/dev/diagnosis/`, `docs/dev/work/`, `docs/dev/ledger/`,
+and `CHANGELOG.md`. Classifier run over the full committed + working diff, not eyeballed.
+
+**Pages edited (0). Pages verified no-edit:** no page needed inspection, because the
+classifier surfaced no relevant source. The branch changes no product behavior, no route,
+no prompt, no module boundary, and no governance clause — `static/app.js` is untouched and
+the defect was in the test harness, not the app. Checked, not skipped.

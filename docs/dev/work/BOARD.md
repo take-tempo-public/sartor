@@ -2,11 +2,11 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 5 | Epics 6 | Closed 20
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 6 | Epics 6 | Closed 20
 
 ## Open
 
-- **44** -- CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR (`agent`) -- Failed all 3 CI attempts on docs-only PR #98 (3==2 restore-fired, late 3rd _restoreScrollY); not an item-27-31 test.
+- **44** -- CI flake: test_scroll_spy_attributes_overlapping_refresh_corpus_calls rerun-exhausted on a docs-only PR (`agent`) -- PROVEN harness defect: the clear was gated on refreshCorpus-exit, which precedes that invocation's own -fired. Fixed.
 - **45** -- Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session (`agent`) -- cleanup-plan-on-merge fires only on local `git merge --no-ff`; close-out moved to `gh pr merge`, so the marker survives.
 
 ## Blocked
@@ -32,6 +32,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **18** -- Large judge-score variance between back-to-back runs of the same fixture (`agent`) -- Same fixture, 68s apart: tone 3.2->2.1, clarification_quality 3.2->3.8, composite 4.06->3.89 - n=2, uncharacterized.
 - **23** -- analyzer.py split (prompts.py + client.py seams) - design-first, deferred (`user`) -- PX-52, WATCH: extract prompts.py/client.py when prompt work next opens the file, not a standalone refactor.
 - **46** -- CI flake: test_reader_never_observes_a_partial_file's control arm fails when the naive writer doesn't tear (`agent`) -- Control assertion (`assert naive`) is itself a timing race; a quiet runner completes write_text between reader polls.
+- **47** -- Audit sibling scroll-spy tests for the same settle-gate hole item 44 fixed (`agent`) -- Item 44's fix landed in one shared helper; other tests reasoning about spy events after a clear were not audited.
 
 ## Epics
 

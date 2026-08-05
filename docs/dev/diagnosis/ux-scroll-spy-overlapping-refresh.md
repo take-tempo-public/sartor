@@ -344,3 +344,24 @@ and not vacuously.
 - `assert len(fired) == 2` must survive unchanged. Relaxing it to `>= 2`, or adding a sleep
   to outlast the extra event, converts a flaky-but-honest test into a permanently green
   meaningless one.
+
+---
+
+## Still open
+
+Stated plainly rather than left to be discovered (C-0):
+
+1. **The CI leg is not closed by this document.** Everything above was established locally,
+   and the defining property of this flake is that it does not appear locally (O-9). One
+   proven mechanism is fixed; whether it was the *only* contributor is a claim only CI can
+   settle. Read the ux job log for `RERUN` and for `[ux] rerun-rate alarm:` — a bare
+   `PASSED` is not evidence here (O-1 records two runs where `gh pr checks` said `pass`
+   while the test had failed an attempt).
+2. **The same gate bug may exist in sibling tests.** `_settle_and_clear_spy_timeline()` was
+   extracted from one test. Any other test in this family that clears the timeline on
+   `refreshCorpus-exit`, or reasons about `-fired` counts after a clear, has the same hole.
+   Not audited on this branch — scoped to item 44, one branch one item — but it is the
+   obvious next question and is flagged for the carry-forward ledger rather than left
+   implicit.
+3. **Why CI's window is so much wider than this machine's** is unmeasured (Inferred §2).
+   Not load-bearing for the fix, which closes the window rather than narrowing it.
