@@ -38,7 +38,12 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from scripts.enforcement.evidence import diagnosis_path, has_observed_evidence, template_text
+from scripts.enforcement.evidence import (
+    diagnosis_path,
+    has_observed_citation,
+    has_observed_evidence,
+    template_text,
+)
 from scripts.enforcement.gitutil import git_branch
 from scripts.enforcement.guards.result import GuardResult
 
@@ -72,11 +77,35 @@ def _is_exempt(norm_path: str, repo_root: Path) -> bool:
     return any(rel.startswith(p) or p in norm_path for p in _EXEMPT_PREFIXES)
 
 
-def _message(branch: str, dossier: Path, repo_root: Path, exists: bool) -> tuple[str, ...]:
+def _message(
+    branch: str, dossier: Path, repo_root: Path, exists: bool, uncited: bool = False
+) -> tuple[str, ...]:
     try:
         shown = dossier.resolve().relative_to(repo_root.resolve()).as_posix()
     except (ValueError, OSError):
         shown = dossier.as_posix()
+    if uncited:
+        # Charter C-12: the section is filled in, but nothing in it points at an artifact.
+        return (
+            f"BLOCKED (require-evidence-before-fix): on '{branch}', {shown} has a",
+            "'## Observed' section that cites NOTHING.",
+            "",
+            "Charter C-12 -- declare the gap, never fill it. A section of plausible",
+            "narrative with no artifact behind it is how a reconstruction becomes a",
+            "premise and then gets cited as fact. In this repo that pattern cost items",
+            "13, 15 and 31: each filed mechanism was plausible, each was wrong.",
+            "",
+            "Add at least one of these to '## Observed':",
+            "  - a CI run or job id, or a link to one",
+            "  - a file:line anchor (path/to/file.py:123)",
+            "  - a pytest nodeid (tests/test_x.py::test_y)",
+            "  - a fenced block holding the actual output you saw",
+            "",
+            "If you have none of those, you have not observed anything yet -- say so",
+            "plainly and put the mechanism under '## Inferred', where it belongs.",
+            "This check is a FLOOR, not a density check: it cannot tell whether every",
+            "claim is sourced, and it cannot detect a fabricated citation.",
+        )
     why = "has no filled-in '## Observed' section" if exists else "does not exist"
     # ASCII only. Hook stderr lands on a cp1252 console on Windows, where a stray em-dash
     # comes back as a replacement char -- every other guard's message here is ASCII too.
@@ -123,6 +152,8 @@ def decide(file_path: str, env: Mapping[str, str]) -> GuardResult:
         return GuardResult.block(*_message(branch, dossier, repo_root, exists=False))
     if not has_observed_evidence(text, template_text(repo_root)):
         return GuardResult.block(*_message(branch, dossier, repo_root, exists=True))
+    if not has_observed_citation(text):
+        return GuardResult.block(*_message(branch, dossier, repo_root, exists=True, uncited=True))
     return GuardResult.allow()
 
 

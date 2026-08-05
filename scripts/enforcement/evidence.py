@@ -114,6 +114,58 @@ def has_observed_evidence(text: str, template: str = "") -> bool:
     return not (template and observed == substantive(section(template, "Observed")))
 
 
+#: What counts as a citation in `## Observed` (charter **C-12**). Deliberately broad — the
+#: point is to reject a section of pure unsourced narrative, not to dictate a format:
+#:   - a URL (a CI run, a job log, an issue)
+#:   - a long numeric id (GitHub run/job ids are 11 digits here)
+#:   - `path/to/file.py:123` — a file:line anchor
+#:   - a pytest nodeid (`file.py::test_name`)
+#:   - a fenced block (a pasted artifact: a traceback, a log line, a command's output)
+#:   - `PR #12` / `#12`
+_CITATION_RES = (
+    re.compile(r"https?://\S+"),
+    re.compile(r"\b\d{9,}\b"),
+    re.compile(r"[\w./\\-]+\.\w{1,5}:\d+"),
+    re.compile(r"\S+\.\w{1,5}::\w+"),
+    re.compile(r"^\s*```", re.MULTILINE),
+    re.compile(r"#\d+\b"),
+)
+
+
+def observed_citations(text: str) -> int:
+    """How many distinct citation markers `## Observed` carries. 0 == unsourced narrative."""
+    observed = substantive(section(text, "Observed"))
+    return sum(1 for pattern in _CITATION_RES if pattern.search(observed))
+
+
+def has_observed_citation(text: str) -> bool:
+    """True iff `## Observed` cites at least one artifact (charter **C-12**).
+
+    **This is a floor, not a density check, and the difference is stated rather than
+    glossed.** It rejects the specific failure of filling `## Observed` with plausible
+    narrative and no artifact behind any of it — which is how a reconstruction becomes a
+    premise and then gets cited as fact. It does **not** verify that each individual claim
+    in the section is sourced, and one citation does not license twenty unsourced sentences
+    around it.
+
+    Two things it deliberately does not do, with reasons:
+
+    - **No per-bullet requirement.** Real dossiers in this repo open `## Observed` with a
+      framing sentence and carry evidence in tables and numbered entries; a per-line rule
+      would block legitimate writing and train people to pad lines with fake anchors.
+    - **No causal-language ban.** Rejecting "because"/"caused by" under `## Observed` (they
+      belong under `## Inferred`) was considered and rejected for now: on a *blocking* gate,
+      false positives are expensive, and a gate that blocks honest prose trains evasion
+      rather than rigor. Recorded here so the next person knows it was a decision, not an
+      oversight.
+
+    **It cannot detect a fabricated citation** — a made-up run id passes. The honest claim is
+    that an unsourced assertion becomes non-committable, not that a dishonest one becomes
+    impossible.
+    """
+    return observed_citations(text) > 0
+
+
 def replay_text(text: str) -> str:
     """The `## Observed` + `## Falsified` sections, rendered for re-injection into context.
 
