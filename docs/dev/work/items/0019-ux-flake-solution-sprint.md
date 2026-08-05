@@ -3,7 +3,7 @@ schema = 1
 id = 19
 kind = "epic"
 title = "UX-suite flakiness solution sprint - mode-C residual + newly observed instances"
-status = "closed"
+status = "open"
 resolution = "All 5 children closed 2026-07-31 (spanning 27-31): 27 already-fixed-before-filing (no code change); 28 not-reproduced (24-run campaign, owner-directed close); 29 mechanism observed + two-phase fix landed; 30 capability-proven mechanism + harness fix landed; 31 (last child) capability-proven mechanism + two-phase app+harness fix landed. Not one mechanism, as the original filing itself predicted -- five independent investigations, five different dispositions. Unblocks item 10's depends_on = [3, 6, 7, 9, 19] (still gated on 3/6/7/9)."
 decision_owner = "agent"
 refs = [
@@ -194,3 +194,25 @@ capability-proven mechanism, two-phase app+harness fix. The epic's own original 
 "explicitly not one mechanism, do not conflate them" — held throughout: five independent
 investigations, five different dispositions, zero shared root cause. Unblocks one of item 10's
 five `depends_on` entries (still gated on 3, 6, 7, 9).
+
+### 2026-08-05 — REOPENED (child 30 recurred in CI)
+
+Status `closed` → `open`. Child **30** recurred in CI on PR #102 five days after its
+closure, with a captured instrument artifact showing a 30s timeout while every quiescence
+signal read ready — a mechanism the 2026-07-31 fix does not cover. See item 30's
+2026-08-05 update for the raw evidence.
+
+The `resolution` line above is left unedited as the record of what was believed on
+2026-07-31. Reading it now, the disposition mix is itself the finding: of five children,
+**27** was already fixed before it was filed, **28** was closed as *not reproduced* (not
+proven fixed), and **30** was closed on a fix for *a* vulnerability with a matching symptom
+that its own text admitted was "not confirmed as the historical cause." Only **29** and
+**31** were closed on an observed-and-reproduced mechanism.
+
+So three of five closures rested on something weaker than "we saw this fail, we fixed that,
+it stopped failing" — and the one that came back is one of the three. That is a
+**systematic** weakness in the closure bar, not bad luck on a single item.
+
+**Consequence for item 10** (`depends_on = [3, 6, 7, 9, 19]`): the v1.1.0 release chain is
+gated on 19 again. This is not a scheduling technicality — it is the correct signal, and it
+should not be routed around by re-closing 19 without evidence.
