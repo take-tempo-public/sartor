@@ -317,10 +317,19 @@ selector) — and **decide-and-document each site before the first edit.**
    and orphans the local commits it replaces (it already produced one zombie
    commit, `9f3c800`, before this was understood). Ask the user to confirm,
    then: `git push -u origin <branch>` → open the PR (`gh pr create`, or hand
-   the user the URL) → **wait for all required checks to go green** →
+   the user the URL) → **wait for the required checks with
+   `python -m scripts.ci_wait <n>`** →
    `gh pr merge <n> --merge` (never `--squash` / `--rebase`) →
    `git checkout main && git pull --ff-only`. Use `--ff-only` so an unexpected
    divergence fails loudly instead of silently manufacturing a merge commit.
+   **`scripts/ci_wait.py` is the single definition of "the PR is green" — never
+   hand-roll a watcher, a poll loop, or a `gh pr checks … | jq` one-liner.** It
+   exits **0** only when every required check passed *and* no test needed a
+   retry; **3 = green-after-retries** (charter C-7 rule 3 — stop and look, do
+   not merge on it reflexively), **1** a failing required check plus its log
+   tail, **8** the deadline expiring, **2** a wrapper error. Two hand-rolled
+   30-minute watches once ran to completion emitting *nothing* while a required
+   check was already red — that silence is the failure this replaces.
    **Pushing is outward-facing on a public repo:** state what will become
    public — including any commits already on your local `main` that the remote
    does not have, since they ride along — and get explicit confirmation before
