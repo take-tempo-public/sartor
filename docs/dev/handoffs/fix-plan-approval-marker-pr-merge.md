@@ -117,9 +117,10 @@ diff):
 
 1. `tests/test_doc_links.py::test_no_broken_cross_document_links_or_cites` —
    `docs/dev/handoffs/feat-verify-dont-assume-guard.md:178` contains the
-   regex literal `` `^/[A-Za-z](?:/|$)` `` inside backticks (documenting
-   `verify_binary_on_path`'s own `_MSYS_ABS_PATH_RE`); `check_doc_links.py`
-   misparses `(?:/|$)` as a link target `?:/|$` that does not exist.
+   `_MSYS_ABS_PATH_RE` regex literal (as defined in
+   `scripts/enforcement/guards/verify_binary_on_path.py`) inside backticks;
+   `check_doc_links.py` misparses the pattern's character-class-then-group
+   shape as a link target that does not exist.
 2. `tests/test_evidence_gate.py::TestEnforcementIsWired::test_every_hook_script_is_executable_in_the_index`
    — `hooks/bash-dispatcher.sh` is committed at git mode `100644` (not
    executable), confirmed via `git ls-tree ee2ee0f -- hooks/bash-dispatcher.sh`

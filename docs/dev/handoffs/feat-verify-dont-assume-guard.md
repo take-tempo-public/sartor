@@ -175,9 +175,10 @@ interpreter, `shutil.which("/c/Users/.../python.EXE")` returns `None` even
 though the identical binary at its native path resolves — the mirror image of
 the false-ALLOW this same path shape has caused in *other* guards'
 `cwd`/`file_path` resolution (`gitutil.git_branch`, `require_feature_branch`,
-2026-07-20). Fixed by adding `_MSYS_ABS_PATH_RE` (`^/[A-Za-z](?:/|$)`) and
-skipping the check entirely for a token matching it — per the guard's own
-fail-open rule, refusing to guess is the fix, not a cleverer path translation.
+2026-07-20). Fixed by adding `_MSYS_ABS_PATH_RE` (as defined in
+`scripts/enforcement/guards/verify_binary_on_path.py`) and skipping the check
+entirely for a token matching it — per the guard's own fail-open rule,
+refusing to guess is the fix, not a cleverer path translation.
 Re-run after the fix: both MSYS-path cases above now return `False`
 (unchecked), which is the intended, disclosed trade — see "Recurrences" below
 for the residual, un-generalized gap this leaves.
