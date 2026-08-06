@@ -56,6 +56,16 @@ green gate for the final tree, and that assertion is unverified by construction.
 6. **Adjacent (item 49, 2026-08-05):** a `git add -A` swept an untracked
    `personas/bundled/tmp*.html` into a commit — post-gate *staging* surprise,
    same window, different artifact type.
+7. **This document itself (2026-08-06, PR #105 / run `31114143878`):** the
+   chain-close commit that *created this class study* added an unclassified
+   top-level doc, and the hand-picked structural re-check subset run before
+   pushing did not include `tests/test_wiki_relevance_classification.py` —
+   CI's py3.13 job failed on exactly that audit. Dossier:
+   `docs/dev/diagnosis/chain-gate-integration.md`. **Consequence for candidate
+   mechanism 1:** a hand-picked subset is itself a gate-window; the final-tree
+   re-check must be *derived* (in practice: the full `-m "not ux"` tier, ~45s
+   on CI hardware and ~8 min locally, or a subset generated from the diff —
+   never a hardcoded list).
 
 ## The mechanism (shared by every instance)
 
