@@ -13,6 +13,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `scripts/flake_rates.py` — real per-test CI flake rates from job logs, the closure bar's `verified_by` artifact (`feat/flake-rate-measurement`)
+
+"The UX suite is flaky" had never been a number with a citable source. Three prior
+measurements existed and each is now marked unusable: the ~42% figure in
+`docs/dev/RELEASE_ARC.md` is scoped to "5 distinct settle/restore-family tests" with no
+source naming which 5; item 44's ~67% is explicitly marked "supersede this arithmetic,
+do not carry it forward"; a 64%/11-run measurement was recovered by hand-pulling CI
+logs. Meanwhile the ux tier's own rerun-rate alarm has fired on every CI run since
+`feat/rerun-rate-alarm` and landed in the job log unread. Charter **C-11**'s closure
+bar (landed the prior branch) now refuses to close a work item on prose — closure needs
+a falsifiable `verified_by` artifact, and nothing in the repo could produce one for a
+flake. This is that instrument, not a threshold: **nothing here fails closed** on a
+test's rate (C-12 — a budget cannot be set before there is data; the follow-on gate is
+tracked, unbuilt, as work item 51).
+
+`scripts/flake_rates.py collect` fetches CI runs via `gh` (one whole-run log fetch per
+run — every job comes free in that fetch, latency-bound not payload-bound, per
+`ci_wait.distinct_run_ids`'s own measured finding) and parses every pytest session it
+finds into a committed, content-addressed store at `docs/dev/flake-rates/`.
+`... report` ranks by **Wilson 95% lower bound**, not raw rate, so a test failing 1/1
+cannot outrank one failing 12/300; anything below `--min-attempts` (default 20) is
+reported separately as insufficient data rather than dropped.
+
+Design was verified against a real captured log (`gh run view 31047661015 --log`, the
+run in which item 30 recurred) before any production code was written, and the first
+30-run backfill surfaced one more gap live. Fourteen numbered observations (O-1…O-14,
+full detail in the module's own docstring) — three worth naming here because each broke
+a first-draft parser **silently**, no exception, no zero result, just a quietly wrong
+count: a custom `pytest_runtest_logreport` hook's own `\n` splits pytest's outcome line
+for a reran test's first attempt; pytest-xdist prints a bare-nodeid "dispatch echo"
+before its `[gwN] ...` result line, indistinguishable in shape from the rerun-orphan
+fragment above (one rule discards both correctly); and pytest's own `=== FAILURES ===`
+section — traceback plus the short-summary restatement — lands *after* every outcome
+line, immediately before the terminal summary, never inline after the failing test's
+own line, which the first backfill attempt caught directly (7 of 233 real sessions
+would have been wrongly excluded). A session-level reconciliation guard (parsed roster
+size vs. the terminal summary's own declared counts) is what would have caught all
+three, and is the load-bearing check going forward — an unreconciled session is
+excluded from rates, never silently trusted.
+
+First backfill (30 real runs, 2026-08-03 → 2026-08-06, 233 sessions, all reconciled)
+found exactly 4 tests with any failure. Findings filed on the relevant work items
+rather than restated here: item 44's fix independently confirmed via a clean
+before/after regime split (15/15 clean since the fix landed, reruns/exhaustions before
+it); item 30 gained a previously unfiled third occurrence (2026-08-03, four days after
+its "fix," two days before the known PR #102 recurrence — the exact "alarm fires,
+nothing reads it" pattern item 44 already named, now dated and cited); item 46's known
+single sample independently reproduced; item 47's sibling-audit request got a partial,
+labeled contribution (19 of 20 tests in the file clean across up to 30 runs); item 48's
+pytest-step duration came back tight and unremarkable even on its own cited run,
+narrowing its 3x job-duration anomaly to something outside pytest's own execution time.
+
+`tests/test_flake_rates.py` (38 tests) pins verbatim real-log fixtures for both output
+shapes (sequential and xdist), asserts the parser reproduces item 30's captured
+evidence independently, and — mirroring `tests/test_work_items_closure_bar.py`'s own
+standard — mutates each clean fixture (drop the summary, drop an outcome line) and
+asserts the session is excluded, not silently reported clean. No new dependency
+(stdlib only). Consumer enumeration for the gated `scripts/wiki_relevance.py` edit
+(classifying the new `docs/dev/flake-rates/` store as wiki-irrelevant):
+`docs/dev/blast-radius/flake-rate-measurement.md`.
+
 ### Governance: charter **C-11** (enforcement before discipline) + **C-12** (declare the gap), with four mechanisms (`feat/enforcement-first-governance`)
 
 **Owner-directed, from measured failure.** The governing posture changes: **a constraint

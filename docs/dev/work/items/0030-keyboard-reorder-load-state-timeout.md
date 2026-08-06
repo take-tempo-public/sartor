@@ -160,3 +160,26 @@ tests/ux/regression/test_20260604_bullet_drag_reorder.py:253: in test_keyboard_r
 instrument or the reproduction, never the fix — this item has already been closed once on a
 plausible-and-real-but-wrong mechanism, which is the precise failure this rule exists to
 stop.
+
+### 2026-08-06 — third occurrence found, previously unfiled (`feat/flake-rate-measurement`)
+
+`python -m scripts.flake_rates collect --limit 30` backfilled 30 real CI runs
+(2026-08-03 → 2026-08-06) and found **this test absorbed a rerun on run
+[`30859772069`](https://github.com/take-tempo-public/sartor/actions/runs/30859772069)**
+(`fix/wiki-freshness-relevance-classification`, 2026-08-03T22:44:17Z, `sha 31dbb1bf`) —
+**four days after the 2026-07-31 "fix" landed, two days before the already-documented
+PR #102 recurrence, and never filed anywhere until now.** `gh pr checks` on that run
+reported `pass`; `python -m scripts.flake_rates` did not exist yet, so nothing read the
+job log. This is the exact mechanism item 44 already named ("the repo's own rerun-rate
+alarm... was landing in the job log unread on every run") — now dated, cited, and
+confirmed for this specific test's specific "fixed" period.
+
+Corrected occurrence count across the 30-run backfill window: **2 of 32 attempts
+failed, 2 distinct SHAs** (`31dbb1bf` 2026-08-03, and the already-known `f164e224`/PR
+#102 2026-08-05) — both real reruns, zero exhausted-to-3/3 failures in this window.
+Per-attempt rate in this specific window: 6.2% raw / 1.7% Wilson lower bound (n=32,
+below the report's own `--min-attempts 20` default — reported here, not treated as a
+stable rate). **Not root-caused by this branch** — this branch measures, it does not
+diagnose; the mechanism question this item already asks remains exactly as open as it
+was. Raw data: `docs/dev/flake-rates/` (`report --tier ux` reproduces the count from
+the committed store).

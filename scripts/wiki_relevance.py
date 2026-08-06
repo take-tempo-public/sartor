@@ -48,6 +48,9 @@ IRRELEVANT_PREFIXES = frozenset(
         "docs/dev/reviews/",  # review archive — provenance model, never ingested
         "docs/dev/prov/",  # provenance spec — process meta, not wiki-cited
         "docs/dev/work/items/",  # per-item filings — BOARD.md is generated FROM these
+        "docs/dev/flake-rates/",  # CI flake-rate measurement store — process/telemetry
+        # record (per-run JSONL shards), never a wiki source; see
+        # docs/dev/blast-radius/flake-rate-measurement.md
         "docs/screenshots/",  # image assets, not text a wiki page cites
         "docs/ux/",  # one-off UX audit / capture-process docs, not wiki-cited
         "tests/",  # the wiki documents production modules, never test files

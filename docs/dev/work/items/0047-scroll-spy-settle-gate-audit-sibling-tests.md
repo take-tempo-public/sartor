@@ -45,3 +45,31 @@ running.
 **Do not** widen `_settle_and_clear_spy_timeline()`'s gate speculatively to cover tests that
 have not been shown to need it. Item 44's own evidence trail exists because the mechanism was
 proven before the gate was touched.
+
+## Updates
+
+### 2026-08-06 — partial contribution: 19 siblings clean across up to 30 real CI runs
+
+`feat/flake-rate-measurement` backfilled 30 real CI runs and ranked every test in
+`tests/ux/regression/test_20260708_busy_states_and_chip.py` (the file this item names)
+by per-attempt failure rate. **This is the "cheap version of the audit"'s empirical
+half, not the code-read half this item actually asks for — it does not replace the
+grep-and-read step below.**
+
+Result: item 44's own test is the only one in the file with a nonzero rate (21/48
+attempts across 30 runs, 11 distinct SHAs — see item 44's closure and item 19's
+2026-08-06 update). **All 19 other tests in the file show zero failures and zero
+absorbed reruns** across their observed windows (most at 30/30 runs; the newer
+`test_settle_gate_clears_the_timeline_without_leaking_a_pending_restore` at 12/12,
+consistent with being added post-fix). Full per-test table:
+`python -m scripts.flake_rates report --tier ux --min-attempts 1` against the
+committed store in `docs/dev/flake-rates/`.
+
+**What this does and does not establish.** Zero observed failures across ≤30 runs is
+consistent with "no sibling has the same hole," but at this sample size it cannot
+distinguish that from "the hole exists but hasn't fired yet" — absence of evidence at
+n≤30 is weak evidence of absence, not proof. It also cannot see anything about the
+`_settle_and_clear_spy_timeline()` gating logic itself, which is exactly the thing the
+grep-and-read audit above would check. **The audit this item asks for is still not
+done** — this update narrows "which sibling should you check first if one starts
+flaking" from 19 candidates to effectively none observed so far, nothing more.

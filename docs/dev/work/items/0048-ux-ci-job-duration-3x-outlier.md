@@ -51,3 +51,30 @@ branch (scope was the wrapper itself).
 Filed at the owner's explicit direction after the wrapper surfaced the duration on its
 first real use. Owner context: the UX-suite flake class has consumed more than a month of
 sessions, and a full redesign of the suite is under active consideration.
+
+### 2026-08-06 — partial data, and it narrows the mechanism (`feat/flake-rate-measurement`)
+
+**This does NOT settle the item — it measures a different thing than what was asked
+for, and that gap is itself informative.** This item asks for per-*job* duration
+(`gh pr checks --json`'s discarded `elapsed` field, or `gh run view --json jobs`) —
+neither is collected by `scripts/flake_rates.py`, which only parses `pytest`'s own
+terminal-summary wall clock from inside the job log (`SummaryCounts.duration_s`). The
+two are not the same measurement: job duration includes checkout, Python/Playwright
+setup, and Chromium install/cache; pytest's own duration is execution time only.
+
+That distinction is exactly what the data says something about. Across the 30-run
+backfill (2026-08-03 → 2026-08-06), the ux tier's own pytest step ran a **tight,
+unremarkable 225.1s–275.4s** (median 242.1s, n=30) — including **run
+[`31047661015`](https://github.com/take-tempo-public/sartor/actions/runs/31047661015)
+itself**, the PR #102 run this item was filed from (its ux job was reported at 14m49s
+= 889s total; its pytest step here measured 275.45s — the second-highest in the whole
+window, but not a 3x outlier the way the full job time was).
+
+**So: pytest's own execution was not the source of the 3x job-duration anomaly on
+PR #102.** Whatever cost the extra ~10 minutes was outside the pytest step — checkout,
+environment setup, or (the item's own leading candidate) a Chromium cache miss. This
+doesn't identify which; it rules out one candidate (a real suite slowdown) with real
+data rather than leaving it as pure conjecture. Still n=1 for the anomaly itself — no
+second 3x outlier appears in this 30-run window. Raw series and every run's pytest-step
+duration: `docs/dev/flake-rates/` (`kind: "session"` records, `duration_s` field for
+`tier: "ux"`, `session_index: 0`).
