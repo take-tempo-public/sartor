@@ -4,7 +4,7 @@ id = 45
 kind = "item"
 title = "Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session"
 status = "open"
-decision_owner = "agent"
+decision_owner = "user"
 refs = [
   "hooks/cleanup-plan-on-merge.sh",
   "hooks/check-plan-approved.sh",
