@@ -346,6 +346,27 @@ those two (plus the one additional occurrence of F2's own defect class
 this session's RED-first run surfaced, needed to make the SAME named test
 pass) was implemented. Do not expand beyond what is listed here.
 
+**Post-chain addendum (orchestrator, owner-directed 2026-08-06): normal
+one-branch-one-session execution resumes after this chain's PR merges.** The
+next branch for the next agent is the **scoped wiki update** the chain
+deferred with the owner's explicit OK (charter close-out convention;
+freshness drift was 20/75 at chain close, under the blocking threshold):
+
+- **Branch:** `docs/wiki-enforcement-catchup` off `main`, after the chain PR
+  lands. Run a **scoped** `/wiki-self-update` against the chain's own
+  wiki-relevant diff — the `verify-binary-on-path` guard, the Bash-dispatcher
+  fold, and the `docs/governance/enforcement.md` reach declaration
+  (`scripts/wiki_relevance.py` classified those as wiki-relevant; everything
+  else in the chain's diff verified not).
+- **After it:** the queue per the march plan — item 45's fix branch **only
+  after the owner signs off on a fix design** (see the staged proposal in
+  `docs/dev/diagnosis/plan-approval-marker-pr-merge.md` §"The fix"; the owner
+  has additionally directed that any reconciler must not silently *delete*
+  approval state — favor archival + a ledger receipt over `rm`, preserving
+  decision provenance), then the sprint-A1 check-in. Items 52 (gate-window
+  class study), 53 (guard heredoc false-BLOCK) and 54 (git-flow.md stale
+  path) are filed and watching — future sprints, not this queue.
+
 ---
 
 ## First move

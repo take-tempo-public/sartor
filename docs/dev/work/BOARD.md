@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 6 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 9 | Epics 6 | Closed 19
+**Open 6 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 12 | Epics 6 | Closed 19
 
 ## Open
 
@@ -36,6 +36,9 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **48** -- UX CI job ran 14m49s against a ~5m baseline on PR #102 — 3x outlier, green, uncharacterized (`agent`) -- ux job took 14m49s on PR #102 vs ~5m1s on PR #100 — zero reruns, so not a flake; the runtime is the anomaly.
 - **49** -- Test suite leaves tmp*.html litter in the tracked personas/bundled/ directory (`agent`) -- A suite run leaves personas/bundled/tmp*.html behind; `git add -A` swept one into a commit before it was caught.
 - **51** -- Flake-rate budget gate: report --check against a committed threshold (`agent`) -- flake_rates.py is an instrument, not a gate; report --check against a committed budget is a named, unbuilt successor.
+- **52** -- Gate-window gap: post-gate artifacts (handoffs, staged modes, amends) are never re-gated against the final committed tree (`user`) -- The tree that lands is never the tree the gate examined; class study documents 6 instances + candidate mechanisms.
+- **53** -- verify-binary-on-path false-BLOCKs on heredoc bodies containing prose quotes (quote-parity desync) (`agent`) -- Quote-parity tracker ignores heredoc semantics; prose quotes in a commit-message heredoc caused a live false-BLOCK.
+- **54** -- agents/git-flow.md cites hooks at the retired .claude-plugin/hooks/ path (`agent`) -- Doc cites .claude-plugin/hooks/ (retired path); doubly stale now the hook dispatches via bash-dispatcher.sh.
 
 ## Epics
 
