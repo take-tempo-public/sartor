@@ -142,6 +142,32 @@ output.
 
 ---
 
+## Recurrences observed this session → guardrail authored
+
+<!-- REQUIRED — do not delete. Charter C-11. This section exists because
+     `scripts/verify_doc_template.py` refuses a handoff without it, which means a
+     session cannot close while leaving C-11's question unanswered.
+
+     A RECURRENCE is any failure mode you recognized as happening before — a second
+     instance, or a first instance you recognized as a member of a known class. It does
+     NOT have to be a bug: a process failure, a doc that was stale again, an assumption
+     you caught yourself making again, all count.
+
+     For EACH one, write one row:
+       - what recurred, and how you recognized it as a recurrence (not a first sighting);
+       - the mechanism you authored on this branch that fails closed — a guard, a gate, a
+         test, a schema rule. Name the file.
+       - OR, if you authored none: say so PLAINLY, say why, and confirm you surfaced it to
+         the user. "Filed as a work item" is NOT a mechanism. "Wrote it in the ledger" is
+         NOT a mechanism. "Added a note to the docs" is NOT a mechanism. Those record the
+         problem; C-11 exists because in this repo they have never once fixed it.
+
+     If nothing recurred, write "None observed." — but read that answer twice before you
+     write it, because "I didn't notice any" is exactly what every session that fed this
+     backlog would also have written. -->
+
+---
+
 ## What this branch should build
 
 <!-- Numbered list of concrete deliverables. Each item must:

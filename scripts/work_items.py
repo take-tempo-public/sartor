@@ -67,8 +67,25 @@ _KNOWN_KEYS = frozenset(
         "branches",
         "refs",
         "summary",
+        "verified_by",
+        "closure_exception",
+        "guardrail",
+        "guardrail_deferred",
         "x",
     }
+)
+
+#: Charter **C-11** closure bar. Items closed BEFORE the bar was adopted (2026-08-05,
+#: `feat/enforcement-first-governance`). Requiring `verified_by` retroactively would force
+#: either fabricating artifacts for closures made before the rule existed, or 19 edits
+#: asserting things nobody verified — both worse than the problem this bar solves.
+#:
+#: **This list is closed.** It is the exact set of `status = "closed"` ids at the adopting
+#: commit, and `tests/test_work_items_closure_bar.py` fails if an id is added to it. A new
+#: closure gets no grandfathering; that is the entire point. Same maintained-list +
+#: audit-test shape as `tests/test_egress_allowlist.py`'s SANCTIONED_EGRESS_FILES.
+_CLOSURE_BAR_GRANDFATHERED = frozenset(
+    {1, 6, 11, 12, 13, 14, 15, 17, 21, 22, 26, 27, 28, 29, 31, 32, 33, 35, 44}
 )
 
 _FILENAME_RE = re.compile(r"^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
@@ -228,6 +245,40 @@ def parse_file(path: Path) -> ParsedFile:
     resolution = optional_str("resolution")
     if status == "closed" and not resolution:
         errors.append(f'{rel}: status "closed" requires a non-empty `resolution`')
+
+    # --- charter C-11 closure bar ------------------------------------------------------
+    # Prose in `resolution` alone is too easy to satisfy: three of epic 19's five closures
+    # read as resolved while resting on "not reproduced" or on a fix for a DIFFERENT defect
+    # with a matching symptom, and the one that came back (item 30) was one of the three.
+    verified_by = optional_str_list("verified_by")
+    closure_exception = optional_str("closure_exception")
+    guardrail = optional_str("guardrail")
+    guardrail_deferred = optional_str("guardrail_deferred")
+
+    if (
+        status == "closed"
+        and item_id is not None
+        and item_id not in _CLOSURE_BAR_GRANDFATHERED
+        and not verified_by
+        and not closure_exception
+    ):
+        errors.append(
+            f'{rel}: status "closed" requires a non-empty `verified_by` naming a falsifiable '
+            f"artifact (a test path, a gate, a guard, or a CI run id) — or a "
+            f"`closure_exception` naming the owner who accepted the closure without one "
+            f"(charter C-11)"
+        )
+
+    # An item carrying a `resolution` while NOT closed was closed once and reopened. C-11
+    # makes that recognition the trigger: the branch that reopens it authors a mechanism,
+    # or says plainly that it did not and why. Detectable from the file alone — no history.
+    if status != "closed" and resolution and not guardrail and not guardrail_deferred:
+        errors.append(
+            f"{rel}: this item was closed and reopened (it carries `resolution` with status "
+            f"{status!r}), so charter C-11 requires a `guardrail` naming the mechanism "
+            f"authored in response — or `guardrail_deferred` stating plainly that none was "
+            f"and why"
+        )
 
     epic_raw = data.get("epic")
     epic: int | None = None

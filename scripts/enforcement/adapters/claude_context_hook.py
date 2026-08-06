@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -93,23 +94,102 @@ def _dossier(payload: dict[str, Any]) -> tuple[str, Path, str | None]:
         return branch, path, None
 
 
+#: Charter **C-12**. Injected on SessionStart(`compact`) REGARDLESS of branch type. The
+#: pre-C-12 hook keyed entirely off a `fix/*` dossier and returned "" otherwise -- so a
+#: compaction on a `feat/*`/`chore/*` branch (i.e. most branches) injected NOTHING, and the
+#: rebuilt context had no way to know it had lost anything. That silence is the failure mode:
+#: the model fills the gap from plausibility and proceeds as though it were sourced.
+_COMPACTION_NOTICE = (
+    "=== INFORMATION WAS LOST (charter C-12 - a compaction just occurred) ===",
+    "",
+    "This context was REBUILT from a summary. You are missing things you previously knew,",
+    "and you cannot tell from the inside which things. Compactions on record this session: {n}.",
+    "",
+    "Before you assert ANY fact you cannot see in front of you right now - a file's contents,",
+    "a command's output, what a test did, what was already decided - reconcile against the",
+    "repo and git. Do not continue from the summary as though it were the evidence.",
+    "",
+    "If you find a gap, SAY SO. 'I no longer have this' and 'I did not verify this' are",
+    "required outputs, not admissions of failure. Reconstructing a lost fact from",
+    "plausibility, and then proceeding as though it were sourced, is a C-0 violation and is",
+    "the single mechanism underneath most of this project's expensive wrong turns.",
+    "",
+    "",
+)
+
+
+def _ledger_shard(payload: dict[str, Any]) -> Path | None:
+    """This session's provenance-ledger shard (`docs/dev/prov/SPEC.md`), or None."""
+    session = payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if not session:
+        return None
+    return _project_dir(payload) / "docs" / "dev" / "ledger" / f"{session}.jsonl"
+
+
+def compaction_count(payload: dict[str, Any]) -> int:
+    """How many `compacted` receipts this session's ledger shard already holds."""
+    shard = _ledger_shard(payload)
+    if shard is None:
+        return 0
+    try:
+        lines = shard.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return 0
+    return sum(1 for line in lines if '"event": "compacted"' in line)
+
+
+def record_compaction(payload: dict[str, Any]) -> bool:
+    """PreCompact: append a durable `compacted` receipt. True iff one was written.
+
+    PreCompact cannot inject context (see the module docstring), so the loss would otherwise
+    leave no trace at all once the window is gone. Writing it to the session's own ledger
+    shard makes the data-loss event **auditable after the fact** rather than merely warned
+    about in the moment -- and it is what `restore_evidence` counts on the way back in.
+    """
+    shard = _ledger_shard(payload)
+    if shard is None:
+        return False
+    record = {
+        "event": "compacted",
+        "session": payload.get("session_id", "unknown"),
+        "branch": git_branch(str(_project_dir(payload))),
+        "trigger": payload.get("trigger", "unknown"),
+        "ts": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    try:
+        shard.parent.mkdir(parents=True, exist_ok=True)
+        with shard.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record) + "\n")
+    except OSError:
+        return False  # never wedge a compaction over a failed write
+    return True
+
+
+def compaction_notice(payload: dict[str, Any]) -> str:
+    """The C-12 information-loss declaration, or "" when this is not a post-compaction start."""
+    if payload.get("source") != "compact":
+        return ""
+    return "\n".join(line.format(n=compaction_count(payload)) for line in _COMPACTION_NOTICE)
+
+
 def restore_evidence(payload: dict[str, Any]) -> str:
     """SessionStart: the text to replay into the fresh context ("" = stay silent).
 
     Silent unless there is genuinely something to say — a hook that greets every session with
     boilerplate trains the reader to skip it, and then it is worthless on the day it matters.
     """
+    notice = compaction_notice(payload)
     branch, path, text = _dossier(payload)
     if not branch.startswith("fix/") or text is None:
-        return ""
+        return notice  # C-12: the loss is announced even with no dossier to replay
     body = replay_text(text)
     if not body:
-        return ""
+        return notice
     shown = path.as_posix()
     if len(body) > _MAX_REPLAY_CHARS:
         body = body[:_MAX_REPLAY_CHARS].rstrip() + _TRUNCATED.format(path=shown)
     preamble = "\n".join(line.format(path=shown) for line in _PREAMBLE)
-    return preamble + body
+    return notice + preamble + body
 
 
 def capture_before_compact(payload: dict[str, Any]) -> str:
@@ -154,9 +234,14 @@ def main(argv: list[str]) -> int:
         # Plain stdout — SessionStart adds it to Claude's context verbatim, no JSON needed.
         if message := restore_evidence(payload):
             print(message)
-    elif message := capture_before_compact(payload):
-        # PreCompact reaches the USER only, and only via `systemMessage`.
-        print(json.dumps({"systemMessage": message}))
+    else:
+        # PreCompact. The receipt is written UNCONDITIONALLY -- the warning below fires
+        # only when evidence is missing, but the data-loss EVENT is always worth recording
+        # (charter C-12), and it is what the SessionStart notice counts on the way back in.
+        record_compaction(payload)
+        if message := capture_before_compact(payload):
+            # PreCompact reaches the USER only, and only via `systemMessage`.
+            print(json.dumps({"systemMessage": message}))
     return 0
 
 

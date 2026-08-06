@@ -33,6 +33,12 @@ personas/*
 !personas/bundled/
 !personas/bundled/**
 !personas/cover_letter.html
+# ...but `!personas/bundled/**` un-ignores test litter too. A suite run leaves
+# `personas/bundled/tmp*.html` behind, and on 2026-08-05 a `git add -A` swept one into a
+# commit (caught before push, removed). Re-ignored explicitly rather than left to vigilance
+# — charter C-11: a recognized failure gets a mechanism, and git refusing to stage the file
+# IS the mechanism. The leak's SOURCE is a separate question, filed as work item 49.
+personas/bundled/tmp*
 
 # ---- LLM telemetry (per-call JSONL emitted by analyzer.py) ----
 logs/

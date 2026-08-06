@@ -249,7 +249,13 @@ class TestDependsOn:
         # an epic's non-terminal-children rule, an item may close with an
         # unresolved dependency still open.
         _write_item(tmp_path, "0001-a.md", _item_text(id=1, status="open"))
-        text = _item_text(id=2, status="closed", extra='resolution = "done"\ndepends_on = [1]\n')
+        # `verified_by` satisfies the C-11 closure bar, which is a separate rule from the
+        # `depends_on` behaviour under test here — see tests/test_work_items_closure_bar.py.
+        text = _item_text(
+            id=2,
+            status="closed",
+            extra='resolution = "done"\nverified_by = ["tests/x.py::test_y"]\ndepends_on = [1]\n',
+        )
         _write_item(tmp_path, "0002-b.md", text)
         _items, errors = structural_errors(tmp_path / "items")
         assert errors == []
@@ -305,7 +311,11 @@ class TestStructuralErrors:
     def test_closed_epic_with_all_closed_children_passes(self, tmp_path: Path) -> None:
         text = _item_text(id=1, kind="epic", status="closed", extra='resolution = "done"\n')
         _write_item(tmp_path, "0001-epic.md", text)
-        child = _item_text(id=2, status="closed", extra='epic = 1\nresolution = "shipped"\n')
+        child = _item_text(
+            id=2,
+            status="closed",
+            extra='epic = 1\nresolution = "shipped"\nverified_by = ["tests/x.py::test_y"]\n',
+        )
         _write_item(tmp_path, "0002-child.md", child)
         _items, errors = structural_errors(tmp_path / "items")
         assert errors == []

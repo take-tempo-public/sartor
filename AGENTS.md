@@ -136,6 +136,64 @@ tell a signature change from a comment fix in the same file; and the computed au
 covers first-party Python import fan-in only, so JS, Jinja templates and CSS are
 curation-only — the `loadComposition()` case above is itself in that blind spot.
 
+### Enforcement before discipline (charter C-11) — read this before you write a note instead of a gate
+
+**A constraint with no mechanism that fails closed is not a constraint.** It is a
+prediction about your future good behavior, and this project has measured that prediction
+and found it false.
+
+- **The first time you recognize a failure mode as a RECURRENCE** — a second instance, or a
+  first instance you recognize as a member of a known class — **author a mechanism that
+  fails closed, on that branch.** A note, a memory, a ledger row, a work-item update, or a
+  new prose rule is **not a compliant response on its own.** Those record the problem; they
+  have never once fixed it.
+- **If no mechanism is possible, say so explicitly, with the reason, to the user.** An
+  undeclared gap is counted as protection by whoever reads the doc next. Silence is the
+  failure.
+- **New governance defaults to a gate.** Prose discipline is the exception, and where you
+  use it you label it **unenforced** in the same breath.
+
+Enforced by the closure bar in [`scripts/work_items.py`](scripts/work_items.py) (`status =
+"closed"` needs a falsifiable `verified_by` artifact or an owner-named `closure_exception`;
+a reopened item needs a `guardrail`) — it runs inside `python -m scripts.gate` and CI, so it
+binds every agent — and by the required `## Recurrences observed this session → guardrail
+authored` section in [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md),
+which `scripts/verify_doc_template.py` refuses a handoff without.
+
+**Why this clause exists** (the measurement, not a vibe): ~20 merged branches on UX-suite
+flakes in 40 days; one branch merged three times over the same flake; item 30 recurring in
+CI five days after closure; three of epic 19's five closures resting on weaker evidence than
+they claimed. C-7/C-8/C-10 already said most of the right things and did not hold, because
+each left the decisive moment to your judgment.
+
+**Known limit** (stated, not papered over — C-0): these force the question to be asked and
+an artifact to be named. Neither can verify the artifact is real.
+
+### Declare the gap; never fill it (charter C-12) — read this before you assert anything you did not verify
+
+**Information you no longer hold is surfaced as MISSING before anything depends on it.**
+Reconstructing a lost fact from plausibility and proceeding as though it were sourced is a
+C-0 violation, and it is the mechanism underneath most C-7 failures — a filled gap becomes a
+premise, and the premise gets cited as fact.
+
+- **Compaction, summarization, context loss, and a subagent's unverified report are
+  data-loss events to be ANNOUNCED**, not conditions to work around quietly.
+- **"I no longer have this," "I did not verify this," and "this is a guess" are required
+  outputs**, not admissions of failure. They are always cheaper than the alternative.
+- Worked cost: item 13's filed mechanism was false, item 15's was false, item 31's `-n 2`
+  attribution was an unsourced narrowing contradicted by the only surviving artifact. Each
+  was plausible. Each became a premise. Each cost a branch.
+
+Enforced by the observed-citation check in
+[`scripts/enforcement/evidence.py`](scripts/enforcement/evidence.py) (a `## Observed` bullet
+carrying no run id, `path:line`, quoted command or fenced artifact blocks the production
+edit) and the compaction-disclosure controls in
+[`scripts/enforcement/adapters/claude_context_hook.py`](scripts/enforcement/adapters/claude_context_hook.py).
+
+**Known limit** (C-0): these enforce the *presence* of a citation and the *announcement* of
+a loss. No mechanism here detects a fabricated citation — an unsourced assertion becomes
+non-committable, a dishonest one does not become impossible.
+
 ### Branch before code changes
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.

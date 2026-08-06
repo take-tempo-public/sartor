@@ -2,11 +2,12 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 7 | Epics 6 | Closed 19
+**Open 6 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 8 | Epics 6 | Closed 19
 
 ## Open
 
 - **45** -- Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session (`agent`) -- cleanup-plan-on-merge fires only on local `git merge --no-ff`; close-out moved to `gh pr merge`, so the marker survives.
+- **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 
 ## Blocked
 
@@ -33,6 +34,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **46** -- CI flake: test_reader_never_observes_a_partial_file's control arm fails when the naive writer doesn't tear (`agent`) -- Control assertion (`assert naive`) is itself a timing race; a quiet runner completes write_text between reader polls.
 - **47** -- Audit sibling scroll-spy tests for the same settle-gate hole item 44 fixed (`agent`) -- Item 44's fix landed in one shared helper; other tests reasoning about spy events after a clear were not audited.
 - **48** -- UX CI job ran 14m49s against a ~5m baseline on PR #102 — 3x outlier, green, uncharacterized (`agent`) -- ux job took 14m49s on PR #102 vs ~5m1s on PR #100 — zero reruns, so not a flake; the runtime is the anomaly.
+- **49** -- Test suite leaves tmp*.html litter in the tracked personas/bundled/ directory (`agent`) -- A suite run leaves personas/bundled/tmp*.html behind; `git add -A` swept one into a commit before it was caught.
 
 ## Epics
 
