@@ -137,7 +137,7 @@ Guards reach agents through three adapters with very different coverage:
 |---|---|---|
 | `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
 | `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
-| `adapters/claude_hook.py` · `claude_dispatcher.py` · `claude_context_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, the C-8/C-12 context hooks |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, the C-8/C-12 context hooks |
 
 ### The gap, named
 
@@ -145,6 +145,13 @@ Guards reach agents through three adapters with very different coverage:
 Code only.** Both clauses are real and both are enforced *here* — but outside Claude Code
 nothing enforces either one. The same is true of C-8's `restore-evidence`/`capture-before-compact`
 and C-12's compaction disclosure.
+
+**`verify_binary_on_path` (`feat/verify-dont-assume-guard`) is Claude Code only too — and,
+unlike C-7/C-10, deliberately has no planned git-native path.** It parses a Bash
+command-string, a shape that exists only in the Claude PreToolUse contract; a git
+`pre-commit`/`pre-push` hook never sees a proposed shell command, so there is no equivalent
+input to route this guard from. Named here rather than left to be discovered during
+extraction, same as the other two.
 
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude

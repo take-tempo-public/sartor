@@ -30,13 +30,14 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from scripts.enforcement.adapters import claude_dispatcher
+from scripts.enforcement.adapters import bash_dispatcher, claude_dispatcher
 from scripts.enforcement.guards import (
     block_merge_to_main,
     block_secrets,
@@ -44,6 +45,7 @@ from scripts.enforcement.guards import (
     route_security_lint,
     ruff_changed,
     validate_context,
+    verify_binary_on_path,
 )
 from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 
@@ -59,16 +61,20 @@ OLD_SHA = "b2c83d2"
 # validate-context no longer ship their own standalone .sh — they run inside
 # edit-write-dispatcher.sh (no short-circuit: the other four guards also run
 # on these payloads, but none of the existing fixtures below incidentally
-# trip a second guard — verified when this branch landed). block-secrets
-# stays pointed at its own file: that file still backs the separate
-# Bash-matcher wiring (secret-scanning on Bash commands), untouched by this
-# migration.
+# trip a second guard — verified when this branch landed). Since
+# `feat/verify-dont-assume-guard`, block-merge-to-main and ruff-changed no
+# longer ship their own standalone .sh either — they run inside
+# bash-dispatcher.sh. block-secrets's default here is bash-dispatcher.sh (the
+# real path a Bash-shaped payload takes in production); its own equivalence
+# tests below override to edit-write-dispatcher.sh for the Edit/Write-shaped
+# payloads, which is the real path THOSE take — block-secrets no longer has
+# a standalone file backing either matcher.
 GUARD_FILES = {
     "require-feature-branch": "edit-write-dispatcher.sh",
-    "block-merge-to-main": "block-merge-to-main.sh",
-    "block-secrets": "block-secrets.sh",
+    "block-merge-to-main": "bash-dispatcher.sh",
+    "block-secrets": "bash-dispatcher.sh",
     "route-security-lint": "edit-write-dispatcher.sh",
-    "ruff-changed": "ruff-changed.sh",
+    "ruff-changed": "bash-dispatcher.sh",
     "validate-context": "edit-write-dispatcher.sh",
 }
 
@@ -201,8 +207,13 @@ def _run_old(old_hooks: dict[str, Path], name: str, payload: dict, **kwargs) -> 
     return _run_hook(old_hooks[name], payload, **kwargs)
 
 
-def _run_new(name: str, payload: dict, **kwargs) -> tuple[int, str]:
-    return _run_hook(HOOKS_DIR / GUARD_FILES[name], payload, **kwargs)
+def _run_new(name: str, payload: dict, *, file: str | None = None, **kwargs) -> tuple[int, str]:
+    """`file` overrides the `GUARD_FILES[name]` default — needed for
+    block-secrets, whose real production route depends on the payload's
+    `tool_name` (Bash -> bash-dispatcher.sh, Edit/Write -> edit-write-
+    dispatcher.sh), not on the guard name alone."""
+    script = file or GUARD_FILES[name]
+    return _run_hook(HOOKS_DIR / script, payload, **kwargs)
 
 
 def _assert_equivalent(
@@ -483,6 +494,146 @@ class TestRuffChangedUnit:
         assert not result.blocked
 
 
+class TestVerifyBinaryOnPathUnit:
+    """No OLD-side equivalent — this guard is new surface
+    (`feat/verify-dont-assume-guard`). Hand-tested against the real
+    `hooks/bash-dispatcher.sh` during authoring (this branch's design note
+    has the transcripts); this class is the fast, subprocess-free unit
+    matrix covering the same cases plus edge coverage."""
+
+    def test_allow_real_binary(self) -> None:
+        result = verify_binary_on_path.decide("python --version")
+        assert not result.blocked
+
+    def test_block_missing_binary(self) -> None:
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz --flag")
+        assert result.blocked
+        assert "definitely_missing_tool_xyz" in result.messages[0]
+        assert "not found on PATH" in result.messages[0]
+
+    def test_block_message_does_not_overclaim(self) -> None:
+        """Charter C-0: the message must stay factual about a PATH lookup —
+        never imply this guard verifies a claim or catches more than a
+        missing binary (owner directive)."""
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz")
+        text = " ".join(result.messages)
+        assert "never assume" not in text.lower()
+
+    def test_allow_empty_command(self) -> None:
+        assert not verify_binary_on_path.decide("").blocked
+        assert not verify_binary_on_path.decide("   ").blocked
+
+    def test_allow_stderr_redirect_fd_duplication(self) -> None:
+        """Regression: hand-tested finding, not a hypothesis. `2>&1` was
+        first mis-split — `&` read as the background operator — carving `1`
+        out as its own segment and blocking it as a "missing binary". This
+        exact command (`python -m mypy . 2>&1 | tail -5`) is one this
+        branch's own gate run used; caught before it shipped."""
+        result = verify_binary_on_path.decide("python -m mypy . 2>&1 | tail -5")
+        assert not result.blocked
+
+    def test_allow_combined_redirect_and_fd_dup_variants(self) -> None:
+        for cmd in ("python 2>&1", "python >&2", "python 1>&2", "python &> out.log"):
+            assert not verify_binary_on_path.decide(cmd).blocked, cmd
+
+    def test_block_still_reached_through_a_redirect(self) -> None:
+        """The redirect fix must not become a blanket exemption — a genuinely
+        missing binary right next to a redirect is still caught."""
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz 2>&1")
+        assert result.blocked
+
+    def test_allow_real_background_operator_still_splits(self) -> None:
+        """A bare trailing `&` (real backgrounding, not a redirect) must
+        still act as a segment boundary."""
+        result = verify_binary_on_path.decide("sleep 5 & wait")
+        assert not result.blocked
+
+    def test_block_missing_binary_before_background_operator(self) -> None:
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz &")
+        assert result.blocked
+
+    def test_allow_python_dash_m(self) -> None:
+        """`python -m X` — the binary is `python`; `X` is a module name, not
+        a separate token this guard should try to resolve on PATH."""
+        result = verify_binary_on_path.decide("python -m ruff check .")
+        assert not result.blocked
+
+    def test_allow_env_assignment_prefix(self) -> None:
+        result = verify_binary_on_path.decide('FOO=bar BAZ="a b" python -c "print(1)"')
+        assert not result.blocked
+
+    def test_block_through_chain_operator(self) -> None:
+        result = verify_binary_on_path.decide("git status && definitely_missing_tool_xyz")
+        assert result.blocked
+
+    def test_block_through_pipe(self) -> None:
+        result = verify_binary_on_path.decide("git status | definitely_missing_tool_xyz")
+        assert result.blocked
+
+    def test_allow_guarded_by_double_pipe(self) -> None:
+        """A segment followed by `||` is a defensive probe the command's own
+        author already handles — deliberately not checked (module docstring
+        "Deliberate exemptions")."""
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz || echo fallback")
+        assert not result.blocked
+
+    def test_allow_probe_commands(self) -> None:
+        assert not verify_binary_on_path.decide("command -v definitely_missing_tool_xyz").blocked
+        assert not verify_binary_on_path.decide("which definitely_missing_tool_xyz").blocked
+
+    def test_allow_shell_builtin(self) -> None:
+        assert not verify_binary_on_path.decide("cd /tmp && ls").blocked
+
+    def test_allow_uncertain_command_substitution(self) -> None:
+        """Fail-open: `$(...)` means this scanner cannot trust its own
+        segment boundaries, so the whole command is allowed unchecked."""
+        result = verify_binary_on_path.decide("echo $(definitely_missing_tool_xyz)")
+        assert not result.blocked
+
+    def test_allow_uncertain_backtick_substitution(self) -> None:
+        result = verify_binary_on_path.decide("echo `definitely_missing_tool_xyz`")
+        assert not result.blocked
+
+    def test_allow_uncertain_subshell(self) -> None:
+        result = verify_binary_on_path.decide("(definitely_missing_tool_xyz)")
+        assert not result.blocked
+
+    def test_allow_uncertain_unbalanced_quote(self) -> None:
+        result = verify_binary_on_path.decide('echo "unterminated')
+        assert not result.blocked
+
+    def test_allow_windows_style_path_to_real_binary(self) -> None:
+        """The historical false-ALLOW path shape, hand-tested: a native
+        Windows absolute path to a binary that genuinely exists must resolve
+        correctly, not be misread as missing."""
+        py = shutil.which("python")
+        assert py is not None, "this test environment must have python on PATH"
+        result = verify_binary_on_path.decide(f'"{py}" --version')
+        assert not result.blocked
+
+    def test_block_windows_style_path_to_missing_binary(self) -> None:
+        result = verify_binary_on_path.decide(r'"C:\NoSuchDir\NoSuchTool.exe" --flag')
+        assert result.blocked
+
+    def test_allow_msys_style_path_never_checked(self) -> None:
+        """A Git-Bash `/c/...`-style path is skipped, not resolved — hand-
+        tested finding: native Windows Python's `shutil.which` reads a REAL
+        binary at this path shape as missing (a false BLOCK), so this guard
+        deliberately does not check it at all rather than guess wrong."""
+        result = verify_binary_on_path.decide("/c/NoSuchDir/NoSuchTool.exe --flag")
+        assert not result.blocked
+
+    def test_claude_check_reads_command_field(self) -> None:
+        result = verify_binary_on_path.claude_check(
+            {"tool_input": {"command": "definitely_missing_tool_xyz"}}
+        )
+        assert result.blocked
+
+    def test_claude_check_allows_missing_command_field(self) -> None:
+        result = verify_binary_on_path.claude_check({"tool_input": {}})
+        assert not result.blocked
+
+
 class TestValidateContextUnit:
     def test_block_invalid_json(self) -> None:
         result = validate_context.decide("output/alex/context_1.json", "{not valid", REPO_ROOT)
@@ -629,19 +780,28 @@ class TestBlockSecretsEquivalence:
         assert old[0] == 2
 
     def test_clear_allow_ordinary_edit(self, old_hooks: dict[str, Path], tmp_path: Path) -> None:
+        # Edit's real production route is edit-write-dispatcher.sh, not the
+        # GUARD_FILES default (bash-dispatcher.sh, for the Bash-shaped case
+        # above) — override to the file this payload shape actually takes.
         payload = {
             "tool_name": "Edit",
             "tool_input": {"file_path": "app.py", "new_string": "x = 1"},
         }
         old = _run_old(old_hooks, "block-secrets", payload, subprocess_cwd=tmp_path)
-        new = _run_new("block-secrets", payload, subprocess_cwd=tmp_path)
+        new = _run_new(
+            "block-secrets", payload, file="edit-write-dispatcher.sh", subprocess_cwd=tmp_path
+        )
         _assert_equivalent(old, new)
         assert old[0] == 0
 
     def test_edge_block_secret_file_write(self, old_hooks: dict[str, Path], tmp_path: Path) -> None:
+        # Same override rationale as test_clear_allow_ordinary_edit above:
+        # Write's real route is edit-write-dispatcher.sh.
         payload = {"tool_name": "Write", "tool_input": {"file_path": ".api_key", "content": "sk-x"}}
         old = _run_old(old_hooks, "block-secrets", payload, subprocess_cwd=tmp_path)
-        new = _run_new("block-secrets", payload, subprocess_cwd=tmp_path)
+        new = _run_new(
+            "block-secrets", payload, file="edit-write-dispatcher.sh", subprocess_cwd=tmp_path
+        )
         _assert_equivalent(old, new, message_substrings=("secret file",))
         assert old[0] == 2
 
@@ -872,3 +1032,62 @@ class TestEditWriteDispatcher:
         assert code == 2
         assert "require-feature-branch" in err
         assert "block-secrets" in err
+
+
+# --------------------------------------------------------------------------- #
+# 5. Bash dispatcher (feat/verify-dont-assume-guard) — one process, all four
+#    guards, no short-circuit (no OLD equivalent for verify-binary-on-path;
+#    the other three had standalone files, hand-tested byte-identical against
+#    this dispatcher during authoring — see this branch's design note).
+#    Exercises the real hooks/bash-dispatcher.sh wrapper via the same
+#    _run_hook helper the OLD-vs-NEW equivalence classes above use.
+# --------------------------------------------------------------------------- #
+
+
+class TestBashDispatcher:
+    """feat/verify-dont-assume-guard: block-secrets, block-merge-to-main,
+    ruff-changed, and verify-binary-on-path all run in one process, and every
+    blocked guard's messages appear — proving there's no short-circuit."""
+
+    def test_guard_order_is_exactly_the_bash_guards(self) -> None:
+        assert set(bash_dispatcher._GUARD_ORDER) == {
+            "block-secrets",
+            "block-merge-to-main",
+            "ruff-changed",
+            "verify-binary-on-path",
+        }
+
+    def test_allow_when_all_four_allow(self, tmp_path: Path) -> None:
+        payload = {"tool_name": "Bash", "tool_input": {"command": "python --version"}}
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 0, err
+
+    def test_block_missing_binary_single_guard(self, tmp_path: Path) -> None:
+        payload = {
+            "tool_name": "Bash",
+            "tool_input": {"command": "definitely_missing_tool_xyz --flag"},
+        }
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 2
+        assert "verify-binary-on-path" in err
+
+    def test_aggregates_two_simultaneous_blocks_no_short_circuit(self, tmp_path: Path) -> None:
+        """verify-binary-on-path (missing binary) AND block-secrets (embedded
+        key) both trip on one command — both messages must appear, proving
+        no short-circuit."""
+        command = "definitely_missing_tool_xyz " + "sk-ant-" + "b" * 30
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 2
+        assert "verify-binary-on-path" in err
+        assert "block-secrets" in err
+
+    def test_uncertain_command_does_not_block(self, tmp_path: Path) -> None:
+        """Fail-open, exercised through the real dispatcher: an uncertain
+        command (command substitution) is allowed rather than guessed at."""
+        payload = {
+            "tool_name": "Bash",
+            "tool_input": {"command": "echo $(definitely_missing_tool_xyz)"},
+        }
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 0, err

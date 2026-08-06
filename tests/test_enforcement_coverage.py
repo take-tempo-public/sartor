@@ -48,6 +48,9 @@ _BINDS_NON_CLAUDE_AGENTS: dict[str, bool] = {
     # --- the gap -------------------------------------------------------------------------
     "require_evidence_before_fix": False,  # charter C-7 — Claude Code PreToolUse only
     "require_consumer_enumeration": False,  # charter C-10 — Claude Code PreToolUse only
+    "verify_binary_on_path": False,  # feat/verify-dont-assume-guard — Claude Code PreToolUse only;
+    # no git-native adapter was built (out of scope for this branch — the Bash-command-string
+    # parsing this guard does has no equivalent in a git pre-commit/pre-push hook's input shape)
 }
 
 #: Guards whose clause has **no** tool-agnostic enforcement at all. Kept as its own constant
@@ -115,6 +118,7 @@ class TestTheExtractionGapIsPinned:
         assert sorted(EXTRACTION_GAP) == [
             "require_consumer_enumeration",
             "require_evidence_before_fix",
+            "verify_binary_on_path",
         ]
 
     def test_gap_is_documented_where_the_extraction_will_look(self) -> None:
