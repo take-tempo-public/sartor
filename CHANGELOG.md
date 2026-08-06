@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `groups:` in `.github/dependabot.yml` — collapse same-ecosystem minor/patch bumps into one PR per ecosystem (`chore/dependabot-groups`)
+
+11 dependency-upgrade PRs were open and ungrouped (8 fully green, never merged — a
+separate merge-policy gap, tracked on `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward
+ledger, not fixed here). Added a `groups:` key to each of the three `update:` blocks
+(`pip`, `github-actions`, `npm` in `/docs-site`), grouping `minor` + `patch`
+`update-types` per ecosystem so dependabot's next scheduled run opens roughly one
+grouped PR per ecosystem instead of one PR per dependency. `major` is deliberately
+left out of every group so a breaking bump still opens its own individually-reviewable
+PR. Schema follows GitHub's documented `groups` reference exactly; validated locally
+by parsing the file with `yaml.safe_load` (no server-side dependabot dry-run exists).
+**Verifying the resulting grouped PRs actually land grouped is explicitly out of scope
+for this commit** — dependabot only re-evaluates config on its own schedule, so this is
+next-morning, post-merge work, not tonight's.
+
 ### Added: `scripts/flake_rates.py` — real per-test CI flake rates from job logs, the closure bar's `verified_by` artifact (`feat/flake-rate-measurement`)
 
 "The UX suite is flaky" had never been a number with a citable source. Three prior

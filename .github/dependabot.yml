@@ -9,6 +9,15 @@
 # Latent until the repo is pushed to GitHub and this file is read by
 # Dependabot on the real remote (matches ci.yml's "committed but dormant
 # until pushed" framing — see docs/governance/enforcement.md).
+#
+# `groups:` (chore/dependabot-groups) collapses same-ecosystem minor/patch bumps
+# into one PR per ecosystem per run, per GitHub's documented schema
+# (https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#groups).
+# Major updates are deliberately left OUT of every group's `update-types` so a
+# breaking bump still opens its own individually-reviewable PR instead of
+# riding along in a batch. Verifying the resulting grouped PRs actually land
+# grouped on dependabot's next scheduled run is out of scope for this commit —
+# see docs/dev/RELEASE_CHECKLIST.md Carry-forward ledger / the branch handoff.
 
 version: 2
 updates:
@@ -17,6 +26,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      pip-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # `github-actions` covers the workflows' action pins. Those pins are full commit
   # SHAs (OpenSSF Scorecard Pinned-Dependencies) with a `# vX.Y` trailing comment —
@@ -28,6 +42,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # docs-site/ (Fumadocs + Next) is a committed npm project with a lockfile, and
   # was previously watched only by Dependabot's *security* alerts (which need no
@@ -38,6 +57,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      npm-docs-site-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     # typescript is held at ^6.0.3 deliberately — typescript@7's ESM restructure
     # dropped lib/typescript.js, which next@16.2.11's TypeScript detector hard-codes
     # an existsSync check against, so a genuinely-installed typescript@7.x reads as
