@@ -1,1 +1,3 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/feat-enforcement-first-governance.md", "session": "20b5de20-e774-4fe3-905e-bcad687d7188", "branch": "main", "commit": "d044d64", "actor": "amodal1", "agent": "claude-sonnet-5", "ts": "2026-08-06T00:40:25Z", "fingerprint": "114e8b027579"}
+{"event": "compacted", "session": "unknown", "branch": "feat/flake-rate-measurement", "trigger": "unknown", "ts": "2026-08-06T02:03:00Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/feat-flake-rate-measurement.md", "session": "20b5de20-e774-4fe3-905e-bcad687d7188", "branch": "feat/flake-rate-measurement", "commit": "4f26eac", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5", "ts": "2026-08-06T02:47:45Z", "fingerprint": "a5c853aecf2a"}
