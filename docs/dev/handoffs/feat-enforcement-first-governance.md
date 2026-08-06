@@ -1,8 +1,8 @@
 <!-- provenance: schema=1 session=b7fe246e-c3d0-49bd-98bf-939560ebb497 branch=feat/enforcement-first-governance commit=77d837c actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-08-05 -->
 
-# Agent handoff: after `feat/enforcement-first-governance` (C-11/C-12 adopted with four mechanisms; next branch is OWNER-GATED)
+# Agent handoff: after `feat/enforcement-first-governance` (C-11/C-12 adopted with four mechanisms; next is the flake-rate measurement)
 
-**Branch to create:** `<!-- owner decides — see First move -->` (branch off `main`)
+**Branch to create:** `feat/flake-rate-measurement` (branch off `main`)
 **Base branch:** `main`
 
 > **READ THIS FIRST — the governing posture changed on this branch.**
@@ -55,7 +55,7 @@
 - ~~`fix/ux-scroll-spy-overlapping-refresh`~~ ✓ — item 44
 - ~~`feat/ci-wait-wrapper`~~ ✓ — `scripts/ci_wait.py` (PR #102)
 - ~~`feat/enforcement-first-governance`~~ ✓ — C-11 + C-12, this handoff's branch
-- **next ← OWNER-GATED, see First move**
+- **`feat/flake-rate-measurement`** ← next (owner-decided 2026-08-05)
 - Still queued: dependabot `groups:` → dependency upgrades (#63 ruff, then #50, #84) →
   verify-don't-assume Bash guard → items 45, 46
 - `fix/experience-soft-retire` ← sprint A1, only after the above **and** a check-in
@@ -70,8 +70,8 @@ without evidence (and the closure bar will now refuse a prose-only closure anywa
 
 ## What just landed on `main`
 
-**Nothing yet — not merged as of writing.** Five commits on the branch: `c3bd546`,
-`35c4e66`, `2e670d4`, `1524ad7`, `77d837c`.
+**Nothing yet — not merged as of writing.** Eight commits on the branch, from `c3bd546`
+(the charter amendment) through the enforcement-reach documentation and item 50.
 
 **Charter C-11 + C-12 adopted, with four mechanisms.** The posture: **new governance
 defaults to a gate; prose discipline is the exception and is labeled unenforced where used.**
@@ -122,12 +122,23 @@ session did and was wrong. What worked: **foreground chunks** — `-m "not ux"` 
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-**Open (2 / 10 ceiling):**
+**Open (3 / 10 ceiling):**
 1. **Item 19 — UX-suite flake epic, REOPENED this session** (child 30 recurred). Carries a
    `guardrail` naming what was built *and* stating plainly that the flake class itself
    remains unguarded — no mechanism prevents the next flake, only the next premature closure.
 2. Item 45 — plan-approval marker survives a PR-channel merge. **Third consecutive
    confirmation** this session; the marker was found stale at startup and **not ridden**.
+
+**Open (3 / 10 ceiling) — item 50 added at owner direction:**
+3. **Item 50 (NEW)** — **C-7 and C-10 are enforced by Claude Code hooks ONLY.**
+   `adapters/git_hook.py` (the tool-agnostic path) routes six guards;
+   `require_evidence_before_fix` and `require_consumer_enumeration` are not among them,
+   so another agent can edit production code on a `fix/*` branch with no dossier. The
+   **gap is already pinned by a mechanism** (`tests/test_enforcement_coverage.py`
+   derives routing and fails on any undeclared guard; `docs/governance/enforcement.md`
+   §"Enforcement reach" is the canonical statement). What is open is the owner-gated
+   decision of whether to give C-7/C-10 a git-hook path — resolve with the README's
+   pending tool-agnostic-enforcement decision.
 
 **Blocked (3 + the sequenced epics):** item 3 ([HUMAN] GitHub toggles — note `enforce_admins`
 is now unblocked: both halves of its precondition are met), item 5, item 8, epics 37–40.
@@ -204,16 +215,28 @@ instance," which is a **stricter** bar than the clause's own floor.)*
 
 ## What this branch should build
 
-**OWNER-GATED — do not pick this yourself.** The owner is weighing two directions, and the
-session's plan must start from their answer:
+**OWNER-DECIDED 2026-08-05: build the flake-rate measurement.** Not a suggestion to
+re-litigate — the owner chose it explicitly at the end of the authoring session.
 
-- **(a) Flake-rate measurement.** Extract true per-attempt failure rates per test from CI job
-  logs — `scripts/ci_wait.py` already parses the rerun alarm, and `gh` returns per-job elapsed
-  time that it currently discards, so this is additive and costs no extra API calls.
-  Converts "flaky" into a ranked list with numbers, and answers whether this is one mechanism
-  or seven **before** anyone commits to a fix shape.
-- **(b) The queued CI-infra work** — dependabot `groups:` (11 open PRs, and no `groups:` key
-  anywhere in `.github/dependabot.yml`; verified 2026-08-05), then the upgrades.
+**Extract true per-attempt failure rates per test from CI job logs.** `scripts/ci_wait.py`
+already parses the ux tier's rerun alarm out of a job log, and `gh pr checks --json` returns
+a per-job elapsed time the wrapper currently **discards**, so this is additive and costs no
+extra API calls. Turn "flaky" into a **ranked list with numbers** — per test, per-attempt
+failure rate across recent runs — which answers whether this is one mechanism or seven
+**before** anyone commits to a fix shape.
+
+**Why this is the right first move and not more measurement theatre:** epic 19 now gates
+item 10's release chain, and the C-11 closure bar will **refuse** to close 19 or 30 on prose.
+Closure requires a falsifiable `verified_by` artifact. The measurement is the only thing that
+can produce one. The mechanism forces the sequence — it does not rest on anyone's intent.
+
+Reuse, don't rebuild: `scripts/ci_wait.py`'s `_scan_run` / `scan_reruns` already do the log
+fetch and marker parse, and `distinct_run_ids` already dedupes by run (log fetches are
+latency-bound per request — measured 4.7 s for a 2.88 MB run log vs 4.4 s for a 133 KB job
+log).
+
+**Deferred, still queued behind it:** dependabot `groups:` (11 open PRs, no `groups:` key
+anywhere in `.github/dependabot.yml`; verified 2026-08-05), then the upgrades.
 
 **Owner context you must not lose:** they are actively considering **redesigning the UX suite
 or the system around it**, on the grounds that a month of flake work produced repeated
@@ -230,14 +253,15 @@ fixes themselves.
 
 ## First move
 
-**Owner, at launch:** choose (a) or (b) above, and approve the session plan when asked.
+**Owner, at launch:** approve the session plan when asked. The branch is already chosen —
+`feat/flake-rate-measurement`, decided 2026-08-05.
 
 Agent: FIRST action is `python scripts/check_handoff_pointer.py "<the pointer line you were
 given>"`; once it passes, consume this file
 (`python scripts/verify_doc_template.py docs/dev/handoffs/feat-enforcement-first-governance.md
 docs/dev/AGENT_HANDOFF_TEMPLATE.md --event consumed --agent <agent>`).
 
-Then create the branch the owner chose off `main`, write a plan at
+Then create `feat/flake-rate-measurement` off `main`, write a plan at
 `~/.claude/plans/<slug>.md`, and show it before touching code. **Do not code first.**
 
 **Do not trust a pre-existing plan-approval marker** (item 45). Earn a fresh one via

@@ -2,11 +2,12 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 8 | Epics 6 | Closed 19
+**Open 6 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 8 | Epics 6 | Closed 19
 
 ## Open
 
 - **45** -- Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session (`agent`) -- cleanup-plan-on-merge fires only on local `git merge --no-ff`; close-out moved to `gh pr merge`, so the marker survives.
+- **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 
 ## Blocked
 
