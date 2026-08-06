@@ -49,9 +49,9 @@ introspects the adapter module at runtime.
 
 This item is **not** the mechanism — the mechanism landed with it:
 
-- [`docs/governance/enforcement.md`](../../governance/enforcement.md) §"Enforcement reach"
+- [`docs/governance/enforcement.md`](../../../governance/enforcement.md) §"Enforcement reach"
   is the canonical statement, written where an extraction would look.
-- [`tests/test_enforcement_coverage.py`](../../../tests/test_enforcement_coverage.py) makes
+- [`tests/test_enforcement_coverage.py`](../../../../tests/test_enforcement_coverage.py) makes
   it unmissable: it **derives** routing from `git_hook.py`, and fails if a guard is added
   without declaring its reach, if the declared table drifts from the adapter, or if
   `enforcement.md` stops naming the gapped guards. Proven RED-then-GREEN with a throwaway
