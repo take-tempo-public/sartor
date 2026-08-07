@@ -3,3 +3,5 @@
 {"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T16:43:08Z"}
 {"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T17:04:21Z"}
 {"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T17:08:59Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T17:31:33Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/fix-plan-approval-marker-pr-merge.md", "session": "ce768599-40ad-4c65-b996-cf7398315b19", "branch": "fix/plan-approval-marker-pr-merge", "commit": "8844c9c", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5", "ts": "2026-08-07T17:40:44Z", "fingerprint": "8590cc871eac"}
