@@ -1,16 +1,15 @@
-<!-- provenance: schema=1 session=c8caf603-88cf-46b6-b2aa-77d41a898d3c branch=fix/plan-approval-marker-pr-merge commit=867cb04 actor=amodal1 agent=anthropic/claude-sonnet-5 generated_at=2026-08-06 -->
+<!-- provenance: schema=1 session=ce768599-40ad-4c65-b996-cf7398315b19 branch=fix/plan-approval-marker-pr-merge commit=8844c9c actor=amodal1 agent=anthropic/claude-sonnet-5 generated_at=2026-08-07 -->
 
-# Agent handoff: after `fix/plan-approval-marker-pr-merge` (item 45 dossier written, both fix shapes characterized, neither implemented — chain's last case)
+# Agent handoff: after `fix/plan-approval-marker-pr-merge` (item 45 closed)
 
-**Branch to create:** none — this handoff's own subject branch (`fix/plan-approval-marker-pr-merge`) is the chain's **last case**. The next step is the orchestrator's own chain close-out, not a new case branch.
-**Base branch:** `feat/verify-dont-assume-guard`
+**Branch to create:** none — owner decision, not this handoff's to make. See "First move" below.
+**Base branch:** `main` (this branch's own base; `main` was at `ae7e0fa` when this branch started).
 
-**This is not `main`.** Same stacked-chain posture as every predecessor in this
-series: nothing in this chain has been pushed, PR'd, or merged as of this
-writing. This branch's own close-out checklist step 4 ("Land it through the PR
-channel") is reproduced verbatim below per template but was **not executed
-this session** — landing the whole chain is the orchestrator's own next step,
-not this branch's.
+**This branch closed item 45** (plan-approval marker survives a PR-channel merge).
+The prior session's staged design (D3(b), a `SessionStart` reconciler) was disproven
+before being built; this session pivoted to a design that lives inside the existing
+`check-plan-approved.sh` PreToolUse blocker, built it, found and fixed two further
+genuine defects while doing so, and landed with a green gate.
 
 ---
 
@@ -44,9 +43,8 @@ not this branch's.
 
 ## Where we are in the arc
 
-**Stream:** v1.1.0 Final March — CI-infrastructure pass, ahead of epic A.
-**Sequencing rule:** strictly sequential — one branch at a time (within this
-chain, "sequential" means tip-to-tip stacking, not each off `main`).
+**Stream:** v1.1.0 Final March — CI-infrastructure pass complete, ahead of epic A.
+**Sequencing rule:** strictly sequential — one branch at a time.
 **Blocked until this stream tags:** the public v1.1.0 cut (epic E / item 10).
 
 - ~~`chore/v11-march-kickoff`~~ ✓ · ~~`feat/consumer-enumeration-gate`~~ ✓ (C-10)
@@ -57,258 +55,212 @@ chain, "sequential" means tip-to-tip stacking, not each off `main`).
 - ~~`chore/dependabot-groups`~~ ✓ — `groups:` key added to `.github/dependabot.yml`
 - ~~`feat/verify-dont-assume-guard`~~ ✓ — `verify-binary-on-path` PreToolUse guard +
   Bash-matcher hooks folded into one dispatcher
-- **`fix/plan-approval-marker-pr-merge`** ← this branch (item 45 — dossier
-  written, decision made: neither fix shape implemented, see below)
-- **Next: the orchestrator's own chain close-out** — adversarial full-diff
-  review across every case branch, then the owner's morning flow: push, one
-  PR, `python -m scripts.ci_wait`, merge, then dependabot upgrades
-  (#63 ruff, #50, #84) with owner confirm. **No further case branches follow
-  this one.**
+- ~~`fix/plan-approval-marker-pr-merge`~~ (first occupancy) — item 45 dossier written,
+  root cause proven, neither candidate fix shape implemented
+- ~~`fix/chain-gate-integration`~~ ✓ — F1 + F2 fixed; chain-level push-blocker resolved
+- ~~The pre-march chain merged as PR #105 (`c15d080`)~~ ✓
+- ~~`docs/wiki-enforcement-catchup`~~ ✓ — pruned chain branches, scoped
+  `/wiki-self-update`, 0 pages needed editing (PR #110, `ae7e0fa`)
+- **`fix/plan-approval-marker-pr-merge` (second occupancy)** ← this branch — item 45
+  CLOSED. D3(b) refuted, D3(c) built, two implementation-time defects found and
+  fixed, gate green.
+- **Next: sprint A1, OR an owner-directed alternative — owner decision, not this
+  handoff's to make.** See "First move" below.
 
-**The march is still deliberately paused. Do not touch epics B–E.**
+**The march is still deliberately paused before epics B–E.**
 
-**Item 10's release chain is still gated on epic 19** — untouched this
-session.
-
-**A NEW, urgent, chain-level blocker was found this session** (not part of
-item 45, not fixed here — see "Carried-forward observations" and "What just
-landed" below): the gate is **not** green at this branch's own base
-(`feat/verify-dont-assume-guard`, `867cb04`), for two reasons entirely
-predating this branch's own diff. **The orchestrator's chain close-out should
-resolve this before pushing** — pushing now would fail CI on both.
+**Item 10's release chain is still gated on epic 19** — untouched this session.
 
 ---
 
-## What just landed on `feat/verify-dont-assume-guard`
+## What just landed on `main`
 
-**Nothing pushed, PR'd, or merged.** This branch added no production code —
-item 45's own dossier work concluded that neither candidate fix shape clears
-the bar for implementation this session (see "What this branch should build"
-below for the full reasoning). What actually changed:
+`main` was at `ae7e0fa` (PR #110) when this branch started. This branch's own tip is
+`8844c9c` (one commit — the branch was small enough that the pre-close sweep folded
+into the same commit as the fix rather than a separate close-out commit; the handoff
+you are reading and the item/CHANGELOG updates are part of that same commit).
 
-- **New:** `docs/dev/diagnosis/plan-approval-marker-pr-merge.md` — the C-7
-  dossier. Root cause of item 45 is **PROVEN** (re-verified live, plus a new
-  isolated reproduction that holds "HEAD is a genuine merge commit" constant
-  and true across both a PR-channel-shaped run and a local-`--no-ff`-shaped
-  run, varying only the Bash command text/output — proving the mechanism is
-  exactly "command-text shape", not "whether a merge structurally occurred").
-  Both candidate fix shapes are characterized in depth; **neither is
-  implemented**. Passes `scripts.enforcement.evidence.has_observed_evidence`
-  and `has_observed_citation` (checked directly, not assumed).
-- **Updated:** `docs/dev/work/items/0045-plan-approval-marker-survives-pr-merge.md`
-  — a dated `## Updates` entry recording the re-verification, the new
-  reproduction, and the decision. **Item 45 stays `open`** — no `verified_by`
-  is claimed, because no fix landed (C-11: a closure needs a falsifiable
-  artifact; there isn't one to point to here).
-- **Committed:** this session's own provenance-ledger file
-  (`docs/dev/ledger/c8caf603-88cf-46b6-b2aa-77d41a898d3c.jsonl`) — the
-  `consumed` event for the prior handoff plus several `compacted` events
-  (see "Recurrences" below).
+**What the commit does:**
 
-**A NEW discovery, unrelated to item 45, found while running this branch's own
-close-out gate — declared, not fixed, per this branch's own scope boundary:**
-`feat/verify-dont-assume-guard`'s own tip (`867cb04`, this branch's base) does
-**not** pass `pytest -m "not ux"` cleanly, despite that branch's own commit
-message (`ee2ee0f`) claiming "2357 passed, 1 skipped... zero reruns". Two
-failures, both root-caused (via `git stash` + isolated re-run against the
-clean tip — the failures reproduce identically with none of this branch's own
-changes present, proving they predate and are independent of this branch's
-diff):
+1. **Refuted the prior session's staged D3(b) design** before writing any code for
+   it, verified directly against this repo's own artifacts (not re-derived from the
+   dossier's prose): `.approved-C--Dev-sartor`'s mtime is the `ExitPlanMode` write;
+   `git reflog` shows the feature branch was created 3m42s *after* that write, so
+   `ExitPlanMode` fires on `main`, not on the feature branch the dossier's own
+   hand-trace assumed. An approval-time stamp would record `branch=main, sha=<main's
+   own tip>`, trivially an ancestor of `main` forever — the reconciler would archive
+   a legitimately-armed marker at the first `startup/resume/compact` after every
+   approval. Full evidence: `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`
+   "D3(b) refuted".
+2. **Pivoted (owner-approved) to D3(c):** the same channel-independent ancestry
+   check, moved into the existing `check-plan-approved.sh` PreToolUse blocker with a
+   **late-bound** stamp (written on the first production edit after approval, the
+   moment `require-feature-branch` guarantees HEAD is a real feature branch). No new
+   hook file, no `.claude/settings.json` change, no
+   `tests/test_governance_hooks_gate.py` edit — verified those stayed untouched.
+3. **Owner directive (archive, never delete) implemented** via a new shared
+   `hooks/lib/retire-approved-plan.sh`, sourced by both `check-plan-approved.sh` and
+   `cleanup-plan-on-merge.sh` (switched from `rm -f`).
+4. **Two further genuine defects found and fixed while BUILDING the mechanism**, both
+   root-caused by direct reproduction (not guessed at): a `$HOME`-derived path handed
+   to `python3` as an argv string is silently wrong on Windows/Git-Bash (MSYS
+   auto-translates `$HOME` to POSIX form, which a native `python3.exe` misresolves —
+   fixed via `cygpath -m`); and the archive directory name embedded the entire
+   sanitized project path, which for a sufficiently long real path pushes
+   `manifest.json` past Windows' 260-char `MAX_PATH` (reproduced exactly: `plan.md`
+   stayed under, `manifest.json` tipped it over — fixed by hashing the project key to
+   12 hex chars for the directory name). New reference memory:
+   `reference-bash-to-python3-path-gotchas-windows`.
+5. **18 new regression tests** in `tests/test_plan_approval_scoping.py`, confirmed
+   RED against the pre-fix hooks (`git stash` the two hook files, rerun, confirm
+   failure, restore) before the fix landed, then GREEN after.
+6. **Item 45 closed** with `verified_by` naming the six most load-bearing tests.
+   **Item 55 filed** (carry-forward, `status=watching`) for the `plan-archived`
+   ledger-event vocabulary drift this receipt introduces into
+   `docs/dev/prov/SPEC.md` — deliberately not amended on this branch (SPEC.md is
+   itself a C-10 gated surface; amending it would drag `require-consumer-enumeration`
+   across every ledger consumer for a bugfix branch).
 
-1. `tests/test_doc_links.py::test_no_broken_cross_document_links_or_cites` —
-   `docs/dev/handoffs/feat-verify-dont-assume-guard.md:178` contains the
-   `_MSYS_ABS_PATH_RE` regex literal (as defined in
-   `scripts/enforcement/guards/verify_binary_on_path.py`) inside backticks;
-   `check_doc_links.py` misparses the pattern's character-class-then-group
-   shape as a link target that does not exist.
-2. `tests/test_evidence_gate.py::TestEnforcementIsWired::test_every_hook_script_is_executable_in_the_index`
-   — `hooks/bash-dispatcher.sh` is committed at git mode `100644` (not
-   executable), confirmed via `git ls-tree ee2ee0f -- hooks/bash-dispatcher.sh`
-   showing `100644` **at the commit that created the file** — unlike every
-   sibling hook script (`git ls-tree` on `hooks/restore-evidence.sh` /
-   `hooks/edit-write-dispatcher.sh` shows `100755`). **This is a recognized
-   recurrence**, not a first sighting: commit `dfe1767` ("the three new hook
-   scripts were not executable") is the exact same failure class, already
-   once fixed reactively in this repo's history.
+**Full gate at this branch's tip, no reruns anywhere:**
+- `python -m ruff check .` → all checks passed
+- `python -m ruff format --check .` → 342 files already formatted
+- `python -m mypy .` → Success: no issues found in 357 source files
+- `python -m pytest -m "not ux"` → this machine's background test runner exhibited
+  **five consecutive kills** this session (`[gwN] node down: Not properly
+  terminated`, the same signature `reference-shared-machine-oom-kills-bg-runs`
+  already documents; `wmic OS get FreePhysicalMemory` confirmed ~1.5–1.9GB free of
+  16.5GB throughout, external pressure, not a leak of this session's own — orphan
+  sweep found only one unrelated `C:\Dev\spolia` process). **Assembled a complete,
+  verified result from 8 kill-resistant foreground batches** (`split -n l/8` over the
+  139 top-level test files) instead: **2375 passed / 1 skipped / 0 failed / 0
+  reruns** — an exact match for the pre-branch baseline (2357) plus this branch's own
+  18 new tests. Both memories updated with this session's data (see
+  "Recurrences" below).
+- `python -m scripts.work_items check` → OK (55 files)
+- `python -m scripts.wiki_freshness` → OK — 20 file(s) changed since the last ingest
+  (< 75-file block threshold), unchanged from the prior session's figure — this
+  branch added no wiki-relevant paths (checked: none of its 10 changed files
+  classify as wiki-relevant per `scripts/wiki_relevance.py`).
 
-Both are **entirely outside item 45's scope** (a doc-link regex escape and a
-git file-mode bit in a different branch's own deliverable) and this branch's
-own C-7 dossier does not cover either — fixing them here would blur which
-case fixed what, the same reasoning item 45's own file already gives for not
-folding its fix into a governance branch. **Declared here per C-11/C-12
-instead: this needs to be resolved before the chain pushes**, since it is
-baked into the tip every case in this chain branches from and will fail CI
-identically for whichever branch's PR opens first.
+**Wiki-relevance check (pre-close sweep item 0):** none of this branch's changed
+files (`hooks/*`, `tests/*`, `docs/dev/diagnosis/*`, `docs/dev/work/*`,
+`CHANGELOG.md`) classify as wiki-relevant. Stated explicitly per the required
+discipline, not silently skipped.
+
+**No dev server or long-lived background process from this session's own sartor
+work left running** — every test run (chunked or otherwise) completed and exited.
+**Separately observed, not this branch's to fix:** `C:\Dev\spolia\.venv\...python.exe
+-m http.server 8971` — a different project's own orphan, same class the last two
+handoffs flagged; not started by this session or this repo.
 
 ---
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-**Open (5 — was 3 last handoff; +2 new this session, both declared above, 0
-resolved):**
+`docs/dev/work/BOARD.md` is the authoritative live-item source (regenerate with
+`python -m scripts.work_items board --write`; not hand-edited). Reproduced verbatim
+from the board at this branch's tip, not re-derived.
 
-1. **Item 19 — UX-suite flake epic, still open (reopened 2026-08-05).** Not
-   touched this session.
-2. **Item 45 — plan-approval marker survives a PR-channel merge.** **This
-   branch's own subject.** Root cause proven; both fix shapes characterized;
-   **neither implemented** — the narrower `SessionStart` branch-existence
-   design characterized in the dossier's "Decision" section is a staged,
-   not-yet-built proposal for the owner to approve or reject. Item stays
-   open.
-3. **Item 50 — C-7/C-10 are Claude-Code-only; the extraction gap.** Not
-   touched this session.
-4. **NEW — `feat/verify-dont-assume-guard`'s own tip fails 2 pre-existing
-   gate checks**, contradicting that branch's own commit-message claim of a
-   clean gate run. Both root-caused this session (see "What just landed"
-   above): a doc-link regex-escape false-positive in
-   `docs/dev/handoffs/feat-verify-dont-assume-guard.md:178`, and
-   `hooks/bash-dispatcher.sh` committed non-executable
-   (`git ls-tree ee2ee0f -- hooks/bash-dispatcher.sh` → `100644`). **Resolve
-   before the chain pushes** — CI will fail on both otherwise. Not fixed
-   here (out of item 45's scope; would blur which case owns the fix).
-5. **NEW — `hooks/bash-dispatcher.sh`'s non-executable commit is a
-   recognized recurrence of a known failure class** (commit `dfe1767`,
-   "the three new hook scripts were not executable", already fixed once
-   reactively). The MECHANISM that catches this (`test_every_hook_script_is_
-   executable_in_the_index`) already exists and fired correctly this time —
-   the gap is procedural (the prior branch's own close-out did not re-run the
-   full gate as the literal last step before its final commit), not a
-   missing test. Worth the chain close-out asking: should the close-out
-   checklist itself gain a "re-run gate against the FINAL committed tree,
-   not a pre-handoff working copy" step? Named, not built — a process
-   change to the checklist itself is bigger than this branch's own scope.
+**Open (1, down from 2 — item 45 closed this session):**
+1. **50** — C-7 and C-10 are enforced by Claude Code hooks only — the clauses do not
+   travel to other agents or an extracted governance package. Guards are not routed
+   by `git_hook.py`, so only Claude Code enforces them; prose binds other agents.
 
-**Watching (10, unchanged this session — not re-touched, not re-derived
-beyond confirming none of this session's own work affects them):**
-- Item 30 — REOPENED, three dated CI occurrences, still not root-caused.
-- Item 46 — independently reproduced by `flake_rates.py`; still n=1.
-- Item 47 — audit sibling scroll-spy tests for item 44's settle-gate hole.
-- Item 48 — pytest-step duration anomaly, still uncharacterized (n=1).
-- Item 49 — test suite leaves `tmp*.html` litter in tracked `personas/bundled/`.
-- Item 51 — `report --check` against a committed budget; deliberately unbuilt.
-- Item 2 (wordmark sweep) · Item 16 (`--suite real` non-functional) · Item 18
-  (judge variance, n=2) · Item 23 (PX-52 analyzer split).
-- The Git-Bash/MSYS-path resolution class + the dependabot-groups
-  post-merge-morning check — both carried from the immediately-prior handoff,
-  still not checked or built; not this branch's scope.
+**Blocked (3):** item 3 ([HUMAN] GitHub toggles), item 5 (grounding-score persistence
+gap), item 8 (Compose-time rewrite latitude dial).
 
-**Blocked (3 + the sequenced epics, unchanged):** item 3 ([HUMAN] GitHub
-toggles), item 5, item 8, epics 37–40.
+**Deferred (7):** items 4, 7, 24, 25, 41, 42, 43 — all owner-gated or explicitly
+post-1.1.0-scheduled; see `BOARD.md` for each.
 
-**Deferred (7, unchanged):** items 4, 7, 24, 25, 41, 42, 43.
+**Watching (13, up from 12 — item 55 filed this session):** items 2, 16, 18, 23, 46,
+47, 48, 49, 51, 52, 53, 54, **55 (new — ledger event vocabulary drift, this branch's
+own finding, see above)**; see `BOARD.md` for each.
 
-Open-only count is now **5**, still under the reduction-sprint threshold, but
-worth flagging: 2 of the 5 are new-this-session discoveries about a SIBLING
-branch's own gate state, not new item-45 work — the chain close-out should
-treat resolving them as a precondition for pushing, not as backlog.
+**Epics (6):** 19 (UX-suite flakiness umbrella, children 27–31), 36 (Final March epic A,
+children 20, 34 — open), 37/38/39/40 (Final March epics B/C/D/E — blocked, sequenced
+after A per the march plan). Epic 39 carries item 9 (stale screenshots); epic 40 carries
+item 10 (the v1.1.0 tag itself, `depends on: 3, 6, 7, 9, 19`).
+
+**Closed (20, up from 19 — item 45 this session):** unchanged otherwise — see
+`BOARD.md` for the full list.
+
+Open-only count stays **1**, well under the reduction-sprint threshold.
 
 ---
 
 ## Recurrences observed this session → guardrail authored
 
-**Two recognized recurrences this session. Neither got a NEW mechanism —
-one because the existing mechanism already covers it and fired correctly,
-one because this dossier's own conclusion is that authoring a NEW
-approval-adjacent mechanism needs an owner decision first, and building one
-anyway under a decision-not-yet-made would be exactly the failure C-11 exists
-to prevent, not a compliant response to it.**
+**Three recognized recurrences this session.**
 
-1. **A mid-session `compacted` ledger event — the fourth consecutive session
-   disclosing this class** (`docs/dev/ledger/c8caf603-88cf-46b6-b2aa-77d41a898d3c.jsonl`,
-   one new row this session: `branch=fix/plan-approval-marker-pr-merge,
-   ts=2026-08-06T13:16:05Z`, `session=unknown`, `trigger=unknown`, matching
-   the same shape every predecessor handoff has already disclosed). **No new
-   guardrail authored**, for the same reason stated in every prior
-   disclosure: the existing mechanism (the PreCompact hook writing a
-   `compacted` receipt) is precisely what this class needs — a disclosure
-   trigger, not a prevention mechanism, since a repo-side hook cannot prevent
-   compaction itself. This agent's own reasoning trace shows no discontinuity
-   at any point in this session; every fact cited above was verified directly
-   against live tool output at the point of use, not recalled from a prior
-   summary.
-2. **`hooks/bash-dispatcher.sh` committed non-executable — recognized as the
-   same class as commit `dfe1767`** ("the three new hook scripts were not
-   executable"), not a first sighting. **No new mechanism authored on THIS
-   branch**, for a specific reason: the mechanism that catches this class
-   ALREADY EXISTS (`test_every_hook_script_is_executable_in_the_index`) and
-   it fired correctly the moment this session ran the full gate — it is not
-   a missing check, it is a **procedural** gap (the branch that introduced
-   the regression did not re-run the full gate as the literal last step
-   before its own final commit). Authoring a second mechanism for a gap the
-   first mechanism already closes would be exactly the "third redundant
-   mechanism" C-11's own text names as the failure. **Surfaced explicitly to
-   the user/orchestrator instead** (per C-11's own "if no mechanism is
-   possible, say so explicitly, with the reason" clause) as a candidate
-   process change to the close-out checklist itself (see "Carried-forward
-   observations" item 5) — not built here, because a checklist-process
-   change is bigger than this branch's own scope and needs the same kind of
-   owner sign-off as item 45's own fix shape.
+1. **`ScheduleWakeup` called to poll a background Bash task's completion, twice, and
+   the flawed `stop:true` "recovery" also recurred.** Despite the durable memory
+   (`feedback-schedulewakeup-not-for-background-bash`) being present in the
+   auto-loaded MEMORY.md index, AND despite this session's own consumed handoff
+   explicitly narrating the *prior* session's identical recurrence as "recognized,
+   no mechanism possible" in its own C-11 section — this session repeated it anyway
+   (occurrence 20 of the trigger, occurrence 4 of the flawed `stop:true` recovery
+   specifically) minutes after reading that exact narration. **No new mechanism
+   authored** — `ScheduleWakeup` is a harness tool outside this repo's own
+   hooks/enforcement surface, and the memory file itself now states plainly (per its
+   own occurrence-7 conclusion, reaffirmed) that in-context recall has been proven
+   insufficient 20 times running and this needs harness-level enforcement, not
+   another memory reinforcement. Surfaced here rather than left implied.
+2. **Background pytest/gate runs killed by (likely) shared-machine memory pressure —
+   recurrence of a known class, but with a NEW, partially-contradicting data point.**
+   `reference-shared-machine-oom-kills-bg-runs` already documented this failure mode
+   and explicitly claimed chunking does NOT help ("smaller chunk size didn't
+   matter"). This session found the opposite: chunking into 8 foreground batches
+   rescued a run that failed 5 times running in every un-chunked shape tried
+   (`-n auto`, `-n 4`, serial). **Mechanism: the memory itself, updated with both data
+   points** rather than only the more emphatic one — this is exactly the kind of
+   external-tooling limitation this repo's own C-11 exempts from requiring an
+   in-repo gate (the tool is outside `sartor.`'s own hooks/gate surface), so the
+   guardrail is the corrected record, stated as such.
+3. **A design characterized by hand-trace, then treated as sound, without being
+   built and run — the SAME failure class `docs/dev/diagnosis/plan-approval-marker-
+   pr-merge.md`'s own "Known limit" paragraph predicted for itself.** Recognized as a
+   member of failure pattern 5f ("guessing the mechanism") the moment the dossier's
+   own reflog evidence contradicted its hand-trace premise. **Mechanism authored:**
+   `tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::
+   test_stamp_is_late_bound_on_the_first_production_edit` and
+   `test_no_stamp_is_written_while_head_is_main` pin *when* the stamp is bound as a
+   committed, falsifiable test — any future reversion to approval-time stamping goes
+   red rather than shipping plausible-but-wrong again.
 
-**Everything else this session** (the isolated D2 reproduction's own
-self-caught instrumentation bug — an early `-q` flag on the setup `git merge`
-suppressed git's own `Merge made by...` output, producing a false negative
-about the test's OWN correctness, not the hook's; caught and fixed within the
-same turn, never landed as a claim) **was a first-sighting-with-its-own-fix,
-not a recognized recurrence left ungoverned.**
+**Everything else this session** (the `cygpath`/MSYS path-translation defect and the
+`MAX_PATH` defect) — both were first sightings of their specific mechanism in this
+repo, not recognized recurrences of a prior class; recorded as a new reference memory
+(`reference-bash-to-python3-path-gotchas-windows`) rather than framed as C-11
+recurrences.
 
 ---
 
 ## What this branch should build
 
-**Nothing further on this branch — item 45's dossier work is this branch's
-complete deliverable, and the decision it reached is "neither implemented."**
-Per `docs/dev/work/items/0045-plan-approval-marker-survives-pr-merge.md` and
-this branch's own brief:
+**Nothing further — item 45 is this branch's complete scope, and it is done.**
 
-1. **Root cause of item 45 is PROVEN**, not inferred — see
-   `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`'s `## Observed`
-   section (re-verified live at this branch's own HEAD, plus a new isolated
-   reproduction).
-2. **Both candidate fix shapes were characterized, neither implemented:**
-   - (a) a `PostToolUse` matcher on `gh pr merge`'s command shape is
-     demonstrably insufficient — it structurally cannot see dependabot's
-     server-side auto-merge (enabled in this repo since 2026-08-04),
-     GitHub-UI merges, or merges from another terminal/session, which are
-     the dominant real merge channel here, not an edge case.
-   - (b) naive `SessionStart` reconciliation ("has `main` moved since
-     approval?") fails the mandated compaction-mid-session test: an
-     unrelated auto-merge landing on `main` while an unrelated plan is still
-     legitimately active would disarm a legitimately-armed marker. A
-     narrower design ("has *this approved branch* been merged?", via a new,
-     additive stamp file + branch-existence/ancestor-of-`main` check) is
-     channel-independent and, hand-traced against the compaction scenario,
-     does not misfire — but it is a first-of-its-kind mechanism that can
-     autonomously delete approval state, and the dossier's own "Decision"
-     section judges that deserves an explicit owner call before being
-     written, not only before being merged.
-3. **Item 45 stays open.** The dossier's "Decision" section carries the
-   staged, not-yet-built proposal (the narrower branch-existence design) for
-   the owner to approve, reject, or amend on a future branch.
-
-**Scope was bounded to item 45** as filed in
-`docs/dev/work/items/0045-plan-approval-marker-survives-pr-merge.md`. The two
-NEW discoveries about `feat/verify-dont-assume-guard`'s own gate state
-(above) were deliberately **not** picked up as fixes, for the same reason —
-they are a different case's own defects, and fixing them here would blur
-which branch owns which fix.
-
-**This is the chain's last case.** The next step is the orchestrator's own
-chain close-out: an adversarial full-diff review across every case branch in
-this stacked chain, then the owner's morning flow — push, open one PR, wait
-with `python -m scripts.ci_wait`, merge, then the queued dependabot upgrades
-(#63 ruff, #50, #84) with owner confirm. **No further case branches follow
-this handoff.** The two pre-existing gate failures named above should be
-resolved as part of that close-out, before the push — see "Carried-forward
-observations" items 4–5.
+Do not expand beyond item 45's own fix. Sprint A1 and any other next-branch work is
+explicitly the next session's own scoped branch, not a continuation of this one.
 
 ---
 
 ## First move
 
-There is no "first move" for a new branch — this handoff's own subject
-branch already exists and this session's work on it is complete. The
-orchestrator's first move is its own chain close-out (see above), starting
-with the two pre-existing gate failures this handoff declares.
+**There is no single prescribed first move — item 45 being closed does not
+auto-select the next branch; that is still an owner decision:**
+
+- **Sprint A1** (`feat/corpus-polish` + `fix/experience-soft-retire`, epic 36) — per
+  `RELEASE_ARC.md`'s Final March cadence, "the next session starts from the epic
+  branch with the owner's plan-approval click." Model prescription: **Opus** (schema
+  migration + retired-role blast-radius audit). This is the march's own next
+  scheduled sprint and the most likely default absent other direction.
+- **Item 50** (C-7/C-10 enforcement is Claude-Code-only) — `status=open`, the sole
+  remaining Open-ledger item, but `decision_owner = "user"` and no fix shape has been
+  proposed; not actionable without an owner scoping decision first.
+- **Anything else the owner directs.**
+
+Whichever the owner picks: write a plan at `~/.claude/plans/<slug>.md` and show it to
+the user before touching any code. **Do not code first.**
 
 ---
 

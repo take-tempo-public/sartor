@@ -13,6 +13,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: plan-approval marker survives a PR-channel merge — item 45 closed (`fix/plan-approval-marker-pr-merge`)
+
+The prior session's staged fix design (D3(b): a `SessionStart` reconciler stamping
+the branch + HEAD SHA at `ExitPlanMode` time) was disproven before being built —
+`ExitPlanMode` fires while HEAD is still on `main` (the feature branch is created
+afterward, per `AGENTS.md`), so an approval-time stamp would record `branch=main,
+sha=<main's own tip>`, which is trivially an ancestor of `main` forever. That design
+would have archived a legitimately-armed marker at the first `startup/resume/compact`
+after every single approval. Full refutation, verified against this repo's own reflog
+and marker mtime: `docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "D3(b)
+refuted". Pivoted (owner-approved) to D3(c): the same channel-independent ancestry
+check (a branch either no longer exists, or its tip is now an ancestor of `main` but
+wasn't already an ancestor of the `main` tip recorded at stamp time), moved into the
+**existing** `check-plan-approved.sh` PreToolUse blocker instead of a new hook, with
+the stamp written **late** — on the first production edit after approval, the moment
+`require-feature-branch` guarantees HEAD is a real feature branch, never `main`. No
+new hook file, no `.claude/settings.json` change, no
+`tests/test_governance_hooks_gate.py` edit. Cost-conscious: everything through the
+"has anything changed" decision uses bash builtins and direct ref-file reads, never a
+`git` subprocess, so the steady state (branch unchanged, `main` unmoved) costs nothing
+extra — verified by a runnable test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`)
+that shims `git` and asserts zero invocations, not just claimed in a comment. Owner
+directive (archive, never delete, preserving decision provenance) implemented via a
+new shared `hooks/lib/retire-approved-plan.sh` — `mv`s the retired plan into
+`$HOME/.claude/plans/archive/`, writes a local manifest, and appends a `plan-archived`
+receipt to the session's tracked ledger shard (basename only, never the absolute
+path — this repo is public) — sourced by both `check-plan-approved.sh` and
+`cleanup-plan-on-merge.sh` (which switches from `rm -f` to the same archive path, so
+a plan retired via either channel is retired identically). 18 new regression tests in
+`tests/test_plan_approval_scoping.py`, confirmed RED against the pre-fix hooks before
+the fix landed (`git stash` the two hook files, rerun, confirm failure, restore), then
+GREEN after. Filed a carry-forward item (55) for the `plan-archived` ledger-event
+vocabulary drift this receipt introduces (`docs/dev/prov/SPEC.md`'s own event list
+goes unamended, following the `compacted` precedent, since SPEC.md is itself a C-10
+gated surface) rather than silently absorbing it. **Two more genuine, always-latent
+defects found and fixed while building the archive+receipt mechanism, both
+root-caused via direct reproduction, not guessed at** (full evidence:
+`docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "Falsified"): a `$HOME`-derived
+path handed to `python3` as an argv string is silently wrong on Windows/Git-Bash
+(`$HOME` is auto-translated by MSYS to POSIX form, which a native `python3.exe`
+misinterprets — `/c/Users/x` resolves to `C:\c\Users\x`, which doesn't exist), fixed
+by routing every such path through `cygpath -m` first; and the archive directory name
+embedded the entire sanitized project path, which for a sufficiently long real
+project path pushes `<archive_dir>/manifest.json` past Windows' 260-char `MAX_PATH`
+(reproduced exactly: `plan.md` stayed under the limit, `manifest.json` tipped it
+over), fixed by hashing the project key to 12 hex chars for the directory name
+(matching this project's own fingerprint convention) while keeping the full path in
+the manifest's own content. **A third, caught by this PR's own CI on first push**
+(all three Python-version lint/test jobs failed identically): the new
+`test_missing_git_is_a_no_op`'s own test helper blacklisted every PATH directory
+containing `git`, which on the Linux runner also removed `bash` itself (`git` and
+`bash` share `/usr/bin` there) — `FileNotFoundError: 'bash'`, fetched directly from
+the failed job's log, not guessed at. A test-helper defect, not a hook defect; fixed
+by rebuilding the helper to preserve the small set of binaries the hook needs via a
+per-binary shim instead of blacklisting whole directories.
+
 ### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
 
 A new PreToolUse guard (`scripts/enforcement/guards/verify_binary_on_path.py`)

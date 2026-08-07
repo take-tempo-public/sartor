@@ -3,14 +3,25 @@ schema = 1
 id = 45
 kind = "item"
 title = "Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session"
-status = "open"
+status = "closed"
 decision_owner = "user"
+resolution = "Fixed on fix/plan-approval-marker-pr-merge (2026-08-07): the owner-approved D3(b) SessionStart design was disproven before being built (ExitPlanMode fires while HEAD is still on main -- a SessionStart reconciler stamped at approval time would archive a legitimately-armed marker at the first startup/resume/compact after EVERY approval; see docs/dev/diagnosis/plan-approval-marker-pr-merge.md \"D3(b) refuted\"). Pivoted to D3(c): the reconciliation lives inside the existing check-plan-approved.sh PreToolUse blocker, with the stamp written late (on the first production edit after approval, when require-feature-branch guarantees HEAD is a real feature branch) rather than at approval time. Channel-independent by construction (local merge, gh pr merge, GitHub UI, dependabot auto-merge all look identical: branch gone, or its tip is now an ancestor of main but wasn't already an ancestor of the main-tip recorded at stamp time). No new hook file, no .claude/settings.json change, no tests/test_governance_hooks_gate.py edit. Owner directive (archive, never delete) implemented via a new shared hooks/lib/retire-approved-plan.sh, sourced by both check-plan-approved.sh and cleanup-plan-on-merge.sh (which switched from rm -f to the same archive path)."
+verified_by = [
+  "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_pr_channel_merge_blocks_the_next_edit",
+  "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_deleted_branch_blocks_the_next_edit",
+  "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_branch_with_no_commits_survives_unrelated_main_movement",
+  "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_stamp_is_late_bound_on_the_first_production_edit",
+  "tests/test_plan_approval_scoping.py::TestArchiveAndReceipt::test_cleanup_on_merge_archives_instead_of_deleting",
+  "tests/test_plan_approval_scoping.py::TestEfficiency::test_no_git_subprocess_when_main_has_not_moved",
+]
 refs = [
   "hooks/cleanup-plan-on-merge.sh",
   "hooks/check-plan-approved.sh",
+  "hooks/lib/retire-approved-plan.sh",
+  "docs/dev/diagnosis/plan-approval-marker-pr-merge.md",
   "AGENTS.md",
 ]
-summary = "cleanup-plan-on-merge fires only on local `git merge --no-ff`; close-out moved to `gh pr merge`, so the marker survives."
+summary = "Fixed: reconciler moved into check-plan-approved.sh, late-bound stamp, archive-not-delete via hooks/lib/."
 ```
 
 Observed 2026-08-04 at the start of `feat/consumer-enumeration-gate`, before any
@@ -100,3 +111,35 @@ changed and did not:
 - **Item 45 stays OPEN.** No `verified_by` artifact is claimed (none was earned — no fix
   landed). The dossier's own "Decision" section carries a staged, not-yet-built proposal for
   the owner to approve or reject on a future branch.
+
+### 2026-08-07 — CLOSED (`fix/plan-approval-marker-pr-merge`, second occupancy of this branch name)
+
+The prior session's staged D3(b) design (SessionStart reconciler, approval-time stamp) was
+**disproven before being built**, verified directly against this repo's own artifacts:
+`.approved-C--Dev-sartor`'s mtime (2026-08-05 20:06:58 -0700) is the write ExitPlanMode
+performed, and `git reflog` shows the feature branch wasn't created until 3m42s later — so
+`ExitPlanMode` fires while HEAD is on `main`, contradicting the dossier's own hand-trace
+premise ("approve on `fix/foo`"). An approval-time stamp would have recorded `branch=main,
+sha=<main's own tip>`, which is trivially an ancestor of `main` forever — the reconciler
+would archive a legitimately-armed marker at the first `startup/resume/compact` after every
+single approval. Full refutation: `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`
+"D3(b) refuted".
+
+Owner approved a pivot to D3(c): the same ancestry idea, same archive-not-delete directive,
+moved into the existing `check-plan-approved.sh` PreToolUse blocker with a **late-bound**
+stamp (written on the first production edit after approval, not at approval time). No new
+hook file, no `.claude/settings.json` change, no `tests/test_governance_hooks_gate.py` edit.
+18 new regression tests in `tests/test_plan_approval_scoping.py`, all confirmed RED against
+the pre-fix hooks before the fix landed (`git stash` + rerun), then GREEN after. Full gate:
+`ruff check` / `ruff format --check` / `mypy` / `pytest -m "not ux"` (chunked into 8 batches
+after this machine's own background runner exhibited repeated kills unrelated to this
+branch's code) all green, 2375 passed / 1 skipped / 0 failed / 0 reruns. Filed a
+carry-forward item (55) for the `plan-archived` ledger-event vocabulary drift this fix's
+receipt mechanism introduces, rather than silently absorbing it (C-11/C-12). **Two further
+genuine defects found and fixed while building the mechanism** (both root-caused by direct
+reproduction, not guessed at — full evidence in the dossier's own `## Falsified` section): a
+`$HOME`-derived path handed to `python3` as an argv string is silently wrong on
+Windows/Git-Bash (fixed via `cygpath -m` translation), and the archive directory name
+embedded the full project path, which for a sufficiently long real path pushes past
+Windows' 260-char `MAX_PATH` (fixed by hashing the project key to 12 hex chars for the
+directory name).
