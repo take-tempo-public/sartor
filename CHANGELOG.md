@@ -69,6 +69,32 @@ the failed job's log, not guessed at. A test-helper defect, not a hook defect; f
 by rebuilding the helper to preserve the small set of binaries the hook needs via a
 per-binary shim instead of blacklisting whole directories.
 
+### Fixed: item 45 reopened same day — a brand-new branch after a merge inherited a stale approval (`fix/plan-approval-branch-switch-gap`)
+
+Found while scoping an unrelated multi-branch orchestration design, not while chasing
+this item. The D3(c) reconciliation just closed above ran its "late-bind the stamp to
+the current branch" block *before* its "reconcile whatever was previously stamped"
+block, so switching straight from an already-merged branch to a brand-new one — the
+ordinary "finish task, start the next one" flow, and the only shape
+`require-feature-branch` actually allows, since it never permits an edit while
+`HEAD == main` — silently overwrote the stamp before the old branch was ever checked.
+This is the same original symptom item 45 was filed against, not a new defect class:
+the committed regression suite only ever exercised same-branch-continuation and
+`HEAD == main` shapes. Two isolated throwaway repros confirmed it, and it then fired
+for real on this session's own actual marker while writing the diagnosis dossier —
+this session had never called `ExitPlanMode`, yet a brand-new branch's first edit was
+allowed. Full evidence: `docs/dev/diagnosis/plan-approval-branch-switch-gap.md`. Fixed
+by reordering the two blocks in `hooks/check-plan-approved.sh` so the previously-stamped
+branch is reconciled — archived and blocked if warranted — before it can be overwritten.
+A candidate belt-and-suspenders addition (force reconciliation on every branch switch,
+independent of the mtime pre-filter) was tried and dropped after empirically confirming
+the existing mtime conditions already catch the real case, keeping the fix minimal — the
+efficiency test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`) still
+passes unmodified. New regression test,
+`test_new_branch_after_merge_requires_fresh_approval`, confirmed RED against the
+just-closed code before the fix, then GREEN after; full 26-test suite (up from 18)
+green, no reruns.
+
 ### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
 
 A new PreToolUse guard (`scripts/enforcement/guards/verify_binary_on_path.py`)

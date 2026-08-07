@@ -506,6 +506,46 @@ class TestBranchMergeReconciliation:
         archive_root = home / ".claude" / "plans" / "archive"
         assert archive_root.is_dir() and any(archive_root.iterdir())
 
+    def test_new_branch_after_merge_requires_fresh_approval(self, tmp_path: Path) -> None:
+        """The ordinary "finish task, start the next one" flow, not the
+        same-branch-continuation shape `test_pr_channel_merge_blocks_the_next_edit`
+        covers. `require-feature-branch` never allows an edit while `HEAD == main`,
+        so branching straight to a brand-new task after a merge -- never revisiting
+        the just-merged branch -- is actually the ONLY shape an ordinary session
+        produces. Full evidence: docs/dev/diagnosis/plan-approval-branch-switch-gap.md."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+
+        _git(["checkout", "-q", "-b", "fix/task-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "task A work"], cwd=repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(_edit_file(repo))
+            ).returncode
+            == 0
+        )
+
+        # task A lands on main -- and is never revisited, the ordinary case.
+        _git(["checkout", "-q", "main"], cwd=repo)
+        _git(
+            ["merge", "-q", "--no-ff", "-m", "Merge pull request #1 from fix/task-a", "fix/task-a"],
+            cwd=repo,
+        )
+
+        # A brand-new branch for the NEXT task, off the now-updated main.
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        r = _run(
+            CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(_edit_file(repo))
+        )
+        assert r.returncode == 2, (
+            f"a brand-new branch must never inherit a stale, already-consumed "
+            f"approval (stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+        assert "PLAN RETIRED" in r.stderr
+
     def test_deleted_branch_blocks_the_next_edit(self, tmp_path: Path) -> None:
         home = tmp_path / "home"
         (home / ".claude" / "plans").mkdir(parents=True)

@@ -172,23 +172,18 @@ if [ -n "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
   if [ -n "$MAIN_REF" ]; then
     CUR_BRANCH=$(_current_branch "$GITDIR") || CUR_BRANCH=""
 
-    # Late-bind: only while checked out on a real feature branch (never
-    # main/master, never detached) — the moment require-feature-branch
-    # guarantees this stamp will name the actual work, not main's own tip.
-    if [ -n "$CUR_BRANCH" ] && [ "$CUR_BRANCH" != "main" ] && [ "$CUR_BRANCH" != "master" ]; then
-      _read_stamp "$STAMP"
-      if [ "$STAMPED_BRANCH" != "$CUR_BRANCH" ]; then
-        BASE_SHA=$(_ref_sha "$GITDIR" "$MAIN_REF")
-        if [ -n "$BASE_SHA" ]; then
-          { echo "branch=$CUR_BRANCH"; echo "base=$BASE_SHA"; } > "$STAMP" 2>/dev/null
-        fi
-      fi
-    fi
-
-    # Reconcile whatever is CURRENTLY stamped — independent of CUR_BRANCH,
-    # because the stamped branch may have merged and been left (e.g.
-    # `git checkout main`) within the same session, and that must still
-    # reconcile on the next edit even though HEAD is no longer on it.
+    # Reconcile whatever is CURRENTLY stamped FIRST, before anything below can
+    # overwrite it — independent of CUR_BRANCH, because the stamped branch may
+    # have merged and been left (e.g. `git checkout main`, or a brand-new
+    # branch checked out for the NEXT task) within the same session, and that
+    # must still reconcile on the next edit even though HEAD is no longer on
+    # it. Item 45 / D3(c)'s original ordering did this AFTER the re-stamp
+    # block below, which meant switching straight from an already-merged
+    # branch to a brand-new one silently overwrote the stamp before the old
+    # branch was ever checked — the ordinary "finish task, start the next
+    # one" flow inherited a stale approval with no fresh ExitPlanMode. Fixed
+    # here (2026-08-07); full evidence:
+    # docs/dev/diagnosis/plan-approval-branch-switch-gap.md.
     _read_stamp "$STAMP"
     if [ -n "$STAMPED_BRANCH" ]; then
       BRANCH_REF_FILE="$GITDIR/refs/heads/$STAMPED_BRANCH"
@@ -221,6 +216,22 @@ if [ -n "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
         # cheap pre-filter above doesn't re-pay the git calls until
         # something actually changes again.
         touch "$STAMP" 2>/dev/null
+      fi
+    fi
+
+    # Late-bind (or transfer) the stamp to CUR_BRANCH — only reached if the
+    # PREVIOUSLY stamped branch (if any) was just reconciled above and did
+    # NOT need archiving (a real `exit 2` above short-circuits before this
+    # ever runs). Only while checked out on a real feature branch (never
+    # main/master, never detached) — the moment require-feature-branch
+    # guarantees this stamp will name the actual work, not main's own tip.
+    if [ -n "$CUR_BRANCH" ] && [ "$CUR_BRANCH" != "main" ] && [ "$CUR_BRANCH" != "master" ]; then
+      _read_stamp "$STAMP"
+      if [ "$STAMPED_BRANCH" != "$CUR_BRANCH" ]; then
+        BASE_SHA=$(_ref_sha "$GITDIR" "$MAIN_REF")
+        if [ -n "$BASE_SHA" ]; then
+          { echo "branch=$CUR_BRANCH"; echo "base=$BASE_SHA"; } > "$STAMP" 2>/dev/null
+        fi
       fi
     fi
   fi
