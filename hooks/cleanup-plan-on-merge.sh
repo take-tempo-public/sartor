@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
-# PostToolUse hook on Bash: after a successful git merge --no-ff, delete THIS
-# project's plan file and approval state so its next task starts from a clean
-# blocked state. Scoped per-project via CLAUDE_PROJECT_DIR (F-gov-02/F-gov-03):
-# a merge in one project/worktree must never wipe another concurrent session's
-# already-approved plan.
+# PostToolUse hook on Bash: after a successful git merge --no-ff, retire THIS
+# project's plan file and approval state (archive, never delete — owner
+# directive, item 45 / D3(c), 2026-08-07: preserve decision provenance) so
+# its next task starts from a clean blocked state. Scoped per-project via
+# CLAUDE_PROJECT_DIR (F-gov-02/F-gov-03): a merge in one project/worktree
+# must never touch another concurrent session's already-approved plan.
+#
+# Shares hooks/lib/retire-approved-plan.sh with check-plan-approved.sh's own
+# branch-merge reconciler, so a plan retired via either channel — a local
+# `--no-ff` merge (this script) or a PR-channel/auto/UI merge caught on the
+# next edit (the other script) — is retired identically. Do NOT re-add a
+# `gh pr merge` text pattern here: the reconciler in check-plan-approved.sh
+# already covers that case (and every other channel) independent of command
+# text, which is why this script's own pre-filter stays narrowly scoped to
+# the one shape it has always covered.
 #
 # The three grep checks below are a cheap PRE-FILTER only (avoids spawning git
 # on every single Bash call) — they are NOT the safety check, because a Bash
@@ -40,21 +50,16 @@ if [ "${PARENT_COUNT:-0}" -lt 2 ]; then
   exit 0
 fi
 
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 PLANS_DIR="$HOME/.claude/plans"
 PROJECT_KEY=$(echo -n "${CLAUDE_PROJECT_DIR:-unknown}" | tr -c 'A-Za-z0-9' '-')
-MARKER="$PLANS_DIR/.approved-$PROJECT_KEY"
-CURRENT="$PLANS_DIR/.current-$PROJECT_KEY"
 
-# Delete only THIS project's recorded plan file(s) — read the pointers before
-# removing the pointer files themselves. Never touch another project's files.
-if [ -f "$MARKER" ]; then
-  APPROVED_PLAN=$(cat "$MARKER" 2>/dev/null)
-  [ -n "$APPROVED_PLAN" ] && [ -f "$APPROVED_PLAN" ] && rm -f "$APPROVED_PLAN"
+# Retire only THIS project's recorded plan file(s) — the shared helper reads
+# the pointers, archives whatever they point at, and removes the pointer
+# files themselves. Never touches another project's files.
+LIB="$HOOKS_DIR/lib/retire-approved-plan.sh"
+if [ -f "$LIB" ]; then
+  # shellcheck source=hooks/lib/retire-approved-plan.sh
+  . "$LIB"
+  retire_approved_plan "$PLANS_DIR" "$PROJECT_KEY" "$PROJECT_DIR"
 fi
-if [ -f "$CURRENT" ]; then
-  CURRENT_PLAN=$(cat "$CURRENT" 2>/dev/null)
-  [ -n "$CURRENT_PLAN" ] && [ -f "$CURRENT_PLAN" ] && rm -f "$CURRENT_PLAN"
-fi
-
-# Delete this project's own pointer files — next task must earn fresh approval
-rm -f "$MARKER" "$CURRENT"

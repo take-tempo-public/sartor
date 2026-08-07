@@ -1,10 +1,15 @@
 # Diagnosis — plan-approval marker survives a PR-channel merge
 
-> **Status:** root cause PROVEN (live-reproduced, isolated, twice). **Fix SHAPE is
-> NOT decided on this branch** — both candidate shapes are characterized below;
-> neither is implemented. This dossier's own conclusion is that the decision
-> needs an owner call (see "The fix").
-> **Branch:** `fix/plan-approval-marker-pr-merge`
+> **Status:** root cause PROVEN (live-reproduced, isolated, twice). **Fix shape
+> DECIDED** (2026-08-07 session): D3(b) as originally staged is disproven — see
+> "D3(b) refuted" below — and the owner approved a pivot to a PreToolUse-based
+> design instead. See `docs/dev/handoffs/` for this branch's own close-out for
+> the built fix; this dossier documents the evidence, not the implementation.
+> **Branch:** `fix/plan-approval-marker-pr-merge` (recreated 2026-08-07 from
+> `main` at `ae7e0fa` — the original branch of this name merged as part of PR
+> #105 and was pruned; this dossier file survived the merge on `main` and is
+> reused rather than duplicated, per the branch-slug convention that strips the
+> `fix/` prefix).
 
 ---
 
@@ -50,10 +55,13 @@ own HEAD (`867cb04`), not copied from the prior file:**
 
 3. `~/.claude/plans/.approved-C--Dev-sartor`, read READ-ONLY (never modified):
    content is `C:/Users/iam/.claude/plans/harmonic-stirring-wreath.md`. Precise
-   mtimes via `stat -c '%Y'`: marker = `1785985618` (2026-08-05 20:06:58Z), plan
-   file = `1785985607` (2026-08-05 20:06:47Z) — the marker is 11 seconds *newer*
-   than the plan file, so `hooks/check-plan-approved.sh:51`'s freshness test
-   (`[ "$APPROVED_PLAN" -nt "$MARKER" ]`) is false and the gate is **open**.
+   mtimes via `stat -c '%Y'`: marker = `1785985618` (2026-08-05 20:06:58 **-0700**,
+   i.e. `2026-08-06T03:06:58Z` — the original write-up of this dossier stamped this
+   `Z` directly onto the local-offset clock time instead of converting; corrected
+   2026-08-07, see "D3(b) refuted" below for why the correction matters), plan
+   file = `1785985607` (2026-08-05 20:06:47 -0700) — the marker is 11 seconds
+   *newer* than the plan file, so `hooks/check-plan-approved.sh:51`'s freshness
+   test (`[ "$APPROVED_PLAN" -nt "$MARKER" ]`) is false and the gate is **open**.
 
    **Why this is the chain's legitimately-earned marker, not itself a live
    instance of the defect:** this session's own `git log --oneline --graph -8`
@@ -152,6 +160,55 @@ removing `-q` so the script captures git's genuine stdout rather than
 asserting a hand-typed literal — this is itself the C-7 "observe, don't
 assume" discipline applied to writing the instrument, not just to the hook
 under test).
+
+**Two more, found and fixed while BUILDING the D3(c) implementation** (not the
+design itself — the archive+receipt mechanism `retire-approved-plan.sh`),
+each root-caused by direct reproduction before being fixed, per the same
+discipline:
+
+1. **Cross-runtime path translation.** `TestArchiveAndReceipt::test_archive_
+   preserves_the_plan_and_writes_a_receipt` failed reproducibly under
+   `pytest -n 8` (3/3) but passed in isolation — not flakiness, a real defect
+   masked by a machine-specific coincidence. Reproduced directly:
+   `env["HOME"] = 'C:\Users\iam\AppData\Local\Temp\...'` fed to a bash
+   subprocess comes back as `bash`'s own `$HOME` already POSIX-translated
+   (`/tmp/...` or `/c/...`, confirmed via a standalone repro, not inferred).
+   A **native** `python3.exe` (not MSYS-compiled) does not understand that
+   syntax: `Path('/c/Users/iam/x').resolve()` → `C:\c\Users\iam\x`, which does
+   not exist (`Path.is_dir()` → `False`, confirmed directly). It "worked" in
+   one earlier serial run purely because `C:\tmp` happens to be a real,
+   coincidental junction to this specific machine's temp dir — not a
+   portable behavior. Fixed by routing every `$HOME`-derived path through
+   `cygpath -m` (MSYS-shipped, correct on both bash and native Windows
+   programs) before handing it to `python3` as an argv string
+   (`hooks/lib/retire-approved-plan.sh`'s `_native_path()`).
+2. **Windows `MAX_PATH` (260 chars).** Fixing (1) did not fix the test —
+   same failure, `manifest.json` missing while `plan.md` (moved via `mv`)
+   was present. Instrumented directly (temporary stderr capture + an
+   explicit `except OSError as e: print(...)`) rather than guessed at:
+   `FileNotFoundError(2, 'No such file or directory')` on the `write_text`
+   call, with `Path(archive_dir).is_dir()` confirmed `True` immediately
+   before it. Measured the actual path length: 262 characters — `archive_id`
+   embedded the ENTIRE sanitized `project_key` (the full project directory
+   path, every non-alphanumeric byte → `-`), so a deeply-nested project path
+   (realistic for OneDrive-synced or deeply-nested real user directories,
+   not just this session's pytest tmp path) pushes the archive directory
+   name itself past the point where `manifest.json` (13 chars) tips the full
+   path over 260, while `plan.md` (7 chars) stays just under — exactly
+   matching the observed pattern. Fixed by hashing `project_key` to 12 hex
+   chars (`sha256sum`, matching this project's own fingerprint convention in
+   `docs/dev/prov/SPEC.md`) for the directory name instead of embedding it
+   whole; the full `project_dir` is still recorded inside `manifest.json`'s
+   own content, where length doesn't matter.
+
+Both are genuine, always-latent defects (not test-environment artifacts) that
+would have shipped invisibly — the archive+receipt mechanism would have
+silently dropped its own manifest on any sufficiently long real project path,
+exactly the "silently thinner provenance than intended" failure the owner's
+archive-not-delete directive exists to prevent. Neither was in the original
+D3(c) design write-up; both surfaced only once the mechanism was actually
+built and stress-tested, which is itself the argument for C-7's own rule
+against trusting a design "sound on paper."
 
 ---
 
@@ -322,7 +379,56 @@ away:**
   suite already parse, and the design was reasoned about on paper this session
   rather than iterated against a real owner review.
 
-### Decision
+### D3(b) refuted (2026-08-07 session, before any code was written)
+
+The narrower (b) design's own hand-trace (above) opens: *"approve on `fix/foo`
+(record branch=`fix/foo`, sha=X)"*. **That premise is false in this repo, and
+this dossier's own live marker proves it — the "Known limit" paragraph below
+predicted exactly this outcome.**
+
+`ExitPlanMode` fires while HEAD is still on `main`. `AGENTS.md:199`: "Create a
+feature branch **when moving from plan to execute**" — i.e. *after* approval,
+not before. Verified directly against this dossier's own live evidence, not a
+fresh reproduction:
+
+- The marker `.approved-C--Dev-sartor` was written at `2026-08-05 20:06:58
+  -0700` (corrected timestamp above) — that write **is** `ExitPlanMode` firing.
+- `git reflog --date=iso` for that window: `55f7c1e HEAD@{2026-08-05 20:00:07
+  -0700}: pull --ff-only: Fast-forward` (onto `main`), then `55f7c1e
+  HEAD@{2026-08-05 20:10:40 -0700}: checkout: moving from main to
+  chore/dependabot-groups` — the feature branch was created **3m42s after**
+  the marker was stamped.
+- So at approval time HEAD was on `main` at `55f7c1e`, and
+  `git merge-base --is-ancestor 55f7c1e main` → **exit 0, permanently** (it
+  *is* `main`'s own history; `main` only moves forward).
+
+Consequence for D3(b) exactly as staged: the stamp would record `branch=main,
+sha=<main's own tip>`. At `SessionStart`, clause 1 (`show-ref
+refs/heads/main`) always succeeds trivially, and clause 2
+(`is-ancestor(sha, main)`) is true from the instant it is written. The
+reconciler fires at the **first `startup|resume|compact` after every single
+approval**, archiving a legitimately-armed marker mid-work — reproducing, via
+a different mechanism, the exact "naive design" failure mode this dossier
+believed the narrower form had engineered around (see "Naive design" above).
+
+Two further, independently disqualifying findings for the `SessionStart`
+placement specifically (not the ancestry idea itself, which survives the
+pivot below):
+
+- `tests/test_governance_hooks_gate.py::test_context_hooks_never_gate` invokes
+  `claude_context_hook.main()` against `{"cwd": str(REPO_ROOT)}` — the real
+  repository, with no `HOME` override — so a reconciler added to that module
+  would read, and (per the owner's archive-not-delete directive) mutate, the
+  developer's live `~/.claude/plans` marker on every ordinary local `pytest`
+  run, while staying green in CI forever (no `~/.claude/plans` exists on a
+  runner). `tests/test_c12_disclosure_gate.py` already documents this exact
+  class of trap having bitten once for the ledger-shard fallback.
+- `test_context_hooks_are_wired_on_their_lifecycle_events` pins `SessionStart`
+  to wire exactly `{"restore-evidence"}`; a second SessionStart hook is
+  structurally forced into the `CONTEXT` category (the blocker/witness sets
+  are pinned to their own events), i.e. directly into the test above.
+
+### Decision (superseded by the pivot below — kept for the record)
 
 Neither shape clears "clean, hook-testable in isolation, and does not weaken
 any existing behavior" on its own: (a) is demonstrably insufficient (D2 proves
@@ -333,26 +439,48 @@ dossier judges should get an explicit owner decision before being written —
 not because the design is unfinished, but because of the asymmetry between what
 it costs to wait one more owner round-trip and what it would cost to ship a
 subtly wrong version of a mechanism whose whole job is deciding when edits are
-allowed. **Recommendation for the owner, staged, not built:** the narrower
+allowed. ~~**Recommendation for the owner, staged, not built:** the narrower
 branch-existence design above, as an **additive-only** stamp file + a new
 `SessionStart` hook alongside `restore-evidence.sh`, with the two mandatory
 regression tests (same-branch-mid-compaction stays armed; unrelated-main-move
-mid-compaction stays armed) authored *before* the wipe path is enabled.
+mid-compaction stays armed) authored *before* the wipe path is enabled.~~
+**Superseded 2026-08-07 — see "D3(b) refuted" above and "The pivot" below.**
 
-**Known limit (C-0, stated not papered over):** this dossier's own
-characterization of the narrower (b) design was reasoned and hand-traced, not
-built and run. "Hand-traced against a scenario" is weaker evidence than a
-passing isolated test, and this dossier does not claim otherwise.
+**Known limit (C-0, stated not papered over) — this is the one that fired:**
+this dossier's own characterization of the narrower (b) design was reasoned
+and hand-traced, not built and run. "Hand-traced against a scenario" is
+weaker evidence than a passing isolated test, and this dossier did not claim
+otherwise — and the hand-trace's own premise turned out to be false, which is
+exactly the failure mode a stated-but-unheeded limit is supposed to make
+unsurprising when it lands.
+
+### The pivot — D3(c): reconcile inside the existing PreToolUse blocker
+
+Same ancestry idea as D3(b)'s narrower form, same archive-not-delete
+directive, different placement: `hooks/check-plan-approved.sh` (already
+PreToolUse on every `Edit`/`Write`) does the reconciliation itself, and the
+stamp is written **late** — on the first production edit after approval,
+which is the first moment `require-feature-branch` guarantees HEAD is a real
+feature branch, never `main`. Two additions beyond D3(b)'s own ancestry
+check: a `base` baseline (the tip of `main` at stamp time), because a
+freshly-created branch with zero commits has `tip == main tip` and bare
+ancestry would false-fire the instant `main` moves for any unrelated reason;
+and a mtime pre-filter so the added git calls cost ~0 extra subprocesses in
+the steady state. No new hook file, no `.claude/settings.json` change, no
+`test_governance_hooks_gate.py` edit — the constraint that eliminated D3(b)
+is exactly what this placement avoids paying. Full design, file list, and
+test list: this branch's own plan / handoff, not duplicated here.
 
 ---
 
 ## Acceptance bar
 
-Not applicable to this branch's own output — no fix was written. For whichever
-shape the owner selects on a future branch: the exact D2 reproduction script
-above, re-run against the *fixed* hook (or the new reconciler), must go from
-"marker survives" to "marker wiped" for the PR-channel scenario, **and** —if
-the narrower (b) design is chosen — the two compaction-safety tests named above
-must exist and pass before the wipe path is wired into `.claude/settings.json`.
-"CI is green" is not the bar; "the exact reproduction that proved the defect
-now proves the fix" is.
+**Amended 2026-08-07 for the D3(c) pivot.** Under D3(c) the marker does not
+disappear at `gh pr merge` time — it is retired at the **next edit attempt**,
+by design (that is what closes the within-session hole D3(b) could not). So
+D2's reproduction gains a step [4]: feed `check-plan-approved.sh` a
+production-file edit payload after the merge and assert `exit 2` **and** the
+marker archived. This is a *stronger* bar than the original — it asserts the
+edit is actually blocked, not merely that a file disappeared. "CI is green"
+is not the bar; "the exact reproduction that proved the defect now proves the
+fix" still is.

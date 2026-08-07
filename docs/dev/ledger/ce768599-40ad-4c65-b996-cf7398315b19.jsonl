@@ -1,0 +1,5 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/docs-wiki-enforcement-catchup.md", "session": "ce768599-40ad-4c65-b996-cf7398315b19", "branch": "main", "commit": "ae7e0fa", "actor": "amodal1", "agent": "claude-code", "ts": "2026-08-07T14:04:48Z", "fingerprint": "0109f1b44cb9"}
+{"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T16:09:24Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T16:43:08Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T17:04:21Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/plan-approval-marker-pr-merge", "trigger": "unknown", "ts": "2026-08-07T17:08:59Z"}
