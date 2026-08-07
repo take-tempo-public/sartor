@@ -5,12 +5,14 @@ kind = "item"
 title = "Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session"
 status = "closed"
 decision_owner = "user"
-resolution = "Fixed on fix/plan-approval-marker-pr-merge (2026-08-07): the owner-approved D3(b) SessionStart design was disproven before being built (ExitPlanMode fires while HEAD is still on main -- a SessionStart reconciler stamped at approval time would archive a legitimately-armed marker at the first startup/resume/compact after EVERY approval; see docs/dev/diagnosis/plan-approval-marker-pr-merge.md \"D3(b) refuted\"). Pivoted to D3(c): the reconciliation lives inside the existing check-plan-approved.sh PreToolUse blocker, with the stamp written late (on the first production edit after approval, when require-feature-branch guarantees HEAD is a real feature branch) rather than at approval time. Channel-independent by construction (local merge, gh pr merge, GitHub UI, dependabot auto-merge all look identical: branch gone, or its tip is now an ancestor of main but wasn't already an ancestor of the main-tip recorded at stamp time). No new hook file, no .claude/settings.json change, no tests/test_governance_hooks_gate.py edit. Owner directive (archive, never delete) implemented via a new shared hooks/lib/retire-approved-plan.sh, sourced by both check-plan-approved.sh and cleanup-plan-on-merge.sh (which switched from rm -f to the same archive path)."
+resolution = "Fixed on fix/plan-approval-marker-pr-merge (2026-08-07): the owner-approved D3(b) SessionStart design was disproven before being built (ExitPlanMode fires while HEAD is still on main -- a SessionStart reconciler stamped at approval time would archive a legitimately-armed marker at the first startup/resume/compact after EVERY approval; see docs/dev/diagnosis/plan-approval-marker-pr-merge.md \"D3(b) refuted\"). Pivoted to D3(c): the reconciliation lives inside the existing check-plan-approved.sh PreToolUse blocker, with the stamp written late (on the first production edit after approval, when require-feature-branch guarantees HEAD is a real feature branch) rather than at approval time. Channel-independent by construction (local merge, gh pr merge, GitHub UI, dependabot auto-merge all look identical: branch gone, or its tip is now an ancestor of main but wasn't already an ancestor of the main-tip recorded at stamp time). No new hook file, no .claude/settings.json change, no tests/test_governance_hooks_gate.py edit. Owner directive (archive, never delete) implemented via a new shared hooks/lib/retire-approved-plan.sh, sourced by both check-plan-approved.sh and cleanup-plan-on-merge.sh (which switched from rm -f to the same archive path). REOPENED same day (fix/plan-approval-branch-switch-gap): the D3(c) reconciliation ran the late-bind (stamp-overwrite) block BEFORE reconciling whatever was previously stamped, so switching straight from an already-merged branch to a brand-new one -- the ordinary \"finish task, start the next one\" flow, and the ONLY shape require-feature-branch actually allows -- silently inherited the stale approval with no fresh ExitPlanMode. This is the same original symptom, not a new defect class: item 45's own committed test only ever exercised same-branch-continuation and HEAD==main shapes, never a branch switch. Root-caused live (docs/dev/diagnosis/plan-approval-branch-switch-gap.md), including a real-world instance on this session's own real marker, not just the throwaway repro. Fixed by reordering the two blocks so the previously-stamped branch is reconciled -- and archived + exit 2 if warranted -- before it can be overwritten; a candidate belt-and-suspenders addition (force reconciliation on every branch switch regardless of the mtime pre-filter) was tried and dropped after empirically confirming the existing mtime conditions already catch the real case, keeping the fix minimal. RECLOSED same session with the new regression test added to verified_by."
+guardrail = "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_new_branch_after_merge_requires_fresh_approval pins the exact transition (branch merges, then a DIFFERENT brand-new branch is checked out and edited) that let this recur once already inside the very fix meant to close it -- any future reordering that reintroduces stamp-overwrite-before-reconcile goes red rather than shipping plausible-but-wrong again."
 verified_by = [
   "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_pr_channel_merge_blocks_the_next_edit",
   "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_deleted_branch_blocks_the_next_edit",
   "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_branch_with_no_commits_survives_unrelated_main_movement",
   "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_stamp_is_late_bound_on_the_first_production_edit",
+  "tests/test_plan_approval_scoping.py::TestBranchMergeReconciliation::test_new_branch_after_merge_requires_fresh_approval",
   "tests/test_plan_approval_scoping.py::TestArchiveAndReceipt::test_cleanup_on_merge_archives_instead_of_deleting",
   "tests/test_plan_approval_scoping.py::TestEfficiency::test_no_git_subprocess_when_main_has_not_moved",
 ]
@@ -19,9 +21,10 @@ refs = [
   "hooks/check-plan-approved.sh",
   "hooks/lib/retire-approved-plan.sh",
   "docs/dev/diagnosis/plan-approval-marker-pr-merge.md",
+  "docs/dev/diagnosis/plan-approval-branch-switch-gap.md",
   "AGENTS.md",
 ]
-summary = "Fixed: reconciler moved into check-plan-approved.sh, late-bound stamp, archive-not-delete via hooks/lib/."
+summary = "Fixed, reopened same day for an uncovered branch-switch transition, refixed: reconcile old stamp before overwrite."
 ```
 
 Observed 2026-08-04 at the start of `feat/consumer-enumeration-gate`, before any
@@ -143,3 +146,21 @@ Windows/Git-Bash (fixed via `cygpath -m` translation), and the archive directory
 embedded the full project path, which for a sufficiently long real path pushes past
 Windows' 260-char `MAX_PATH` (fixed by hashing the project key to 12 hex chars for the
 directory name).
+
+### 2026-08-07 — REOPENED and REFIXED, same day (`fix/plan-approval-branch-switch-gap`)
+
+Found while scoping an unrelated multi-branch orchestration design, not while chasing this
+item: `hooks/check-plan-approved.sh`'s branch-merge reconciliation (just closed above) ran
+its "late-bind the stamp to `$CUR_BRANCH`" block *before* its "reconcile whatever was
+previously stamped" block, so a transition straight from an already-merged branch to a
+brand-new one silently overwrote the stamp before the old branch was ever checked. Two
+isolated throwaway repros confirmed it (`docs/dev/diagnosis/plan-approval-branch-switch-gap.md`
+O1/O2), and it then fired for real on this session's own actual marker while writing the
+dossier (O5) — this session had never called `ExitPlanMode`, yet a brand-new branch's first
+edit was allowed. A new regression test,
+`test_new_branch_after_merge_requires_fresh_approval`, was confirmed RED against the
+just-closed code (`returncode == 0` where `2` was required) before the fix, then GREEN
+after reordering the two blocks. Full `tests/test_plan_approval_scoping.py` suite (26 tests,
+up from 18) green, no reruns, including the pre-existing efficiency test — confirming a
+candidate extra safeguard (force reconciliation on every branch switch) was unnecessary and
+was dropped rather than kept "to be safe."
