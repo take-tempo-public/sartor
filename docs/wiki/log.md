@@ -1071,3 +1071,49 @@ close-out mention is about the wiki loop's own trigger, unchanged);
 
 **This IS a governance change**, unlike the previous two close-out checks — which is exactly
 why two pages needed correcting rather than none.
+
+---
+
+## 2026-08-07 — scoped `/wiki-self-update --since 55f7c1e` (`docs/wiki-enforcement-catchup`)
+
+**Trigger:** the chain's own handoff (`docs/dev/handoffs/fix-chain-gate-integration.md`
+"Post-chain addendum") directed a scoped run against the chain's own diff, not the full
+`.last_ingest_sha`→HEAD window — the chain PR (#105) merged as `c15d080`, a merge commit
+whose **first** parent (`55f7c1e`, PR #104) is the true pre-chain `main` tip; its second
+parent (`f67943c`) is the chain branch's own tip, easily mistaken for the base in the
+opposite order. `--since 55f7c1e` isolates exactly the chain's landed diff.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../CLAUDE.md`](../../CLAUDE.md) and
+[`../governance/enforcement.md`](../governance/enforcement.md). Classifier run over the
+full `55f7c1e..HEAD` diff (32 changed paths); the guard/dispatcher source itself
+(`hooks/bash-dispatcher.sh`, `scripts/enforcement/guards/verify_binary_on_path.py`,
+`scripts/enforcement/adapters/bash_dispatcher.py`) classifies irrelevant — `hooks/` and
+most of `scripts/` are wholesale agent-tooling, not product surface — confirming rather
+than contradicting the handoff's own claim, which named the *concepts* (the
+`verify-binary-on-path` guard, the Bash-dispatcher fold, the `enforcement.md` reach
+declaration) rather than the source files carrying them.
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`verify-binary-on-path` / `verify_binary_on_path` / `bash-dispatcher` / `bash_dispatcher` /
+`claude_hook` / `PreToolUse` / `adapters/` — no page cites any of it, so nothing to
+re-anchor. Per D5, changes to `CLAUDE.md` / `docs/governance/` usually map to no page; this
+diff is Claude-Code-hook-wiring detail (agent tooling), the same category
+`scripts/wiki_relevance.py` already excludes `hooks/` and `scripts/enforcement/` from
+wholesale — not a new product concept the wiki curates (contrast
+[[route-surface]], which cites `edit-write-dispatcher.sh` because that fold is load-bearing
+for *why the security gate is uniform*, a product-security claim, not a hooks-mechanics
+one). No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** (stays `65b0f88f5c2469484a3ed2ad8edbe28991f56df1`,
+2026-07-30) — declared, not silently left, per C-12. This run only diffed
+`55f7c1e..HEAD` (the chain's own slice); the checkpoint already lagged 93 commits behind
+`55f7c1e` before this branch started, covered piecemeal by several branches' own
+lightweight "scoped close-out relevance check" log entries above (which inspect a
+branch's own diff and log the verdict but do not move the formal checkpoint — a second,
+lighter mechanism alongside this full loop). Advancing the checkpoint to HEAD here would
+misrepresent that gap as checked when only its final 2-file slice was. Current drift,
+verified: `python -m scripts.wiki_freshness` → **20 file(s) changed since the last ingest
+(< 75-file block threshold)** — matches the handoff's own "20/75 at chain close" figure
+exactly (this branch's own commits added no further wiki-relevant paths). Safe to leave
+for the next bounded catch-up pass; not a merge blocker for this branch.
