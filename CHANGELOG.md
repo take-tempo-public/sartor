@@ -60,7 +60,14 @@ project path pushes `<archive_dir>/manifest.json` past Windows' 260-char `MAX_PA
 (reproduced exactly: `plan.md` stayed under the limit, `manifest.json` tipped it
 over), fixed by hashing the project key to 12 hex chars for the directory name
 (matching this project's own fingerprint convention) while keeping the full path in
-the manifest's own content.
+the manifest's own content. **A third, caught by this PR's own CI on first push**
+(all three Python-version lint/test jobs failed identically): the new
+`test_missing_git_is_a_no_op`'s own test helper blacklisted every PATH directory
+containing `git`, which on the Linux runner also removed `bash` itself (`git` and
+`bash` share `/usr/bin` there) — `FileNotFoundError: 'bash'`, fetched directly from
+the failed job's log, not guessed at. A test-helper defect, not a hook defect; fixed
+by rebuilding the helper to preserve the small set of binaries the hook needs via a
+per-binary shim instead of blacklisting whole directories.
 
 ### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
 

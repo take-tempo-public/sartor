@@ -110,14 +110,50 @@ def _run(
     )
 
 
-def _path_without_git() -> str:
-    """This process's PATH with every directory containing a `git`/`git.exe`
-    binary removed — used to test "git absent from PATH" without also
-    breaking bash's own PATH lookup for coreutils/python3 the hook needs."""
+#: The small set of external binaries `check-plan-approved.sh` itself needs on a
+#: payload that reaches the branch-merge reconciler with git hidden. Preserving
+#: exactly these (via a per-binary shim) rather than every entry in a directory
+#: that happens to also hold `git` is what makes `_path_without_git` safe on a
+#: platform where `git` and `bash` share one bin dir (e.g. `/usr/bin` on Linux
+#: CI) — dropping that whole directory broke `bash` itself, not just hid `git`,
+#: the first time this test ran there (`FileNotFoundError: 'bash'`).
+_NEEDED_ALONGSIDE_GIT = ("bash", "cat", "tr", "grep", "python3", "basename", "awk")
+
+
+def _path_without_git(shim_root: Path) -> str:
+    """This process's PATH with `git`/`git.exe` unreachable via `command -v`,
+    while `_NEEDED_ALONGSIDE_GIT` stays resolvable even if it lived alongside
+    `git` on the original PATH. `shim_root` is a test-owned scratch dir (e.g.
+    `tmp_path`) to build the filtered shim directory under."""
     parts = os.environ.get("PATH", "").split(os.pathsep)
-    kept = [
-        p for p in parts if not (Path(p) / "git.exe").exists() and not (Path(p) / "git").exists()
-    ]
+    git_dirs = {p for p in parts if (Path(p) / "git.exe").is_file() or (Path(p) / "git").is_file()}
+    if not git_dirs:
+        return os.environ.get("PATH", "")
+
+    shim_dir = shim_root / "no-git-path"
+    shim_dir.mkdir(exist_ok=True)
+    for name in _NEEDED_ALONGSIDE_GIT:
+        for p in parts:
+            for candidate in (Path(p) / name, Path(p) / f"{name}.exe"):
+                if not candidate.is_file():
+                    continue
+                link = shim_dir / candidate.name
+                if link.exists():
+                    break
+                try:
+                    os.symlink(candidate, link)
+                except OSError:
+                    try:
+                        os.link(candidate, link)
+                    except OSError:
+                        shutil.copy2(candidate, link)
+                break
+            else:
+                continue
+            break  # first PATH match for this binary wins, mirroring normal PATH resolution
+
+    kept = [p for p in parts if p not in git_dirs]
+    kept.insert(0, str(shim_dir))
     return os.pathsep.join(kept)
 
 
@@ -542,7 +578,7 @@ class TestBranchMergeReconciliation:
             home=home,
             project_dir=str(repo),
             stdin_text=_payload_edit(edited),
-            extra_env={"PATH": _path_without_git()},
+            extra_env={"PATH": _path_without_git(tmp_path)},
         )
         assert r.returncode == 0, r.stderr
         assert stamp.exists(), "without git on PATH the reconciler must fail open, never archive"

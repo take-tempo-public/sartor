@@ -200,15 +200,37 @@ discipline:
    `docs/dev/prov/SPEC.md`) for the directory name instead of embedding it
    whole; the full `project_dir` is still recorded inside `manifest.json`'s
    own content, where length doesn't matter.
+3. **A third, found on the PR's own CI run (not caught locally — Windows-only
+   local testing left this class of gap).** `TestBranchMergeReconciliation::
+   test_missing_git_is_a_no_op`'s own test helper, `_path_without_git()`,
+   dropped every PATH directory containing a `git`/`git.exe` binary to
+   simulate "git absent from PATH." On the Linux CI runner, `git` and `bash`
+   both live in `/usr/bin` — dropping that whole directory made `bash`
+   itself unfindable, not just `git`: `FileNotFoundError: [Errno 2] No such
+   file or directory: 'bash'` at the `subprocess.run(["bash", ...])` call
+   site, fetched directly from the failed job's own log
+   (`gh api repos/.../actions/jobs/<id>/logs`) rather than guessed at from
+   the exit code alone. This is a **test-helper** bug, not a hook bug — the
+   hook script itself (`check-plan-approved.sh`) was never exercised past
+   the point of the broken subprocess launch. Fixed by rebuilding the helper
+   to preserve the small set of binaries the hook actually needs
+   (`bash`/`cat`/`tr`/`grep`/`python3`/`basename`/`awk`) via a per-binary
+   shim (symlink, falling back to hardlink, falling back to a real copy)
+   rather than blacklisting whole PATH directories.
 
-Both are genuine, always-latent defects (not test-environment artifacts) that
-would have shipped invisibly — the archive+receipt mechanism would have
-silently dropped its own manifest on any sufficiently long real project path,
+The first two are genuine, always-latent production defects (not test-environment
+artifacts) that would have shipped invisibly — the archive+receipt mechanism would
+have silently dropped its own manifest on any sufficiently long real project path,
 exactly the "silently thinner provenance than intended" failure the owner's
-archive-not-delete directive exists to prevent. Neither was in the original
-D3(c) design write-up; both surfaced only once the mechanism was actually
-built and stress-tested, which is itself the argument for C-7's own rule
-against trusting a design "sound on paper."
+archive-not-delete directive exists to prevent. The third is a test-helper-only
+defect (the production hook was never exercised past the broken subprocess
+launch) that would not have shipped to a user, but it DID block this PR's own CI
+on first push — a real cost, just a different kind. None of the three was in the
+original D3(c) design write-up; all three surfaced only once the mechanism was
+actually built and stress-tested (locally for the first two, on CI for the
+third), which is itself the argument for C-7's own rule against trusting a
+design "sound on paper" — and, for the third, against trusting a fix "verified"
+on only one platform.
 
 ---
 
