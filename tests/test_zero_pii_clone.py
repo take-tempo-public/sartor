@@ -126,7 +126,8 @@ def test_no_database_or_logs_tracked() -> None:
 # 2. No secret-shaped FILE is tracked anywhere in the tree.
 # --------------------------------------------------------------------------- #
 def test_no_secret_files_tracked() -> None:
-    """No tracked path matches the secret-file patterns block-secrets.sh guards
+    """No tracked path matches the secret-file patterns the block-secrets guard
+    (scripts/enforcement/guards/block_secrets.py) checks
     (.api_key / .env* / *.pem / *.key / *.p12 / *.crt)."""
     secret_suffixes = (".pem", ".key", ".p12", ".crt")
     offenders = []
@@ -146,7 +147,8 @@ def test_no_secret_files_tracked() -> None:
 # 3. No API-key SHAPE appears in any tracked text file.
 # --------------------------------------------------------------------------- #
 def test_no_api_key_shapes_in_tracked_files() -> None:
-    """Scan tracked text files for the Anthropic key shape (block-secrets.sh:29).
+    """Scan tracked text files for the Anthropic key shape
+    (scripts/enforcement/guards/block_secrets.py:_API_KEY_RE).
 
     The pattern is assembled from fragments so this test file is not a self-match
     when it is itself one of the tracked files being scanned.
@@ -164,7 +166,7 @@ def test_no_api_key_shapes_in_tracked_files() -> None:
             offenders.append(rel)
     assert not offenders, (
         f"Anthropic API-key shape found in tracked file(s): {offenders}. "
-        "Secrets must never be committed (charter C-1 / S-1; block-secrets.sh)."
+        "Secrets must never be committed (charter C-1 / S-1; the block-secrets guard)."
     )
 
 

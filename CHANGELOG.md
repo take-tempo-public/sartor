@@ -13,6 +13,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
+
+A new PreToolUse guard (`scripts/enforcement/guards/verify_binary_on_path.py`)
+checks the leading binary of each top-level Bash command segment against `PATH`
+before the command runs, blocking with a factual "'X' not found on PATH" message
+instead of letting a multi-step command die deep inside on a bare
+"command not found". Deliberately fail-open: substitutions, subshells, heredocs,
+bare-variable leads, unbalanced quotes, MSYS `/c/`-style paths, `||`-guarded
+segments, and probe commands (`command -v`, `which`) are allowed unchecked —
+stated in the module's own docstring, and the block message explicitly limits its
+claim to the PATH lookup (charter C-0). In the same branch, the three standalone
+PreToolUse/Bash hook wrappers (`block-secrets.sh`, `block-merge-to-main.sh`,
+`ruff-changed.sh`) were folded into one dispatcher
+(`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
+mirroring PX-37's Edit|Write dispatcher — guard decision logic untouched,
+no-short-circuit aggregation, one process per Bash call instead of three.
+Declared reach: Claude Code PreToolUse only (joins the pinned extraction gap in
+`tests/test_enforcement_coverage.py`; no git-native adapter exists for a
+Bash-command-string guard). Known defect found in first live use, filed not fixed:
+the quote-parity tracker misreads heredoc bodies containing prose quotes and can
+false-BLOCK (workaround per its own message: rephrase, e.g. `git commit -F`).
+
+### Changed: item 45 diagnosed end-to-end; both fix shapes characterized, neither implemented (`fix/plan-approval-marker-pr-merge`)
+
+C-7 dossier at `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`: re-verified
+item 45's three inherited observations live, and added an isolated reproduction
+(throwaway `HOME` + git repo) proving `cleanup-plan-on-merge.sh`'s wipe mechanism
+is command-text shape, not "did a merge structurally occur" — a fully merge-shaped
+PR-channel event leaves the plan-approval marker armed. Both candidate fix shapes
+characterized: a `gh pr merge` command matcher is structurally insufficient
+(misses server-side auto-merge — enabled in this repo — GitHub-UI merges, and
+other-terminal merges); the sound variant of SessionStart reconciliation (an
+additive approval-time stamp + branch-ancestry check) is designed and staged in
+the dossier but deliberately **not built** — a first-of-its-kind mechanism that
+autonomously deletes approval state warrants an explicit owner decision before
+being written. Item 45 stays open; no `verified_by` claimed.
+
+### Fixed: `hooks/bash-dispatcher.sh` executable bit + doc-link false positives (`fix/chain-gate-integration`)
+
+Two gate failures introduced by post-gate artifacts that were never re-gated
+against the final committed tree: `hooks/bash-dispatcher.sh` was committed at git
+mode 100644 (caught by `test_every_hook_script_is_executable_in_the_index` —
+third sighting of the class `dfe1767` first fixed), and two handoffs' inline
+regex literal `](`-sequence parsed as a markdown link and tripped
+`test_no_broken_cross_document_links_or_cites` (fixed per D5 cite-don't-restate:
+name the symbol's home, don't restate the pattern).
+
+### Added: `groups:` in `.github/dependabot.yml` — collapse same-ecosystem minor/patch bumps into one PR per ecosystem (`chore/dependabot-groups`)
+
+11 dependency-upgrade PRs were open and ungrouped (8 fully green, never merged — a
+separate merge-policy gap, tracked on `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward
+ledger, not fixed here). Added a `groups:` key to each of the three `update:` blocks
+(`pip`, `github-actions`, `npm` in `/docs-site`), grouping `minor` + `patch`
+`update-types` per ecosystem so dependabot's next scheduled run opens roughly one
+grouped PR per ecosystem instead of one PR per dependency. `major` is deliberately
+left out of every group so a breaking bump still opens its own individually-reviewable
+PR. Schema follows GitHub's documented `groups` reference exactly; validated locally
+by parsing the file with `yaml.safe_load` (no server-side dependabot dry-run exists).
+**Verifying the resulting grouped PRs actually land grouped is explicitly out of scope
+for this commit** — dependabot only re-evaluates config on its own schedule, so this is
+next-morning, post-merge work, not tonight's.
+
 ### Added: `scripts/flake_rates.py` — real per-test CI flake rates from job logs, the closure bar's `verified_by` artifact (`feat/flake-rate-measurement`)
 
 "The UX suite is flaky" had never been a number with a citable source. Three prior

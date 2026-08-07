@@ -4,7 +4,7 @@ id = 45
 kind = "item"
 title = "Plan-approval marker survives a PR-channel merge, leaving the plan gate open into the next session"
 status = "open"
-decision_owner = "agent"
+decision_owner = "user"
 refs = [
   "hooks/cleanup-plan-on-merge.sh",
   "hooks/check-plan-approved.sh",
@@ -65,3 +65,38 @@ The interim posture held: the marker was **not ridden** — this session ran `En
 wrote the plan → `ExitPlanMode` and earned a fresh one. No change to the diagnosis or the
 proposed fix shape; recorded only to stop the recurrence count being re-derived by the next
 session that trips over it.
+
+### 2026-08-06 — dossier written, both fix shapes characterized, **neither implemented** (`fix/plan-approval-marker-pr-merge`)
+
+Full dossier at `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`. Summary of what
+changed and did not:
+
+- **Re-verified live** (not copied) the three inherited observations against THIS session's
+  own HEAD (`867cb04`): `hooks/cleanup-plan-on-merge.sh`'s three-`grep` pre-filter (lines
+  21/24/27) + structural check (lines 34-41); `AGENTS.md:232`'s `gh pr merge` flow text
+  containing none of the three trigger phrases; the real `~/.claude/plans/.approved-C--Dev-sartor`
+  marker (READ-ONLY), confirmed to be the chain's own legitimately-earned marker (`HEAD` has
+  1 parent — no merge event has occurred in this chain at all, so nothing has tried to wipe
+  it) rather than a live instance of the defect.
+- **New: an isolated reproduction** (throwaway HOME + throwaway git repo, dossier D2) that
+  holds "HEAD is a genuine ≥2-parent merge commit" constant and TRUE in both a PR-channel-shaped
+  run and a local-`--no-ff`-shaped run, varying only the Bash command text/output fed to the
+  hook. Confirms the mechanism is exactly "command-text shape", not "whether a merge
+  structurally happened" — the PR-channel case is not a near-miss, it is fully merge-shaped
+  and still untouched by the hook.
+- **Both candidate fix shapes characterized in depth, neither implemented:**
+  - (a) a `PostToolUse` matcher on `gh pr merge`'s command shape closes only the sub-case of
+    an agent typing that command in the same session — it structurally cannot see dependabot's
+    server-side auto-merge (enabled in this repo since 2026-08-04), GitHub-UI merges, or merges
+    from another terminal/session, which are not edge cases here but the dominant real channel.
+  - (b) naive form ("has `main` moved since approval") fails the mandated compaction-mid-session
+    test: an unrelated auto-merge landing on `main` while an agent's own unrelated plan is still
+    legitimately active would disarm a legitimately-armed marker. A narrower form ("has *this
+    approved branch* been merged", via a NEW additive stamp file + branch-existence/ancestor-of-
+    main check) is channel-independent and, hand-traced against the compaction scenario, does not
+    misfire — but it is a first-of-its-kind mechanism that can autonomously delete approval state,
+    and this dossier judges that deserves an explicit owner decision before being written, not
+    only before being merged.
+- **Item 45 stays OPEN.** No `verified_by` artifact is claimed (none was earned — no fix
+  landed). The dossier's own "Decision" section carries a staged, not-yet-built proposal for
+  the owner to approve or reject on a future branch.

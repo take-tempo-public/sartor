@@ -12,15 +12,24 @@ Invoked by a thin wrapper in root `hooks/` naming its own guard (so
 
     exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_hook.py" <guard-name>
 
-Since PX-37 (`chore/hook-dispatcher`), only `block-merge-to-main` and
-`ruff-changed` still ship their own such wrapper (`hooks/block-merge-to-main.sh`,
-`hooks/ruff-changed.sh` — both Bash-matcher only). The six Edit|Write guards
+Since PX-37 (`chore/hook-dispatcher`), the six Edit|Write guards
 (`require-feature-branch`, `require-evidence-before-fix`,
 `require-consumer-enumeration`, `block-secrets`, `validate-context`,
-`route-security-lint`) run instead via `dispatch()`, called
-from `claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry —
-this module's per-guard CLI (`main()`, below) stays in place for those two and
-for direct guard-module callers (`git_hook.py`, `ci_backstop.py`).
+`route-security-lint`) run via `dispatch()`, called from
+`claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry. Since
+`feat/verify-dont-assume-guard`, the four Bash guards (`block-secrets`,
+`block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`) run the same
+way via `bash_dispatcher.py`'s single `hooks/bash-dispatcher.sh` entry —
+neither of those three previously-standalone Bash wrappers
+(`hooks/block-merge-to-main.sh`, `hooks/block-secrets.sh`,
+`hooks/ruff-changed.sh`) ships anymore. `block-secrets` is dispatched by
+BOTH `claude_dispatcher.py` and `bash_dispatcher.py` (its own `decide()`
+inspects both the Bash `command` field and the Edit/Write `file_path`/
+`new_string`/`content` fields), needing no standalone file for either
+matcher now. This module's per-guard CLI (`main()`, below) has no remaining
+`.sh` caller of its own; it stays in place because both dispatchers route
+through its `dispatch()`, and because `git_hook.py`/`ci_backstop.py` import
+the guard modules it also imports.
 """
 
 from __future__ import annotations
@@ -46,6 +55,7 @@ from scripts.enforcement.guards import (  # noqa: E402
     route_security_lint,
     ruff_changed,
     validate_context,
+    verify_binary_on_path,
 )
 from scripts.enforcement.guards.result import GuardResult  # noqa: E402
 
@@ -58,6 +68,7 @@ _GUARD_NAMES = (
     "route-security-lint",
     "ruff-changed",
     "validate-context",
+    "verify-binary-on-path",
 )
 
 
@@ -88,6 +99,8 @@ def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
     if name == "validate-context":
         repo_root = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
         return validate_context.claude_check(payload, repo_root)
+    if name == "verify-binary-on-path":
+        return verify_binary_on_path.claude_check(payload)
     raise SystemExit(f"claude_hook.py: unknown guard '{name}' (expected one of {_GUARD_NAMES})")
 
 
