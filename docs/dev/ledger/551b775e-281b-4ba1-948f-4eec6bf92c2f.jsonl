@@ -1,0 +1,2 @@
+{"event": "compacted", "session": "unknown", "branch": "docs/epic-a-wave-orchestration-design", "trigger": "unknown", "ts": "2026-08-08T02:07:10Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md", "session": "551b775e-281b-4ba1-948f-4eec6bf92c2f", "branch": "docs/epic-a-wave-orchestration-design", "commit": "e59603c", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-08T02:28:11Z", "fingerprint": "bc88f870b385"}
