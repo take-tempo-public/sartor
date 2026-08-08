@@ -1672,6 +1672,46 @@ and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stab
   the full per-branch close-out checklist — no lightened ceremony. The sprint branch
   merges into its epic integration branch as the session's **final act**; the next
   session starts from the epic branch with the owner's plan-approval click.
+  - **Amendment, 2026-08-08 — Epic A only, bounded experiment (owner-directed).**
+    For Epic A's A1–A4 chain *only*, each sprint branch **stacks on the prior sprint's
+    own tip** and there are **no intermediate merges**; a single `ExitPlanMode` approval,
+    taken once at the start, covers the whole chain. Everything else in this rule stands
+    unchanged — full per-branch close-out, no lightened ceremony, five separate handoffs.
+    This resolves a real contradiction: the Epic A design in
+    [`docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md`](handoffs/docs-epic-a-wave-orchestration-design.md)
+    overrode this clause while citing only the "One PR per epic" rule below, which it does
+    match. Amending is the owner's call, taken explicitly rather than left as silent drift.
+    **This is not a reversal of the charter's W-1 "no waves" posture** and does not extend
+    to epics B–E; those revert to the merge-into-epic shape above unless separately amended.
+    Rationale and the full errata: [`docs/dev/epic-a-chain-design-corrections.md`](epic-a-chain-design-corrections.md).
+  - **Mechanical precondition for the single approval (do not skip).** The plan-approval
+    stamp inherited from the *previous* branch retires the moment that branch is detected
+    as merged, which would archive the brand-new Epic A plan on the first edit. Before
+    `EnterPlanMode`, create the A1 branch and take **one throwaway edit on it** — it is
+    correctly blocked with `PLAN RETIRED` and flushes the stale stamp. The flush must
+    happen **on the branch, not on `main`**, where `require-feature-branch` pre-empts the
+    reconciler and leaves it half-completed (work item 56). Then run the ceremony once.
+    The approved plan file is then **frozen** for the chain's duration — any write to it
+    blocks every later production edit until a fresh `ExitPlanMode`.
+  - **Per-sprint commit sequence (closes the item-52 gate window rather than restating it).**
+    implement → `git add -A` → adversarial review of the **staged** diff → fix findings →
+    **`git add -A` again** → file deferred findings and `python -m scripts.work_items board
+    --write` → `git add -A` → **now** `python -m scripts.gate` → assert `git diff --quiet`
+    **and** an empty `git status --porcelain --untracked-files=all` → commit. The assertion
+    is the mechanism; without it the tree that lands was never the tree the gate examined.
+  - **Blast-radius dossiers are required for A2 and A4 as well as A1.** Both edit
+    `ui_pages/selectors.py`, a gated C-10 surface — A2 for the `data-compose-ready` settle
+    contract, A4 for `PriorApps`. Each sprint's `## Consumers` section must literally name
+    that path. C-10 applies on every branch type, not just `fix/*`.
+  - **Item 20 keeps its own `fix/*` branch**, stacked between `feat/compose-wait-ux` and
+    `feat/role-summary-drafting` — six branches, not five. The C-7 evidence guard only
+    fires on `fix/*`, so folding an evidence fix onto a `feat/*` branch silently disables
+    it; that is a hook bypass by branch naming regardless of intent.
+  - **Decide the epic-branch close-out shape before the chain starts.** `epic/a-app-core`
+    cannot stay a bare ref: the epic CHANGELOG entry, final handoff and ledger row have to
+    be committed somewhere, and production edits on an `epic/*` branch are forbidden below.
+    Either land those on the **last sprint branch** before cutting the ref, or create the
+    epic branch early and fast-forward each sprint tip onto it, writing the re-point down.
 - Epic integration branches: `epic/a-app-core`, `epic/b-render-ats`,
   `epic/c-diagnostics`, `epic/d-docs-ia`, `epic/e-release`. March branch names never
   contain `main`/`master` as a word (the merge guard matches command text, not the

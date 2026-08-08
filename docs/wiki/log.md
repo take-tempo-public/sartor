@@ -1117,3 +1117,33 @@ verified: `python -m scripts.wiki_freshness` → **20 file(s) changed since the 
 (< 75-file block threshold)** — matches the handoff's own "20/75 at chain close" figure
 exactly (this branch's own commits added no further wiki-relevant paths). Safe to leave
 for the next bounded catch-up pass; not a merge blocker for this branch.
+
+## 2026-08-08 — scoped close-out relevance check (`docs/epic-a-chain-design-corrections`)
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) and the new
+[`../dev/epic-a-chain-design-corrections.md`](../dev/epic-a-chain-design-corrections.md).
+Classifier run over this branch's own diff; the other four changed paths classify
+irrelevant and are accounted for, not overlooked: `docs/dev/work/items/0056-*.md` and
+`docs/dev/work/BOARD.md` (per-item filings + the file generated from them),
+`docs/dev/ledger/*.jsonl` (provenance record), and the handoff (process record).
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`Epic A` / `one sprint` / `stacked` / `plan-approval` / `integration branch`. Exactly one
+hit — [`pages/governance-extraction.md`](pages/governance-extraction.md) line 107 — and it
+cites **`charter.md`'s W-1**, not the `RELEASE_ARC.md` cadence bullet this branch amended.
+That distinction is load-bearing rather than convenient: the amendment is explicitly scoped
+to Epic A as a bounded experiment and explicitly **not** a reversal of W-1's serial-default
+posture, so the claim that page makes ("the operative default is still serial") remains
+true at HEAD and needs no re-anchoring. The new corrections doc is errata for a specific
+epic's execution method — the same process-record category `wiki_relevance.py` already
+excludes wholesale for `docs/dev/diagnosis/` and `docs/dev/handoffs/`; it defaults relevant
+only because it sits at `docs/dev/*.md` top level. No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12.
+The checkpoint remains `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30) and still
+lags the same 93+ commits the entry above documents; this branch inspected only its own
+two-path slice and advancing the checkpoint would misrepresent that backlog as checked.
+Drift after this branch: **22 wiki-relevant files against the 75-file block threshold** —
+the 20 recorded above plus this branch's two. Not a merge blocker; the backlog stays queued
+for the next bounded catch-up pass.
