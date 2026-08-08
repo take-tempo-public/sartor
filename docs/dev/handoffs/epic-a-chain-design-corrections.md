@@ -96,7 +96,20 @@ flake work, and the observation is filed as **item 57**.
 
 A wrapper detail worth carrying forward: the backgrounded gate reported **exit code 0**
 while its own output ended `gate: FAILED at 'pytest -m ux' (exit 1)`. Read the output,
-never the background task's exit code.
+never the background task's exit code. This happened **three times** in one session,
+including on `ci_wait` itself.
+
+**Then the PR went red anyway, and that is finding 10.** The green gate above was run on a
+**staged, uncommitted** tree, and
+`tests/test_wiki_relevance_classification.py::test_every_top_level_entry_is_classified`
+enumerates via `git ls-tree HEAD:<dir>` — so it passed **vacuously**, saw nothing, and CI
+then failed all three quality jobs on the unclassified new
+`docs/dev/epic-a-chain-design-corrections.md` (PR #115, run 31267919219). Re-running the
+identical local command *after* committing reproduced it exactly. Fixed by classifying the
+file into `IRRELEVANT_FILES` (gated C-10 edit — dossier at
+`docs/dev/blast-radius/epic-a-chain-design-corrections.md`), and `RELEASE_ARC.md`'s
+amendment now requires **a second gate run on the committed tree**. Do not skip that step
+on a docs-only branch; a docs-only branch is exactly what produced it.
 
 ---
 
@@ -150,7 +163,7 @@ Open-only count stays **1**, well under the reduction-sprint threshold.
 
 ## Recurrences observed this session → guardrail authored
 
-**Three recognized recurrences.**
+**Four recognized recurrences.**
 
 1. **A design worked out in context and lost before it was written down — second
    instance in two days.** Recognized immediately: the handoff this session consumed was
@@ -192,6 +205,21 @@ Open-only count stays **1**, well under the reduction-sprint threshold.
      corrected before commit. **Read the output, never the background exit code.**
    - The re-run passing is *not* evidence the hole is closed (C-7 rule 3). It is recorded
      as two results, not as a green.
+
+4. **An unclassified new `docs/dev/*.md` file failing
+   `test_every_top_level_entry_is_classified` — second instance in nine days.** The first
+   is `docs/dev/blast-radius/chain-gate-integration.md` (PR #105, run 31114143878); this
+   one is PR #115, run 31267919219. Recognized as a recurrence only *after* CI went red,
+   which is itself the point. **Mechanism authored: none that fails closed**, and the
+   reason is written into `docs/dev/blast-radius/epic-a-chain-design-corrections.md`: the
+   guard already fails closed correctly — what recurs is an **author-side** gap (nothing
+   warns at authoring time), and building that warning would mean a new gate touching the
+   same gated surface from a branch whose own gate was red at the time. **Surfaced to the
+   owner.** What this branch *did* author is the durable half: `RELEASE_ARC.md` now
+   requires a second gate run **on the committed tree**, because the first one passed
+   vacuously — see finding 10 in
+   [`docs/dev/epic-a-chain-design-corrections.md`](../epic-a-chain-design-corrections.md),
+   which carries the three-run reproduction table.
 
 ---
 

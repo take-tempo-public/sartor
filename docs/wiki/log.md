@@ -1120,13 +1120,33 @@ for the next bounded catch-up pass; not a merge blocker for this branch.
 
 ## 2026-08-08 — scoped close-out relevance check (`docs/epic-a-chain-design-corrections`)
 
-**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
-[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md) and the new
-[`../dev/epic-a-chain-design-corrections.md`](../dev/epic-a-chain-design-corrections.md).
-Classifier run over this branch's own diff; the other four changed paths classify
-irrelevant and are accounted for, not overlooked: `docs/dev/work/items/0056-*.md` and
-`docs/dev/work/BOARD.md` (per-item filings + the file generated from them),
-`docs/dev/ledger/*.jsonl` (provenance record), and the handoff (process record).
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 1** —
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md).
+
+**Corrected mid-branch twice (originally recorded as 2 paths / drift 22, then 1 / 21).**
+Both figures were *reasoned*, not measured; the measured value is **drift 20/75,
+unchanged by this branch**, because `docs/dev/RELEASE_ARC.md` was **already** in the
+drift set from earlier branches (verified: `git diff --name-only 65b0f88 HEAD` piped
+through `is_wiki_relevant()` → 20 paths, RELEASE_ARC.md among them). This branch
+therefore adds **zero** new wiki-relevant paths. Recording the arithmetic slip rather
+than just the right number: predicting a drift count instead of running the classifier
+is the same C-12 failure mode as any other unsourced assertion.
+
+The first version of this
+entry counted the new `docs/dev/epic-a-chain-design-corrections.md` as relevant. It is
+not: `tests/test_wiki_relevance_classification.py::test_every_top_level_entry_is_classified`
+failed closed on CI (PR #115, run 31267919219, all three quality jobs) because that file
+was a **new, unclassified** `docs/dev/` top-level entry. It has now been classified into
+`IRRELEVANT_FILES` — a dev-process errata record, the same character as the
+already-listed `docs/dev/gate-window-class-study.md` and the wholesale-excluded
+`docs/dev/diagnosis/`. Consumer enumeration for that gated edit:
+[`../dev/blast-radius/epic-a-chain-design-corrections.md`](../dev/blast-radius/epic-a-chain-design-corrections.md).
+The superseded figures are left visible here rather than silently overwritten.
+
+The other changed paths classify irrelevant and are accounted for, not overlooked:
+`docs/dev/work/items/0056-*.md` / `0057-*.md` and `docs/dev/work/BOARD.md` (per-item
+filings + the file generated from them), `docs/dev/ledger/*.jsonl` (provenance record),
+`docs/dev/blast-radius/` and the handoff (process records).
 
 **Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
 `Epic A` / `one sprint` / `stacked` / `plan-approval` / `integration branch`. Exactly one
@@ -1144,6 +1164,6 @@ only because it sits at `docs/dev/*.md` top level. No scribe/auditor spend — $
 The checkpoint remains `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30) and still
 lags the same 93+ commits the entry above documents; this branch inspected only its own
 two-path slice and advancing the checkpoint would misrepresent that backlog as checked.
-Drift after this branch: **22 wiki-relevant files against the 75-file block threshold** —
-the 20 recorded above plus this branch's two. Not a merge blocker; the backlog stays queued
-for the next bounded catch-up pass.
+Drift after this branch: **20 wiki-relevant files against the 75-file block threshold** —
+unchanged from the entry above, per the measurement in this entry's own correction note.
+Not a merge blocker; the backlog stays queued for the next bounded catch-up pass.

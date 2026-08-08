@@ -1699,6 +1699,17 @@ and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stab
     --write` → `git add -A` → **now** `python -m scripts.gate` → assert `git diff --quiet`
     **and** an empty `git status --porcelain --untracked-files=all` → commit. The assertion
     is the mechanism; without it the tree that lands was never the tree the gate examined.
+    - **Then commit and run the gate ONE more time, on the committed tree.** Staging is
+      **not** sufficient: several checks read committed `HEAD`, not the index or the
+      filesystem, and pass **vacuously** on a staged-but-uncommitted tree.
+      `tests/test_wiki_relevance_classification.py` enumerates via
+      `git ls-tree HEAD:<dir>`, and `scripts/wiki_freshness.py` computes
+      `git diff --name-only <last_ingest_sha> HEAD` — neither can see a new file until it
+      is committed. **Observed, with a local reproduction, on this very branch
+      (2026-08-08):** the staged gate went green, CI then failed all three quality jobs on
+      an unclassified new `docs/dev/*.md` file (PR #115, run 31267919219), and re-running
+      the identical local command *after* committing reproduced the failure exactly. A
+      docs-only branch is not exempt — that is precisely the case that produced this.
   - **Blast-radius dossiers are required for A2 and A4 as well as A1.** Both edit
     `ui_pages/selectors.py`, a gated C-10 surface — A2 for the `data-compose-ready` settle
     contract, A4 for `PriorApps`. Each sprint's `## Consumers` section must literally name

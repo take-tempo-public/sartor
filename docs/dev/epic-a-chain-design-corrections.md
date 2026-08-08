@@ -246,6 +246,57 @@ work item 56.
 
 ---
 
+## 10. NEW — gating a STAGED tree passes vacuously for every check that reads `HEAD`
+
+Found by this branch's own CI going red after its own gate went green. **The only finding
+in this document with a deterministic local reproduction rather than a report.**
+
+**[VERIFIED] — observed, three times, in both directions:**
+
+| Run | Tree state | `HEAD` | Result |
+|---|---|---|---|
+| Local `pytest -m "not ux"` | staged, uncommitted | `d9c9f6f` | 2376 passed — **vacuous** |
+| CI (py3.11 / 3.12 / 3.13) | committed | `fced8e9` | **all three failed**, same assertion |
+| Local `pytest -m "not ux"`, re-run | committed | `fced8e9` | **1 failed** — reproduced exactly |
+
+The failure: `tests/test_wiki_relevance_classification.py::test_every_top_level_entry_is_classified`
+— `Unclassified top-level entr(y/ies) for wiki-relevance:
+['docs/dev/epic-a-chain-design-corrections.md']`.
+
+**[VERIFIED] — mechanism, read from source, not inferred:** that test enumerates through
+`_git_tree_entries()`, which shells out to **`git ls-tree HEAD:<dir>`**. It reads committed
+`HEAD` — not the index, not the filesystem. A file that is staged but not committed is
+invisible to it, so the check passes by finding nothing to complain about.
+`scripts/wiki_freshness.py` has the same property via
+`git diff --name-only <last_ingest_sha> HEAD`.
+
+**Why this matters beyond one red build.** Finding 2 above prescribes a per-sprint sequence
+ending "…gate → assert the window is closed → commit." That ordering is **insufficient**,
+and this branch proved it by following it and shipping a red PR. The assertion it
+recommends (`git diff --quiet` + empty `git status --porcelain`) is still correct and still
+necessary — it just cannot catch this, because index and working tree genuinely *did*
+match. The gap is between the index and `HEAD`.
+
+**Correction — a second gate run, after the commit.** `RELEASE_ARC.md`'s amendment now
+carries it. Cheap in practice: the second run is the one that matters, and on a docs-only
+branch the expensive UX tier can be reasoned about separately (this branch's diff contained
+zero Python).
+
+**This is the item-52 gate-window class with the polarity flipped.** Item 52 is about
+artifacts mutating the tree *after* the gate. This is the tree being *behind* the gate's
+own reads — same class ("the tree that lands is never the tree the gate examined"), a
+direction the class study does not currently cover.
+
+**Recurrence, honestly labelled:** the identical guard fired for the identical reason on
+PR #105 nine days earlier (`docs/dev/blast-radius/chain-gate-integration.md`, run
+31114143878) — a chain-close pass creating a `docs/dev/*.md` file without classifying it.
+The guard failed closed both times, which is it working. What recurred is the **author-side**
+gap: nothing warns at authoring time, so you learn from a red CI job. No fail-closed
+mechanism was authored for that here, and the reason is written into
+`docs/dev/blast-radius/epic-a-chain-design-corrections.md` rather than left implicit.
+
+---
+
 ## A1 citation-drift audit — `RELEASE_ARC.md` sprint A1 brief vs. HEAD `d9c9f6f`
 
 **[REPORTED]** throughout. Re-verify any line number before editing against it.
