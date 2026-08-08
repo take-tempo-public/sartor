@@ -81,6 +81,11 @@ IRRELEVANT_FILES = frozenset(
         # dev-process failure-class study (item 52) — same process-record character
         # as docs/dev/diagnosis/; never cited by a wiki page
         "docs/dev/gate-window-class-study.md",
+        # dev-process errata for one epic's execution method — same process-record
+        # character as the study above and as docs/dev/diagnosis/; never cited by a
+        # wiki page. Consumer enumeration:
+        # docs/dev/blast-radius/epic-a-chain-design-corrections.md
+        "docs/dev/epic-a-chain-design-corrections.md",
     }
 )
 

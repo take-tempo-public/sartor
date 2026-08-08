@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 13 | Epics 6 | Closed 20
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 14 | Epics 6 | Closed 20
 
 ## Open
 
@@ -39,6 +39,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **53** -- verify-binary-on-path false-BLOCKs on heredoc bodies containing prose quotes (quote-parity desync) (`agent`) -- Quote-parity tracker ignores heredoc semantics; prose quotes in a commit-message heredoc caused a live false-BLOCK.
 - **54** -- agents/git-flow.md cites hooks at the retired .claude-plugin/hooks/ path (`agent`) -- Doc cites .claude-plugin/hooks/ (retired path); doubly stale now the hook dispatches via bash-dispatcher.sh.
 - **55** -- Ledger event vocabulary has drifted from docs/dev/prov/SPEC.md without amendment (`agent`) -- compacted (2026-07) and plan-archived (2026-08-07) both ship as ledger events SPEC.md's own vocabulary list never names.
+- **56** -- Plan retirement half-completes on main: empty archive dir created, pointer files survive, stale approval stays live (`user`) -- On main the reconciler dies mid-function: empty archive dir, all three pointers survive, stale approval stays live.
 
 ## Epics
 
@@ -51,6 +52,7 @@ Epic umbrella for 5 independent UX-suite flake candidates (items 27-31) - not on
 - **29** -- O-12/O-14: the O-10 regression test itself fails under resource contention (`agent`) -- O-10's own regression test fails 4x under contention (CPU load, -n2, cross-project procs); 5/5 in isolation.
 - **30** -- Keyboard-reorder test: one Playwright 30s timeout, uncontended, no diagnosis (`agent`) -- test_keyboard_reorder_persists_and_reset_reverts: one Playwright 30s timeout; single sample.
 - **31** -- Surgical-refinement network-retry test: assertion flake, one isolated-clean rerun so far (`agent`) -- test_surgical_refinement_network_failure_surfaces_error_with_retry: assertion flake, twice serial (corrected).
+- **57** -- UX flake: /draft-summary 400 'Context file unreadable' — a reader-side signature the settle-hole diagnosis explicitly excluded (`agent`) -- 400 on a context file that exists: JSONDecodeError/OSError on read. Settle-hole dossier's O-3 had zero non-2xx.
 
 ### 36 -- Final March epic A - main-app function + UX (open)
 
