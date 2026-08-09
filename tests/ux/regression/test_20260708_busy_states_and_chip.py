@@ -46,9 +46,18 @@ from ui_pages.selectors import Compose, UserPicker, Wizard
 
 _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres."
 
-_BUSY_BANNER = "#_busyBanner"
+# A2 (feat/compose-wait-ux): the banner selector moved into the registry
+# (`Compose.BUSY_BANNER`) once a second module needed it — kept aliased here so
+# the rest of this file reads unchanged.
+_BUSY_BANNER = Compose.BUSY_BANNER
 _BUSY_SHOWING = re.compile(r"(^|\s)show(\s|$)")
-_BUSY_LABEL = re.compile(r"integrating your answers|preparing compose", re.IGNORECASE)
+# A2 added the third label: the hold raised after `wizardGoTo(3)` that rides out
+# the Compose arrival volley. All three are legal mid-flight states of the same
+# click, so the regex accepts any of them.
+_BUSY_LABEL = re.compile(
+    r"integrating your answers|preparing compose|composing your tailored", re.IGNORECASE
+)
+_BUSY_COMPOSING = re.compile(r"composing your tailored", re.IGNORECASE)
 
 
 def _delayed(fn: Callable[..., Any], seconds: float) -> Callable[..., Any]:
@@ -415,6 +424,15 @@ def test_submit_clarifications_shows_busy_overlay_then_clears(
     monkeypatch.setattr(
         analyzer, "recommend_bullets", _delayed(ux_stubs.fake_recommend_bullets, 0.4)
     )
+    # A2 — and slow the FIRST leg of the Compose arrival volley (the positioning
+    # draft always fires on pass 1), so the "Composing…" hold below is reliably
+    # observable rather than racing a sub-100ms stub cascade. Same `_delayed`
+    # idiom the chip test already uses for the gap-fill leg.
+    monkeypatch.setattr(
+        analyzer,
+        "draft_positioning_summary",
+        _delayed(ux_stubs.fake_draft_positioning_summary, 0.5),
+    )
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
@@ -423,12 +441,24 @@ def test_submit_clarifications_shows_busy_overlay_then_clears(
     WizardClarifyPage(page, live_server).answer_first("Yes, ran Kafka in production.")
 
     page.click(Wizard.SUBMIT_CLARIFICATIONS)
-    # Overlay visible mid-flight, with one of the two accurate labels.
+    # Overlay visible mid-flight, with one of the accurate labels.
     banner = page.locator(_BUSY_BANNER)
     expect(banner).to_have_class(_BUSY_SHOWING)
     expect(banner).to_contain_text(_BUSY_LABEL)
-    # Clears once Compose lands.
+    # A2 (feat/compose-wait-ux) — this test used to assert the overlay was GONE
+    # at this point. That was the defect, not the contract: the Compose panel
+    # becomes visible the instant `wizardGoTo(3)` fires `loadComposition()`,
+    # which is when the background volley STARTS. The overlay now deliberately
+    # outlives panel-visibility and clears at the terminal render. Asserting the
+    # new invariant in both directions is what makes a silently-dropped hold
+    # (old behavior) fail rather than pass.
     page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=15_000)
+    expect(banner).to_have_class(_BUSY_SHOWING)
+    expect(banner).to_contain_text(_BUSY_COMPOSING)
+    # Clears once the volley reaches its terminal render — and the release runs
+    # synchronously BEFORE the mutation that makes Compose.SETTLED observable,
+    # so this ordering is deterministic, not a settle-then-poll.
+    WizardComposePage(page, live_server)._wait_settled()
     expect(banner).not_to_have_class(_BUSY_SHOWING)
 
 
@@ -445,6 +475,13 @@ def test_skip_clarifications_shows_busy_overlay_then_clears(
     monkeypatch.setattr(
         analyzer, "recommend_bullets", _delayed(ux_stubs.fake_recommend_bullets, 0.4)
     )
+    # A2 — see the sibling test above: slow the volley's first leg so the
+    # "Composing…" hold is observable rather than raced.
+    monkeypatch.setattr(
+        analyzer,
+        "draft_positioning_summary",
+        _delayed(ux_stubs.fake_draft_positioning_summary, 0.5),
+    )
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
@@ -457,8 +494,13 @@ def test_skip_clarifications_shows_busy_overlay_then_clears(
     page.locator("#clarifyStartRow").get_by_role("button", name="Skip").click()
     banner = page.locator(_BUSY_BANNER)
     expect(banner).to_have_class(_BUSY_SHOWING)
-    expect(banner).to_contain_text(re.compile("preparing compose", re.IGNORECASE))
+    expect(banner).to_contain_text(_BUSY_LABEL)
+    # A2 — same invariant change as the submit path above: the hold outlives
+    # panel-visibility and clears at the terminal render, not before.
     page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=15_000)
+    expect(banner).to_have_class(_BUSY_SHOWING)
+    expect(banner).to_contain_text(_BUSY_COMPOSING)
+    WizardComposePage(page, live_server)._wait_settled()
     expect(banner).not_to_have_class(_BUSY_SHOWING)
 
 

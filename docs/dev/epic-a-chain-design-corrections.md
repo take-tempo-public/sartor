@@ -464,7 +464,52 @@ orchestrator improvising: it verifies the pointer, consumes the handoff, reads
 in full, and resumes at the vector position the last handoff names. The envelope above
 carries forward unchanged — it does not need re-approving.
 
-### 11.11 Known limits (C-0)
+### 11.11 The wiki freshness ratchet was never zeroed, so it cannot engage
+
+Found 2026-08-09 by the third orchestrator, after the owner asked why incremental wiki
+updates were not happening per commit. **They are happening. The checkpoint advance is
+not, and that is the whole problem.**
+
+**[VERIFIED] — observed:**
+
+- `docs/wiki/.last_ingest_sha` is `65b0f88f…` — **2026-07-30, 132 commits behind HEAD**.
+  Last advanced in `b50abec`; `git show --stat 5474763` confirms A1b did not touch it.
+- `python -m scripts.wiki_freshness` reports **36 wiki-relevant files** against the
+  75-file block threshold. The 36 span ~10 days and include `db/models.py`,
+  `blueprints/corpus/experiences.py`, `corpus_to_json_resume.py` and `db/build_context.py`
+  — files A1b's own wiki pass documented.
+- A1b did **not** skip the work: `docs/wiki/log.md` records 7 pages written, 3 verified
+  no-edit, 4 auditor findings repaired, 2 missed classes disclosed.
+
+**Mechanism — not neglect, a correctly-reasoned refusal.** A1b declined the advance under
+C-12 and wrote why: *"This pass inspected one branch's slice; advancing the checkpoint
+would assert the whole backlog had been ingested."* That is right. `.last_ingest_sha` is a
+single repo-wide "everything up to here is ingested" marker, and a scoped per-branch pass
+cannot honestly claim it.
+
+**The fault is structural.** Item 35 (2026-08-04) made small per-branch incremental
+updates the norm, but `drift = files changed since .last_ingest_sha` still assumes
+periodic full catch-up passes. So correctly-ingested work inflates the counter — A1b said
+this in its own log — and every honest agent declines the advance, which grows the backlog,
+which makes the next refusal more certain. **A ratchet that was never zeroed cannot
+engage.** Left alone the counter reaches 75 mid-chain and reddens a sprint gate with no
+code cause: drift is 36 now and the errata's finding 6 estimates Epic A at 40–60
+wiki-relevant files.
+
+**Decision, owner-directed 2026-08-09 ("we should be making incremental wiki updates each
+commit now").** A2's closer runs the wiki pass **widened to the full `65b0f88`→HEAD
+delta** and advances `.last_ingest_sha`. One pass rather than a scoped pass now plus a
+catch-up branch later, and it zeroes the ratchet permanently: from A3 onward the checkpoint
+sits at the previous sprint's tip, so each sprint's own slice **is** the whole delta and
+its closer can advance it honestly and cheaply. That is the per-commit behavior the owner
+asked for, and it only becomes available once the backlog is cleared.
+
+**To file as a work item** (the closer owns `BOARD.md`): the counter measures "changed
+since checkpoint", not "wiki coverage current", so it will re-diverge from the incremental
+workflow the moment a pass is scoped narrower than the checkpoint gap again. Zeroing it
+here fixes this instance, **not the class**.
+
+### 11.12 Known limits (C-0)
 
 This section makes the stop conditions **explicit and finite**. It does not make them
 correct, and it cannot stop an agent from stopping on something it should have decided, or

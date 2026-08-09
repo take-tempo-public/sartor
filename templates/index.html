@@ -330,10 +330,23 @@
              recommend / gap-fill) that already reloads Compose silently.
              Driven from the SAME data-compose-bg-pending counter the UX
              settle gate depends on (_markComposeBgReload); never toggled
-             independently. -->
+             independently. A2 (feat/compose-wait-ux) added a per-call LABEL to
+             that counter, so this text is now set from JS to name whichever leg
+             of the cascade is running; the counter itself is unchanged, and the
+             chip is still never toggled from a second source of truth. -->
         <span id="composeBgChip" class="compose-bg-chip hidden" aria-live="polite">Updating suggestions…</span>
       </div>
       <div class="panel-body">
+        <!-- A2 (feat/compose-wait-ux) — in-flight block for the ARRIVAL volley,
+             on the same idiom as #analysisPending / #generatePending. The panel
+             becomes visible when wizardGoTo(3) fires loadComposition(), which is
+             when the background cascade STARTS; this block (and the _setBusy
+             banner beside it) stay up until that cascade reaches its terminal
+             render, so "Compose is visible" stops reading as "Compose is done". -->
+        <div class="analysis-pending hidden" id="composePending" aria-live="polite">
+          <span class="analysis-pending-dot" aria-hidden="true"></span>
+          Composing your tailored résumé — picking bullets, positioning and skills…
+        </div>
         <div class="edit-hint">
           The AI picked the strongest bullets for this job. Pin to force-
           include, exclude to drop, or open <em>find more</em> to add

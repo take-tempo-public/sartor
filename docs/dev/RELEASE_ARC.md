@@ -1815,8 +1815,13 @@ small + in-scope → folded into sprints; everything else → filed).
 - **A2 — compose/tailor UX** (`feat/compose-wait-ux` + the item 20 fix branch).
   "Composing…" wait gate reusing `_setBusy` + the analyze streaming-panel pattern,
   held until the post-`loadComposition` background volley settles — **audit every
-  `_markComposeBgReload` call site (9)** and the UX suite's `data-compose-ready`
-  contract BEFORE changing settle semantics. Strengthen "Updating suggestions" +
+  `_markComposeBgReload` call site (12)** and the UX suite's `data-compose-ready`
+  contract BEFORE changing settle semantics. (This brief read "(9)" until A2
+  re-derived it: 9 was the count `fix/compose-unawaited-reloads` fixed — preserved
+  verbatim in `static/app.js`'s own comment — not the number of sites that exist.
+  Grep-confirmed 12 increments and 12 matching `finally` decrements at A2's base;
+  enumerated one row each in `docs/dev/blast-radius/compose-wait-ux.md` §C. Do not
+  re-copy the historical 9 into a live count.) Strengthen "Updating suggestions" +
   post-clarify busy states; replace the Skills-card emoji pin/x with the word-button
   idiom (`static/app.js:7943,7950`); extend in-place Edit to all suggested bullets
   (today only `is_pending_review` bullets have it, `static/app.js:8825-8844`).

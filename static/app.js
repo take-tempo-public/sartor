@@ -1495,7 +1495,10 @@ async function submitClarifications() {
   // overlay when it fires the recommend call, but it's a no-op (no
   // _composeApplicationId) when there's nothing to recommend against — this
   // guarantees the overlay never sticks in that case.
-  _setBusy(false);
+  // A2 — routed through _clearBusyUnlessComposing so it cannot tear down the
+  // "Composing…" hold _fireRecommendThenCompose just raised for the arrival
+  // volley (that hold releases itself at the terminal render).
+  _clearBusyUnlessComposing();
 }
 
 async function skipClarifications() {
@@ -1527,7 +1530,9 @@ async function skipClarifications() {
     }
     await _fireRecommendThenCompose();
   } finally {
-    _setBusy(false);
+    // A2 — same reason as submitClarifications: this clears THIS function's own
+    // "Preparing compose…" overlay, never the arrival-volley hold stacked on it.
+    _clearBusyUnlessComposing();
   }
 }
 
@@ -1578,6 +1583,26 @@ async function _fireRecommendThenCompose() {
     }
   }
   wizardGoTo(3);
+  // A2 (feat/compose-wait-ux) — wizardGoTo(3) shows the panel and fires
+  // loadComposition() fire-and-forget; the background volley it kicks off runs
+  // for several more seconds. Hold a visible wait state across it so "Compose
+  // is ready" and "Compose is visible" stop being the same moment. Raised AFTER
+  // the finally above so the two never fight over the one banner element.
+  // Guarded on the navigation having actually TAKEN: wizardGoTo no-ops with a
+  // toast when step 3 is unreachable, and in that case it never called
+  // loadComposition() — so nothing would ever release the hold and the banner
+  // would sit until its cap expired.
+  // The `_composeApplicationId != null` half is NOT belt-and-braces. loadComposition
+  // is `async`, so wizardGoTo's fire-and-forget call runs its body synchronously up
+  // to the first `await` — and its `_composeApplicationId == null` early return is
+  // the ONE exit with no `await` before it. On that path the whole function,
+  // including its own `_settleComposeIfIdle()` (which flushes an EMPTY waiter list),
+  // has already returned by the time this line runs, so a hold raised here would
+  // have nothing left to flush it and would strand the banner until the cap.
+  // Defensive: no live path is known where lastContextPath is truthy while
+  // _composeApplicationId is null at this point — this closes the logic hole, it is
+  // not a fix to an observed failure.
+  if (_wizardStep === 3 && _composeApplicationId != null) _holdComposingBusy();
 }
 
 // ---- Generation (P8 Gate #2) ----
@@ -7328,18 +7353,147 @@ let _composeUseRoleIntros = false;
 // The attribute is ABSENT at zero (the `:not([data-compose-bg-pending])`
 // selector depends on that); it is never left as `data-compose-bg-pending="0"`.
 let _composeBgReloads = 0;
-function _markComposeBgReload(delta) {
+// A2 (feat/compose-wait-ux) — the human labels of the background calls
+// currently in flight, newest last. PURELY PRESENTATIONAL: it drives
+// #composeBgChip's text so the chip can name what is actually running instead
+// of always reading "Updating suggestions…". It is a PARALLEL structure, never
+// a second source of truth — `_composeBgReloads` remains the only thing that
+// sets or clears `data-compose-bg-pending`, and a call site that passes no
+// label increments exactly as it did before.
+let _composeBgLabels = [];
+const _COMPOSE_BG_DEFAULT_LABEL = 'Updating suggestions…';
+
+// A2 — release callbacks for the "Composing…" wait gate (_holdComposingBusy).
+// They are invoked SYNCHRONOUSLY, and always immediately BEFORE the DOM
+// mutation that makes ui_pages/selectors.py's `Compose.SETTLED`
+// (`#composeList[data-compose-ready]:not([data-compose-bg-pending])`)
+// observable — so `WizardComposePage._wait_settled()` returning already implies
+// the overlay is down, with no window in between. The gate READS the same two
+// signals that selector encodes; it deliberately does NOT redefine either of
+// them (docs/dev/blast-radius/compose-wait-ux.md, consumers 1-9).
+let _composeSettleWaiters = [];
+
+function _flushComposeSettleWaiters() {
+  if (!_composeSettleWaiters.length) return;
+  const waiters = _composeSettleWaiters;
+  _composeSettleWaiters = [];
+  waiters.forEach(fn => {
+    // A throwing release must never take the render pass down with it — this
+    // runs inside loadComposition()'s own terminal path.
+    try { fn(); } catch (e) { console.warn('compose settle waiter failed:', e); }
+  });
+}
+
+// Flush only once the background volley has actually drained. Called from EVERY
+// loadComposition() exit path — including the early error/empty returns, which
+// never set `data-compose-ready` and would otherwise leave the overlay to its
+// timeout cap instead of clearing when the pass genuinely ended.
+function _settleComposeIfIdle() {
+  if (_composeBgReloads === 0) _flushComposeSettleWaiters();
+}
+
+function _markComposeBgReload(delta, label) {
   _composeBgReloads = Math.max(0, _composeBgReloads + delta);
+  if (delta > 0) {
+    _composeBgLabels.push(label || _COMPOSE_BG_DEFAULT_LABEL);
+  } else if (delta < 0 && _composeBgLabels.length) {
+    // Remove THIS site's own label rather than blindly popping: the arrival
+    // volley overlaps, so decrements do not arrive in increment order. Resolve
+    // the key exactly the way the increment above does — 7 of the 12 call sites
+    // pass no label, and an unlabelled decrement that searched for `undefined`
+    // would miss, fall back to "splice the last entry", and remove a LABELLED
+    // auto-cascade entry still in flight (leaving the chip on a stale name). A
+    // user action during the arrival volley reaches this: `_setBusy` blocks no
+    // input, so Pin/Drop/Tailor are clickable while the volley runs.
+    const key = label || _COMPOSE_BG_DEFAULT_LABEL;
+    const at = _composeBgLabels.lastIndexOf(key);
+    _composeBgLabels.splice(at < 0 ? _composeBgLabels.length - 1 : at, 1);
+  }
+  if (_composeBgReloads === 0) _composeBgLabels = [];
   const list = document.getElementById('composeList');
   if (!list) return;
-  if (_composeBgReloads > 0) list.setAttribute('data-compose-bg-pending', '1');
-  else list.removeAttribute('data-compose-bg-pending');
+  if (_composeBgReloads > 0) {
+    list.setAttribute('data-compose-bg-pending', '1');
+  } else {
+    // A2 — release the "Composing…" hold SYNCHRONOUSLY, immediately BEFORE the
+    // removal that makes Compose.SETTLED observable. Ordering only; the
+    // attribute rule itself (present iff the counter is > 0, never "0") is
+    // byte-identical to what every settle consumer already depends on.
+    _flushComposeSettleWaiters();
+    list.removeAttribute('data-compose-bg-pending');
+  }
   // UX fix (feat/ux-busy-states-and-hydration) — the visible counterpart to
   // the test-only attribute above: same counter, same increments/decrements,
   // so the chip and the UX settle gate can never disagree about "is a
   // background reload in flight". Purely presentational — no new state.
   const chip = document.getElementById('composeBgChip');
-  if (chip) chip.classList.toggle('hidden', _composeBgReloads === 0);
+  if (chip) {
+    chip.classList.toggle('hidden', _composeBgReloads === 0);
+    // A2 — name the work while it is in flight; leave the last label in place
+    // on the way to hidden so the text never flashes back to the generic one.
+    if (_composeBgReloads > 0) {
+      chip.textContent = _composeBgLabels[_composeBgLabels.length - 1]
+        || _COMPOSE_BG_DEFAULT_LABEL;
+    }
+  }
+}
+
+// A2 — how many "Composing…" holds are live. `submitClarifications` /
+// `skipClarifications` each end with their own `_setBusy(false)` belonging to
+// an EARLIER phase of the same click; those must not tear this hold down, so
+// they route through `_clearBusyUnlessComposing()` instead.
+let _composeBusyHolds = 0;
+// Bound on the hold. A POST that rejects in a way that never reaches a terminal
+// render must not strand a "don't navigate away" banner over a usable page.
+const _COMPOSE_SETTLE_CAP_MS = 20000;
+
+function _clearBusyUnlessComposing() {
+  if (_composeBusyHolds > 0) return;
+  _setBusy(false);
+}
+
+// A2 (feat/compose-wait-ux) — the "Composing…" wait gate. The owner-observed
+// gap: the Compose panel becomes visible the moment `wizardGoTo(3)` runs, which
+// is when the background volley (positioning draft → skills recommend →
+// gap-fill → role intros) STARTS, not when it finishes — so the step read as
+// "done" while cards were still being torn down and rebuilt underneath.
+// Reuses the two existing idioms rather than inventing a third: `_setBusy`
+// (the app-wide "don't navigate away" banner) and the analyze/generate
+// streaming-panel block (#analysisPending / #generatePending → #composePending).
+// Held until the volley settles, released synchronously by
+// `_flushComposeSettleWaiters` at the true terminal render.
+function _holdComposingBusy() {
+  const list = document.getElementById('composeList');
+  // No list at all: nothing will ever flush a waiter, so do not raise an
+  // overlay that has nothing to release it.
+  if (!list) return;
+  // Already terminal — nothing in flight AND the settle marker present. NOTE at
+  // the only call site today (`_fireRecommendThenCompose`) the `hasAttribute`
+  // half cannot fire: loadComposition removes `data-compose-ready` at entry,
+  // synchronously, before this line runs. Kept because it is the correct
+  // defensive condition for any future caller that raises a hold outside that
+  // ordering — but it is not protection this code path currently receives.
+  if (_composeBgReloads === 0 && list.hasAttribute('data-compose-ready')) return;
+  const pending = document.getElementById('composePending');
+  _composeBusyHolds += 1;
+  _setBusy(true, 'Composing your tailored résumé');
+  if (pending) pending.classList.remove('hidden');
+  let released = false;
+  let capTimer = null;
+  const release = () => {
+    if (released) return;
+    released = true;
+    // Drop the cap timer on the normal (settle-driven) release. The `released`
+    // guard already makes a late fire a no-op, but without this every hold
+    // retains a live 20 s timer long after the volley finished.
+    if (capTimer != null) { clearTimeout(capTimer); capTimer = null; }
+    _composeBusyHolds = Math.max(0, _composeBusyHolds - 1);
+    if (pending) pending.classList.add('hidden');
+    if (_composeBusyHolds === 0) _setBusy(false);
+  };
+  _composeSettleWaiters.push(release);
+  // Idempotent: whichever of the two fires first wins.
+  capTimer = setTimeout(release, _COMPOSE_SETTLE_CAP_MS);
 }
 
 async function loadComposition() {
@@ -7363,6 +7517,12 @@ async function loadComposition() {
   _setLoadingPlaceholder(list, 'Scoring corpus against this job…');
   if (_composeApplicationId == null) {
     _setLoadingPlaceholder(list, 'Run ANALYZE first.');
+    // A2 — this pass ended without a terminal render, so Compose.SETTLED will
+    // never become true on it; release any "Composing…" hold here instead of
+    // leaving it to the cap (docs/dev/blast-radius/compose-wait-ux.md — the
+    // dossier's row 8 covers the TERMINAL-render insert only; the early-return
+    // inserts are not separately enumerated there, so no row number is cited).
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7374,11 +7534,13 @@ async function loadComposition() {
     );
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
   if (!res.ok) {
     _setLoadingPlaceholder(list, 'Failed to load composition.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7440,6 +7602,7 @@ async function loadComposition() {
   }
   if (!data.experiences || data.experiences.length === 0) {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7479,6 +7642,11 @@ async function loadComposition() {
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
   // Step 6 (Output) where it's clearly relevant.
+  // A2 — release the "Composing…" hold SYNCHRONOUSLY, immediately BEFORE the
+  // attribute set below: with the bg counter already at zero this line is the
+  // one that makes Compose.SETTLED observable, so flushing after it would leave
+  // a window where a settled reader still sees the overlay. Ordering only.
+  _settleComposeIfIdle();
   // Terminal render reached — re-set the settle marker cleared at entry (above).
   list.setAttribute('data-compose-ready', '1');
   _restoreScrollY(_scrollY);
@@ -7601,9 +7769,13 @@ async function _refreshLiveEditPreview(editorId, docType, frameId) {
 // server (it overwrites llm_summary_recommendation on each call). The
 // route returns the same shape as a fresh composition refresh, so we
 // reload composition after to surface the recommendation chips.
+// A2 — the label is the chip's text while this leg of the arrival volley runs;
+// declared once so the increment and its `finally` decrement cannot drift apart.
+const _BG_LABEL_RECOMMEND_SUMMARY = 'Choosing your positioning…';
+
 async function _fireRecommendSummary() {
   if (_composeApplicationId == null || !lastContextPath) return;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_RECOMMEND_SUMMARY);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-summary`,
@@ -7621,7 +7793,7 @@ async function _fireRecommendSummary() {
   } catch {
     // Non-blocking — Compose still works without the recommendation.
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_RECOMMEND_SUMMARY);
   }
 }
 
@@ -7629,6 +7801,8 @@ async function _fireRecommendSummary() {
 // positioning summary (Sonnet) at Compose, then refresh so the editable draft
 // shows. `force` just repaints the placeholder for an explicit Regenerate; the
 // route always overwrites composition_overrides.summary_text.
+const _BG_LABEL_DRAFT_SUMMARY = 'Drafting your positioning summary…';
+
 async function _fireDraftSummary(force, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   if (force) {
@@ -7654,7 +7828,7 @@ async function _fireDraftSummary(force, btn) {
   const claimed = _composeApplicationId;
   _draftSummaryFiredForApp = claimed;
   let persisted = false;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_DRAFT_SUMMARY);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-summary`,
@@ -7680,7 +7854,7 @@ async function _fireDraftSummary(force, btn) {
     // Release the claim on every non-success path, so the draft can be retried —
     // by the next loadComposition() pass, or by the user hitting Regenerate.
     if (!persisted && _draftSummaryFiredForApp === claimed) _draftSummaryFiredForApp = null;
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_DRAFT_SUMMARY);
     _clearBtnPending(btn, 'Regenerate');
   }
 }
@@ -7707,10 +7881,12 @@ function _failDraftSummary(msg) {
 // resurfaces a decided-on proposal. `btn` is the clicked button (present only for
 // the explicit trigger); its presence gates in-flight UI feedback + a result
 // toast so the silent auto-fire keeps its original non-blocking behavior.
+const _BG_LABEL_GAP_FILL = 'Finding gaps this résumé doesn’t cover yet…';
+
 async function _fireDraftGapFill(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   _setBtnPending(btn, 'Regenerating…');
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_GAP_FILL);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-gap-fill`,
@@ -7735,7 +7911,7 @@ async function _fireDraftGapFill(btn) {
     // over the corpus set; the explicit Regenerate surfaces a toast instead.
     if (btn) _toast('Network error regenerating suggestions.', true);
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_GAP_FILL);
     _clearBtnPending(btn, 'Regenerate suggestions');
   }
 }
@@ -8012,18 +8188,30 @@ function _renderSkillRow(it) {
       style: 'background:var(--brand);color:var(--bg-0);',
     }));
   }
-  // Pin toggle
+  // A2 (feat/compose-wait-ux) — pin/drop were a 📌/📍 and ✕/↩ pair of
+  // `.btn-icon` glyph buttons: the meaning had to be recovered from a `title`
+  // tooltip, and 📌-vs-📍 is a distinction most people cannot read at 12px.
+  // Switched to the SAME word-button idiom the compose bullet rows already use
+  // (`.corpus-action-btn` + the `.on` state class, _renderBulletRow_compose),
+  // so one affordance vocabulary covers both lists. The `.skill-pin` /
+  // `.skill-drop` classes are KEPT — `Compose.SKILL_DROP`
+  // (ui_pages/selectors.py) and `WizardComposePage.drop_skill()` select on
+  // them, and nothing selects on the glyphs.
   const pinBtn = _el('button', {
-    className: 'btn-icon skill-pin', title: 'Pin (always include)',
-    textContent: it.pinned ? '📌' : '📍',
+    className: 'corpus-action-btn skill-pin' + (it.pinned ? ' on' : ''),
+    title: 'Pin (always include this skill)',
+    textContent: it.pinned ? 'Pinned' : 'Pin',
   });
+  pinBtn.type = 'button';
   pinBtn.onclick = () => _toggleSkillPin(row);
   meta.appendChild(pinBtn);
   // Drop toggle
   const dropBtn = _el('button', {
-    className: 'btn-icon skill-drop', title: it.excluded ? 'Restore' : 'Drop (hide)',
-    textContent: it.excluded ? '↩' : '✕',
+    className: 'corpus-action-btn delete skill-drop' + (it.excluded ? ' on' : ''),
+    title: it.excluded ? 'Restore this skill' : 'Drop (hide this skill)',
+    textContent: it.excluded ? 'Dropped' : 'Drop',
   });
+  dropBtn.type = 'button';
   dropBtn.onclick = () => _toggleSkillDrop(row);
   meta.appendChild(dropBtn);
   // Reorder up/down
@@ -8038,12 +8226,30 @@ function _renderSkillRow(it) {
   return row;
 }
 
+// A2 — repaint both skill buttons from `_skillState` in one place. The two
+// togglers below each used to hand-write the glyphs, which is why the emoji
+// swap could not be done in the renderer alone: the first click would have
+// written a 📌 straight back over the word (blast-radius dossier row 50).
+function _refreshSkillRowActions(row) {
+  const s = row._skillState; if (!s) return;
+  const pin = row.querySelector('.skill-pin');
+  if (pin) {
+    pin.textContent = s.pinned ? 'Pinned' : 'Pin';
+    pin.classList.toggle('on', !!s.pinned);
+  }
+  const drop = row.querySelector('.skill-drop');
+  if (drop) {
+    drop.textContent = s.excluded ? 'Dropped' : 'Drop';
+    drop.classList.toggle('on', !!s.excluded);
+    drop.title = s.excluded ? 'Restore this skill' : 'Drop (hide this skill)';
+  }
+}
+
 function _toggleSkillPin(row) {
   const s = row._skillState; if (!s) return;
   s.pinned = !s.pinned;
   if (s.pinned) { s.excluded = false; row.classList.remove('skill-excluded'); }
-  const btn = row.querySelector('.skill-pin');
-  if (btn) btn.textContent = s.pinned ? '📌' : '📍';
+  _refreshSkillRowActions(row);
   _scheduleCompositionSave();
 }
 
@@ -8052,10 +8258,7 @@ function _toggleSkillDrop(row) {
   s.excluded = !s.excluded;
   if (s.excluded) { s.pinned = false; }
   row.classList.toggle('skill-excluded', s.excluded);
-  const pin = row.querySelector('.skill-pin');
-  if (pin) pin.textContent = s.pinned ? '📌' : '📍';
-  const drop = row.querySelector('.skill-drop');
-  if (drop) { drop.textContent = s.excluded ? '↩' : '✕'; drop.title = s.excluded ? 'Restore' : 'Drop (hide)'; }
+  _refreshSkillRowActions(row);
   _scheduleCompositionSave();
 }
 
@@ -8099,10 +8302,12 @@ function _collectSkillState() {
 // Fire recommend-skills (Haiku ordering). Idempotent server-side. Reloads
 // composition after so the new order + chips render. `explicit` distinguishes a
 // user click (always run) from the auto-fire on first load.
+const _BG_LABEL_RECOMMEND_SKILLS = 'Tailoring skills to this job…';
+
 async function _fireRecommendSkills(explicit, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   _setBtnPending(btn, 'Tailoring…');
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_RECOMMEND_SKILLS);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-skills`,
@@ -8115,7 +8320,7 @@ async function _fireRecommendSkills(explicit, btn) {
   } catch {
     if (explicit) _toast('Network error tailoring skills.', true);
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_RECOMMEND_SKILLS);
     _clearBtnPending(btn, 'Tailor skills to this JD');
   }
 }
@@ -8425,9 +8630,11 @@ function _maybeFireRecommendExperienceSummaries() {
   if (needs) _fireRecommendExperienceSummaries();
 }
 
+const _BG_LABEL_ROLE_INTROS = 'Choosing a role intro for each job…';
+
 async function _fireRecommendExperienceSummaries() {
   if (_composeApplicationId == null || !lastContextPath) return;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_ROLE_INTROS);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-experience-summaries`,
@@ -8439,7 +8646,7 @@ async function _fireRecommendExperienceSummaries() {
   } catch {
     // Non-blocking — Compose still works without the recommendation.
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_ROLE_INTROS);
   }
 }
 
@@ -8901,28 +9108,46 @@ function _renderBulletRow_compose(b, opts = {}) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag pending', textContent: 'Pending',
     }));
+  }
+  // A2 (feat/compose-wait-ux) — in-place Edit on EVERY suggested bullet, not
+  // only the `is_pending_review` ones. Before this, a bullet the AI put in front
+  // of you that you'd already approved (or that came straight from the corpus)
+  // had no way to be fixed without leaving the tailor flow for the Career Corpus
+  // tab and finding it again — a round trip the "edit it where you see it"
+  // affordance already existed for one row type and not the others.
+  // Same route as before (`PUT /api/bullets/<id>`, the one the Corpus tab uses)
+  // and therefore the same corpus-wide effect, which the modal now states
+  // plainly: on a non-pending bullet that effect is no longer self-evident.
+  // Deliberately appended to `.row-meta`, NOT `.row-actions` — `_refreshComposeRow`
+  // addresses the action buttons BY INDEX (`btns[0..2]`), so a fourth button
+  // there would put that contract one edit away from breaking.
+  const editBtn = _el('button', {
+    className: 'corpus-action-btn compose-bullet-edit', textContent: 'Edit',
+  });
+  editBtn.type = 'button';
+  editBtn.title = 'Edit this bullet — the change saves to your career corpus';
+  editBtn.onclick = () => _editComposeBullet(b, row);
+  meta.appendChild(editBtn);
+  if (b.is_pending_review) {
     // Walkthrough D3: edit + approve a proposed bullet INLINE in the tailor flow
     // (both persist straight to the corpus via the same routes the Corpus tab
     // uses), so the user never has to leave Compose to keep a proposed change.
-    const editBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'Edit',
-    });
-    editBtn.onclick = () => _editComposeBullet(b, row);
     const approveBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'Approve',
+      className: 'corpus-action-btn compose-bullet-approve', textContent: 'Approve',
     });
+    approveBtn.type = 'button';
     approveBtn.onclick = async () => {
       try {
         await _postJson(`/api/bullets/${b.id}/accept`, {});
         b.is_pending_review = false;
         meta.querySelector('.corpus-row-flag.pending')?.remove();
-        editBtn.remove();
+        // A2 — Edit SURVIVES approval now that it is no longer pending-only;
+        // only Approve retires (there is nothing left to approve).
         approveBtn.remove();
         await _refreshOnboardingBanner();
         _toast('Bullet approved — saved to your corpus');
       } catch (e) { _toast('Approve failed: ' + e.message, true); }
     };
-    meta.appendChild(editBtn);
     meta.appendChild(approveBtn);
   }
   const tagWrap = _el('span', { className: 'tag-chip-wrap' });
@@ -8932,13 +9157,20 @@ function _renderBulletRow_compose(b, opts = {}) {
   return row;
 }
 
-// Walkthrough D3 — edit a proposed (pending-review) bullet from the Compose step.
-// PUT /api/bullets/<id> persists the new text to the corpus (same route the
-// Career Corpus tab uses); the row updates in place. Approval is a separate click.
+// Walkthrough D3 — edit a bullet from the Compose step. PUT /api/bullets/<id>
+// persists the new text to the corpus (same route the Career Corpus tab uses);
+// the row updates in place. Approval is a separate click.
+// A2 — reachable from every compose bullet row now, not just the pending-review
+// ones, so the subtitle can no longer say "this proposed bullet": on an already-
+// approved corpus bullet the edit is corpus-wide and affects future applications
+// too, and that has to be said before the user commits to it, not after.
 async function _editComposeBullet(b, row) {
   const result = await openFormModal({
     title: 'Edit bullet',
-    subtitle: 'Edit this proposed bullet. Your change saves to your career corpus.',
+    subtitle: b.is_pending_review
+      ? 'Edit this proposed bullet. Your change saves to your career corpus.'
+      : 'This edits the bullet in your career corpus, so it applies to future '
+        + 'applications too — not just this one.',
     submitLabel: 'Save',
     fields: [
       { name: 'text', label: 'Bullet', type: 'textarea', required: true,

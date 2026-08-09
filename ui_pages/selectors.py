@@ -549,6 +549,14 @@ class Compose:
     SKILLS_CARD = "#composeList .skills-card"
     SKILL_ROW = ".compose-skill-row"
     SKILL_DROP = ".skill-drop"
+    # A2 (feat/compose-wait-ux) — the pin half of the pair. Both are word buttons
+    # on the `.corpus-action-btn` idiom now (they were 📌/📍 and ✕/↩ glyphs); the
+    # CLASS hooks above/below are unchanged, so drop_skill() is unaffected.
+    SKILL_PIN = ".skill-pin"
+    # A2 — in-place Edit, now on every compose bullet row rather than only the
+    # `is_pending_review` ones.
+    BULLET_EDIT = ".compose-bullet-edit"
+    BULLET_APPROVE = ".compose-bullet-approve"
     # Settle signal: loadComposition() (static/app.js) clears this on #composeList
     # at entry (before its fetch) and sets it after the final synchronous append,
     # so a *stably present* marker proves the auto-recommend re-render cascade
@@ -563,4 +571,27 @@ class Compose:
     # ONLY (READY present + bg-pending absent) state is the true terminal render —
     # making this a deterministic settle signal (no timing heuristic). Consumed by
     # WizardComposePage._wait_settled.
+    #
+    # A2 (feat/compose-wait-ux) — this contract now has a SECOND consumer, and
+    # the fact matters to anyone editing the two strings above. The product's own
+    # "Composing…" wait gate (`_holdComposingBusy` / `_flushComposeSettleWaiters`
+    # in static/app.js) waits on the SAME two signals, read from their in-app
+    # source rather than from the DOM. It deliberately does not widen, narrow or
+    # otherwise redefine either selector: `data-compose-ready` is still cleared at
+    # loadComposition()'s entry and set only at its terminal render, and
+    # `data-compose-bg-pending` is still present iff the counter is > 0.
+    # The one guarantee A2 adds — relied on by the busy-state regression tests —
+    # is ORDERING: the gate's release runs SYNCHRONOUSLY immediately before
+    # whichever DOM mutation makes SETTLED true, so a reader that observes SETTLED
+    # can never also observe the wait overlay still up. Enumeration + the
+    # alternatives rejected: docs/dev/blast-radius/compose-wait-ux.md.
     SETTLED = "#composeList[data-compose-ready]:not([data-compose-bg-pending])"
+    # A2 — the in-panel wait block for the arrival volley, on the same idiom as
+    # the analyze/generate streaming panels (#analysisPending / #generatePending).
+    PENDING = "#composePending"
+    # A2 — the app-wide "working…" banner _setBusy() creates (static/app.js).
+    # Lived as a bare literal in tests/ux/regression/test_20260708_busy_states_
+    # and_chip.py; registered here because A2's tests need it too and two copies
+    # of one selector string in two files is the drift this registry prevents.
+    BUSY_BANNER = "#_busyBanner"
+    BUSY_BANNER_TEXT = "#_busyBanner .cb-busy-text"
