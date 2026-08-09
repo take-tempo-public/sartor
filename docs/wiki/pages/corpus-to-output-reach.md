@@ -121,7 +121,7 @@ to the LLM — underneath Step-5 copy promising no AI variation. The frontend ga
 built on this is in [[frontend-wizard]] `[synthesis]`.
 
 The predicate is deliberately cheap enough to call on every resume-state build and
-every composition save — at most five `dict.get` lookups on an already-loaded dict,
+every composition save — at most six `dict.get` lookups on an already-loaded dict,
 short-circuiting on the first miss, returning the document by reference with no copy
 and no traversal of `work` / `skills` past a truthiness test — which is why the
 design is "call it from all three seams" rather than "cache the answer"

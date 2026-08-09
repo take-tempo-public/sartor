@@ -1507,3 +1507,31 @@ claims still hold at HEAD):
 `blueprints/applications.py:_pre_generate_hydration`), never a bare `path:line` — following
 the previous entry's carried-forward method note. That convention is still **unenforced**:
 `SCHEMA.md` prefers it, and nothing rejects a bare line cite.
+
+## 2026-08-09 — grounding-audit corrections to the item-20 pass (3 findings applied)
+
+Independent auditors grounding-audited the item-20 pass logged directly above (author ≠
+auditor — that pass's four pages were all written by the closing context and were **not**
+self-audited). Three findings, all applied here; each premise was re-verified against the
+code before editing rather than taken on the auditors' word.
+
+| # | finding | fix |
+|---|---|---|
+| 1 | Off-by-one cost claim. `corpus-to-output-reach` and the `hardening.frozen_composition_doc` docstring both said "at most **five** `dict.get` lookups". The worst case is **six**: `career_corpus`, `approved_composition`, `basics`, `basics.get("summary")`, `doc.get("work")`, `doc.get("skills")` — the last reached only when `work` and `summary` are both falsy in the `or`-chain. | Both places corrected to six. The allocation-free / by-reference / short-circuit parts of the claim re-audited as correct and left alone. |
+| 2 | `context-set-contract` conflated two counts, saying the predicate is asked at "three seams across `blueprints/generation.py`, `blueprints/applications.py` and the wizard rail". Two *implementations* once existed and disagreed (that is the drift the shared helper fixed); **three** *call sites* exist today (`generation.py:_frozen_composition`, `applications.py:_pre_generate_hydration`, `applications.py:save_application_composition`); the wizard rail is neither — it reads the server's flag and never computes the predicate. | Sentence rewritten so the two counts are distinct and the rail is described as a **consumer** of the decision. Now consistent with the docstring's own "those two … / all three seams" language. |
+| 3 | True claim cited to a source that does not contain it. The page said the predicate lives in `hardening.py` because `applications` cannot import `generation` (cycle: `generation` → `templates` → `applications`). The cycle is real, but the rationale appeared in neither the cited source nor the docstring, which said only "because more than one seam has to ask the question and they must not answer it differently". | Fixed by making it **sourced**, not by weakening the page: the import-cycle rationale was added to the `frozen_composition_doc` docstring, next to the code it explains, so the page's citation is now honest. |
+
+**Import cycle verified first-hand**, not inherited: `blueprints/generation.py` imports
+`blueprints.templates`; `blueprints/templates.py` imports `blueprints.applications`
+(`_load_application_owned`); `blueprints/applications.py` imports no `blueprints.generation`
+at all (its only two matches for the string are a docstring and a comment). `hardening.py`
+imports no blueprint, and both blueprints already import it — so it is the only shared home
+that costs nothing structurally. That last sentence is now in the docstring.
+
+**Sources touched:** `hardening.py` (`frozen_composition_doc` docstring only — the module is
+deterministic under charter C-6, and no logic, import, or behavior changed). It is in
+`ACKNOWLEDGED_NOT_GATED` in `scripts/enforcement/blast_radius.py`, confirmed before editing,
+so no C-10 blast-radius dossier is owed.
+
+**Cite convention.** Symbol cites throughout, no bare `path:line` — carried forward from the
+two entries above. Still **unenforced**: `SCHEMA.md` prefers it, nothing rejects a line cite.

@@ -1814,6 +1814,12 @@ def frozen_composition_doc(context_set: Mapping[str, Any]) -> dict[str, Any] | N
       and the ``/composition`` freeze response's ``frozen`` field — together decide
       whether the Step-5 wizard rail OPENS (``_wizardReachable`` in static/app.js).
 
+    Neither of those seams could host it. ``blueprints/applications.py`` cannot import
+    ``blueprints/generation.py``: ``generation`` imports ``blueprints.templates``, which
+    imports ``blueprints.applications``, so the reverse edge would close an import cycle.
+    ``hardening`` imports no blueprint at all and both already import it, so it is the
+    only shared home that costs nothing structurally.
+
     Those two were separate implementations of "frozen" for one sprint and disagreed:
     the client's asked only "is there an ``approved_composition`` dict?", so a freeze
     that produced a CONTENTLESS document (or a context whose analyze-time
@@ -1832,7 +1838,7 @@ def frozen_composition_doc(context_set: Mapping[str, Any]) -> dict[str, Any] | N
     Otherwise None, and the caller falls through to the UNCHANGED ``generate()`` LLM
     path, so legacy + ``--suite synthetic`` stay byte-identical.
 
-    Deterministic and allocation-free: at most five ``dict.get`` lookups on an
+    Deterministic and allocation-free: at most six ``dict.get`` lookups on an
     already-loaded dict, short-circuiting on the first miss, and the document is
     returned BY REFERENCE — no copy, no traversal of ``work``/``skills`` beyond a
     truthiness test. Cheap enough to call on every resume-state build and on every

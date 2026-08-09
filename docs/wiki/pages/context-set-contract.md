@@ -67,10 +67,17 @@ Everything past analyze is added on demand, so older context files round-trip un
   contexts round-trip unchanged `[synthesis]`. Whether a given context counts as
   frozen is **not** a per-caller judgement: [`hardening.py:frozen_composition_doc`](../../../hardening.py)
   is the one predicate — corpus-mode, `approved_composition` is a dict, and that
-  document has content — and it lives here, in the module that owns this contract,
-  because three seams across `blueprints/generation.py`, `blueprints/applications.py`
-  and the wizard rail must not answer it differently (Epic A item 20; see
-  [[corpus-to-output-reach]] and [[frontend-wizard]]).
+  document has content. It lives here, in the module that owns this contract, because
+  **two** independent implementations of "frozen" once existed — one in
+  `blueprints/generation.py`, one in `blueprints/applications.py` — and disagreed;
+  neither seam could host the shared one, since `applications` cannot import
+  `generation` without closing the `generation` → `blueprints.templates` →
+  `applications` import cycle. It is called from **three** sites today
+  (`generation.py:_frozen_composition`, `applications.py:_pre_generate_hydration`,
+  `applications.py:save_application_composition`). The Step-5 wizard rail is a
+  **consumer** of the answer, not a fourth implementation: it reads the server's flag
+  and never computes the predicate (Epic A item 20; see [[corpus-to-output-reach]] and
+  [[frontend-wizard]]).
 
 ## Two builders, one shape
 
