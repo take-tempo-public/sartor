@@ -137,7 +137,24 @@ def test_frozen_composition_path_shows_deterministic_copy(
 def test_legacy_path_never_claims_deterministic_assembly(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Rail-jump to Step 5 WITHOUT a freeze → the LLM framing, no determinism claim."""
+    """A run the server will NOT assemble deterministically must never be shown the
+    determinism claim — which, after item 20, means it cannot reach Step 5 at all.
+
+    Item 20 (`fix/wizard-rail-frozen-composition-gate`) rewrote this test. It used
+    to drive a rail-jump straight to Step 5 with nothing frozen and assert the panel
+    OPENED — i.e. it pinned exactly the flow item 20 closes, the one that reaches
+    the retired full-LLM `generate()` under copy claiming otherwise. The invariant
+    it was really protecting survives the gate and is asserted here in its stronger
+    form: the phrase is nowhere in the document, not merely hidden inside a panel.
+
+    Everything below is driven by real user action and read through Playwright
+    visibility. An earlier revision of this rewrite reached for
+    `page.evaluate("_compositionFrozen = false; _renderGenerateStepCopy()")` to keep
+    exercising the legacy copy render — a state the real app can no longer enter,
+    asserted via `class`-attribute substring matching that would have passed even if
+    the panel never rendered at all. Fabricating unreachable state is not coverage;
+    the reachable half is what a user can actually meet.
+    """
     from tests.ux.stubs import install_llm_stubs
 
     cid = seed_user(ux_app, "alice")
@@ -148,19 +165,25 @@ def test_legacy_path_never_claims_deterministic_assembly(
     UserPickerPage(page, live_server).select("alice")
     WizardJobPage(page, live_server).open().analyze(_JD)
 
-    # Straight to Step 5 via the rail — no Compose save, nothing frozen.
-    base = BasePage(page, live_server)
-    base.goto_step(5)
-    page.wait_for_selector(Wizard.PANEL_GENERATE, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    # No Compose save, nothing frozen: the rail refuses Step 5. (Asserted rather
+    # than clicked — a disabled button never satisfies Playwright's actionability
+    # wait, so a click here would time out instead of reporting the refusal.)
+    expect(BasePage(page, live_server).rail_step(5)).to_be_disabled()
+    expect(page.locator(Wizard.PANEL_GENERATE)).to_be_hidden()
+    expect(page.locator(Wizard.GENERATE_COPY_FROZEN)).to_be_hidden()
+    # The determinism claim is nowhere the user can read it — the assertion the
+    # pre-item-20 version of this test made against the opened panel, kept at
+    # document scope now that the panel itself is unreachable.
+    assert "assembled instantly" not in (page.locator("body").inner_text() or "").lower()
 
-    legacy = page.locator(Wizard.GENERATE_COPY_LEGACY)
-    expect(legacy).to_be_visible(timeout=DEFAULT_TIMEOUT_MS)
-    assert "the ai writes a tailored" in (legacy.text_content() or "").lower()
-    frozen = page.locator(Wizard.GENERATE_COPY_FROZEN)
-    expect(frozen).to_be_hidden()
-    # The determinism claim is nowhere in the visible panel.
-    panel_text = (page.locator(Wizard.PANEL_GENERATE).inner_text() or "").lower()
-    assert "assembled instantly" not in panel_text
+    # `#generateStepCopyLegacy` is retained (not deleted) as the honest fallback if
+    # any future path ever reaches Step 5 unfrozen — see the dossier's "Deliberately
+    # NOT changed" note. It has no reachable render today, so this asserts only what
+    # is true without fabricating state: it is in the DOM and still carries the LLM
+    # framing, never the determinism claim.
+    legacy_copy = (page.locator(Wizard.GENERATE_COPY_LEGACY).text_content() or "").lower()
+    assert "the ai writes a tailored" in legacy_copy
+    assert "assembled instantly" not in legacy_copy
 
 
 # ---------------------------------------------------------------------------

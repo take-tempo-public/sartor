@@ -6698,11 +6698,17 @@ function resumeApplicationIntoWizard(detail) {
   // so preview iframes + downloads honor the template. lastContextPath enables
   // the Step 2/3 reachability gate (_wizardReachable).
   _composeApplicationId = detail.id;
-  // F-09: conservative reset — the resume payload doesn't say whether this
-  // context carries a frozen approved_composition, so Step 5 shows the legacy
-  // copy until the user re-freezes via Compose's Save-and-continue. Never
-  // claims determinism it can't verify.
-  _compositionFrozen = false;
+  // F-09 + item 20: the resume payload NOW says whether this context carries a
+  // frozen approved_composition (`has_frozen_composition`, from
+  // blueprints/applications.py::_pre_generate_hydration), so this reads the fact
+  // instead of the old conservative hard-`false`. That reset was harmless while
+  // Step 5 was ungated and a lock-out the moment it wasn't: observed on the base
+  // tip, a resumed application whose context DID carry the frozen document
+  // reported `frozen: False` (docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md,
+  // observation 4). Still never claims determinism it can't verify — the flag is
+  // false whenever the field is absent, which covers a degraded resume with no
+  // live context file and every pre-freeze-era application.
+  _compositionFrozen = !!(rs && rs.has_frozen_composition);
   const personaSel = document.getElementById('personaSelect');
   if (personaSel && rs.persona_template_id != null) {
     personaSel.value = String(rs.persona_template_id);
@@ -7144,17 +7150,56 @@ function wizardInit(opts) {
 function _wizardReachable(step) {
   // Forward gating after B1 reorder:
   //   Step 1 always reachable; Step 2+ needs a successful analysis;
-  //   Step 6 needs a successful generation.
+  //   Step 5 needs a FROZEN composition; Step 6 needs a successful generation.
   if (step >= 2 && !lastContextPath) return false;
+  // Item 20 (fix/wizard-rail-frozen-composition-gate) — Step 5 used to open on
+  // nothing but a context path, so a rail click that skipped Compose reached
+  // Generate with no `approved_composition`; server-side
+  // `blueprints/generation.py::_frozen_composition` then returns None and the
+  // retired full-LLM `generate()` fires. Observed (driven run) in
+  // docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md, observations 1+3.
+  //
+  // The condition is exactly "the server will assemble this deterministically"
+  // (`hardening.frozen_composition_doc` — the same predicate `/api/generate` uses
+  // to choose between the deterministic assemble and the legacy `generate()`).
+  // NOT the weaker "Compose's Save-and-continue completed": that admitted runs the
+  // server then refused to assemble, under Step-5 copy promising "no AI variation"
+  // — item 20's own defect, one layer in. `_compositionFrozen` carries the server's
+  // answer from BOTH its setters — the freeze response's `frozen` field in-session,
+  // and the resume payload's `has_frozen_composition` for a reloaded prior
+  // application. Neither is a client re-derivation.
+  //
+  // This locks out a candidate whose analyze-time `career_corpus` snapshot is empty
+  // (zero active roles), which is intended: that run WOULD reach the LLM path, so
+  // the determinism claim behind the rail would be false. They are not walled out —
+  // steps 1-4 stay reachable off `lastContextPath` alone, so Compose (step 3) is
+  // always one click away, and step 1 re-runs analyze after the Career Corpus panel
+  // (outside the rail) has roles in it again.
+  //
+  // Step 6 stays gated on `lastResumePath` alone: a run that WAS generated must
+  // remain downloadable even when its freeze state can't be recovered.
+  if (step === 5 && !_compositionFrozen) return false;
   if (step >= 6 && !lastResumePath) return false;
   return true;
 }
 
+// Item 20 — ONE message source for both refusals a locked step can produce: the
+// toast on an attempted navigation, and the `title` on the greyed rail button.
+// A greyed step carrying no explanation reads as a bug, and Step 5's lock in
+// particular is a flow requirement (finish Compose), not a missing analysis —
+// so it must not inherit the generic "Run ANALYZE first" text.
+function _wizardLockReason(step) {
+  if (step >= 6) return 'Generate the documents first.';
+  if (step === 5 && lastContextPath) {
+    return 'Save your composition in Compose (step 3) first — Generate builds '
+      + 'the documents from exactly what you approved there.';
+  }
+  return 'Run ANALYZE first (step 1).';
+}
+
 function wizardGoTo(step, opts) {
   if (!_wizardReachable(step)) {
-    _toast(step >= 6
-      ? 'Generate the documents first.'
-      : 'Run ANALYZE first (step 1).', true);
+    _toast(_wizardLockReason(step), true);
     return;
   }
   _wizardStep = step;
@@ -7219,7 +7264,9 @@ function _wizardRender(opts) {
     // unnoticed. A tooltip on reachable steps announces they're clickable.
     const _lbl = btn.querySelector('.wizard-label');
     const _lblText = (_lbl && _lbl.textContent) ? _lbl.textContent : `Step ${s}`;
-    if (btn.disabled) btn.removeAttribute('title');
+    // Item 20: a locked step now says WHY it is locked (same text the refusal
+    // toast uses) instead of silently dropping its tooltip.
+    if (btn.disabled) btn.title = _wizardLockReason(s);
     else btn.title = isActive ? `You're on step ${s}: ${_lblText}`
                               : `Go to step ${s}: ${_lblText}`;
     // Swap the number for ✓ on done steps; restore the digit otherwise.
@@ -9322,7 +9369,17 @@ async function _postComposition(state) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || `HTTP ${res.status}`);
   }
-  return true;
+  // Item 20 (adversarial review, finding 1) — returns the SERVER's `frozen`, not a
+  // bare "the POST succeeded". A `freeze: true` save can land 200 and still write a
+  // document /api/generate refuses to assemble deterministically (contentless, or a
+  // context whose analyze-time career_corpus snapshot is empty), in which case the
+  // server runs the legacy LLM path. `saveCompositionThenNext` sets
+  // `_compositionFrozen` from this and `_wizardReachable` opens Step 5 on it, over
+  // copy promising "no AI variation" — so this has to be the server's answer to the
+  // same question, never the client's own guess at it. Non-freeze autosaves get
+  // `frozen: false` and ignore the return.
+  const body = await res.json().catch(() => ({}));
+  return body.frozen === true;
 }
 
 // Debounced (~300ms) optimistic autosave. The DOM is already updated by the
@@ -9442,10 +9499,12 @@ async function saveCompositionThenNext() {
     // Generation-experience re-architecture — Save-and-continue FREEZES the
     // approved composition (the single content contract downstream renders). The
     // debounced autosave omits `freeze`, so only this explicit action snapshots.
-    // F-09: only claim the deterministic-assembly copy when the freeze POST
-    // actually landed (_postComposition returns false on its no-app/no-context
-    // guard — e.g. a degraded resume with no live context file — and throws on
-    // HTTP failure, caught below).
+    // F-09 + item 20: only claim the deterministic-assembly copy when the server
+    // says this freeze produced a document it will actually assemble from.
+    // `_postComposition` returns the response's `frozen` — false on its
+    // no-app/no-context guard (e.g. a degraded resume with no live context file),
+    // false when the freeze landed but resolved to nothing the assemble path can
+    // use, and it throws on HTTP failure (caught below).
     _compositionFrozen = (await _postComposition({ ...state, freeze: true })) === true;
     _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {

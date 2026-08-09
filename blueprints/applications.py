@@ -51,7 +51,7 @@ from flask.typing import ResponseReturnValue
 from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
-from hardening import context_transaction
+from hardening import context_transaction, frozen_composition_doc
 from web_infra import (
     PathTraversalError,
     _error_detail_payload,
@@ -311,6 +311,21 @@ def _pre_generate_hydration(ctx_data: dict[str, Any]) -> dict[str, Any] | None:
     `loadComposition()`, since the actual composition content itself lives
     behind the separate `/composition` route, not in the context file).
 
+    Item 20 adds `has_frozen_composition`: whether this context is one
+    `/api/generate` will assemble DETERMINISTICALLY. The Step-5 rail gate
+    (`_wizardReachable` in static/app.js) is a hard gate now, and
+    `_compositionFrozen` is otherwise a session-only client flag — without this
+    field a resumed application that WAS frozen reports unfrozen and Generate
+    stays locked.
+
+    It is `hardening.frozen_composition_doc` — the SAME predicate
+    `blueprints/generation.py::_frozen_composition` applies when it chooses between
+    the deterministic assemble and the legacy LLM `generate()` — not a local
+    re-derivation of it. An earlier revision used the weaker "an
+    `approved_composition` key is present", which admitted runs the server then
+    refused to assemble; the Step-5 copy behind the rail promises "no AI
+    variation", so the rail has to gate on the server's own answer.
+
     Shared by the two `_build_resume_state` call sites (feat/ux-busy-states-and-
     hydration, Option A): the pre-generate branch below, which uses it to pick
     the furthest step to land on directly, AND the Step-6 (résumé generated)
@@ -330,6 +345,7 @@ def _pre_generate_hydration(ctx_data: dict[str, Any]) -> dict[str, Any] | None:
         "has_composition": bool(
             ctx_data.get("composition_overrides") or ctx_data.get("llm_recommendations")
         ),
+        "has_frozen_composition": frozen_composition_doc(ctx_data) is not None,
     }
     if ctx_data.get("clarifications") or ctx_data.get("clarification_questions"):
         hydration["clarification_questions"] = ctx_data.get("clarification_questions") or []
@@ -1693,6 +1709,11 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         # delta — but the surrounding whole-dict write-back used to erase any OTHER
         # route's key that landed in the meantime (e.g. llm_recommendations). That is
         # the lost update; the transaction closes it.
+        #
+        # `frozen_assemblable` stays False unless the freeze below both runs AND
+        # produces an assemblable document — a plain (non-freeze) autosave is never
+        # "frozen".
+        frozen_assemblable = False
         with context_transaction(cp) as fresh:
             fresh["composition_overrides"] = overrides
 
@@ -1725,6 +1746,19 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                     application_id=application_id,
                     context_data=fresh,
                 )
+                # Item 20 (adversarial review, finding 1) — `frozen` reports whether
+                # the snapshot we just wrote is one /api/generate will actually
+                # assemble deterministically, NOT merely that a freeze was requested
+                # and a dict got written. The client sets `_compositionFrozen` from
+                # this and the Step-5 rail gates on that flag, over copy promising
+                # "no AI variation": a freeze whose resolved document is contentless
+                # (every role retired, the positioning draft cleared, no skills) is
+                # a dict the server's own gate rejects, so answering `true` here
+                # would open Generate onto the legacy LLM path. Same predicate the
+                # generate route applies — `hardening.frozen_composition_doc`.
+                # Computed in-lock, on the dict about to be written, so it describes
+                # the state the next reader sees.
+                frozen_assemblable = frozen_composition_doc(fresh) is not None
         return jsonify(
             {
                 "application_id": application_id,
@@ -1743,7 +1777,7 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 "summary_text_edited": summary_text_edited_in,
                 "accepted_generated_bullet_ids": accepted_generated_in,
                 "retired_gap_fill_keys": retired_gap_fill_in,
-                "frozen": bool(freeze),
+                "frozen": frozen_assemblable,
             }
         )
     finally:

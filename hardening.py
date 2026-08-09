@@ -1799,6 +1799,61 @@ def save_context_set(context_set: ContextSet, username: str, base_dir: str = "ou
     return str(path)
 
 
+def frozen_composition_doc(context_set: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the frozen ``approved_composition`` doc a context will ASSEMBLE from, else None.
+
+    **The single definition of "this context is frozen."** Generation-experience
+    re-architecture Phase 4 made this the deterministic-assemble gate; it lives here,
+    in the module that owns the ``ContextSet`` contract, because more than one seam
+    has to ask the question and they must not answer it differently:
+
+    - ``blueprints/generation.py::_frozen_composition`` — decides whether
+      ``/api/generate`` assembles deterministically or falls through to the legacy
+      full-LLM ``generate()``.
+    - ``blueprints/applications.py::_pre_generate_hydration`` (``has_frozen_composition``)
+      and the ``/composition`` freeze response's ``frozen`` field — together decide
+      whether the Step-5 wizard rail OPENS (``_wizardReachable`` in static/app.js).
+
+    Those two were separate implementations of "frozen" for one sprint and disagreed:
+    the client's asked only "is there an ``approved_composition`` dict?", so a freeze
+    that produced a CONTENTLESS document (or a context whose analyze-time
+    ``career_corpus`` snapshot is empty) opened the rail onto Step-5 copy claiming
+    "Assembled instantly … no AI variation" over a run the server then handed to the
+    LLM. Adding a second copy of this predicate is how that recurs — call this.
+
+    Present ONLY when all three hold:
+
+    1. the context is corpus-mode (``career_corpus`` non-empty) — a legacy file-based
+       context, or a candidate with zero ACTIVE roles at analyze time, has none;
+    2. ``approved_composition`` is a dict — Compose's Save-and-continue (freeze) wrote
+       one; the debounced autosave never does;
+    3. that document has CONTENT — any of ``work`` / ``basics.summary`` / ``skills``.
+
+    Otherwise None, and the caller falls through to the UNCHANGED ``generate()`` LLM
+    path, so legacy + ``--suite synthetic`` stay byte-identical.
+
+    Deterministic and allocation-free: at most five ``dict.get`` lookups on an
+    already-loaded dict, short-circuiting on the first miss, and the document is
+    returned BY REFERENCE — no copy, no traversal of ``work``/``skills`` beyond a
+    truthiness test. Cheap enough to call on every resume-state build and on every
+    composition save, which is why the fix is "call this from all three seams" rather
+    than "cache the answer somewhere".
+
+    Args:
+        context_set: A loaded context dict (a ``ContextSet`` or the plain ``json.loads``
+            of a ``context_*.json`` — both are read by key only).
+    """
+    if not context_set.get("career_corpus"):
+        return None
+    doc = context_set.get("approved_composition")
+    if not isinstance(doc, dict):
+        return None
+    basics = doc.get("basics")
+    summary = basics.get("summary") if isinstance(basics, dict) else None
+    has_content = bool(doc.get("work") or summary or doc.get("skills"))
+    return doc if has_content else None
+
+
 def summarize_recent_edits(context_set: ContextSet) -> str:
     """Compact text summary of what the candidate edited since last generation.
 

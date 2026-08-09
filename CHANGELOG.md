@@ -50,6 +50,48 @@ edit, including the correction that there are **12** background-reload call site
 rather than the 9 the plan quoted from a historical fix — is in
 [`docs/dev/blast-radius/compose-wait-ux.md`](docs/dev/blast-radius/compose-wait-ux.md).
 
+### Fixed: the wizard rail let Generate run the retired full-LLM path (`fix/wizard-rail-frozen-composition-gate`, Epic A / item 20)
+
+Step 5 (Generate) opened on nothing more than "an analysis exists". A user who
+analyzed and then clicked **5 · Generate** on the rail arrived having never passed
+through **3 · Compose**, so no composition had been frozen — and with no approved
+composition to assemble, generation fell through to the **legacy full-LLM path**
+the frozen-composition re-architecture retired for corpus-mode users. The step's
+own copy already branched between a "the AI writes it" and a "assembled from your
+approved composition" variant *because both paths were live*.
+
+Step 5 is now hard-gated: the rail button is disabled unless generation will
+actually assemble from an approved composition, and it says why rather than
+greying out mutely. The refusal text and the button's tooltip come from one
+source, so they cannot drift apart.
+
+**"Will it assemble?" is one question with one answer.** The rail asks the same
+predicate the generate route itself applies, rather than its own approximation of
+it — because the copy behind the rail promises "same input, same résumé, no AI
+variation", and only the generate route knows whether that is true. A first cut of
+this fix used the looser test "did Save and continue run?", which is not the same
+question: a save can complete and still leave nothing to assemble from (every role
+retired, the positioning draft cleared), and the rail would have opened on it.
+That gap is closed by construction now — the predicate has one implementation and
+three callers, and the tests assert their *agreement* rather than checking each
+side's expectations separately.
+
+**The server-side fallback is deliberately unchanged.** It remains correct for the
+cases that legitimately have nothing to assemble — a candidate with no active
+roles, or a pre-corpus context — and two committed route tests pin it. The rail is
+the gate; the fallback is the floor. A user in that state is not stuck: the earlier
+steps stay open, so the way forward is to put content back into the composition (or
+the corpus) and come through again.
+
+Found while fixing it, and fixed with it: resuming a prior application reported it
+as *unfrozen* regardless of what its saved context held, because the "is it
+frozen?" flag lived only in the browser session. That was harmless while Step 5 was
+ungated and would have become a lock-out the moment it wasn't — a resumed run that
+genuinely had a frozen composition would have found Generate greyed out. The
+resume payload now carries the fact. Evidence, the widened instrument that caught
+that second defect, and the alternatives killed along the way are in
+[`docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md`](docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md).
+
 ### Fixed: retiring a role with zero bullets silently did nothing (`fix/experience-soft-retire`, Epic A / A1b)
 
 `DELETE /api/experiences/<id>` implemented "retire" as a cascade onto the role's
