@@ -402,6 +402,15 @@ The chain stops and waits for the owner at each of these, every time:
 2. A hook blocks and the block **cannot be cleared by doing the work it asks for** (writing
    the dossier, writing the observation). A hook cleared by doing the work is not a stop —
    it is the hook functioning, and the run continues.
+   > **Scoped interpretation, dated 2026-08-09, Epic A chain only** (flagged by the
+   > compliance witness). Binding rule 3 in `docs/dev/AGENT_HANDOFF_TEMPLATE.md` is
+   > **mandatory-verbatim** and states unconditionally: *"If a hook blocks you: surface the
+   > hook name and its message, and STOP."* This clause narrows that for the chain envelope
+   > and **does not amend the template**, whose text stays binding and unmodified. The
+   > narrowing matches long-standing practice — the C-7 evidence guard is routinely satisfied
+   > by writing the dossier without pausing for the owner — but it is an interpretation, so it
+   > is dated and scoped here rather than left as a silent contradiction between two live
+   > sources. The prohibition on *bypassing* a hook is untouched and absolute.
 3. An adversarial reviewer returns a **CONFIRMED** correctness/regression finding whose fix
    would **change the sprint's scope** rather than correct its implementation.
 4. Evidence required by C-7 **cannot be obtained** — the defect will not reproduce, or the
@@ -469,6 +478,14 @@ expensive way on A2 (2026-08-09), twice in one sprint:
 Cost to the orchestrator is near zero — a detached launch plus a waiter that returns the
 terminal summary and a rerun sweep — and it cannot die with an agent.
 
+> **SUPERSEDED IN PART, 2026-08-09 — see §14.7.** The reason given below is **false**.
+> Claude Code's PreToolUse payload *does* carry `agent_id` / `agent_type` inside a subagent,
+> documented explicitly for this purpose. This seam **is gateable**; no such guard exists here
+> yet, which is an implementation gap, not a platform limit. The rule below remains unenforced
+> **in fact** — nothing currently checks it — but it is no longer unenforce**able**, so under
+> C-11 a gate is the default response and the exception path no longer applies. Do not build
+> one off this note: §14.7 records why it needs its own adversarial pass first.
+
 **Unenforced — labelled as C-11 requires.** No gate distinguishes a main-session `Edit`
 from a subagent's, so 11.9 is prose discipline, not a mechanism. The falsifiable check the
 owner can run cheaply: at each sprint's review point every changed file must be accounted
@@ -534,9 +551,24 @@ here fixes this instance, **not the class**.
 
 This section makes the stop conditions **explicit and finite**. It does not make them
 correct, and it cannot stop an agent from stopping on something it should have decided, or
-deciding something it should have surfaced. It is a written envelope, not a mechanism —
-except for 11.5's halt points, which coincide with hooks that already fail closed
-(`block-merge-to-main`, `require-feature-branch`).
+deciding something it should have surfaced. **It is a written envelope, not a mechanism.**
+
+**CORRECTION (compliance witness, 2026-08-09).** An earlier revision claimed the halt points
+*"coincide with hooks that already fail closed (`block-merge-to-main`,
+`require-feature-branch`)."* Checked against the guards: **one narrow sub-case of one of the
+five is gated.** `block_merge_to_main` fires only on `git merge` / `git push` **targeting
+`main`/`master`** — it does **not** fire on `gh pr create` (no PR-creation gate exists
+anywhere in this repo) and does **not** fire on `git push -u origin <feature-branch>`, the
+routine act of publishing a sprint branch. `require_feature_branch` blocks `Edit`/`Write`
+while HEAD is `main` — an unrelated obligation that does not back halt point 1 at all.
+**Halt points 2–5 have no hook backing whatsoever.**
+
+So, explicitly, per C-11's rule that an undeclared gap is counted as protection by whoever
+reads next: **unenforced** — PR creation, feature-branch push, halt point 2
+(schema/security/architecture), halt point 3 (contradicting a recorded owner decision), halt
+point 4 (release-blocking discoveries), halt point 5 (branch pruning). The overclaim occurred
+in the one section whose entire job is honest disclosure, two subsections after §11.9 got the
+identical discipline right.
 
 ---
 
@@ -577,7 +609,26 @@ All three from session transcripts under `~/.claude/projects/C--Dev-sartor/`, by
 |---|---|---|---|---|
 | 1 | `c42da573` | 2026-08-08 17:57Z → 08-09 02:02Z (~8h) | **Owner interrupt** | Implemented A1a **by hand** (16 `Edit` / 8 `Write`), launched exactly **one** implementer Agent, downgraded the mandated Sonnet reviewer to inline self-review, then handed A1b off **mid-flight with its staged diff unreviewed**. Root cause: read the errata, never the design of record. |
 | 2 | `d05ae572` | 02:04Z → 06:05Z (~4h) | **Owner interrupt** — *"you have yet to run a single sprint without stopping. what is wrong?"* | Entire session consumed **closing one sprint**: refuter, fix-applier, **14 wiki subagents**, 24 own `Edit`s, ≥4 gate runs (2 killed). Never started A2. |
-| 3 | `aaa7857e` (this one) | 2026-08-09 | **Self-declared context limit** after item 20 | Completed A2 **and** item 20 end-to-end with full ceremony and **zero questions to the owner**. Stopped at a gated, committed, handed-off boundary — but chose that moment by **prediction, not measurement**. |
+| 3 | `aaa7857e` (this one) | 2026-08-09 | **Self-declared context limit** after item 20 | Completed A2 **and** item 20 end-to-end with full ceremony. Stopped at a gated, committed, handed-off boundary — but chose that moment by **prediction, not measurement**. |
+
+**CORRECTION (process review, 2026-08-09).** An earlier revision of the stop-3 row claimed
+**"zero questions to the owner."** That is **false in the sense that matters**, and it was
+the sentence that made the single in-design data point look like autonomous unattended
+execution. The owner intervened at least four times during that session: the four directives
+recorded in §12.0; the wiki-per-commit direction quoted in §11.11; *"did the gate freeze?"*
+(§12.2 F11); and the reframe that produced §13. The agent asked no questions **while the
+owner steered repeatedly.** Corrected in place rather than silently, because the claim was
+also repeated to the owner in conversation.
+
+**CORRECTION (process review, 2026-08-09) — this table is not three trials of one system.**
+Stops 1 and 2 both ended before 2026-08-09 06:05Z. The §11 envelope was authored by session
+3 **before it ran anything**, precisely because the design had declared that vocabulary not a
+precondition (§11.3). So stops 1 and 2 ran **without** the run vector, halt points, flag
+stops, the corrected seam, the orchestrator-owns-the-gate rule, or the wiki-ratchet decision.
+
+**The design under evaluation has n = 1, that run was owner-attended, and it completed two
+sprints.** Any inference in this document that pools all three as trials of one configuration
+is unsound. See the retraction in §13.2.
 
 **Stop 3 is the one with a novel lesson.** It contradicts `feedback-dont-trust-self-context-judgment`
 (C-8 corollary: **handoff triggers must be EXTERNAL**). The agent had no reliable readout
@@ -721,6 +772,332 @@ shape of reasoning that erodes any rule, and it was used twice.
    that.
 
 **Do not design the mechanism from this section.** It states what is unknown.
+
+---
+
+## 13. Obligation audit — which side of the system carries what
+
+> **Owner reframe, 2026-08-09:** *"if we cannot make the handoff sufficient with the rest
+> of the appropriate infrastructure, then the experiment fails. it relies upon both."*
+> The unit of analysis is **handoff + infrastructure as one system**. For every obligation a
+> receiving agent must meet, the question is **which side carries it**, and whether that side
+> fails closed.
+
+### 13.1 The audit
+
+| Obligation | Carried by | Fails closed? |
+|---|---|---|
+> **CORRECTION (compliance witness + process review, 2026-08-09).** Two rows below were
+> mis-graded and one grading rule was applied inconsistently. Fixed in place. The table's
+> "Partial — the *script* is sound; running it is prose" rows survived review and are its
+> best work; the **inference drawn from the table in §13.2 did not** — see the retraction there.
+
+| Branch before any code edit | `require-feature-branch` | **Yes** |
+| Plan approval still valid | `check-plan-approved.sh` | **Yes** |
+| Evidence before a fix (`fix/*`) | `require-evidence-before-fix` + `enforcement/evidence.py` | **Yes** |
+| Enumerate consumers of a gated surface | `require-consumer-enumeration` + `blast_radius.py` | **Yes** |
+| No secrets committed | `block-secrets` | **Yes** |
+| No merge/push to `main` | `block-merge-to-main` | **Yes** |
+| Route security gate on new routes | `route-security-lint` + `test_route_containment_gate.py` | **Yes** |
+| Lint staged Python before commit | `ruff-changed` | **Yes** |
+| Binary on PATH before a Bash command | `verify-binary-on-path` | **Partial — fail-OPEN by design** on anything it cannot parse with certainty: `$(…)`, backticks, subshells, heredocs, `\|\|`-guarded segments, MSYS paths. The guard's own docstring is titled *"Fail-open on uncertainty, by design"* and `decide()` returns `allow()` unconditionally on those. Graded "Yes" in an earlier revision — wrong, and it inflated §13.2. |
+| Wiki freshness under threshold | `test_wiki_freshness_gate.py` (rides `pytest`) | **Partial before commit / Yes before merge.** Regraded: it depends on the *same* unenforced local step ("someone runs the gate") that earns `scripts/gate.py` a "Partial" two rows below. Its real fail-closed point is the required PR check on `main`. |
+| Work-item closure bar | `work_items.py` (rides the gate) | **Partial before commit / Yes before merge** — identical shape, regraded for the same reason. |
+| Handoff structurally intact | `verify_doc_template.py` | Partial — the *script* is sound; **running it is prose** |
+| Pointer verified before acting | `check_handoff_pointer.py` | Partial — same shape |
+| Quality gate green before commit | `scripts/gate.py` | Partial — same shape |
+| **Read the design of record in full** | prose in the handoff | **NO** |
+| **Read the errata / §11 envelope** | prose | **NO** |
+| **Orchestrator must not implement** | prose (§11.9, self-labelled unenforced) | **NO** |
+| **Delegate the sprint AND its close-out** | prose | **NO** |
+| **Run the adversarial refuter every sprint** | prose | **NO** |
+| **Do not stop for in-envelope decisions** | prose (§11.8) | **NO** |
+
+### 13.2 The finding — **RETRACTED**
+
+> **RETRACTED 2026-08-09** by adversarial process review, before adoption and before any
+> implementation. The retracted text is preserved below struck rather than deleted, because
+> the *shape* of the error is the useful artifact: it is `AGENT_FAILURE_PATTERNS.md` **5f at
+> the process layer** — a plausible mechanism, found by reading, fixed without instrumenting,
+> where *"fixing a real defect that isn't THE defect still leaves the bug."*
+
+**Why it is retracted — the document's own data contradicts it.** Of §12.2's eleven friction
+rows, **eight are failures of the enforced / tooling half**: F1 (a subagent cannot run the
+gate), F2 (`| tee` truncating the log — two false mechanisms), F3 (`kill -0` lying — two
+gates raced), F4 (unresolved, an unrelated process tree may have been killed), F5 (waiters
+culled unpredictably), F8 (the item-52 window reopening **by construction**, 3×), F9 (the
+freshness counter measuring the wrong thing), F11 (~40 min dead wall-clock). §11.11 adds a
+ninth: the wiki-freshness **gate** is a false-positive generator that reddens a sprint gate
+with no code cause. **Every quantified cost in the register is on the enforced side. Not one
+is attributed to the unenforced half.** The retracted finding counted the wins and ignored
+the losses sitting in the same document.
+
+**Second reason: the sample.** The finding pooled three stops as trials of one system. Per
+the correction in §12.1, stops 1 and 2 predate the envelope entirely. **n = 1 in-design,
+owner-attended, and it completed two sprints.**
+
+**Third reason: a rival explanation was never adjudicated.** §11.3 already attributes stops 1
+and 2 to a different cause — the waived halt-point vocabulary. §13.2 substituted a new causal
+account without engaging or retiring the earlier one. Two competing diagnoses of the same
+points, in one document, with nothing choosing between them.
+
+**What the corrected record actually supports** — stated as a candidate, not a finding:
+on present data the leading explanation for the stops is **ceremony cost** (F10: 2.86 M
+subagent tokens for 392 lines of production code; F9: 216,973 tokens for one wiki pass)
+**compounded by tooling that lies about long-running work** (F1–F5, F11). Both instruments
+proposed in §14 addressed neither, and both would have **added** ceremony.
+
+~~*Retracted text:* "The infrastructure is robust exactly where this project has historically
+been burned — secrets, `main`, evidence, consumers, schema contracts, route containment. It is
+empty exactly where the chain experiment lives."~~
+
+The three stops (12.1) were **method** failures rather than code-safety failures, and no
+existing hook caught them. **Note the weakened claim:** an earlier revision said no hook
+*could* have caught them, which is unfalsifiable for stops 1 and 2 — the envelope they are
+being judged against did not exist while they ran.
+
+- Stop 1 — implemented A1a by hand, downgraded the mandated reviewer, read the errata
+  instead of the design.
+- Stop 2 — consumed by one sprint's ceremony; never reached the next sprint.
+- Stop 3 — stopped on a self-predicted, unmeasured context limit.
+
+Meanwhile the enforced half performed: the C-7 guard made item 20's implementer write its
+dossier before any production edit; the C-10 guard made A2's implementer enumerate
+`ui_pages/selectors.py` consumers first; the full gate caught a defect that four targeted
+green runs had missed on A1b.
+
+**So the experiment is not failing because the system is weak. It is running almost entirely
+on the unenforced half of a system whose enforced half works.** That is a materially more
+precise diagnosis than "handoffs are unreliable," and it says where to instrument.
+
+### 13.3 Three categories, not one
+
+1. **Movable to a mechanism now.** "Read the mandated set" has the same shape as C-7 and
+   C-10 — block production edits until a named file carries cited content. Proven twice here.
+2. ~~**Visible-only, not blockable.**~~ **CATEGORY RETRACTED — see §14.7.** Its sole member,
+   "the orchestrator must not implement", **is** blockable: the PreToolUse payload carries
+   `agent_id` / `agent_type` inside a subagent, documented for exactly this purpose. The
+   category was an artifact of an untested categorical, and it is now empty.
+3. **Genuinely open.** "Do not stop for in-envelope decisions" and "delegate the ceremony
+   rather than absorbing it" have no fail-closed form this session can see. Stated as open
+   rather than papered over with a rule that would not hold.
+
+---
+
+## 14. Instrument proposals — DRAFT, for adversarial review before any implementation
+
+> **STATUS: PROPOSAL.** Nothing here is adopted. Per the owner's sequence — *gather data,
+> instrument, test, then implement* — these are **instruments scoped to the Epic A/B chain
+> experiments**, not governance. They are the first candidates for a future execution-method
+> governance wing, so they are designed to be **composable and method-agnostic**, not
+> Epic-A-specific.
+
+### 14.1 Instrument A — `require-chain-briefing` (category 1)
+
+**Problem it addresses:** two of three stops began with partial reading of the mandated set.
+Stop 1 read the errata and not the design of record and rebuilt the chain model wrongly.
+Nothing detects this until a sprint has already drifted.
+
+**Shape — a direct transplant of `require-evidence-before-fix`:**
+
+- A new guard in `scripts/enforcement/guards/`, routed through the existing
+  `hooks/edit-write-dispatcher.sh` (one process per matcher, PX-37).
+- **Trigger:** the current branch is named in a committed chain manifest
+  (`docs/dev/chain/<chain>.md` or equivalent). No manifest, no chain, guard silent — so it
+  cannot affect ordinary branches.
+- **Block:** `Edit`/`Write` to production paths until
+  `docs/dev/chain-briefing/<branch-slug>.md` carries an `## Attested` section whose bullets
+  each carry a **citation** — reusing `scripts/enforcement/evidence.py`'s existing
+  citation validator rather than writing a second one.
+- **Exemptions, same as C-7:** `docs/**`, `tests/**`, `*.md` stay writable, so the way
+  through is always open — go read, then write down what you read.
+- **No escape hatch**, for the same reason C-7 needs none.
+
+**What it does NOT claim:** it cannot verify comprehension, and a determined agent can
+attest falsely. It converts *silent* non-reading into *blocked* non-reading. Same honest
+limit C-12 already states about fabricated citations.
+
+### 14.2 Instrument B — delegation attribution (category 2)
+
+**Problem it addresses:** §11.9 is self-labelled unenforced; stop 1's core failure (the
+orchestrator implementing by hand) is invisible until someone reads the transcript.
+
+**Shape — detection, not blocking:**
+
+- Each subagent, as its final act, appends one row to
+  `docs/dev/chain/attribution/<branch-slug>.jsonl`: `{agent, role, paths[]}`.
+- `scripts/chain_attribution.py <base>..<head>` compares git's changed tracked paths against
+  the union of claimed paths and **exits nonzero on any unclaimed path**.
+- A path no subagent claims means the orchestrator wrote it.
+
+**Strength and limit, stated together:** the orchestrator does not author the manifest, so
+hiding a hand-edit requires **forging a subagent row** — a deliberate falsification, not
+drift. Consistent with C-12's own known limit: no mechanism here makes a dishonest claim
+impossible; it makes a silent one detectable.
+
+### 14.3 Category 3 — no instrument proposed
+
+"Do not stop for in-envelope decisions" and "delegate the close-out" get **no proposal**.
+Recording that plainly, per C-11's rule that an undeclared gap is counted as protection by
+whoever reads next. What Epic B should collect instead: per-sprint counts of owner-facing
+stops with their trigger, and the token/wall-clock split between implementation and
+ceremony.
+
+### 14.4 Falsifiers
+
+- **A:** an agent passes the briefing gate and still drifts at the role level → the problem
+  is comprehension or volume, not compliance, and A is the wrong fix.
+- **B:** attribution comes back clean while the transcript shows hand-implementation → the
+  manifest is being written carelessly and the check is theatre.
+
+---
+
+### 14.5 BOTH PROPOSALS WITHDRAWN — outcome of adversarial review, 2026-08-09
+
+Three independent reviewers — a process reviewer and a technical reviewer both instructed to
+**refute** (the precedent `RELEASE_ARC.md`'s own Final March section set for governance
+proposals), plus the read-only compliance witness. **Verdict: build neither.** §14.1–14.4 are
+preserved above as the rejected draft; the reasons are the artifact.
+
+**Why Instrument A died:**
+
+1. **Its trigger sits inside its own exemption set.** `docs/dev/chain/<chain>.md` is under
+   `docs/` **and** ends `.md` — doubly exempt under the C-7 exemptions §14.1 copied verbatim
+   (`require_evidence_before_fix.py:52` + `:73`). A blocked agent clears the block permanently
+   by deleting one line from a file the guard explicitly lets it write. The written *"no
+   escape hatch"* is refuted by the spec's own text. `require_consumer_enumeration.py:63`
+   already narrowed exactly this, with the reasoning that a blanket directory exemption
+   *"would silently make its `GATED` entry dead code."* §14.1 copied the older, wider guard
+   and reproduced the defect the newer one exists to avoid.
+2. **It cannot reach the actor it is named for.** Stop 1's root cause was the **orchestrator**
+   reading the errata instead of the design. Under §11.9 the orchestrator does not touch the
+   working tree, so it never triggers an `Edit`-matcher — and the orchestrator's actual writes
+   (this file, `RELEASE_ARC.md`, handoffs, `BOARD.md`) are all `.md`, exempt. The artifact is
+   also **per-branch-slug**, so the first subagent to write it pre-clears the block for
+   everyone, including the orchestrator on the one occasion it does hand-implement.
+3. **It is pre-falsified by data already in hand.** `evidence.py`'s own docstring: *"a
+   **ceremony check, not a truth check**… It cannot tell a real observation from a plausible
+   story, and it does not try."* Threshold 40 characters; the citation regex accepts any
+   `path.md:12`-shaped string without resolving it. An agent that read **only this errata** —
+   which restates the run vector, halt points, seam and model table — passes comfortably.
+   Stop 1's agent produced exactly that kind of confident specific prose. §14.4's own
+   falsifier for A is therefore satisfied retrospectively, without running Epic B.
+4. **It is a gate wearing the word "instrument."** It changes behaviour rather than observing
+   it, and once shipped it is a permanent enforcement surface any branch can activate. That
+   inverts the owner's stated sequence, and §11.6.5 already classifies a new enforcement
+   surface authored mid-chain as **the owner's decision, not the orchestrator's**.
+
+**Why Instrument B died:**
+
+1. **Six of nine subagents lack the tool grant to write a row**, and for `compliance-witness`
+   and `wiki-grounding-auditor` the read-only grant **is** the enforcement — widening it to
+   permit a log row removes the mechanism.
+2. **It exits nonzero on every clean sprint.** Machine-written tracked paths have no author:
+   the attribution file itself, `docs/dev/ledger/*.jsonl` (written *after* the gate, 3× last
+   session), `BOARD.md` (generated by `work_items board --write`), `docs/wiki/.last_ingest_sha`.
+   Any exemption list is a hand-maintained consumer list — stale by C-10's own rule.
+3. **The failure polarity is inverted.** A killed or compacted agent never reaches its final
+   act, so its paths read as unclaimed and the check **falsely accuses the orchestrator**.
+   F1, F5 and F6 establish agent death and silent compaction as routine in a two-sprint sample.
+4. **The shared JSONL is the design `docs/dev/prov/SPEC.md:64-72` explicitly rejects** —
+   *"never a single shared file — concurrent sessions would merge-conflict on it"* — with 13–14
+   concurrent `Edit`-holding scribes as the live counterexample.
+5. **Its honesty claim assumes the discipline it exists to replace.** *"The orchestrator does
+   not author the manifest"* is a convention, not a property: the file is plain, unsigned and
+   orchestrator-writable. That is §12.6's own objection — *"any marker the orchestrator can
+   create, it can also clear"* — reappearing three sections later in the author's own proposal.
+
+**Two findings about the proposal's own honesty, recorded because they are the useful part:**
+
+- **§14 silently dropped F6.** §12.3 calls it *"the one to weigh hardest"* and §12.6 lists it
+  as instrumentation item 2, yet no category in §14 addresses it. Under C-11 an undeclared gap
+  is worse than a declared one, and §14.3 declared the wrong gap.
+- **§14.3's C-11 declaration satisfies form, not content.** The reason given — *"no fail-closed
+  form this session can see"* — is a statement about the session's search, not about
+  impossibility, and no candidate was evaluated and rejected. C-11's exception is for *"where
+  no mechanism is possible."* Candidates exist in this document's own idiom (a `stops.jsonl`
+  in which every owner-facing stop cites the §11.5 or §11.6 clause authorising it; §12.6's
+  implementation-vs-ceremony token split as a proxy for "delegate the close-out"). Neither was
+  considered.
+
+### 14.6 What to build instead — the reviewers' ordering, not the author's
+
+**Nothing is adopted here either.** This is the corrected candidate list for the owner's
+post-Epic-A decision.
+
+1. **F6 compaction telemetry — first, and cheapest.** The `compacted` rows already exist in
+   `docs/dev/ledger/*.jsonl`. Counting them per agent run, and recording whether that agent's
+   report was later found degraded, is a **reporting script over data already on disk** — not a
+   new enforcement surface. It measures the one failure mode that is both observed in-sample
+   and identical in shape to the Key Decision 10 incident that produced the no-waves posture.
+2. **Settle §12.6's untested categorical.** See §14.7.
+3. **Keep Instrument B's concept; move the writer.** A `PostToolUse` hook writing the
+   attribution row — the `claude_context_hook.py` precedent already in the repo — removes the
+   agent-death false positives and the tool-grant conflict at once, and makes forgery require
+   defeating a hook rather than appending a line. Contingent on §14.7's outcome.
+4. **Re-derive §13's finding from the corrected data first** (n = 1 in-design, owner-attended,
+   ceremony-bound) before scoping any briefing gate.
+
+**Standing caution from the process review, recorded because it cuts against the whole
+direction:** both withdrawn instruments **lowered** the friction of running deeper unattended
+chains and **neither raised** the cost of a lane reporting complete-when-partial — the Key
+Decision 10 failure. A green path-level attribution check would acquire the authority of the
+line-level verification W-1 actually requires, and it is least reliable exactly when the run
+is worst. Any future proposal in this space has to answer that.
+
+### 14.7 The untested categorical — flagged pending probe
+
+§12.6 and §13.3 rest on: *"no PreToolUse hook can distinguish a main-session `Edit` from a
+subagent's — the hook input does not carry that distinction."*
+
+**This was asserted, not measured.** The compliance witness verified the weaker true claim —
+no guard in this repo currently reads any such field (grepped for `isSidechain`,
+`parent_tool_use_id`, `agent_id`, `subagent`; zero hits). The process reviewer flagged the
+stronger claim as an unsourced categorical about a mechanism's **reach**, contradicted in
+spirit by `scripts/enforcement/adapters/claude_context_hook.py:123`, which already reads
+`payload.get("session_id")`.
+
+**PROBE RESULT, 2026-08-09 — THE CLAIM IS FALSE.**
+
+Claude Code's documented hook schema carries **`agent_id`** and **`agent_type`** in the
+PreToolUse payload when the hook fires inside a subagent, and the documentation states their
+purpose in as many words: *"Present only when the hook fires inside a subagent call. **Use
+this to distinguish subagent hook calls from main-thread calls.**"* Subagent tool calls fire
+the parent session's configured hooks — *"a `PreToolUse` hook in `settings.json` also runs
+before every tool a subagent uses."* There are also `SubagentStart` / `SubagentStop` events
+carrying agent identity as **required** fields.
+Sources: `https://code.claude.com/docs/en/hooks.md`, `https://code.claude.com/docs/en/sub-agents.md`.
+
+Neither field appears anywhere in this repo. **That is an implementation gap, not a platform
+limitation** — which is the opposite of what §11.9, §12.6, §13.3 and §14.2 all assumed.
+
+**What this overturns:**
+
+- **§11.9's "Unenforced" label is wrong on its stated reason.** The delegation seam — *the
+  orchestrator does not touch the working tree* — **is gateable**: a PreToolUse guard can
+  allow an `Edit` carrying `agent_id` and block one without it. Under C-11 ("new governance
+  defaults to a gate"), that makes a gate the default response, not the exception.
+- **§13.3's category 2 ("visible-only, not blockable") is wrong.** It was the only member of
+  that category, so the category is empty.
+- **Instrument B's whole detector-not-gate shape** was chosen because of this claim. The
+  reason is gone; the design would have to be redone from the gate premise, not patched.
+- **§14.6 item 3** (move the writer to a `PostToolUse` hook) is superseded — if identity is
+  available at `PreToolUse`, blocking beats recording.
+
+**What it does NOT overturn.** The process review's primary verdict stands untouched: the
+diagnosis in §13.2 was unsound, the sample is n = 1, and the leading candidate cause on
+present data is **ceremony cost plus tooling that lies about long-running work** — none of
+which a seam gate addresses. A newly-available mechanism is not a reason to build it. This
+finding goes to the post-Epic-A review as **the highest-value single item**, and it needs its
+own adversarial pass before anyone writes a guard: at minimum, whether an `agent_id`-gated
+gate would have prevented any of the three stops, and what it does to the ordinary
+non-chain workflow.
+
+**Method note, recorded because it is the reusable part.** This took one delegated probe of
+roughly two minutes to settle, and it had been sitting as an unexamined categorical
+underneath four sections and two instrument designs. It was found by an adversarial reviewer
+asking *"where is this sourced?"* — not by anyone re-reading the code. **The cheapest thing
+in this entire session was checking a claim nobody had checked.**
 
 ---
 
