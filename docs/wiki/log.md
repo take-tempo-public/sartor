@@ -1167,3 +1167,37 @@ two-path slice and advancing the checkpoint would misrepresent that backlog as c
 Drift after this branch: **20 wiki-relevant files against the 75-file block threshold** —
 unchanged from the entry above, per the measurement in this entry's own correction note.
 Not a merge blocker; the backlog stays queued for the next bounded catch-up pass.
+
+## 2026-08-08 — scoped close-out relevance check (`feat/corpus-polish`)
+
+Epic A sprint A1a — a presentational reorder of the Career corpus panel plus two row-density
+changes. Three of this branch's changed paths classify **wiki-relevant** via
+`scripts/wiki_relevance.py`: `templates/index.html`, `static/app.js`, `static/style.css`.
+The rest classify irrelevant and are accounted for, not overlooked:
+`docs/dev/work/items/0058-*.md` / `0059-*.md` and `docs/dev/work/BOARD.md` (per-item filings
+plus the file generated from them), and `docs/dev/ledger/*.jsonl` (provenance records).
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`panelCorpus` / `corpus panel` / `section order` / `skillsEditorSection` / `Summary variants`.
+Two hits, both in a **Grounding:** header rather than in body prose —
+[`pages/career-corpus.md`](pages/career-corpus.md) line 6 and
+[`pages/importing-your-experience.md`](pages/importing-your-experience.md) line 7. Both cite
+by **ID selector** (`#panelCorpus`, `#educationEditorSection`, `#certificationsEditorSection`,
+`#corpusIngestFile`), not by line number, and every one of those IDs still exists, unrenamed,
+in the reordered markup — verified by an ID-set diff across the whole panel, which came back
+identical at 34 IDs before and after.
+
+The distinction that makes this a no-edit rather than a convenient skip: **neither page
+documents the section *order*.** They describe what the corpus is and how it fills up. A
+reader following either page finds every element it names, in a panel whose sequence it never
+asserted. Had either page said "Skills sits above Education," this would have been a required
+edit. No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12. The
+checkpoint remains `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30) and still lags the
+backlog the entries above document; this branch inspected only its own three-path slice.
+Drift after this branch: **22 wiki-relevant files against the 75-file block threshold**, up 2
+from the 20 above. Measured, not reasoned: of this branch's three relevant paths,
+`static/app.js` was **already** in the drift set from earlier branches, while
+`templates/index.html` and `static/style.css` are new to it. Not a merge blocker; the backlog
+stays queued for the next bounded catch-up pass.

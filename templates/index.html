@@ -772,6 +772,46 @@
             <div id="summaryVariantsList"></div>
           </section>
 
+          <!-- Section order (Epic A sprint A1, owner-decided 2026-08-08):
+               Summary → Work Experience → Education → Certifications → Skills.
+               Work Experience leads because it is the corpus's substance and the
+               section users edit most; credentials (Education, Certifications)
+               stay adjacent; Skills closes the panel. Every ui_pages/ selector
+               for these is ID-based, so this order is presentational only —
+               keep it that way (no :nth-child coupling). -->
+          <div id="corpusExperienceList" class="corpus-experience-list"></div>
+
+          <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
+               Corpus Item, same chrome as the Skills editor below. No
+               pending-review lifecycle (a human types these directly; see
+               db/models.py Education). Reorder is two ↑/↓ buttons per row
+               (mirrors the Compose bullet-list keyboard-reorder affordance —
+               .reorder-controls/.reorder-btn — since neither the Skills nor
+               Summary-variant editors have reorder chrome to copy). -->
+          <section class="education-editor-section" id="educationEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Education</div>
+              <button class="corpus-action-btn" onclick="openEducationAdd()">+ Add education</button>
+            </div>
+            <div class="edit-hint" id="educationEditorEmptyHint" style="margin-bottom:8px">
+              Schools and degrees the résumé can surface.
+            </div>
+            <div id="educationEditorList"></div>
+          </section>
+
+          <!-- F-04 (UX-W1, 2026-07-07) — Certifications editor. Same shape
+               as the Education editor immediately above. -->
+          <section class="certifications-editor-section" id="certificationsEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Certifications</div>
+              <button class="corpus-action-btn" onclick="openCertificationAdd()">+ Add certification</button>
+            </div>
+            <div class="edit-hint" id="certificationsEditorEmptyHint" style="margin-bottom:8px">
+              Professional certifications the résumé can surface.
+            </div>
+            <div id="certificationsEditorList"></div>
+          </section>
+
           <!-- B.5 (Sprint 6.6) — Skills editor. Candidate-level skill Corpus
                Items: add / retire / tag the canonical skills, and review
                (approve / deny) skills the AI proposed from a JD. Per-application
@@ -806,39 +846,6 @@
               <div id="skillsEditorDenied"></div>
             </details>
           </section>
-
-          <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
-               Corpus Item, same chrome as the Skills editor above. No
-               pending-review lifecycle (a human types these directly; see
-               db/models.py Education). Reorder is two ↑/↓ buttons per row
-               (mirrors the Compose bullet-list keyboard-reorder affordance —
-               .reorder-controls/.reorder-btn — since neither the Skills nor
-               Summary-variant editors have reorder chrome to copy). -->
-          <section class="education-editor-section" id="educationEditorSection" style="display:none">
-            <div class="corpus-section-header">
-              <div class="corpus-section-title">Education</div>
-              <button class="corpus-action-btn" onclick="openEducationAdd()">+ Add education</button>
-            </div>
-            <div class="edit-hint" id="educationEditorEmptyHint" style="margin-bottom:8px">
-              Schools and degrees the résumé can surface.
-            </div>
-            <div id="educationEditorList"></div>
-          </section>
-
-          <!-- F-04 (UX-W1, 2026-07-07) — Certifications editor. Same shape
-               as the Education editor immediately above. -->
-          <section class="certifications-editor-section" id="certificationsEditorSection" style="display:none">
-            <div class="corpus-section-header">
-              <div class="corpus-section-title">Certifications</div>
-              <button class="corpus-action-btn" onclick="openCertificationAdd()">+ Add certification</button>
-            </div>
-            <div class="edit-hint" id="certificationsEditorEmptyHint" style="margin-bottom:8px">
-              Professional certifications the résumé can surface.
-            </div>
-            <div id="certificationsEditorList"></div>
-          </section>
-
-          <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
       </section>
     </div>

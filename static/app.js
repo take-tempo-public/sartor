@@ -4191,9 +4191,10 @@ function _renderSkillEditorRow(s, isPending) {
   row.appendChild(head);
 
   if (!isPending) {
-    const tagWrap = _el('div', {
-      className: 'skill-tags', style: 'display:flex;gap:4px;flex-wrap:wrap;margin:4px 0;',
-    });
+    // A1 — layout lives in .skill-editor-row .skill-tags (style.css) now, not
+    // inline: an inline style wins the cascade per-property, so the compact
+    // row's metrics could not override an inline margin here.
+    const tagWrap = _el('div', { className: 'skill-tags' });
     (s.tags || []).forEach(t => {
       const chip = _el('span', {
         className: 'corpus-row-flag', textContent: t.display_value || t.value,
@@ -4968,11 +4969,16 @@ function _renderCorpusDetail(body, exp) {
   retire.onclick = () => deleteExperience(expId, retire);
   btnRow.appendChild(retire);
   body.appendChild(btnRow);
+  // A1 (Epic A) — card order is titles → summary → bullets. The role's
+  // identity (who/where/when) stays in the field group above; then what the
+  // role WAS (titles), then how it is positioned (summary), then the
+  // evidence (bullets). Summary previously rendered last, after the bullets
+  // it is meant to frame.
   body.appendChild(_renderTitleSection(expId, exp.titles || []));
-  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
   // B.4 — per-role intro variants editor (mirrors the candidate summary-variant
   // editor, scoped to this experience). Loads asynchronously into its list.
   body.appendChild(_renderExperienceSummarySection(expId));
+  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
 }
 
 function _renderExperienceFieldGroup(expId, exp) {

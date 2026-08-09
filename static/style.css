@@ -3629,6 +3629,67 @@ input:focus, select:focus, textarea:focus {
   align-self: start;
 }
 
+/* ---- Epic A sprint A1 — compact skill rows on the .pipeline-row metric
+   idiom. A skill is usually one word, but these rows inherit
+   .summary-variant-row's 12px/14px two-column grid, so chip, tags and
+   actions each claimed their own line and a short skill list read as a
+   wall of cards. This borrows .pipeline-row's density (8px/10px padding,
+   tight margin) and lays the row out as a single wrapping flex line.
+
+   Deliberately NOT borrowed from .pipeline-row: `cursor: pointer`, the
+   hover border-color change and the translateY lift. Those belong to a row
+   that is itself clickable; a skill row is not — its affordances are the
+   buttons inside it — and a lift on a non-clickable row is a false
+   affordance. Density is the shared idiom here, not interactivity.
+
+   These selectors must stay AFTER .summary-variant-row: both are single
+   class selectors, so the cascade resolves the tie on source order. */
+.skill-editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+/* Descendant-scoped on purpose: .skill-editor-head is reused by the denied-
+   skill, education AND certification row renderers (static/app.js — four
+   call sites). A bare .skill-editor-head rule here would restyle education
+   and certification rows too, which sprint A1a does not touch. */
+.skill-editor-row .skill-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.skill-editor-row .skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+/* Actions sit inline at the row's trailing edge rather than stacking. */
+.skill-editor-row .summary-variant-actions {
+  flex-direction: row;
+  align-self: center;
+  margin-left: auto;
+}
+
+/* ---- Epic A sprint A1 — education-row reorder arrows sit parallel with
+   Edit/Retire instead of stacked above them. .summary-variant-actions is a
+   flex COLUMN by default, which pushed the ↑/↓ pair onto its own line above
+   the two buttons; this scopes a row direction to the education row only.
+
+   Scoped deliberately rather than changing .reorder-controls itself: that
+   class is shared with the Compose bullet list's keyboard-reorder
+   affordance, where the stacked ↑/↓ pair is correct. The pair stays
+   vertical here too (it is only 34px tall) — what moves is the cluster. */
+.education-editor-row .summary-variant-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ---- Positioning card (β.6c) — sits above the experience cards in
    Step 3 Compose. Renders the candidate's SummaryItem variants with
    the LLM recommendation flagged and the user's pin (if any) marking
