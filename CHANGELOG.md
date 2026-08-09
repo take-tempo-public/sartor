@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: a visible wait state across the Compose arrival volley (`feat/compose-wait-ux`, Epic A / A2)
+
+The Compose panel became visible the moment the wizard navigated to it — which is
+when the background volley of drafting requests **starts**, not when it finishes —
+so the step read as done while cards were still being torn down and rebuilt
+underneath. Compose now holds a "Composing your tailored résumé" wait state,
+reusing the two idioms already in the app (the app-wide busy banner and the
+analyze/generate streaming-panel block) rather than inventing a third, released
+when the volley settles or after a declared 20-second cap.
+
+**The settle contract is unchanged.** The UX harness's `data-compose-ready` /
+`data-compose-bg-pending` signals keep their exact meanings; the product reads the
+same two signals instead of redefining either. The one guarantee added is
+**ordering** — the release runs synchronously immediately before the DOM mutation
+that makes "settled" observable, so nothing can observe a settled Compose with the
+overlay still up. Widening the settle definition to include the banner was
+considered and rejected in writing: it would invert the direction of the contract
+and break a regression test that deliberately observes an *unsettled* state.
+
+Alongside it: the background-reload chip now names the leg in flight instead of
+always reading "Updating suggestions…" (counter arithmetic and its attribute
+invariants are behaviourally unchanged); the Skills card's pin/drop glyph buttons
+become the word-button idiom the compose bullet rows already use, keeping their
+existing classes so nothing selecting on them breaks; and in-place Edit extends to
+**every** suggested bullet rather than only pending-review ones, surviving
+approval — with the modal subtitle branching, because on an already-approved bullet
+the corpus-wide effect of an edit is no longer self-evident.
+
+Two declared limits, stated rather than papered over: the app-wide busy banner has
+no CSS rule backing its body class, so it advises rather than blocks input
+(board item 63), and past the 20-second cap the panel reads as done while a render
+may still be cascading (board item 64 tracks a related unproven-reachability
+guard). The grep-complete consumer enumeration — 55 rows, written before the first
+edit, including the correction that there are **12** background-reload call sites
+rather than the 9 the plan quoted from a historical fix — is in
+[`docs/dev/blast-radius/compose-wait-ux.md`](docs/dev/blast-radius/compose-wait-ux.md).
+
 ### Fixed: retiring a role with zero bullets silently did nothing (`fix/experience-soft-retire`, Epic A / A1b)
 
 `DELETE /api/experiences/<id>` implemented "retire" as a cascade onto the role's

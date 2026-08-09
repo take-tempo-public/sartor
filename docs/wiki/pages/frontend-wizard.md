@@ -42,7 +42,35 @@ The **Tailor** tab (`#tab-tailor`) hosts the wizard. A rail of `.wizard-step` bu
 ## Career corpus panel — corpus list and soft-retire management
 
 The **Career corpus** tab (`#tab-corpus`) renders [`#panelCorpus`](../../../templates/index.html) with
-a list of experiences, skill/education/certification editors, and import affordances. Within
+a list of experiences, skill/education/certification editors, and import affordances.
+
+**Section order** (owner-decided 2026-08-08, Epic A sprint A1a): Summary →
+**Work Experience** → Education → Certifications → Skills. Work Experience leads
+because it is the corpus's substance and the section users edit most; the credential
+sections stay adjacent; Skills closes the panel. Every `ui_pages/` selector for these
+is **ID-based**, so the order is presentational only — the markup comment in
+[`templates/index.html`](../../../templates/index.html) says to keep it that way and
+introduce no `:nth-child` coupling `[synthesis]`.
+
+The same sprint **compacted the skill rows**. `.skill-editor-row` had inherited
+`.summary-variant-row`'s two-column grid, so chip, tags and actions each claimed their
+own line and a short skill list read as a wall of cards; it now borrows
+`.pipeline-row`'s density (8px/10px padding, tight margin) and lays out as one wrapping
+flex line ([`static/style.css`](../../../static/style.css)). Three constraints are
+recorded in the rule's own comment and are the reusable part:
+
+- **`cursor: pointer`, the hover border-color change and the `translateY` lift were
+  deliberately NOT borrowed.** Those belong to a row that is itself clickable; a skill
+  row's affordances are the buttons *inside* it, so a lift would be a false affordance.
+  Density is the shared idiom, not interactivity.
+- The new selectors must stay **after** `.summary-variant-row` — both are single-class
+  selectors, so the cascade resolves the tie on source order.
+- `.skill-editor-head` is styled **descendant-scoped** (`.skill-editor-row
+  .skill-editor-head`) because that class is reused by the denied-skill, education and
+  certification row renderers; a bare rule would have restyled sections this sprint
+  does not touch.
+
+Within
 the experiences list, a **"Show retired" toggle** (`toggleCorpusRetired`,
 [`app.js:toggleCorpusRetired`](../../../static/app.js)) manages visibility of soft-retired
 roles (those with `is_active: false`). The toggle is **async**: it calls
@@ -94,7 +122,25 @@ snapshots a navigation-generation counter ([`_navGen`](../../../static/app.js))
 before the awaits and checks it after; if an explicit tab switch bumped the counter
 during the awaits, the stale side effects (`_armHelpTour`, `_activateTab`,
 `_maybeFireTourStop`) are skipped but state work continues ([`app.js:onUserSelect`](../../../static/app.js)
-`[synthesis]`). `switchTopTab` also cancels any in-flight smooth-scroll animation by
+`[synthesis]`).
+
+**The same shape, on the status/history axis (item 31).** `_navGen` deliberately does
+not cover status writes, and `onUserSelect`'s tail could resolve *after* a different
+action had already set a more meaningful status (a refinement's `ERROR`) and recorded
+its own history entry — overwriting it with a generic `READY` and wiping the record.
+[`app.js:setStatus`](../../../static/app.js) now bumps a second counter,
+`_statusGen`; `onUserSelect` snapshots it before its awaits and skips **both** the
+status write and the history reset when a newer status landed meanwhile. The
+mechanism was capability-proven with a deterministic `page.route()` probe, and the
+post-fix rerun showed the stale write suppressed entirely — no `READY` entry at all
+(`040b665`). The harness half of the same fix is `UserPicker.SELECT_READY`
+(`#userSelect[data-user-select-ready]`,
+[`ui_pages/selectors.py`](../../../ui_pages/selectors.py)): the attribute is removed
+synchronously before the first await and set **last**, after the guard has run, so a
+settle wait can neither observe a stale "ready" from a prior selection nor race ahead
+of the cascade `[synthesis]`.
+
+`switchTopTab` also cancels any in-flight smooth-scroll animation by
 invoking the raw scroll primitive ([`_scrollRestoreNative.scrollTo`](../../../static/app.js))
 to prevent viewport drift when an explicit navigation is issued while a smooth scroll
 from a prior action is still animating `[synthesis]`.
@@ -172,12 +218,73 @@ A local `bgDraftFiring` flag inside `loadComposition` and the persisted
 `data-compose-bg-pending` counter (`_markComposeBgReload`) serialize these so two
 calls never read-modify-write the same context file at once — a real clobber bug
 this serialization exists to prevent `[synthesis]`. While the counter is nonzero, a
-`#composeBgChip` ("Updating suggestions…") makes the in-flight background work
-visible rather than silent. Gap-fill proposals render per-role with accept/retire;
+`#composeBgChip` makes the in-flight background work visible rather than silent; as
+of sprint A2 `_markComposeBgReload` takes an **optional label**, so the chip names
+whichever leg of the cascade is running instead of always reading "Updating
+suggestions…". The label list (`_composeBgLabels`) is explicitly a *parallel,
+presentational* structure — `_composeBgReloads` remains the only thing that sets or
+clears `data-compose-bg-pending`, and a call site passing no label increments exactly
+as before ([`app.js:_markComposeBgReload`](../../../static/app.js)). Decrements
+remove **their own** label by `lastIndexOf` rather than popping, because the arrival
+volley overlaps and decrements do not arrive in increment order.
+Gap-fill proposals render per-role with accept/retire;
 [`app.js:_renderGapFillControls`](../../../static/app.js) also exposes an
 always-visible "Regenerate suggestions" control that re-fires the same draft route
 on demand, excluding (route-side) any key already retired or already accepted so a
 decided-on proposal never resurfaces.
+
+**The "Composing…" wait gate (Epic A, sprint A2).** `wizardGoTo(3)` makes the Compose
+panel visible at the moment the background volley *starts*, not when it finishes — so
+the step read as done while cards were still being torn down and rebuilt underneath.
+[`app.js:_holdComposingBusy`](../../../static/app.js) raises a visible wait state
+across that window, reusing the two idioms already in the file rather than inventing a
+third: `_setBusy` (the app-wide "don't navigate away" banner, text "Composing your
+tailored résumé") and the analyze/generate in-panel block (`#composePending`, on the
+same `.analysis-pending` shape as `#analysisPending` / `#generatePending`).
+
+The gate **reads** the two signals
+[`ui_pages/selectors.py`](../../../ui_pages/selectors.py) already encodes
+(`Compose.READY` = `#composeList[data-compose-ready]`, `Compose.SETTLED` = that
+`:not([data-compose-bg-pending])`) and deliberately redefines neither. The one
+guarantee it adds is **ordering**:
+[`app.js:_flushComposeSettleWaiters`](../../../static/app.js) runs *synchronously,
+immediately before* whichever DOM mutation makes `SETTLED` observable, so a reader
+that observes `SETTLED` can never also observe the overlay still up. Widening
+`SETTLED` to include the banner was considered and rejected in writing — it would
+invert the contract and break `test_20260722_compose_bare_reload_settle.py`, which
+observes an unsettled state on purpose (`ui_pages/selectors.py`'s own comment records
+this) `[synthesis]`.
+
+Three details are load-bearing and easy to get wrong:
+
+- The hold is raised only when the navigation actually took **and**
+  `_composeApplicationId != null`. `loadComposition` is `async`, so its
+  `_composeApplicationId == null` early return is the one exit with no `await` before
+  it — it completes (flushing an empty waiter list) before the hold would be raised,
+  which would strand the banner until its cap. The commit records this as closing a
+  logic hole, **not** a fix to an observed failure: no live path was found where
+  `lastContextPath` is truthy while `_composeApplicationId` is null there (`2a0b37a`).
+- `submitClarifications` / `skipClarifications` end with their own `_setBusy(false)`
+  belonging to an *earlier* phase of the same click, so both now route through
+  [`app.js:_clearBusyUnlessComposing`](../../../static/app.js), which no-ops while any
+  hold is live.
+- The hold is bounded by `_COMPOSE_SETTLE_CAP_MS` (20 s) so a POST that never reaches a
+  terminal render cannot strand the banner over a usable page. Past the cap the panel
+  reads as done while the render may still cascade — a **declared, unquantified**
+  tradeoff, filed as Deferred in
+  [`docs/dev/blast-radius/compose-wait-ux.md`](../../../docs/dev/blast-radius/compose-wait-ux.md),
+  not an unnoticed one.
+
+Selectors added alongside it (values only, no contract change to READY/SETTLED):
+`Compose.PENDING`, `BUSY_BANNER`, `BUSY_BANNER_TEXT`, `SKILL_PIN`, `BULLET_EDIT`,
+`BULLET_APPROVE` ([`ui_pages/selectors.py`](../../../ui_pages/selectors.py)). The same
+sprint moved the skills pin/drop affordances from glyph buttons to the word-button
+idiom the bullet rows already use — the `.skill-pin` / `.skill-drop` **classes are
+kept**, because `Compose.SKILL_DROP` selects on them and nothing selected on the
+glyphs — and made in-place Edit available on *every* compose bullet rather than only
+`is_pending_review` ones, surviving approval; the modal subtitle branches, because on
+an already-approved bullet the corpus-wide effect is no longer self-evident and has to
+be said before the user commits to it.
 
 **Freezing on Save-and-continue.** `saveCompositionThenNext`
 ([`static/app.js`](../../../static/app.js)) POSTs the collected composition state
@@ -253,7 +360,9 @@ title + icon group left and the collapse chevron stays right — see
 `.help-inline` line as the first `.panel-body` child wired into `aria-describedby`. The
 `panelUser` welcome block auto-opens once-ever via
 [`app.js:_maybeAutoOpenHelp`](../../../static/app.js), gated by the `cb_help_seen:`
-localStorage seam (`CB_HELP_SEEN_PREFIX`), wrapped so a throwing store reads as "not seen"
+localStorage seam (the durable string form; the UX suite names it
+[`ui_pages/selectors.py:Help.SEEN_PREFIX`](../../../ui_pages/selectors.py)), wrapped so a
+throwing store reads as "not seen"
 `[synthesis]`. The same primitive is **ported** (not imported) into the localhost console
 — see [[diagnostics-console]].
 

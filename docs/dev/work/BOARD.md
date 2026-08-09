@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 19 | Epics 6 | Closed 20
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 22 | Epics 6 | Closed 20
 
 ## Open
 
@@ -45,6 +45,9 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **60** -- Corpus count reads "0 experiences" while retired cards render, when every role is retired and Show retired is ticked (`agent`) -- Count reports live roles; the empty hint branches on total rows, so they disagree when every role is retired.
 - **61** -- Migration "upgrade adds column X" tests never execute op.add_column — revision 0001 is create_all against the live models (`agent`) -- Stopping the chain at N-1 yields today's full schema, so the guard skips and the ADD path goes unexercised.
 - **62** -- A scroll-creep xfail flips to xpass between runs — nondeterministic, currently invisible because the marker is non-strict (`agent`) -- Two gate runs over the same code gave `1 xfailed, 1 xpassed` then `2 xfailed` — the xfail is nondeterministic.
+- **63** -- `body.cb-busy` has no CSS rule — `_setBusy` blocks no input anywhere in the app despite its "don't navigate away" copy (`user`) -- `_setBusy` adds `body.cb-busy`, but no rule matches it — the busy banner is cosmetic, not blocking.
+- **64** -- Open question: is the `_composeApplicationId == null` strand actually reachable, or is the A2 guard defending an impossible state? (`agent`) -- A2 guarded a confirmed mechanism whose reachability was never established — the question, not a bug claim.
+- **65** -- The wiki freshness counter measures "files changed since checkpoint", not "coverage current" — a scoped pass can never honestly advance it (`user`) -- Drift = files-since-checkpoint assumes periodic catch-up passes; under a per-branch workflow it self-perpetuates.
 
 ## Epics
 

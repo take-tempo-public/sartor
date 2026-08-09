@@ -92,6 +92,29 @@ schema [`json_resume.py:md_to_json_resume`](../../../json_resume.py). This is th
 JSON contract the renderers consume — distinct from the pipeline's `context_set`
 (see [[context-set-contract]]).
 
+### Bracket-aware list splitting (item 15)
+
+Free-text lists (skills, keywords) are comma / pipe / middot separated, which naively
+fragments any entry containing a parenthetical: "Eval Framework Design (LLM-as-judge,
+rubric-based)" split into two bogus skills.
+[`json_resume.py:split_outside_brackets`](../../../json_resume.py) is the shared
+primitive that fixes it — it splits on a caller-supplied delimiter pattern while
+tracking `()` / `[]` depth and ignoring delimiters nested inside a group.
+`_parse_skills` uses it on both forms it handles: the grouped `Label: a, b, c` line
+and the flat `_SKILLS_SPLIT_RE` line ([`json_resume.py:_parse_skills`](../../../json_resume.py)).
+
+Two degenerate-input behaviors are deliberate and documented in its docstring rather
+than left to be discovered: a **stray closing bracket** with no opener is ignored
+instead of letting tracked depth go negative (negative depth would mask every later
+delimiter), and an **unclosed opening bracket** makes the remainder of the string one
+trailing token — the same "give up gracefully" a plain split has on malformed input,
+just scoped to the tail rather than the whole string. The pattern must contain no
+capturing groups, since it is embedded into an internal alternation `[synthesis]`.
+
+It is deliberately **public and shared** rather than duplicated: `evals/bootstrap.py`
+imports it for résumé skill extraction, so the eval side and the render side cannot
+disagree about where a skill ends — see [[eval-harness]].
+
 ## `.docx` — original-as-style-template
 
 [`generator.py:_write_docx_from_json_resume`](../../../generator.py) opens the persona `.docx` via
@@ -168,3 +191,4 @@ out of the formatting layer entirely `[synthesis]`.
 - [[generation-and-grounding]] — the upstream LLM that produces the markdown this path renders.
 - [[corpus-to-output-reach]] — how corpus curation reaches both the preview and the generate prompt.
 - [[deterministic-llm-boundary]] — the P1 rule that forbids an LLM call here.
+- [[eval-harness]] — the other consumer of `json_resume.split_outside_brackets`.

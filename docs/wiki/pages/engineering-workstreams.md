@@ -67,6 +67,42 @@
   lifting the prescriptive rules into one canonical home, is **[[governance-extraction]]**.
 - **Status / where:** ✅ **SHIPPED with v1.0.6** (tagged 2026-06-15, per RELEASE_ARC §Phase 4.5). WS-4a (system-model + wiki skeleton + wiki skills + excellence-walk ingest) front-loaded early; WS-4b (code cold-ingest: 16 `path:line`-grounded pages, audience tags, architecture-diagram drift fixes) landed before Sprint 6.5 (commit `a0a1cb2`, 2026-06-13 per RELEASE_ARC). The wiki substrate is now operational as the knowledge foundation for v1.0.7's self-documenting loop and doc-grounded assistant `[synthesis]`.
 
+## What the backlog became: the v1.1.0 Final March (2026-08-04)
+
+WS-1…WS-4 were the *walk-era* backlog. The live plan of record at HEAD is a different
+shape: [`RELEASE_ARC.md` §"v1.1.0 Final March"](../../dev/RELEASE_ARC.md) — five
+owner-approved **epics A–E**, each with its own board item (36–40): **A**
+`epic/a-app-core` (main-app function + UX), **B** `epic/b-render-ats` (rendering + ATS
+correctness), **C** `epic/c-diagnostics` (the diagnostics console), **D**
+`epic/d-docs-ia` (documentation + information architecture), **E** `epic/e-release`
+(the public cut). A post-1.1 backlog is filed as items 41–43 and deliberately not
+scheduled. RELEASE_ARC is authoritative and moves — re-check it, not this page.
+
+Two process facts are worth carrying here because they change how a session on this
+repo behaves, and both are **bounded amendments scoped to Epic A alone**, not new
+defaults:
+
+- **Stacked chain (amendment 2026-08-08, owner-directed).** For Epic A's A1–A4 chain
+  only, each sprint branch stacks on the prior sprint's tip rather than branching from
+  `main`. This resolves a real contradiction with the ordinary one-branch-per-item
+  rule; epics B–E keep the standard shape.
+- **One gate run, on the committed tree (amendment 2026-08-09, owner-approved).** For
+  Epic A's chain, the prior two-run-per-sprint shape drops its *pre-commit* run — which
+  finding 10 established was partly vacuous, since every check reading committed `HEAD`
+  passed by finding nothing. The amended order is: implement → stage → adversarial
+  review of the **staged** diff → fix → stage → file deferred findings + regenerate the
+  board → stage → **commit** → `python -m scripts.gate` on the committed tree. RELEASE_ARC
+  argues this is strictly *stronger*, not weaker: the tree that lands is the tree the
+  gate examined, by construction rather than by assertion.
+
+The still-serial posture is why this reads as a *sequence* of sprints rather than parallel
+lanes: its canonical home is the **"Posture" paragraph** of W-1 in
+[`docs/governance/charter.md`](../../governance/charter.md) ("the operative default today
+is serial … no parallel lanes, no wave assembly"), and
+[`docs/dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md) §"Cadence + process" ties the sprint
+structure to it directly ("One sprint = one branch = one session, owned end-to-end
+(charter W-1.3)") `[synthesis]`.
+
 ## Related
 
 - [[excellence-walk]] — the walk this backlog belongs to.
@@ -74,6 +110,8 @@
 - [[consistency-tracks-enforcement]] · [[project-self-assessment]] — where WS-1/WS-2 were
   originally diagnosed as gaps; both are now closed (see above).
 - [[llm-wiki-design]] — the WS-4 design in depth.
+- [[governance-extraction]] — WS-4's follow-on; the W-1 serial-vs-parallel posture the
+  Final March's sprint sequencing inherits.
 - [[code-module-map]] — the post-WS-1 `blueprints/` + `web_infra/` module inventory
   (the single-file `app.py` monolith WS-1 decomposed); the code cold-ingest is WS-4
   realized.

@@ -59,8 +59,8 @@ silently `[synthesis]`.
 
 Funnelling through one door is what makes the boundary *enforceable* rather than
 aspirational: caching, telemetry, model selection, and retry are defined once and
-cannot be forgotten by any call site that routes through it (the standalone scope
-check is the lone by-design exception) `[synthesis]`. The single
+cannot be forgotten by any call site that routes through it — and since item 21 there
+is no call site that does not `[synthesis]`. The single
 `_emit_call_log` block in the `finally` of
 [`analyzer.py:_call_llm_streaming`](../../../analyzer.py) writes one JSONL
 telemetry record per funnelled call (stamped with the call kind under the JSON key
@@ -92,7 +92,12 @@ docstrings declare it, and the code matches:
   post-generation metrics (verb diversity, specificity density, n-gram overlap,
   fabricated-specifics + date-grounding checks, cost — the full set is in
   [[generation-and-grounding]]). The only `anthropic` mention is a pricing-table
-  *comment*, not a call.
+  *comment*, not a call. F-14 added
+  [`hardening.py:extract_jd_label`](../../../hardening.py) here rather than in the
+  analyzer: naming a job posting from its own header is a **regex-and-priority-order**
+  problem, not a reasoning one, and putting it on this side of the boundary is what
+  makes it free, offline, and reproducible on every eval record — see [[eval-harness]]
+  `[synthesis]`.
 - [`parser.py`](../../../parser.py) — "Deterministic resume parsing — P1
   Hardening." `.docx`/`.pdf`/`.md` → structured text.
 - [`generator.py`](../../../generator.py) — "Document output generation — P1
@@ -138,3 +143,5 @@ enforceable: the judge lives on the deterministic side of the line.
 - [[prompt-version-discipline]] — `PROMPT_VERSION` stamped by the same funnel's telemetry.
 - [[consistency-tracks-enforcement]] — LLM-call instrumentation as an enforced-consistency win.
 - [[project-self-assessment]] — the boundary as a state-of-the-work strength.
+- [[eval-harness]] — `hardening.extract_jd_label`, a deterministic helper that exists
+  for the eval side only.

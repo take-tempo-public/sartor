@@ -75,6 +75,78 @@ produce mechanical consistency `[synthesis]`.
 > roadmap. The fix isn't "be more disciplined" — it's "extend the enforcement surface"
 > (model the contracts → WS-2; split the monolith → WS-1).
 
+## What happened next: the finding became a constitutional clause (2026-08-05)
+
+The Q2 finding above is descriptive — *consistency tracks enforcement*. Two months
+later the project turned it into a **binding rule** with the opposite polarity: **a
+constraint with no mechanism that fails closed is not a constraint**
+([`docs/governance/charter.md`](../../governance/charter.md), **C-11**, adopted
+2026-08-05, owner-directed). The first time a failure mode is recognized as a
+*recurrence*, the compliant response is a mechanism authored on that branch; a note, a
+memory, a ledger row, or a new prose rule is explicitly **not** compliant on its own.
+New governance now **defaults to a gate**, and prose discipline is the exception that
+must be labeled *unenforced* in the same breath. This page's "the fix isn't 'be more
+disciplined'" line is exactly the position C-11 makes binding `[synthesis]`.
+
+C-11 was adopted from **measurement, not friction** — the charter's own `[src: …]` tag
+cites ~20 merged branches on UX-suite flakes in 40 days, one branch merged three times
+over the same flake, item 30 recurring in CI five days after closure, and three of epic
+19's five closures resting on weaker evidence than they claimed. Its sibling **C-12**
+("declare the gap; never fill it") and the earlier **C-10** (enumerate consumers before
+changing a contract) complete the family; the charter's clause range is now
+**C-0…C-12** and the amendment ceremony covers all of them.
+
+Three concrete escalations from "convention" to "gate" are worth naming, because they
+land on rows this table graded on convention:
+
+- **The C-11 closure bar** — `status = "closed"` on a work item now requires a
+  falsifiable `verified_by` artifact or a named, attributed `closure_exception`; a
+  *reopened* item requires a `guardrail` (or an explicit `guardrail_deferred` saying
+  why none was possible). It rides `scripts/gate.py` and CI, so it binds every agent
+  ([`docs/dev/work/SCHEMA.md`](../../dev/work/SCHEMA.md),
+  [`scripts/work_items.py`](../../../scripts/work_items.py)). The pre-adoption closures
+  are **grandfathered exactly once**, and the grandfather list is itself pinned by
+  `tests/test_work_items_closure_bar.py::TestGrandfatherListIsClosed` so adding an id
+  requires editing that test in the same diff.
+- **The handoff recurrence section** — [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](../../dev/AGENT_HANDOFF_TEMPLATE.md)
+  now requires a `## Recurrences observed this session → guardrail authored` section,
+  and [`scripts/verify_doc_template.py`](../../../scripts/verify_doc_template.py)
+  refuses a handoff without it — not by a special case, but because
+  `required_headings` treats **every** template heading at `##` or deeper as
+  mandatory and in order, so adding the section to the template *is* the gate
+  ([`scripts/verify_doc_template.py:required_headings`](../../../scripts/verify_doc_template.py),
+  [`scripts/verify_doc_template.py:match_headings`](../../../scripts/verify_doc_template.py))
+  `[synthesis]`.
+- **`require-consumer-enumeration`** — the C-10 gate; plus a registry audit
+  (`tests/test_blast_radius_classification.py`) with **both** a `stale` and an
+  `offenders` half, because a curated list with only a stale check rots in the *safe*
+  direction and gives false confidence
+  ([`docs/governance/enforcement.md`](../../governance/enforcement.md) §C2).
+- **The "LLM instrumentation — every call routes through `_call_llm`" row above was
+  optimistic when written.** `check_refinement_scope` opened its own
+  `client.messages.create` until item 21 (2026-08-02). The row is left as the
+  2026-06-07 source recorded it; the correction is [[deterministic-llm-boundary]]
+  `[synthesis]`.
+
+### The reach gap, named
+
+[`docs/governance/enforcement.md`](../../governance/enforcement.md) §"Enforcement reach"
+records a split that is invisible from any single file and went unrecorded until
+2026-08-05: guards reach agents through **three adapters with different coverage**. The
+git-hook adapter is tool-agnostic (Codex, Cursor, Aider, a human on the CLI);
+`ci_backstop.py` + `scripts/gate.py` bind everyone even with no hooks installed; but
+`require_evidence_before_fix` (C-7), `require_consumer_enumeration` (C-10), the C-8/C-12
+context hooks, and `verify_binary_on_path` are **Claude Code only**. Of the C-11/C-12
+mechanisms, only the closure bar binds every agent.
+
+So the honest statement of this page's thesis at HEAD is narrower than it looks:
+consistency tracks enforcement, **and enforcement tracks which agent you are**. That
+gap is declared rather than papered over (C-0), carried by work item 50, and kept
+honest by construction — `tests/test_enforcement_coverage.py` *derives* the routing
+from the adapter at runtime and fails if a guard is added without declaring its reach,
+if the declared table drifts, or if that section stops naming the gapped guards
+`[synthesis]`.
+
 ## Related
 
 - [[excellence-walk]] — the walk this finding belongs to.
