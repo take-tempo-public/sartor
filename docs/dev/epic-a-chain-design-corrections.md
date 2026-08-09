@@ -1101,6 +1101,169 @@ in this entire session was checking a claim nobody had checked.**
 
 ---
 
+## 15. The plan for the second half of Epic A — owner-scoped, 2026-08-09
+
+> **This section IS directive for the remainder of Epic A.** Unlike §12–§14, which are a data
+> register and a rejected draft, the four decisions below were taken by the owner on
+> 2026-08-09 and scope the A3 → A4 → epic-close run. They remain **Epic-A-scoped**; lifting
+> any of them into standing governance is the post-Epic-A decision.
+>
+> **The target this exists to serve: Epic B must run beginning to end with no owner
+> intervention.** Everything below is chosen to make that testable.
+
+### 15.1 The four decisions
+
+1. **Epic B "no intervention" ends at PR-ready.** The run cuts the epic branch and drafts the
+   PR body, then stops. **Push, PR and merge stay the owner's** — outward-facing on a public
+   repo and the only irreversible step. So "no intervention" means: *no owner input is
+   required to produce a mergeable epic.* Halt point 1 (§11.5) survives, and is the only one
+   that may block an otherwise-complete run.
+2. **Cadence: light per sprint, one full close-out at the epic end.** Not a lightened ceremony
+   everywhere — a *designed interval*.
+3. **A separate epic-level handoff artifact.** The sprint handoff
+   (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`) is **effective and stays untouched**. Intra-chain
+   sprint transitions are a different thing and get their own, flexible template — see §15.4.
+4. **Adversarial WIP: one refuter per sprint, plus a countable-claim canary that escalates.**
+   See §15.5.
+
+### 15.2 What "light per sprint" means — the minimum recoverable record
+
+**Every sprint still does** (non-negotiable; most are hook-gated and cannot be skipped):
+
+- The C-7 diagnosis dossier on any `fix/*` branch, and the C-10 blast-radius dossier for any
+  gated surface. **These are the enforced half and they work.**
+- A substantive commit message — the sprint's primary durable record.
+- The **sprint brief** for the next sprint (§15.4), ~1 page.
+- Work items filed for anything discovered-and-not-chased.
+- `python -m scripts.gate` on the committed tree, log swept for `RERUN`, run by the
+  orchestrator detached with `> file 2>&1` (§11.9).
+- One adversarial refuter on the staged diff, plus the §15.5 canary.
+
+**Deferred to the epic close-out** (not skipped — *scheduled*):
+
+- The wiki pass and `.last_ingest_sha` advance.
+- Full grounding audits of wiki pages.
+- The full `AGENT_HANDOFF_TEMPLATE.md` ceremony with its verbatim blocks and
+  `verify_doc_template.py` validation.
+- `BOARD.md` regeneration (items are *filed* per sprint; the board is *regenerated* once).
+
+**Why deferring the wiki pass is safe now, and the check that keeps it safe.**
+`.last_ingest_sha` is at the item-20 tip and drift reads **1 of 75**. Two sprints cannot
+approach the threshold. **This is conditional, not permanent:** the next agent runs
+`python -m scripts.wiki_freshness` at each sprint's gate and, if drift exceeds **40**, does
+the wiki pass immediately rather than deferring. That number is a deliberate margin, not a
+measurement.
+
+### 15.3 Close-out intervals are an EPIC-DESIGN requirement, not a sprint-time choice
+
+**Binding on whoever plans a chain epic** (owner direction, 2026-08-09):
+
+- A chain epic's design **must declare its intra-epic close-out intervals** — where they fall
+  and why there.
+- **If a chain epic declares no intra-epic close-outs, the design must carry a written
+  justification argument.** Silence is not a permissible answer.
+- This must be stated to the **planning** agent and the **orchestrating** agent, in durable
+  documentation, not discovered at run time.
+
+**Rationale, with the number that motivated it.** Close-out ceremony ran at roughly **40% of
+sprint cost** (§12.2 F10 — 2.86M subagent tokens for ~800 lines of production code across two
+sprints). The owner's stated tolerance: **10–20% is comfortable, 40% is acceptable *if* it
+prevents a compounded missed failure costing days of churn.** So the interval is a real
+engineering trade to be argued per epic, not a default to inherit.
+
+**Lift target:** when Epic B is designed, this requirement moves into the epic-planning
+section of `docs/dev/RELEASE_ARC.md`. It is recorded here first because Epic A is still
+running and §12.4 defers standing-governance changes until a verified run exists.
+
+### 15.4 The epic sprint-brief — a NEW artifact, not a shrunk handoff
+
+**Do not modify `docs/dev/AGENT_HANDOFF_TEMPLATE.md`.** It is a **session-to-session** handoff
+at a branch close, it carries mandatory verbatim blocks, it is validated by
+`verify_doc_template.py`, and it is working. Degrading it to save intra-chain cost would
+damage the thing that is not broken.
+
+An **intra-chain sprint transition is a different artifact**: a brief to the next agent inside
+a running chain, where the envelope, binding rules and hard constraints are **already
+established once for the epic** and do not need re-copying per sprint.
+
+**Created at `docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md`** — deliberately *not* at
+`docs/dev/` root: a new top-level `docs/dev/` entry requires classifying it in
+`scripts/wiki_relevance.py`, which is a **C-10 gated surface** and would pull a blast-radius
+dossier onto whichever branch creates it. `docs/dev/handoffs/` is already an
+`IRRELEVANT_PREFIXES` entry, so the template lands with no gated edit and no wiki drift. (This
+trap has now fired twice in this project's history — PR #105 and PR #115 — and the technical
+review flagged the proposal walking into it a third time.)
+
+It carries:
+
+- **Sprint identity** — which sprint, which branch, stacked on which tip.
+- **Pointer to the epic's standing context** — the design of record, §11's envelope, §15's
+  cadence. **Referenced once, not restated.** This is the ~300 lines/sprint that copying costs.
+- **What just landed** — honestly, including anything unverified.
+- **What this sprint builds** — scope, and what is explicitly out.
+- **First move** — the concrete first action.
+- **Decisions taken alone last sprint** that this one inherits.
+- **Open risks handed forward**, including "I have not verified this" items.
+- **Flag-stop state** — anything waiting on the owner.
+
+**Deliberately flexible.** The owner's constraint was *"flexibility in prompting without
+disrupting a very effective sprint-based handoff."* This template is a floor, not a form: an
+orchestrator may add whatever a given sprint needs. The full ceremony still runs at the epic
+close, where the session-to-session handoff is the correct artifact.
+
+**Recoverability bar it must clear:** a fresh agent handed only the brief + the pointers must
+be able to reconstruct sprint state without reading a transcript. That is the property stops 1
+and 2 lacked.
+
+### 15.5 The countable-claim canary — cheap, deterministic, escalating
+
+**Owner design, and it is better than the reduction it replaces.** The rejected H-1 would have
+*narrowed coverage* (audit only pages with countable claims). This instead **keeps full
+coverage and makes the cheap check the trigger for the expensive one.**
+
+1. **Cheap deterministic pass over every touched wiki page.** Extract each *countable* claim —
+   counts ("16 keys"), enumerations ("three call sites"), list lengths, predicates ("two
+   setters") — and verify it mechanically against source. Deterministic, no LLM judgment.
+2. **Any variance is a canary.** A wrong count opens a **full adversarial grounding audit of
+   that page**, not just a correction of the number.
+3. **No variance → no deeper audit for that page.**
+
+**Why this is the right trigger, on this session's evidence.** Every substantive audit finding
+was reachable from a countable claim: `_BASE_SYSTEM_PROMPTS` "11 keys" (actual 16, on a page
+whose `PROMPT_VERSION` was also stale); "at most five `dict.get` lookups" (six); "three seams"
+(conflating two implementations with three call sites). **A page that miscounts is a page that
+was written from memory** — and the other errors travel with it.
+
+**Falsifier:** a page whose countable claims all verify but which carries a materially wrong
+prose or structural claim. That would show the canary is not correlated with page quality and
+the trigger needs widening.
+
+### 15.6 Hypotheses A3/A4 will test — with falsifiers
+
+| # | Hypothesis | Falsifier |
+|---|---|---|
+| **H-6** | Deferring close-out ceremony to the epic boundary cuts per-sprint cost toward 10–20% **without** increasing escaped defects. | A defect escapes A3/A4 that the deferred ceremony would have caught, or the epic close-out costs more than the sprint close-outs it replaced. |
+| **H-7** | A fresh agent can execute a sprint from the §15.4 brief + pointers, without the full handoff ceremony. | The receiving agent drifts at the role level, or has to read a transcript to reconstruct state. |
+| **H-8** | The countable-claim canary catches page-quality problems at a fraction of full-audit cost. | §15.5's falsifier fires. |
+| **H-9** | A chain can reach PR-ready with no owner input. | Any owner intervention required to produce a mergeable epic. **Stop 3 already failed this** — four owner steers — so A3/A4 is the first real trial. |
+
+**Measurement, kept cheap:** per sprint record production-code / test / doc line counts from
+git, gate-run count, and whether the refuter or the canary caught anything. No new tooling —
+the owner declined instrument-building, and these are `git` one-liners at close-out.
+
+### 15.7 What must be true before Epic B starts
+
+1. Epic A reaches PR-ready.
+2. H-6 through H-9 have outcomes recorded here, including the falsified ones.
+3. §14.7's finding — **the delegation seam is gateable via `agent_id`** — gets its own
+   adversarial pass. It is the highest-value unbuilt item and the one thing that could make
+   §11.9 a real constraint instead of prose. **Not built during Epic A** (§11.6.5 makes a new
+   enforcement surface mid-chain the owner's call).
+4. The §15.3 close-out-interval requirement is lifted into `RELEASE_ARC.md`'s epic-planning
+   section, so Epic B's design declares its intervals or argues for having none.
+
+---
+
 ## A1 citation-drift audit — `RELEASE_ARC.md` sprint A1 brief vs. HEAD `d9c9f6f`
 
 **[REPORTED]** throughout. Re-verify any line number before editing against it.

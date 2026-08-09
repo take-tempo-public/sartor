@@ -366,10 +366,42 @@ Instead, in order:
 
 ---
 
+## READ FIRST — §15 is directive and it changes how you run A3/A4
+
+**`docs/dev/epic-a-chain-design-corrections.md` §15 scopes the rest of Epic A**, owner-decided
+2026-08-09. It overrides the per-sprint cadence assumed elsewhere in this handoff. In short:
+
+1. **Epic B's target — and therefore yours — is PR-ready with no owner intervention.** Push,
+   PR and merge stay the owner's. "No intervention" means no owner input is needed to *produce*
+   a mergeable epic. Stop 3 failed this (four owner steers); **A3/A4 is the first real trial.**
+2. **Light close-out per sprint; one full close-out at the epic end.** §15.2 lists exactly what
+   is still owed each sprint (dossiers, rich commit, sprint brief, work items, gate, refuter)
+   and what is deferred (wiki pass, grounding audits, full handoff ceremony, `BOARD.md` regen).
+   **Conditional:** run `python -m scripts.wiki_freshness` at each gate — if drift exceeds
+   **40**, do the wiki pass that sprint instead of deferring.
+3. **Use `docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md` between sprints**, not the full
+   session handoff. The session handoff template is untouched and still required at the epic
+   close. Standing context is pointed at, never restated.
+4. **One refuter per sprint, plus the countable-claim canary** (§15.5): mechanically verify
+   every count / enumeration / predicate on touched pages; **any variance opens a full
+   grounding audit of that page.** Cheap deterministic check as the trigger for the expensive
+   one — a page that miscounts was written from memory, and its other errors travel with it.
+
+§15.6 lists the four hypotheses A3/A4 are testing (H-6…H-9) with their falsifiers. **Record
+the outcomes, including the falsified ones** — that is the deliverable, not just a finished
+epic.
+
+**Do not build the `agent_id` seam gate** (§14.7), however tempting it looks. It is real, it is
+the highest-value unbuilt item, and §11.6.5 makes a new enforcement surface mid-chain the
+owner's decision.
+
+---
+
 ## Orchestrator's guidance for finishing Epic A
 
 *Added 2026-08-09 by the session that ran A2 and item 20 end-to-end, at the owner's request.
 This is operating advice, not governance. The binding rules are below and they win.*
+*Where this section and §15 disagree, **§15 wins** — it is later and owner-decided.*
 
 ### The one thing that decides whether you succeed
 

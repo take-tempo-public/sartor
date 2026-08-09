@@ -12,3 +12,5 @@
 {"event": "compacted", "session": "unknown", "branch": "fix/wizard-rail-frozen-composition-gate", "trigger": "unknown", "ts": "2026-08-09T11:38:24Z"}
 {"event": "generated", "doc": "docs/dev/handoffs/wizard-rail-frozen-composition-gate.md", "session": "aaa7857e-4732-4daf-90f7-97315fac91f9", "branch": "fix/wizard-rail-frozen-composition-gate", "commit": "0435e68", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T16:49:11Z", "fingerprint": "30982ece1b88"}
 {"event": "compacted", "session": "unknown", "branch": "fix/wizard-rail-frozen-composition-gate", "trigger": "unknown", "ts": "2026-08-09T16:53:34Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/chain-execution-instruments", "trigger": "unknown", "ts": "2026-08-09T19:45:33Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/wizard-rail-frozen-composition-gate.md", "session": "aaa7857e-4732-4daf-90f7-97315fac91f9", "branch": "feat/chain-execution-instruments", "commit": "a6f7df8", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T20:10:40Z", "fingerprint": "07a4f977d4e9"}
