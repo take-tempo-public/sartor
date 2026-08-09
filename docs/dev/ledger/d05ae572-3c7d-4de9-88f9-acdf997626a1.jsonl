@@ -1,2 +1,6 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/experience-soft-retire.md", "session": "d05ae572-3c7d-4de9-88f9-acdf997626a1", "branch": "fix/experience-soft-retire", "commit": "53cf3de", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T02:05:25Z", "fingerprint": "faf58c854acb"}
 {"event": "compacted", "session": "unknown", "branch": "fix/experience-soft-retire", "trigger": "unknown", "ts": "2026-08-09T03:04:04Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/experience-soft-retire", "trigger": "unknown", "ts": "2026-08-09T03:15:28Z"}
+{"event": "compacted", "session": "unknown", "branch": "fix/experience-soft-retire", "trigger": "unknown", "ts": "2026-08-09T03:33:38Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/experience-soft-retire-a2.md", "session": "d05ae572-3c7d-4de9-88f9-acdf997626a1", "branch": "fix/experience-soft-retire", "commit": "5474763", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T03:34:36Z", "fingerprint": "321381c2af54"}
+{"event": "generated", "doc": "docs/dev/handoffs/experience-soft-retire-a2.md", "session": "d05ae572-3c7d-4de9-88f9-acdf997626a1", "branch": "fix/experience-soft-retire", "commit": "5474763", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T03:49:06Z", "fingerprint": "d2e6eef04b97"}

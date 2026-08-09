@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 18 | Epics 6 | Closed 20
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 19 | Epics 6 | Closed 20
 
 ## Open
 
@@ -44,6 +44,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **59** -- A corpus role card shows two different summary editors — the legacy denormalized field and the canonical variants section (`user`) -- A role card offers two summary editors: the legacy Experience.summary cache and the canonical variants section.
 - **60** -- Corpus count reads "0 experiences" while retired cards render, when every role is retired and Show retired is ticked (`agent`) -- Count reports live roles; the empty hint branches on total rows, so they disagree when every role is retired.
 - **61** -- Migration "upgrade adds column X" tests never execute op.add_column — revision 0001 is create_all against the live models (`agent`) -- Stopping the chain at N-1 yields today's full schema, so the guard skips and the ADD path goes unexercised.
+- **62** -- A scroll-creep xfail flips to xpass between runs — nondeterministic, currently invisible because the marker is non-strict (`agent`) -- Two gate runs over the same code gave `1 xfailed, 1 xpassed` then `2 xfailed` — the xfail is nondeterministic.
 
 ## Epics
 
