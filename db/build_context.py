@@ -22,6 +22,7 @@ import json
 import logging
 import re
 from collections.abc import Iterable
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -36,6 +37,7 @@ from db.models import (
     Clarification,
     Education,
     Experience,
+    ExperienceSummaryItem,
     ExperienceTitle,
     Skill,
 )
@@ -76,6 +78,10 @@ def build_context_set_from_db(
     - `resume.path` is "" (no file backs the synthetic text)
     - `prior_clarifications` is populated (D5 — cross-JD reuse; absent from
       `hardening.build_context_set`'s legacy file-based output)
+    - `experience_summary_items` is populated (A3 — per-role intro variants,
+      grounding source material for `draft_experience_summaries` and for
+      `hardening.assemble_source_union`; likewise absent from the file-based
+      output)
     - `supplemental_resumes` is always [] in DB-backed mode
     """
     candidate = session.query(Candidate).filter_by(username=candidate_username).first()
@@ -188,6 +194,11 @@ def build_context_set_from_db(
     # candidate necessarily belongs to an earlier application — no origin
     # filter needed.
     prior_clarifications = _prior_clarifications_for_candidate(session, candidate.id)
+    # A3 (feat/role-summary-drafting): the candidate's active per-role intro
+    # variants, staged durably for the same reason prior_clarifications is —
+    # they are real corpus text that `_synthesize_resume_markdown` does not
+    # emit, so `hardening.assemble_source_union` cannot see them otherwise.
+    experience_summary_items = _experience_summary_groups(session, experiences)
 
     context_set: ContextSet = {
         "timestamp": application_run.created_at,
@@ -225,8 +236,77 @@ def build_context_set_from_db(
         "run_id": run_id,
         "career_corpus": career_corpus,
         "prior_clarifications": prior_clarifications,
+        "experience_summary_items": experience_summary_items,
     }
     return context_set, application, application_run
+
+
+def _experience_summary_groups(
+    session: Session, experiences: list[Experience]
+) -> list[dict[str, Any]]:
+    """A3 — active, APPROVED per-role intro variants for `experiences`, grouped by role.
+
+    Shape is byte-compatible with what `/recommend-experience-summaries` already
+    stages transiently (`analyzer.recommend_experience_summaries` reads exactly
+    this), so the durable key and the route's fresher in-memory copy are the same
+    contract, not two.
+
+    **One query, not one per role.** The obvious implementation
+    (`for exp in experiences: exp.summary_items`) is an N+1 against a lazy
+    relationship; this issues a single `WHERE experience_id IN (...)` and groups
+    in Python, so cost is O(1) round-trips and O(variants) work regardless of
+    corpus size. Roles with no active variants are omitted (matching the route),
+    and `experiences` is the ALREADY-retired-filtered list, so a soft-retired
+    role's intros never enter the union.
+
+    Pending-leak guard (blast-radius D5 close-out): this staging runs at the
+    START of a fresh `ApplicationRun` — before anything could have been
+    accepted/kept FOR this run — so there is no "accepted for this run" set
+    to consult yet, unlike the render-path guard in
+    `corpus_to_json_resume._resolve_chosen_experience_summary_text`. A
+    kept-but-unreviewed (`is_pending_review=1`) draft from ANY application
+    (including one drafted earlier for this same application, if not yet
+    reviewed) is therefore excluded here unconditionally — mirrors
+    `_collect_skills`'s `is_pending_review=0` filter — so an unreviewed intro
+    can never be laundered into the anti-fabrication grounding source for a
+    run that never accepted it.
+    """
+    if not experiences:
+        return []
+    exp_ids = [e.id for e in experiences]
+    rows = list(
+        session.execute(
+            select(ExperienceSummaryItem)
+            .where(
+                ExperienceSummaryItem.experience_id.in_(exp_ids),
+                ExperienceSummaryItem.is_active == 1,
+                ExperienceSummaryItem.is_pending_review == 0,
+            )
+            .order_by(
+                ExperienceSummaryItem.display_order,
+                ExperienceSummaryItem.id,
+            )
+        ).scalars()
+    )
+    by_exp: dict[int, list[dict[str, Any]]] = {}
+    for row in rows:
+        if not (row.text or "").strip():
+            continue
+        by_exp.setdefault(row.experience_id, []).append(
+            {
+                "id": row.id,
+                "text": row.text,
+                "label": row.label,
+                "has_outcome": bool(row.has_outcome),
+            }
+        )
+    # Preserve the caller's experience ordering (start_date desc) rather than
+    # the id order the IN() query happens to return.
+    return [
+        {"experience_id": exp.id, "company": exp.company, "items": by_exp[exp.id]}
+        for exp in experiences
+        if exp.id in by_exp
+    ]
 
 
 def _prior_clarifications_for_candidate(

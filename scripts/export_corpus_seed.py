@@ -149,9 +149,36 @@ def _tag_row(tag: Any) -> dict[str, Any]:
     }
 
 
+def _experience_summary_item_row(item: Any) -> dict[str, Any]:
+    """A3 — one per-role intro variant (`ExperienceSummaryItem`).
+
+    Carried, not filtered: like every other entity here this is a faithful
+    snapshot, so a retired variant is exported with its flag rather than dropped.
+    `evals.seed_import` defaults the whole key to absent-means-none, so seeds
+    exported before this existed still load and SEED_SCHEMA_VERSION stays at 1 —
+    the same back-compat rule `experience.is_active` set.
+
+    Tag links are NOT exported. `ExperienceSummaryItemTag` exists in the schema
+    but nothing in the corpus→context→prompt path reads it today, and exporting
+    a relation the importer would have to guess at is how a snapshot starts
+    lying. Stated rather than silently skipped.
+    """
+    return {
+        "id": item.id,
+        "text": item.text,
+        "label": item.label,
+        "display_order": item.display_order,
+        "is_active": bool(item.is_active),
+        "is_pending_review": bool(item.is_pending_review),
+        "source": item.source,
+        "has_outcome": bool(item.has_outcome),
+    }
+
+
 def _experience_row(exp: Any) -> dict[str, Any]:
     titles = sorted(exp.titles, key=lambda t: t.id)
     bullets = sorted(exp.bullets, key=lambda b: (b.display_order, b.id))
+    intros = sorted(exp.summary_items, key=lambda s: (s.display_order, s.id))
     return {
         "id": exp.id,
         "company": exp.company,
@@ -167,6 +194,9 @@ def _experience_row(exp: Any) -> dict[str, Any]:
         "is_active": bool(exp.is_active),
         "titles": [_title_row(t) for t in titles],
         "bullets": [_bullet_row(b) for b in bullets],
+        # A3 — per-role intro variants, so a corpus seed can round-trip the
+        # grounding source `analyzer.draft_experience_summaries` reads.
+        "summary_items": [_experience_summary_item_row(s) for s in intros],
     }
 
 

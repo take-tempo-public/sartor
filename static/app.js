@@ -7386,6 +7386,11 @@ let _gapFillFiredForApp = null;
 let _retiredGapFillKeys = [];
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
+// A3 — whether draft_experience_summaries has already run for the loaded
+// application. Mirrors the server's has_experience_summary_drafts (key
+// presence, not list length), so a draft call that legitimately produced zero
+// intros still stops the opt-in path re-firing it.
+let _composeHasRoleIntroDrafts = false;
 
 // Test-observability: count of in-flight background reloads that will re-enter
 // loadComposition() (auto-cascade draft/recommend + user-action pin/accept/etc).
@@ -7657,9 +7662,19 @@ async function loadComposition() {
   // each experience card. The toggle is the explicit opt-in: when off (default)
   // no role intro reaches the résumé and the generate prompt is byte-identical.
   _composeUseRoleIntros = !!data.use_experience_summaries;
+  // A3 — the durable "a draft call already ran for this application" latch.
+  _composeHasRoleIntroDrafts = !!data.has_experience_summary_drafts;
+  // Still needed by the picker-apply block near the end of this function: the
+  // per-role PICKER only has something to apply when saved variants exist.
   const anyRoleVariants = (data.experiences || []).some(
     e => ((e.summary || {}).variants || []).length > 0);
-  if (anyRoleVariants) list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
+  // A3 widens what the TOGGLE is gated on (it used to require anyRoleVariants):
+  // this block runs only after the zero-experiences early return above, and a
+  // candidate with ZERO saved intro variants is exactly who drafting exists
+  // for — gating the toggle on already having variants would hide the feature
+  // from the only people who need it.
+  list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
+  list.appendChild(_renderRoleIntroDraftControls(data));
   // feat/regenerate-gap-fill — the manual Regenerate control for the per-role
   // gap-fill lanes rendered inside each experience card below. Always shown
   // (once experiences exist): a retired proposal never re-auto-drafts (the
@@ -7678,13 +7693,13 @@ async function loadComposition() {
     _gapFillFiredForApp = _composeApplicationId;
     _fireDraftGapFill();
   }
-  if (anyRoleVariants) {
-    // Show/hide the per-role pickers + default each opted-in role to the AI's
-    // recommendation. Then opportunistically fire the per-role recommend (one
-    // Haiku call) only when opted in and a role still lacks one.
-    _applyRoleIntros(_composeUseRoleIntros);
-    if (_composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
-  }
+  // A3 — the section itself now also renders for a role with zero saved
+  // variants (it can carry a draft card), so show/hide must run whenever ANY
+  // section exists, not only when saved variants do. The recommend call keeps
+  // its original `anyRoleVariants` guard: it SELECTS among saved variants and
+  // has nothing to do when there are none.
+  _applyRoleIntros(_composeUseRoleIntros);
+  if (anyRoleVariants && _composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
   // Compose-step inline preview was removed in the 2026-05-25 punch list
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
@@ -8540,7 +8555,29 @@ async function _onRoleIntrosToggle(checked) {
   } catch (e) {
     _toast('Autosave failed: ' + e.message, true);
   }
-  if (checked) _maybeFireRecommendExperienceSummaries();
+  if (!checked) return;
+  // Serialized on purpose: both calls read-modify-write the SAME context file
+  // and each ends in a loadComposition(). context_transaction makes the write
+  // safe, but firing them concurrently would race two full re-renders against
+  // each other. Recommend (cheap Haiku selection over what already exists)
+  // first; draft (Sonnet authoring) only after.
+  await _maybeFireRecommendExperienceSummaries();
+  await _maybeFireDraftExperienceSummaries();
+}
+
+// A3 — draft per-role intros when the user opts in, and only then. Deliberately
+// NOT an arrival auto-fire like gap-fill's: role intros are opt-in (the toggle
+// is off by default), so auto-drafting on every Compose arrival would spend a
+// Sonnet call per application on a feature most applications never turn on.
+// Latched twice — the server's has_experience_summary_drafts (durable, key
+// presence) and _roleIntroDraftFiredForApp (in-session, covers the window
+// between the POST and the reload that observes it).
+async function _maybeFireDraftExperienceSummaries() {
+  if (_composeApplicationId == null) return;
+  if (_roleIntroDraftFiredForApp === _composeApplicationId) return;
+  if (_composeHasRoleIntroDrafts) return;
+  _roleIntroDraftFiredForApp = _composeApplicationId;
+  await _fireDraftExperienceSummaries();
 }
 
 // Show/hide each role's picker for the current toggle state. When on, default
@@ -8607,11 +8644,21 @@ function _renderComposeRoleIntro(exp) {
   header.appendChild(addBtn);
   section.appendChild(header);
 
+  // A3 — the JD-fitted draft card, when draft_experience_summaries produced one
+  // for this role. Rendered ABOVE the saved variants and BEFORE the empty-state
+  // return: a role with zero saved variants is exactly the role a draft is most
+  // useful for, so the old early return would have hidden it.
+  if (summary.draft) {
+    section.appendChild(_renderRoleIntroDraftCard(summary.draft, exp.id));
+  }
+
   if (!variants.length) {
-    section.appendChild(_el('div', {
-      className: 'compose-empty-experience',
-      textContent: 'No intro variants yet — add one to use a per-role summary line.',
-    }));
+    if (!summary.draft) {
+      section.appendChild(_el('div', {
+        className: 'compose-empty-experience',
+        textContent: 'No intro variants yet — add one to use a per-role summary line.',
+      }));
+    }
     return section;
   }
 
@@ -8668,13 +8715,18 @@ function _toggleRoleIntroChoice(expId, summaryId) {
 // Fire the per-role recommend (one batched Haiku call) only when opted in and a
 // role with 2+ variants still lacks a recommendation. Reloads composition on
 // success so the recommendation chips + defaults surface.
+// Deliberately NOT declared `async`, even though one caller now awaits it: the
+// unawaited caller inside loadComposition() relies on `_markComposeBgReload(1)`
+// running SYNCHRONOUSLY before `_settleComposeIfIdle()` a few lines later (A2's
+// settle contract). Returning the promise from a plain function keeps that
+// synchronous prefix provably intact while still being awaitable.
 function _maybeFireRecommendExperienceSummaries() {
   let needs = false;
   document.querySelectorAll('#composeList .compose-role-intro[data-exp-id]').forEach(sec => {
     const n = sec.querySelectorAll('.role-intro-variant').length;
     if (n > 1 && !sec.dataset.recommendedId) needs = true;
   });
-  if (needs) _fireRecommendExperienceSummaries();
+  return needs ? _fireRecommendExperienceSummaries() : Promise.resolve();
 }
 
 const _BG_LABEL_ROLE_INTROS = 'Choosing a role intro for each job…';
@@ -8730,6 +8782,162 @@ async function _addComposeRoleIntro(expId) {
   } finally {
     _markComposeBgReload(-1);
   }
+}
+
+// ============================================================
+// A3 (Epic A) — per-role intro DRAFTING (analyzer.draft_experience_summaries)
+//
+// The picker above SELECTS among intros the candidate already wrote
+// (recommend_experience_summaries). This lane AUTHORS a new one per role,
+// fitted to this JD, in ONE batched call for every role — never one per role.
+// A draft is transient until the user keeps it; keeping saves it into the
+// CANONICAL per-role variant store (ExperienceSummaryItem, pending review),
+// never the legacy denormalized Experience.summary column (work item 59).
+// ============================================================
+
+const _BG_LABEL_ROLE_INTRO_DRAFTS = 'Writing a role intro for each job…';
+
+// Per-application once-only latch, mirroring _gapFillFiredForApp: the server's
+// has_experience_summary_drafts (key presence, not list length) is the durable
+// half; this is the in-session half that stops a re-loop between the POST and
+// the reload that observes it.
+let _roleIntroDraftFiredForApp = null;
+
+// One editable draft card. `edit in place` is the textarea itself: Keep sends
+// whatever is in it, so the user's wording always wins over the model's.
+function _renderRoleIntroDraftCard(draft, expId) {
+  const card = _el('div', { className: 'compose-role-intro-draft' });
+  card.dataset.key = draft.key;
+  card.dataset.expId = String(expId);
+
+  const head = _el('div', { className: 'row-meta' });
+  head.appendChild(_el('span', {
+    className: 'corpus-row-flag', textContent: 'Suggested for this job',
+    style: 'background:var(--brand);color:var(--bg-0);',
+  }));
+  card.appendChild(head);
+
+  const ta = _el('textarea', {
+    className: 'role-intro-draft-text',
+    rows: 2,
+    value: draft.text || '',
+  });
+  ta.dataset.expId = String(expId);
+  card.appendChild(ta);
+
+  if (draft.rationale) {
+    card.appendChild(_el('div', { className: 'edit-hint', textContent: draft.rationale }));
+  }
+  const quote = ((draft.evidence || {}).quote || '').trim();
+  if (quote) {
+    card.appendChild(_el('div', {
+      className: 'edit-hint', textContent: 'Grounded in: “' + quote + '”',
+    }));
+  }
+
+  const actions = _el('div', { className: 'row-meta' });
+  const keep = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-keep', textContent: 'Keep',
+  });
+  keep.type = 'button';
+  keep.onclick = () => _decideRoleIntroDraft(draft.key, 'keep', ta.value);
+  actions.appendChild(keep);
+  const reject = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-reject', textContent: 'Reject',
+  });
+  reject.type = 'button';
+  reject.onclick = () => _decideRoleIntroDraft(draft.key, 'reject', '');
+  actions.appendChild(reject);
+  card.appendChild(actions);
+  return card;
+}
+
+// Keep (saves a pending ExperienceSummaryItem + chooses it for this application)
+// or reject (drops the transient draft). Reloads composition on success — the
+// reload is what re-seeds chosen_experience_summary_ids + the toggle from the
+// server, so the client's next wholesale /composition save re-sends them rather
+// than clobbering what this route just wrote.
+async function _decideRoleIntroDraft(key, decision, text) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (decision === 'keep' && !(text || '').trim()) {
+    _toast('Intro text cannot be empty.', true);
+    return;
+  }
+  _markComposeBgReload(1);
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/experience-summary-decide`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context_path: lastContextPath, key, decision, text: text || '',
+        }) },
+    );
+    if (res.ok) await loadComposition();
+    else _toast('Could not update the suggested role intro.', true);
+  } catch {
+    _toast('Network error updating the suggested role intro.', true);
+  } finally {
+    _markComposeBgReload(-1);
+  }
+}
+
+// Fire the batched drafting call. `btn` is present only for the explicit
+// "Draft intros for this job" trigger; its absence keeps the auto-fire silent
+// and non-blocking, exactly like _fireDraftGapFill.
+async function _fireDraftExperienceSummaries(btn) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  _setBtnPending(btn, 'Drafting…');
+  _markComposeBgReload(1, _BG_LABEL_ROLE_INTRO_DRAFTS);
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/draft-experience-summaries`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) {
+      if (btn) {
+        const body = await res.json().catch(() => ({}));
+        const n = (body.drafts || []).length;
+        _toast(n
+          ? `${n} role intro${n === 1 ? '' : 's'} to review.`
+          : 'No grounded role intros could be drafted.');
+      }
+      // Awaited — settle-gate bracket (see _fireDraftSummary for the rationale).
+      await loadComposition();
+    } else if (btn) {
+      _toast('Could not draft role intros.', true);
+    }
+  } catch {
+    if (btn) _toast('Network error drafting role intros.', true);
+  } finally {
+    _markComposeBgReload(-1, _BG_LABEL_ROLE_INTRO_DRAFTS);
+    _clearBtnPending(btn, 'Draft intros for this job');
+  }
+}
+
+// The explicit control row, rendered next to the "Add role intros" toggle.
+// Batched like gap-fill, so it lives once above the cards rather than per card.
+function _renderRoleIntroDraftControls(data) {
+  const total = (data.experiences || [])
+    .filter(e => (e.summary || {}).draft).length;
+  const wrap = _el('div', {
+    className: 'role-intro-draft-controls',
+    style: 'margin:6px 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;',
+  });
+  wrap.appendChild(_el('span', {
+    className: 'edit-hint',
+    textContent: total
+      ? `${total} drafted role intro${total === 1 ? '' : 's'} to review below.`
+      : 'No drafted role intros right now.',
+  }));
+  const btn = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-regen',
+    textContent: 'Draft intros for this job',
+  });
+  btn.type = 'button';
+  btn.onclick = () => _fireDraftExperienceSummaries(btn);
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 // Pick the strongest bullets from a score-sorted list using a quality

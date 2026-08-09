@@ -283,6 +283,31 @@ class ContextSet(_ContextSetRequired, total=False):
     # access. Absent on legacy (file-based) contexts — the default path (and
     # --suite synthetic) stay byte-identical. total=False.
     prior_clarifications: list[PriorClarification]
+    # A3 (feat/role-summary-drafting): the candidate's ACTIVE per-role intro
+    # variants (ExperienceSummaryItem rows), grouped by experience. Staged
+    # durably at context-build time (db.build_context.build_context_set_from_db,
+    # corpus-mode only) for the same reason prior_clarifications is: it is
+    # legitimate grounding source material that does NOT appear in the
+    # synthesized `resume.text` (_synthesize_resume_markdown emits titles +
+    # bullets + skills + education + certifications, never intro variants), so
+    # a metric scored without it reports a chosen-or-reworked role intro as
+    # fabrication. Read by assemble_source_union below and by
+    # analyzer.recommend_experience_summaries / draft_experience_summaries,
+    # which the /recommend-experience-summaries + /draft-experience-summaries
+    # routes ALSO stage transiently with a fresher DB read (the route copy wins
+    # in-memory; the durable copy is what survives to disk). Absent on legacy
+    # file-based contexts. Element shape:
+    #   {"experience_id": int, "company": str,
+    #    "items": [{"id": int, "text": str, "label": str|None,
+    #               "has_outcome": bool}, ...]}
+    # Typed `list[Any]`, deliberately, and NOT as a nested TypedDict: this value
+    # is read back off JSON on disk (or staged by a route), so every consumer
+    # defensively isinstance-checks each element before touching it. A precise
+    # element type would make mypy declare those live runtime guards
+    # `unreachable` — which is a type-checker artifact, not a fact about the
+    # data — and would ALSO break list-invariance against the
+    # `list[dict[str, Any]]` the routes build. total=False.
+    experience_summary_items: list[Any]
 
 
 # Common English stop words to exclude from keyword extraction
@@ -1916,6 +1941,19 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
     it over-reports legitimately-reused facts as fabrication. Returned as a
     list of raw text blocks (empty entries skipped).
 
+    A3 (feat/role-summary-drafting) adds a FIFTH source for the same reason:
+    the candidate's own per-role intro variants
+    (`context_set["experience_summary_items"]`). These are real, candidate-owned
+    corpus text, but they are NOT part of the synthesized `resume.text` in
+    corpus mode (`db.build_context._synthesize_resume_markdown` emits titles,
+    bullets, skills, education and certifications — never intro variants), so
+    without this a role intro the candidate already wrote, or a
+    `draft_experience_summaries` reframing of one, scores as fabricated.
+    Widened here because `draft_experience_summaries` is shown these variants
+    as grounding material, and the prompt-side and metric-side source sets must
+    not diverge. Absent on legacy file-based contexts -> the union is unchanged
+    and `--suite synthetic` stays byte-identical.
+
     This is the single source-union definition, shared by
     compute_iteration_signals (the iteration clarifier) and the eval-time L0
     fabricated-specifics check, so the two can never score against divergent
@@ -1941,6 +1979,17 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
         prior_ans = prior.get("answer") if isinstance(prior, dict) else None
         if prior_ans:
             source_texts.append(str(prior_ans))
+    # A3: per-role intro variants. One pass over an already-materialized list —
+    # no re-scan, no DB access (this module is deterministic, C-6).
+    for group in context_set.get("experience_summary_items") or []:
+        if not isinstance(group, dict):
+            continue
+        for variant in group.get("items") or []:
+            if not isinstance(variant, dict):
+                continue
+            variant_text = str(variant.get("text") or "").strip()
+            if variant_text:
+                source_texts.append(variant_text)
     return source_texts
 
 

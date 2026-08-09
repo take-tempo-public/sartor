@@ -4,9 +4,10 @@ Deterministic, LLM-free (P1 hardening boundary — an ``evals/`` helper, no mode
 calls). The faithful inverse of ``scripts/export_corpus_seed.py::export_seed``:
 reads a single-candidate ``seed.json`` (``seed_schema_version: 1``) and
 reconstructs the Candidate / Tag / Experience / ExperienceTitle / Bullet /
-SummaryItem / Skill / Education / Certification rows (plus the bullet / title /
-summary tag links) into a fresh DB, **preserving the original primary keys** so
-foreign-key joins round-trip unambiguously without a remap table.
+ExperienceSummaryItem / SummaryItem / Skill / Education / Certification rows
+(plus the bullet / title / summary tag links) into a fresh DB, **preserving the
+original primary keys** so foreign-key joins round-trip unambiguously without a
+remap table.
 
 The imported session feeds ``db.build_context.build_context_set_from_db``, so the
 corpus-backed eval runner exercises the REAL product pipeline. The active-only /
@@ -109,6 +110,7 @@ def import_seed(session: Session, seed: dict[str, Any]) -> str:
         Certification,
         Education,
         Experience,
+        ExperienceSummaryItem,
         ExperienceTitle,
         ExperienceTitleTag,
         Skill,
@@ -185,6 +187,28 @@ def import_seed(session: Session, seed: dict[str, Any]) -> str:
                         confidence=link["confidence"],
                     )
                 )
+
+        # A3 (feat/role-summary-drafting): per-role intro variants. Back-compat
+        # by the same rule `is_active` above established — a seed exported before
+        # this key existed simply has no intros, which is the honest reading, so
+        # SEED_SCHEMA_VERSION stays at 1. Tag links are deliberately NOT carried:
+        # the exporter does not emit them for this entity either (see
+        # `_experience_summary_item_row`), so importing them would invent state.
+        for intro in exp.get("summary_items", []):
+            session.add(
+                ExperienceSummaryItem(
+                    id=intro["id"],
+                    experience_id=exp["id"],
+                    text=intro["text"],
+                    label=intro.get("label"),
+                    display_order=intro.get("display_order", 0),
+                    is_active=_flag(intro.get("is_active", 1)),
+                    is_pending_review=_flag(intro.get("is_pending_review", 0)),
+                    source=intro.get("source", "manual"),
+                    has_outcome=_flag(intro.get("has_outcome", 0)),
+                )
+            )
+        session.flush()
 
         for bullet in exp["bullets"]:
             session.add(

@@ -483,7 +483,13 @@ class TestWorkHistory:
 
 
 def _seed_experience_summary(
-    session, experience_id: int, *, text: str, display_order: int = 0, is_active: int = 1
+    session,
+    experience_id: int,
+    *,
+    text: str,
+    display_order: int = 0,
+    is_active: int = 1,
+    is_pending_review: int = 0,
 ) -> int:
     from db.models import ExperienceSummaryItem
 
@@ -492,6 +498,8 @@ def _seed_experience_summary(
         text=text,
         display_order=display_order,
         is_active=is_active,
+        is_pending_review=is_pending_review,
+        source="llm_proposed" if is_pending_review else "manual",
     )
     session.add(si)
     session.flush()
@@ -1145,6 +1153,133 @@ class TestPendingLeakGuard:
         assert "Accepted gap-fill bullet." in doc["work"][0]["highlights"]
         assert pending_id in doc["meta"]["sartor"]["accepted_generated_bullet_ids"]
         assert pending_id in doc["meta"]["sartor"]["work_provenance"][0]["highlight_ids"]
+
+
+class TestExperienceSummaryPendingLeakGuard:
+    """A3 close-out (blast-radius D5, adversarial-review finding) — a
+    kept-but-unreviewed (is_pending_review=1) ExperienceSummaryItem must render
+    for THIS application (its id in composition_overrides.
+    accepted_experience_summary_ids) but must NOT leak into another
+    application's render just because it shares the same candidate-scoped role.
+    Mirrors TestPendingLeakGuard for Bullets."""
+
+    def test_pending_variant_excluded_by_default(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        pending_id = _seed_experience_summary(
+            session, eid, text="Leaky pending intro.", is_pending_review=1
+        )
+        # A DIFFERENT application's context: it "chose" the pending item (e.g. via
+        # a picker that listed it) but never accepted it via its OWN KEEP call —
+        # no accepted_experience_summary_ids override.
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert "summary" not in doc["work"][0]
+
+    def test_pending_variant_renders_when_accepted(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        pending_id = _seed_experience_summary(
+            session, eid, text="Kept role intro.", is_pending_review=1
+        )
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+                "accepted_experience_summary_ids": [pending_id],
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["summary"] == "Kept role intro."
+
+    def test_cross_application_leak_closed(self, session, tmp_path):
+        """The exact confirmed-defect scenario: application A keeps a draft;
+        application B (same candidate, same role, never accepted it) must not
+        see it rendered."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        pending_id = _seed_experience_summary(
+            session, eid, text="Drafted for application A.", is_pending_review=1
+        )
+        # Application A: accepted (KEEP) this variant.
+        ctx_a = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+                "accepted_experience_summary_ids": [pending_id],
+            },
+        )
+        doc_a = build_json_resume_from_corpus(session, cid, context_path=ctx_a)
+        assert doc_a["work"][0]["summary"] == "Drafted for application A."
+
+        # Application B: same candidate/role, picked the SAME item id (e.g. an
+        # unguarded picker let it through) but never ran ITS OWN KEEP — no
+        # accepted_experience_summary_ids for B.
+        ctx_b_path = tmp_path / "context_b.json"
+        ctx_b_path.write_text(
+            json.dumps(
+                {
+                    "composition_overrides": {
+                        "use_experience_summaries": True,
+                        "chosen_experience_summary_ids": {str(eid): pending_id},
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        doc_b = build_json_resume_from_corpus(session, cid, context_path=str(ctx_b_path))
+        assert "summary" not in doc_b["work"][0]
+
+    def test_default_path_no_pending_byte_identical(self, session, tmp_path):
+        """An approved (is_pending_review=0) variant renders exactly as before the
+        guard — the guard's extra term is a no-op when nothing is pending."""
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        sid = _seed_experience_summary(session, eid, text="Approved framing.")
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): sid},
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["work"][0]["summary"] == "Approved framing."
+
+    def test_meta_sartor_records_accepted_experience_summary_ids(self, session, tmp_path):
+        from corpus_to_json_resume import build_json_resume_from_corpus
+
+        cid = _seed_candidate(session)
+        eid, _ = _seed_experience(session, cid, bullets=("Shipped X.",))
+        pending_id = _seed_experience_summary(
+            session, eid, text="Kept role intro.", is_pending_review=1
+        )
+        ctx = _ctx_file(
+            tmp_path,
+            composition_overrides={
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+                "accepted_experience_summary_ids": [pending_id],
+            },
+        )
+        doc = build_json_resume_from_corpus(session, cid, context_path=ctx)
+        assert doc["meta"]["sartor"]["accepted_experience_summary_ids"] == [pending_id]
 
 
 class TestFrozenCompositionProvenance:

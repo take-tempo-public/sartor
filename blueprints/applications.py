@@ -1,13 +1,19 @@
 """Applications seam — the job-application tracker + per-application Compose.
 
 The fifth domain blueprint extracted from `app.py` (Sprint 8.3f, the app.py ->
-blueprints decomposition). Owns the thirteen routes that list/show applications,
-update their status/notes/title-company, read + persist the per-application
-Compose composition overrides, run the per-application LLM recommend/suggest
+blueprints decomposition). Owns the routes that list/show applications, update
+their status/notes/title-company, read + persist the per-application Compose
+composition overrides, run the per-application LLM recommend/draft/suggest
 steps, and serve the candidate-memory clarifications list, plus their domain-only
 helpers (`_application_summary_dict`, `_build_resume_state`,
 `_find_context_path_for_run`, `_load_application_owned`,
-`_latest_analysis_essentials`, and the seven context-override readers):
+`_latest_analysis_essentials`, and the context-override readers).
+
+The list below is the CURRENT FULL SET — 22 routes as of Epic A sprint A3. (It
+read "the thirteen routes" with a 15-line list for several sprints after it
+stopped being true; re-derive it with
+`grep -c "@applications_bp.route" blueprints/applications.py` rather than
+trusting this sentence.)
 
     GET    /api/users/<u>/applications                          list_applications
     GET    /api/applications/<id>                               get_application
@@ -20,6 +26,14 @@ helpers (`_application_summary_dict`, `_build_resume_state`,
     POST   /api/applications/<id>/composition                   save_application_composition
     POST   /api/applications/<id>/recommend                     recommend_application_bullets
     POST   /api/applications/<id>/recommend-summary             recommend_application_summary
+    POST   /api/applications/<id>/draft-summary                 draft_application_summary
+    POST   /api/applications/<id>/draft-gap-fill                draft_application_gap_fill
+    POST   /api/applications/<id>/gap-fill-decide               gap_fill_decide
+    POST   /api/applications/<id>/draft-experience-summaries
+                                              draft_application_experience_summaries
+    POST   /api/applications/<id>/experience-summary-decide     experience_summary_decide
+    POST   /api/applications/<id>/draft-refinement              draft_application_refinement
+    POST   /api/applications/<id>/accept-refinement             accept_application_refinement
     POST   /api/applications/<id>/recommend-experience-summaries
                                                   recommend_application_experience_summaries
     POST   /api/applications/<id>/recommend-skills              recommend_application_skills
@@ -775,20 +789,45 @@ def _read_title_overrides(context_path: str) -> dict[int, int]:
     return out
 
 
+def _accepted_experience_summary_ids(overrides: dict[str, Any]) -> set[int]:
+    """Return the KEPT ExperienceSummaryItem id set from a composition_overrides dict.
+
+    Pending-leak guard ledger (A3 close-out, blast-radius D5): populated by
+    `experience_summary_decide` (KEEP), mirroring `accepted_generated_bullet_ids`
+    for Bullets (`_read_gap_fill`). A pending (`is_pending_review=1`) variant is
+    eligible for THIS application's picker / composition-save / render ONLY when
+    its id is in this set. Empty when absent.
+    """
+    out: set[int] = set()
+    for x in overrides.get("accepted_experience_summary_ids") or []:
+        try:
+            out.add(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _read_experience_summary_overrides(
     context_path: str,
-) -> tuple[dict[int, dict[str, Any]], dict[int, int], bool]:
-    """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries) from a context file.
+) -> tuple[dict[int, dict[str, Any]], dict[int, int], bool, set[int]]:
+    """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries, accepted_ids) from a context file.
 
     - recs_by_exp: experience-id → {summary_item_id, rationale, alternates}
       from `llm_experience_summary_recommendations.recommendations`.
     - chosen_by_exp: experience-id → chosen ExperienceSummaryItem id from
       `composition_overrides.chosen_experience_summary_ids`.
     - use_experience_summaries: the "Add role intros" toggle state.
-    _within-gated by OUTPUT_DIR. Returns ({}, {}, False) on read/parse failure
-    so the route degrades to "no role intros" rather than 500ing.
+    - accepted_ids: ExperienceSummaryItem ids KEPT for THIS application (A3
+      close-out pending-leak guard) — see `_accepted_experience_summary_ids`.
+    _within-gated by OUTPUT_DIR. Returns ({}, {}, False, set()) on read/parse
+    failure so the route degrades to "no role intros" rather than 500ing.
     """
-    empty: tuple[dict[int, dict[str, Any]], dict[int, int], bool] = ({}, {}, False)
+    empty: tuple[dict[int, dict[str, Any]], dict[int, int], bool, set[int]] = (
+        {},
+        {},
+        False,
+        set(),
+    )
     if not context_path:
         return empty
     cp = Path(context_path)
@@ -821,7 +860,10 @@ def _read_experience_summary_overrides(
             except (TypeError, ValueError):
                 continue
     use_flag = bool(overrides.get("use_experience_summaries"))
-    return recs_by_exp, chosen_by_exp, use_flag
+    accepted_ids = (
+        _accepted_experience_summary_ids(overrides) if isinstance(overrides, dict) else set()
+    )
+    return recs_by_exp, chosen_by_exp, use_flag, accepted_ids
 
 
 def _read_skill_composition(
@@ -973,6 +1015,42 @@ def _read_recommendations_and_added(
     return added, rec_by_exp
 
 
+def _read_experience_summary_drafts(
+    context_path: str,
+) -> tuple[dict[int, dict[str, Any]], bool]:
+    """A3: Return (drafts keyed by experience id, has_drafts) from a context file.
+
+    `has_drafts` is KEY PRESENCE, not list length — the same latch contract
+    `_read_gap_fill`'s `has_gap_fill` uses, so a draft call that legitimately
+    produced nothing still stops the client re-firing. At most one draft per role
+    (the analyzer already dedups), so a dict keyed by experience id is the right
+    shape here, unlike gap-fill's list-per-role. _within-gated by OUTPUT_DIR;
+    degrades to ({}, False) on read/parse failure rather than 500ing.
+    """
+    if not context_path:
+        return {}, False
+    cp = Path(context_path)
+    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+        return {}, False
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}, False
+    has_drafts = "llm_experience_summary_drafts" in ctx
+    raw = ctx.get("llm_experience_summary_drafts") or []
+    out: dict[int, dict[str, Any]] = {}
+    if isinstance(raw, list):
+        for d in raw:
+            if not isinstance(d, dict):
+                continue
+            try:
+                eid = int(d.get("experience_id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+            out.setdefault(eid, d)
+    return out, has_drafts
+
+
 @applications_bp.route("/api/applications/<int:application_id>/composition", methods=["GET"])
 def get_application_composition(application_id: int) -> ResponseReturnValue:
     """Fit-ranked bullets + eligible titles for the Compose wizard step.
@@ -1044,7 +1122,14 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             exp_summary_recs,
             exp_summary_chosen,
             use_experience_summaries,
+            accepted_experience_summary_ids,
         ) = _read_experience_summary_overrides(ctx_path)
+        # A3 — transient per-role intro DRAFTS (draft_experience_summaries).
+        # has_experience_summary_drafts is key presence, so a draft call that
+        # produced nothing still latches the client's once-only fire.
+        exp_summary_drafts, has_experience_summary_drafts = _read_experience_summary_drafts(
+            ctx_path
+        )
         # B.5 — per-JD skill curation: recommend_skills ordering + pin/drop/
         # reorder overrides. Drives the Compose skill-curation card.
         (
@@ -1195,8 +1280,20 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             # above — filter/sort in Python instead of a per-experience query
             # (was the third N+1 query family in this loop, alongside bullets
             # and titles).
+            # Pending-leak guard (A3 close-out, blast-radius D5): a kept-but-
+            # unreviewed (is_pending_review=1) variant is a candidate-scoped row,
+            # shared across every application for this role — it must appear in
+            # ITS OWN application's picker (pending-and-editable), never as an
+            # already-chosen option in another application's context. Approved
+            # (is_pending_review=0) variants are unaffected — visible everywhere,
+            # as before.
             esi_rows = sorted(
-                (esi for esi in exp.summary_items if esi.is_active),
+                (
+                    esi
+                    for esi in exp.summary_items
+                    if esi.is_active
+                    and (not esi.is_pending_review or esi.id in accepted_experience_summary_ids)
+                ),
                 key=lambda esi: (esi.display_order, esi.id),
             )
             role_summary_variants: list[dict[str, Any]] = []
@@ -1237,6 +1334,11 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                             "recommended_id": exp_rec_id,
                             "chosen_id": exp_chosen_id,
                             "has_recommendation": exp_rec_id is not None,
+                            # A3 — the transient JD-fitted draft for THIS role
+                            # (null when none). Rendered as an editable
+                            # keep/reject card above the variant list; it is not
+                            # a variant until the user keeps it.
+                            "draft": exp_summary_drafts.get(exp.id),
                         },
                         # Phase 3 — per-role gap-fill proposals (accept/retire lane).
                         "gap_fill_proposals": exp_gap_fill,
@@ -1377,6 +1479,9 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 },
                 # B.4 — the "Add role intros" toggle state for this application.
                 "use_experience_summaries": use_experience_summaries,
+                # A3 — key presence flips this true after the first role-intro
+                # draft (even with zero drafts), so the client never re-loops.
+                "has_experience_summary_drafts": has_experience_summary_drafts,
                 # B.5 — skill curation payload for the Compose skill card.
                 "skills": {
                     "items": skill_items_out,
@@ -1558,6 +1663,16 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
 
+        # A3 close-out (blast-radius D5) — the pending-leak guard's per-application
+        # acceptance ledger, read from THIS request's pre-mutation snapshot of the
+        # context file. Unlike accepted_generated_bullet_ids (client-resent every
+        # save), this key is server-owned: only `/experience-summary-decide` (KEEP)
+        # ever adds to it, so it is carried forward unconditionally below rather
+        # than rebuilt from the request body.
+        accepted_experience_summary_ids_saved = _accepted_experience_summary_ids(
+            ctx.get("composition_overrides") or {}
+        )
+
         # feat/compose-add-title — validate each pinned title is an eligible
         # (is_official OR truthful_enough_to_use) title of the named experience,
         # and that the experience belongs to this application's candidate. A bad
@@ -1611,6 +1726,11 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         # id is a 400 (not a silent drop) so the UI can't pin a stale/foreign id.
         # The sentinel 0 means "explicitly cleared — no intro for this role";
         # it's persisted (so it isn't re-defaulted on reload) but not validated.
+        # Pending-leak guard (A3 close-out, blast-radius D5): a pending
+        # (is_pending_review=1) variant is eligible ONLY when it was KEPT for
+        # THIS application (its id in accepted_experience_summary_ids_saved) —
+        # mirrors the Skill validation below (is_pending_review=0) plus the
+        # per-application acceptance the Bullet lane uses for its own pending ids.
         for eid_str, item_id in chosen_experience_summary_ids.items():
             if item_id == 0:
                 continue
@@ -1633,10 +1753,12 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 )
                 .first()
             )
-            if row is None:
+            if row is None or (
+                row.is_pending_review and row.id not in accepted_experience_summary_ids_saved
+            ):
                 return jsonify(
                     {
-                        "error": f"summary variant {item_id} is not an active intro of experience {eid_str}"
+                        "error": f"summary variant {item_id} is not an eligible intro of experience {eid_str}"
                     }
                 ), 400
 
@@ -1715,6 +1837,22 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
         # "frozen".
         frozen_assemblable = False
         with context_transaction(cp) as fresh:
+            # Pending-leak guard carry-forward (A3 close-out, blast-radius D5):
+            # accepted_experience_summary_ids is server-owned — only
+            # experience_summary_decide (KEEP) ever adds to it, the client never
+            # resends it — so this route (which wholesale-rebuilds
+            # composition_overrides from the request body) must carry it forward
+            # explicitly or a KEEP's acceptance is silently dropped on the very
+            # next save. Re-derived from the FRESH in-lock read, not the outer
+            # pre-lock snapshot, to close the same lost-update window the
+            # surrounding transaction exists for.
+            fresh_accepted_experience_summary_ids = _accepted_experience_summary_ids(
+                fresh.get("composition_overrides") or {}
+            )
+            if fresh_accepted_experience_summary_ids:
+                overrides["accepted_experience_summary_ids"] = sorted(
+                    fresh_accepted_experience_summary_ids
+                )
             fresh["composition_overrides"] = overrides
 
             # feat/compose-add-title — generate reads the FROZEN career_corpus
@@ -2545,6 +2683,490 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
         raise
     finally:
         session.close()
+
+
+# ---------------------------------------------------------------------------
+# Epic A sprint A3 — per-role intro drafting (analyzer.draft_experience_summaries)
+# ---------------------------------------------------------------------------
+
+
+def _build_experience_summary_targets(
+    ctx: dict[str, Any], intros_by_exp: dict[int, list[dict[str, Any]]]
+) -> list[dict[str, Any]]:
+    """Build `experience_summary_targets` from an ALREADY-LOADED context dict.
+
+    One entry per role that is actually going on this résumé, carrying the three
+    grounding sources `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT` names: the
+    role's heading facts, the bullets currently selected for it, and the intro
+    variants the candidate has already written for it.
+
+    The effective-bullet rule mirrors
+    `corpus_to_json_resume.build_json_resume_from_corpus` exactly —
+    ``(recommended ∪ pinned ∪ added ∪ accepted_generated) − excluded`` when a
+    recommendation exists for that role, else all-active minus excluded — so a
+    drafted intro is grounded in the bullets that will actually sit under it.
+    Roles with no effective bullet AND no existing intro are omitted: there is
+    nothing to ground a draft in.
+
+    Takes the already-parsed `ctx` rather than a path on purpose: the sibling
+    `_read_*` helpers each re-read and re-parse the context file, and calling
+    four of them here would be four extra reads of a file the caller already has
+    in memory.
+    """
+    corpus = ctx.get("career_corpus")
+    if not isinstance(corpus, list):
+        return []
+    overrides = ctx.get("composition_overrides")
+    if not isinstance(overrides, dict):
+        overrides = {}
+
+    def _int_set(key: str) -> set[int]:
+        out: set[int] = set()
+        for raw in overrides.get(key) or []:
+            try:
+                out.add(int(raw))
+            except (TypeError, ValueError):
+                continue
+        return out
+
+    pinned = _int_set("pinned")
+    excluded = _int_set("excluded")
+    added = _int_set("added")
+    accepted_generated = _int_set("accepted_generated_bullet_ids")
+
+    rec_by_exp: dict[int, set[int]] = {}
+    for k, v in (ctx.get("llm_recommendations") or {}).items():
+        try:
+            eid = int(k)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(v, dict):
+            ids: set[int] = set()
+            for raw in v.get("bullet_ids") or []:
+                try:
+                    ids.add(int(raw))
+                except (TypeError, ValueError):
+                    continue
+            rec_by_exp[eid] = ids
+
+    title_choices: dict[int, int] = {}
+    raw_titles = overrides.get("pinned_title_ids") or {}
+    if isinstance(raw_titles, dict):
+        for k, v in raw_titles.items():
+            try:
+                title_choices[int(k)] = int(v)
+            except (TypeError, ValueError):
+                continue
+
+    targets: list[dict[str, Any]] = []
+    for exp in corpus:
+        if not isinstance(exp, dict):
+            continue
+        try:
+            eid = int(exp.get("id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        rec_ids = rec_by_exp.get(eid)
+        bullets: list[dict[str, Any]] = []
+        for b in exp.get("bullets") or []:
+            if not isinstance(b, dict):
+                continue
+            try:
+                bid = int(b.get("id"))  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+            text = str(b.get("text") or "").strip()
+            if not text or bid in excluded:
+                continue
+            include = (
+                rec_ids is None
+                or bid in rec_ids
+                or bid in pinned
+                or bid in added
+                or bid in accepted_generated
+            )
+            if include:
+                bullets.append({"id": bid, "text": text})
+
+        existing_intros = intros_by_exp.get(eid, [])
+        if not bullets and not existing_intros:
+            continue
+
+        eligible = exp.get("eligible_titles") or []
+        title = ""
+        pinned_title_id = title_choices.get(eid)
+        for t in eligible:
+            if (
+                isinstance(t, dict)
+                and pinned_title_id is not None
+                and t.get("id") == pinned_title_id
+            ):
+                title = str(t.get("title") or "").strip()
+                break
+        if not title:
+            for t in eligible:
+                if isinstance(t, dict) and t.get("is_official"):
+                    title = str(t.get("title") or "").strip()
+                    break
+        if not title and eligible and isinstance(eligible[0], dict):
+            title = str(eligible[0].get("title") or "").strip()
+
+        span = f"{str(exp.get('start_date') or '').strip()}–{str(exp.get('end_date') or 'present').strip()}"
+        targets.append(
+            {
+                "experience_id": eid,
+                "company": str(exp.get("company") or "").strip(),
+                "title": title,
+                "span": span,
+                "bullets": bullets,
+                "existing_intros": existing_intros,
+            }
+        )
+    return targets
+
+
+def _active_intros_by_experience(
+    session: Session, candidate_id: int
+) -> dict[int, list[dict[str, Any]]]:
+    """Active `ExperienceSummaryItem` variants for a candidate, grouped by role.
+
+    ONE query joined to `Experience` (not one per role — the N+1 shape PX-38
+    already had to remove from the composition GET's loop).
+    """
+    from db.models import Experience, ExperienceSummaryItem
+
+    rows = (
+        session.query(ExperienceSummaryItem)
+        .join(Experience, ExperienceSummaryItem.experience_id == Experience.id)
+        .filter(
+            Experience.candidate_id == candidate_id,
+            Experience.is_active == 1,
+            ExperienceSummaryItem.is_active == 1,
+        )
+        .order_by(ExperienceSummaryItem.display_order, ExperienceSummaryItem.id)
+        .all()
+    )
+    out: dict[int, list[dict[str, Any]]] = {}
+    for r in rows:
+        if not (r.text or "").strip():
+            continue
+        out.setdefault(r.experience_id, []).append({"id": r.id, "text": r.text, "label": r.label})
+    return out
+
+
+@applications_bp.route(
+    "/api/applications/<int:application_id>/draft-experience-summaries", methods=["POST"]
+)
+def draft_application_experience_summaries(application_id: int) -> ResponseReturnValue:
+    """A3 — draft a JD-fitted one-line intro for EACH included role, in ONE call (Sonnet).
+
+    The batched sibling of `/draft-summary`: `analyzer.draft_experience_summaries`
+    fires once for every role on this résumé, never once per role. Results are
+    TRANSIENT proposals on `ctx["llm_experience_summary_drafts"]` (the same shape
+    contract as `llm_gap_fill_proposals` — not `ExperienceSummaryItem` rows yet).
+    The user then KEEPs one (optionally after editing it in place), which creates a
+    pending variant, or REJECTs it, via `/experience-summary-decide`.
+
+    `recommend_experience_summaries` (`/recommend-experience-summaries`) is
+    untouched and stays the SELECTOR over variants that already exist; this route
+    is the AUTHOR of new ones.
+
+    The key is ALWAYS written (even `[]`) so the client's
+    `has_experience_summary_drafts` latch flips and a once-only fire never re-loops.
+    The analyzer short-circuits without an LLM call when there is no JD or no
+    role target.
+
+    Body: {context_path}. Filesystem + ownership: _safe_username via
+    _load_application_owned; _within gates context_path.
+    """
+    import hashlib
+
+    from analyzer import LLMResponseError, draft_experience_summaries
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        intros_by_exp = _active_intros_by_experience(session, candidate.id)
+        targets = _build_experience_summary_targets(ctx, intros_by_exp)
+
+        # Stage transient inputs for the LLM call; the fresh in-lock write below
+        # never carries them to disk.
+        ctx["experience_summary_targets"] = targets
+        ctx["jd_text"] = app_row.jd_text
+        run_id = ctx.get("run_id") or uuid.uuid4().hex[:12]
+        try:
+            result = draft_experience_summaries(
+                _get_client(),
+                ctx,
+                username=candidate.username,
+                run_id=run_id,
+            )
+        except anthropic.APIConnectionError as exc:
+            logger.error("Draft-experience-summaries: Anthropic connection error: %s", exc)
+            return jsonify({"error": "AI service connection failed"}), 503
+        except LLMResponseError as exc:
+            logger.error(
+                "Draft-experience-summaries: malformed LLM response: %s", exc.validation_error
+            )
+            return jsonify(
+                {
+                    "error": "AI role-intro draft was malformed",
+                    "detail": str(exc.validation_error),
+                }
+            ), 502
+
+        drafts: list[dict[str, Any]] = []
+        for d in result.get("drafts") or []:
+            if not isinstance(d, dict):
+                continue
+            eid = _coerce_experience_id(d.get("experience_id"))
+            text = str(d.get("text") or "").strip()
+            if eid is None or not text:
+                continue
+            evidence = d.get("evidence") if isinstance(d.get("evidence"), dict) else {}
+            drafts.append(
+                {
+                    # Same stable key shape as the gap-fill lane, prefixed so the
+                    # two proposal families can never collide in a client-side set.
+                    "key": hashlib.sha256(f"intro:{eid}|{text}".encode()).hexdigest()[:12],
+                    "experience_id": eid,
+                    "text": text,
+                    "evidence": evidence,
+                    "rationale": str(d.get("rationale") or "").strip(),
+                }
+            )
+
+        # ALWAYS write the key, even empty — key PRESENCE (not list length) is what
+        # flips has_experience_summary_drafts, exactly like llm_gap_fill_proposals.
+        with context_transaction(cp) as fresh:
+            fresh["llm_experience_summary_drafts"] = drafts
+        return jsonify({"application_id": application_id, "drafts": drafts})
+    finally:
+        session.close()
+
+
+@applications_bp.route(
+    "/api/applications/<int:application_id>/experience-summary-decide", methods=["POST"]
+)
+def experience_summary_decide(application_id: int) -> ResponseReturnValue:
+    """A3 — KEEP (optionally edited) or REJECT ONE drafted role intro.
+
+    KEEP: create a real `ExperienceSummaryItem` on the draft's role
+    (`source='llm_proposed'`, `is_pending_review=1` — the same review posture
+    gap-fill's accepted Bullet takes), point
+    `composition_overrides.chosen_experience_summary_ids[<eid>]` at it, turn on
+    `use_experience_summaries` so the intro actually renders, and drop the
+    transient draft. `text` in the body overrides the draft's text, which is how
+    "edit in place" lands: what the user sees is what gets saved.
+
+    REJECT: drop the transient draft. No row is ever created.
+
+    **Deliberate divergence from the gap-fill lane, recorded rather than
+    silently copied:** `/gap-fill-decide`'s retire ALSO writes a durable
+    `retired_gap_fill_keys` set, because gap-fill has an auto-fire path that
+    would resurface the same proposal. This lane has no auto-fire — the drafts
+    key latches after the first call and only an explicit user Regenerate calls
+    again, at which point re-drafting is what the user asked for. So no new
+    durable override key is added, and the client's wholesale-rebuild clobber
+    contract (`_collectCompositionState`) gains no new field to drop.
+
+    Idempotency also differs, and for a schema reason: gap-fill keys its
+    idempotency on `Bullet.source = 'llm_proposed:<key>'`, but
+    `ExperienceSummaryItem.source` carries a DB CHECK constraint restricted to
+    exactly `manual|imported|llm_proposed` (`db/models.py`), so the key cannot
+    ride there. This route dedups on (experience, source='llm_proposed',
+    identical active text) instead — a double-KEEP reuses the existing row.
+
+    Body: {context_path, key, decision, text?}. decision in {"keep","reject"}.
+    Filesystem + ownership: _safe_username via _load_application_owned; _within
+    gates context_path.
+    """
+    from db.models import Experience, ExperienceSummaryItem, IterationLog
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    key = (data.get("key") or "").strip()
+    decision = (data.get("decision") or "").strip().lower()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+    if not key:
+        return jsonify({"error": "key required"}), 400
+    if decision not in ("keep", "reject"):
+        return jsonify({"error": "decision must be 'keep' or 'reject'"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+
+        if decision == "reject":
+            with context_transaction(cp) as fresh:
+                fresh["llm_experience_summary_drafts"] = _drafts_without(
+                    fresh.get("llm_experience_summary_drafts"), key
+                )
+            return jsonify({"application_id": application_id, "key": key, "rejected": True})
+
+        # decision == "keep"
+        raw_drafts = ctx.get("llm_experience_summary_drafts")
+        drafts: list[Any] = raw_drafts if isinstance(raw_drafts, list) else []
+        draft = next((d for d in drafts if isinstance(d, dict) and d.get("key") == key), None)
+        if draft is None:
+            return jsonify({"error": "Unknown or stale draft key"}), 404
+
+        # An in-place edit arrives as `text`; it wins over the model's wording.
+        text = str(data.get("text") or draft.get("text") or "").strip()
+        if not text:
+            return jsonify({"error": "text cannot be empty"}), 400
+
+        exp = (
+            session.query(Experience)
+            .filter_by(id=draft.get("experience_id"), candidate_id=candidate.id, is_active=1)
+            .first()
+        )
+        if exp is None:
+            return jsonify({"error": "Draft targets an unknown experience"}), 400
+
+        existing = (
+            session.query(ExperienceSummaryItem)
+            .filter_by(
+                experience_id=exp.id,
+                source="llm_proposed",
+                is_active=1,
+                text=text,
+            )
+            .first()
+        )
+        if existing is not None:
+            item_id = existing.id
+        else:
+            next_order = (
+                session.query(ExperienceSummaryItem).filter_by(experience_id=exp.id).count()
+            )
+            item = ExperienceSummaryItem(
+                experience_id=exp.id,
+                text=text,
+                label="JD-fitted draft",
+                display_order=next_order,
+                is_active=1,
+                is_pending_review=1,
+                source="llm_proposed",
+                has_outcome=0,
+            )
+            session.add(item)
+            session.flush()
+            item_id = item.id
+            run_pk = ctx.get("application_run_id")
+            if isinstance(run_pk, int):
+                session.add(
+                    IterationLog(
+                        application_run_id=run_pk,
+                        action="keep_role_intro",
+                        summary=f"Kept drafted role intro {item_id} on experience {exp.id}",
+                    )
+                )
+            # DB row first; if the ctx write below fails the variant is inert
+            # (nothing points at it), so no compensating delete is needed —
+            # the same ordering /gap-fill-decide's accept uses.
+            session.commit()
+
+        with context_transaction(cp) as fresh:
+            overrides = fresh.get("composition_overrides")
+            if not isinstance(overrides, dict):
+                overrides = {}
+            chosen = overrides.get("chosen_experience_summary_ids")
+            if not isinstance(chosen, dict):
+                chosen = {}
+            chosen[str(exp.id)] = item_id
+            overrides["chosen_experience_summary_ids"] = chosen
+            overrides["use_experience_summaries"] = True
+            # Pending-leak guard (A3 close-out, blast-radius D5): fold item_id
+            # into the per-application acceptance ledger — mirrors
+            # _apply_gap_fill_accept's accepted_generated_bullet_ids for Bullets.
+            # This is what lets the resolver / picker / composition-save render
+            # this KEPT-but-unreviewed variant for THIS application while every
+            # OTHER application's read sites keep excluding it (is_pending_review
+            # stays 1 until a human reviews it into the canonical corpus).
+            accepted_ids = [
+                int(x) for x in (overrides.get("accepted_experience_summary_ids") or [])
+            ]
+            if item_id not in accepted_ids:
+                accepted_ids.append(item_id)
+            overrides["accepted_experience_summary_ids"] = accepted_ids
+            fresh["composition_overrides"] = overrides
+            fresh["llm_experience_summary_drafts"] = _drafts_without(
+                fresh.get("llm_experience_summary_drafts"), key
+            )
+        return jsonify(
+            {
+                "application_id": application_id,
+                "key": key,
+                "summary_item_id": item_id,
+                "experience_id": exp.id,
+                "text": text,
+                "accepted_experience_summary_ids": accepted_ids,
+            }
+        )
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def _drafts_without(raw: object, key: str) -> list[Any]:
+    """Return the role-intro draft list with `key` removed.
+
+    Taken off a FRESHLY-read context, not the caller's earlier read — the delta
+    this route owns is "drop the one draft I just decided", and recomputing it
+    against what is on disk now is what keeps a concurrent
+    /draft-experience-summaries regeneration from being clobbered. Same reasoning
+    (and same shape) as `_proposals_without`.
+    """
+    items = raw if isinstance(raw, list) else []
+    return [d for d in items if not (isinstance(d, dict) and d.get("key") == key)]
 
 
 # ---------------------------------------------------------------------------

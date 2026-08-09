@@ -13,6 +13,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: JD-fitted role intros, drafted for every role in one call (`feat/role-summary-drafting`, Epic A / A3)
+
+Compose could already *pick* the best per-role intro from ones the candidate had
+written; it could not *write* one. A candidate with no saved intro for a role had
+nothing to pick, and a candidate with saved intros had only generic ones written
+for no particular job. New `analyzer.draft_experience_summaries` (Sonnet,
+`call_kind="draft_experience_summary"`) drafts the one-line intro that sits under
+each role heading, fitted to this JD — **one call covering every included role,
+never one call per role**, so cost stays flat as a corpus grows. Grounded per
+role in that role's own selected bullets, that role's own existing intro
+variants, this application's clarifications, and (D5) confirmed clarifications
+from the candidate's other applications; the prompt is explicit that evidence
+never travels between employers, and omitting a role is always allowed and
+preferred over padding one. `PROMPT_VERSION` `2026-07-08.4` → `2026-08-09.1`.
+`recommend_experience_summaries` is untouched and remains the selector.
+
+Each draft surfaces on its role's Compose card as an editable keep/reject card.
+Keeping saves it into the **canonical** per-role variant store
+(`ExperienceSummaryItem`, `source='llm_proposed'`, pending review) and selects it
+for this application — never into the legacy denormalized `Experience.summary`
+cache, so the two summary editors a corpus role card already carries stay two.
+Two new routes, `POST /api/applications/<id>/draft-experience-summaries` and
+`POST /api/applications/<id>/experience-summary-decide`.
+
+**Grounding widened to match, and this closes a gap that pre-dates the feature.**
+In corpus mode the résumé text handed to the grounding metric is synthesized from
+titles, bullets, skills, education and certifications — never from per-role intro
+variants. So an intro the candidate wrote themselves was invisible to
+`hardening.assemble_source_union` and scored as though fabricated, which was
+already true for any intro the recommender picked. The union now folds in
+`context_set["experience_summary_items"]` (four sources → five), and
+`db.build_context.build_context_set_from_db` stages that key **durably** rather
+than leaving it a transient route-staged value that never reached disk. Legacy
+file-based contexts never populate it, so `--suite synthetic` is unchanged.
+
+Also: corpus seeds now round-trip per-role intro variants
+(`experiences[].summary_items` in `scripts/export_corpus_seed.py` +
+`evals/seed_import.py`; `SEED_SCHEMA_VERSION` stays at 1 — the key is optional on
+read), without which a seeded corpus could not exercise that grounding source at
+all. A committed synthetic corpus fixture plus a small deterministic harness
+(`python -m evals.corpus_drafting_probe`) gives the call a repeatable
+corpus-mode measurement, since `--suite synthetic` is file-based and cannot reach
+corpus drafting; results, costs and two honest negative findings are in
+[`evals/TUNING_LOG.md`](evals/TUNING_LOG.md).
+
+### Fixed: the UX harness could make a real, billed API call (work item 34)
+
+`tests/ux/stubs.py::install_llm_stubs` neutralized `_get_client` on four
+blueprints by hand. Four others bound it and were missed — `blueprints/corpus/`'s
+`skills`, `proposals` and `curation`, plus `blueprints/assistant` — so any UX test
+reaching one of their routes on a machine with a real `.api_key` would have made a
+live Anthropic call with nothing asserting the cost. Work item 34 named two of the
+four; enumerating fresh found all four, which is why the fix is a gate rather than
+two more lines: `tests/test_ux_stub_coverage.py` AST-walks `blueprints/**.py` and
+fails closed when the set of modules binding `_get_client` and the set the harness
+patches disagree in **either** direction. This is the third instance of the same
+omission (items 21, 22, 34), which under charter C-11 makes a mechanism the
+required response.
+
 ### Added: a visible wait state across the Compose arrival volley (`feat/compose-wait-ux`, Epic A / A2)
 
 The Compose panel became visible the moment the wizard navigated to it — which is

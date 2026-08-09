@@ -3896,6 +3896,29 @@ input:focus, select:focus, textarea:focus {
   flex-direction: column;
   gap: 8px;
 }
+/* A3 — the JD-fitted role-intro draft card (keep / reject, edit in place).
+   Sits above the saved variants and borrows the chosen-variant accent so it
+   reads as "proposed for this job", not as another saved variant. */
+.compose-role-intro-draft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-edge);
+  border-radius: var(--radius, 6px);
+  background: linear-gradient(180deg,
+    rgba(232, 167, 84, 0.08) 0%,
+    rgba(232, 167, 84, 0.03) 100%);
+}
+.compose-role-intro-draft .role-intro-draft-text {
+  width: 100%;
+  resize: vertical;
+  min-height: 3.2em;
+}
+.role-intro-draft-controls {
+  align-items: center;
+}
 .role-intro-variant {
   cursor: pointer;
   position: relative;
