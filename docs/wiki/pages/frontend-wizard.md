@@ -168,9 +168,33 @@ called with `{scroll:false}` — scrolls the active panel into view ([`app.js:_w
 landing decision would otherwise move the viewport away from where the user has explicitly
 navigated ([`wizardInit`](../../../static/app.js) / [`_wizardRender`](../../../static/app.js) opts param). Forward motion is gated by
 [`app.js:_wizardReachable`](../../../static/app.js): step ≥ 2 needs a successful analysis
-(`lastContextPath`), step 6 needs a generation (`lastResumePath`) `[synthesis]`.
+(`lastContextPath`), **step 5 needs a frozen composition** (`_compositionFrozen`), step 6
+needs a generation (`lastResumePath`) `[synthesis]`.
 [`app.js:wizardGoTo`](../../../static/app.js) lazy-loads on entry — `loadComposition()` on
 step 3, `_loadTemplatePicker()` on step 4.
+
+**Step 5's gate is a hard gate, and its condition is the server's** (Epic A item 20).
+Step 5 previously opened on nothing but a context path, so a rail click that skipped
+Compose reached Generate with no `approved_composition` and the retired full-LLM
+`generate()` fired underneath Step-5 copy promising deterministic assembly. The
+condition is now exactly "the server will assemble this deterministically" —
+[`hardening.py:frozen_composition_doc`](../../../hardening.py), the same predicate
+`/api/generate` applies (see [[corpus-to-output-reach]]) — and **not** the weaker
+"Save-and-continue completed", which would still admit runs the server refuses. The
+client never re-derives it: `_compositionFrozen` carries the server's answer from both
+of its setters (below). A candidate whose analyze-time `career_corpus` snapshot is empty
+is locked out of Step 5 by design, and is not walled in — steps 1–4 stay reachable off
+`lastContextPath` alone, so Compose is one click away. Step 6 stays gated on
+`lastResumePath` alone so an already-generated run remains downloadable even when its
+freeze state can't be recovered ([`app.js:_wizardReachable`](../../../static/app.js)).
+
+A locked step now says **why**. [`app.js:_wizardLockReason`](../../../static/app.js) is
+the single message source for both refusals a locked step can produce — the toast
+[`wizardGoTo`](../../../static/app.js) raises on an attempted navigation, and the `title`
+[`_wizardRender`](../../../static/app.js) sets on the greyed rail button (which
+previously had its tooltip *removed*, leaving the lock unexplained). Step 5's reason
+names Compose specifically rather than inheriting the generic "Run ANALYZE first",
+because its lock is a flow requirement, not a missing analysis `[synthesis]`.
 
 ## Step 3 — the Compose cards
 
@@ -290,13 +314,28 @@ be said before the user commits to it.
 ([`static/app.js`](../../../static/app.js)) POSTs the collected composition state
 with `freeze: true`; the server resolves it into `approved_composition` — a
 resolved JSON-Resume snapshot plus a `meta.sartor` provenance block — via
-`corpus_to_json_resume.freeze_approved_composition`. `_compositionFrozen` (a
-client-side flag mirroring the server's `_frozen_composition` gate) then makes
+`corpus_to_json_resume.freeze_approved_composition`. `_compositionFrozen` then makes
 Step 5's copy state-aware: [`app.js:_renderGenerateStepCopy`](../../../static/app.js)
 shows one of two copy blocks (`#generateStepCopyFrozen` /
 `#generateStepCopyLegacy`) depending on whether Generate is about to run a real
 LLM call or deterministically assemble the frozen content — so the app never
-claims a determinism guarantee it isn't about to honor `[synthesis]`.
+claims a determinism guarantee it isn't about to honor `[synthesis]`. Since item 20
+that same flag also **gates the rail** (above), which is why neither of its two
+setters is a client-side guess:
+
+- **In-session**, [`app.js:_postComposition`](../../../static/app.js) returns the
+  freeze response's `frozen` field rather than a bare "the POST succeeded", and
+  [`saveCompositionThenNext`](../../../static/app.js) assigns from it. A
+  `freeze: true` save can land `200` and still write a document `/api/generate`
+  refuses to assemble; the guard's other exits (no application / no context path,
+  e.g. a degraded resume with no live context file) still read false, and an HTTP
+  failure still throws.
+- **On resume**, [`app.js:resumeApplicationIntoWizard`](../../../static/app.js)
+  reads `has_frozen_composition` off the resume payload
+  ([`blueprints/applications.py:_pre_generate_hydration`](../../../blueprints/applications.py)).
+  It previously reset to a conservative hard `false` — harmless while Step 5 was
+  ungated, a lock-out the moment it wasn't. Absent field still reads false, so a
+  degraded resume and every pre-freeze-era application stay honest `[synthesis]`.
 
 **Surgical refinement loops back to Compose, not a rewrite.** In corpus mode
 (`_composeApplicationId != null`), `submitRefinement` routes to
@@ -382,7 +421,8 @@ armed and with no modal already open (so stops never stack);
 - [[code-module-map]] — where `app.js` / `index.html` sit in the module map.
 - [[pipeline-stages]] — the analyze→compose→generate flow the wizard steps drive.
 - [[route-surface]] — the `/api/...` routes each step calls.
-- [[corpus-to-output-reach]] — how composition overrides reach the generated document.
+- [[corpus-to-output-reach]] — how composition overrides reach the generated document, and the one `frozen_composition_doc` predicate Step 5's rail gate shares with `/api/generate`.
+- [[context-set-contract]] — the `approved_composition` key the freeze writes and the rail gate reads.
 - [[career-corpus]] — the user-facing guide to the career corpus and soft-retire.
 - [[tailoring-a-resume]] — the user-facing walk through the same six steps.
 - [[diagnostics-console]] — the localhost console that ports this help primitive.

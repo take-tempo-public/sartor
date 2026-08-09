@@ -134,7 +134,12 @@ A GET/POST pair on the application's context file:
   the context file in place. The handler **rebuilds `composition_overrides`
   wholesale**, so the debounced autosave sends the full state each time
   `[synthesis]` — this is the clobber surface tracked in the compose memory.
-  Ownership rides `_load_application_owned`; `_within` gates `context_path`.
+  Ownership rides `_load_application_owned`; `_within` gates `context_path`. The
+  response's `frozen` field is **not** an echo of the request's `freeze` flag: it
+  is [`hardening.py:frozen_composition_doc`](../../../hardening.py) applied in-lock
+  to the dict about to be written, so a freeze that resolved to a document
+  `/api/generate` would refuse to assemble answers `false` (Epic A item 20) — see
+  [[corpus-to-output-reach]].
 
 ## Experiences CRUD — `blueprints/corpus/experiences.py`
 

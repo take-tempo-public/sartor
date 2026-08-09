@@ -9,6 +9,8 @@
 > preview, the deterministic assemble, and the generated download in
 > agreement.
 > **Sources:** [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py),
+> [`hardening.py`](../../../hardening.py) (`frozen_composition_doc` — the single
+> "is this context frozen?" predicate),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`blueprints/applications.py`](../../../blueprints/applications.py) (the
 > `/api/applications/<id>/composition` GET+POST handlers; `_apply_recommended_skills`
@@ -43,7 +45,8 @@ off the same context file so the surfaces never disagree `[synthesis]`:
 2. **Generated download, frozen-composition branch** (Phase 4, corpus mode
    post-freeze) — **zero résumé-body LLM calls**.
    [`blueprints/generation.py:_frozen_composition`](../../../blueprints/generation.py)
-   returns `context_set["approved_composition"]` when present and non-empty;
+   returns the frozen `approved_composition` when the context qualifies (see
+   "One predicate" below);
    [`blueprints/generation.py:_assemble_from_frozen_composition`](../../../blueprints/generation.py)
    renders it straight through `generator.py:generate_resume_from_json_resume`
    (no markdown round-trip) `[synthesis]`.
@@ -82,6 +85,47 @@ download) renders THIS snapshot without re-resolving. The debounced
 autosave (no `freeze` flag) still rebuilds `composition_overrides` on every
 save, same as before — only the explicit freeze also captures
 `approved_composition`.
+
+## One predicate: "will this context assemble deterministically?"
+
+Three seams have to answer that question, and **one function answers it for all
+of them** — [`hardening.py:frozen_composition_doc`](../../../hardening.py), which
+lives in the module that owns the `ContextSet` contract rather than in any one
+consumer. It returns the document, or `None`, on three conditions: the context is
+corpus-mode (`career_corpus` non-empty), `approved_composition` is a dict, and
+that document has content (any of `work` / `basics.summary` / `skills`). `None`
+means the caller falls through to the unchanged legacy `generate()` LLM path, so
+file-based contexts and `--suite synthetic` stay byte-identical.
+
+The three callers (Epic A item 20):
+
+- [`blueprints/generation.py:_frozen_composition`](../../../blueprints/generation.py)
+  — now a thin named wrapper that delegates. It is kept under this name because
+  [`evals/runner.py`](../../../evals/runner.py) imports it by that name alongside
+  `_assemble_from_frozen_composition`, exercising the real gate + assembler rather
+  than a re-implementation.
+- [`blueprints/applications.py:_pre_generate_hydration`](../../../blueprints/applications.py)
+  — publishes the answer as `has_frozen_composition` on the resume-state payload,
+  so a **resumed** application recovers its freeze state instead of reporting
+  unfrozen.
+- [`blueprints/applications.py:save_application_composition`](../../../blueprints/applications.py)
+  — the POST response's `frozen` field is this predicate applied, inside the
+  context transaction, to the dict about to be written. It is deliberately **not**
+  `bool(freeze)`: a freeze request can land `200` having resolved to a document
+  `/api/generate` would refuse to assemble.
+
+Why one implementation and not two: the client and server briefly held separate
+notions of "frozen" (the client's asked only whether an `approved_composition`
+dict existed), and the weaker client-side one admitted runs the server then handed
+to the LLM — underneath Step-5 copy promising no AI variation. The frontend gate
+built on this is in [[frontend-wizard]] `[synthesis]`.
+
+The predicate is deliberately cheap enough to call on every resume-state build and
+every composition save — at most five `dict.get` lookups on an already-loaded dict,
+short-circuiting on the first miss, returning the document by reference with no copy
+and no traversal of `work` / `skills` past a truthiness test — which is why the
+design is "call it from all three seams" rather than "cache the answer"
+([`hardening.py:frozen_composition_doc`](../../../hardening.py) docstring).
 
 ## The `composition_overrides` shape
 

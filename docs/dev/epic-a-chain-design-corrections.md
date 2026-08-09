@@ -448,6 +448,27 @@ sanctions** (`RELEASE_ARC.md`'s cadence rule). Every other tracked change on an 
 branch — production code, tests, dossiers, `BOARD.md`, handoffs, wiki pages — arrives
 through a subagent.
 
+**The gate is step 5, and it belongs to the ORCHESTRATOR, not to any agent.** Learned the
+expensive way on A2 (2026-08-09), twice in one sprint:
+
+- **A subagent must never run `python -m scripts.gate`.** The closer's gate died with the
+  agent, and the agent — having compacted mid-run — returned "I'll report once the gate log
+  shows its terminal lines" instead of a result. The work was fine; the tail was lost.
+- **Never `| tee` a long-running command.** Both A2 "killed" gate runs were `tee` dying with
+  the harness's Bash wrapper while the gate itself kept running headless, writing nowhere.
+  The log stopped; the work did not. This produced two false mechanisms in a row — first
+  "memory pressure is killing the gate," then an attempt to reclaim 1.2 GB of "orphaned
+  workers" that were **the live gate run**, one command short of destroying a working run
+  and filing the wrong cause. Use `> file 2>&1` so the descriptor belongs to the gate
+  process and survives wrapper death.
+- **`kill -0 <pid>` is invalid here.** Git Bash tracks MSYS pids, not Windows pids, so it
+  reports a live native process as gone. A waiter built on it returns instantly and lies.
+  That is how two gates ended up racing each other. Poll with `tasklist` / `Get-CimInstance`
+  instead.
+
+Cost to the orchestrator is near zero — a detached launch plus a waiter that returns the
+terminal summary and a rerun sweep — and it cannot die with an agent.
+
 **Unenforced — labelled as C-11 requires.** No gate distinguishes a main-session `Edit`
 from a subagent's, so 11.9 is prose discipline, not a mechanism. The falsifiable check the
 owner can run cheaply: at each sprint's review point every changed file must be accounted

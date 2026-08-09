@@ -64,7 +64,13 @@ Everything past analyze is added on demand, so older context files round-trip un
   (freeze), not on every autosave. When present, `/api/generate` renders it directly
   with **zero** résumé-body LLM calls instead of running `generate()` — see
   [[corpus-to-output-reach]] and [[pipeline-stages]] Step 5. `total=False`, so older
-  contexts round-trip unchanged `[synthesis]`.
+  contexts round-trip unchanged `[synthesis]`. Whether a given context counts as
+  frozen is **not** a per-caller judgement: [`hardening.py:frozen_composition_doc`](../../../hardening.py)
+  is the one predicate — corpus-mode, `approved_composition` is a dict, and that
+  document has content — and it lives here, in the module that owns this contract,
+  because three seams across `blueprints/generation.py`, `blueprints/applications.py`
+  and the wizard rail must not answer it differently (Epic A item 20; see
+  [[corpus-to-output-reach]] and [[frontend-wizard]]).
 
 ## Two builders, one shape
 
@@ -154,3 +160,4 @@ recurs at dozens of context-loading routes across `blueprints/analysis.py`,
 - [[deterministic-llm-boundary]] — why `build_context_set` carries no LLM call.
 - [[corpus-data-model]] — the DB rows the `_from_db` builder projects into this shape.
 - [[corpus-to-output-reach]] — how `approved_composition` is produced and consumed downstream.
+- [[frontend-wizard]] — the wizard rail that gates Step 5 on this contract's `frozen_composition_doc` predicate.

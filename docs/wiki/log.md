@@ -1449,3 +1449,61 @@ decision under the Epic A envelope's flag-stop rule, not a closer's call).
 
 **Not re-audited:** the re-anchors above were written by this closing context and therefore
 have no independent auditor of their own. Stated, not papered over (C-0).
+
+---
+
+## 2026-08-09 — incremental wiki pass, Epic A sprint A3 close (item 20, the Step-5 rail gate)
+
+**Checkpoint:** `2a0b37a` → `3e2b8a5136c1ce1e1fd820d865742d3e5d9ab846`. **Drift before: 4.
+Drift after: 0.**
+
+**This is the first genuinely incremental pass** since the ratchet was zeroed on A2. The
+relevant set was derived mechanically, not by judgement: `git diff --name-only 2a0b37a HEAD`
+(29 files) filtered through `scripts/wiki_relevance.py:is_wiki_relevant`, leaving **4**:
+
+- `hardening.py`
+- `blueprints/applications.py`
+- `blueprints/generation.py`
+- `static/app.js`
+
+**The change being documented.** Item 20 made the Step-5 wizard rail a hard gate and gave
+client and server **one** predicate to gate on — the new public
+`hardening.frozen_composition_doc`. Previously the client asked only "is there an
+`approved_composition` dict?" while `/api/generate` applied a stricter test, so the rail
+could open onto Step-5 copy promising deterministic assembly over a run the server then
+handed to the legacy LLM `generate()`.
+
+**Pages edited (4) — this is the audit list.** Author ≠ auditor: all four were written by
+this closing context and are **not** audited here.
+
+| page | edit |
+|---|---|
+| `corpus-to-output-reach` | New `## One predicate: "will this context assemble deterministically?"` section — the three conditions, the three call sites, why one implementation, and the allocation-free cost argument for calling rather than caching. `hardening.py` added to Sources. Reach path 2's description of `_frozen_composition` corrected (it no longer implements the test). |
+| `frontend-wizard` | Step-5 gate added to the `_wizardReachable` description; new paragraphs on the hard gate's condition (the server's, not a client re-derivation), the deliberate empty-`career_corpus` lock-out and why it isn't a wall-in, and `_wizardLockReason` as the one message source for the toast + the previously-silent greyed-button `title`. `_compositionFrozen`'s two setters (`_postComposition`'s returned `frozen`; `resumeApplicationIntoWizard`'s `has_frozen_composition`) documented in the freeze section. |
+| `context-set-contract` | The `approved_composition` bullet now names `frozen_composition_doc` as the one predicate and says why it lives in `hardening.py` — the module that owns this contract. |
+| `route-surface` | The composition POST's response `frozen` field is not an echo of the request's `freeze` flag; it is the predicate applied in-lock to the dict about to be written. |
+
+Backlinks reconciled bidirectionally: `context-set-contract` ↔ `frontend-wizard` added
+(both directions); the `corpus-to-output-reach` ↔ `frontend-wizard` pair already existed and
+its `corpus-to-output-reach` line was sharpened to name the shared predicate.
+
+**Verified no-edit** (source changed, or page cites a changed symbol, and the page's existing
+claims still hold at HEAD):
+
+- `pipeline-stages` — cites `blueprints/generation.py:_frozen_composition` for the Step-5
+  frozen-vs-legacy branch. The symbol still exists with unchanged semantics (it is now a
+  named wrapper delegating to `hardening.frozen_composition_doc`), and the page describes the
+  branch, not the predicate's implementation. Claim unaffected.
+- `document-rendering` — same symbol, same reason; the page's subject is what happens *after*
+  the gate returns a doc.
+- `deterministic-llm-boundary` — `hardening.py` gained a new public function, but the page
+  claims only that the module carries no LLM call. `frozen_composition_doc` is pure dict
+  reads; the claim is strengthened, not challenged.
+- `llm-call-catalog`, `iteration-audit-chain`, `corpus-data-model` — mention
+  `approved_composition` as data, never the freeze predicate. No cite touched by this diff.
+
+**Cite convention.** Every cite added in this pass is a **symbol** cite
+(`hardening.py:frozen_composition_doc`, `app.js:_wizardLockReason`,
+`blueprints/applications.py:_pre_generate_hydration`), never a bare `path:line` — following
+the previous entry's carried-forward method note. That convention is still **unenforced**:
+`SCHEMA.md` prefers it, and nothing rejects a bare line cite.
