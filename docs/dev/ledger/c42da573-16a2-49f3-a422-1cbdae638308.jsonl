@@ -2,3 +2,5 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/epic-a-chain-design-corrections.md", "session": "c42da573-16a2-49f3-a422-1cbdae638308", "branch": "main", "commit": "52c821e", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-08T18:29:31Z", "fingerprint": "c5b7dac135ae"}
 {"event": "plan-archived", "session": "c42da573-16a2-49f3-a422-1cbdae638308", "branch": "feat/corpus-polish", "archive_id": "20260808T184215Z-142537ca4cdd", "plan": "graceful-tickling-thimble.md", "ts": "2026-08-08T18:42:16Z"}
 {"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T00:44:54Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T01:00:47Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T01:06:02Z"}
