@@ -1710,6 +1710,28 @@ and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stab
       an unclassified new `docs/dev/*.md` file (PR #115, run 31267919219), and re-running
       the identical local command *after* committing reproduced the failure exactly. A
       docs-only branch is not exempt — that is precisely the case that produced this.
+    - **Amendment, 2026-08-09 — Epic A only, owner-approved: ONE gate run, after the
+      commit.** The two-run shape above spends ~30 minutes of gate wall-clock per sprint,
+      and finding 10 established that the *first* of those runs is partly vacuous — every
+      check reading committed `HEAD` passes by finding nothing. The amended sequence keeps
+      review-before-commit and drops only the vacuous run: implement → `git add -A` →
+      adversarial review of the **staged** diff → fix confirmed findings → `git add -A` →
+      file deferred findings + `python -m scripts.work_items board --write` → `git add -A`
+      → **commit** → `python -m scripts.gate` **on the committed tree** → if red, fix,
+      commit again, re-gate. This is strictly stronger than the original, not weaker: the
+      tree that lands *is* the tree the gate examined, by construction rather than by an
+      assertion, and the index/`HEAD` gap finding 10 documents cannot open at all. The
+      `git diff --quiet` + empty `git status --porcelain --untracked-files=all` assertion
+      still runs, now after the gate, as the check that no artifact appeared during it
+      (item 52's own window). Scoped to Epic A's chain; epics B–E keep the shape above
+      unless separately amended. Rationale and the full envelope this arrived with:
+      [`docs/dev/epic-a-chain-design-corrections.md`](epic-a-chain-design-corrections.md) §11.
+  - **The chain's authorization envelope is
+    [`docs/dev/epic-a-chain-design-corrections.md`](epic-a-chain-design-corrections.md) §11**
+    (owner-approved 2026-08-09) — the run vector, halt points, flag stops, handbacks, and
+    the delegation seam. It exists because the design explicitly waived the owner's
+    2026-08-06 chain-grammar directives, and two sessions were interrupted for stopping
+    several times per sprint with nothing written down saying which stops were real.
   - **Blast-radius dossiers are required for A2 and A4 as well as A1.** Both edit
     `ui_pages/selectors.py`, a gated C-10 surface — A2 for the `data-compose-ready` settle
     contract, A4 for `PriorApps`. Each sprint's `## Consumers` section must literally name

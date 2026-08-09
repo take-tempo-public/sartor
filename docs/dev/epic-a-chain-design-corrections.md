@@ -297,6 +297,183 @@ mechanism was authored for that here, and the reason is written into
 
 ---
 
+## 11. NEW — the chain had no authorization envelope, and the governance around it defaults to STOP
+
+Found by the third orchestrating session (2026-08-09), before it ran anything, after the
+owner reported that no session had yet run a sprint without stopping. **Owner-approved the
+same day**; this section is the sanction, not a proposal.
+
+### 11.1 Observed — why the first two attempts ended
+
+**[VERIFIED]** by reading both session transcripts under
+`~/.claude/projects/C--Dev-sartor/`, counting `tool_use` blocks directly:
+
+| | `c42da573` (A1a + A1b start) | `d05ae572` (A1b close) |
+|---|---|---|
+| Wall clock | 2026-08-08 17:57Z → 08-09 02:02Z (~8h) | 02:04Z → 06:05Z (~4h) |
+| Own `Edit`/`Write` | 16 / 8 — **implemented A1a by hand** | 24 / 6 |
+| Implementer `Agent` launches | **1** (A1b) | **0** |
+| Other agents | 0 | Sonnet refuter, opus fix-applier, **14 wiki scribes/auditors**, gate-fix agent |
+| Full gate runs | ≥3 (1 killed) | ≥4 (1 killed) |
+| How it ended | **owner interrupt** | **owner interrupt** |
+
+Neither session ran out of context, compacted to death, or crashed. **Both were
+interrupted by the owner**, whose final message in each names the symptom verbatim:
+
+> `c42da573`: *"find what you lost and try to get on the right page and then handoff to an
+> agent to run the thread"*
+>
+> `d05ae572`: *"this was supposed to be an epic that hands off to a fresh agent each sprint
+> with a single agent orchestrating, but you have yet to run a single sprint without
+> stopping. what is wrong?"*
+
+Twelve hours across two sessions produced **1.5 of the chain's 6 branches**.
+
+### 11.2 Falsified — "the orchestrator cannot afford to read four sprint diffs"
+
+This session's own first hypothesis, killed before it was acted on. A1b's diff is 2,126
+lines, which looks fatal for a context that must survive four sprints. The split does not
+support that reading (`git show --numstat 5474763`):
+
+```
+docs 761  |  tests 273  |  production code 392
+```
+
+~400 lines of real code per sprint is roughly 10k tokens — an epic-long orchestrator is
+comfortably affordable, and W-1's line-level verification duty is **not** the binding
+constraint. Recorded here so the next session does not re-derive it.
+
+### 11.3 The mechanism — mandatory stops, with nothing saying which ones are real
+
+An agent running this chain is bound by a dense set of correct, individually-justified
+stop conditions: a hook block is *"surface the hook name and its message, and STOP"*
+(Binding rule 3); C-9 makes corrupted input a blocked gate; C-12 requires announcing a
+gap; `RELEASE_ARC.md`'s own cadence rule says *"discoveries are filed, never chased;
+release-blocking discoveries stop the session and surface to the owner"* and *"hook
+blocks, gate failures after two honest attempts, or intent ambiguity: stop, write state
+durably, surface"*; and the per-sprint close-out is explicitly *"no lightened ceremony"*
+with no escape hatch.
+
+Every one of those is right for a single branch. Stacked four sprints deep with **no
+statement of what the orchestrator may decide on its own**, they guarantee several
+mandatory stops per sprint — which is exactly what the owner observed twice.
+
+The missing vocabulary is not novel: the owner authored it on **2026-08-06** (run vector,
+halt points, handbacks, flag stops, resume protocol, *"fail-closed scoping: silence =
+stop, not proceed"*). The Epic A design then **explicitly declared it not a precondition**
+for this run:
+
+> *"not contingent on the broader 2026-08-06 governance directives (written chain-sanction
+> grammar, halt-points / handbacks / flag-stops vocabulary) landing first"*
+> — `docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md` §"The design"
+
+**That waiver is the defect.** Per-agent drift is real and additional — A1a was implemented
+by hand, the mandated Sonnet reviewer was downgraded once — but drift alone does not
+explain two independently-briefed sessions landing in the same place.
+
+### 11.4 The run vector (ordered scope, fail-closed)
+
+```
+A2  feat/compose-wait-ux        → item 20  fix/*  → A3  feat/role-summary-drafting
+ → A4  feat/prior-apps-pipeline → final Opus xhigh review over the full epic diff
+ → epic/a-app-core cut from A4's tip → STOP, hand the PR decision to the owner
+```
+
+Anything not on this vector is **out of scope by default**. Silence is a stop, not a
+licence: a question the vector does not answer is a flag stop (11.6), never an assumption.
+
+### 11.5 Halt points — unconditional, no judgment involved
+
+The chain stops and waits for the owner at each of these, every time:
+
+1. **Any `git push`, PR creation, or merge.** The epic lands as one owner-gated PR. Nothing
+   goes to a public remote without the owner stating what becomes public and approving it.
+2. **Any schema, security, or architecture decision not already settled** in the ARC brief,
+   the design, or this errata. (Reaffirms `AGENT_FAILURE_PATTERNS.md` 5c.)
+3. **Anything that contradicts a recorded owner decision** — the corpus section order, the
+   epic close-out shape, the frozen plan file, the model table. Surface the conflict; never
+   self-resolve it.
+4. **A release-blocking discovery**, per the existing cadence rule.
+5. **Branch pruning**, per standing feedback.
+
+### 11.6 Flag stops — conditional; "need a human if I hit this"
+
+1. The gate is red after **two honest attempts** on the same cause.
+2. A hook blocks and the block **cannot be cleared by doing the work it asks for** (writing
+   the dossier, writing the observation). A hook cleared by doing the work is not a stop —
+   it is the hook functioning, and the run continues.
+3. An adversarial reviewer returns a **CONFIRMED** correctness/regression finding whose fix
+   would **change the sprint's scope** rather than correct its implementation.
+4. Evidence required by C-7 **cannot be obtained** — the defect will not reproduce, or the
+   instrument would have to be scoped to the hypothesis.
+5. A **C-11 recurrence** arises whose fail-closed mechanism would be a new enforcement
+   surface (that is itself a scope change, and the owner decides).
+6. Context runs thin enough that C-8's handoff trigger fires.
+
+### 11.7 Handbacks — owner executes as a normal sprint
+
+**None for A2, item 20, or A3.** A4 is the owner's option to take as a normal sprint
+(the 2026-08-06 directive's own worked example); if not exercised, A4 runs on the vector
+like the others.
+
+### 11.8 Inside the envelope — the orchestrator decides alone and keeps moving
+
+Everything the halt points and flag stops do not name. Explicitly including: implementation
+approach within a sprint's brief; which findings block a commit versus get filed to
+`BOARD.md`; dossier content and structure; test design; how to resolve a gate failure whose
+cause is understood; whether a discovery is in-scope-and-small or filed. These get **decided
+and recorded**, not surfaced mid-run. The owner reads the record afterward.
+
+### 11.9 The delegation seam — the orchestrator does not touch the working tree
+
+The design delegated the cheap part (≈400 lines of code) and kept the expensive part (two
+full gate runs, a 14-subagent wiki loop, a ~480-line handoff, dossiers, BOARD, ledger) in
+the one context that must survive longest. `d05ae572` is the proof: a whole session spent
+on one sprint's close-out with the code already written by someone else.
+
+**Corrected seam — three fresh agents per sprint:**
+
+1. **Implementer** (model per the design's table) — branch, blast-radius dossier, diagnosis
+   dossier if `fix/*`, code, tests, `git add -A`. Reports; commits nothing.
+2. **Sonnet refuter** — reads the **staged** diff, instructed to refute, folding in item
+   52's structural re-check (doc links, hook modes, `python -m scripts.work_items check`).
+3. **Orchestrator** — reads the real code+tests diff, judges the refuter's findings, decides
+   block-vs-file. This is the judgment pause the design exists to protect.
+4. **Closer** — applies confirmed findings, files deferred ones, regenerates `BOARD.md`,
+   commits, runs the gate on the committed tree, runs the wiki-relevance close-out, writes
+   the next sprint's handoff and validates it.
+
+The orchestrator's own writes are confined to **this file and the governance amendments it
+sanctions** (`RELEASE_ARC.md`'s cadence rule). Every other tracked change on an Epic A
+branch — production code, tests, dossiers, `BOARD.md`, handoffs, wiki pages — arrives
+through a subagent.
+
+**Unenforced — labelled as C-11 requires.** No gate distinguishes a main-session `Edit`
+from a subagent's, so 11.9 is prose discipline, not a mechanism. The falsifiable check the
+owner can run cheaply: at each sprint's review point every changed file must be accounted
+for by the implementer's own report; a tracked file that no subagent reports having written
+means the run has drifted back to hand-implementation. Building a real gate here would be a
+new enforcement surface mid-chain — a flag stop under 11.6.5, not something to take
+unilaterally.
+
+### 11.10 Resume/pickup protocol
+
+If this session ends before the vector completes, the next one is **not** a fresh
+orchestrator improvising: it verifies the pointer, consumes the handoff, reads
+`docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md` **in full**, reads this file
+in full, and resumes at the vector position the last handoff names. The envelope above
+carries forward unchanged — it does not need re-approving.
+
+### 11.11 Known limits (C-0)
+
+This section makes the stop conditions **explicit and finite**. It does not make them
+correct, and it cannot stop an agent from stopping on something it should have decided, or
+deciding something it should have surfaced. It is a written envelope, not a mechanism —
+except for 11.5's halt points, which coincide with hooks that already fail closed
+(`block-merge-to-main`, `require-feature-branch`).
+
+---
+
 ## A1 citation-drift audit — `RELEASE_ARC.md` sprint A1 brief vs. HEAD `d9c9f6f`
 
 **[REPORTED]** throughout. Re-verify any line number before editing against it.
