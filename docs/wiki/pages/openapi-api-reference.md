@@ -81,14 +81,19 @@ Exactly these, one `@spec.validate(...)` call site each, `tags=["users"|"corpus"
 `ApplicationDetail.resume_state` is left as a permissive `dict[str, Any]`
 rather than fully modeled — `_build_resume_state`'s keys legitimately vary by
 which wizard step is furthest reached, so the model is a first approximation,
-not a contract `[synthesis]`. Every decorated route still runs its normal
-`_safe_username` / `_within` security gate unchanged (see [[route-surface]]) —
-spectree decoration is additive and does not touch the request-handling body,
-by design (the module docstring calls out that adding request-side validation
-would require rewriting route bodies to read `request.context.json` instead of
-`request.json` — "the exact edit class that once dropped `_within` in the 8.3
-blueprint split," per `tests/test_route_containment_gate.py` — so Phase 1
-deliberately stays response-only).
+not a contract `[synthesis]`. `ExperienceSummaryItem` (the response model for
+`GET /api/users/<username>/experiences`) includes an `is_active: bool = True`
+field ([`web_infra/openapi.py:ExperienceSummaryItem`](../../../web_infra/openapi.py))
+that mirrors the role's soft-retire status from
+[`blueprints/corpus/_shared.py:_experience_summary_dict`](../../../blueprints/corpus/_shared.py)
+`[synthesis]`. Every decorated route still runs its normal `_safe_username` /
+`_within` security gate unchanged (see [[route-surface]]) — spectree decoration
+is additive and does not touch the request-handling body, by design (the module
+docstring calls out that adding request-side validation would require rewriting
+route bodies to read `request.context.json` instead of `request.json` — "the
+exact edit class that once dropped `_within` in the 8.3 blueprint split," per
+`tests/test_route_containment_gate.py` — so Phase 1 deliberately stays
+response-only).
 
 ## The generator: `scripts/generate_openapi_spec.py`
 

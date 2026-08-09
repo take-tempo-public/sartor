@@ -1,0 +1,2 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/experience-soft-retire.md", "session": "d05ae572-3c7d-4de9-88f9-acdf997626a1", "branch": "fix/experience-soft-retire", "commit": "53cf3de", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T02:05:25Z", "fingerprint": "faf58c854acb"}
+{"event": "compacted", "session": "unknown", "branch": "fix/experience-soft-retire", "trigger": "unknown", "ts": "2026-08-09T03:04:04Z"}

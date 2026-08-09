@@ -39,6 +39,41 @@ The **Tailor** tab (`#tab-tailor`) hosts the wizard. A rail of `.wizard-step` bu
 (`data-wstep="1".."6"`) sits above six `.cb-panel` sections, each tagged
 `data-wstep-body`.
 
+## Career corpus panel — corpus list and soft-retire management
+
+The **Career corpus** tab (`#tab-corpus`) renders [`#panelCorpus`](../../../templates/index.html) with
+a list of experiences, skill/education/certification editors, and import affordances. Within
+the experiences list, a **"Show retired" toggle** (`toggleCorpusRetired`,
+[`app.js:toggleCorpusRetired`](../../../static/app.js)) manages visibility of soft-retired
+roles (those with `is_active: false`). The toggle is **async**: it calls
+[`app.js:refreshCorpus`](../../../static/app.js) to reload the entire experiences list
+from the server, then re-expands the cards the user had open before the reload —
+without re-expansion, toggling the box would silently close the user's place
+in the corpus `[synthesis]`.
+
+Both experiences-list fetches (`refreshCorpus` and [`refreshCorpusSummaryFor`](../../../static/app.js))
+use a shared query-string helper, [`app.js:_corpusListQuery`](../../../static/app.js), so the two
+cannot drift apart and leave the list view and the experience count disagreeing about
+what is visible `[synthesis]`. With "Show retired" unticked, the suffix is empty;
+ticked, it appends `?include_retired=1` to the fetch URL.
+
+The experience count displayed below the toolbar — "N experiences" — is calculated
+by [`app.js:_corpusLiveCountText`](../../../static/app.js), which counts only
+*active* experiences (those with `is_active !== false`). This is intentional: with
+"Show retired" ticked, the list carries both active and retired roles, but the count
+reflects only the roles that can reach a résumé during generation, so the count never
+overstates the usable corpus size `[synthesis]`.
+
+Retired role cards render with a `retired` CSS class (set by [`app.js:_renderCorpusSummary`](../../../static/app.js)
+when `is_active === false`) and carry a `RETIRED` flag. The styling applies `opacity: 0.6` to
+the entire card and a strikethrough to the company name, dimming the whole subtree
+as a group (opacity composites children; no descendant can opt back out) — see
+[`static/style.css:.corpus-card.retired`](../../../static/style.css). The action button
+on a retired card's detail view becomes **Restore experience** (calling [`app.js:restoreExperience`](../../../static/app.js),
+which PUTs `{is_active: true}` to the experience), replacing the usual Soft-retire action.
+Restoring a role resurrects only the role itself; bullets the user had retired individually
+remain retired `[synthesis]`.
+
 ## Smart landing
 
 After a user is selected, [`app.js:_landingTab`](../../../static/app.js) fetches
@@ -239,5 +274,6 @@ armed and with no modal already open (so stops never stack);
 - [[pipeline-stages]] — the analyze→compose→generate flow the wizard steps drive.
 - [[route-surface]] — the `/api/...` routes each step calls.
 - [[corpus-to-output-reach]] — how composition overrides reach the generated document.
+- [[career-corpus]] — the user-facing guide to the career corpus and soft-retire.
 - [[tailoring-a-resume]] — the user-facing walk through the same six steps.
 - [[diagnostics-console]] — the localhost console that ports this help primitive.

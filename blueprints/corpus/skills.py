@@ -282,9 +282,14 @@ def suggest_skills_from_corpus_route(username: str) -> ResponseReturnValue:
             return jsonify({"error": "Candidate not found"}), 404
 
         experiences = (
+            # Same exclusion as db.build_context: a retired role must not seed
+            # skill proposals, since it can never reach a generated document.
             session.query(Experience)
-            .filter_by(candidate_id=candidate.id)
-            .order_by(Experience.display_order)
+            .filter_by(candidate_id=candidate.id, is_active=1)
+            # The `id` tiebreak is load-bearing: `create_experience` seeds
+            # `display_order` from a count of LIVE roles, so retiring one and
+            # creating another hands two live siblings the same value.
+            .order_by(Experience.display_order, Experience.id)
             .all()
         )
         career_corpus = _build_career_corpus_payload(experiences)

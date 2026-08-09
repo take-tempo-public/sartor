@@ -173,9 +173,14 @@ def build_json_resume_from_corpus(
         basics["profiles"] = profiles
 
     # ---- Assemble work[] ----
+    # Soft-retired roles (is_active=0) never render. The filter belongs on THIS
+    # query rather than inside the loop below: `work[]` and `work_provenance` are
+    # built in lockstep from it, so filtering the source keeps them order-aligned
+    # by construction — a second, separate filter is exactly how provenance would
+    # silently drift out of alignment with the entries it describes.
     experiences = (
         session.query(Experience)
-        .filter_by(candidate_id=candidate.id)
+        .filter_by(candidate_id=candidate.id, is_active=1)
         .order_by(Experience.start_date.desc(), Experience.id.desc())
         .all()
     )

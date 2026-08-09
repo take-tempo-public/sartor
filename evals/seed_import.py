@@ -156,6 +156,10 @@ def import_seed(session: Session, seed: dict[str, Any]) -> str:
                 end_date=exp.get("end_date"),
                 display_order=exp.get("display_order", 0),
                 summary=exp.get("summary"),
+                # Back-compat: seeds exported before experience.is_active existed
+                # have no such key. Default to live — a missing flag must never
+                # be read as "retired", which would silently shrink the corpus.
+                is_active=_flag(exp.get("is_active", 1)),
             )
         )
         session.flush()

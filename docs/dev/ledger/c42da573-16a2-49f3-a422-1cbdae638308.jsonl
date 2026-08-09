@@ -4,3 +4,4 @@
 {"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T00:44:54Z"}
 {"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T01:00:47Z"}
 {"event": "compacted", "session": "unknown", "branch": "feat/corpus-polish", "trigger": "unknown", "ts": "2026-08-09T01:06:02Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/experience-soft-retire.md", "session": "c42da573-16a2-49f3-a422-1cbdae638308", "branch": "fix/experience-soft-retire", "commit": "b8381f5", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-09T02:01:05Z", "fingerprint": "faf58c854acb"}

@@ -316,10 +316,12 @@ def _cfg(db_path):
 
 def _seed_orphan_shape(db_path):
     """Seed one experience with the 4 orphan shapes (accepted/retired x
-    bullet/title) + one genuinely-still-pending control row. Schema is fully
-    built already (0014 adds no columns), so this runs against the ORM
-    directly regardless of which revision `alembic_version` currently points
-    at. Returns the 5 proposal_review ids by label."""
+    bullet/title) + one genuinely-still-pending control row. Runs against the
+    live ORM, so it requires the HEAD schema to still be in place: callers
+    rewinding to an earlier revision must do so with `command.stamp` (pointer
+    only), never `command.downgrade` (which would run 0016's DROP COLUMN and
+    remove a column the ORM still writes). Returns the 5 proposal_review ids
+    by label."""
     from db.models import (
         Application,
         ApplicationRun,
@@ -466,10 +468,11 @@ class TestBackfillMigration0014:
 
         db = tmp_path / "backfill.sqlite"
         command.upgrade(_cfg(db), "head")
-        # Rewind the version pointer to just before 0014 — its downgrade() is
-        # a documented no-op (data-only migration, nothing to structurally
-        # undo), so this only moves alembic_version, not the rows below.
-        command.downgrade(_cfg(db), "0013")
+        # Rewind the version pointer with stamp, not downgrade, so the walk
+        # back never runs 0016's DROP COLUMN — that would remove
+        # experience.is_active while the live ORM (used by the seed below)
+        # still writes it. stamp moves alembic_version only, no DDL.
+        command.stamp(_cfg(db), "0013")
 
         ids = _seed_orphan_shape(db)
 
@@ -489,13 +492,13 @@ class TestBackfillMigration0014:
 
         db = tmp_path / "backfill_rerun.sqlite"
         command.upgrade(_cfg(db), "head")
-        command.downgrade(_cfg(db), "0013")
+        command.stamp(_cfg(db), "0013")
         ids = _seed_orphan_shape(db)
         command.upgrade(_cfg(db), "head")
         first_pass = _decisions(db, ids)
 
         # Re-run the migration for real a second time.
-        command.downgrade(_cfg(db), "0013")
+        command.stamp(_cfg(db), "0013")
         command.upgrade(_cfg(db), "head")
         second_pass = _decisions(db, ids)
 

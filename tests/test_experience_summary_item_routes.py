@@ -224,9 +224,13 @@ class TestMigrationBackfill:
             )
             cx.execute(
                 sa.text(
+                    # `is_active` is listed explicitly: the model declares it
+                    # NOT NULL with a Python-side default (parity with
+                    # Bullet.is_active), so create_all emits no SQL DEFAULT and
+                    # a raw INSERT that omits it fails the NOT NULL constraint.
                     "INSERT INTO experience (id, candidate_id, company, start_date, "
-                    "display_order, summary, created_at, updated_at) "
-                    "VALUES (1,1,'Acme','2021-01',0,'Owned platform scale.','t','t')"
+                    "display_order, summary, is_active, created_at, updated_at) "
+                    "VALUES (1,1,'Acme','2021-01',0,'Owned platform scale.',1,'t','t')"
                 )
             )
         # Drop the B.4 tables, then re-run the upgrade to exercise the backfill.

@@ -522,3 +522,182 @@ class TestApplicationIndexAddIsActive:
                 assert cols == ["candidate_id", "is_active", "status", "updated_at"]
         finally:
             engine.dispose()
+
+
+def _seed_experience_tree(db_path: Path) -> dict[str, int]:
+    """Seed one candidate + one experience with a title, a bullet, and a summary item.
+
+    Exactly the parent/child shape migration 0016 must not disturb: `experience`
+    is the CASCADE parent of all three child tables, so a `batch_alter_table`
+    recreate would wipe them under the app's `PRAGMA foreign_keys=ON`.
+    """
+    from db.models import (
+        Bullet,
+        Candidate,
+        Experience,
+        ExperienceSummaryItem,
+        ExperienceTitle,
+    )
+
+    engine = make_engine(db_path)
+    try:
+        Session = make_session_factory(engine)
+        session = Session()
+        try:
+            candidate = Candidate(username="exp0016user")
+            session.add(candidate)
+            session.flush()
+
+            experience = Experience(
+                candidate_id=candidate.id,
+                company="Acme",
+                start_date="2020-01",
+                display_order=0,
+            )
+            session.add(experience)
+            session.flush()
+
+            title = ExperienceTitle(
+                experience_id=experience.id,
+                title="Staff Engineer",
+                is_official=1,
+                truthful_enough_to_use=1,
+                is_pending_review=0,
+                is_active=1,
+                source="official",
+            )
+            bullet = Bullet(
+                experience_id=experience.id,
+                text="Shipped the thing.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+            summary_item = ExperienceSummaryItem(
+                experience_id=experience.id,
+                text="Owned platform scale.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="imported",
+                has_outcome=0,
+            )
+            session.add_all([title, bullet, summary_item])
+            session.commit()
+            return {
+                "candidate_id": candidate.id,
+                "experience_id": experience.id,
+                "title_id": title.id,
+                "bullet_id": bullet.id,
+                "summary_item_id": summary_item.id,
+            }
+        finally:
+            session.close()
+    finally:
+        engine.dispose()
+
+
+def _assert_experience_tree_intact(db_path: Path, ids: dict[str, int]) -> None:
+    engine = make_engine(db_path)
+    try:
+        with engine.connect() as conn:
+            for table, key in (
+                ("experience", "experience_id"),
+                ("experience_title", "title_id"),
+                ("bullet", "bullet_id"),
+                ("experience_summary_item", "summary_item_id"),
+            ):
+                assert (
+                    conn.execute(
+                        text(f"SELECT count(*) FROM {table} WHERE id=:id"),  # noqa: S608
+                        {"id": ids[key]},
+                    ).scalar()
+                    == 1
+                ), f"{table} row lost"
+            assert conn.execute(text("PRAGMA integrity_check")).scalar() == "ok"
+            assert list(conn.execute(text("PRAGMA foreign_key_check"))) == []
+    finally:
+        engine.dispose()
+
+
+class TestExperienceIsActive:
+    """Migration 0016: experience.is_active, added with a NATIVE ADD COLUMN.
+
+    `experience` is the CASCADE parent of experience_title, bullet AND
+    experience_summary_item — one more child table than the 0011 case this
+    revision copies. A `batch_alter_table` recreate would cascade-delete all
+    three while FK enforcement is on; a native ADD/DROP COLUMN touches no rows.
+    These tests assert exactly that, in both directions.
+    """
+
+    def test_upgrade_0015_to_head_adds_is_active_no_row_loss(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "up0016.sqlite"
+        cfg = _alembic_config(db_path)
+        command.upgrade(cfg, "0015")
+        ids = _seed_experience_tree(db_path)
+
+        command.upgrade(cfg, "head")
+
+        _assert_experience_tree_intact(db_path, ids)
+        engine = make_engine(db_path)
+        try:
+            with engine.connect() as conn:
+                cols = {row[1] for row in conn.execute(text("PRAGMA table_info(experience)"))}
+                assert "is_active" in cols
+                # No backfill: every pre-existing row comes up LIVE. Inferring
+                # retirement from "has no active bullets" would hide live roles.
+                assert (
+                    conn.execute(
+                        text("SELECT is_active FROM experience WHERE id=:id"),
+                        {"id": ids["experience_id"]},
+                    ).scalar()
+                    == 1
+                )
+        finally:
+            engine.dispose()
+
+    def test_downgrade_head_to_0015_drops_is_active_no_row_loss(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "down0016.sqlite"
+        cfg = _alembic_config(db_path)
+        command.upgrade(cfg, "head")
+        ids = _seed_experience_tree(db_path)
+
+        command.downgrade(cfg, "0015")
+
+        _assert_experience_tree_intact(db_path, ids)
+        engine = make_engine(db_path)
+        try:
+            with engine.connect() as conn:
+                cols = {row[1] for row in conn.execute(text("PRAGMA table_info(experience)"))}
+                assert "is_active" not in cols
+            # Chain stays valid both directions, repeatedly.
+            command.upgrade(cfg, "head")
+            with engine.connect() as conn:
+                cols = {row[1] for row in conn.execute(text("PRAGMA table_info(experience)"))}
+                assert "is_active" in cols
+        finally:
+            engine.dispose()
+        _assert_experience_tree_intact(db_path, ids)
+
+    def test_fresh_empty_db_has_experience_is_active(self, tmp_path: Path) -> None:
+        """0001 is Base.metadata.create_all, so a fresh clone already has the
+        column and 0016's PRAGMA guard must skip the ALTER rather than raise."""
+        db_path = tmp_path / "fresh0016.sqlite"
+        command.upgrade(_alembic_config(db_path), "head")
+        engine = make_engine(db_path)
+        try:
+            with engine.connect() as conn:
+                cols = {row[1] for row in conn.execute(text("PRAGMA table_info(experience)"))}
+                assert "is_active" in cols
+        finally:
+            engine.dispose()
+
+    def test_already_at_head_upgrade_is_a_noop(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "athead0016.sqlite"
+        cfg = _alembic_config(db_path)
+        command.upgrade(cfg, "head")
+        ids = _seed_experience_tree(db_path)
+        command.upgrade(cfg, "head")  # guard must short-circuit
+        _assert_experience_tree_intact(db_path, ids)

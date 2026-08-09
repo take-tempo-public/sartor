@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 16 | Epics 6 | Closed 20
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 18 | Epics 6 | Closed 20
 
 ## Open
 
@@ -42,6 +42,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **56** -- Plan retirement half-completes on main: empty archive dir created, pointer files survive, stale approval stays live (`user`) -- On main the reconciler dies mid-function: empty archive dir, all three pointers survive, stale approval stays live.
 - **58** -- A handoff amended after its `generated` stamp blocks the next session, with nothing warning at authoring time (`user`) -- Handoff amended after its generated row; fingerprint and stamp both drift, and the next session hits a C-9 block.
 - **59** -- A corpus role card shows two different summary editors — the legacy denormalized field and the canonical variants section (`user`) -- A role card offers two summary editors: the legacy Experience.summary cache and the canonical variants section.
+- **60** -- Corpus count reads "0 experiences" while retired cards render, when every role is retired and Show retired is ticked (`agent`) -- Count reports live roles; the empty hint branches on total rows, so they disagree when every role is retired.
+- **61** -- Migration "upgrade adds column X" tests never execute op.add_column — revision 0001 is create_all against the live models (`agent`) -- Stopping the chain at N-1 yields today's full schema, so the guard skips and the ADD path goes unexercised.
 
 ## Epics
 

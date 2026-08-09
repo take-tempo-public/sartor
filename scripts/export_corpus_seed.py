@@ -160,6 +160,11 @@ def _experience_row(exp: Any) -> dict[str, Any]:
         "end_date": exp.end_date,
         "display_order": exp.display_order,
         "summary": exp.summary,
+        # Carried, NOT filtered on: this export is a faithful snapshot of every
+        # row (see the module docstring), so a retired role is exported with its
+        # flag rather than dropped. `evals.seed_import` defaults a missing key to
+        # 1, so old seeds still load and SEED_SCHEMA_VERSION stays at 1.
+        "is_active": bool(exp.is_active),
         "titles": [_title_row(t) for t in titles],
         "bullets": [_bullet_row(b) for b in bullets],
     }

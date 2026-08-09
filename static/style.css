@@ -1611,6 +1611,13 @@ textarea:focus-visible {
 .corpus-row.retired .corpus-row-input { text-decoration: line-through; }
 .corpus-row-flag.retired { background: #3a3a4a; color: var(--fg-1); }
 
+/* A whole retired ROLE, same treatment one level up: the entire card dims,
+   RETIRED flag included. `opacity` composites the whole subtree as a group, so
+   no descendant can opt back out — same as the row-level rule above, which
+   doesn't try. */
+.corpus-card.retired { opacity: 0.6; }
+.corpus-card.retired .corpus-card-company { text-decoration: line-through; }
+
 .corpus-show-retired {
   display: inline-flex;
   align-items: center;

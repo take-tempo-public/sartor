@@ -82,10 +82,15 @@ def build_context_set_from_db(
     if candidate is None:
         raise ValueError(f"No candidate with username={candidate_username!r}")
 
+    # Soft-retired roles (is_active=0) are hard-excluded here. This is one of the
+    # two chokepoints that close the whole generation blast radius: everything
+    # below — the synthesized résumé markdown, the corpus snapshot, and the
+    # <career_corpus> prompt payload — reads this already-filtered list, so a
+    # retired role can never reach the LLM or a generated document.
     experiences = list(
         session.execute(
             select(Experience)
-            .where(Experience.candidate_id == candidate.id)
+            .where(Experience.candidate_id == candidate.id, Experience.is_active == 1)
             .order_by(Experience.start_date.desc(), Experience.id)
         ).scalars()
     )

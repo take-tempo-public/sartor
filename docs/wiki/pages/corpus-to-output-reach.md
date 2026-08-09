@@ -152,6 +152,32 @@ sartor-specific resolution state (`chosen_summary_id`, `summary_source`,
 `use_experience_summaries`, `skill_curation_active`, …) is stamped under
 `meta.sartor.*` so standard JSON Resume themes ignore it.
 
+## Active-only filtering: two chokepoints
+
+Soft-retired roles (`Experience.is_active = 0`) are hard-excluded from all
+generated output — they can never reach the LLM, the JSON Resume document, or a
+downloaded file. This is enforced at two chokepoints that together cover the
+entire generation blast radius:
+
+1. [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py)
+   — the single `select(Experience)` query filters `Experience.is_active == 1`.
+   Because everything downstream reads this already-filtered list — the
+   synthesized résumé markdown, the `<career_corpus>` prompt payload, and the
+   corpus snapshot — a retired role never reaches any of them `[synthesis]`.
+
+2. [`corpus_to_json_resume.py:build_json_resume_from_corpus`](../../../corpus_to_json_resume.py)
+   — the `work[]` query filters the same way. The filter is deliberately on the
+   query itself, not in the loop body, because `work[]` and its order-aligned
+   `meta.sartor.work_provenance` are built in lockstep from it — a second,
+   separate filter would silently drift the provenance out of alignment with the
+   entries it describes `[synthesis]`.
+
+**Consequence:** `context_set` and `hardening.CorpusExperience` carry no
+`is_active` key; filtering upstream means a retired role never enters the
+payload. An application whose `corpus_snapshot_json` was frozen *before* the role
+was retired still contains that role on re-render — this is intended freeze
+semantics, matching how a retired bullet already behaves `[synthesis]`.
+
 ## Where the curated context_set comes from
 
 The context the overrides decorate is built by

@@ -184,6 +184,69 @@ class TestRetireVisibility:
         shown = client.get(f"/api/experiences/{eid}?include_retired=1").get_json()
         assert "Shipped V1." in [b["text"] for b in shown["bullets"]]
 
+    def test_retired_role_hidden_from_list_shown_with_flag(self, corpus_app):
+        """Role-level retire, the include_retired counterpart of the title/bullet cases.
+
+        The 0-bullet case is the one that used to no-op silently
+        (docs/dev/diagnosis/experience-soft-retire.md); it is the subject here so
+        this test fails if the fix ever regresses to the bullet-cascade-only shape.
+        """
+        cid = _seed_candidate()
+        kept = _seed_experience(cid, company="Globex", bullets=("Shipped V1.",))
+        empty = _seed_experience(
+            cid, company="Acme", official_title="Advisor", display_order=1
+        )  # deliberately zero bullets
+        client = corpus_app.test_client()
+
+        r = client.delete(f"/api/experiences/{empty}")
+        assert r.status_code == 200
+        assert r.get_json()["is_active"] is False
+        assert r.get_json()["retired_bullets"] == 0  # nothing to cascade to
+
+        default = client.get("/api/users/alice/experiences").get_json()
+        assert [row["id"] for row in default] == [kept]
+
+        shown = client.get("/api/users/alice/experiences?include_retired=1").get_json()
+        by_id = {row["id"]: row for row in shown}
+        assert set(by_id) == {kept, empty}
+        assert by_id[empty]["is_active"] is False
+        assert by_id[kept]["is_active"] is True
+
+    def test_restore_role_via_put(self, corpus_app):
+        cid = _seed_candidate()
+        eid = _seed_experience(cid, company="Acme", official_title="Advisor")
+        client = corpus_app.test_client()
+        client.delete(f"/api/experiences/{eid}")
+        assert client.get("/api/users/alice/experiences").get_json() == []
+
+        r = client.put(f"/api/experiences/{eid}", json={"is_active": True})
+        assert r.status_code == 200
+        assert r.get_json()["is_active"] is True
+        assert [row["id"] for row in client.get("/api/users/alice/experiences").get_json()] == [eid]
+
+    def test_restore_does_not_resurrect_bullets_retired_before_the_role(self, corpus_app):
+        """Restoring a role restores the role only — every bullet stays retired."""
+        from db.models import Bullet
+        from db.session import get_session
+
+        cid = _seed_candidate()
+        eid = _seed_experience(cid, bullets=("Kept.", "Dropped."))
+        s = get_session()
+        try:
+            dropped = s.query(Bullet).filter_by(experience_id=eid, text="Dropped.").first().id
+        finally:
+            s.close()
+        client = corpus_app.test_client()
+        client.delete(f"/api/bullets/{dropped}")
+        client.delete(f"/api/experiences/{eid}")
+        client.put(f"/api/experiences/{eid}", json={"is_active": True})
+
+        # The role is back, but both bullets are retired: the role-level retire
+        # cascaded to "Kept." and the user had already retired "Dropped.".
+        detail = client.get(f"/api/experiences/{eid}").get_json()
+        assert detail["is_active"] is True
+        assert detail["bullets"] == []
+
     def test_summary_title_count_excludes_retired(self, corpus_app):
         cid = _seed_candidate()
         eid = _seed_experience(cid, alt_titles=("Senior PM",))

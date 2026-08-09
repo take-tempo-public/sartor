@@ -5,8 +5,8 @@
 > (`is_active` / `is_pending_review` / `source` / `display_order` + a `*_tag`
 > join) that `Bullet`, `Skill`, `SummaryItem`, and `ExperienceSummaryItem` all
 > wear — the "unified Corpus Item" shape — plus the narrower `is_active`
-> soft-retire pattern it later lent to `ExperienceTitle` and `Application`,
-> and the alembic chain (head `0015`) that grew it.
+> soft-retire pattern also carried by `Experience`, `ExperienceTitle`, and
+> `Application`, and the alembic chain (head `0016`) that grew it.
 > **Sources:** [`db/models.py`](../../../db/models.py),
 > [`db/build_context.py`](../../../db/build_context.py),
 > [`db/migrations/versions/0009_skill_corpus_item.py`](../../../db/migrations/versions/0009_skill_corpus_item.py),
@@ -16,6 +16,7 @@
 > [`db/migrations/versions/0013_application_is_active.py`](../../../db/migrations/versions/0013_application_is_active.py),
 > [`db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py`](../../../db/migrations/versions/0014_backfill_orphaned_proposal_reviews.py),
 > [`db/migrations/versions/0015_application_index_add_is_active.py`](../../../db/migrations/versions/0015_application_index_add_is_active.py),
+> [`db/migrations/versions/0016_experience_is_active.py`](../../../db/migrations/versions/0016_experience_is_active.py),
 > [`docs/architecture.md`](../../architecture.md) §Persistence model.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -90,10 +91,23 @@ keyword tagging a bullet/title), per the `SkillTag` docstring.
 
 ## The `is_active` soft-retire pattern spreads beyond the four items
 
-Two non-Corpus-Item tables later borrowed just the `is_active` half of the shape
+Three non-Corpus-Item tables borrowed just the `is_active` half of the shape
 (soft-retire, never hard-delete a row other rows reference), not the full
-four-column lifecycle — neither gained `is_pending_review`/`source`/`display_order`:
+four-column lifecycle — none gained `is_pending_review`/`source`/`display_order`:
 
+- [`Experience`](../../../db/models.py) — migration `0016` adds `is_active`
+  "parity with `Bullet.is_active`": the corpus DELETE on a role used to be
+  implemented purely as a cascade onto child bullets (`is_active=0`), which was
+  a no-op for a role with zero bullets — it returned 200 and left the role
+  listed in the corpus and rendering into generated output. Retired roles are
+  hidden from the corpus unless `include_retired` is set and never reach
+  generation; restore via `PUT /api/experiences/<id> {is_active: true}`. Restoring
+  does NOT reactivate bullets (they carry their own flag and user intent). Kept
+  (not hard-deleted) because `application_bullet` and `application_run_title`
+  reference the tree for audit. Uses native `op.add_column` (not `batch_alter_table`)
+  because `experience` is a PARENT table of `experience_title`, `bullet`, AND
+  `experience_summary_item` — a batch recreate would cascade-delete those child
+  rows while FK enforcement is on `[synthesis]`.
 - [`ExperienceTitle`](../../../db/models.py) — migration `0011` adds `is_active`
   "parity with `Bullet.is_active`": the corpus "delete" on an
   alternate title was always a soft-retire (clearing `is_official` /
@@ -105,11 +119,12 @@ four-column lifecycle — neither gained `is_pending_review`/`source`/`display_o
   list can hide poor examples / abandoned drafts while keeping the application's
   runs + audit trail.
 
-Both migrations use a **native `ADD COLUMN`**, not `batch_alter_table`, for the same
-reason `0010` does (below): `experience_title` and `application` are each a PARENT
-table (of `application_run_title` and `application_run` respectively), and a batch
-recreate would cascade-delete those child rows while SQLite FK enforcement is on
-`[synthesis]`.
+All three migrations (`0011`, `0013`, `0016`) use a **native `ADD COLUMN`**, not
+`batch_alter_table`, for the same reason `0010` does (below): each is a PARENT
+table (`experience_title` parents `application_run_title` / `proposal_review`;
+`application` parents `application_run`; `experience` parents `experience_title`,
+`bullet`, AND `experience_summary_item`), and a batch recreate would
+cascade-delete those child rows while SQLite FK enforcement is on `[synthesis]`.
 
 ## Denormalized caches the items supersede
 
@@ -141,11 +156,11 @@ application's iterations `[synthesis]`. (The hardening / no-LLM boundary itself 
 canonical in [`AGENTS.md`](../../../AGENTS.md) — cited, not restated, per
 [`SCHEMA.md`](../SCHEMA.md) D5.)
 
-## Migration chain — head `0015`
+## Migration chain — head `0016`
 
-Schema evolution is alembic-driven; the current head is **`0015`**
-([`0015_application_index_add_is_active.py`](../../../db/migrations/versions/0015_application_index_add_is_active.py),
-`revision="0015"`, `down_revision="0014"`, verified). Five
+Schema evolution is alembic-driven; the current head is **`0016`**
+([`0016_experience_is_active.py`](../../../db/migrations/versions/0016_experience_is_active.py),
+`revision="0016"`, `down_revision="0015"`, verified). Six
 migrations landed after `0010`:
 
 - **`0011`** adds `ExperienceTitle.is_active` (see the `is_active` pattern section
@@ -174,6 +189,14 @@ migrations landed after `0010`:
   adds a fully-covering equality prefix for the default query. Uses native
   `op.create_index` / `op.drop_index` only (metadata-only DDL in SQLite,
   zero row touch) — no `batch_alter_table` risk `[synthesis]`.
+- **`0016`** adds `Experience.is_active` (see the `is_active` pattern section
+  above); **no backfill** — the migration docstring
+  ([`0016_experience_is_active.py`](../../../db/migrations/versions/0016_experience_is_active.py))
+  explains why: the old retire semantics left no signature distinguishable from
+  "role never had bullets typed in yet," so inferring retirement would silently
+  hide live roles. Uses native `op.add_column` (not `batch_alter_table`) because
+  `experience` is a PARENT of three child tables (see the pattern section
+  above) `[synthesis]`.
 
 `0010` (PX-02) adds the nullable `Candidate.online_profile_text` column — the cached
 opt-in profile/website scrape, a **distinct channel** from `profile_text` (the β.6

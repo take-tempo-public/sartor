@@ -13,6 +13,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: retiring a role with zero bullets silently did nothing (`fix/experience-soft-retire`, Epic A / A1b)
+
+`DELETE /api/experiences/<id>` implemented "retire" as a cascade onto the role's
+child bullets and nothing else — `Experience` carried no retire flag of its own.
+For a role with **zero** bullets that affected zero rows, still returned `200`, and
+left the role listed in the corpus and still rendering into generated output. Fixed
+by giving `Experience` the `is_active` soft-retire column its three siblings
+(`Bullet`, `ExperienceTitle`, `Application`) already have, via new alembic revision
+`0016_experience_is_active` — native `op.add_column` behind a `PRAGMA table_info`
+guard, deliberately **not** `batch_alter_table`, because `experience` is the CASCADE
+parent of `experience_title`, `bullet` *and* `experience_summary_item` and a batch
+recreate would delete all three. **No backfill**, and that is a decision, not an
+omission: the old retire left no recoverable signature on the row, and "every bullet
+retired" is indistinguishable from "no bullets typed in yet", so inferring
+retirement would have hidden live roles.
+
+Generation is closed at the two chokepoints that cover it transitively —
+`db/build_context.py` (prompt, synthesized résumé, corpus snapshot) and
+`corpus_to_json_resume.py` (rendered `work[]`, and its order-aligned
+`work_provenance`, filtered at the shared query so the two cannot drift apart).
+A retired role also drops out of the review queue, merge suggestions, skill
+proposals, compositions and role-intro staging, and — the subtlest one — no longer
+acts as a silent merge target for a résumé re-import, which used to resurrect it
+with no user-visible signal. Restore lands on `PUT /api/experiences/<id>
+{"is_active": true}`; `_load_experience_for_candidate` deliberately does **not**
+filter, since a filter there would 404 every mutation on a retired role, the restore
+route first among them. Restoring a role does not resurrect bullets the user retired
+individually. In the UI the existing "Show retired" checkbox now governs the role
+list as well as card contents, retired cards render dimmed with a `RETIRED` flag and
+a Restore button, and the count reports live roles only.
+
+`context_set` is **unchanged**: `hardening.CorpusExperience` deliberately does not
+carry the flag — filtering upstream means a retired role never reaches the payload,
+so adding a key to a persisted, frozen-snapshot contract would buy nothing and cost
+every reader an absence-tolerant branch forever. Evidence (four-layer reproduction,
+with a passing control arm) in
+[`docs/dev/diagnosis/experience-soft-retire.md`](docs/dev/diagnosis/experience-soft-retire.md);
+the grep-complete consumer enumeration, its decisions, and four corrections to the
+prior `[REPORTED]` audit — including two raw-SQL sites it recorded as nonexistent,
+one of which breaks — in
+[`docs/dev/blast-radius/experience-soft-retire.md`](docs/dev/blast-radius/experience-soft-retire.md).
+Also corrects `docs/architecture.md`'s ER diagram, which claimed `experience` had
+both `is_active` and `is_pending_review` when it had neither.
+
 ### Fixed: plan-approval marker survives a PR-channel merge — item 45 closed (`fix/plan-approval-marker-pr-merge`)
 
 The prior session's staged fix design (D3(b): a `SessionStart` reconciler stamping

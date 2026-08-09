@@ -1053,6 +1053,7 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             )
             .filter_by(
                 candidate_id=candidate.id,
+                is_active=1,  # retired roles drop out of new compositions
             )
             .order_by(Experience.start_date.desc(), Experience.id.desc())
             .all()
@@ -2227,7 +2228,8 @@ def draft_application_gap_fill(application_id: int) -> ResponseReturnValue:
         # pattern_kind into the Bullet CHECK set, compute a stable accept/retire
         # key (doubles as Bullet.source), and drop dups.
         cand_exp_ids = {
-            e.id for e in session.query(Experience).filter_by(candidate_id=candidate.id)
+            e.id
+            for e in session.query(Experience).filter_by(candidate_id=candidate.id, is_active=1)
         }
         # feat/regenerate-gap-fill — never resurface a proposal the user already
         # decided on. RETIRED keys are durable (composition_overrides); ACCEPTED
@@ -2881,6 +2883,7 @@ def recommend_application_experience_summaries(application_id: int) -> ResponseR
             session.query(Experience)
             .filter_by(
                 candidate_id=candidate.id,
+                is_active=1,  # no role intros for a retired role
             )
             .order_by(Experience.start_date.desc(), Experience.id.desc())
             .all()

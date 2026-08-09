@@ -3633,10 +3633,26 @@ document.querySelectorAll('.panel-header').forEach(header => {
 
 let _corpusLoadedForUser = '';
 let _corpusExperiences = [];
-// P4 — when true, the corpus detail fetch includes retired (is_active=0) titles
-// + bullets so the user can review/restore them. Default off: retired items are
-// invisible unless this box is ticked.
+// P4 — when true, the corpus fetches include retired (is_active=0) rows so the
+// user can review/restore them: retired titles + bullets inside a card body, and
+// (since the experience-level soft-retire fix) retired ROLES in the list itself.
+// Default off: retired items are invisible unless this box is ticked.
 let _corpusShowRetired = false;
+
+// The shared "show retired" query suffix for the two experiences-LIST fetches
+// (refreshCorpus + refreshCorpusSummaryFor). One helper, so the two can't drift
+// apart and leave the list and the count disagreeing about what's visible.
+function _corpusListQuery() {
+  return _corpusShowRetired ? '?include_retired=1' : '';
+}
+
+// "N experiences" counts LIVE roles only. With "Show retired" ticked the list
+// also carries retired roles, and counting those would tell the user they have
+// more experience in the corpus than can ever reach a résumé.
+function _corpusLiveCountText() {
+  const n = _corpusExperiences.filter(e => e.is_active !== false).length;
+  return `${n} experience${n === 1 ? '' : 's'}`;
+}
 
 // Navigation generation (item 29, docs/dev/diagnosis/
 // ux-restore-scroll-y-resource-contention.md Round 3): bumped on every top-tab
@@ -3709,7 +3725,10 @@ async function refreshCorpus() {
   refreshCertificationsEditor();
   let res;
   try {
-    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+    // Retired ROLES are hidden by default, same contract the card body already
+    // uses for retired titles/bullets (_loadCorpusDetail).
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/experiences${_corpusListQuery()}`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
     _restoreScrollY(_scrollY);
@@ -4867,8 +4886,7 @@ function _renderCorpusList() {
       return;
     }
     toolbar.style.display = '';
-    countEl.textContent =
-      `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+    countEl.textContent = _corpusLiveCountText();
     _clearChildren(list);
     if (_corpusExperiences.length === 0) {
       hint.textContent = 'No experiences yet. Click + Import résumé to extract '
@@ -4890,11 +4908,20 @@ function _renderCorpusList() {
 }
 
 function _renderCorpusSummary(exp) {
-  const card = _el('div', { className: 'corpus-card', id: `corpus-exp-${exp.id}` });
+  // A retired role only reaches here with "Show retired" ticked; the `retired`
+  // class is what makes "this role is retired" visible rather than just absent.
+  const retired = exp.is_active === false;
+  const card = _el('div', {
+    className: retired ? 'corpus-card retired' : 'corpus-card',
+    id: `corpus-exp-${exp.id}`,
+  });
   card.dataset.experienceId = exp.id;
   const header = _el('div', { className: 'corpus-card-header' });
   header.onclick = () => toggleCorpusCard(exp.id);
   header.appendChild(_el('button', { className: 'corpus-card-toggle' }, [], { 'aria-label': 'Expand' }));
+  if (retired) {
+    header.appendChild(_el('div', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+  }
   header.appendChild(_el('div', { className: 'corpus-card-company', textContent: exp.company || '(no company)' }));
   header.appendChild(_el('div', { className: 'corpus-card-title', textContent: exp.official_title || '(no official title)' }));
   header.appendChild(_el('div', { className: 'corpus-card-dates', textContent: `${exp.start_date} — ${exp.end_date || 'current'}` }));
@@ -4965,9 +4992,17 @@ function _renderCorpusDetail(body, exp) {
     };
     btnRow.appendChild(acceptAll);
   }
-  const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'Soft-retire experience' });
-  retire.onclick = () => deleteExperience(expId, retire);
-  btnRow.appendChild(retire);
+  if (exp.is_active === false) {
+    // A retired role gets Restore instead of Retire — retiring it again is a
+    // no-op, and without this button there is no UI path back at all.
+    const restore = _el('button', { className: 'cb-btn cb-bg-teal', textContent: 'Restore experience' });
+    restore.onclick = () => restoreExperience(expId, restore);
+    btnRow.appendChild(restore);
+  } else {
+    const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'Soft-retire experience' });
+    retire.onclick = () => deleteExperience(expId, retire);
+    btnRow.appendChild(retire);
+  }
   body.appendChild(btnRow);
   // A1 (Epic A) — card order is titles → summary → bullets. The role's
   // identity (who/where/when) stays in the field group above; then what the
@@ -5284,15 +5319,29 @@ async function _reloadCorpusCard(expId) {
   await refreshCorpusSummaryFor(expId);
 }
 
-// P4 — global "Show retired" toggle. Re-renders every currently-expanded card
-// with (or without) retired titles + bullets. Default off, so retired items are
-// never visible unless the user explicitly opts in here.
-function toggleCorpusRetired(checked) {
+// P4 — global "Show retired" toggle. Reloads the LIST (so retired roles appear
+// or disappear) and re-renders every currently-expanded card with (or without)
+// retired titles + bullets. Default off, so retired items are never visible
+// unless the user explicitly opts in here.
+//
+// The list reload is not optional: retiring a whole role is now a role-level
+// flag, so without it ticking the box would reveal retired rows inside surviving
+// cards while the retired roles themselves stayed invisible.
+async function toggleCorpusRetired(checked) {
   _corpusShowRetired = !!checked;
-  document.querySelectorAll('.corpus-card.expanded').forEach(card => {
-    const expId = parseInt(card.dataset.experienceId, 10);
-    if (!Number.isNaN(expId)) _loadCorpusDetail(expId);
-  });
+  const expanded = Array.from(document.querySelectorAll('.corpus-card.expanded'))
+    .map(card => parseInt(card.dataset.experienceId, 10))
+    .filter(id => !Number.isNaN(id));
+  await refreshCorpus();
+  // refreshCorpus() rebuilds the list from scratch, collapsing every card, so
+  // re-expand what the user had open — otherwise ticking the box silently
+  // closes their place in the corpus.
+  for (const expId of expanded) {
+    const card = document.getElementById(`corpus-exp-${expId}`);
+    if (!card) continue;  // the role itself just went out of view
+    card.classList.add('expanded');
+    await _loadCorpusDetail(expId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -5477,7 +5526,8 @@ function _clearBtnPending(btn, label) {
 }
 
 async function refreshCorpusSummaryFor(expId) {
-  const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  const res = await fetch(
+    `/api/users/${encodeURIComponent(currentUser)}/experiences${_corpusListQuery()}`);
   if (!res.ok) return;
   const body = await res.json().catch(() => []);
   // `/experiences` returns a bare array on success but a needs_onboarding
@@ -5498,20 +5548,39 @@ async function refreshCorpusSummaryFor(expId) {
   if (dates) dates.textContent = `${exp.start_date} — ${exp.end_date || 'current'}`;
   if (meta) meta.textContent = `${exp.bullet_count_active} bullets` +
     (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
-  document.getElementById('corpusCount').textContent =
-    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+  document.getElementById('corpusCount').textContent = _corpusLiveCountText();
 }
 
 async function deleteExperience(expId, triggerEl) {
   const ok = await cbConfirm(
-    'All its bullets become inactive and it drops out of new résumés. You '
-      + 'can restore them via "Show retired".',
+    'The role and all its bullets drop out of new résumés. You can bring it '
+      + 'back via "Show retired".',
     { title: 'Retire this entire experience?', confirmLabel: 'Retire', triggerEl },
   );
   if (!ok) return;
   try {
-    const r = await _deleteJson(`/api/experiences/${expId}`);
-    _toast(`Retired ${r.retired_bullets} bullet(s)`);
+    // The bullet count is incidental — a role with none retires just as much as
+    // one with ten, and the old "Retired 0 bullet(s)" toast read as a no-op for
+    // exactly the case this fix addresses.
+    await _deleteJson(`/api/experiences/${expId}`);
+    _toast('Experience retired');
+    await refreshCorpus();
+  } catch (e) { _toast('Failed: ' + e.message, true); }
+}
+
+// The other half of the retire pair. Bullets keep their own is_active, so a
+// restore brings the ROLE back without resurrecting bullets the user retired
+// individually beforehand — those are restored one at a time, as before.
+async function restoreExperience(expId, triggerEl) {
+  const ok = await cbConfirm(
+    'The role becomes available to new résumés again. Bullets you retired '
+      + 'individually stay retired.',
+    { title: 'Restore this experience?', confirmLabel: 'Restore', triggerEl },
+  );
+  if (!ok) return;
+  try {
+    await _putJson(`/api/experiences/${expId}`, { is_active: true });
+    _toast('Experience restored');
     await refreshCorpus();
   } catch (e) { _toast('Failed: ' + e.message, true); }
 }

@@ -1201,3 +1201,66 @@ from the 20 above. Measured, not reasoned: of this branch's three relevant paths
 `static/app.js` was **already** in the drift set from earlier branches, while
 `templates/index.html` and `static/style.css` are new to it. Not a merge blocker; the backlog
 stays queued for the next bounded catch-up pass.
+
+---
+
+## 2026-08-08 — `fix/experience-soft-retire` (Epic A, sprint A1b) — scoped diff pass
+
+**Mode:** diff, window `7c15c2e` → working tree (this branch's own slice only, per the
+close-out per-branch rule). **Not** the `.last_ingest_sha` window.
+
+**Sources read:** the branch's 17 wiki-relevant paths — the `Experience.is_active`
+soft-retire column (`db/models.py`, `db/migrations/versions/0016_experience_is_active.py`),
+its consumer filters (`db/build_context.py`, `corpus_to_json_resume.py`,
+`blueprints/corpus/{experiences,_shared,curation,skills}.py`, `blueprints/applications.py`,
+`onboarding/{corpus_import,review_cli}.py`, `evals/seed_import.py`,
+`scripts/export_corpus_seed.py`, `web_infra/openapi.py`) and the UI
+(`static/app.js`, `static/style.css`).
+
+**Pages changed (7, none created):** `corpus-data-model` (the load-bearing one — a fourth
+carrier of the `is_active` pattern, chain head `0015`→`0016`), `corpus-to-output-reach`
+(the two generation chokepoints), `route-surface` (three changed route contracts),
+`career-corpus`, `frontend-wizard`, `importing-your-experience`, `openapi-api-reference`.
+
+**Verified no-edit (checked, not skipped):** `context-set-contract` and
+`application-audit-chain` — the `context_set` shape and frozen-snapshot semantics
+deliberately did *not* change, which is itself the recorded decision; `code-module-map` —
+no module added or removed.
+
+**Auditor catch-rate: 4 findings / 7 pages audited.** One DRIFTED cite
+(`importing-your-experience` carried bare line numbers against the repo's path/symbol
+convention), one DRIFTED label (`frontend-wizard` said the button reads "Restore" when it
+reads "Restore experience"), one UNSUPPORTED structural defect (a one-way `[[career-corpus]]`
+backlink with no return half), and one audience-tier violation (`career-corpus` is stamped
+`user — no technical background assumed` and had acquired function names and module paths in
+its body prose). All four repaired by the orchestrator; author never graded its own page.
+
+**Two classes the auditors did NOT catch**, recorded so the catch-rate is not read as
+completeness: (1) every scribe emitted its new paragraphs as single unwrapped lines against
+pages wrapped at ~78 columns — cosmetic, but it would have made every future diff on those
+pages a one-line churn; (2) `index.md`'s `corpus-data-model` entry read "alembic head 0010",
+stale since before this branch and now doubly so. Both were found by reading the diffs
+directly. The grounding auditors are scoped to cite/claim verification and would not be
+expected to see either — that scoping is the point, not a defect, but it means a human (or
+orchestrator) diff read remains load-bearing.
+
+**One claim graded softer than the rest:** `corpus-to-output-reach`'s frozen-snapshot
+consequence was marked SUPPORTED on the reasoning that it "logically follows", not by
+tracing the re-render path. It agrees with the independently-recorded decision in
+`docs/dev/blast-radius/experience-soft-retire.md`, so it is not suspect — but it is
+inference, and should not later be cited as observed.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12.
+The checkpoint stays `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30). This pass
+inspected one branch's slice; advancing the checkpoint would assert the whole backlog had
+been ingested.
+
+**Drift after this branch: 36 wiki-relevant files against the 75-file block threshold**, up
+14 from 22. Measured, not reasoned (`scripts/wiki_relevance.is_wiki_relevant` over
+`65b0f88f…`→HEAD versus this branch's own changed set): of this branch's 17 relevant paths,
+`static/app.js`, `static/style.css` and `docs/architecture.md` were already in the drift set;
+the other 14 are new to it. **Stated limitation:** those 14 are precisely the files this pass
+just documented, but the counter measures "changed since checkpoint", not "wiki coverage
+current" — so correctly-ingested work still inflates the number while the checkpoint is
+deliberately held back. Now near half the threshold; the backlog wants a bounded catch-up
+pass before it approaches 75.

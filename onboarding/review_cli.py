@@ -115,10 +115,14 @@ class ReviewSession:
         self.edited = 0
 
     def pending_experiences(self) -> list[Experience]:
-        """Return experiences belonging to this candidate that have any pending title or bullet, ordered newest-first."""
+        """Return LIVE experiences of this candidate that have any pending title or bullet, newest-first.
+
+        Soft-retired roles (is_active=0) are excluded — they can never reach a
+        generated document, so reviewing their pending items is dead work.
+        """
         stmt = (
             select(Experience)
-            .where(Experience.candidate_id == self.candidate.id)
+            .where(Experience.candidate_id == self.candidate.id, Experience.is_active == 1)
             .order_by(Experience.start_date.desc())
         )
         all_for_candidate = list(self.session.execute(stmt).scalars())
@@ -391,13 +395,14 @@ class ReviewSession:
 
 
 def iter_pending_experiences(session: Session, candidate_id: int) -> Iterator[Experience]:
-    """Yield pending experiences for a candidate without running the interactive loop.
+    """Yield pending LIVE experiences for a candidate without running the interactive loop.
 
-    Read-only helper used by tests and any future automation.
+    Read-only helper used by tests and any future automation. Mirrors
+    `pending_experiences`, including its soft-retire exclusion.
     """
     stmt = (
         select(Experience)
-        .where(Experience.candidate_id == candidate_id)
+        .where(Experience.candidate_id == candidate_id, Experience.is_active == 1)
         .order_by(Experience.start_date.desc())
     )
     for exp in session.execute(stmt).scalars():

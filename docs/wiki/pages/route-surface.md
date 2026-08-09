@@ -136,6 +136,35 @@ A GET/POST pair on the application's context file:
   `[synthesis]` — this is the clobber surface tracked in the compose memory.
   Ownership rides `_load_application_owned`; `_within` gates `context_path`.
 
+## Experiences CRUD — `blueprints/corpus/experiences.py`
+
+The role-curation surface — experiences, bullets, titles, and per-role summary
+variants — lives in
+[`blueprints/corpus/experiences.py`](../../../blueprints/corpus/experiences.py).
+Soft-retired rows (`is_active=0`) stay in the DB to preserve audit chains;
+hard-delete is refused `[synthesis]`.
+
+Three routes implement soft-retire semantics:
+
+- [`list_experiences`](../../../blueprints/corpus/experiences.py)
+  (`GET /api/users/<username>/experiences`) hides soft-retired roles by default;
+  pass `?include_retired=1` to show them.
+- [`update_experience`](../../../blueprints/corpus/experiences.py)
+  (`PUT /api/experiences/<id>`) accepts `is_active`, which is where RESTORE
+  lands. The loader `_load_experience_for_candidate` deliberately does NOT filter
+  on `is_active` — a filter there would 404 every mutation on a retired role,
+  this restore route first among them `[synthesis]`.
+- [`delete_experience`](../../../blueprints/corpus/experiences.py)
+  (`DELETE /api/experiences/<id>`) sets `is_active=0` on the role AND cascades to
+  its bullets; the role-level flag is the load-bearing half, and the response
+  carries `is_active` `[synthesis]`.
+
+The response serializers
+[`_experience_summary_dict`](../../../blueprints/corpus/_shared.py) and
+[`_experience_detail_dict`](../../../blueprints/corpus/_shared.py) emit the
+role's own `is_active`. That flag is always emitted regardless of
+`?include_retired`, which governs child rows only `[synthesis]`.
+
 ## Corpus-completer routes (Sprint 6.6 B.4 / B.5) — `blueprints/applications.py`
 
 Fired from the Compose step; each takes `{context_path}`, validates it with

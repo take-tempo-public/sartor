@@ -352,7 +352,6 @@ erDiagram
         string end_date "YYYY-MM or NULL=current"
         text summary
         int is_active "soft-retire"
-        int is_pending_review
     }
 
     experience_title {
