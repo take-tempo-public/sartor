@@ -604,6 +604,7 @@ assume it.
 | F8 | **The item-52 gate window reopens by construction** | Post-gate `compacted` ledger rows appeared **3×**, each needing a commit + targeted re-verification + an honest *"the full gate did not examine this commit"* disclosure | 3 extra commits |
 | F9 | **Wiki close-out cost, and a counter that measures the wrong thing** | A1b: 14 subagents. A2's widened pass: **216,973** subagent tokens. `.last_ingest_sha` had been stuck **130+ commits** because a scoped pass cannot honestly advance a repo-wide marker | Largest single close-out line item |
 | F10 | **Ceremony dwarfs the code** | A1b: **392** lines production code, 273 tests, **761** docs. Two sprints ≈ **2.86 M** subagent tokens | See 12.3 |
+| F11 | **A detached gate emits no completion signal — this is the cost side of fixing F1/F2** | The task notification fires for the *launcher* exiting, not for the gate. The final review gate finished at 10:08:04 and went unnoticed until the owner asked *"did the gate freeze?"* at 10:47:54 | **~40 min of dead wall-clock** |
 
 **Token accounting** (as reported per agent, this session):
 
@@ -641,6 +642,13 @@ assume it.
   backlog; item 20's was 4 files. *Falsifier:* A3/A4 passes that stay near 200 k tokens.
 - **H-3: the orchestrator-runs-the-gate rule removes F1 entirely.** Zero subagent gate deaths
   after it was adopted. *Falsifier:* any further truncated gate.
+- **H-4 (F11): detaching the gate trades a truncated log for a missing completion signal.**
+  Fixing F1/F2 made the record reliable and the *notification* unreliable — the harness signals
+  the launcher, not the gate, so the orchestrator must poll and can simply stop polling (it did,
+  for ~40 min). *Candidate instrument for Epic B:* have the gate write a sentinel file as its
+  last act and wait on **that**, so completion is observable without polling the log. Untested.
+  **This is a genuine tradeoff, not a strict improvement, and the register should not pretend
+  otherwise.**
 
 **Pure friction, no discipline value — fix independent of the experiment:** F2–F5, F7. Captured
 in `reference-long-run-log-lies-tee-and-pid-checks`.
