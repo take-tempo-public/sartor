@@ -366,6 +366,99 @@ Instead, in order:
 
 ---
 
+## Orchestrator's guidance for finishing Epic A
+
+*Added 2026-08-09 by the session that ran A2 and item 20 end-to-end, at the owner's request.
+This is operating advice, not governance. The binding rules are below and they win.*
+
+### The one thing that decides whether you succeed
+
+**Read `docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md` in full, then §11 of
+the errata, before your first tool call.** Two sessions skipped it, rebuilt the model from
+the errata alone, and got their own role wrong for a whole sprint. You are an
+**orchestrator**. If you find yourself writing sprint code with your own hands, you are in
+the wrong role and the run has already drifted.
+
+### The loop that worked, per sprint
+
+1. **Create the branch yourself** (stacked on the previous tip, never `main`).
+2. **Implementer Agent** — Opus for A3, Sonnet `xhigh` for A4 per the design's table. It
+   writes the C-10 dossier **first**, then code + tests, then `git add -A`. **It commits
+   nothing.**
+3. **Sonnet refuter** on the **staged** diff, instructed to **refute**, with item 52's
+   structural re-check folded into the same pass. Tell it explicitly what claims to attack —
+   a generic "review this" gets you a generic answer. Both sprints' best findings came from
+   naming the implementer's own headline claim as the target.
+4. **You read the real code diff** — production + tests, skipping the docs bulk. That is
+   ~400–700 lines a sprint, ~10 k tokens. This is the judgment pause the design exists to
+   protect; do not delegate it.
+5. **Fix-applier Agent** for confirmed findings. Re-read its hunks yourself; on item 20 its
+   report cited line numbers that were wrong while the edits were right.
+6. **You commit.** Then **you run the gate** (see below).
+7. **Closer Agent** — wiki pass + checkpoint advance, work items, `BOARD.md`, next handoff,
+   `verify_doc_template`. **Do not also give it the gate.**
+8. **Grounding auditors** on every page the closer wrote — author never audits its own page.
+
+### Gate rules — these are not style preferences
+
+- **You run the gate. Never a subagent.** A closer's gate died with the agent and returned a
+  non-report; that cost a sprint's tail.
+- **`nohup python -u -m scripts.gate > file 2>&1 &`. Never `| tee`.** `tee` dies with the
+  harness's Bash wrapper and truncates the log **while the gate keeps running headless**.
+  This produced two false mechanisms in one sprint, and nearly caused a live gate run to be
+  killed as "orphaned workers".
+- **`kill -0` is invalid on Windows PIDs under Git Bash.** It reports live processes as gone.
+  Poll with `tasklist` / `Get-CimInstance`. A waiter built on `kill -0` returned instantly and
+  led to two gates racing.
+- **The log's terminal line is authoritative**, not a process check and not an exit code.
+  Require `gate: all steps passed.` **and** sweep the whole log for uppercase `RERUN`. The
+  legitimate hits are the plugin banner and test *names* (`test_ci_wait.py`,
+  `test_ux_rerun_report.py`, `test_idempotent_on_rerun`).
+- Long waiters get culled unpredictably. Poll in short windows; the gate survives regardless
+  because it owns its own file descriptor.
+- A gate run is ~13–20 min. Budget two per sprint (one, plus one after any post-gate fix).
+
+### What to expect
+
+- **A3 is the largest sprint in the epic** — a net-new LLM call end-to-end. Do not treat it
+  as A2-sized. `PROMPT_VERSION` must bump in the **same commit** as the prompt change, and
+  corpus-mode drafting is **not** covered by `--suite synthetic`, so the targeted eval fixture
+  is real work, not a checkbox.
+- **A4 is the mechanical one** (Sonnet `xhigh`), but it edits `ui_pages/selectors.py`, a C-10
+  **gated** surface, so `docs/dev/blast-radius/prior-apps-pipeline.md` must name that path
+  before the first edit. The least-equipped implementer meets a no-escape-hatch gate here —
+  say so in its brief.
+- **Then**: the final Opus **`xhigh`** review over the full epic diff, `epic/a-app-core` cut
+  from A4's tip, and **one PR**. Pushing is a **halt point** — it is outward-facing on a public
+  repo and needs the owner's explicit confirmation.
+
+### Traps that cost this session real time
+
+- **Editor Pyright diagnostics are stale against the working tree.** Three were raised, three
+  were verified spurious. `mypy` is the gate and stayed clean. Do not spend rounds on them.
+- **Subagents compact silently.** Ledger `compacted` rows appeared mid-run with no notice to
+  the agent or to me. A visibly truncated report is catchable; a subtly degraded one is not.
+  Treat a report that stops mid-sentence as data loss, and re-verify its claims against disk.
+- **Post-gate ledger rows reopen item 52's window every close-out.** Expect one, commit it,
+  re-run the cheap checks, and **disclose that the full gate did not see it** rather than
+  quietly folding it in.
+- **A fixture edited to keep a test green can hide a regression.** Item 20 changed three test
+  seeds; the implementer surfaced it deliberately. Do the same.
+
+### How not to become the fourth stop
+
+Three stops so far — two owner interrupts, one self-declared context limit (see
+`docs/dev/epic-a-chain-design-corrections.md` §12.1). The failure shape is never "wrote bad
+code"; it is **the orchestrator doing the work, or being consumed by one sprint's ceremony.**
+Delegate the sprint *and its close-out*; keep the diff read, the judgment, the commit and the
+gate. If you must hand off, do it at a **gated, committed, clean-tree boundary** — never with
+staged unreviewed work, which is exactly how stop 1 ended.
+
+**§12 of the errata is a data register for a post-Epic-A review. It governs nothing. Do not
+cite it as a rule, and do not implement anything from it.**
+
+---
+
 ## Binding rules — no discretion (copy verbatim — MANDATORY in every handoff)
 <!-- verbatim -->
 
