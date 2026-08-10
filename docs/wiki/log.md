@@ -1071,3 +1071,99 @@ close-out mention is about the wiki loop's own trigger, unchanged);
 
 **This IS a governance change**, unlike the previous two close-out checks — which is exactly
 why two pages needed correcting rather than none.
+
+---
+
+## 2026-08-07 — scoped `/wiki-self-update --since 55f7c1e` (`docs/wiki-enforcement-catchup`)
+
+**Trigger:** the chain's own handoff (`docs/dev/handoffs/fix-chain-gate-integration.md`
+"Post-chain addendum") directed a scoped run against the chain's own diff, not the full
+`.last_ingest_sha`→HEAD window — the chain PR (#105) merged as `c15d080`, a merge commit
+whose **first** parent (`55f7c1e`, PR #104) is the true pre-chain `main` tip; its second
+parent (`f67943c`) is the chain branch's own tip, easily mistaken for the base in the
+opposite order. `--since 55f7c1e` isolates exactly the chain's landed diff.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../CLAUDE.md`](../../CLAUDE.md) and
+[`../governance/enforcement.md`](../governance/enforcement.md). Classifier run over the
+full `55f7c1e..HEAD` diff (32 changed paths); the guard/dispatcher source itself
+(`hooks/bash-dispatcher.sh`, `scripts/enforcement/guards/verify_binary_on_path.py`,
+`scripts/enforcement/adapters/bash_dispatcher.py`) classifies irrelevant — `hooks/` and
+most of `scripts/` are wholesale agent-tooling, not product surface — confirming rather
+than contradicting the handoff's own claim, which named the *concepts* (the
+`verify-binary-on-path` guard, the Bash-dispatcher fold, the `enforcement.md` reach
+declaration) rather than the source files carrying them.
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`verify-binary-on-path` / `verify_binary_on_path` / `bash-dispatcher` / `bash_dispatcher` /
+`claude_hook` / `PreToolUse` / `adapters/` — no page cites any of it, so nothing to
+re-anchor. Per D5, changes to `CLAUDE.md` / `docs/governance/` usually map to no page; this
+diff is Claude-Code-hook-wiring detail (agent tooling), the same category
+`scripts/wiki_relevance.py` already excludes `hooks/` and `scripts/enforcement/` from
+wholesale — not a new product concept the wiki curates (contrast
+[[route-surface]], which cites `edit-write-dispatcher.sh` because that fold is load-bearing
+for *why the security gate is uniform*, a product-security claim, not a hooks-mechanics
+one). No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** (stays `65b0f88f5c2469484a3ed2ad8edbe28991f56df1`,
+2026-07-30) — declared, not silently left, per C-12. This run only diffed
+`55f7c1e..HEAD` (the chain's own slice); the checkpoint already lagged 93 commits behind
+`55f7c1e` before this branch started, covered piecemeal by several branches' own
+lightweight "scoped close-out relevance check" log entries above (which inspect a
+branch's own diff and log the verdict but do not move the formal checkpoint — a second,
+lighter mechanism alongside this full loop). Advancing the checkpoint to HEAD here would
+misrepresent that gap as checked when only its final 2-file slice was. Current drift,
+verified: `python -m scripts.wiki_freshness` → **20 file(s) changed since the last ingest
+(< 75-file block threshold)** — matches the handoff's own "20/75 at chain close" figure
+exactly (this branch's own commits added no further wiki-relevant paths). Safe to leave
+for the next bounded catch-up pass; not a merge blocker for this branch.
+
+## 2026-08-08 — scoped close-out relevance check (`docs/epic-a-chain-design-corrections`)
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 1** —
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md).
+
+**Corrected mid-branch twice (originally recorded as 2 paths / drift 22, then 1 / 21).**
+Both figures were *reasoned*, not measured; the measured value is **drift 20/75,
+unchanged by this branch**, because `docs/dev/RELEASE_ARC.md` was **already** in the
+drift set from earlier branches (verified: `git diff --name-only 65b0f88 HEAD` piped
+through `is_wiki_relevant()` → 20 paths, RELEASE_ARC.md among them). This branch
+therefore adds **zero** new wiki-relevant paths. Recording the arithmetic slip rather
+than just the right number: predicting a drift count instead of running the classifier
+is the same C-12 failure mode as any other unsourced assertion.
+
+The first version of this
+entry counted the new `docs/dev/epic-a-chain-design-corrections.md` as relevant. It is
+not: `tests/test_wiki_relevance_classification.py::test_every_top_level_entry_is_classified`
+failed closed on CI (PR #115, run 31267919219, all three quality jobs) because that file
+was a **new, unclassified** `docs/dev/` top-level entry. It has now been classified into
+`IRRELEVANT_FILES` — a dev-process errata record, the same character as the
+already-listed `docs/dev/gate-window-class-study.md` and the wholesale-excluded
+`docs/dev/diagnosis/`. Consumer enumeration for that gated edit:
+[`../dev/blast-radius/epic-a-chain-design-corrections.md`](../dev/blast-radius/epic-a-chain-design-corrections.md).
+The superseded figures are left visible here rather than silently overwritten.
+
+The other changed paths classify irrelevant and are accounted for, not overlooked:
+`docs/dev/work/items/0056-*.md` / `0057-*.md` and `docs/dev/work/BOARD.md` (per-item
+filings + the file generated from them), `docs/dev/ledger/*.jsonl` (provenance record),
+`docs/dev/blast-radius/` and the handoff (process records).
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`Epic A` / `one sprint` / `stacked` / `plan-approval` / `integration branch`. Exactly one
+hit — [`pages/governance-extraction.md`](pages/governance-extraction.md) line 107 — and it
+cites **`charter.md`'s W-1**, not the `RELEASE_ARC.md` cadence bullet this branch amended.
+That distinction is load-bearing rather than convenient: the amendment is explicitly scoped
+to Epic A as a bounded experiment and explicitly **not** a reversal of W-1's serial-default
+posture, so the claim that page makes ("the operative default is still serial") remains
+true at HEAD and needs no re-anchoring. The new corrections doc is errata for a specific
+epic's execution method — the same process-record category `wiki_relevance.py` already
+excludes wholesale for `docs/dev/diagnosis/` and `docs/dev/handoffs/`; it defaults relevant
+only because it sits at `docs/dev/*.md` top level. No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12.
+The checkpoint remains `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30) and still
+lags the same 93+ commits the entry above documents; this branch inspected only its own
+two-path slice and advancing the checkpoint would misrepresent that backlog as checked.
+Drift after this branch: **20 wiki-relevant files against the 75-file block threshold** —
+unchanged from the entry above, per the measurement in this entry's own correction note.
+Not a merge blocker; the backlog stays queued for the next bounded catch-up pass.

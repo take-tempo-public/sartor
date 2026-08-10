@@ -13,6 +13,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: plan-approval marker survives a PR-channel merge — item 45 closed (`fix/plan-approval-marker-pr-merge`)
+
+The prior session's staged fix design (D3(b): a `SessionStart` reconciler stamping
+the branch + HEAD SHA at `ExitPlanMode` time) was disproven before being built —
+`ExitPlanMode` fires while HEAD is still on `main` (the feature branch is created
+afterward, per `AGENTS.md`), so an approval-time stamp would record `branch=main,
+sha=<main's own tip>`, which is trivially an ancestor of `main` forever. That design
+would have archived a legitimately-armed marker at the first `startup/resume/compact`
+after every single approval. Full refutation, verified against this repo's own reflog
+and marker mtime: `docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "D3(b)
+refuted". Pivoted (owner-approved) to D3(c): the same channel-independent ancestry
+check (a branch either no longer exists, or its tip is now an ancestor of `main` but
+wasn't already an ancestor of the `main` tip recorded at stamp time), moved into the
+**existing** `check-plan-approved.sh` PreToolUse blocker instead of a new hook, with
+the stamp written **late** — on the first production edit after approval, the moment
+`require-feature-branch` guarantees HEAD is a real feature branch, never `main`. No
+new hook file, no `.claude/settings.json` change, no
+`tests/test_governance_hooks_gate.py` edit. Cost-conscious: everything through the
+"has anything changed" decision uses bash builtins and direct ref-file reads, never a
+`git` subprocess, so the steady state (branch unchanged, `main` unmoved) costs nothing
+extra — verified by a runnable test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`)
+that shims `git` and asserts zero invocations, not just claimed in a comment. Owner
+directive (archive, never delete, preserving decision provenance) implemented via a
+new shared `hooks/lib/retire-approved-plan.sh` — `mv`s the retired plan into
+`$HOME/.claude/plans/archive/`, writes a local manifest, and appends a `plan-archived`
+receipt to the session's tracked ledger shard (basename only, never the absolute
+path — this repo is public) — sourced by both `check-plan-approved.sh` and
+`cleanup-plan-on-merge.sh` (which switches from `rm -f` to the same archive path, so
+a plan retired via either channel is retired identically). 18 new regression tests in
+`tests/test_plan_approval_scoping.py`, confirmed RED against the pre-fix hooks before
+the fix landed (`git stash` the two hook files, rerun, confirm failure, restore), then
+GREEN after. Filed a carry-forward item (55) for the `plan-archived` ledger-event
+vocabulary drift this receipt introduces (`docs/dev/prov/SPEC.md`'s own event list
+goes unamended, following the `compacted` precedent, since SPEC.md is itself a C-10
+gated surface) rather than silently absorbing it. **Two more genuine, always-latent
+defects found and fixed while building the archive+receipt mechanism, both
+root-caused via direct reproduction, not guessed at** (full evidence:
+`docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "Falsified"): a `$HOME`-derived
+path handed to `python3` as an argv string is silently wrong on Windows/Git-Bash
+(`$HOME` is auto-translated by MSYS to POSIX form, which a native `python3.exe`
+misinterprets — `/c/Users/x` resolves to `C:\c\Users\x`, which doesn't exist), fixed
+by routing every such path through `cygpath -m` first; and the archive directory name
+embedded the entire sanitized project path, which for a sufficiently long real
+project path pushes `<archive_dir>/manifest.json` past Windows' 260-char `MAX_PATH`
+(reproduced exactly: `plan.md` stayed under the limit, `manifest.json` tipped it
+over), fixed by hashing the project key to 12 hex chars for the directory name
+(matching this project's own fingerprint convention) while keeping the full path in
+the manifest's own content. **A third, caught by this PR's own CI on first push**
+(all three Python-version lint/test jobs failed identically): the new
+`test_missing_git_is_a_no_op`'s own test helper blacklisted every PATH directory
+containing `git`, which on the Linux runner also removed `bash` itself (`git` and
+`bash` share `/usr/bin` there) — `FileNotFoundError: 'bash'`, fetched directly from
+the failed job's log, not guessed at. A test-helper defect, not a hook defect; fixed
+by rebuilding the helper to preserve the small set of binaries the hook needs via a
+per-binary shim instead of blacklisting whole directories.
+
+### Fixed: item 45 reopened same day — a brand-new branch after a merge inherited a stale approval (`fix/plan-approval-branch-switch-gap`)
+
+Found while scoping an unrelated multi-branch orchestration design, not while chasing
+this item. The D3(c) reconciliation just closed above ran its "late-bind the stamp to
+the current branch" block *before* its "reconcile whatever was previously stamped"
+block, so switching straight from an already-merged branch to a brand-new one — the
+ordinary "finish task, start the next one" flow, and the only shape
+`require-feature-branch` actually allows, since it never permits an edit while
+`HEAD == main` — silently overwrote the stamp before the old branch was ever checked.
+This is the same original symptom item 45 was filed against, not a new defect class:
+the committed regression suite only ever exercised same-branch-continuation and
+`HEAD == main` shapes. Two isolated throwaway repros confirmed it, and it then fired
+for real on this session's own actual marker while writing the diagnosis dossier —
+this session had never called `ExitPlanMode`, yet a brand-new branch's first edit was
+allowed. Full evidence: `docs/dev/diagnosis/plan-approval-branch-switch-gap.md`. Fixed
+by reordering the two blocks in `hooks/check-plan-approved.sh` so the previously-stamped
+branch is reconciled — archived and blocked if warranted — before it can be overwritten.
+A candidate belt-and-suspenders addition (force reconciliation on every branch switch,
+independent of the mtime pre-filter) was tried and dropped after empirically confirming
+the existing mtime conditions already catch the real case, keeping the fix minimal — the
+efficiency test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`) still
+passes unmodified. New regression test,
+`test_new_branch_after_merge_requires_fresh_approval`, confirmed RED against the
+just-closed code before the fix, then GREEN after; full 26-test suite (up from 18)
+green, no reruns.
+
+### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
+
+A new PreToolUse guard (`scripts/enforcement/guards/verify_binary_on_path.py`)
+checks the leading binary of each top-level Bash command segment against `PATH`
+before the command runs, blocking with a factual "'X' not found on PATH" message
+instead of letting a multi-step command die deep inside on a bare
+"command not found". Deliberately fail-open: substitutions, subshells, heredocs,
+bare-variable leads, unbalanced quotes, MSYS `/c/`-style paths, `||`-guarded
+segments, and probe commands (`command -v`, `which`) are allowed unchecked —
+stated in the module's own docstring, and the block message explicitly limits its
+claim to the PATH lookup (charter C-0). In the same branch, the three standalone
+PreToolUse/Bash hook wrappers (`block-secrets.sh`, `block-merge-to-main.sh`,
+`ruff-changed.sh`) were folded into one dispatcher
+(`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
+mirroring PX-37's Edit|Write dispatcher — guard decision logic untouched,
+no-short-circuit aggregation, one process per Bash call instead of three.
+Declared reach: Claude Code PreToolUse only (joins the pinned extraction gap in
+`tests/test_enforcement_coverage.py`; no git-native adapter exists for a
+Bash-command-string guard). Known defect found in first live use, filed not fixed:
+the quote-parity tracker misreads heredoc bodies containing prose quotes and can
+false-BLOCK (workaround per its own message: rephrase, e.g. `git commit -F`).
+
+### Changed: item 45 diagnosed end-to-end; both fix shapes characterized, neither implemented (`fix/plan-approval-marker-pr-merge`)
+
+C-7 dossier at `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`: re-verified
+item 45's three inherited observations live, and added an isolated reproduction
+(throwaway `HOME` + git repo) proving `cleanup-plan-on-merge.sh`'s wipe mechanism
+is command-text shape, not "did a merge structurally occur" — a fully merge-shaped
+PR-channel event leaves the plan-approval marker armed. Both candidate fix shapes
+characterized: a `gh pr merge` command matcher is structurally insufficient
+(misses server-side auto-merge — enabled in this repo — GitHub-UI merges, and
+other-terminal merges); the sound variant of SessionStart reconciliation (an
+additive approval-time stamp + branch-ancestry check) is designed and staged in
+the dossier but deliberately **not built** — a first-of-its-kind mechanism that
+autonomously deletes approval state warrants an explicit owner decision before
+being written. Item 45 stays open; no `verified_by` claimed.
+
+### Fixed: `hooks/bash-dispatcher.sh` executable bit + doc-link false positives (`fix/chain-gate-integration`)
+
+Two gate failures introduced by post-gate artifacts that were never re-gated
+against the final committed tree: `hooks/bash-dispatcher.sh` was committed at git
+mode 100644 (caught by `test_every_hook_script_is_executable_in_the_index` —
+third sighting of the class `dfe1767` first fixed), and two handoffs' inline
+regex literal `](`-sequence parsed as a markdown link and tripped
+`test_no_broken_cross_document_links_or_cites` (fixed per D5 cite-don't-restate:
+name the symbol's home, don't restate the pattern).
+
+### Added: `groups:` in `.github/dependabot.yml` — collapse same-ecosystem minor/patch bumps into one PR per ecosystem (`chore/dependabot-groups`)
+
+11 dependency-upgrade PRs were open and ungrouped (8 fully green, never merged — a
+separate merge-policy gap, tracked on `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward
+ledger, not fixed here). Added a `groups:` key to each of the three `update:` blocks
+(`pip`, `github-actions`, `npm` in `/docs-site`), grouping `minor` + `patch`
+`update-types` per ecosystem so dependabot's next scheduled run opens roughly one
+grouped PR per ecosystem instead of one PR per dependency. `major` is deliberately
+left out of every group so a breaking bump still opens its own individually-reviewable
+PR. Schema follows GitHub's documented `groups` reference exactly; validated locally
+by parsing the file with `yaml.safe_load` (no server-side dependabot dry-run exists).
+**Verifying the resulting grouped PRs actually land grouped is explicitly out of scope
+for this commit** — dependabot only re-evaluates config on its own schedule, so this is
+next-morning, post-merge work, not tonight's.
+
 ### Added: `scripts/flake_rates.py` — real per-test CI flake rates from job logs, the closure bar's `verified_by` artifact (`feat/flake-rate-measurement`)
 
 "The UX suite is flaky" had never been a number with a citable source. Three prior
