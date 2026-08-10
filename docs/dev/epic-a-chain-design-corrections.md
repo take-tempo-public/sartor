@@ -665,6 +665,30 @@ assume it.
 - **Item 20 ≈ 1.23 M** — implementer 260,174 · refuter 142,845 · fixer 262,795 · closer 197,443 · 4 auditors 284,896 · audit-fixer 79,348
 - **Calibration:** the 2026-08-06 pre-march chain spent **~1.4 M for 3 queue items + 1 integration case**. This run is roughly **2× per unit of work**, and bought adversarial review plus 13 grounding audits with the difference.
 
+**F13 — the harness's own `run_in_background` is NOT equivalent to `nohup … &`, and §11.9's
+wording did not make that distinction.** A4's gate was launched with the Bash tool's
+`run_in_background: true` plus a direct `> file 2>&1` redirect. The harness reported
+`status: killed` partway through, and unlike F2 the work genuinely died with it: the log
+stopped exactly at `=== gate: pytest -m "not ux" -n auto ===` and `tasklist` showed **zero**
+surviving Python processes. `ruff` / `ruff format` / `mypy` had already passed (364 files);
+the pytest tier never ran.
+
+**The mechanism is ownership, not redirection.** §11.9's existing rule — *"launch it detached
+with a direct redirect (`> file 2>&1`), never `| tee`"* — fixes F2 (the descriptor dying with
+the wrapper) but does **not** fix this: with `run_in_background`, the harness owns the process
+tree and can cull it wholesale, taking a correctly-redirected gate with it. §11.9's own worked
+example already says `nohup python -u -m scripts.gate > file 2>&1 &`, and **`nohup … &` is
+load-bearing there, not decoration** — it is what detaches the run from the harness's
+lifecycle. The A4 orchestrator read the redirect rule, applied it via the harness's
+backgrounding instead of `nohup`, and lost ~4 minutes of gate.
+
+**Correction, cheap and textual:** state in §11.9 that the gate is launched with `nohup … &`
+from a *foreground* call (which returns immediately), and that the harness's own
+`run_in_background` is **not** an acceptable substitute for it — then poll the log in short
+windows. F5 (waiters culled unpredictably) is the same underlying property seen from the
+waiter's side; this is it seen from the launched-work's side. **Unenforced** — nothing checks
+which backgrounding mechanism a future orchestrator reaches for.
+
 **F12 deserves its own note, because the mitigation is free and the failure is silent.** F11
 and F12 are the same harness property seen from opposite ends: **a background task's
 completion notification is delivered to the orchestrator, and only to the orchestrator.** For
