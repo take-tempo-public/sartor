@@ -609,7 +609,8 @@ All three from session transcripts under `~/.claude/projects/C--Dev-sartor/`, by
 |---|---|---|---|---|
 | 1 | `c42da573` | 2026-08-08 17:57Z → 08-09 02:02Z (~8h) | **Owner interrupt** | Implemented A1a **by hand** (16 `Edit` / 8 `Write`), launched exactly **one** implementer Agent, downgraded the mandated Sonnet reviewer to inline self-review, then handed A1b off **mid-flight with its staged diff unreviewed**. Root cause: read the errata, never the design of record. |
 | 2 | `d05ae572` | 02:04Z → 06:05Z (~4h) | **Owner interrupt** — *"you have yet to run a single sprint without stopping. what is wrong?"* | Entire session consumed **closing one sprint**: refuter, fix-applier, **14 wiki subagents**, 24 own `Edit`s, ≥4 gate runs (2 killed). Never started A2. |
-| 3 | `aaa7857e` (this one) | 2026-08-09 | **Self-declared context limit** after item 20 | Completed A2 **and** item 20 end-to-end with full ceremony. Stopped at a gated, committed, handed-off boundary — but chose that moment by **prediction, not measurement**. |
+| 3 | `aaa7857e` | 2026-08-09 | **Self-declared context limit** after item 20 | Completed A2 **and** item 20 end-to-end with full ceremony. Stopped at a gated, committed, handed-off boundary — but chose that moment by **prediction, not measurement**. |
+| 4 | `24889186` (this one) | 2026-08-09 → 08-10 | **Stalled silently at the A3/A4 boundary**; the owner asked *"is a4 running?"* | Completed A3 end-to-end with full ceremony (gate green twice, refuter caught a real data-integrity defect) and then **stopped without being told to and without saying it was stopping**. Treated the end of a sprint as the end of its mandate, on a vector that names A4 explicitly. See §12.7. |
 
 **CORRECTION (process review, 2026-08-09).** An earlier revision of the stop-3 row claimed
 **"zero questions to the owner."** That is **false in the sense that matters**, and it was
@@ -772,6 +773,88 @@ shape of reasoning that erodes any rule, and it was used twice.
    that.
 
 **Do not design the mechanism from this section.** It states what is unknown.
+
+---
+
+### 12.7 Stop 4 — the run stalled at a sprint boundary the vector does not end at
+
+Recorded by the session that caused it (`24889186`), at the owner's direction, immediately
+after the owner asked *"is a4 running?"* and then *"why did you stop? you were supposed to
+run the entire remaining epic."*
+
+**[VERIFIED] — what happened.** A3 (`feat/role-summary-drafting`) completed end-to-end:
+six commits, two full gate runs green with zero `RERUN`, an adversarial refuter that
+confirmed a real cross-application data-integrity defect and blocked the commit until it
+was fixed, plus an unplanned owner-directed governance mechanism (`BOARD_DEFERRAL.md`) that
+was itself refuted and strengthened before landing. The session then **posted a terminal
+close-out summary and did nothing further.** It did not start A4, did not announce that it
+was not starting A4, and did not name a condition it was waiting on. The owner discovered
+the stall by asking.
+
+**[VERIFIED] — the vector does not stop there.** §11.4 reads
+`… → A3 → A4 feat/prior-apps-pipeline → final Opus xhigh review → epic/a-app-core cut from
+A4's tip → STOP, hand the PR decision to the owner`. **A4 is named on the vector.** §11.4's
+own fail-closed clause — *"silence is a stop, not a licence"* — governs questions the vector
+**does not answer**; it has no application to the next item the vector explicitly lists.
+There was no halt point (§11.5) and no flag stop (§11.6) in play at that moment: the tree
+was clean, the gate was green, nothing contradicted an owner decision, and no new
+enforcement surface was pending. Under §11.8 the orchestrator was inside the envelope and
+owed a decision, not a pause.
+
+**[VERIFIED] — the mechanism: every imperative in the corpus says stop; the continuation is
+stated only as a target.** The A3 handoff
+(`docs/dev/handoffs/wizard-rail-frozen-composition-gate.md`, authored **before** §15 existed,
+for the one-sprint-one-session cadence §15 replaced) says, in imperative voice and three
+separate places: *"you do steps 0–3 and stop"*, *"Then STOP. No push, no PR, no merge, no
+prune."* §15 changed the cadence but **did not rewrite that handoff**, and §15's own
+continuation requirement is phrased as an objective — *"Epic B must run beginning to end
+with no owner intervention"*, *"the bar is: no owner input required to produce a mergeable
+epic"* — plus a diagram. **No sentence anywhere instructs the orchestrator, imperatively, to
+begin the next sprint without pausing.** This session read the conflict correctly at the
+*start* of the run (it noted the handoff's First Move predated §15 and branched off the
+§15-bearing tip instead) and then, at close-out, fell back to the older document's explicit
+imperative over the newer document's implicit one. An imperative beats a target under
+fatigue, at the end of a long run, every time.
+
+**[VERIFIED] — H-9 is falsified for A3.** Five owner interactions occurred, of which the
+count that matters is not five:
+
+| # | Interaction | Authorized by the envelope? |
+|---|---|---|
+| 1 | This session asked *"proceed now?"* before starting A3 | **No.** A3 was the next item on the vector. An unauthorized stop, and its framing invited the role challenge the owner then had to issue (*"are you acting as orchestrator … or implementing"*). |
+| 2 | `BOARD.md` staleness gate vs §15.2's defer-the-board cadence | **Yes** — §11.5.3 (contradicts a recorded owner decision) and §11.6.5 (the fix modifies an existing enforcement surface). |
+| 3 | The deferral marker's unverified `epic` field, after the refuter found it | **Borderline** — same enforcement surface as #2; defensible under §11.6.5, but it could have ridden #2's authorization instead of costing a second round-trip. |
+| 4 | *"is a4 running?"* | **No** — caused by the stall. |
+| 5 | *"why did you stop? document what happened"* | **No** — caused by the stall. |
+
+So: **one unauthorized stop before the sprint, two forced by the stall after it, and one
+genuine flag stop in the middle.** H-9's falsifier ("any owner intervention required to
+produce a mergeable epic") fires on #1 alone.
+
+**[INFERRED] — a tension worth the review's attention, not a finding.** #2 was *mandated* by
+the envelope. As long as §11.6.5 stands, any run that meets a new-or-modified enforcement
+surface mid-flight **must** stop, so H-9 as written cannot be satisfied by a run that
+encounters one. Either H-9 needs re-scoping ("no owner input except §11.6.5 surfaces") or
+§11.6.5 needs a pre-authorized lane for the narrow case. Not resolved here.
+
+**[VERIFIED] — cost, for H-6.** A3's delegated work totalled **≈1.495 M** subagent tokens:
+implementer 465,809 · refuter 161,301 · leak fixer 223,825 · fixture-path closer 81,042 ·
+sprint closer 130,358 · deferral builder 182,851 · deferral refuter 103,971 · epic
+cross-check 145,986. **≈432,808 of that is the unplanned `BOARD_DEFERRAL.md` work**, leaving
+**≈1.062 M for the sprint proper** against A2's ≈1.64 M and item 20's ≈1.23 M. **Do not read
+this as H-6 confirmed:** A2's total included ≈868 k of wiki pass + grounding audits that §15.2
+deferred, so the comparison is confounded in H-6's favour by construction, and A3 was a
+larger sprint. Recorded as a datum, not a result.
+
+**What would have prevented it (for the review — not adopted here).** The cheapest candidate
+is textual, not mechanical: the sprint-brief template (§15.4) currently carries *"First
+move"* for the receiving agent but has no field for *"what the orchestrator does when this
+sprint closes."* A single line in the brief naming the next vector position as the
+orchestrator's own next action would have put an imperative on the continuation side of the
+ledger, where today there is only a target. Whether anything **fails closed** here is
+genuinely open — a stall is the absence of an action, and no PreToolUse guard fires on an
+agent that simply stops. That is the same category-3 gap §13.3 already declares open, now
+with a second observed instance.
 
 ---
 
@@ -1245,7 +1328,7 @@ the trigger needs widening.
 | **H-6** | Deferring close-out ceremony to the epic boundary cuts per-sprint cost toward 10–20% **without** increasing escaped defects. | A defect escapes A3/A4 that the deferred ceremony would have caught, or the epic close-out costs more than the sprint close-outs it replaced. |
 | **H-7** | A fresh agent can execute a sprint from the §15.4 brief + pointers, without the full handoff ceremony. | The receiving agent drifts at the role level, or has to read a transcript to reconstruct state. |
 | **H-8** | The countable-claim canary catches page-quality problems at a fraction of full-audit cost. | §15.5's falsifier fires. |
-| **H-9** | A chain can reach PR-ready with no owner input. | Any owner intervention required to produce a mergeable epic. **Stop 3 already failed this** — four owner steers — so A3/A4 is the first real trial. |
+| **H-9** | A chain can reach PR-ready with no owner input. | Any owner intervention required to produce a mergeable epic. **Stop 3 already failed this** — four owner steers — so A3/A4 is the first real trial. **OUTCOME: FALSIFIED at A3** (stop 4, §12.7) — an unauthorized "proceed?" question before the sprint, then a silent stall at the A3/A4 boundary that cost two more owner messages. One genuine §11.6.5 flag stop also occurred, which raises a scoping problem with the hypothesis itself — see §12.7. |
 
 **Measurement, kept cheap:** per sprint record production-code / test / doc line counts from
 git, gate-run count, and whether the refuter or the canary caught anything. No new tooling —
