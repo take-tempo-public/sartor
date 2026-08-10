@@ -412,3 +412,189 @@ per-request cost; tracked as
   docstring names (computed offenders are first-party Python import fan-in
   only). Terminal counts reported in the implementer's report for this
   sprint, per the same convention the A2/A3 dossiers used.
+
+---
+
+# Second surface (same branch) — the unhandled keyless-client 500
+
+> **Status:** enumeration below written BEFORE the first edit to `analyzer.py`.
+> **Trigger:** PR #117's required check went red on
+> `tests/ux/regression/test_20260809_wizard_rail_frozen_gate.py::test_resumed_application_with_a_frozen_composition_can_reach_step5`,
+> which omits `install_llm_stubs` and therefore drives the real
+> `analyzer.draft_positioning_summary` through `POST
+> /api/applications/<id>/draft-summary`.
+> **Gate status:** `blueprints/applications.py` and `analyzer.py` are **not** in
+> `scripts/enforcement/blast_radius.py`'s gated registry — verified, no
+> `require-consumer-enumeration` hook fires here. This section exists because a
+> handler pattern repeated across five blueprint modules is a shared contract
+> regardless of whether a hook agrees (C-10's ordering discipline is the rule;
+> the hook is only one enforcement of it).
+
+## Surface
+
+**Observed mechanism (from the sprint's diagnosis, not re-derived here):** with
+no `ANTHROPIC_API_KEY` and no `.api_key` file, `web_infra.clients._get_client()`
+returns `anthropic.Anthropic(api_key="")`. The SDK accepts that at construction
+time and only refuses at request-build time, inside
+`anthropic/_client.py::_validate_headers`, with a bare **`TypeError`**
+("Could not resolve authentication method…"). Confirmed against the installed
+SDK (`anthropic==0.88.0`): `_api_key_auth` returns `{"X-Api-Key": ""}` for an
+empty key, `_validate_headers` sees a falsy header value, and falls through to
+the `raise TypeError`. `TypeError` matches neither of the two handlers every LLM
+route pairs (`anthropic.APIConnectionError`, `analyzer.LLMResponseError`), so it
+escapes to Flask as a **500**.
+
+The single production surface changed is therefore **`analyzer._call_llm_streaming`**
+— the one place in the codebase that touches `client.messages` (grep-verified:
+`analyzer.py:1247` is the only `client.messages.*` outside `evals/runner.py`,
+which has its own client factory). `_call_llm` is a thin drain of that
+generator, so covering the generator covers both.
+
+**One new symbol:** `analyzer.LLMConfigurationError`, a **subclass of
+`analyzer.LLMResponseError`**. The subclassing is the load-bearing design
+decision, not an incidental one — see `## Options weighed` below.
+
+## Enumeration
+
+Whole tree, `Grep`/ripgrep, run before the first edit:
+
+```
+rg -n "client\.messages" -g "*.py"        -> analyzer.py:1247 (the only call
+                                             site behind every blueprint route)
+                                             evals/runner.py:369,554 (separate
+                                             client factory, evals only)
+                                             + test doubles only
+rg -n "except anthropic.APIConnectionError" blueprints/
+                                          -> 20 sites / 6 modules
+rg -n "except LLMResponseError" blueprints/
+                                          -> 19 sites / 5 modules
+rg -n "LLMResponseError" -g "*.py"        -> analyzer (def + 7 raise/doc sites),
+                                             blueprints/{analysis,applications,
+                                             generation,corpus/proposals,
+                                             corpus/skills}, evals/runner.py:817,
+                                             scripts/smoke_phase_b1.py:151,175,
+                                             onboarding/extract_experiences.py
+                                             (docstring), 6 test modules
+rg -n "_get_client" -g "*.py"             -> web_infra/clients.py (def) +
+                                             8 blueprint modules + evals +
+                                             scripts/vector_before_after_eval.py
+```
+
+**Correction to the sprint brief's own count (recorded, not smoothed over):**
+the brief states the two-exception pattern repeats *"17 times across 4 files"*.
+The grep-complete count is **19 `except LLMResponseError` sites across 5
+modules** — the brief's enumeration omitted `blueprints/corpus/proposals.py`
+(2) and `blueprints/corpus/skills.py` (1), and `blueprints/assistant.py` (which
+it counted) actually has **no** `LLMResponseError` handler at all. This is the
+"any hand-maintained consumer list is stale until re-derived" case C-10 names.
+
+## Consumers
+
+Every site below inherits the new behavior **without an edit**, because
+`LLMConfigurationError` subclasses the exception each already catches.
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 49 | `analyzer.py:1149` `_call_llm_streaming` | **edit** | Pre-check the client's resolvable auth inside the existing `try:` (so the `finally:` still emits the `status="error"` telemetry row it emits today) and raise `LLMConfigurationError`; plus a message-matched conversion of the SDK's own `TypeError` as a version-drift backstop. |
+| 50 | `analyzer.py:35` `LLMResponseError` | **no change** | Untouched; the new class extends it. Nothing anywhere does `type(exc) is LLMResponseError` (grep-verified) so no `isinstance`-vs-identity trap. |
+| 51 | `analyzer.py:1299` `_call_llm` | **no change** | Pure drain of #49 — inherits the behavior. |
+| 52 | `analyzer.py:1431/1349` `_parse_or_retry` / `_parse_or_retry_streaming` | **no change** | Both catch only `(json.JSONDecodeError, ValidationError)`, so a config error propagates on the **first** attempt and is never re-tried into a second (would-be) call. Checked before editing, not assumed. |
+| 53 | `blueprints/analysis.py:277,375,476,813` | **no change** | 4 `except LLMResponseError` sites → 502 + `detail=exc.validation_error`, which now carries the credential cause verbatim. |
+| 54 | `blueprints/applications.py:1996,2140,2272,2395,2938,3251,3599,3703,3788` | **no change** | 9 sites; `:2272` is the one the failing UX test hits. |
+| 55 | `blueprints/generation.py:970,1444,1568` | **no change** | 3 sites (`:1444` is inside the SSE generator → emits an `error` event with `http_status: 502` rather than a 500). |
+| 56 | `blueprints/corpus/proposals.py:143,398` | **no change** | 2 sites the brief's list omitted. |
+| 57 | `blueprints/corpus/skills.py:322` | **no change** | 1 site the brief's list omitted. |
+| 58 | `blueprints/assistant.py:270-278` | **no change** | Has **no** `LLMResponseError` handler, but its SSE generator already ends in a blanket `except Exception` → `_sse("error", …, http_status 500)`. It never produced an unhandled Flask 500 for this defect and does not now; behavior is unchanged there. Named rather than silently omitted. |
+| 59 | `evals/runner.py:817` | **no change** | Records `iter_status="pipeline_error"` with `exc.validation_error` as the reason; a credential failure now lands there with a clear reason instead of in the adjacent `except Exception` with a raw `TypeError` string. Strictly better, no semantic damage. |
+| 60 | `scripts/smoke_phase_b1.py:151,175` | **no change** | Same: a clearer message on the same branch. |
+| 61 | `web_infra/clients.py:47` `_get_client` | **no change — deliberately** | See `## Options weighed` (a). |
+| 62 | `tests/ux/stubs.py:488` `install_llm_stubs` | **no change** | Patches `_get_client` to `lambda: None`. `None` exposes neither credential slot, so the pre-check passes it straight through and an unstubbed call still fails with the same `AttributeError` → 500 it always did. The missing-stub signal is deliberately **not** relabeled: `tests/ux/conftest.py:216` red-lines the `page` fixture on `resp.status >= 500` either way, but keeping the original shape means the next omission looks exactly like this one did. "Did the fix mask its own defect class?" is the question that matters here, and the answer is no. |
+| 62a | `tests/test_extract_experiences.py` (9 tests), `tests/test_analyzer_model_selection.py` | **no change — but ONLY because the check was tightened for them** | **Found by direct probe before running anything, not after a red suite.** These pass `MagicMock(spec=anthropic.Anthropic)`. The SDK sets `api_key` as an *instance* attribute, so it is absent from `dir(anthropic.Anthropic)` and a spec'd mock raises `AttributeError` for it — a naive `getattr(client, "api_key", None)` pre-check reads that as "no credential" and would have failed all of them. The shipped check therefore refuses only on **present-and-falsy** slots and passes through anything exposing neither. Probe: `'api_key' in dir(anthropic.Anthropic)` → `False`; `MagicMock(spec=anthropic.Anthropic).api_key` → `AttributeError`; `anthropic.Anthropic(api_key="").api_key` → `''`, `.auth_token` → `None`. |
+| 63 | `analyzer.py`'s 21 `_demo_mode_active()` short-circuits | **no change** | Every call kind returns canned output before reaching #49, so `_DemoClient` (which has no `api_key`) never trips the new pre-check. |
+
+**Negative results (findings, recorded deliberately):**
+
+- **No `PROMPT_VERSION` bump is required.** No prompt text, persona constant,
+  or user-prompt builder changes — grep-verified: the edit touches only the
+  pre-flight of `_call_llm_streaming`, above `stream_kwargs`.
+- **No route file changes at all.** Zero edits under `blueprints/`, so
+  `route-security-lint` has nothing to fire on and no route's happy path,
+  status code, or body shape moves.
+- **`tests/test_egress_allowlist.py:SANCTIONED_EGRESS_FILES` is unaffected** —
+  no module gains or loses an `anthropic` import (`analyzer.py` already
+  imports it).
+
+## Options weighed (and why the two rejected ones were rejected)
+
+**(a) Fail fast in `web_infra.clients._get_client()` — REJECTED, and not merely
+as "broader".** It is *wrong at that boundary*: several routes call
+`_get_client()` eagerly and then hand the client to an analyzer function that
+**short-circuits without any LLM call**. `analyzer.draft_positioning_summary`
+(`analyzer.py:4222-4223`) returns the source summary unchanged when the context
+carries no JD; `analyzer.py` has **21** `_demo_mode_active()` short-circuits of
+the same shape. Raising in `_get_client()` would convert those
+currently-working, deliberately-free, keyless paths into errors — a real
+regression traded for the fix. Worse, the raised error would have to subclass
+something the 17-plus sites already catch anyway, so it buys no coverage that
+(b) does not, while adding blast radius across `evals/`, `scripts/`, and
+`blueprints/diagnostics.py`.
+
+**(c) Per-route catch at `/draft-summary` only — REJECTED.** It fixes the one
+red check and leaves the identical hole at the other 18 `LLMResponseError`
+sites plus every future one. C-11: the recurrence is the whole point; a fix
+scoped to the instance that happened to be observed is the note-instead-of-gate
+failure mode.
+
+**(b) Catch at the analyzer boundary — CHOSEN.** It is the narrowest place that
+is also complete: one function, the only `client.messages` call site, reached by
+every one of the 19 handler sites. A blanket `except TypeError` there was
+explicitly **not** used — it would swallow genuine programming errors (a wrong
+argument, a `None` where a dict is expected) and turn real bugs into polite
+messages. Instead:
+
+1. A **pre-check** on the client's resolvable auth (`api_key` / `auth_token`),
+   raising before any SDK call — deterministic, no message matching. It refuses
+   only on a **positive determination** (both slots present and falsy) and
+   passes through any object exposing neither, which is what keeps row 62 and
+   row 62a's existing behaviors intact. This covers every path to the observed
+   `TypeError` in `anthropic==0.88.0` (`_api_key_auth`/`_bearer_auth` are the
+   only two contributors to the headers `_validate_headers` inspects).
+2. A **message-matched conversion** of `TypeError` (only when
+   `"Could not resolve authentication method"` is in the message) as the
+   SDK-version-drift backstop. Narrow by construction: any other `TypeError`
+   re-raises untouched and still reaches the developer as a 500.
+
+**Known limits (stated, not papered over — C-0):**
+
+- The pre-check reads `api_key`/`auth_token` attributes. A future auth mode
+  that resolves through neither (e.g. `AnthropicBedrock` / `AnthropicVertex`)
+  would be a **false positive**. Not a live risk today: `_get_client()`
+  constructs `anthropic.Anthropic(api_key=...)` and nothing else, and
+  `_call_llm_streaming` is typed `client: anthropic.Anthropic`.
+- The resulting HTTP status is **502**, and the route's user-facing `error`
+  string still says "malformed" (it is the existing `LLMResponseError` copy at
+  19 untouched sites). The *cause* is carried verbatim in the response `detail`
+  and in the route's own `logger.error` line. Making the status a 503 with
+  "AI service is not configured" copy would require editing all 19 sites —
+  deferred rather than done silently; see `## Deferred` #4.
+
+## Deferred
+
+4. **The 19 handler sites keep 502/"malformed" copy for a configuration
+   error.** Correct status/copy would be 503 + "the AI service is not
+   configured". Doing it means 19 edits across 5 modules on a branch whose job
+   is a red check, so it is filed, not done. The information is not lost — the
+   `detail` field and the server log both name the cause exactly.
+
+## Verification (this surface)
+
+- **`tests/test_llm_credential_gate.py`** (new) pins all four halves: the
+  keyless client raises `LLMConfigurationError` **and never touches
+  `client.messages`**; a keyed client's path is untouched; a genuine `TypeError`
+  raised from inside the stream is **not** converted (the anti-blanket-catch
+  assertion); and `POST /api/applications/<id>/draft-summary` with a keyless
+  client returns a deliberate non-500 naming the cause.
+- A missed consumer here **cannot be silent**: every site either catches
+  `LLMResponseError` (inherits the new class) or already has a blanket
+  `except Exception`. The failure mode of getting this wrong is a *louder*
+  error, not a quieter one.

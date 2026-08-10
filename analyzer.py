@@ -46,6 +46,102 @@ class LLMResponseError(Exception):
         super().__init__(f"LLM response failed validation: {validation_error}")
 
 
+class LLMConfigurationError(LLMResponseError):
+    """Raised when no Anthropic credential resolves, so no call can be attempted.
+
+    **Why it subclasses `LLMResponseError` — this is deliberate, not sloppy
+    taxonomy.** Every LLM route in `blueprints/` pairs exactly two handlers
+    (`anthropic.APIConnectionError` + `LLMResponseError`); a keyless client
+    matched neither, because the Anthropic SDK refuses a credential-less request
+    with a bare **`TypeError`** raised at request-build time inside
+    `anthropic/_client.py::_validate_headers` — before any network I/O, so
+    `APIConnectionError` never fires. That `TypeError` escaped to Flask as an
+    unhandled **500** (observed: PR #117's required check, 3/3 in CI, from
+    `POST /api/applications/<id>/draft-summary`). Inheriting from
+    `LLMResponseError` gives all 19 `except LLMResponseError` sites across five
+    blueprint modules a coherent, cause-naming failure **without editing any of
+    them** — the alternative, a standalone class, would have left every one of
+    them 500-ing, which is the defect itself.
+
+    Known limit (C-0): the resulting HTTP status stays 502 and those sites' copy
+    still says "malformed". The cause travels verbatim in `validation_error`,
+    which every one of them already puts in the response `detail` and in its own
+    `logger.error` line. Correcting status + copy means 19 edits and is deferred
+    (`docs/dev/blast-radius/prior-apps-pipeline.md`, second surface, Deferred #4).
+    """
+
+    def __init__(self, detail: str) -> None:
+        """Store the credential cause in the `validation_error` slot callers already read."""
+        super().__init__(raw="", validation_error=detail)
+
+    def __str__(self) -> str:
+        """Report the configuration cause without `LLMResponseError`'s validation framing."""
+        return f"Anthropic client is not configured: {self.validation_error}"
+
+
+# Substring of the Anthropic SDK's own credential-refusal message
+# (`anthropic/_client.py::_validate_headers`, verified against anthropic==0.88.0).
+# Used ONLY to re-label that one exception — see `_call_llm_streaming`.
+_SDK_NO_AUTH_MARKER = "Could not resolve authentication method"
+
+# Human-facing remediation, kept in one place so the route `detail`, the server
+# log, and the test assertion all read the same string.
+_NO_CREDENTIAL_DETAIL = (
+    "the Anthropic client resolved no credential (neither `api_key` nor "
+    "`auth_token` is set). Set ANTHROPIC_API_KEY, or create a `.api_key` file "
+    "at the repo root."
+)
+
+
+def _assert_client_has_credential(client: anthropic.Anthropic, call_kind: str) -> None:
+    """Refuse the call up front when the client is KNOWN to carry no credential.
+
+    The SDK itself only refuses at request-build time and does it with a bare
+    `TypeError`, which no caller in this codebase catches (see
+    `LLMConfigurationError`). Checking here — the single `client.messages` call
+    site — converts a server crash into a deliberate, catchable domain error at
+    all 19 handler sites at once.
+
+    Deliberately NOT a blanket `except TypeError` around the SDK call: that
+    would swallow genuine programming errors (a wrong argument, a `None` where a
+    dict is expected) and turn real bugs into polite messages.
+
+    **Positive determination only.** The check refuses when both credential
+    slots are PRESENT AND FALSY (`anthropic.Anthropic(api_key="")` — exactly
+    what `web_infra.clients._get_client()` builds with no key on the box).
+    An object exposing neither slot is passed straight through untouched, which
+    is not a nicety — it is what keeps two existing behaviors intact:
+
+    - `MagicMock(spec=anthropic.Anthropic)` (nine tests in
+      `tests/test_extract_experiences.py`, plus `test_analyzer_model_selection`)
+      exposes no `api_key` at all, because the SDK declares it as an
+      instance attribute, so it is absent from `dir(anthropic.Anthropic)` and a
+      spec'd mock refuses it. A naive `getattr(..., None)` check would have
+      failed every one of those tests.
+    - `tests/ux/stubs.py::install_llm_stubs` patches `_get_client` to return
+      `None`. Passing that through means an UNSTUBBED analyzer call still fails
+      with the same loud `AttributeError` it always did, instead of being
+      relabeled as a configuration problem — the missing-stub signal keeps its
+      original shape.
+
+    Known limit (C-0): a credential resolved through neither slot (an
+    `AnthropicBedrock` / `AnthropicVertex` client) is not inspectable here.
+    Not reachable today — `_get_client()` constructs `anthropic.Anthropic(
+    api_key=...)` and nothing else — and the message-matched `TypeError`
+    backstop in `_call_llm_streaming` covers whatever this cannot see.
+    """
+    unset = object()
+    api_key = getattr(client, "api_key", unset)
+    auth_token = getattr(client, "auth_token", unset)
+    if api_key is unset and auth_token is unset:
+        return  # not an inspectable SDK client — leave its own failure mode alone
+    if api_key is not unset and api_key:
+        return
+    if auth_token is not unset and auth_token:
+        return
+    raise LLMConfigurationError(f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}")
+
+
 # Required keys per call. _parse_or_retry uses these to detect shape drift
 # (e.g. the model returns valid JSON but omits a section) and trigger a retry.
 # Keep in sync with the JSON spec in analyze()/generate() prompts.
@@ -1244,11 +1340,27 @@ def _call_llm_streaming(
         }
         if effective_model == SONNET_MODEL:
             stream_kwargs["thinking"] = {"type": "disabled"}
+        # Inside the try (not above it) on purpose: the `finally` below still
+        # emits the one `status="error"` telemetry row a failed call has always
+        # emitted, so this changes the failure's TYPE, not its observability.
+        _assert_client_has_credential(client, call_kind)
         with client.messages.stream(**stream_kwargs) as stream:
             for delta in stream.text_stream:
                 chunks.append(delta)
                 yield delta
             final = stream.get_final_message()
+    except TypeError as exc:
+        status = "error"
+        # Backstop for SDK drift only. The pre-check above already covers every
+        # path to this message in anthropic==0.88.0; if a later SDK grows another
+        # one, re-label it here rather than 500. Narrow BY CONSTRUCTION — the
+        # message match means no ordinary TypeError (a real programming error)
+        # can be swallowed; anything else re-raises untouched.
+        if _SDK_NO_AUTH_MARKER in str(exc):
+            raise LLMConfigurationError(
+                f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}"
+            ) from exc
+        raise
     except Exception:
         status = "error"
         raise

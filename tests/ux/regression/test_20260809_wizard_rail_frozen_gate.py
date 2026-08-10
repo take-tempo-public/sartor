@@ -326,7 +326,7 @@ def _seed_frozen_step6_application(ux_app: ModuleType) -> int:
 @pytest.mark.ux
 @pytest.mark.slow
 def test_resumed_application_with_a_frozen_composition_can_reach_step5(
-    page: Page, live_server: str, ux_app: ModuleType
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The rival the widened instrument exists to catch.
 
@@ -337,6 +337,13 @@ def test_resumed_application_with_a_frozen_composition_can_reach_step5(
     and a lock-out the moment it isn't. The payload now carries the fact.
     """
     aid = _seed_frozen_step6_application(ux_app)
+    # Not optional here, despite this test never asserting on an LLM result: the
+    # resume drives `loadComposition()`, whose once-per-application positioning
+    # auto-fire POSTs `/draft-summary` and reached the REAL Sonnet call. On a dev
+    # machine with `.api_key` that billed (7 confirmed rows for `alice` in
+    # `logs/llm_calls.jsonl`); in CI, with no key, it 500'd and red-lined the
+    # `page` fixture's `assert not server_errors`.
+    install_llm_stubs(ux_app, monkeypatch)
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
