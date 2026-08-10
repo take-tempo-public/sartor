@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed: prior applications live in Pipeline now, not a second per-candidate list (`feat/prior-apps-pipeline`, Epic A / A4)
+
+The Tailor tab's "Prior applications" panel — a per-candidate list of past
+applications, foldable, with its own status filter and show-retired toggle —
+duplicated what the cross-candidate Pipeline board (Wave 2 recruiter tier,
+F-17) already showed. Removed. Clicking a Pipeline row now opens the shared
+application-detail modal **in place**, on the Pipeline tab, instead of first
+switching to the Tailor tab as it used to.
+
+Everything the panel's cards offered beyond browsing is unchanged and reached
+the same way it always was: the detail modal's status transitions
+(Mark submitted / Got interview / …), retire/restore, editable title/company,
+and "Resume in wizard". Two panel-card-only affordances have no Pipeline
+equivalent and are not carried forward: the per-card "N to review"
+pending-proposals pill (the count is still visible inside the detail modal)
+and echoing an edited company back onto a list card (the modal's own
+re-hydration on reopen still proves the edit persisted).
+
+`ui_pages/selectors.py`'s `PriorApps` class is now scoped to the shared modal
+only (`MODAL`, `RESUME_BUTTON`, `TITLE_INPUT`, `COMPANY_INPUT`); the
+now-removed `PANEL`, `LIST`, `PENDING_PILL`, `card()`, `card_company()`
+members are gone. `ui_pages/prior_apps.py`'s `PriorAppsPage.open_detail()`
+opens the modal directly rather than replaying a panel-card click.
+
 ### Added: JD-fitted role intros, drafted for every role in one call (`feat/role-summary-drafting`, Epic A / A3)
 
 Compose could already *pick* the best per-role intro from ones the candidate had

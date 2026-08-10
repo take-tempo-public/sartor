@@ -91,8 +91,10 @@ class Help:
     # `_maybeAutoOpenHelp`/`_maybeFireTourStop`. Seeding their `cb_help_seen:`
     # flags models a returning user so auto-modals never overlay a fresh
     # browser context's first interaction. Panels that only carry an on-demand
-    # (i) (panelAnalysis/panelApplications/panelPersonas/panelMemory) never
-    # auto-open, so they're intentionally absent. Single source of truth for
+    # (i) (panelAnalysis/panelPersonas/panelMemory) never auto-open, so
+    # they're intentionally absent (panelApplications used to be a third
+    # example of this — A4, `feat/prior-apps-pipeline`, removed the panel
+    # itself, not just its tour-stop absence). Single source of truth for
     # both `tests/ux/conftest.py`'s autouse suppression fixture and
     # `scripts/capture_screenshots.py` — keep in sync with `static/app.js` if
     # a new auto-firing block is ever registered.
@@ -285,27 +287,19 @@ class Wizard:
 
 
 class PriorApps:
-    """Selectors for the Prior Applications panel and detail modal."""
+    """Selectors for the shared application-detail modal.
 
-    PANEL = "#panelApplications"
-    LIST = "#applicationsList"
+    A4 (`feat/prior-apps-pipeline`): the per-candidate Applications panel that
+    used to host this modal's card-click navigation was removed; the Pipeline
+    board (`ui_pages.pipeline.PipelinePage`) is now the sole production entry
+    point into it.
+    """
+
     MODAL = "#appDetailModal"
     RESUME_BUTTON = "#btnResumeApp"
     # #24 — editable job-title / company inputs in the detail modal.
     TITLE_INPUT = "#appDetailTitle"
     COMPANY_INPUT = "#appDetailCompany"
-    # #24 — the relabeled (was "N pending") proposal pill on a card.
-    PENDING_PILL = ".application-card-pending"
-
-    @staticmethod
-    def card(app_id: int) -> str:
-        """Return the card selector for an application id."""
-        return f"#app-card-{app_id}"
-
-    @staticmethod
-    def card_company(app_id: int) -> str:
-        """Return the company-field selector within an application card."""
-        return f"#app-card-{app_id} .application-card-company"
 
 
 class Personas:
@@ -332,6 +326,10 @@ class Pipeline:
     COLUMN = ".pipeline-column"
     ROW = ".pipeline-row"
     COUNT = "#pipelineCount"
+    # A4 (feat/prior-apps-pipeline) — the per-row company field (F-15's
+    # captured-employer display, formerly only on the removed Applications
+    # panel's card).
+    ROW_COMPANY = ".pipeline-row-company"
 
 
 class Memory:

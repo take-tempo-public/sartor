@@ -657,12 +657,37 @@ assume it.
 | F9 | **Wiki close-out cost, and a counter that measures the wrong thing** | A1b: 14 subagents. A2's widened pass: **216,973** subagent tokens. `.last_ingest_sha` had been stuck **130+ commits** because a scoped pass cannot honestly advance a repo-wide marker | Largest single close-out line item |
 | F10 | **Ceremony dwarfs the code** | A1b: **392** lines production code, 273 tests, **761** docs. Two sprints ≈ **2.86 M** subagent tokens | See 12.3 |
 | F11 | **A detached gate emits no completion signal — this is the cost side of fixing F1/F2** | The task notification fires for the *launcher* exiting, not for the gate. The final review gate finished at 10:08:04 and went unnoticed until the owner asked *"did the gate freeze?"* at 10:47:54 | **~40 min of dead wall-clock** |
+| F12 | **A SUBAGENT that backgrounds a task deadlocks: the completion notification routes to the orchestrator, never back into the subagent's own context** | A4's implementer launched `pytest -m ux` with `run_in_background`, then returned, verbatim: *"I'll pause here and wait for the background task notification before continuing with the final verification and report."* It waited on a signal that structurally cannot arrive. 259 tool calls / 373 k tokens / ~47 min produced **no report** — while its working tree was complete and correct | ~47 min + a recovery round-trip; **near-loss of a finished sprint's entire narrative** |
 
 **Token accounting** (as reported per agent, this session):
 
 - **A2 ≈ 1.64 M** — implementer 309,448 · refuter 186,705 · fixer 91,853 · wiki 216,973 · 9 grounding auditors 650,996 · closer 181,056
 - **Item 20 ≈ 1.23 M** — implementer 260,174 · refuter 142,845 · fixer 262,795 · closer 197,443 · 4 auditors 284,896 · audit-fixer 79,348
 - **Calibration:** the 2026-08-06 pre-march chain spent **~1.4 M for 3 queue items + 1 integration case**. This run is roughly **2× per unit of work**, and bought adversarial review plus 13 grounding audits with the difference.
+
+**F12 deserves its own note, because the mitigation is free and the failure is silent.** F11
+and F12 are the same harness property seen from opposite ends: **a background task's
+completion notification is delivered to the orchestrator, and only to the orchestrator.** For
+the orchestrator (F11) that means it must not stop polling. For a **subagent** (F12) it means
+backgrounding anything is an unrecoverable deadlock — the subagent blocks on a signal that
+has no path to it, then returns whatever partial text it has. A4's implementer lost a
+complete, correct, gate-clean sprint's entire narrative this way and came within one recovery
+round-trip of the work being redone from scratch.
+
+What makes it dangerous is that **the failure is invisible from the outside and looks like
+success**: the tool reports `status: completed`, a normal token count, and a plausible closing
+sentence. Nothing distinguishes it from a finished agent except reading the result and
+noticing it is not a report. Contrast F1, where the log obviously truncated.
+
+**Mitigation, applied from A4's recovery onward and free to adopt:** every subagent brief
+states explicitly that the agent must **never** use `run_in_background` and must never wait on
+a task notification — long verification either runs in the foreground within its own timeout,
+or is the orchestrator's to run. The recovery itself is also now a known-good move: re-send to
+the same agent (its transcript survives), tell it the notification is not coming, and ask for
+**report only, no tool-heavy re-verification** — the orchestrator re-runs the expensive checks
+itself rather than paying for them twice. This is prose discipline in a subagent prompt, not a
+gate; **nothing fails closed if a future brief omits it**, and that is stated here rather than
+left for a reader to assume otherwise (C-11).
 
 ### 12.3 Tradeoff recommendations — for the review, not adopted
 

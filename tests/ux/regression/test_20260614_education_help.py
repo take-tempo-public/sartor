@@ -31,9 +31,10 @@ from ui_pages.selectors import Help
 
 # Every panel that carries an on-demand (i) help icon (injected at load by
 # _initHelp into each registered .cb-panel, visible or not).
+# A4 (feat/prior-apps-pipeline): panelApplications removed — its _HELP_REGISTRY
+# entry and the panel itself are both gone.
 _ALL_HELP_PANELS = [
     "panelUser",
-    "panelApplications",
     "panelJD",
     "panelAnalysis",
     "panelClarify",

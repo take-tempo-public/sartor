@@ -7,9 +7,12 @@ Covers the five UX-review findings this branch fixes:
         here (skill retire: Confirm AND Cancel paths); the corpus Accept-all
         flow (the register's own F-07 evidence) is covered in
         `test_20260612_corpus_affordance_polish.py::test_accept_all_pending_clears_banner`.
-- F-23  the Tailor tab folds the User selection + Prior applications panels
-        to a compact/collapsible summary by default so the wizard rail owns
-        the viewport; the choice persists across reloads via localStorage.
+- F-23  the Tailor tab folds the User selection panel to a compact/collapsible
+        summary by default so the wizard rail owns the viewport; the choice
+        persists across reloads via localStorage. (Originally covered User
+        selection + Prior applications both; A4, feat/prior-apps-pipeline,
+        removed the Prior applications panel, so User selection is the sole
+        remaining foldable ambient panel — see the two tests below.)
 - F-13  the Compose gap-fill lane carries a subdued "Optional" badge.
 - F-14  the edit-detection modal ("Your edits aren't saved yet") uses plain
         language that names each choice's effect — same ids/choices/timing.
@@ -27,11 +30,11 @@ from types import ModuleType
 import pytest
 from playwright.sync_api import Page, expect
 
-from tests.ux.seeding import seed_application, seed_exp_with_bullets, seed_user
+from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from tests.ux.stubs import install_llm_stubs
 from ui_pages import BasePage, CorpusPage, UserPickerPage, WizardComposePage, WizardJobPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Compose, PriorApps, UserPicker, Wizard
+from ui_pages.selectors import Compose, UserPicker, Wizard
 
 _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres."
 
@@ -127,44 +130,52 @@ def test_skill_retire_uses_cbconfirm_confirm_path(
 def test_tailor_tab_folds_ambient_panels_by_default(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    """First visit (no stored preference): User selection + Prior applications
-    default to collapsed so the wizard rail is the primary surface. Every
-    existing id/selector still resolves — only the collapsed posture is new."""
+    """First visit (no stored preference): User selection defaults to
+    collapsed so the wizard rail is the primary surface. Every existing
+    id/selector still resolves — only the collapsed posture is new.
+
+    A4 (feat/prior-apps-pipeline): this also used to assert Prior applications
+    collapsed by default — that panel is gone, and User selection is the sole
+    remaining F-23 foldable panel."""
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
-    seed_application(cid, title="Staff Engineer", company="Acme")
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
-    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(UserPicker.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
     assert "collapsed" in (page.get_attribute(UserPicker.PANEL, "class") or "")
-    assert "collapsed" in (page.get_attribute(PriorApps.PANEL, "class") or "")
     expect(page.locator(Wizard.RAIL)).to_be_visible()
 
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_applications_panel_expand_choice_persists_across_reload(
+def test_user_panel_expand_choice_persists_across_reload(
     page: Page, live_server: str, ux_app: ModuleType
 ) -> None:
-    """Expanding the applications panel is remembered (localStorage) across a
-    reload — 'prior state preserved', not just this session."""
+    """Expanding the User selection panel is remembered (localStorage) across
+    a reload — 'prior state preserved', not just this session.
+
+    A4 (feat/prior-apps-pipeline): this used to exercise the same shared
+    persistence mechanism (`_applyFoldableDefault`) through the now-removed
+    Prior applications panel; User selection is the sole remaining foldable
+    panel, so this test now exercises the mechanism through it instead of
+    losing coverage of it entirely."""
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
-    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
-    assert "collapsed" in (page.get_attribute(PriorApps.PANEL, "class") or "")
+    page.wait_for_selector(UserPicker.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    assert "collapsed" in (page.get_attribute(UserPicker.PANEL, "class") or "")
 
-    page.click(f"{PriorApps.PANEL} .panel-header")
-    page.wait_for_selector(f"{PriorApps.PANEL}:not(.collapsed)", timeout=DEFAULT_TIMEOUT_MS)
+    page.click(f"{UserPicker.PANEL} .panel-header")
+    page.wait_for_selector(f"{UserPicker.PANEL}:not(.collapsed)", timeout=DEFAULT_TIMEOUT_MS)
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
-    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
-    assert "collapsed" not in (page.get_attribute(PriorApps.PANEL, "class") or "")
+    page.wait_for_selector(UserPicker.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    assert "collapsed" not in (page.get_attribute(UserPicker.PANEL, "class") or "")
 
 
 # ---------------------------------------------------------------------------

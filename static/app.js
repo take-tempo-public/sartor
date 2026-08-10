@@ -265,13 +265,19 @@ function _renderPipelineRow(a) {
     if (!sel) return;
     sel.value = a.candidate_username;
     onUserSelect().then(() => {
-      const tailorBtn = document.getElementById('topTabTailor');
-      if (tailorBtn) switchTopTab('tailor', tailorBtn);
+      // A4 (feat/prior-apps-pipeline): open the detail modal IN PLACE on the
+      // Pipeline tab, rather than tab-switching to Tailor first. Re-assert
+      // 'pipeline' explicitly (not a no-op): onUserSelect()'s own smart-landing
+      // routing (_landingTab()) may have just navigated to 'corpus' or
+      // 'tailor' for the newly selected candidate, same as the old code had to
+      // force 'tailor' back after that same race.
+      const pipelineBtn = document.getElementById('topTabPipeline');
+      if (pipelineBtn) switchTopTab('pipeline', pipelineBtn);
       // "linking into that candidate+application" (F-17): open the specific
       // application's detail modal, not just the candidate's list.
       // _showApplicationDetail fetches independently, so it doesn't need to
-      // wait on the (fire-and-forget) applications-list refresh inside
-      // onUserSelect().
+      // wait on the (fire-and-forget) pipeline-board refresh inside
+      // switchTopTab('pipeline', ...).
       _showApplicationDetail(a.id);
     });
   };
@@ -425,11 +431,6 @@ async function onUserSelect() {
   const navGenAtStart = _navGen;  // item 29: detect explicit navigation during the awaits below
   const statusGenAtStart = _statusGen;  // item 31: detect a newer status write during the awaits below
   await loadConfig();
-  show('panelApplications');           // prep the Tailor tab's landing panel
-  // F-23: default the applications list to a collapsed short summary too — it
-  // used to be a full untruncated list sitting above the wizard rail. Persisted
-  // the same way as panelUser.
-  _applyFoldableDefault('panelApplications', true);
   // panelConfig moved to the Settings drawer (Workstream B1.3); no longer
   // a flow panel. loadConfig() still populates the same #cfgX inputs
   // because the drawer hosts them via the same ids.
@@ -473,7 +474,9 @@ async function onUserSelect() {
   // harness wait on this attribute can't observe it before the guard above
   // has already run.
   document.getElementById('userSelect').setAttribute('data-user-select-ready', '1');
-  refreshApplications();
+  // A4 (feat/prior-apps-pipeline): no per-candidate applications list to
+  // refresh here anymore — Pipeline (cross-candidate) refreshes itself on its
+  // own tab activation instead of on user selection.
   _loadPersonaOptions();
   wizardInit({ scroll: !superseded });
 }
@@ -1092,8 +1095,10 @@ async function runAnalysis() {
     // docs/RELEASE_CHECKLIST.md.
     _wizardRender();
     // KW7: /api/analyze just created the Application row — re-render the
-    // applications block so it stops showing the stale pre-analyze state.
-    refreshApplications();
+    // Pipeline board so it stops showing the stale pre-analyze state (A4,
+    // feat/prior-apps-pipeline: was refreshApplications() against the
+    // now-removed panel).
+    refreshPipeline();
     setStatus('ANALYSIS COMPLETE');
     _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
     // Workstream B1 reorder: recommend no longer fires here. It fires
@@ -1784,8 +1789,9 @@ function _onGenerationComplete(data) {
   // refreshes lazily when its tab is shown (see showTab).
   _refreshOutputPreview();
   // KW7: generation updated the application's run data (iteration count,
-  // updated_at) — keep the applications block in sync.
-  refreshApplications();
+  // updated_at) — keep the Pipeline board in sync (A4, feat/prior-apps-
+  // pipeline: was refreshApplications() against the now-removed panel).
+  refreshPipeline();
 }
 
 // β.5 — show "+ Generate cover letter" when no cover letter exists yet,
@@ -2173,13 +2179,10 @@ const _HELP_REGISTRY = {
     tip: 'About sartor',
     welcome: true,
   },
-  panelApplications: {
-    title: 'Prior applications',
-    body: 'Every résumé you generate is kept here against the job you tailored '
-      + 'it for. Reopen one to download it again, or to pick up where you left '
-      + 'off and refine it further. Nothing here changes your career corpus.',
-    tip: 'Prior applications',
-  },
+  // A4 (feat/prior-apps-pipeline): panelApplications's help entry removed
+  // along with the panel itself. Prior applications live in the Pipeline tab
+  // now; it has no _HELP_REGISTRY entry of its own (out of this sprint's
+  // scope; not added here).
 
   // ---- Wizard steps (Tailor tab) ---------------------------------------
   panelJD: {
@@ -3440,7 +3443,7 @@ function _showMarkSubmittedNudge() {
 }
 
 // Step-6 nudge click: PUT submitted on the wizard's application, confirm,
-// and sync the applications block. Idempotent server-side — sent_at stamps
+// and sync the Pipeline board. Idempotent server-side — sent_at stamps
 // only on the first transition.
 async function markCurrentApplicationSubmitted() {
   if (_composeApplicationId == null) {
@@ -3449,8 +3452,10 @@ async function markCurrentApplicationSubmitted() {
   }
   if (await _putApplicationStatus(_composeApplicationId, 'submitted')) {
     document.getElementById('markSubmittedNudge')?.classList.add('hidden');
-    _toast('Marked submitted — report the outcome from its Applications card');
-    refreshApplications();
+    // A4 (feat/prior-apps-pipeline): "its Applications card" named the
+    // now-removed panel's card; Pipeline is where the outcome gets reported now.
+    _toast('Marked submitted — report the outcome from its Pipeline row');
+    refreshPipeline();
   }
 }
 
@@ -3481,8 +3486,9 @@ function hideAllPanels() {
   // Workstream B1: panelConfig moved to Settings drawer + panelResume
   // removed; remaining flow panels are listed explicitly + the wizard
   // panels are added so hideAllPanels keeps doing what it advertises.
+  // A4 (feat/prior-apps-pipeline): panelApplications removed from this list —
+  // the panel it named no longer exists.
   [
-    'panelApplications',
     'panelJD', 'panelAnalysis', 'panelClarify',
     'panelCompose', 'panelTemplate', 'panelGenerate', 'panelOutput',
   ].forEach(hide);
@@ -3608,13 +3614,15 @@ function esc(str) {
 }
 
 // ---- Panel collapse / expand ----
-// F-23 — the two "ambient" panels that used to crowd the wizard off-screen
-// (User selection, Prior applications) persist their collapsed/expanded state
-// across reloads, so a returning visitor's own choice sticks instead of
-// re-inheriting the collapsed-by-default posture every time. Any manual
-// toggle (via _togglePanel) on one of these ids is remembered here; every
-// other .cb-panel (wizard step panels, Corpus, etc.) is unaffected.
-const _FOLDABLE_PANEL_IDS = ['panelUser', 'panelApplications'];
+// F-23 — the "ambient" panel that used to crowd the wizard off-screen (User
+// selection) persists its collapsed/expanded state across reloads, so a
+// returning visitor's own choice sticks instead of re-inheriting the
+// collapsed-by-default posture every time. Any manual toggle (via
+// _togglePanel) on one of these ids is remembered here; every other .cb-panel
+// (wizard step panels, Corpus, etc.) is unaffected. (A4, feat/prior-apps-
+// pipeline: this used to also cover panelApplications — Prior applications —
+// removed along with the panel itself.)
+const _FOLDABLE_PANEL_IDS = ['panelUser'];
 
 function _togglePanel(panelId) {
   const panel = document.getElementById(panelId);
@@ -6225,143 +6233,15 @@ function _renderDuplicateExp(exp) {
 }
 
 // ===============================================================
-// Phase D.3 — Applications list (within the APPLICATION tab)
+// A4 (feat/prior-apps-pipeline): the "Phase D.3 — Applications list (within
+// the APPLICATION tab)" block that used to live here (the per-candidate
+// #applicationsList render path — refreshApplications, _renderApplicationsList,
+// _renderApplicationCard, toggleApplicationsRetired, _setApplicationsCount,
+// _applicationsShowRetired) was removed along with the #panelApplications
+// panel it rendered into. The shared detail modal below (_showApplicationDetail
+// and its two sub-renderers) is UNCHANGED — it is what Pipeline now opens in
+// place. See docs/dev/blast-radius/prior-apps-pipeline.md.
 // ===============================================================
-
-// Walkthrough J1 — retired applications are hidden unless this is on.
-let _applicationsShowRetired = false;
-function toggleApplicationsRetired(checked) {
-  _applicationsShowRetired = !!checked;
-  refreshApplications();
-}
-
-// F-23 — mirror the count into the panel-header summary too, so the
-// applications panel still reads as a short summary while it's collapsed.
-function _setApplicationsCount(text) {
-  const countEl = document.getElementById('applicationsCount');
-  const headerEl = document.getElementById('applicationsHeaderCount');
-  if (countEl) countEl.textContent = text;
-  if (headerEl) headerEl.textContent = text;
-}
-
-async function refreshApplications() {
-  const list = document.getElementById('applicationsList');
-  if (!list) return;
-  if (!currentUser) {
-    _setLoadingPlaceholder(list, 'Select a user to view their applications.');
-    _setApplicationsCount('0 applications');
-    return;
-  }
-  // B.8 Part 1: lifecycle filter — server-side via the route's ?status= param
-  // (the same query surface the outcome-learning layer uses).
-  const statusFilter = document.getElementById('applicationsStatusFilter')?.value || '';
-  _setLoadingPlaceholder(list, 'Loading…');
-  let res;
-  try {
-    const params = new URLSearchParams();
-    if (statusFilter) params.set('status', statusFilter);
-    if (_applicationsShowRetired) params.set('include_retired', '1');
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications${qs}`);
-  } catch (e) {
-    _setLoadingPlaceholder(list, 'Network error.');
-    return;
-  }
-  if (res.status === 404) {
-    _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
-    _setApplicationsCount('0 applications');
-    return;
-  }
-  if (!res.ok) {
-    _setLoadingPlaceholder(list, 'Failed to load applications.');
-    return;
-  }
-  const apps = await res.json().catch(() => []);
-  if (_needsOnboarding(res, apps)) {
-    _setApplicationsCount('0 applications');
-    _renderCorpusEmptyCTA(list, 'No applications yet. Add your résumé in the '
-      + 'Career corpus tab, then analyze a job description.');
-    return;
-  }
-  if (apps.length === 0 && statusFilter) {
-    // Distinguish "filtered everything out" from "no applications yet" so
-    // the empty-state copy doesn't mislead.
-    _setApplicationsCount('0 applications');
-    _setLoadingPlaceholder(list, 'No applications with this status.');
-    return;
-  }
-  _renderApplicationsList(apps);
-}
-
-function _renderApplicationsList(apps) {
-  const list = document.getElementById('applicationsList');
-  _clearChildren(list);
-  _setApplicationsCount(`${apps.length} application${apps.length === 1 ? '' : 's'}`);
-  if (apps.length === 0) {
-    _setLoadingPlaceholder(list, 'No applications yet. Analyze a JD below to start one.');
-    return;
-  }
-  apps.forEach(a => list.appendChild(_renderApplicationCard(a)));
-}
-
-// dec 7 (G7, UX Cohesion Epic) — the compact roster card: ONE summary line
-// (title/company) + ONE meta line (status · pending-review count · date).
-// Everything this card used to render directly — iteration count, the
-// status-transition row (Mark submitted / Got interview / …), and the
-// retire/restore admin row — moved into the expanded detail modal
-// (_showApplicationDetail, already opened on card click below), alongside
-// the JD snippet + per-run status that modal now ALSO surfaces for the
-// first time. A roster of 10+ applications used to be 10+ small multi-row
-// cards each carrying its own button rows; it's now a dense two-line list.
-function _renderApplicationCard(app) {
-  const retired = app.is_active === false;
-  const card = _el('div', {
-    className: 'application-card' + (retired ? ' retired' : ''),
-    id: `app-card-${app.id}`,
-  });
-  const header = _el('div', { className: 'application-card-header' });
-  header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
-  if (app.company) {
-    header.appendChild(_el('div', { className: 'application-card-company', textContent: app.company }));
-  }
-  card.appendChild(header);
-
-  const meta = _el('div', { className: 'application-card-meta' });
-  const chipStatus = app.status || 'draft';
-  meta.appendChild(_el('span', {
-    className: `app-status-chip status-${chipStatus}`,
-    textContent: _toSentence((chipStatus === 'submitted' ? 'no response' : chipStatus).replace('_', ' ')),
-  }));
-  if (retired) {
-    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'Retired' }));
-  }
-  if (app.pending_proposals > 0) {
-    const badge = _el('span', {
-      className: 'application-card-pending',
-      textContent: `${app.pending_proposals} to review`,
-    });
-    badge.title = 'AI-proposed bullets/titles for this application awaiting your review';
-    meta.appendChild(badge);
-  }
-  const outcomeStatuses = new Set(['interview', 'rejected', 'withdrawn']);
-  const sentStatuses = new Set(['submitted']);
-  let dateLabel;
-  if (outcomeStatuses.has(app.status) && app.outcome_at) {
-    dateLabel = 'Outcome · ' + _formatRelativeDate(app.outcome_at);
-  } else if (sentStatuses.has(app.status) && app.sent_at) {
-    dateLabel = 'Sent · ' + _formatRelativeDate(app.sent_at);
-  } else {
-    dateLabel = _formatRelativeDate(app.updated_at);
-  }
-  meta.appendChild(_el('span', {
-    className: 'application-card-date',
-    textContent: dateLabel,
-  }));
-  card.appendChild(meta);
-
-  card.onclick = () => _showApplicationDetail(app.id);
-  return card;
-}
 
 // dec 7 — the status-transition row, now rendered INTO the expanded detail
 // modal (#appDetailStatusActions) rather than directly on the compact card.
@@ -6369,8 +6249,9 @@ function _renderApplicationCard(app) {
 // submitted → the three outcome buttons; interview/rejected/withdrawn is
 // terminal (data-model decision 2026-06-10), so no further actions render.
 // Re-renders the modal's own detail (not the whole list) on success so the
-// modal reflects the new status without a jarring close; refreshApplications()
-// still runs so the roster behind it stays in sync.
+// modal reflects the new status without a jarring close; refreshPipeline()
+// still runs so the board behind it stays in sync (A4, feat/prior-apps-
+// pipeline: was refreshApplications() against the now-removed panel).
 // `container` is the modal's own #appDetailStatusActions div (already
 // carries the .outcome-action-row class in templates/index.html) — this
 // populates it in place rather than nesting another wrapper.
@@ -6388,7 +6269,7 @@ function _renderAppDetailStatusActions(container, app) {
     const btn = _el('button', { className: 'outcome-btn', textContent: label });
     btn.addEventListener('click', async () => {
       if (await _putApplicationStatus(app.id, status)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6405,7 +6286,7 @@ function _renderAppDetailAdminRow(container, app) {
     const restore = _el('button', { className: 'app-admin-btn', textContent: 'Restore' });
     restore.addEventListener('click', async () => {
       if (await _setApplicationRetired(app.id, false)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6419,7 +6300,7 @@ function _renderAppDetailAdminRow(container, app) {
       );
       if (!ok) return;
       if (await _setApplicationRetired(app.id, true)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6622,7 +6503,7 @@ async function _showApplicationDetail(applicationId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (r.ok) { _toast(okMsg); refreshApplications(); return true; }
+      if (r.ok) { _toast(okMsg); refreshPipeline(); return true; }
       const err = await r.json().catch(() => ({}));
       _toast(err.error || 'Failed to save', true);
       return false;
@@ -7245,8 +7126,10 @@ function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
 function wizardBack() { wizardGoTo(Math.max(1, _wizardStep - 1)); }
 
 function _wizardRender(opts) {
-  // Show only the active step's panel(s); keep User/Applications/Config
-  // visible as ambient context (they aren't wizard steps).
+  // Show only the active step's panel(s); keep User/Config visible as
+  // ambient context (they aren't wizard steps). (A4, feat/prior-apps-
+  // pipeline: Applications used to be a third ambient panel here too —
+  // removed along with the panel itself.)
   const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
   Object.values(_WIZARD_PANELS).flat().forEach(pid => {
     if (stepPanels.has(pid)) show(pid); else hide(pid);
@@ -9797,8 +9680,8 @@ async function _loadTemplatePicker() {
   const body = await res.json().catch(() => ({}));
   // Brand-new user: config exists but no Candidate row yet (the read
   // endpoint now signals this via 200 + needs_onboarding). Mirror
-  // _loadOwnedPersonas / refreshApplications and surface the onboarding CTA
-  // instead of a misleading "Failed to load templates" error. Return early —
+  // _loadOwnedPersonas and surface the onboarding CTA instead of a
+  // misleading "Failed to load templates" error. Return early —
   // the <select> hydration + live-preview kickoff below both assume a
   // populated body.
   if (_needsOnboarding(res, body)) {

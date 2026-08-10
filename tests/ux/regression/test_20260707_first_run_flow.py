@@ -33,9 +33,9 @@ from playwright.sync_api import Page
 
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from tests.ux.stubs import install_llm_stubs
-from ui_pages import BasePage, UserPickerPage, WizardJobPage
+from ui_pages import BasePage, PipelinePage, UserPickerPage, WizardJobPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Help, UserPicker, Wizard
+from ui_pages.selectors import Help, Pipeline, UserPicker, Wizard
 
 _JD = (
     "Senior Backend Engineer, Platform. Python on Postgres + AWS with Kafka "
@@ -199,7 +199,12 @@ def test_application_card_shows_company_from_analyze(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Analyzing a JD with a detectable employer stamps it on the Application
-    row, and the applications card renders it (was: null company)."""
+    row, and the Pipeline board renders it (was: null company).
+
+    A4 (feat/prior-apps-pipeline): this used to check the removed Applications
+    panel's card (`.application-card-company`) — Pipeline is the sole
+    remaining surface that renders a per-application company field.
+    """
     cid = seed_user(ux_app, "alice")
     seed_exp_with_bullets(cid)
     install_llm_stubs(ux_app, monkeypatch)
@@ -208,10 +213,9 @@ def test_application_card_shows_company_from_analyze(
     UserPickerPage(page, live_server).select("alice")
     WizardJobPage(page, live_server).open().analyze("About Initech\n" + _JD)
 
-    # KW7: analyze re-renders the applications block; the fresh card carries
-    # the deterministically captured, title-cased employer.
-    page.wait_for_selector(
-        ".application-card-company", state="attached", timeout=DEFAULT_TIMEOUT_MS
-    )
-    company = (page.locator(".application-card-company").first.text_content() or "").lower()
+    # KW7: analyze re-renders the Pipeline board; the fresh row carries the
+    # deterministically captured, title-cased employer.
+    PipelinePage(page, live_server).open()
+    page.wait_for_selector(Pipeline.ROW_COMPANY, state="attached", timeout=DEFAULT_TIMEOUT_MS)
+    company = (page.locator(Pipeline.ROW_COMPANY).first.text_content() or "").lower()
     assert "initech" in company

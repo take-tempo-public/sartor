@@ -169,43 +169,11 @@
       </div>
     </section>
 
-    <!-- APPLICATIONS (Phase D.3) -->
-    <section class="cb-panel hidden" id="panelApplications">
-      <div class="panel-header cb-bg-teal">Prior applications<span id="applicationsHeaderCount" class="panel-header-summary"></span></div>
-      <div class="panel-body">
-        <div class="edit-hint">
-          Past applications stored in the DB. Click a card to view its
-          iteration history. Pending proposals are flagged in violet.
-        </div>
-        <!-- B.8 Part 1: lifecycle-status filter (server-side via ?status=).
-             Card labels follow the canonical semantics table — a submitted
-             application reads NO RESPONSE until an outcome is reported. -->
-        <div class="form-row" style="margin-bottom:8px">
-          <label for="applicationsStatusFilter" class="sr-only">Filter applications by status</label>
-          <select id="applicationsStatusFilter" onchange="refreshApplications()"
-                  aria-label="Filter applications by status">
-            <option value="">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">No response yet</option>
-            <option value="interview">Got interview</option>
-            <option value="rejected">Rejected</option>
-            <option value="withdrawn">Withdrawn</option>
-          </select>
-          <label class="applications-show-retired">
-            <input type="checkbox" id="applicationsShowRetired"
-                   onchange="toggleApplicationsRetired(this.checked)">
-            Show retired
-          </label>
-        </div>
-        <div id="applicationsList" class="application-list">
-          <div class="corpus-empty-experience">Loading…</div>
-        </div>
-        <div class="form-row" style="margin-top:8px">
-          <button class="cb-btn cb-bg-teal" onclick="refreshApplications()">Refresh</button>
-          <span class="edit-hint" id="applicationsCount" style="margin:0">0 applications</span>
-        </div>
-      </div>
-    </section>
+    <!-- (A4, feat/prior-apps-pipeline: the "Prior applications" panel
+         (Phase D.3) that used to live here was removed — Pipeline is now the
+         sole surface for browsing past applications, and clicking a row
+         there opens the shared #appDetailModal in place. See
+         docs/dev/blast-radius/prior-apps-pipeline.md.) -->
 
     <!-- (Workstream B1.3: USER CONFIGURATION moved to the Settings
          drawer; only the wizard + dynamic surfaces live in the

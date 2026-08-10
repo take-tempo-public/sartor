@@ -101,7 +101,12 @@ _VALID_APP_STATUSES = frozenset({"draft", "submitted", "interview", "rejected", 
 def _application_summary_dict(
     app_row: Application, runs: list[ApplicationRun], pending_proposal_count: int
 ) -> dict[str, Any]:
-    """Compact application row for the Applications tab list view."""
+    """Compact application row for `GET /api/users/<username>/applications`.
+
+    A4 (feat/prior-apps-pipeline): the frontend no longer calls this route (the
+    Applications tab it served was removed) — it stays a live, tested API
+    surface regardless.
+    """
     latest_run = runs[-1] if runs else None
     return {
         "id": app_row.id,
@@ -233,7 +238,8 @@ def list_applications(username: str) -> ResponseReturnValue:
 def get_application(application_id: int) -> ResponseReturnValue:
     """Full detail for one application: metadata + runs + pending-proposal counts.
 
-    Used by the Applications tab when the user opens a card to see the
+    Used by the application detail modal (opened from the Pipeline board as of
+    A4, feat/prior-apps-pipeline) when the user opens a row to see the
     iteration history and decide whether to resume editing.
     """
     from db.models import Application, Candidate, ProposalReview

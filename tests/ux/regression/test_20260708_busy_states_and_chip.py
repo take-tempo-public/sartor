@@ -760,8 +760,9 @@ def test_wizard_render_smooth_scroll_creeps_explicit_baseline(
     'smooth'})` (app.js:7093-7095, fired by `wizardInit()` -- app.js:6969 --
     which `onUserSelect()` -- app.js:451 -- calls as its LAST statement,
     itself the tail of an async chain: loadConfig -> _landingTab ->
-    _activateTab -> refreshApplications -> _loadPersonaOptions ->
-    wizardInit) can still be mid-animation when an UNRELATED later explicit
+    _activateTab -> _loadPersonaOptions -> wizardInit (A4, feat/prior-apps-
+    pipeline: the chain's own refreshApplications step was removed along with
+    the panel it refreshed) can still be mid-animation when an UNRELATED later explicit
     `window.scrollTo()` sets a baseline -- and whether that baseline then
     drifts, with ZERO corpus reload / refreshCorpus() / _captureScrollY /
     _restoreScrollY involved anywhere in this test. This rules out any
