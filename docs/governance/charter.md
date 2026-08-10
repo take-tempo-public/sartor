@@ -1,7 +1,7 @@
 # Constitution — sartor.
 
 > **Purpose:** the single canonical home for sartor.'s *binding* governance —
-> the constitutional clauses (C-0…C-9), the defaults (D-1…D-7), the parallel-session
+> the constitutional clauses (C-0…C-12), the defaults (D-1…D-7), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
 > **Audience:** every contributor and every AI agent (Claude Code, Cursor, Codex,
@@ -250,6 +250,67 @@ motivates this clause sits in that blind spot. Neither gap is silently upgraded 
 the evidence exist, C-8 makes it survive the context window, C-9 makes its carrier
 verifiable, C-10 makes the **scope** of a change knowable before it is made.]*
 
+**C-11 — Enforcement before discipline; the default response is a gate.** **A constraint
+with no mechanism that fails closed is not a constraint** — it is a prediction about the
+model's future good behavior, and this project has now measured that prediction and found it
+false. The **first** time a failure mode is recognized as a **recurrence** — a second
+instance, or a first instance recognized as a member of a known class — the response is a
+mechanism that **fails closed**, authored on that branch. A note, a memory, a ledger row, a
+work-item update, or a new prose rule is **not** a compliant response on its own; those are
+the record of the problem, never the fix for it. Where no mechanism is possible, the gap is
+**declared explicitly, with its reason, and surfaced to the owner** — never left implied by
+silence, and never counted as protection. New governance defaults to a gate; text-based
+discipline is the **exception**, and where it is used it is labeled **unenforced** in the
+same breath. *[src: adopted 2026-08-05, owner-directed, from measured failure rather than
+from friction — the owner's words: "instead of making notes when you notice that you've
+repeatedly done something, on the first instance, we will author a guardrail restraint or
+forced implementation… we go to hooks before text based discipline," and "we will be
+changing our governance model to assume the worst action from the model first and only relax
+as experiment." The measurement that forced it: **~20 merged branches on UX-suite flakes in
+40 days** (2026-06-27 → 2026-08-04), `fix/ux-scroll-wizard-rail-flake` merged three times and
+`fix/ux-restore-scroll-y-resource-contention` twice; **item 30 recurring in CI five days
+after being closed**, visible only because `scripts/ci_wait.py` read the job log while
+`gh pr checks` reported the run clean; **three of epic 19's five closures resting on weaker
+evidence than they claimed** (27 already-fixed-before-filing, 28 *not reproduced*, 30 on a
+fix its own text called "not confirmed as the historical cause"), with the one that came back
+being one of the three; and **seven bespoke synchronization primitives across 79 occurrences
+in 14 files**, accreted one per flake with no single owner. C-7, C-8 and C-10 already said
+most of the right things and did not hold, because each left the decisive moment to the
+model's judgment. This clause removes that discretion by construction: it makes "write it
+down and move on" a **non-compliant** answer. Enforced in this repo by the closure bar in
+`../../scripts/work_items.py` (which runs inside `../../scripts/gate.py` and CI) and by the
+required recurrence section in `../dev/AGENT_HANDOFF_TEMPLATE.md` (which
+`../../scripts/verify_doc_template.py` refuses a handoff without). **Stated limit under C-0:**
+those mechanisms force the question to be asked and an artifact to be named; neither can
+verify that the artifact is real. That is a bound on the enforcement, not a licence to
+narrate past it.]*
+
+**C-12 — Declare the gap; never fill it.** Information the session no longer holds is
+surfaced as **missing** before any action depends on it. Reconstructing a lost fact from
+plausibility and then proceeding as though it were sourced is a **C-0 violation**, and it is
+the mechanism underneath most C-7 failures: a filled gap becomes a premise, the premise gets
+cited as fact, and the fabrication is downstream of a step nobody recorded. **Compaction,
+summarization, context loss, and a subagent's unverified report are data-loss events to be
+announced**, not conditions to be worked around quietly. "I no longer have this," "I did not
+verify this," and "this is a guess" are **required outputs**, not admissions of failure —
+and they are always cheaper than the alternative. *[src: adopted 2026-08-05, owner-directed,
+from a pattern the owner named directly: "you lose information and then act as if you didn't…
+this is misleading and leads you to imagine what should be done after inventing information
+without ever surfacing that you had gaps or were making assumptions." Corroborated in this
+repo's own record — item 13's filed mechanism was false, item 15's was false, and item 31's
+`-n 2` attribution was an unsourced narrowing contradicted by the only surviving artifact;
+each was plausible, each became a premise, each cost a branch. Enforced by the
+observed-citation check in `../../scripts/enforcement/evidence.py` (a `## Observed` bullet
+with no run id, `path:line`, quoted command or fenced artifact blocks the production edit)
+and by the compaction-disclosure controls in
+`../../scripts/enforcement/adapters/claude_context_hook.py` (a durable `compacted` receipt on
+PreCompact, and an unconditional information-loss declaration injected on
+SessionStart `compact` — previously silent on any branch without a `fix/*` dossier, which is
+to say on most branches). **Stated limit under C-0:** these enforce the *presence* of a
+citation and the *announcement* of a loss. No mechanism here detects a fabricated citation.
+The honest claim is that an unsourced assertion becomes non-committable — not that a
+dishonest one becomes impossible.]*
+
 ### Defaults (binding until changed; changeable in normal flow with a written rationale)
 
 - **D-1 — Minimal dependencies.** New dep = `pyproject.toml` + `CHANGELOG.md` +
@@ -391,12 +452,12 @@ wording adapted from the 2026-06 review draft §"W-2"; `../wiki/pages/governance
 
 ## Amendment ceremony
 
-This charter is itself amended under the ceremony below — C-7, C-8, C-9, C-10, and this
+This charter is itself amended under the ceremony below — C-7 through C-12, and this
 Working-model section were each added this way; the ceremony was practiced by
 convention (a dated `[src: adopted …, owner-directed, from …]` tag on each) before it
 was written down as its own rule here.
 
-Amending a **constitutional clause (C-0…C-10)** requires, in order:
+Amending a **constitutional clause (C-0…C-12)** requires, in order:
 
 1. a dated amendment entry **in this document** — the `[src: adopted <date>,
    owner-directed, from <trigger>]` tag with rationale — following the same clauses

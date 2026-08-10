@@ -136,6 +136,64 @@ tell a signature change from a comment fix in the same file; and the computed au
 covers first-party Python import fan-in only, so JS, Jinja templates and CSS are
 curation-only — the `loadComposition()` case above is itself in that blind spot.
 
+### Enforcement before discipline (charter C-11) — read this before you write a note instead of a gate
+
+**A constraint with no mechanism that fails closed is not a constraint.** It is a
+prediction about your future good behavior, and this project has measured that prediction
+and found it false.
+
+- **The first time you recognize a failure mode as a RECURRENCE** — a second instance, or a
+  first instance you recognize as a member of a known class — **author a mechanism that
+  fails closed, on that branch.** A note, a memory, a ledger row, a work-item update, or a
+  new prose rule is **not a compliant response on its own.** Those record the problem; they
+  have never once fixed it.
+- **If no mechanism is possible, say so explicitly, with the reason, to the user.** An
+  undeclared gap is counted as protection by whoever reads the doc next. Silence is the
+  failure.
+- **New governance defaults to a gate.** Prose discipline is the exception, and where you
+  use it you label it **unenforced** in the same breath.
+
+Enforced by the closure bar in [`scripts/work_items.py`](scripts/work_items.py) (`status =
+"closed"` needs a falsifiable `verified_by` artifact or an owner-named `closure_exception`;
+a reopened item needs a `guardrail`) — it runs inside `python -m scripts.gate` and CI, so it
+binds every agent — and by the required `## Recurrences observed this session → guardrail
+authored` section in [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md),
+which `scripts/verify_doc_template.py` refuses a handoff without.
+
+**Why this clause exists** (the measurement, not a vibe): ~20 merged branches on UX-suite
+flakes in 40 days; one branch merged three times over the same flake; item 30 recurring in
+CI five days after closure; three of epic 19's five closures resting on weaker evidence than
+they claimed. C-7/C-8/C-10 already said most of the right things and did not hold, because
+each left the decisive moment to your judgment.
+
+**Known limit** (stated, not papered over — C-0): these force the question to be asked and
+an artifact to be named. Neither can verify the artifact is real.
+
+### Declare the gap; never fill it (charter C-12) — read this before you assert anything you did not verify
+
+**Information you no longer hold is surfaced as MISSING before anything depends on it.**
+Reconstructing a lost fact from plausibility and proceeding as though it were sourced is a
+C-0 violation, and it is the mechanism underneath most C-7 failures — a filled gap becomes a
+premise, and the premise gets cited as fact.
+
+- **Compaction, summarization, context loss, and a subagent's unverified report are
+  data-loss events to be ANNOUNCED**, not conditions to work around quietly.
+- **"I no longer have this," "I did not verify this," and "this is a guess" are required
+  outputs**, not admissions of failure. They are always cheaper than the alternative.
+- Worked cost: item 13's filed mechanism was false, item 15's was false, item 31's `-n 2`
+  attribution was an unsourced narrowing contradicted by the only surviving artifact. Each
+  was plausible. Each became a premise. Each cost a branch.
+
+Enforced by the observed-citation check in
+[`scripts/enforcement/evidence.py`](scripts/enforcement/evidence.py) (a `## Observed` bullet
+carrying no run id, `path:line`, quoted command or fenced artifact blocks the production
+edit) and the compaction-disclosure controls in
+[`scripts/enforcement/adapters/claude_context_hook.py`](scripts/enforcement/adapters/claude_context_hook.py).
+
+**Known limit** (C-0): these enforce the *presence* of a citation and the *announcement* of
+a loss. No mechanism here detects a fabricated citation — an unsourced assertion becomes
+non-committable, a dishonest one does not become impossible.
+
 ### Branch before code changes
 
 A `require-feature-branch` PreToolUse hook blocks `Edit`/`Write` while on `main`/`master`. Create a feature branch when moving from plan to execute (`git checkout -b <type>/<short-desc>`). Intentional main edits: `export CLAUDE_ALLOW_MAIN_EDITS=1`.
@@ -171,7 +229,7 @@ is the failure mode this section exists to prevent.
 1. Quality gate green — `python -m scripts.gate` (PX-55; runs `ruff check .` + `ruff format --check .` + `mypy .` + `pytest`, the same steps CI runs — see "Testing and validation" below).
 2. Write the next-agent handoff — **ON THIS BRANCH, BEFORE the merge** (this is exactly what the pre-close sweep's own "fold it in before the merge" rule already requires: the handoff is one of this branch's own docs, and `require-feature-branch` blocks writing it on `main` once this branch is gone, so there is no compliant way to do this step after merging). **READ [`docs/dev/AGENT_HANDOFF_TEMPLATE.md`](docs/dev/AGENT_HANDOFF_TEMPLATE.md) FIRST and reproduce every `<!-- verbatim -->`-marked section (Documents to read, Binding rules, Hard constraints, Close-out checklist) byte-for-byte, dropping none; a handoff written from memory is non-compliant** — as a **committed file** at `docs/dev/handoffs/<branch-slug>.md`, stamped per [`docs/dev/prov/SPEC.md`](docs/dev/prov/SPEC.md) §1 and validated before commit with `python scripts/verify_doc_template.py docs/dev/handoffs/<branch-slug>.md docs/dev/AGENT_HANDOFF_TEMPLATE.md --event generated --agent <agent>` (a `failed` result is authoring corruption in the handoff itself — fix the file, don't silence the check).
 3. Commit — message records what was done and why (or "no code change — verified" if the branch closed clean); the handoff file from step 2 must be committed by this point too (its own commit or folded into this one — either way, both must exist before step 4).
-4. **Land it through the PR channel — a local `git merge` to `main` is NEVER the flow.** `main` carries branch protection requiring a pull request plus six passing status checks (`strict: true`), so a local merge is rejected outright for a non-admin and, for an admin, silently bypasses those six checks. Squash and rebase merges are both disabled on the repo, leaving **merge commit** as the only method — that is deliberate: a squash rewrites SHAs and orphans the local commits it replaces (it already produced one zombie commit, `9f3c800`, before this was understood). Ask the user to confirm, then: `git push -u origin <branch>` → open the PR (`gh pr create`, or hand the user the URL) → **wait for all required checks to go green** → `gh pr merge <n> --merge` (never `--squash`/`--rebase`) → `git checkout main && git pull --ff-only`. Use `--ff-only` so an unexpected divergence fails loudly instead of silently manufacturing a merge commit. **Pushing is outward-facing on a public repo:** state what will become public — including any commits already on your local `main` that the remote does not have, since they ride along — and get explicit confirmation before the first push.
+4. **Land it through the PR channel — a local `git merge` to `main` is NEVER the flow.** `main` carries branch protection requiring a pull request plus six passing status checks (`strict: true`), so a local merge is rejected outright for a non-admin and, for an admin, silently bypasses those six checks. Squash and rebase merges are both disabled on the repo, leaving **merge commit** as the only method — that is deliberate: a squash rewrites SHAs and orphans the local commits it replaces (it already produced one zombie commit, `9f3c800`, before this was understood). Ask the user to confirm, then: `git push -u origin <branch>` → open the PR (`gh pr create`, or hand the user the URL) → **wait for the required checks with `python -m scripts.ci_wait <n>`** → `gh pr merge <n> --merge` (never `--squash`/`--rebase`) → `git checkout main && git pull --ff-only`. Use `--ff-only` so an unexpected divergence fails loudly instead of silently manufacturing a merge commit. **[`scripts/ci_wait.py`](scripts/ci_wait.py) is the single definition of "the PR is green" — never hand-roll a watcher, a poll loop, or a `gh pr checks … | jq` one-liner** (there is no system `jq` on this machine, and `gh pr checks` exits nonzero on failure, so the usual `|| echo '[]'` fallback discards the real output exactly when it matters). It exits **0** only when every required check passed *and* no test needed a retry; **3 = green-after-retries** (charter C-7 rule 3 — stop and look, do not merge on it reflexively), **1** a failing required check plus its `--log-failed` tail, **8** the deadline expiring, **2** a wrapper error. Two hand-rolled 30-minute watches once ran to completion emitting *nothing* while a required check was already red — that silence is the failure this replaces. **Pushing is outward-facing on a public repo:** state what will become public — including any commits already on your local `main` that the remote does not have, since they ride along — and get explicit confirmation before the first push.
 5. Prune the merged branch(es) with the user's OK — **but regenerate the pointer FIRST**, because it must cite `main`, and pruning a branch a pointer still names leaves the next session with an unresolvable reference (a correct C-9 halt, but a wasted first move). After the `pull --ff-only` in step 4: generate the one-line pointer with `python scripts/print_handoff_pointer.py docs/dev/handoffs/<branch-slug>.md` — never hand-type the branch or commit hash — then immediately verify that exact output with `python scripts/check_handoff_pointer.py "<output>"` before pasting anything: enforce the method, then check the result (a hand-typed hash was proven fabricated once — see [`docs/dev/diagnosis/handoff-pointer-verification.md`](docs/dev/diagnosis/handoff-pointer-verification.md)). Then prune (`git branch -d <branch>`; the remote copy is auto-deleted on merge). Give the user the checked line as copyable chat text, as the **last act** before closing the window — never paste the handoff's full content into chat; that reopens the exact clipboard/terminal-grid corruption channel this flow exists to close (evidence + design: [`docs/dev/handoff-integrity-design.md`](docs/dev/handoff-integrity-design.md); supersedes the prior "handoffs are chat text, never a file" policy for this transfer-channel question specifically). **Binding rule (charter C-9) — corrupted input is a blocked gate:** the next session's FIRST action on receiving a pointer is `python scripts/check_handoff_pointer.py "<pointer line>"`, and only once that passes, `--event consumed` on the handoff file it names; if either one fails (a bad path/branch/hash, structural drift, or a fingerprint mismatch), that is this session's **first output** — surfaced and STOPPED on, never silently reconstructed, regardless of how plausible the reconstruction looks.
 
 ### Document generation

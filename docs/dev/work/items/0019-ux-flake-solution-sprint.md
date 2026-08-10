@@ -3,9 +3,10 @@ schema = 1
 id = 19
 kind = "epic"
 title = "UX-suite flakiness solution sprint - mode-C residual + newly observed instances"
-status = "closed"
+status = "open"
 resolution = "All 5 children closed 2026-07-31 (spanning 27-31): 27 already-fixed-before-filing (no code change); 28 not-reproduced (24-run campaign, owner-directed close); 29 mechanism observed + two-phase fix landed; 30 capability-proven mechanism + harness fix landed; 31 (last child) capability-proven mechanism + two-phase app+harness fix landed. Not one mechanism, as the original filing itself predicted -- five independent investigations, five different dispositions. Unblocks item 10's depends_on = [3, 6, 7, 9, 19] (still gated on 3/6/7/9)."
 decision_owner = "agent"
+guardrail = "Charter C-11 + the closure bar in scripts/work_items.py: a child of this epic can no longer be closed on prose alone, which is how 27/28/30 closed on weaker evidence than they claimed. Plus scripts/ci_wait.py exit 3, which is why child 30's recurrence was seen. The flake CLASS itself remains unguarded -- no mechanism prevents the next one, only the next premature closure."
 refs = [
   "docs/dev/diagnosis/ux-scroll-position-flake.md",
 ]
@@ -194,3 +195,58 @@ capability-proven mechanism, two-phase app+harness fix. The epic's own original 
 "explicitly not one mechanism, do not conflate them" — held throughout: five independent
 investigations, five different dispositions, zero shared root cause. Unblocks one of item 10's
 five `depends_on` entries (still gated on 3, 6, 7, 9).
+
+### 2026-08-05 — REOPENED (child 30 recurred in CI)
+
+Status `closed` → `open`. Child **30** recurred in CI on PR #102 five days after its
+closure, with a captured instrument artifact showing a 30s timeout while every quiescence
+signal read ready — a mechanism the 2026-07-31 fix does not cover. See item 30's
+2026-08-05 update for the raw evidence.
+
+The `resolution` line above is left unedited as the record of what was believed on
+2026-07-31. Reading it now, the disposition mix is itself the finding: of five children,
+**27** was already fixed before it was filed, **28** was closed as *not reproduced* (not
+proven fixed), and **30** was closed on a fix for *a* vulnerability with a matching symptom
+that its own text admitted was "not confirmed as the historical cause." Only **29** and
+**31** were closed on an observed-and-reproduced mechanism.
+
+So three of five closures rested on something weaker than "we saw this fail, we fixed that,
+it stopped failing" — and the one that came back is one of the three. That is a
+**systematic** weakness in the closure bar, not bad luck on a single item.
+
+**Consequence for item 10** (`depends_on = [3, 6, 7, 9, 19]`): the v1.1.0 release chain is
+gated on 19 again. This is not a scheduling technicality — it is the correct signal, and it
+should not be routed around by re-closing 19 without evidence.
+
+### 2026-08-06 — the closure-bar's `verified_by` artifact now exists (`feat/flake-rate-measurement`)
+
+**Owner-decided next branch after C-11/C-12 landed: build the instrument that can
+produce a falsifiable rate, not another investigation.** `scripts/flake_rates.py` +
+the committed store at `docs/dev/flake-rates/` now extract true per-test, per-attempt
+failure rates from CI job logs — the thing every prior measurement on this epic (the
+~42% figure above, item 44's ~67%, the 64%/11-run measurement) had to reconstruct by
+hand, and each of which is separately marked unusable now. **This branch measures; it
+does not diagnose or close anything.**
+
+First backfill, 30 real CI runs (2026-08-03 → 2026-08-06, 233 pytest sessions, all
+reconciled): **exactly 4 tests failed at least once.** Two are this epic's own
+territory:
+
+- **Item 44's test** (closed 2026-08-04, not a child of this epic but the epic's
+  guardrail names it) — 21/48 attempts failed, 11 distinct SHAs, but the failures
+  **cleanly stop at the fix's own landing**: every one of the 15 runs since
+  `fix/ux-scroll-spy-overlapping-refresh` merged is clean (zero reruns, zero
+  failures); every one of the 15 runs before it shows a rerun or a 3/3 exhaustion.
+  Independent confirmation the fix held, from data outside the closure's own PR.
+- **Item 30** (this epic's own reopened child) — a previously unfiled third
+  occurrence found (2026-08-03, four days after its "fix," two days before the known
+  PR #102 recurrence) — see item 30's own 2026-08-06 update for the citation.
+
+The other two (`tests/test_wiki_freshness_gate.py` — a real, non-flaky merge-block on
+a specific historical commit, not relevant to this epic; and item 46's already-known
+sample, independently reproduced) are outside this epic. Full breakdown, per-test
+rates, and the store's own stated limits: `docs/dev/flake-rates/README.md`.
+
+**What this does not do:** set a threshold, propose a fix, or argue any item should
+close. The instrument is a `verified_by`-shaped artifact for whichever branch next
+picks up item 30 or a similar recurrence — it does not spend that artifact here.

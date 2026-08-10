@@ -63,3 +63,16 @@ own investigation. One sample so far.
 ## Updates
 
 ### 2026-08-04 — filed during feat/consumer-enumeration-gate (CI observation on PR #99)
+
+### 2026-08-06 — independently reproduced by the flake-rate instrument; still n=1
+
+`feat/flake-rate-measurement`'s 30-run backfill (2026-08-03 → 2026-08-06) parsed the
+same run this item already cites
+([`30940947527`](https://github.com/take-tempo-public/sartor/actions/runs/30940947527))
+and independently arrived at the identical result: `tests/test_hardening.py::
+TestWriteContextAtomic::test_reader_never_observes_a_partial_file`, py3.13 leg only, 1
+of 1 attempts failed. **This is cross-validation of the parsing instrument against a
+known artifact, not a new occurrence** — no second failure of this test appears
+anywhere in the 30-run window (which spans both before and after this item's own
+2026-08-04 filing date). The item's own escalation signal ("if this blocks a second
+PR, it stops being a watch item") has not fired. No status change.

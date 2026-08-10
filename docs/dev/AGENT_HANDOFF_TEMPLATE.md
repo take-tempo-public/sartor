@@ -142,6 +142,32 @@ output.
 
 ---
 
+## Recurrences observed this session → guardrail authored
+
+<!-- REQUIRED — do not delete. Charter C-11. This section exists because
+     `scripts/verify_doc_template.py` refuses a handoff without it, which means a
+     session cannot close while leaving C-11's question unanswered.
+
+     A RECURRENCE is any failure mode you recognized as happening before — a second
+     instance, or a first instance you recognized as a member of a known class. It does
+     NOT have to be a bug: a process failure, a doc that was stale again, an assumption
+     you caught yourself making again, all count.
+
+     For EACH one, write one row:
+       - what recurred, and how you recognized it as a recurrence (not a first sighting);
+       - the mechanism you authored on this branch that fails closed — a guard, a gate, a
+         test, a schema rule. Name the file.
+       - OR, if you authored none: say so PLAINLY, say why, and confirm you surfaced it to
+         the user. "Filed as a work item" is NOT a mechanism. "Wrote it in the ledger" is
+         NOT a mechanism. "Added a note to the docs" is NOT a mechanism. Those record the
+         problem; C-11 exists because in this repo they have never once fixed it.
+
+     If nothing recurred, write "None observed." — but read that answer twice before you
+     write it, because "I didn't notice any" is exactly what every session that fed this
+     backlog would also have written. -->
+
+---
+
 ## What this branch should build
 
 <!-- Numbered list of concrete deliverables. Each item must:
@@ -317,10 +343,19 @@ selector) — and **decide-and-document each site before the first edit.**
    and orphans the local commits it replaces (it already produced one zombie
    commit, `9f3c800`, before this was understood). Ask the user to confirm,
    then: `git push -u origin <branch>` → open the PR (`gh pr create`, or hand
-   the user the URL) → **wait for all required checks to go green** →
+   the user the URL) → **wait for the required checks with
+   `python -m scripts.ci_wait <n>`** →
    `gh pr merge <n> --merge` (never `--squash` / `--rebase`) →
    `git checkout main && git pull --ff-only`. Use `--ff-only` so an unexpected
    divergence fails loudly instead of silently manufacturing a merge commit.
+   **`scripts/ci_wait.py` is the single definition of "the PR is green" — never
+   hand-roll a watcher, a poll loop, or a `gh pr checks … | jq` one-liner.** It
+   exits **0** only when every required check passed *and* no test needed a
+   retry; **3 = green-after-retries** (charter C-7 rule 3 — stop and look, do
+   not merge on it reflexively), **1** a failing required check plus its log
+   tail, **8** the deadline expiring, **2** a wrapper error. Two hand-rolled
+   30-minute watches once ran to completion emitting *nothing* while a required
+   check was already red — that silence is the failure this replaces.
    **Pushing is outward-facing on a public repo:** state what will become
    public — including any commits already on your local `main` that the remote
    does not have, since they ride along — and get explicit confirmation before

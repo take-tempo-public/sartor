@@ -124,6 +124,54 @@ incident that motivates C-10 sits in that blind spot. There is also no CI backst
 | Close-out sweep / handoff / carry-forward ledger | **tribal (AGENTS.md) — keep tribal** | judgement-shaped, no clean deterministic predicate; honestly separated from the enforced set today (F-gov-04). The cumulative open-ledger discipline (charter W-1.4) is a written rule, not a gate — do not manufacture a brittle predicate |
 | New-dependency justification, PROMPT_VERSION bump | **convention + witness** | `ruff-changed` blocks lint, but the "couldn't be done in pure Python" and version-bump rules stay reviewer-judgement; gating them invites false positives |
 
+## Enforcement reach — WHICH agents each gate actually binds (read this before extracting governance)
+
+> **This section is the extraction checklist.** A clause enforced only by a Claude Code hook
+> **does not travel** — not to Codex, Cursor or Aider today, and not to a governance package
+> extracted into another project tomorrow. The split below is invisible from any single file,
+> which is exactly why it went unrecorded until 2026-08-05.
+
+Guards reach agents through three adapters with very different coverage:
+
+| Adapter | Reach | Guards routed |
+|---|---|---|
+| `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
+| `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, the C-8/C-12 context hooks |
+
+### The gap, named
+
+**`require_evidence_before_fix` (C-7) and `require_consumer_enumeration` (C-10) are Claude
+Code only.** Both clauses are real and both are enforced *here* — but outside Claude Code
+nothing enforces either one. The same is true of C-8's `restore-evidence`/`capture-before-compact`
+and C-12's compaction disclosure.
+
+**`verify_binary_on_path` (`feat/verify-dont-assume-guard`) is Claude Code only too — and,
+unlike C-7/C-10, deliberately has no planned git-native path.** It parses a Bash
+command-string, a shape that exists only in the Claude PreToolUse contract; a git
+`pre-commit`/`pre-push` hook never sees a proposed shell command, so there is no equivalent
+input to route this guard from. Named here rather than left to be discovered during
+extraction, same as the other two.
+
+Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
+(it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude
+Code hooks, and the handoff recurrence section is a script anyone *can* run but nothing
+*forces* a non-Claude agent to.
+
+This is a **stated limit, not a defect to paper over** (C-0). Closing it means giving C-7 and
+C-10 a `git_hook.py` path — which is a real design question, since both depend on knowing the
+current branch and the file being edited, and a git `pre-commit` hook sees a different slice
+of that than a PreToolUse hook does. It is deliberately **not** decided here; it is the
+open question the README's pending tool-agnostic-enforcement decision already tracks, and
+work item **50** carries it.
+
+**Kept honest by construction.** [`../../tests/test_enforcement_coverage.py`](../../tests/test_enforcement_coverage.py)
+*derives* the routing from `git_hook.py` at runtime and fails if a guard is added without
+declaring its reach, if the declared table drifts from what the adapter actually imports, or
+if this section stops naming the gapped guards. So the gap cannot be silently inherited: a
+future branch that closes it, widens it, or adds a new Claude-only guard has to say so in
+the diff.
+
 ## Why the split is principled, not lazy
 
 The dividing line is **C-0's own test**: *can a deterministic check enforce this by

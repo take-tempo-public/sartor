@@ -288,3 +288,37 @@ class TestRealTemplate:
             "Hard constraints (copy verbatim — do not shorten)",
             "Branch close-out checklist (do in this order before closing the window)",
         }
+
+    def test_the_c11_recurrence_section_is_required_of_every_handoff(self) -> None:
+        """Charter **C-11**'s enforcement (M4), and the reason it is not merely advice.
+
+        `required_headings()` selects every `##`-or-deeper heading with no allowlist, and
+        `match_headings()` demands each one be present *in relative order*. So the mere
+        presence of this section in the template is what makes a handoff lacking it a hard
+        `failed` — no code in `verify_doc_template.py` names it specially, and none needs to.
+
+        Deliberately **not** a `<!-- verbatim -->` section: its content is per-session (what
+        recurred, what mechanism was built), not boilerplate to reproduce byte-for-byte.
+        What is enforced is that the question gets answered at all.
+
+        **Stated limit (C-0):** this forces the question to be answered. It cannot check the
+        answer is true, or that the named mechanism exists.
+        """
+        template_path = _REPO_ROOT / "docs" / "dev" / "AGENT_HANDOFF_TEMPLATE.md"
+        content = template_path.read_text(encoding="utf-8")
+        required = required_headings(parse_headings(content))
+        titles = [h.text for h in required]
+        assert "Recurrences observed this session → guardrail authored" in titles
+
+    def test_a_handoff_missing_the_c11_section_is_rejected(self) -> None:
+        """The teeth, asserted directly: strip the section, validation must fail.
+
+        Without this, the test above would only prove the heading exists in the template —
+        not that its absence from a handoff is actually caught.
+        """
+        template_path = _REPO_ROOT / "docs" / "dev" / "AGENT_HANDOFF_TEMPLATE.md"
+        template = template_path.read_text(encoding="utf-8")
+        # A "handoff" that reproduces the template exactly, minus the C-11 section.
+        doc = template.replace("## Recurrences observed this session → guardrail authored", "")
+        errors = validate(doc, template)
+        assert any("Recurrences observed this session" in e for e in errors), errors

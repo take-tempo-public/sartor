@@ -13,6 +13,327 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: plan-approval marker survives a PR-channel merge — item 45 closed (`fix/plan-approval-marker-pr-merge`)
+
+The prior session's staged fix design (D3(b): a `SessionStart` reconciler stamping
+the branch + HEAD SHA at `ExitPlanMode` time) was disproven before being built —
+`ExitPlanMode` fires while HEAD is still on `main` (the feature branch is created
+afterward, per `AGENTS.md`), so an approval-time stamp would record `branch=main,
+sha=<main's own tip>`, which is trivially an ancestor of `main` forever. That design
+would have archived a legitimately-armed marker at the first `startup/resume/compact`
+after every single approval. Full refutation, verified against this repo's own reflog
+and marker mtime: `docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "D3(b)
+refuted". Pivoted (owner-approved) to D3(c): the same channel-independent ancestry
+check (a branch either no longer exists, or its tip is now an ancestor of `main` but
+wasn't already an ancestor of the `main` tip recorded at stamp time), moved into the
+**existing** `check-plan-approved.sh` PreToolUse blocker instead of a new hook, with
+the stamp written **late** — on the first production edit after approval, the moment
+`require-feature-branch` guarantees HEAD is a real feature branch, never `main`. No
+new hook file, no `.claude/settings.json` change, no
+`tests/test_governance_hooks_gate.py` edit. Cost-conscious: everything through the
+"has anything changed" decision uses bash builtins and direct ref-file reads, never a
+`git` subprocess, so the steady state (branch unchanged, `main` unmoved) costs nothing
+extra — verified by a runnable test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`)
+that shims `git` and asserts zero invocations, not just claimed in a comment. Owner
+directive (archive, never delete, preserving decision provenance) implemented via a
+new shared `hooks/lib/retire-approved-plan.sh` — `mv`s the retired plan into
+`$HOME/.claude/plans/archive/`, writes a local manifest, and appends a `plan-archived`
+receipt to the session's tracked ledger shard (basename only, never the absolute
+path — this repo is public) — sourced by both `check-plan-approved.sh` and
+`cleanup-plan-on-merge.sh` (which switches from `rm -f` to the same archive path, so
+a plan retired via either channel is retired identically). 18 new regression tests in
+`tests/test_plan_approval_scoping.py`, confirmed RED against the pre-fix hooks before
+the fix landed (`git stash` the two hook files, rerun, confirm failure, restore), then
+GREEN after. Filed a carry-forward item (55) for the `plan-archived` ledger-event
+vocabulary drift this receipt introduces (`docs/dev/prov/SPEC.md`'s own event list
+goes unamended, following the `compacted` precedent, since SPEC.md is itself a C-10
+gated surface) rather than silently absorbing it. **Two more genuine, always-latent
+defects found and fixed while building the archive+receipt mechanism, both
+root-caused via direct reproduction, not guessed at** (full evidence:
+`docs/dev/diagnosis/plan-approval-marker-pr-merge.md` "Falsified"): a `$HOME`-derived
+path handed to `python3` as an argv string is silently wrong on Windows/Git-Bash
+(`$HOME` is auto-translated by MSYS to POSIX form, which a native `python3.exe`
+misinterprets — `/c/Users/x` resolves to `C:\c\Users\x`, which doesn't exist), fixed
+by routing every such path through `cygpath -m` first; and the archive directory name
+embedded the entire sanitized project path, which for a sufficiently long real
+project path pushes `<archive_dir>/manifest.json` past Windows' 260-char `MAX_PATH`
+(reproduced exactly: `plan.md` stayed under the limit, `manifest.json` tipped it
+over), fixed by hashing the project key to 12 hex chars for the directory name
+(matching this project's own fingerprint convention) while keeping the full path in
+the manifest's own content. **A third, caught by this PR's own CI on first push**
+(all three Python-version lint/test jobs failed identically): the new
+`test_missing_git_is_a_no_op`'s own test helper blacklisted every PATH directory
+containing `git`, which on the Linux runner also removed `bash` itself (`git` and
+`bash` share `/usr/bin` there) — `FileNotFoundError: 'bash'`, fetched directly from
+the failed job's log, not guessed at. A test-helper defect, not a hook defect; fixed
+by rebuilding the helper to preserve the small set of binaries the hook needs via a
+per-binary shim instead of blacklisting whole directories.
+
+### Fixed: item 45 reopened same day — a brand-new branch after a merge inherited a stale approval (`fix/plan-approval-branch-switch-gap`)
+
+Found while scoping an unrelated multi-branch orchestration design, not while chasing
+this item. The D3(c) reconciliation just closed above ran its "late-bind the stamp to
+the current branch" block *before* its "reconcile whatever was previously stamped"
+block, so switching straight from an already-merged branch to a brand-new one — the
+ordinary "finish task, start the next one" flow, and the only shape
+`require-feature-branch` actually allows, since it never permits an edit while
+`HEAD == main` — silently overwrote the stamp before the old branch was ever checked.
+This is the same original symptom item 45 was filed against, not a new defect class:
+the committed regression suite only ever exercised same-branch-continuation and
+`HEAD == main` shapes. Two isolated throwaway repros confirmed it, and it then fired
+for real on this session's own actual marker while writing the diagnosis dossier —
+this session had never called `ExitPlanMode`, yet a brand-new branch's first edit was
+allowed. Full evidence: `docs/dev/diagnosis/plan-approval-branch-switch-gap.md`. Fixed
+by reordering the two blocks in `hooks/check-plan-approved.sh` so the previously-stamped
+branch is reconciled — archived and blocked if warranted — before it can be overwritten.
+A candidate belt-and-suspenders addition (force reconciliation on every branch switch,
+independent of the mtime pre-filter) was tried and dropped after empirically confirming
+the existing mtime conditions already catch the real case, keeping the fix minimal — the
+efficiency test (`TestEfficiency::test_no_git_subprocess_when_main_has_not_moved`) still
+passes unmodified. New regression test,
+`test_new_branch_after_merge_requires_fresh_approval`, confirmed RED against the
+just-closed code before the fix, then GREEN after; full 26-test suite (up from 18)
+green, no reruns.
+
+### Added: `verify-binary-on-path` PreToolUse guard + Bash-hook dispatcher fold (`feat/verify-dont-assume-guard`)
+
+A new PreToolUse guard (`scripts/enforcement/guards/verify_binary_on_path.py`)
+checks the leading binary of each top-level Bash command segment against `PATH`
+before the command runs, blocking with a factual "'X' not found on PATH" message
+instead of letting a multi-step command die deep inside on a bare
+"command not found". Deliberately fail-open: substitutions, subshells, heredocs,
+bare-variable leads, unbalanced quotes, MSYS `/c/`-style paths, `||`-guarded
+segments, and probe commands (`command -v`, `which`) are allowed unchecked —
+stated in the module's own docstring, and the block message explicitly limits its
+claim to the PATH lookup (charter C-0). In the same branch, the three standalone
+PreToolUse/Bash hook wrappers (`block-secrets.sh`, `block-merge-to-main.sh`,
+`ruff-changed.sh`) were folded into one dispatcher
+(`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
+mirroring PX-37's Edit|Write dispatcher — guard decision logic untouched,
+no-short-circuit aggregation, one process per Bash call instead of three.
+Declared reach: Claude Code PreToolUse only (joins the pinned extraction gap in
+`tests/test_enforcement_coverage.py`; no git-native adapter exists for a
+Bash-command-string guard). Known defect found in first live use, filed not fixed:
+the quote-parity tracker misreads heredoc bodies containing prose quotes and can
+false-BLOCK (workaround per its own message: rephrase, e.g. `git commit -F`).
+
+### Changed: item 45 diagnosed end-to-end; both fix shapes characterized, neither implemented (`fix/plan-approval-marker-pr-merge`)
+
+C-7 dossier at `docs/dev/diagnosis/plan-approval-marker-pr-merge.md`: re-verified
+item 45's three inherited observations live, and added an isolated reproduction
+(throwaway `HOME` + git repo) proving `cleanup-plan-on-merge.sh`'s wipe mechanism
+is command-text shape, not "did a merge structurally occur" — a fully merge-shaped
+PR-channel event leaves the plan-approval marker armed. Both candidate fix shapes
+characterized: a `gh pr merge` command matcher is structurally insufficient
+(misses server-side auto-merge — enabled in this repo — GitHub-UI merges, and
+other-terminal merges); the sound variant of SessionStart reconciliation (an
+additive approval-time stamp + branch-ancestry check) is designed and staged in
+the dossier but deliberately **not built** — a first-of-its-kind mechanism that
+autonomously deletes approval state warrants an explicit owner decision before
+being written. Item 45 stays open; no `verified_by` claimed.
+
+### Fixed: `hooks/bash-dispatcher.sh` executable bit + doc-link false positives (`fix/chain-gate-integration`)
+
+Two gate failures introduced by post-gate artifacts that were never re-gated
+against the final committed tree: `hooks/bash-dispatcher.sh` was committed at git
+mode 100644 (caught by `test_every_hook_script_is_executable_in_the_index` —
+third sighting of the class `dfe1767` first fixed), and two handoffs' inline
+regex literal `](`-sequence parsed as a markdown link and tripped
+`test_no_broken_cross_document_links_or_cites` (fixed per D5 cite-don't-restate:
+name the symbol's home, don't restate the pattern).
+
+### Added: `groups:` in `.github/dependabot.yml` — collapse same-ecosystem minor/patch bumps into one PR per ecosystem (`chore/dependabot-groups`)
+
+11 dependency-upgrade PRs were open and ungrouped (8 fully green, never merged — a
+separate merge-policy gap, tracked on `docs/dev/RELEASE_CHECKLIST.md`'s Carry-forward
+ledger, not fixed here). Added a `groups:` key to each of the three `update:` blocks
+(`pip`, `github-actions`, `npm` in `/docs-site`), grouping `minor` + `patch`
+`update-types` per ecosystem so dependabot's next scheduled run opens roughly one
+grouped PR per ecosystem instead of one PR per dependency. `major` is deliberately
+left out of every group so a breaking bump still opens its own individually-reviewable
+PR. Schema follows GitHub's documented `groups` reference exactly; validated locally
+by parsing the file with `yaml.safe_load` (no server-side dependabot dry-run exists).
+**Verifying the resulting grouped PRs actually land grouped is explicitly out of scope
+for this commit** — dependabot only re-evaluates config on its own schedule, so this is
+next-morning, post-merge work, not tonight's.
+
+### Added: `scripts/flake_rates.py` — real per-test CI flake rates from job logs, the closure bar's `verified_by` artifact (`feat/flake-rate-measurement`)
+
+"The UX suite is flaky" had never been a number with a citable source. Three prior
+measurements existed and each is now marked unusable: the ~42% figure in
+`docs/dev/RELEASE_ARC.md` is scoped to "5 distinct settle/restore-family tests" with no
+source naming which 5; item 44's ~67% is explicitly marked "supersede this arithmetic,
+do not carry it forward"; a 64%/11-run measurement was recovered by hand-pulling CI
+logs. Meanwhile the ux tier's own rerun-rate alarm has fired on every CI run since
+`feat/rerun-rate-alarm` and landed in the job log unread. Charter **C-11**'s closure
+bar (landed the prior branch) now refuses to close a work item on prose — closure needs
+a falsifiable `verified_by` artifact, and nothing in the repo could produce one for a
+flake. This is that instrument, not a threshold: **nothing here fails closed** on a
+test's rate (C-12 — a budget cannot be set before there is data; the follow-on gate is
+tracked, unbuilt, as work item 51).
+
+`scripts/flake_rates.py collect` fetches CI runs via `gh` (one whole-run log fetch per
+run — every job comes free in that fetch, latency-bound not payload-bound, per
+`ci_wait.distinct_run_ids`'s own measured finding) and parses every pytest session it
+finds into a committed, content-addressed store at `docs/dev/flake-rates/`.
+`... report` ranks by **Wilson 95% lower bound**, not raw rate, so a test failing 1/1
+cannot outrank one failing 12/300; anything below `--min-attempts` (default 20) is
+reported separately as insufficient data rather than dropped.
+
+Design was verified against a real captured log (`gh run view 31047661015 --log`, the
+run in which item 30 recurred) before any production code was written, and the first
+30-run backfill surfaced one more gap live. Fourteen numbered observations (O-1…O-14,
+full detail in the module's own docstring) — three worth naming here because each broke
+a first-draft parser **silently**, no exception, no zero result, just a quietly wrong
+count: a custom `pytest_runtest_logreport` hook's own `\n` splits pytest's outcome line
+for a reran test's first attempt; pytest-xdist prints a bare-nodeid "dispatch echo"
+before its `[gwN] ...` result line, indistinguishable in shape from the rerun-orphan
+fragment above (one rule discards both correctly); and pytest's own `=== FAILURES ===`
+section — traceback plus the short-summary restatement — lands *after* every outcome
+line, immediately before the terminal summary, never inline after the failing test's
+own line, which the first backfill attempt caught directly (7 of 233 real sessions
+would have been wrongly excluded). A session-level reconciliation guard (parsed roster
+size vs. the terminal summary's own declared counts) is what would have caught all
+three, and is the load-bearing check going forward — an unreconciled session is
+excluded from rates, never silently trusted.
+
+First backfill (30 real runs, 2026-08-03 → 2026-08-06, 233 sessions, all reconciled)
+found exactly 4 tests with any failure. Findings filed on the relevant work items
+rather than restated here: item 44's fix independently confirmed via a clean
+before/after regime split (15/15 clean since the fix landed, reruns/exhaustions before
+it); item 30 gained a previously unfiled third occurrence (2026-08-03, four days after
+its "fix," two days before the known PR #102 recurrence — the exact "alarm fires,
+nothing reads it" pattern item 44 already named, now dated and cited); item 46's known
+single sample independently reproduced; item 47's sibling-audit request got a partial,
+labeled contribution (19 of 20 tests in the file clean across up to 30 runs); item 48's
+pytest-step duration came back tight and unremarkable even on its own cited run,
+narrowing its 3x job-duration anomaly to something outside pytest's own execution time.
+
+`tests/test_flake_rates.py` (38 tests) pins verbatim real-log fixtures for both output
+shapes (sequential and xdist), asserts the parser reproduces item 30's captured
+evidence independently, and — mirroring `tests/test_work_items_closure_bar.py`'s own
+standard — mutates each clean fixture (drop the summary, drop an outcome line) and
+asserts the session is excluded, not silently reported clean. No new dependency
+(stdlib only). Consumer enumeration for the gated `scripts/wiki_relevance.py` edit
+(classifying the new `docs/dev/flake-rates/` store as wiki-irrelevant):
+`docs/dev/blast-radius/flake-rate-measurement.md`.
+
+### Governance: charter **C-11** (enforcement before discipline) + **C-12** (declare the gap), with four mechanisms (`feat/enforcement-first-governance`)
+
+**Owner-directed, from measured failure.** The governing posture changes: **a constraint
+with no mechanism that fails closed is not a constraint** — it is a prediction about the
+model's future good behavior, and this project measured that prediction and found it false.
+New governance now defaults to a **gate**; prose discipline is the exception and is labeled
+*unenforced* where used.
+
+The measurement, all from this repo's own record: **~20 merged branches on UX-suite flakes
+in 40 days** (2026-06-27 → 2026-08-04), one branch merged **three times** over the same
+flake; **item 30 recurring in CI five days after closure**, visible only because
+`scripts/ci_wait.py` read the job log while `gh pr checks` reported the run clean; **three
+of epic 19's five closures resting on weaker evidence than they claimed** (27
+already-fixed-before-filing, 28 *not reproduced*, 30 on a fix its own text called "not
+confirmed as the historical cause"), the one that came back being one of the three; and
+**seven bespoke synchronization primitives across 79 occurrences in 14 files**, accreted one
+per flake with no single owner. C-7, C-8 and C-10 already said most of the right things and
+did not hold, because each left the decisive moment to the model's judgment.
+
+- **C-11 — Enforcement before discipline.** The **first** time a failure mode is recognized
+  as a recurrence, the response is a mechanism that fails closed, authored on that branch. A
+  note, a memory, a ledger row, or a new prose rule is **not compliant on its own**. Where no
+  mechanism is possible, the gap is declared explicitly and surfaced to the owner.
+- **C-12 — Declare the gap; never fill it.** Information the session no longer holds is
+  surfaced as **missing** before anything depends on it. Compaction and context loss are
+  data-loss events **to be announced**. "I no longer have this" is a required output.
+
+**Four mechanisms, each riding a gate that already blocks:**
+
+1. **Closure bar** (`scripts/work_items.py`, runs in `scripts/gate.py` **and** CI, so it
+   binds every agent). `status = "closed"` needs a falsifiable `verified_by` artifact — a
+   test path, gate, guard, or CI run id — or a `closure_exception` **naming the owner**. And
+   an item carrying `resolution` while *not* closed (i.e. reopened) needs a `guardrail`
+   naming the mechanism authored in response, or a `guardrail_deferred` saying plainly that
+   none was. Proven against the real backlog: the reopen rule fired on exactly items 19 and
+   30. Grandfathering is finite and **closed** — the 19 pre-adoption ids are pinned by a test,
+   so adding one requires editing that test in the same diff.
+2. **Observed-citation floor** (`scripts/enforcement/evidence.py` + the
+   `require-evidence-before-fix` guard). A `## Observed` section that clears the character
+   floor but cites *nothing* now blocks the production edit.
+3. **Compaction disclosure** (`scripts/enforcement/adapters/claude_context_hook.py`). Closes
+   a verified gap: `restore_evidence()` keyed off a `fix/*` dossier and returned `""`
+   otherwise, so a compaction on a `feat/*`/`chore/*` branch injected **nothing**. Now
+   PreCompact writes a durable `compacted` receipt to the session ledger, and
+   SessionStart(`compact`) always injects an information-loss declaration.
+4. **Handoff must answer C-11** (`docs/dev/AGENT_HANDOFF_TEMPLATE.md`). A new required
+   section, `## Recurrences observed this session → guardrail authored`. No validator change
+   was needed — `verify_doc_template.py` already demands every `##` heading in relative
+   order, so a session cannot produce a compliant handoff without answering the question.
+
+**Stated limits, up front (C-0).** None of this detects invention. M2 and M4 enforce *shape*
+— a fabricated run id passes both. `verified_by` is not existence-checked. `closure_exception`
+is a real escape, deliberately **named and attributed** rather than silent; routine use is
+itself the signal, and it is visible in the diff. And M2/M3 are Claude Code hooks, so they do
+**not** bind Codex/Cursor/Aider — only M1 (gate + CI) binds every agent. The honest claim is
+that an unsourced assertion becomes non-committable, **not** that a dishonest one becomes
+impossible.
+
+No new dependency. Consumer enumeration re-derived on this branch (not copied):
+`docs/dev/blast-radius/enforcement-first-governance.md`.
+
+### Added: `scripts/ci_wait.py` — one deterministic definition of "the PR is green" (`feat/ci-wait-wrapper`)
+
+Waiting for CI was the last close-out step every session re-implemented by hand, and two
+hand-rolled watchers had already failed in the same expensive way. `scripts/ci_wait.py`
+does for "the PR is green" what `scripts/gate.py` (PX-55) did for "gate green": one script,
+one definition, invoked as `python -m scripts.ci_wait [<pr>]`. AGENTS.md close-out step 4
+and the handoff template's verbatim close-out block now name it, and forbid hand-rolled
+watchers.
+
+Two observed failures set the requirements:
+
+1. **A silent watcher reads as a healthy one.** Two 30-minute `Monitor` watches on PR #99
+   ran to completion emitting **zero** events while a required check was already red — ~1
+   hour lost, and the silence read as "still running, all fine." Contributing: there is no
+   system `jq` binary on this machine, and `gh pr checks` exits *nonzero* on failure, so the
+   common `gh pr checks … | jq … || echo '[]'` shape discards the real output at precisely
+   the moment it carries the failure. The wrapper therefore parses `--json` with Python's
+   own `json` (never `jq`, not even `gh --jq`), treats a nonzero `gh` exit as *data* rather
+   than an error, and prints exactly one terminal `ci-wait: <VERDICT> (exit N)` line from a
+   `finally` block — silence is made structurally impossible, since silence is the defect.
+
+2. **Green-after-retries was indistinguishable from green.** The ux tier has printed
+   `[ux] rerun-rate alarm: N test(s) needed a retry this run` since `feat/rerun-rate-alarm`,
+   and **nothing read it** — charter **C-7** rule 3 going unenforced at the point of use.
+   Confirmed directly rather than assumed: on PR #99's ux job (`92148736760`)
+   `gh pr checks 99 --required` reports bucket `pass` while that job's own log records
+   `2 attempt(s) failed` for the scroll-spy test. The wrapper scans the required runs' logs
+   and routes that **existing** alarm into its verdict rather than building a second
+   mechanism.
+
+Exit codes: **0** all required green with zero absorbed reruns · **1** a required check
+failed (printing that job's `--log-failed` tail, so the traceback needs no second
+round-trip) · **2** wrapper error, *including a rerun scan that could not complete* — an
+unverifiable scan must never read as clean · **3** green-but-reruns-absorbed · **8** still
+pending at the deadline. Exit 3 is owner-selected: it applies C-7 rule 3 at the wrapper
+boundary **without** disturbing CI's deliberately report-only rerun policy (owner decision
+2026-07-20) — the build still passes; the caller is simply told the difference. Required
+and advisory checks are partitioned, so `pip-audit`, the docs deploy, and the label-gated
+smoke eval are reported but never gate.
+
+Verified end-to-end against real historical PRs, which is the A/B: PR #100 → `GREEN`
+(exit 0); PR #99 → **identical `pass` buckets** but `GREEN WITH RERUNS` (exit 3), naming
+the test and its 2-of-3 failed attempts. Deadline, error, and `--no-rerun-scan` paths each
+confirmed to print a terminal line. Log fetches dedupe by **run**, not job — measured
+2026-08-05, a 4-job 2.88 MB run log takes 4.7 s against 4.4 s for a single 133 KB job log,
+so the cost is per-request, and the six required checks' three runs cost three round-trips
+where per-job scanning would cost six.
+
+`tests/test_ci_wait.py` covers the exit-code matrix, the bare `/runs/<id>` link CodeQL emits
+(no job log — reported, never skipped silently), a **negative control** on a clean log so
+the scanner cannot pass vacuously, and an emitter↔scanner **drift contract test** that reads
+`tests/ux/conftest.py` as text and asserts the format strings it prints are the ones these
+regexes match. No new dependency. Consumer enumeration for the gated handoff-template edit:
+`docs/dev/blast-radius/ci-wait-wrapper.md`.
+
 ### Fixed: the UX scroll-spy settle gate leaked a pending restore, flaking every CI run (`fix/ux-scroll-spy-overlapping-refresh`, item 44)
 
 `test_scroll_spy_attributes_overlapping_refresh_corpus_calls` failed at least one attempt

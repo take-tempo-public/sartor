@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/fix-chain-gate-integration.md", "session": "2859b199-f3c9-4030-a8c7-d3e7548831dd", "branch": "main", "commit": "c15d080", "actor": "amodal1", "agent": "claude-sonnet-5", "ts": "2026-08-07T05:12:32Z", "fingerprint": "b1224a080010"}
+{"event": "compacted", "session": "unknown", "branch": "docs/wiki-enforcement-catchup", "trigger": "unknown", "ts": "2026-08-07T05:33:15Z"}
+{"event": "compacted", "session": "unknown", "branch": "docs/wiki-enforcement-catchup", "trigger": "unknown", "ts": "2026-08-07T05:51:42Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-wiki-enforcement-catchup.md", "session": "2859b199-f3c9-4030-a8c7-d3e7548831dd", "branch": "docs/wiki-enforcement-catchup", "commit": "3ac5ed8", "actor": "amodal1", "agent": "claude-sonnet-5", "ts": "2026-08-07T05:58:06Z", "fingerprint": "0109f1b44cb9"}

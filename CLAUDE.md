@@ -121,9 +121,23 @@ hooks for any agent writing code here:
   `output/**/context_*.json` writes.
 - `block-merge-to-main` — blocks merge/push to main without
   explicit `CLAUDE_CONFIRM_MERGE=1`.
+- `verify-binary-on-path` — blocks a Bash command whose leading
+  binary is not on `PATH` ("'X' not found on PATH"), so multi-step
+  commands fail at the gate instead of deep inside. Deliberately
+  fail-open on anything it cannot parse with certainty (substitutions,
+  heredocs, MSYS `/c/` paths, `||`-guarded segments) — the block
+  message limits its claim to the PATH lookup (C-0).
 - `wiki-freshness-reminder` — non-blocking nudge after
   `git commit` when `docs/wiki/` may be stale (silent until the
   first `/wiki-ingest` sets a baseline; never auto-ingests).
+
+**Wiring note (`feat/verify-dont-assume-guard`):** the four Bash-matcher
+guards (`block-secrets`, `block-merge-to-main`, `ruff-changed`,
+`verify-binary-on-path`) run through one dispatcher
+(`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
+and the six Edit|Write guards through another
+(`hooks/edit-write-dispatcher.sh`, PX-37) — one settings.json entry and one
+process per matcher, no-short-circuit aggregation, guard logic unchanged.
 
 ### Skill + subagent catalog
 

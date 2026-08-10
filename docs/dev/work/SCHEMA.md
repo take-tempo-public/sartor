@@ -66,9 +66,21 @@ incompatible delimiter convention.
 | `branches` | array of str | no | a record, not a reference — never checked against git, branches die |
 | `refs` | array of str | no | doc/path pointers (e.g. `"blueprints/diagnostics.py:817-820"`) — not existence-checked |
 | `summary` | str | yes | one line, **hard-capped at 120 characters** |
+| `verified_by` | array of str | **when `status` is `"closed"`** (unless `closure_exception`) | **Charter C-11 closure bar.** A falsifiable artifact that would fail without the fix: a test path, a gate, a guard, or a CI run id. Prose belongs in `resolution`; this field is for the thing someone else can re-run. Not existence-checked — the gate enforces that a claim was *made*, not that it is true (stated limit, C-0) |
+| `closure_exception` | str | alternative to `verified_by` | The escape, deliberately **named and attributed**: who accepted a closure with no falsifiable artifact, and when. Silent exceptions are the failure mode; a visible one in the diff is the signal |
+| `guardrail` | str | **when the item carries `resolution` but is not `closed`** | i.e. it was closed once and **reopened**. Charter C-11: recognizing a recurrence obligates a *mechanism*, and this names it. A note, a memory, or a ledger row is not a mechanism |
+| `guardrail_deferred` | str | alternative to `guardrail` | Says plainly that no mechanism was authored, and why. C-11 permits "none was possible"; it forbids leaving that implied |
 | `[x]` | table | no | opaque namespace, ignored wholesale by the validator — an escape hatch for a field this schema doesn't have, without forking the script |
 
 No other top-level key is permitted outside `[x]`.
+
+**The C-11 closure bar is grandfathered, once.** `scripts/work_items._CLOSURE_BAR_GRANDFATHERED`
+holds the exact set of ids that were already `closed` when the bar was adopted (2026-08-05).
+Requiring `verified_by` retroactively would mean either fabricating artifacts or asserting
+things nobody verified. **The list is closed** —
+`tests/test_work_items_closure_bar.py::TestGrandfatherListIsClosed` pins its membership
+exactly, so adding an id requires editing that test in the same diff. New closures get no
+grandfathering; that is the entire point.
 
 **Item files carry no `<!-- provenance -->` HTML comment stamp.** The
 frontmatter already carries the file's own identity; a second, differently-shaped
