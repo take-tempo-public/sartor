@@ -849,10 +849,16 @@ class TestDeferralEpicCrossCheck:
 
 
 class TestRealBacklogDeferralEpic:
-    """Bridge test: the real, currently-active `BOARD_DEFERRAL.md` names Epic A
-    (item 36) -- confirm it is a real `kind = "epic"` item with a non-closed
-    status right now, so the stronger check does not silently defeat the live
-    deferral it was built to keep working."""
+    """Bridge test: WHEN `BOARD_DEFERRAL.md` is active, confirm it names Epic A
+    (item 36) as a real `kind = "epic"` item with a non-closed status, so the
+    stronger check does not silently defeat the live deferral it was built to
+    keep working. The marker is a deliberately temporary mechanism -- absent
+    is this repo's normal steady state whenever no chain epic has declared a
+    deferral -- so `test_real_deferral_marker_names_epic_a_and_verifies` skips
+    when there is no marker to bridge-test; it never asserted "a marker must
+    exist," only "IF one exists, it must be honest." `test_epic_a_item_is_a_real_open_epic`
+    below is unconditional: it checks item 36's own state directly and never
+    touches the marker file, so it is unaffected either way."""
 
     def test_epic_a_item_is_a_real_open_epic(self) -> None:
         items, errors = structural_errors(_REPO_ROOT / "docs" / "dev" / "work" / "items")
@@ -862,6 +868,18 @@ class TestRealBacklogDeferralEpic:
         assert epic_a.status != "closed"
 
     def test_real_deferral_marker_names_epic_a_and_verifies(self) -> None:
+        # This bridge test only ever validated "a *currently-active* marker is
+        # well-formed and names a real, open epic" -- the mechanism's real
+        # behavior (fixture-based malformed/missing/closed-epic/etc. cases) is
+        # already covered by `TestBoardDeferral` and `TestDeferralEpicCrossCheck`
+        # above, which don't touch the real filesystem. With no active marker
+        # there is nothing here to validate: `BOARD_DEFERRAL.md` is expected to
+        # be ABSENT whenever no chain epic has declared a deferral -- that is
+        # this repo's normal steady state (see the marker's own "Removal"
+        # section, and `docs/dev/epic-a-chain-design-corrections.md` §15.2 for
+        # why it existed at all) -- so skip rather than fail when it's gone.
+        if not work_items_module._BOARD_DEFERRAL_PATH.is_file():
+            pytest.skip("no active BOARD_DEFERRAL.md marker -- nothing to bridge-test right now")
         items, errors = structural_errors(_REPO_ROOT / "docs" / "dev" / "work" / "items")
         assert errors == []
         deferral = work_items_module._read_board_deferral(work_items_module._BOARD_DEFERRAL_PATH)
