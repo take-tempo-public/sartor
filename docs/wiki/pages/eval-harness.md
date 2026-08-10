@@ -169,6 +169,30 @@ primitive is public and shared with `json_resume._parse_skills` precisely so the
 side and the render side cannot disagree about where a skill ends — see
 [[document-rendering]] `[synthesis]`.
 
+## The corpus-mode drafting probe (Epic A sprint A3)
+
+[`evals/corpus_drafting_probe.py`](../../../evals/corpus_drafting_probe.py) is a
+separate, small harness for validating a **corpus-mode** Compose drafting call —
+first built for `analyzer.py:draft_experience_summaries`. It exists because
+`--suite synthetic`'s fixtures are file-based (`resume.md` + `jd.txt`) and can never
+reach a corpus-mode call at all, and adding a corpus fixture as a flat sibling under
+`evals/fixtures/synthetic/` would be silently picked up by `_select_fixtures` as a
+broken `--suite synthetic` fixture (no `resume.*` file). The fixture instead lives
+nested one level under `evals/fixtures/synthetic/corpus/role-summary-drafting/`
+(`seed.json` + `jd.txt` + a hand-written `analysis.json`, no `resume.*`) — inside the
+required `evals/fixtures/synthetic/` prefix (for `tests/test_zero_pii_clone.py`'s
+allowlist) but out of `_select_fixtures`'s per-fixture grading loop. **The "three
+synthetic fixtures" claim above is still accurate**: `_select_fixtures`'s `iterdir()`
+does still pick up the `.../synthetic/corpus/` directory itself as a spurious
+candidate, but `_load_fixture` fails to find a `jd.txt`/`resume.*` directly inside it,
+`run_suite` catches and skips it, and the 3 real fixtures grade normally
+([`evals/corpus_drafting_probe.py`](../../../evals/corpus_drafting_probe.py) docstring).
+Scoring is deterministic only — the L0 fabricated-specifics check and grounding
+overlap from `hardening.py`, against `hardening.py:assemble_source_union` — with no
+LLM judge, because no rubric exists yet for a one-line role intro. Results are
+recorded in [`evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md), the same home
+prompt-tuning results already use, not a new artifact `[synthesis]`.
+
 ## Annotation-pin integrity (items 11 and 13)
 
 The bootstrap doc an `annotations.json` was built from is what its `cluster_index`
@@ -206,7 +230,7 @@ duration, makes `_resolve_system_prompt` return the candidate text for the named
 the `_BASE_SYSTEM_PROMPTS` registry, and makes [`analyzer.py:effective_prompt_version`](../../../analyzer.py)
 return a stable `candidate:<sha256[:12]>` so the run is **quarantined** from score-over-time.
 The default (empty/None) path is byte-identical — the resolver returns the identical constant
-object and the version stays `PROMPT_VERSION` (`2026-07-08.4` at HEAD), so the analyze→generate
+object and the version stays `PROMPT_VERSION` (`2026-08-09.1` at HEAD), so the analyze→generate
 cache is untouched `[synthesis]`. `run_suite` enters the context over the whole fixture loop
 when `--prompt-overrides` supplies a name→text mapping
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)); unknown constant names raise

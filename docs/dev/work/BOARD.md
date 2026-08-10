@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 25 | Epics 6 | Closed 21
+**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 33 | Epics 6 | Closed 21
 
 ## Open
 
@@ -51,6 +51,14 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **66** -- `_compositionFrozen` goes sticky-stale: a post-freeze Compose edit leaves the Step-5 rail open over a stale snapshot (`agent`) -- Freeze, return to Compose, edit: the debounced autosave omits `freeze`, so the client flag stays true.
 - **67** -- `/api/generate` still reaches the legacy full-LLM `generate()` by direct POST, outside the Step-5 rail gate (`user`) -- The rail is the gate; the server fallback is the floor. Filed so the surface is tracked, not assumed closed.
 - **68** -- The Step-5 lock reason names Compose only — wrong for an empty analyze-time `career_corpus`, where recovery is outside the rail (`user`) -- One lock message covers two refusal causes; telling them apart needs the server to say WHY, a payload change.
+- **69** -- `_active_intros_by_experience` feeds a foreign PENDING intro into the draft prompt as "existing intros" -- same is_active-only filter the A3 pending-leak fix closed elsewhere (`agent`) -- Prompt-context bias only (no rendered-resume leak) -- lower severity than what A3 fixed, but the same root class.
+- **70** -- `tests/test_ux_stub_coverage.py`'s AST walker only matches `from web_infra import _get_client` -- a module-attribute form would evade it in either direction (minor, not exploitable today) (`agent`) -- Every current blueprint uses the matched ImportFrom form; an attribute-access blueprint would escape the gate.
+- **71** -- Gather data toward a future design pass: managed/orchestrated epic execution with robust guardrails (`user`) -- Pointer + aggregated data for a future orchestrated-epic-execution design pass -- not a proposal.
+- **72** -- Pipeline rows have no pending-proposals indicator -- the removed panel's pill has no equivalent (`user`) -- At-a-glance pending-review discoverability regressed -- count is still reachable in the detail modal, not on the row.
+- **73** -- PriorAppsPage.open_detail() coverage-mode shift -- four test files went from UI-click to direct-JS-invocation with zero diff (`user`) -- open_detail() moved from DOM click to page.evaluate; four files still pass but now cover a direct-JS path, not a click.
+- **74** -- refreshPipeline() refetches the entire cross-candidate roster on 7 trigger sites -- wider payload, no N+1, revisit if roster grows (`agent`) -- refreshApplications() (1 candidate) replaced by refreshPipeline() (whole roster) at 7 sites -- disclosed trade, no N+1.
+- **75** -- Retired roles reach the A3 draft_experience_summaries prompt -- frozen snapshot never intersected against live is_active (`agent`) -- _build_experience_summary_targets reads the frozen snapshot, not live is_active -- a retired role can reach Sonnet.
+- **76** -- BOARD_DEFERRAL.md's declared field has no expiry bound -- an unbounded exemption, and the gap itself was undisclosed (`user`) -- declared is checked for presence only, never as a date -- the staleness exemption never expires on its own.
 
 ## Epics
 

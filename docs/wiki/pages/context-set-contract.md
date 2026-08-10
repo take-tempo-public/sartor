@@ -58,6 +58,18 @@ Everything past analyze is added on demand, so older context files round-trip un
   `application_id` / `application_run_id`, `composition_overrides`, and
   `llm_recommendations` — the corpus-mode / DB-backed members (B.2–B.3 + the Compose
   step). Absent on file-based contexts.
+- `experience_summary_items` — Epic A sprint A3: the candidate's active, approved
+  per-role intro variants, grouped by experience
+  (`{experience_id, company, items: [{id, text, label, has_outcome}]}`). Staged
+  durably by [`db/build_context.py:_experience_summary_groups`](../../../db/build_context.py)
+  (corpus mode only, one `WHERE … IN (…)` query, not N+1) so it survives to disk —
+  it is legitimate grounding source material for
+  [`analyzer.py:draft_experience_summaries`](../../../analyzer.py) that does NOT
+  appear in the synthesized `resume.text`, so a metric scored without it would
+  report a chosen or reworked role intro as fabrication. Typed `list[Any]`
+  deliberately (not a nested TypedDict), because every consumer reads it back off
+  JSON on disk or a fresher route-staged copy and must defensively isinstance-check
+  each element `[synthesis]`.
 - `approved_composition` — Generation-experience re-architecture Phase 4: the frozen,
   fully-resolved JSON Resume document (bullet/summary/skills text in final order plus a
   `meta.sartor` provenance block), written on Compose's explicit "Save and continue"
@@ -100,8 +112,10 @@ primary `resume.text`, every supplemental's `text`, every clarification answer *
 this application**, and — D5 cross-JD reuse (`feat/clarifications-to-corpus`) — every
 confirmed clarification answer reused from the candidate's *other* applications, read
 off `context_set["prior_clarifications"]` (staged once by
-`db/build_context.py:build_context_set_from_db`, corpus mode only). It is the single
-shared definition consumed by both the iteration clarifier
+`db/build_context.py:build_context_set_from_db`, corpus mode only), and — Epic A
+sprint A3 — every active per-role intro variant's text, read off
+`context_set["experience_summary_items"]` (see above). It is the single shared
+definition consumed by both the iteration clarifier
 ([`hardening.py:compute_iteration_signals`](../../../hardening.py)) and the eval-time
 fabricated-specifics check, so the two can never score against divergent source sets
 `[synthesis]`. The carve-out that widens the grounding check to accept clarifications

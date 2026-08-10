@@ -1383,6 +1383,78 @@ the trigger needs widening.
 git, gate-run count, and whether the refuter or the canary caught anything. No new tooling —
 the owner declined instrument-building, and these are `git` one-liners at close-out.
 
+### 15.6.1 OUTCOMES, recorded at the Epic A close (2026-08-10)
+
+Written by the orchestrating session that ran A3 and A4. **These are the deliverable**, per
+§15.6's own instruction to record outcomes including the falsified ones. Each states what the
+data supports and, where it does not support a verdict, says so instead of manufacturing one.
+
+**H-6 — deferring close-out ceremony to the epic boundary.** **PARTIALLY SUPPORTED, with the
+confound stated.** Its falsifier has two limbs and they came out differently.
+
+*Limb 1 — did a defect escape that the deferred ceremony would have caught?* **No.** The final
+full-epic review returned two confirmed findings (items 75, 76). Neither is of a kind a wiki
+pass, a grounding audit, or a handoff ceremony catches: item 75 was found by **executing**
+`_build_experience_summary_targets`, and item 76 by probing an enforcement mechanism's input
+validation. Deferring ceremony did not hide them, and nothing else surfaced late.
+
+*Limb 2 — did the epic close-out cost more than the per-sprint close-outs it replaced?*
+**Not answerable cleanly from this run, and the honest answer is "roughly a wash, measured
+badly."** Epic close-out ≈ **966 k** subagent tokens (wiki 326,821 · canary 99,839 · two
+grounding audits 144,879 · epic closer 179,582 · final full-epic review 148,648 · findings
+closer 65,757). Against it: A2 alone spent ≈ **868 k** on wiki + 9 grounding auditors, and
+item 20 a further ≈ **285 k** on auditors. So one epic-level pass plausibly replaced two
+sprint-level passes at similar total cost — **but the epic close-out also bought a full-epic
+adversarial review that no per-sprint cadence produces at all**, and that review is where both
+findings came from. The comparison is confounded in H-6's favour by that extra deliverable and
+against it by A3/A4 being larger sprints than A1/A2. **Do not cite a per-sprint percentage
+from this run; the instrumentation to separate ceremony from implementation
+(§12.6 item 3) still does not exist.**
+
+**H-7 — a fresh agent can execute a sprint from the §15.4 sprint brief alone.** **SUPPORTED,
+n = 1.** A4's implementer received only `docs/dev/handoffs/prior-apps-pipeline-brief.md` plus
+pointers, never a full session handoff. Against the stated falsifier: it **did not drift at the
+role level** (wrote the C-10 dossier before its first gated edit, implemented the sprint,
+staged without committing, ran no gate) and it **never read a transcript** to reconstruct
+state. The brief was sufficient.
+
+**One confounder, disclosed rather than buried:** that same agent deadlocked on F12 and
+returned no report on its first stop. Its *work* was complete and correct; its *reporting* was
+lost to a harness trap unrelated to the brief. A reader could mistake that failure for a
+briefing failure. It was not — the recovery needed only "the notification is not coming, send
+your report," with no re-briefing on the sprint's content, which is itself evidence the brief
+had done its job.
+
+**H-8 — the countable-claim canary catches page-quality problems at a fraction of full-audit
+cost.** **COST CONFIRMED. CATCH RATE INCONCLUSIVE — and the distinction matters.**
+
+*Cost:* the canary verified every countable claim across 9 pages for ≈ **100 k** tokens,
+against ≈ **935 k** for this epic's earlier 13-page full-audit sweep. That is the order-of-
+magnitude reduction §15.5 predicted.
+
+*Catch rate:* **nothing fired, and a clean pass does not discriminate between "the canary
+works" and "there was nothing to catch."** The two full grounding audits run alongside it — on
+the two pages the scribe itself flagged as its riskiest prose — also returned 0 DRIFTED /
+0 UNSUPPORTED. So §15.5's falsifier (*a page whose countable claims verify but whose prose is
+materially wrong*) **did not fire**, which is weak corroboration on two pages, not a
+measurement of catch rate across nine. **A trial where the defect rate is zero cannot measure a
+detector.** Epic B should record whether the canary ever fires on a page a full audit would
+also have caught; until then H-8 rests on cost alone.
+
+*One genuinely useful thing the pass did surface, worth carrying:* the scribe caught its own
+instrument lying — `grep -c "@applications_bp.route" blueprints/applications.py` **self-matches
+the module's own docstring**, which recommends that exact command, returning 23 against a true
+22. The canary independently reproduced both numbers and confirmed the dependent route total.
+A documented method that quietly returns the wrong answer is precisely how a "verified" count
+becomes wrong, and it was caught at authoring time rather than by a later audit.
+
+**H-9 — a chain can reach PR-ready with no owner input.** **FALSIFIED at A3.** Full accounting
+in §12.7 (stop 4): one unauthorized "proceed?" before the sprint began, two owner messages
+forced by a silent stall at the A3/A4 boundary, and one genuine §11.6.5 flag stop. See §12.7
+for the scoping problem this exposes in the hypothesis itself — while §11.6.5 stands, any run
+meeting a new-or-modified enforcement surface **must** stop, so H-9 as written cannot be
+satisfied by such a run.
+
 ### 15.7 What must be true before Epic B starts
 
 1. Epic A reaches PR-ready.

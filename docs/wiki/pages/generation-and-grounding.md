@@ -115,17 +115,28 @@ recomputed per iteration because the union grows as clarifications arrive
 in `context_set["prior_clarifications"]` — confirmed clarification answers reused
 from the candidate's OTHER applications, staged once by
 [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py)
-(corpus-mode only). This mirrors what the three drafting calls that accept
+(corpus-mode only). This mirrors what the drafting calls that accept
 `prior_clarifications`
 ([`analyzer.py:draft_positioning_summary`](../../../analyzer.py),
 [`analyzer.py:draft_gap_fill_bullets`](../../../analyzer.py),
-[`analyzer.py:suggest_skills`](../../../analyzer.py) — see [[llm-call-catalog]])
-are shown as legitimate grounding material via a `<prior_clarifications>` prompt
-block once they start citing prior clarifications: the metric must see the same
-union the prompt does, or it over-reports legitimately-reused facts as
-fabrication. The **legacy `generate()` prompt is untouched** — this carve-out is
-scoped to the three drafting calls, not blanket (per
+[`analyzer.py:suggest_skills`](../../../analyzer.py), and — Epic A sprint A3 —
+[`analyzer.py:draft_experience_summaries`](../../../analyzer.py) — see
+[[llm-call-catalog]]) are shown as legitimate grounding material via a
+`<prior_clarifications>` prompt block once they start citing prior clarifications:
+the metric must see the same union the prompt does, or it over-reports
+legitimately-reused facts as fabrication. The **legacy `generate()` prompt is
+untouched** — this carve-out is scoped to these drafting calls, not blanket (per
 [`AGENTS.md`](../../../AGENTS.md) "LLM prompts") `[synthesis]`.
+
+**A3 widens the union a second way, for a different reason.** Beyond D5's
+cross-JD clarification reuse, `assemble_source_union` also folds in
+`context_set["experience_summary_items"]` — the candidate's own active per-role
+intro variants, staged by the same builder. These are real, candidate-authored
+corpus text, but `db/build_context.py`'s synthesized `resume.text` never emits
+them (it emits titles, bullets, skills, education and certifications only), so
+without this widen a role intro the candidate wrote themselves — or a
+`draft_experience_summaries` reframing of one — would score as fabricated
+`[synthesis]`.
 
 The reportable signal is the **groundedness composite** in
 [`evals/runner.py:_groundedness_composite`](../../../evals/runner.py): it folds the

@@ -1535,3 +1535,154 @@ so no C-10 blast-radius dossier is owed.
 
 **Cite convention.** Symbol cites throughout, no bare `path:line` — carried forward from the
 two entries above. Still **unenforced**: `SCHEMA.md` prefers it, nothing rejects a line cite.
+
+---
+
+## 2026-08-10 — Epic A close-out wiki pass, the epic's own remaining delta (`feat/prior-apps-pipeline`)
+
+**Deliberately deferred, now due.** Per
+[`../dev/epic-a-chain-design-corrections.md`](../dev/epic-a-chain-design-corrections.md)
+§15.2 ("light per sprint, one full close-out at the epic end"), this pass covers the
+delta the incremental A2/item-20 passes above did not: `.last_ingest_sha`
+(`3e2b8a5`, item 20's tip) → this branch. **`.last_ingest_sha` deliberately NOT
+advanced** — the orchestrator advances it after the grounding audits on this pass's
+pages pass, so a finding can still be repaired first (per this session's own
+instructions).
+
+**Scope, derived mechanically.** `git diff --name-only 3e2b8a5 HEAD` (68 files)
+filtered through `scripts/wiki_relevance.py:is_wiki_relevant` → **18**: `analyzer.py`,
+`blueprints/applications.py`, `corpus_to_json_resume.py`, `db/build_context.py`,
+`demo_fixtures.py`, `docs/architecture.md`, `docs/dev/work/BOARD_DEFERRAL.md`,
+`evals/TUNING_LOG.md`, `evals/corpus_drafting_probe.py`,
+`evals/fixtures/synthetic/corpus/role-summary-drafting/{analysis.json,jd.txt,seed.json}`,
+`evals/seed_import.py`, `hardening.py`, `scripts/export_corpus_seed.py`,
+`static/app.js`, `static/style.css`, `templates/index.html` — confirmed to match
+the count and list this session was handed, not assumed.
+
+**What changed.** Two Epic A sprints: **A3** (`feat/role-summary-drafting`,
+`7d3ff33`) — a new batched Sonnet call, `analyzer.py:draft_experience_summaries`,
+drafting a JD-fitted one-line role intro for EVERY included role in ONE call;
+two new routes (`draft-experience-summaries`, `experience-summary-decide`); a new
+durable `ContextSet` key (`experience_summary_items`) staged by
+`db/build_context.py:_experience_summary_groups`; `hardening.py:assemble_source_union`
+widened to a fifth grounding source; a per-application acceptance ledger
+(`accepted_experience_summary_ids`) closing a cross-application pending-variant leak
+at four read sites; a new targeted eval probe (`evals/corpus_drafting_probe.py`) plus
+a nested synthetic corpus fixture. **A4** (`feat/prior-apps-pipeline`, `3cfb98d`) — the
+standalone "Prior applications" panel removed entirely; `_renderPipelineRow`'s click
+handler now re-asserts Pipeline and opens the shared detail modal in place, instead of
+switching to Tailor.
+
+**Pages edited (9).**
+
+| page | edit |
+|---|---|
+| `context-set-contract` | New `experience_summary_items` optional-field bullet; the source-union enumeration extended with the A3 fifth source. |
+| `corpus-to-output-reach` | New `accepted_experience_summary_ids` override-table row; new "Drafting a role intro (A3) and the pending-leak guard" section (the author/select split, the KEEP/REJECT flow, the four read sites the guard closes); the Role-intro resolution bullet updated to name the guard. |
+| `llm-call-catalog` | New `draft_experience_summary` Sonnet table row; "three Compose drafting calls" → "four" in both places that phrase appeared. |
+| `prompt-version-discipline` | `PROMPT_VERSION` `2026-07-08.4` → `2026-08-09.1`; `_BASE_SYSTEM_PROMPTS` **16 → 17 keys**; "most recent addition" updated from `SCOPE_CHECK_SYSTEM_PROMPT` to `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT`. |
+| `eval-harness` | `PROMPT_VERSION` mention corrected to `2026-08-09.1`; new "The corpus-mode drafting probe (Epic A sprint A3)" section — `evals/corpus_drafting_probe.py`, why it exists, why the nested fixture doesn't disturb the existing "three synthetic fixtures" claim. |
+| `route-surface` | Route count **117 → 119** (two new `blueprints/applications.py` routes). |
+| `frontend-wizard` | **Corrected a stale claim** the 2026-07-13 pass had itself corrected the other direction: `_renderPipelineRow` no longer switches to Tailor (A4 removed that panel) — it re-asserts Pipeline and opens the detail modal in place. New paragraph on the A3 role-intro drafting UI (draft card, Keep/Reject, the serialize-not-race ordering against the recommend call). Concept line updated. |
+| `generation-and-grounding` | "three drafting calls that accept `prior_clarifications`" → four (added `draft_experience_summaries`); new paragraph on the A3 fifth source-union widen. |
+| `pipeline-stages` | Compose-authors-content sentence extended to name `draft_application_experience_summaries`. |
+
+**Countable claims verified mechanically, not asserted** (this epic's own grounding
+audits found every substantive error was a countable claim, so every number below was
+re-derived from source in this session, not carried over from the branch's own
+commit messages):
+
+- `_BASE_SYSTEM_PROMPTS` keys: `python -c "..."` parsing the dict literal in
+  `analyzer.py` → **17**, matching the DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT
+  addition.
+- Total `@<bp>.route` decorators: `grep -rn "^@[a-zA-Z_]*\.route" blueprints/`
+  (anchored at line start, excluding `__pycache__`) → **118**, plus
+  `dashboard/routes.py`'s **1** → **119** total. Cross-checked against the same
+  count run at the `3e2b8a5` checkpoint commit (`git show 3e2b8a5:<path> | grep
+  -c ...` per file): blueprints **116** + dashboard **1** = **117**, exactly
+  reconciling with the page's pre-existing 117 and the +2 this delta's two new
+  routes account for — the before/after figures agree, not just the after one.
+  A naive `grep -c "@applications_bp.route" blueprints/applications.py` (the
+  exact command the module's own docstring suggests) returns **23**, one over
+  the true **22**, because it also matches the docstring's own literal mention
+  of that grep command — caught only by rerunning with a line-start anchor.
+  Flagged so the next session doesn't trust that docstring's suggested command
+  literally.
+- `blueprints/applications.py` routes: **22**, confirmed both via the anchored
+  grep and via a diff read of the two routes A3 added.
+- Pending-leak guard read sites: **4**, confirmed by grepping
+  `accepted_experience_summary_ids` in `blueprints/applications.py` (2 sites:
+  the GET picker filter at the `esi_rows` comprehension, the POST validator) and
+  `corpus_to_json_resume.py` (2 sites: `build_json_resume_from_corpus`'s read +
+  pass-through, `_resolve_chosen_experience_summary_text`'s check).
+- `draft_experience_summaries` reads `context_set["prior_clarifications"]`:
+  confirmed by reading the function body (`_prior_clarifications_block(...)` call)
+  and the system prompt's own `<prior_clarifications>` block — this is what makes
+  it a fourth call in the D5 list on `generation-and-grounding`, not three.
+
+**Every one of the 18 relevant sources, accounted for.** 6 drove the 9 page edits
+above (`analyzer.py`, `blueprints/applications.py`, `corpus_to_json_resume.py`,
+`db/build_context.py`, `hardening.py`, `static/app.js`); `evals/corpus_drafting_probe.py`
+drove the new `eval-harness` section. The remaining **11 verified no-edit** (checked,
+not skipped):
+
+- `docs/architecture.md` — already correctly updated by the A3 branch itself (both
+  Mermaid diagrams gained `draft_experience_summaries`/A9, the routing-tier prose
+  updated to "four Compose-time drafting calls"); the wiki cites this file, never
+  duplicates it (D5), so nothing to re-anchor.
+- `docs/dev/work/BOARD_DEFERRAL.md` — a governance/gate-mechanism document (the
+  `check_with_deferral()` staleness exemption for `python -m scripts.work_items
+  check`), the same process-record character `scripts/wiki_relevance.py` already
+  wholesale-excludes for `docs/dev/diagnosis/` and `docs/dev/handoffs/` and that the
+  2026-08-08 `docs/epic-a-chain-design-corrections` pass treated the same way; it
+  defaults relevant only because it sits directly under `docs/dev/work/`, not
+  `docs/dev/work/items/`. Grepped every `docs/wiki/pages/*.md` for `BOARD_DEFERRAL` /
+  `check_with_deferral` / `board staleness` — zero hits, nothing to re-anchor. Not a
+  product/architecture concept the wiki curates.
+- `evals/TUNING_LOG.md` — the A3 tuning entry it gained is now the target of the new
+  `eval-harness` "corpus-mode drafting probe" section's own citation; the log itself
+  is referenced, never duplicated (D5), same as every prior `TUNING_LOG.md` entry.
+- `demo_fixtures.py`'s new `demo_draft_experience_summaries` — no wiki page
+  documents demo mode / `_demo_mode_active` at all (grepped, zero hits); a
+  pre-existing coverage gap this diff does not worsen in a way that breaks an
+  existing claim.
+- `evals/seed_import.py` / `scripts/export_corpus_seed.py` — both gained
+  `ExperienceSummaryItem` round-trip support; no wiki page enumerates the seed
+  format's entity list (grepped for `seed_import`/`export_corpus_seed`/round-trip
+  language — the hits are all unrelated round-trip mentions elsewhere), so no claim
+  to update.
+- `evals/fixtures/synthetic/corpus/role-summary-drafting/{analysis.json,jd.txt,seed.json}`
+  — fixture data, not cited by content anywhere; covered at the mechanism level by
+  the new `eval-harness` "corpus-mode drafting probe" section instead.
+- `static/style.css` — grepped for the removed `.application-card*` family and the
+  new `.compose-role-intro-draft*` classes across `docs/wiki/pages/*.md`; zero hits
+  either way. No page cites CSS class names for this surface.
+- `templates/index.html` — the "Prior applications" panel markup (`#panelApplications`)
+  it removed is not cited by any page directly; the fact of the removal is captured
+  through the `static/app.js`-driven `frontend-wizard` fix above (`_renderPipelineRow`
+  no longer opens that panel because the panel is gone). Grepped for `panelApplications`
+  across `docs/wiki/pages/*.md` — zero hits, confirming no dangling reference existed
+  to clean up either.
+
+**Pages checked and confirmed still accurate** (not sources from the 18, but pages a
+changed source cites — inspected in case the change reached them, not assumed safe):
+`corpus-data-model` (no DB model or migration file changed in this delta — confirmed
+`git diff 3e2b8a5 HEAD --name-only | grep -i "db/models\|migrations"` returns nothing
+— so the alembic-head-`0016` claim and the corpus-item table are still current);
+`application-audit-chain`, `iteration-audit-chain`, `deterministic-llm-boundary`,
+`document-rendering`, `code-module-map` (grepped each for
+`draft_experience_summar`/`experience_summary`/`recommend_experience`/`IterationLog`
+action names/`corpus_drafting_probe`; no claim on any of these five references
+anything this delta touched, and `code-module-map`'s `evals/` row is already
+deliberately non-exhaustive — cites only `runner.py` — so needs no new entry);
+`career-corpus`, `importing-your-experience`, `tailoring-a-resume` (user-tier — none
+currently describe role intros at all, grepped, so A3 introduces a coverage gap, not
+a false claim; per the established convention that content passes are separate
+branches, not folded into a code-diff pass — see the 2026-06-14 / 2026-06-25 entries
+above — left for a dedicated content pass rather than authored here).
+
+**Author ≠ auditor not yet run.** This pass's nine edited pages are the audit list —
+none were graded by the context that wrote them. `git add -A` staged; not committed
+(orchestrator's step). `.last_ingest_sha` left at `3e2b8a5` on purpose, per this
+session's instructions, so a grounding-audit finding can still be repaired before the
+checkpoint advances.

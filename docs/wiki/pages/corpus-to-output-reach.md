@@ -151,12 +151,52 @@ byte-identical):
 | `summary_text` / `summary_text_edited` | `str` / `bool` | Compose-drafted (or hand-edited) 2-sentence positioning summary — resolved into `basics.summary` at freeze time, ahead of the legacy pin/recommend/first-active chain |
 | `accepted_generated_bullet_ids` | `[bullet_id]` | gap-fill `Bullet` rows (source `llm_proposed:<hash>`) the user accepted at Compose; folded into the per-role effective set like corpus bullets |
 | `retired_gap_fill_keys` | `[key]` | durable set of gap-fill proposal keys (`sha256(eid\|text)[:12]`) the user retired, so a retired proposal never resurfaces on a later `/draft-gap-fill` call |
+| `accepted_experience_summary_ids` | `[summary_item_id]` | Epic A sprint A3 close-out pending-leak guard: `ExperienceSummaryItem` ids KEPT for THIS application via `/experience-summary-decide`, mirroring `accepted_generated_bullet_ids` for Bullets — see below |
 
-These last three keys are Generation-experience re-architecture additions
-(post-2026-07-02) — Compose-authored content, drafted via Sonnet
-(`draft_application_summary` / `draft_application_gap_fill` in
-`blueprints/applications.py`) — that resolve into the frozen composition
-alongside the older pin/exclude overrides `[synthesis]`.
+The `summary_text*` / `accepted_generated_bullet_ids` / `retired_gap_fill_keys` trio
+are Generation-experience re-architecture additions (post-2026-07-02) —
+Compose-authored content, drafted via Sonnet (`draft_application_summary` /
+`draft_application_gap_fill` in `blueprints/applications.py`) — that resolve into
+the frozen composition alongside the older pin/exclude overrides `[synthesis]`.
+`accepted_experience_summary_ids` is the same shape of ledger for a fourth Sonnet
+drafting call added later, Epic A sprint A3 — see below.
+
+### Drafting a role intro (A3) and the pending-leak guard
+
+[`analyzer.py:draft_experience_summaries`](../../../analyzer.py) (Sonnet,
+`call_kind="draft_experience_summary"`) is the AUTHOR half of the per-role intro
+feature — one batched call drafting a JD-fitted intro line for every included role
+at once, never one call per role. It is a sibling of `recommend_experience_summaries`
+(the Haiku SELECTOR over intros the candidate already wrote), not a replacement for
+it. Fired by `POST /api/applications/<id>/draft-experience-summaries`
+([`blueprints/applications.py:draft_application_experience_summaries`](../../../blueprints/applications.py)),
+writing transient proposals to `ctx["llm_experience_summary_drafts"]` — the same
+shape contract gap-fill's `llm_gap_fill_proposals` uses. The user then KEEPs one
+(optionally edited in place — the edited text wins over the model's) or REJECTs it
+via `POST /api/applications/<id>/experience-summary-decide`
+([`blueprints/applications.py:experience_summary_decide`](../../../blueprints/applications.py)).
+A KEEP creates a real `ExperienceSummaryItem` row with `source='llm_proposed'`,
+`is_pending_review=1` — the same review posture an accepted gap-fill `Bullet` takes.
+
+**Why that pending row needs a guard.** `ExperienceSummaryItem` rows are
+candidate-scoped, shared across every application for that role — the same row a
+different, unrelated application's picker or render path would otherwise also see.
+Without a check, an intro kept-but-not-yet-reviewed for application A would leak
+into application B's picker and render before a human ever reviewed it into the
+canonical corpus. The guard is a per-application acceptance ledger,
+`composition_overrides.accepted_experience_summary_ids`, populated ONLY by
+`experience_summary_decide`'s KEEP (never resent by the client on every autosave —
+`save_application_composition` carries it forward explicitly, re-derived from the
+fresh in-lock read so the carry-forward closes the same lost-update window
+`context_transaction` exists for). It is consulted at four read sites: the
+Compose GET's picker filter and the POST's validated-choice check (both in
+`blueprints/applications.py`), and the render path's
+[`corpus_to_json_resume.py:_resolve_chosen_experience_summary_text`](../../../corpus_to_json_resume.py)
+and its caller in `build_json_resume_from_corpus` (both via
+[`corpus_to_json_resume.py:_read_accepted_experience_summary_ids`](../../../corpus_to_json_resume.py)).
+A pending variant renders or appears as an eligible pick ONLY when its id is in
+this set for THIS application; approved (`is_pending_review=0`) variants are
+unaffected — visible everywhere, as before `[synthesis]`.
 
 JSON persists object keys as strings, so every reader coerces keys + ids back to
 `int` and skips malformed entries rather than failing (see `_read_*` helpers in
@@ -179,7 +219,9 @@ Inside `build_json_resume_from_corpus`:
   strictly opt-in — `work[].summary` is emitted *only* when the toggle is on AND
   the role has an explicit pick; there is deliberately **no** fallback to the
   legacy `Experience.summary` (it survives as a backfilled variant, surfaced only
-  when chosen).
+  when chosen). A pick that resolves to a pending (`is_pending_review=1`) variant
+  renders only when its id is in this application's `accepted_experience_summary_ids`
+  ledger — the A3 pending-leak guard described above.
 - **Bullets**: active bullets sorted by `(display_order, id)`, then the effective
   set is `(recommended ∪ added ∪ pinned) − excluded`; with no
   `llm_recommendations` for that experience it degrades to all-active-minus-excluded

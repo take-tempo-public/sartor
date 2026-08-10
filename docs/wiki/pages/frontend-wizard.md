@@ -2,8 +2,9 @@
 
 > **Audience:** `dev`
 > **Concept:** the browser wizard — the six-step panel rail, the Compose cards
-> (bullets + B.4 role-intro picker + B.5 skills card + Compose-authored summary and
-> gap-fill drafting), the frozen-composition / WYSIWYG-as-source re-architecture,
+> (bullets + B.4 role-intro picker/drafting + B.5 skills card + Compose-authored
+> summary and gap-fill drafting), the frozen-composition / WYSIWYG-as-source
+> re-architecture,
 > the paged.js live preview, config persistence, the smart-landing top-tab
 > structure, the reusable in-app help primitive, and the KW3 new-user first-run
 > tour.
@@ -31,9 +32,16 @@ keys: `Résumé templates` is `personas`, `Candidate memory` is `memory`, `Pipel
 router) maps only the first four — `{tailor,corpus,personas,memory}` — to their button ids;
 `Pipeline` ([`topTabPipeline`](../../../templates/index.html)) is reached only by clicking its
 own tab button, which calls [`switchTopTab`](../../../static/app.js) directly — the smart-landing
-router never lands on it. Its cards navigate the other way: a card click in
-[`_renderPipelineRow`](../../../static/app.js) switches the candidate and opens **Tailor** on
-their applications list `[synthesis]`.
+router never lands on it. A card click in
+[`_renderPipelineRow`](../../../static/app.js) switches the candidate, then (Epic A
+sprint A4, `feat/prior-apps-pipeline`) re-asserts **Pipeline** itself — not Tailor —
+and opens the shared application detail modal ([`_showApplicationDetail`](../../../static/app.js))
+IN PLACE, without a tab switch. The re-assertion is not a no-op: `onUserSelect()`'s
+own smart-landing routing may have just navigated the newly-selected candidate to
+`corpus` or `tailor`, the same race the prior (now-removed) "switch to Tailor"
+behavior existed to override. The standalone "Prior applications" panel this used to
+open onto is gone entirely — Pipeline is now the sole surface for browsing past
+applications `[synthesis]`.
 
 The **Tailor** tab (`#tab-tailor`) hosts the wizard. A rail of `.wizard-step` buttons
 (`data-wstep="1".."6"`) sits above six `.cb-panel` sections, each tagged
@@ -204,6 +212,23 @@ when any role has summary variants — an opt-in `composeRoleIntrosToggle` check
 each role section (`.compose-role-intro[data-exp-id]`) exposes a per-role intro picker. The
 **B.5 skills card** ([`app.js:_renderSkillsCard`](../../../static/app.js)) carries pin/drop
 rows plus a recommend-skills (Haiku ordering) and a grounded suggest-skills review lane.
+
+**Epic A sprint A3 — drafting a role intro, not just selecting one.** Turning the
+toggle on now also fires [`app.js:_maybeFireDraftExperienceSummaries`](../../../static/app.js)
+(after, not concurrently with, the existing recommend call — both read-modify-write
+the same context file, so they are serialized rather than raced), which drafts a
+JD-fitted intro for every role in ONE Sonnet call. Unlike gap-fill, this is
+deliberately **not** an arrival auto-fire: role intros are opt-in and off by default,
+so drafting on every Compose arrival would spend a Sonnet call on a feature most
+applications never turn on. Each draft renders as an editable card
+([`app.js:_renderRoleIntroDraftCard`](../../../static/app.js)) above the role's saved
+variants — including for a role with zero saved variants, which the section now also
+renders for — with Keep (saves whatever is in the textarea, so an in-place edit wins
+over the model's wording) and Reject buttons
+([`app.js:_decideRoleIntroDraft`](../../../static/app.js)) that POST to
+`/experience-summary-decide`. See [[corpus-to-output-reach]] for the pending-leak
+guard a KEEP has to close (the same `ExperienceSummaryItem` row is candidate-scoped,
+shared across every application for that role).
 
 Every save funnels through one gatherer,
 [`app.js:_collectCompositionState`](../../../static/app.js), which snapshots bullets

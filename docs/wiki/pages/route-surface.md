@@ -24,9 +24,11 @@ monolith-to-blueprints split, see [[engineering-workstreams]]) moved every
 `dashboard/` blueprint. At HEAD, `app.py` is a ~296-line composition root
 (`create_app()` factory + `register_blueprints()` + `main()`) carrying **zero**
 `@app.route` decorators [`app.py`](../../../app.py); the route count that used
-to live in one file (93 at the walk's 2026-06-07 reading) is now **117**
-`@<bp>.route` decorators spread across the nine blueprint modules
-`[synthesis]`. The seven blueprints that moved out of the monolith
+to live in one file (93 at the walk's 2026-06-07 reading) is now **119**
+`@<bp>.route` decorators spread across the nine blueprint modules — up from 117
+after Epic A sprint A3 added two routes to `blueprints/applications.py`
+(`draft-experience-summaries`, `experience-summary-decide`) `[synthesis]`. The
+seven blueprints that moved out of the monolith
 (analysis/generation/corpus/templates/applications/users/diagnostics) register
 with **no** `url_prefix`, so every URL they carry stays byte-identical to the
 monolith; `assistant_bp` (`/api/assistant`) and `dashboard_bp` (`/_dashboard`)
