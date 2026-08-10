@@ -58,13 +58,38 @@ Everything past analyze is added on demand, so older context files round-trip un
   `application_id` / `application_run_id`, `composition_overrides`, and
   `llm_recommendations` — the corpus-mode / DB-backed members (B.2–B.3 + the Compose
   step). Absent on file-based contexts.
+- `experience_summary_items` — Epic A sprint A3: the candidate's active, approved
+  per-role intro variants, grouped by experience
+  (`{experience_id, company, items: [{id, text, label, has_outcome}]}`). Staged
+  durably by [`db/build_context.py:_experience_summary_groups`](../../../db/build_context.py)
+  (corpus mode only, one `WHERE … IN (…)` query, not N+1) so it survives to disk —
+  it is legitimate grounding source material for
+  [`analyzer.py:draft_experience_summaries`](../../../analyzer.py) that does NOT
+  appear in the synthesized `resume.text`, so a metric scored without it would
+  report a chosen or reworked role intro as fabrication. Typed `list[Any]`
+  deliberately (not a nested TypedDict), because every consumer reads it back off
+  JSON on disk or a fresher route-staged copy and must defensively isinstance-check
+  each element `[synthesis]`.
 - `approved_composition` — Generation-experience re-architecture Phase 4: the frozen,
   fully-resolved JSON Resume document (bullet/summary/skills text in final order plus a
   `meta.sartor` provenance block), written on Compose's explicit "Save and continue"
   (freeze), not on every autosave. When present, `/api/generate` renders it directly
   with **zero** résumé-body LLM calls instead of running `generate()` — see
   [[corpus-to-output-reach]] and [[pipeline-stages]] Step 5. `total=False`, so older
-  contexts round-trip unchanged `[synthesis]`.
+  contexts round-trip unchanged `[synthesis]`. Whether a given context counts as
+  frozen is **not** a per-caller judgement: [`hardening.py:frozen_composition_doc`](../../../hardening.py)
+  is the one predicate — corpus-mode, `approved_composition` is a dict, and that
+  document has content. It lives here, in the module that owns this contract, because
+  **two** independent implementations of "frozen" once existed — one in
+  `blueprints/generation.py`, one in `blueprints/applications.py` — and disagreed;
+  neither seam could host the shared one, since `applications` cannot import
+  `generation` without closing the `generation` → `blueprints.templates` →
+  `applications` import cycle. It is called from **three** sites today
+  (`generation.py:_frozen_composition`, `applications.py:_pre_generate_hydration`,
+  `applications.py:save_application_composition`). The Step-5 wizard rail is a
+  **consumer** of the answer, not a fourth implementation: it reads the server's flag
+  and never computes the predicate (Epic A item 20; see [[corpus-to-output-reach]] and
+  [[frontend-wizard]]).
 
 ## Two builders, one shape
 
@@ -87,8 +112,10 @@ primary `resume.text`, every supplemental's `text`, every clarification answer *
 this application**, and — D5 cross-JD reuse (`feat/clarifications-to-corpus`) — every
 confirmed clarification answer reused from the candidate's *other* applications, read
 off `context_set["prior_clarifications"]` (staged once by
-`db/build_context.py:build_context_set_from_db`, corpus mode only). It is the single
-shared definition consumed by both the iteration clarifier
+`db/build_context.py:build_context_set_from_db`, corpus mode only), and — Epic A
+sprint A3 — every active per-role intro variant's text, read off
+`context_set["experience_summary_items"]` (see above). It is the single shared
+definition consumed by both the iteration clarifier
 ([`hardening.py:compute_iteration_signals`](../../../hardening.py)) and the eval-time
 fabricated-specifics check, so the two can never score against divergent source sets
 `[synthesis]`. The carve-out that widens the grounding check to accept clarifications
@@ -154,3 +181,4 @@ recurs at dozens of context-loading routes across `blueprints/analysis.py`,
 - [[deterministic-llm-boundary]] — why `build_context_set` carries no LLM call.
 - [[corpus-data-model]] — the DB rows the `_from_db` builder projects into this shape.
 - [[corpus-to-output-reach]] — how `approved_composition` is produced and consumed downstream.
+- [[frontend-wizard]] — the wizard rail that gates Step 5 on this contract's `frozen_composition_doc` predicate.

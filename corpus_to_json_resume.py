@@ -136,6 +136,11 @@ def build_json_resume_from_corpus(
     # (experience_id → ExperienceSummaryItem id). Opt-in: a role's work[].summary
     # is emitted ONLY when the toggle is on AND the role has an explicit pick.
     use_experience_summaries, chosen_experience_summary_ids = _read_experience_summary_choices(ctx)
+    # A3 close-out — pending-leak guard: ExperienceSummaryItem ids KEPT (and thus
+    # explicitly accepted) for THIS application via /experience-summary-decide.
+    # Mirrors accepted_generated_ids for Bullets; see
+    # _resolve_chosen_experience_summary_text below.
+    accepted_experience_summary_ids = _read_accepted_experience_summary_ids(ctx)
     # B.5 (Sprint 6.6) — per-JD skill curation: recommend_skills ordering +
     # pin/drop/reorder overrides. Pending/retired skills are excluded by
     # _collect_skills; with no recommendation + no overrides this is every
@@ -173,9 +178,14 @@ def build_json_resume_from_corpus(
         basics["profiles"] = profiles
 
     # ---- Assemble work[] ----
+    # Soft-retired roles (is_active=0) never render. The filter belongs on THIS
+    # query rather than inside the loop below: `work[]` and `work_provenance` are
+    # built in lockstep from it, so filtering the source keeps them order-aligned
+    # by construction — a second, separate filter is exactly how provenance would
+    # silently drift out of alignment with the entries it describes.
     experiences = (
         session.query(Experience)
-        .filter_by(candidate_id=candidate.id)
+        .filter_by(candidate_id=candidate.id, is_active=1)
         .order_by(Experience.start_date.desc(), Experience.id.desc())
         .all()
     )
@@ -214,6 +224,7 @@ def build_json_resume_from_corpus(
                 session,
                 exp.id,
                 chosen_experience_summary_ids.get(exp.id),
+                accepted_experience_summary_ids,
             )
             if role_intro:
                 entry["summary"] = role_intro
@@ -333,6 +344,9 @@ def build_json_resume_from_corpus(
                 "work_provenance": work_provenance,
                 "skill_ids": skill_ids,
                 "accepted_generated_bullet_ids": sorted(accepted_generated_ids),
+                # A3 close-out — pending-leak guard provenance: ExperienceSummaryItem
+                # ids KEPT for THIS application (mirrors accepted_generated_bullet_ids).
+                "accepted_experience_summary_ids": sorted(accepted_experience_summary_ids),
             },
             "language": "en-US",
         },
@@ -546,23 +560,39 @@ def _resolve_chosen_experience_summary_text(
     session: Session,
     experience_id: int,
     item_id: int | None,
+    accepted_experience_summary_ids: set[int] | None = None,
 ) -> str:
     """Return the chosen ExperienceSummaryItem's text for a role, or "" (B.4).
 
     Returns "" when none is chosen / the variant is missing / inactive / belongs
     to a different role. OPT-IN: NO fallback to the legacy Experience.summary (it
     lives on as a backfilled variant, surfaced only when explicitly chosen).
+
+    Pending-leak guard (blast-radius D5 close-out, mirrors the Bullet guard a few
+    lines above in `build_json_resume_from_corpus`): a kept-but-unreviewed
+    (`is_pending_review=1`) variant renders ONLY when its id is in
+    `accepted_experience_summary_ids` — the set of ids KEPT for THIS application
+    via `/experience-summary-decide` (`composition_overrides.
+    accepted_experience_summary_ids`). Without this, a role intro drafted and
+    kept for application A would render for application B too, since both share
+    the same candidate-scoped `ExperienceSummaryItem` row and B's picker/render
+    path previously filtered on `is_active` alone.
     """
     if item_id is None:
         return ""
     from db.models import ExperienceSummaryItem
 
+    accepted = accepted_experience_summary_ids or set()
     row = (
         session.query(ExperienceSummaryItem)
         .filter_by(id=item_id, experience_id=experience_id, is_active=1)
         .first()
     )
-    if row and (row.text or "").strip():
+    if row is None:
+        return ""
+    if row.is_pending_review and row.id not in accepted:
+        return ""
+    if (row.text or "").strip():
         return row.text
     return ""
 
@@ -630,6 +660,30 @@ def _read_accepted_generated_bullet_ids(ctx: dict[str, Any]) -> set[int]:
         return set()
     out: set[int] = set()
     for x in ov.get("accepted_generated_bullet_ids") or []:
+        try:
+            out.add(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _read_accepted_experience_summary_ids(ctx: dict[str, Any]) -> set[int]:
+    """Return the set of KEPT (accepted) ExperienceSummaryItem ids from composition_overrides.
+
+    Empty when absent. These are `ExperienceSummaryItem` rows the user KEPT at
+    Compose via `/experience-summary-decide` (source='llm_proposed',
+    is_pending_review=1) — the pending-leak guard's per-application acceptance
+    ledger, mirroring `_read_accepted_generated_bullet_ids` for Bullets. Written
+    directly by the KEEP route (not resent by the client on every composition
+    save, unlike the Bullet equivalent) — see
+    `blueprints/applications.py:experience_summary_decide` and the composition
+    save route's carry-forward of this key.
+    """
+    ov = ctx.get("composition_overrides") or {}
+    if not isinstance(ov, dict):
+        return set()
+    out: set[int] = set()
+    for x in ov.get("accepted_experience_summary_ids") or []:
         try:
             out.add(int(x))
         except (TypeError, ValueError):

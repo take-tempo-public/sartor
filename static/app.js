@@ -265,13 +265,19 @@ function _renderPipelineRow(a) {
     if (!sel) return;
     sel.value = a.candidate_username;
     onUserSelect().then(() => {
-      const tailorBtn = document.getElementById('topTabTailor');
-      if (tailorBtn) switchTopTab('tailor', tailorBtn);
+      // A4 (feat/prior-apps-pipeline): open the detail modal IN PLACE on the
+      // Pipeline tab, rather than tab-switching to Tailor first. Re-assert
+      // 'pipeline' explicitly (not a no-op): onUserSelect()'s own smart-landing
+      // routing (_landingTab()) may have just navigated to 'corpus' or
+      // 'tailor' for the newly selected candidate, same as the old code had to
+      // force 'tailor' back after that same race.
+      const pipelineBtn = document.getElementById('topTabPipeline');
+      if (pipelineBtn) switchTopTab('pipeline', pipelineBtn);
       // "linking into that candidate+application" (F-17): open the specific
       // application's detail modal, not just the candidate's list.
       // _showApplicationDetail fetches independently, so it doesn't need to
-      // wait on the (fire-and-forget) applications-list refresh inside
-      // onUserSelect().
+      // wait on the (fire-and-forget) pipeline-board refresh inside
+      // switchTopTab('pipeline', ...).
       _showApplicationDetail(a.id);
     });
   };
@@ -425,11 +431,6 @@ async function onUserSelect() {
   const navGenAtStart = _navGen;  // item 29: detect explicit navigation during the awaits below
   const statusGenAtStart = _statusGen;  // item 31: detect a newer status write during the awaits below
   await loadConfig();
-  show('panelApplications');           // prep the Tailor tab's landing panel
-  // F-23: default the applications list to a collapsed short summary too — it
-  // used to be a full untruncated list sitting above the wizard rail. Persisted
-  // the same way as panelUser.
-  _applyFoldableDefault('panelApplications', true);
   // panelConfig moved to the Settings drawer (Workstream B1.3); no longer
   // a flow panel. loadConfig() still populates the same #cfgX inputs
   // because the drawer hosts them via the same ids.
@@ -473,7 +474,9 @@ async function onUserSelect() {
   // harness wait on this attribute can't observe it before the guard above
   // has already run.
   document.getElementById('userSelect').setAttribute('data-user-select-ready', '1');
-  refreshApplications();
+  // A4 (feat/prior-apps-pipeline): no per-candidate applications list to
+  // refresh here anymore — Pipeline (cross-candidate) refreshes itself on its
+  // own tab activation instead of on user selection.
   _loadPersonaOptions();
   wizardInit({ scroll: !superseded });
 }
@@ -1092,8 +1095,10 @@ async function runAnalysis() {
     // docs/RELEASE_CHECKLIST.md.
     _wizardRender();
     // KW7: /api/analyze just created the Application row — re-render the
-    // applications block so it stops showing the stale pre-analyze state.
-    refreshApplications();
+    // Pipeline board so it stops showing the stale pre-analyze state (A4,
+    // feat/prior-apps-pipeline: was refreshApplications() against the
+    // now-removed panel).
+    refreshPipeline();
     setStatus('ANALYSIS COMPLETE');
     _announce('Analysis complete. Review it, then continue to clarify or skip to compose.');
     // Workstream B1 reorder: recommend no longer fires here. It fires
@@ -1495,7 +1500,10 @@ async function submitClarifications() {
   // overlay when it fires the recommend call, but it's a no-op (no
   // _composeApplicationId) when there's nothing to recommend against — this
   // guarantees the overlay never sticks in that case.
-  _setBusy(false);
+  // A2 — routed through _clearBusyUnlessComposing so it cannot tear down the
+  // "Composing…" hold _fireRecommendThenCompose just raised for the arrival
+  // volley (that hold releases itself at the terminal render).
+  _clearBusyUnlessComposing();
 }
 
 async function skipClarifications() {
@@ -1527,7 +1535,9 @@ async function skipClarifications() {
     }
     await _fireRecommendThenCompose();
   } finally {
-    _setBusy(false);
+    // A2 — same reason as submitClarifications: this clears THIS function's own
+    // "Preparing compose…" overlay, never the arrival-volley hold stacked on it.
+    _clearBusyUnlessComposing();
   }
 }
 
@@ -1578,6 +1588,26 @@ async function _fireRecommendThenCompose() {
     }
   }
   wizardGoTo(3);
+  // A2 (feat/compose-wait-ux) — wizardGoTo(3) shows the panel and fires
+  // loadComposition() fire-and-forget; the background volley it kicks off runs
+  // for several more seconds. Hold a visible wait state across it so "Compose
+  // is ready" and "Compose is visible" stop being the same moment. Raised AFTER
+  // the finally above so the two never fight over the one banner element.
+  // Guarded on the navigation having actually TAKEN: wizardGoTo no-ops with a
+  // toast when step 3 is unreachable, and in that case it never called
+  // loadComposition() — so nothing would ever release the hold and the banner
+  // would sit until its cap expired.
+  // The `_composeApplicationId != null` half is NOT belt-and-braces. loadComposition
+  // is `async`, so wizardGoTo's fire-and-forget call runs its body synchronously up
+  // to the first `await` — and its `_composeApplicationId == null` early return is
+  // the ONE exit with no `await` before it. On that path the whole function,
+  // including its own `_settleComposeIfIdle()` (which flushes an EMPTY waiter list),
+  // has already returned by the time this line runs, so a hold raised here would
+  // have nothing left to flush it and would strand the banner until the cap.
+  // Defensive: no live path is known where lastContextPath is truthy while
+  // _composeApplicationId is null at this point — this closes the logic hole, it is
+  // not a fix to an observed failure.
+  if (_wizardStep === 3 && _composeApplicationId != null) _holdComposingBusy();
 }
 
 // ---- Generation (P8 Gate #2) ----
@@ -1759,8 +1789,9 @@ function _onGenerationComplete(data) {
   // refreshes lazily when its tab is shown (see showTab).
   _refreshOutputPreview();
   // KW7: generation updated the application's run data (iteration count,
-  // updated_at) — keep the applications block in sync.
-  refreshApplications();
+  // updated_at) — keep the Pipeline board in sync (A4, feat/prior-apps-
+  // pipeline: was refreshApplications() against the now-removed panel).
+  refreshPipeline();
 }
 
 // β.5 — show "+ Generate cover letter" when no cover letter exists yet,
@@ -2148,13 +2179,10 @@ const _HELP_REGISTRY = {
     tip: 'About sartor',
     welcome: true,
   },
-  panelApplications: {
-    title: 'Prior applications',
-    body: 'Every résumé you generate is kept here against the job you tailored '
-      + 'it for. Reopen one to download it again, or to pick up where you left '
-      + 'off and refine it further. Nothing here changes your career corpus.',
-    tip: 'Prior applications',
-  },
+  // A4 (feat/prior-apps-pipeline): panelApplications's help entry removed
+  // along with the panel itself. Prior applications live in the Pipeline tab
+  // now; it has no _HELP_REGISTRY entry of its own (out of this sprint's
+  // scope; not added here).
 
   // ---- Wizard steps (Tailor tab) ---------------------------------------
   panelJD: {
@@ -3415,7 +3443,7 @@ function _showMarkSubmittedNudge() {
 }
 
 // Step-6 nudge click: PUT submitted on the wizard's application, confirm,
-// and sync the applications block. Idempotent server-side — sent_at stamps
+// and sync the Pipeline board. Idempotent server-side — sent_at stamps
 // only on the first transition.
 async function markCurrentApplicationSubmitted() {
   if (_composeApplicationId == null) {
@@ -3424,8 +3452,10 @@ async function markCurrentApplicationSubmitted() {
   }
   if (await _putApplicationStatus(_composeApplicationId, 'submitted')) {
     document.getElementById('markSubmittedNudge')?.classList.add('hidden');
-    _toast('Marked submitted — report the outcome from its Applications card');
-    refreshApplications();
+    // A4 (feat/prior-apps-pipeline): "its Applications card" named the
+    // now-removed panel's card; Pipeline is where the outcome gets reported now.
+    _toast('Marked submitted — report the outcome from its Pipeline row');
+    refreshPipeline();
   }
 }
 
@@ -3456,8 +3486,9 @@ function hideAllPanels() {
   // Workstream B1: panelConfig moved to Settings drawer + panelResume
   // removed; remaining flow panels are listed explicitly + the wizard
   // panels are added so hideAllPanels keeps doing what it advertises.
+  // A4 (feat/prior-apps-pipeline): panelApplications removed from this list —
+  // the panel it named no longer exists.
   [
-    'panelApplications',
     'panelJD', 'panelAnalysis', 'panelClarify',
     'panelCompose', 'panelTemplate', 'panelGenerate', 'panelOutput',
   ].forEach(hide);
@@ -3583,13 +3614,15 @@ function esc(str) {
 }
 
 // ---- Panel collapse / expand ----
-// F-23 — the two "ambient" panels that used to crowd the wizard off-screen
-// (User selection, Prior applications) persist their collapsed/expanded state
-// across reloads, so a returning visitor's own choice sticks instead of
-// re-inheriting the collapsed-by-default posture every time. Any manual
-// toggle (via _togglePanel) on one of these ids is remembered here; every
-// other .cb-panel (wizard step panels, Corpus, etc.) is unaffected.
-const _FOLDABLE_PANEL_IDS = ['panelUser', 'panelApplications'];
+// F-23 — the "ambient" panel that used to crowd the wizard off-screen (User
+// selection) persists its collapsed/expanded state across reloads, so a
+// returning visitor's own choice sticks instead of re-inheriting the
+// collapsed-by-default posture every time. Any manual toggle (via
+// _togglePanel) on one of these ids is remembered here; every other .cb-panel
+// (wizard step panels, Corpus, etc.) is unaffected. (A4, feat/prior-apps-
+// pipeline: this used to also cover panelApplications — Prior applications —
+// removed along with the panel itself.)
+const _FOLDABLE_PANEL_IDS = ['panelUser'];
 
 function _togglePanel(panelId) {
   const panel = document.getElementById(panelId);
@@ -3633,10 +3666,26 @@ document.querySelectorAll('.panel-header').forEach(header => {
 
 let _corpusLoadedForUser = '';
 let _corpusExperiences = [];
-// P4 — when true, the corpus detail fetch includes retired (is_active=0) titles
-// + bullets so the user can review/restore them. Default off: retired items are
-// invisible unless this box is ticked.
+// P4 — when true, the corpus fetches include retired (is_active=0) rows so the
+// user can review/restore them: retired titles + bullets inside a card body, and
+// (since the experience-level soft-retire fix) retired ROLES in the list itself.
+// Default off: retired items are invisible unless this box is ticked.
 let _corpusShowRetired = false;
+
+// The shared "show retired" query suffix for the two experiences-LIST fetches
+// (refreshCorpus + refreshCorpusSummaryFor). One helper, so the two can't drift
+// apart and leave the list and the count disagreeing about what's visible.
+function _corpusListQuery() {
+  return _corpusShowRetired ? '?include_retired=1' : '';
+}
+
+// "N experiences" counts LIVE roles only. With "Show retired" ticked the list
+// also carries retired roles, and counting those would tell the user they have
+// more experience in the corpus than can ever reach a résumé.
+function _corpusLiveCountText() {
+  const n = _corpusExperiences.filter(e => e.is_active !== false).length;
+  return `${n} experience${n === 1 ? '' : 's'}`;
+}
 
 // Navigation generation (item 29, docs/dev/diagnosis/
 // ux-restore-scroll-y-resource-contention.md Round 3): bumped on every top-tab
@@ -3709,7 +3758,10 @@ async function refreshCorpus() {
   refreshCertificationsEditor();
   let res;
   try {
-    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+    // Retired ROLES are hidden by default, same contract the card body already
+    // uses for retired titles/bullets (_loadCorpusDetail).
+    res = await fetch(
+      `/api/users/${encodeURIComponent(currentUser)}/experiences${_corpusListQuery()}`);
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
     _restoreScrollY(_scrollY);
@@ -4191,9 +4243,10 @@ function _renderSkillEditorRow(s, isPending) {
   row.appendChild(head);
 
   if (!isPending) {
-    const tagWrap = _el('div', {
-      className: 'skill-tags', style: 'display:flex;gap:4px;flex-wrap:wrap;margin:4px 0;',
-    });
+    // A1 — layout lives in .skill-editor-row .skill-tags (style.css) now, not
+    // inline: an inline style wins the cascade per-property, so the compact
+    // row's metrics could not override an inline margin here.
+    const tagWrap = _el('div', { className: 'skill-tags' });
     (s.tags || []).forEach(t => {
       const chip = _el('span', {
         className: 'corpus-row-flag', textContent: t.display_value || t.value,
@@ -4866,8 +4919,7 @@ function _renderCorpusList() {
       return;
     }
     toolbar.style.display = '';
-    countEl.textContent =
-      `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+    countEl.textContent = _corpusLiveCountText();
     _clearChildren(list);
     if (_corpusExperiences.length === 0) {
       hint.textContent = 'No experiences yet. Click + Import résumé to extract '
@@ -4889,11 +4941,20 @@ function _renderCorpusList() {
 }
 
 function _renderCorpusSummary(exp) {
-  const card = _el('div', { className: 'corpus-card', id: `corpus-exp-${exp.id}` });
+  // A retired role only reaches here with "Show retired" ticked; the `retired`
+  // class is what makes "this role is retired" visible rather than just absent.
+  const retired = exp.is_active === false;
+  const card = _el('div', {
+    className: retired ? 'corpus-card retired' : 'corpus-card',
+    id: `corpus-exp-${exp.id}`,
+  });
   card.dataset.experienceId = exp.id;
   const header = _el('div', { className: 'corpus-card-header' });
   header.onclick = () => toggleCorpusCard(exp.id);
   header.appendChild(_el('button', { className: 'corpus-card-toggle' }, [], { 'aria-label': 'Expand' }));
+  if (retired) {
+    header.appendChild(_el('div', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
+  }
   header.appendChild(_el('div', { className: 'corpus-card-company', textContent: exp.company || '(no company)' }));
   header.appendChild(_el('div', { className: 'corpus-card-title', textContent: exp.official_title || '(no official title)' }));
   header.appendChild(_el('div', { className: 'corpus-card-dates', textContent: `${exp.start_date} — ${exp.end_date || 'current'}` }));
@@ -4964,15 +5025,28 @@ function _renderCorpusDetail(body, exp) {
     };
     btnRow.appendChild(acceptAll);
   }
-  const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'Soft-retire experience' });
-  retire.onclick = () => deleteExperience(expId, retire);
-  btnRow.appendChild(retire);
+  if (exp.is_active === false) {
+    // A retired role gets Restore instead of Retire — retiring it again is a
+    // no-op, and without this button there is no UI path back at all.
+    const restore = _el('button', { className: 'cb-btn cb-bg-teal', textContent: 'Restore experience' });
+    restore.onclick = () => restoreExperience(expId, restore);
+    btnRow.appendChild(restore);
+  } else {
+    const retire = _el('button', { className: 'cb-btn cb-bg-orange', textContent: 'Soft-retire experience' });
+    retire.onclick = () => deleteExperience(expId, retire);
+    btnRow.appendChild(retire);
+  }
   body.appendChild(btnRow);
+  // A1 (Epic A) — card order is titles → summary → bullets. The role's
+  // identity (who/where/when) stays in the field group above; then what the
+  // role WAS (titles), then how it is positioned (summary), then the
+  // evidence (bullets). Summary previously rendered last, after the bullets
+  // it is meant to frame.
   body.appendChild(_renderTitleSection(expId, exp.titles || []));
-  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
   // B.4 — per-role intro variants editor (mirrors the candidate summary-variant
   // editor, scoped to this experience). Loads asynchronously into its list.
   body.appendChild(_renderExperienceSummarySection(expId));
+  body.appendChild(_renderBulletSection(expId, exp.bullets || []));
 }
 
 function _renderExperienceFieldGroup(expId, exp) {
@@ -5278,15 +5352,29 @@ async function _reloadCorpusCard(expId) {
   await refreshCorpusSummaryFor(expId);
 }
 
-// P4 — global "Show retired" toggle. Re-renders every currently-expanded card
-// with (or without) retired titles + bullets. Default off, so retired items are
-// never visible unless the user explicitly opts in here.
-function toggleCorpusRetired(checked) {
+// P4 — global "Show retired" toggle. Reloads the LIST (so retired roles appear
+// or disappear) and re-renders every currently-expanded card with (or without)
+// retired titles + bullets. Default off, so retired items are never visible
+// unless the user explicitly opts in here.
+//
+// The list reload is not optional: retiring a whole role is now a role-level
+// flag, so without it ticking the box would reveal retired rows inside surviving
+// cards while the retired roles themselves stayed invisible.
+async function toggleCorpusRetired(checked) {
   _corpusShowRetired = !!checked;
-  document.querySelectorAll('.corpus-card.expanded').forEach(card => {
-    const expId = parseInt(card.dataset.experienceId, 10);
-    if (!Number.isNaN(expId)) _loadCorpusDetail(expId);
-  });
+  const expanded = Array.from(document.querySelectorAll('.corpus-card.expanded'))
+    .map(card => parseInt(card.dataset.experienceId, 10))
+    .filter(id => !Number.isNaN(id));
+  await refreshCorpus();
+  // refreshCorpus() rebuilds the list from scratch, collapsing every card, so
+  // re-expand what the user had open — otherwise ticking the box silently
+  // closes their place in the corpus.
+  for (const expId of expanded) {
+    const card = document.getElementById(`corpus-exp-${expId}`);
+    if (!card) continue;  // the role itself just went out of view
+    card.classList.add('expanded');
+    await _loadCorpusDetail(expId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -5471,7 +5559,8 @@ function _clearBtnPending(btn, label) {
 }
 
 async function refreshCorpusSummaryFor(expId) {
-  const res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/experiences`);
+  const res = await fetch(
+    `/api/users/${encodeURIComponent(currentUser)}/experiences${_corpusListQuery()}`);
   if (!res.ok) return;
   const body = await res.json().catch(() => []);
   // `/experiences` returns a bare array on success but a needs_onboarding
@@ -5492,20 +5581,39 @@ async function refreshCorpusSummaryFor(expId) {
   if (dates) dates.textContent = `${exp.start_date} — ${exp.end_date || 'current'}`;
   if (meta) meta.textContent = `${exp.bullet_count_active} bullets` +
     (exp.bullet_count_pending ? ` · ${exp.bullet_count_pending} pending` : '');
-  document.getElementById('corpusCount').textContent =
-    `${_corpusExperiences.length} experience${_corpusExperiences.length === 1 ? '' : 's'}`;
+  document.getElementById('corpusCount').textContent = _corpusLiveCountText();
 }
 
 async function deleteExperience(expId, triggerEl) {
   const ok = await cbConfirm(
-    'All its bullets become inactive and it drops out of new résumés. You '
-      + 'can restore them via "Show retired".',
+    'The role and all its bullets drop out of new résumés. You can bring it '
+      + 'back via "Show retired".',
     { title: 'Retire this entire experience?', confirmLabel: 'Retire', triggerEl },
   );
   if (!ok) return;
   try {
-    const r = await _deleteJson(`/api/experiences/${expId}`);
-    _toast(`Retired ${r.retired_bullets} bullet(s)`);
+    // The bullet count is incidental — a role with none retires just as much as
+    // one with ten, and the old "Retired 0 bullet(s)" toast read as a no-op for
+    // exactly the case this fix addresses.
+    await _deleteJson(`/api/experiences/${expId}`);
+    _toast('Experience retired');
+    await refreshCorpus();
+  } catch (e) { _toast('Failed: ' + e.message, true); }
+}
+
+// The other half of the retire pair. Bullets keep their own is_active, so a
+// restore brings the ROLE back without resurrecting bullets the user retired
+// individually beforehand — those are restored one at a time, as before.
+async function restoreExperience(expId, triggerEl) {
+  const ok = await cbConfirm(
+    'The role becomes available to new résumés again. Bullets you retired '
+      + 'individually stay retired.',
+    { title: 'Restore this experience?', confirmLabel: 'Restore', triggerEl },
+  );
+  if (!ok) return;
+  try {
+    await _putJson(`/api/experiences/${expId}`, { is_active: true });
+    _toast('Experience restored');
     await refreshCorpus();
   } catch (e) { _toast('Failed: ' + e.message, true); }
 }
@@ -6125,143 +6233,15 @@ function _renderDuplicateExp(exp) {
 }
 
 // ===============================================================
-// Phase D.3 — Applications list (within the APPLICATION tab)
+// A4 (feat/prior-apps-pipeline): the "Phase D.3 — Applications list (within
+// the APPLICATION tab)" block that used to live here (the per-candidate
+// #applicationsList render path — refreshApplications, _renderApplicationsList,
+// _renderApplicationCard, toggleApplicationsRetired, _setApplicationsCount,
+// _applicationsShowRetired) was removed along with the #panelApplications
+// panel it rendered into. The shared detail modal below (_showApplicationDetail
+// and its two sub-renderers) is UNCHANGED — it is what Pipeline now opens in
+// place. See docs/dev/blast-radius/prior-apps-pipeline.md.
 // ===============================================================
-
-// Walkthrough J1 — retired applications are hidden unless this is on.
-let _applicationsShowRetired = false;
-function toggleApplicationsRetired(checked) {
-  _applicationsShowRetired = !!checked;
-  refreshApplications();
-}
-
-// F-23 — mirror the count into the panel-header summary too, so the
-// applications panel still reads as a short summary while it's collapsed.
-function _setApplicationsCount(text) {
-  const countEl = document.getElementById('applicationsCount');
-  const headerEl = document.getElementById('applicationsHeaderCount');
-  if (countEl) countEl.textContent = text;
-  if (headerEl) headerEl.textContent = text;
-}
-
-async function refreshApplications() {
-  const list = document.getElementById('applicationsList');
-  if (!list) return;
-  if (!currentUser) {
-    _setLoadingPlaceholder(list, 'Select a user to view their applications.');
-    _setApplicationsCount('0 applications');
-    return;
-  }
-  // B.8 Part 1: lifecycle filter — server-side via the route's ?status= param
-  // (the same query surface the outcome-learning layer uses).
-  const statusFilter = document.getElementById('applicationsStatusFilter')?.value || '';
-  _setLoadingPlaceholder(list, 'Loading…');
-  let res;
-  try {
-    const params = new URLSearchParams();
-    if (statusFilter) params.set('status', statusFilter);
-    if (_applicationsShowRetired) params.set('include_retired', '1');
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    res = await fetch(`/api/users/${encodeURIComponent(currentUser)}/applications${qs}`);
-  } catch (e) {
-    _setLoadingPlaceholder(list, 'Network error.');
-    return;
-  }
-  if (res.status === 404) {
-    _setLoadingPlaceholder(list, `No applications yet for ${currentUser}. Analyze a JD below to start one.`);
-    _setApplicationsCount('0 applications');
-    return;
-  }
-  if (!res.ok) {
-    _setLoadingPlaceholder(list, 'Failed to load applications.');
-    return;
-  }
-  const apps = await res.json().catch(() => []);
-  if (_needsOnboarding(res, apps)) {
-    _setApplicationsCount('0 applications');
-    _renderCorpusEmptyCTA(list, 'No applications yet. Add your résumé in the '
-      + 'Career corpus tab, then analyze a job description.');
-    return;
-  }
-  if (apps.length === 0 && statusFilter) {
-    // Distinguish "filtered everything out" from "no applications yet" so
-    // the empty-state copy doesn't mislead.
-    _setApplicationsCount('0 applications');
-    _setLoadingPlaceholder(list, 'No applications with this status.');
-    return;
-  }
-  _renderApplicationsList(apps);
-}
-
-function _renderApplicationsList(apps) {
-  const list = document.getElementById('applicationsList');
-  _clearChildren(list);
-  _setApplicationsCount(`${apps.length} application${apps.length === 1 ? '' : 's'}`);
-  if (apps.length === 0) {
-    _setLoadingPlaceholder(list, 'No applications yet. Analyze a JD below to start one.');
-    return;
-  }
-  apps.forEach(a => list.appendChild(_renderApplicationCard(a)));
-}
-
-// dec 7 (G7, UX Cohesion Epic) — the compact roster card: ONE summary line
-// (title/company) + ONE meta line (status · pending-review count · date).
-// Everything this card used to render directly — iteration count, the
-// status-transition row (Mark submitted / Got interview / …), and the
-// retire/restore admin row — moved into the expanded detail modal
-// (_showApplicationDetail, already opened on card click below), alongside
-// the JD snippet + per-run status that modal now ALSO surfaces for the
-// first time. A roster of 10+ applications used to be 10+ small multi-row
-// cards each carrying its own button rows; it's now a dense two-line list.
-function _renderApplicationCard(app) {
-  const retired = app.is_active === false;
-  const card = _el('div', {
-    className: 'application-card' + (retired ? ' retired' : ''),
-    id: `app-card-${app.id}`,
-  });
-  const header = _el('div', { className: 'application-card-header' });
-  header.appendChild(_el('div', { className: 'application-card-title', textContent: app.title }));
-  if (app.company) {
-    header.appendChild(_el('div', { className: 'application-card-company', textContent: app.company }));
-  }
-  card.appendChild(header);
-
-  const meta = _el('div', { className: 'application-card-meta' });
-  const chipStatus = app.status || 'draft';
-  meta.appendChild(_el('span', {
-    className: `app-status-chip status-${chipStatus}`,
-    textContent: _toSentence((chipStatus === 'submitted' ? 'no response' : chipStatus).replace('_', ' ')),
-  }));
-  if (retired) {
-    meta.appendChild(_el('span', { className: 'app-status-chip status-retired', textContent: 'Retired' }));
-  }
-  if (app.pending_proposals > 0) {
-    const badge = _el('span', {
-      className: 'application-card-pending',
-      textContent: `${app.pending_proposals} to review`,
-    });
-    badge.title = 'AI-proposed bullets/titles for this application awaiting your review';
-    meta.appendChild(badge);
-  }
-  const outcomeStatuses = new Set(['interview', 'rejected', 'withdrawn']);
-  const sentStatuses = new Set(['submitted']);
-  let dateLabel;
-  if (outcomeStatuses.has(app.status) && app.outcome_at) {
-    dateLabel = 'Outcome · ' + _formatRelativeDate(app.outcome_at);
-  } else if (sentStatuses.has(app.status) && app.sent_at) {
-    dateLabel = 'Sent · ' + _formatRelativeDate(app.sent_at);
-  } else {
-    dateLabel = _formatRelativeDate(app.updated_at);
-  }
-  meta.appendChild(_el('span', {
-    className: 'application-card-date',
-    textContent: dateLabel,
-  }));
-  card.appendChild(meta);
-
-  card.onclick = () => _showApplicationDetail(app.id);
-  return card;
-}
 
 // dec 7 — the status-transition row, now rendered INTO the expanded detail
 // modal (#appDetailStatusActions) rather than directly on the compact card.
@@ -6269,8 +6249,9 @@ function _renderApplicationCard(app) {
 // submitted → the three outcome buttons; interview/rejected/withdrawn is
 // terminal (data-model decision 2026-06-10), so no further actions render.
 // Re-renders the modal's own detail (not the whole list) on success so the
-// modal reflects the new status without a jarring close; refreshApplications()
-// still runs so the roster behind it stays in sync.
+// modal reflects the new status without a jarring close; refreshPipeline()
+// still runs so the board behind it stays in sync (A4, feat/prior-apps-
+// pipeline: was refreshApplications() against the now-removed panel).
 // `container` is the modal's own #appDetailStatusActions div (already
 // carries the .outcome-action-row class in templates/index.html) — this
 // populates it in place rather than nesting another wrapper.
@@ -6288,7 +6269,7 @@ function _renderAppDetailStatusActions(container, app) {
     const btn = _el('button', { className: 'outcome-btn', textContent: label });
     btn.addEventListener('click', async () => {
       if (await _putApplicationStatus(app.id, status)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6305,7 +6286,7 @@ function _renderAppDetailAdminRow(container, app) {
     const restore = _el('button', { className: 'app-admin-btn', textContent: 'Restore' });
     restore.addEventListener('click', async () => {
       if (await _setApplicationRetired(app.id, false)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6319,7 +6300,7 @@ function _renderAppDetailAdminRow(container, app) {
       );
       if (!ok) return;
       if (await _setApplicationRetired(app.id, true)) {
-        refreshApplications();
+        refreshPipeline();
         _showApplicationDetail(app.id);
       }
     });
@@ -6522,7 +6503,7 @@ async function _showApplicationDetail(applicationId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (r.ok) { _toast(okMsg); refreshApplications(); return true; }
+      if (r.ok) { _toast(okMsg); refreshPipeline(); return true; }
       const err = await r.json().catch(() => ({}));
       _toast(err.error || 'Failed to save', true);
       return false;
@@ -6598,11 +6579,17 @@ function resumeApplicationIntoWizard(detail) {
   // so preview iframes + downloads honor the template. lastContextPath enables
   // the Step 2/3 reachability gate (_wizardReachable).
   _composeApplicationId = detail.id;
-  // F-09: conservative reset — the resume payload doesn't say whether this
-  // context carries a frozen approved_composition, so Step 5 shows the legacy
-  // copy until the user re-freezes via Compose's Save-and-continue. Never
-  // claims determinism it can't verify.
-  _compositionFrozen = false;
+  // F-09 + item 20: the resume payload NOW says whether this context carries a
+  // frozen approved_composition (`has_frozen_composition`, from
+  // blueprints/applications.py::_pre_generate_hydration), so this reads the fact
+  // instead of the old conservative hard-`false`. That reset was harmless while
+  // Step 5 was ungated and a lock-out the moment it wasn't: observed on the base
+  // tip, a resumed application whose context DID carry the frozen document
+  // reported `frozen: False` (docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md,
+  // observation 4). Still never claims determinism it can't verify — the flag is
+  // false whenever the field is absent, which covers a degraded resume with no
+  // live context file and every pre-freeze-era application.
+  _compositionFrozen = !!(rs && rs.has_frozen_composition);
   const personaSel = document.getElementById('personaSelect');
   if (personaSel && rs.persona_template_id != null) {
     personaSel.value = String(rs.persona_template_id);
@@ -7044,17 +7031,56 @@ function wizardInit(opts) {
 function _wizardReachable(step) {
   // Forward gating after B1 reorder:
   //   Step 1 always reachable; Step 2+ needs a successful analysis;
-  //   Step 6 needs a successful generation.
+  //   Step 5 needs a FROZEN composition; Step 6 needs a successful generation.
   if (step >= 2 && !lastContextPath) return false;
+  // Item 20 (fix/wizard-rail-frozen-composition-gate) — Step 5 used to open on
+  // nothing but a context path, so a rail click that skipped Compose reached
+  // Generate with no `approved_composition`; server-side
+  // `blueprints/generation.py::_frozen_composition` then returns None and the
+  // retired full-LLM `generate()` fires. Observed (driven run) in
+  // docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md, observations 1+3.
+  //
+  // The condition is exactly "the server will assemble this deterministically"
+  // (`hardening.frozen_composition_doc` — the same predicate `/api/generate` uses
+  // to choose between the deterministic assemble and the legacy `generate()`).
+  // NOT the weaker "Compose's Save-and-continue completed": that admitted runs the
+  // server then refused to assemble, under Step-5 copy promising "no AI variation"
+  // — item 20's own defect, one layer in. `_compositionFrozen` carries the server's
+  // answer from BOTH its setters — the freeze response's `frozen` field in-session,
+  // and the resume payload's `has_frozen_composition` for a reloaded prior
+  // application. Neither is a client re-derivation.
+  //
+  // This locks out a candidate whose analyze-time `career_corpus` snapshot is empty
+  // (zero active roles), which is intended: that run WOULD reach the LLM path, so
+  // the determinism claim behind the rail would be false. They are not walled out —
+  // steps 1-4 stay reachable off `lastContextPath` alone, so Compose (step 3) is
+  // always one click away, and step 1 re-runs analyze after the Career Corpus panel
+  // (outside the rail) has roles in it again.
+  //
+  // Step 6 stays gated on `lastResumePath` alone: a run that WAS generated must
+  // remain downloadable even when its freeze state can't be recovered.
+  if (step === 5 && !_compositionFrozen) return false;
   if (step >= 6 && !lastResumePath) return false;
   return true;
 }
 
+// Item 20 — ONE message source for both refusals a locked step can produce: the
+// toast on an attempted navigation, and the `title` on the greyed rail button.
+// A greyed step carrying no explanation reads as a bug, and Step 5's lock in
+// particular is a flow requirement (finish Compose), not a missing analysis —
+// so it must not inherit the generic "Run ANALYZE first" text.
+function _wizardLockReason(step) {
+  if (step >= 6) return 'Generate the documents first.';
+  if (step === 5 && lastContextPath) {
+    return 'Save your composition in Compose (step 3) first — Generate builds '
+      + 'the documents from exactly what you approved there.';
+  }
+  return 'Run ANALYZE first (step 1).';
+}
+
 function wizardGoTo(step, opts) {
   if (!_wizardReachable(step)) {
-    _toast(step >= 6
-      ? 'Generate the documents first.'
-      : 'Run ANALYZE first (step 1).', true);
+    _toast(_wizardLockReason(step), true);
     return;
   }
   _wizardStep = step;
@@ -7100,8 +7126,10 @@ function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
 function wizardBack() { wizardGoTo(Math.max(1, _wizardStep - 1)); }
 
 function _wizardRender(opts) {
-  // Show only the active step's panel(s); keep User/Applications/Config
-  // visible as ambient context (they aren't wizard steps).
+  // Show only the active step's panel(s); keep User/Config visible as
+  // ambient context (they aren't wizard steps). (A4, feat/prior-apps-
+  // pipeline: Applications used to be a third ambient panel here too —
+  // removed along with the panel itself.)
   const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
   Object.values(_WIZARD_PANELS).flat().forEach(pid => {
     if (stepPanels.has(pid)) show(pid); else hide(pid);
@@ -7119,7 +7147,9 @@ function _wizardRender(opts) {
     // unnoticed. A tooltip on reachable steps announces they're clickable.
     const _lbl = btn.querySelector('.wizard-label');
     const _lblText = (_lbl && _lbl.textContent) ? _lbl.textContent : `Step ${s}`;
-    if (btn.disabled) btn.removeAttribute('title');
+    // Item 20: a locked step now says WHY it is locked (same text the refusal
+    // toast uses) instead of silently dropping its tooltip.
+    if (btn.disabled) btn.title = _wizardLockReason(s);
     else btn.title = isActive ? `You're on step ${s}: ${_lblText}`
                               : `Go to step ${s}: ${_lblText}`;
     // Swap the number for ✓ on done steps; restore the digit otherwise.
@@ -7239,6 +7269,11 @@ let _gapFillFiredForApp = null;
 let _retiredGapFillKeys = [];
 // B.4 — whether the "Add role intros" toggle is on for the loaded application.
 let _composeUseRoleIntros = false;
+// A3 — whether draft_experience_summaries has already run for the loaded
+// application. Mirrors the server's has_experience_summary_drafts (key
+// presence, not list length), so a draft call that legitimately produced zero
+// intros still stops the opt-in path re-firing it.
+let _composeHasRoleIntroDrafts = false;
 
 // Test-observability: count of in-flight background reloads that will re-enter
 // loadComposition() (auto-cascade draft/recommend + user-action pin/accept/etc).
@@ -7253,18 +7288,147 @@ let _composeUseRoleIntros = false;
 // The attribute is ABSENT at zero (the `:not([data-compose-bg-pending])`
 // selector depends on that); it is never left as `data-compose-bg-pending="0"`.
 let _composeBgReloads = 0;
-function _markComposeBgReload(delta) {
+// A2 (feat/compose-wait-ux) — the human labels of the background calls
+// currently in flight, newest last. PURELY PRESENTATIONAL: it drives
+// #composeBgChip's text so the chip can name what is actually running instead
+// of always reading "Updating suggestions…". It is a PARALLEL structure, never
+// a second source of truth — `_composeBgReloads` remains the only thing that
+// sets or clears `data-compose-bg-pending`, and a call site that passes no
+// label increments exactly as it did before.
+let _composeBgLabels = [];
+const _COMPOSE_BG_DEFAULT_LABEL = 'Updating suggestions…';
+
+// A2 — release callbacks for the "Composing…" wait gate (_holdComposingBusy).
+// They are invoked SYNCHRONOUSLY, and always immediately BEFORE the DOM
+// mutation that makes ui_pages/selectors.py's `Compose.SETTLED`
+// (`#composeList[data-compose-ready]:not([data-compose-bg-pending])`)
+// observable — so `WizardComposePage._wait_settled()` returning already implies
+// the overlay is down, with no window in between. The gate READS the same two
+// signals that selector encodes; it deliberately does NOT redefine either of
+// them (docs/dev/blast-radius/compose-wait-ux.md, consumers 1-9).
+let _composeSettleWaiters = [];
+
+function _flushComposeSettleWaiters() {
+  if (!_composeSettleWaiters.length) return;
+  const waiters = _composeSettleWaiters;
+  _composeSettleWaiters = [];
+  waiters.forEach(fn => {
+    // A throwing release must never take the render pass down with it — this
+    // runs inside loadComposition()'s own terminal path.
+    try { fn(); } catch (e) { console.warn('compose settle waiter failed:', e); }
+  });
+}
+
+// Flush only once the background volley has actually drained. Called from EVERY
+// loadComposition() exit path — including the early error/empty returns, which
+// never set `data-compose-ready` and would otherwise leave the overlay to its
+// timeout cap instead of clearing when the pass genuinely ended.
+function _settleComposeIfIdle() {
+  if (_composeBgReloads === 0) _flushComposeSettleWaiters();
+}
+
+function _markComposeBgReload(delta, label) {
   _composeBgReloads = Math.max(0, _composeBgReloads + delta);
+  if (delta > 0) {
+    _composeBgLabels.push(label || _COMPOSE_BG_DEFAULT_LABEL);
+  } else if (delta < 0 && _composeBgLabels.length) {
+    // Remove THIS site's own label rather than blindly popping: the arrival
+    // volley overlaps, so decrements do not arrive in increment order. Resolve
+    // the key exactly the way the increment above does — 7 of the 12 call sites
+    // pass no label, and an unlabelled decrement that searched for `undefined`
+    // would miss, fall back to "splice the last entry", and remove a LABELLED
+    // auto-cascade entry still in flight (leaving the chip on a stale name). A
+    // user action during the arrival volley reaches this: `_setBusy` blocks no
+    // input, so Pin/Drop/Tailor are clickable while the volley runs.
+    const key = label || _COMPOSE_BG_DEFAULT_LABEL;
+    const at = _composeBgLabels.lastIndexOf(key);
+    _composeBgLabels.splice(at < 0 ? _composeBgLabels.length - 1 : at, 1);
+  }
+  if (_composeBgReloads === 0) _composeBgLabels = [];
   const list = document.getElementById('composeList');
   if (!list) return;
-  if (_composeBgReloads > 0) list.setAttribute('data-compose-bg-pending', '1');
-  else list.removeAttribute('data-compose-bg-pending');
+  if (_composeBgReloads > 0) {
+    list.setAttribute('data-compose-bg-pending', '1');
+  } else {
+    // A2 — release the "Composing…" hold SYNCHRONOUSLY, immediately BEFORE the
+    // removal that makes Compose.SETTLED observable. Ordering only; the
+    // attribute rule itself (present iff the counter is > 0, never "0") is
+    // byte-identical to what every settle consumer already depends on.
+    _flushComposeSettleWaiters();
+    list.removeAttribute('data-compose-bg-pending');
+  }
   // UX fix (feat/ux-busy-states-and-hydration) — the visible counterpart to
   // the test-only attribute above: same counter, same increments/decrements,
   // so the chip and the UX settle gate can never disagree about "is a
   // background reload in flight". Purely presentational — no new state.
   const chip = document.getElementById('composeBgChip');
-  if (chip) chip.classList.toggle('hidden', _composeBgReloads === 0);
+  if (chip) {
+    chip.classList.toggle('hidden', _composeBgReloads === 0);
+    // A2 — name the work while it is in flight; leave the last label in place
+    // on the way to hidden so the text never flashes back to the generic one.
+    if (_composeBgReloads > 0) {
+      chip.textContent = _composeBgLabels[_composeBgLabels.length - 1]
+        || _COMPOSE_BG_DEFAULT_LABEL;
+    }
+  }
+}
+
+// A2 — how many "Composing…" holds are live. `submitClarifications` /
+// `skipClarifications` each end with their own `_setBusy(false)` belonging to
+// an EARLIER phase of the same click; those must not tear this hold down, so
+// they route through `_clearBusyUnlessComposing()` instead.
+let _composeBusyHolds = 0;
+// Bound on the hold. A POST that rejects in a way that never reaches a terminal
+// render must not strand a "don't navigate away" banner over a usable page.
+const _COMPOSE_SETTLE_CAP_MS = 20000;
+
+function _clearBusyUnlessComposing() {
+  if (_composeBusyHolds > 0) return;
+  _setBusy(false);
+}
+
+// A2 (feat/compose-wait-ux) — the "Composing…" wait gate. The owner-observed
+// gap: the Compose panel becomes visible the moment `wizardGoTo(3)` runs, which
+// is when the background volley (positioning draft → skills recommend →
+// gap-fill → role intros) STARTS, not when it finishes — so the step read as
+// "done" while cards were still being torn down and rebuilt underneath.
+// Reuses the two existing idioms rather than inventing a third: `_setBusy`
+// (the app-wide "don't navigate away" banner) and the analyze/generate
+// streaming-panel block (#analysisPending / #generatePending → #composePending).
+// Held until the volley settles, released synchronously by
+// `_flushComposeSettleWaiters` at the true terminal render.
+function _holdComposingBusy() {
+  const list = document.getElementById('composeList');
+  // No list at all: nothing will ever flush a waiter, so do not raise an
+  // overlay that has nothing to release it.
+  if (!list) return;
+  // Already terminal — nothing in flight AND the settle marker present. NOTE at
+  // the only call site today (`_fireRecommendThenCompose`) the `hasAttribute`
+  // half cannot fire: loadComposition removes `data-compose-ready` at entry,
+  // synchronously, before this line runs. Kept because it is the correct
+  // defensive condition for any future caller that raises a hold outside that
+  // ordering — but it is not protection this code path currently receives.
+  if (_composeBgReloads === 0 && list.hasAttribute('data-compose-ready')) return;
+  const pending = document.getElementById('composePending');
+  _composeBusyHolds += 1;
+  _setBusy(true, 'Composing your tailored résumé');
+  if (pending) pending.classList.remove('hidden');
+  let released = false;
+  let capTimer = null;
+  const release = () => {
+    if (released) return;
+    released = true;
+    // Drop the cap timer on the normal (settle-driven) release. The `released`
+    // guard already makes a late fire a no-op, but without this every hold
+    // retains a live 20 s timer long after the volley finished.
+    if (capTimer != null) { clearTimeout(capTimer); capTimer = null; }
+    _composeBusyHolds = Math.max(0, _composeBusyHolds - 1);
+    if (pending) pending.classList.add('hidden');
+    if (_composeBusyHolds === 0) _setBusy(false);
+  };
+  _composeSettleWaiters.push(release);
+  // Idempotent: whichever of the two fires first wins.
+  capTimer = setTimeout(release, _COMPOSE_SETTLE_CAP_MS);
 }
 
 async function loadComposition() {
@@ -7288,6 +7452,12 @@ async function loadComposition() {
   _setLoadingPlaceholder(list, 'Scoring corpus against this job…');
   if (_composeApplicationId == null) {
     _setLoadingPlaceholder(list, 'Run ANALYZE first.');
+    // A2 — this pass ended without a terminal render, so Compose.SETTLED will
+    // never become true on it; release any "Composing…" hold here instead of
+    // leaving it to the cap (docs/dev/blast-radius/compose-wait-ux.md — the
+    // dossier's row 8 covers the TERMINAL-render insert only; the early-return
+    // inserts are not separately enumerated there, so no row number is cited).
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7299,11 +7469,13 @@ async function loadComposition() {
     );
   } catch (e) {
     _setLoadingPlaceholder(list, 'Network error.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
   if (!res.ok) {
     _setLoadingPlaceholder(list, 'Failed to load composition.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7365,6 +7537,7 @@ async function loadComposition() {
   }
   if (!data.experiences || data.experiences.length === 0) {
     _setLoadingPlaceholder(list, 'No corpus experiences to rank.');
+    _settleComposeIfIdle();
     _restoreScrollY(_scrollY);
     return;
   }
@@ -7372,9 +7545,19 @@ async function loadComposition() {
   // each experience card. The toggle is the explicit opt-in: when off (default)
   // no role intro reaches the résumé and the generate prompt is byte-identical.
   _composeUseRoleIntros = !!data.use_experience_summaries;
+  // A3 — the durable "a draft call already ran for this application" latch.
+  _composeHasRoleIntroDrafts = !!data.has_experience_summary_drafts;
+  // Still needed by the picker-apply block near the end of this function: the
+  // per-role PICKER only has something to apply when saved variants exist.
   const anyRoleVariants = (data.experiences || []).some(
     e => ((e.summary || {}).variants || []).length > 0);
-  if (anyRoleVariants) list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
+  // A3 widens what the TOGGLE is gated on (it used to require anyRoleVariants):
+  // this block runs only after the zero-experiences early return above, and a
+  // candidate with ZERO saved intro variants is exactly who drafting exists
+  // for — gating the toggle on already having variants would hide the feature
+  // from the only people who need it.
+  list.appendChild(_renderRoleIntrosToggle(_composeUseRoleIntros));
+  list.appendChild(_renderRoleIntroDraftControls(data));
   // feat/regenerate-gap-fill — the manual Regenerate control for the per-role
   // gap-fill lanes rendered inside each experience card below. Always shown
   // (once experiences exist): a retired proposal never re-auto-drafts (the
@@ -7393,17 +7576,22 @@ async function loadComposition() {
     _gapFillFiredForApp = _composeApplicationId;
     _fireDraftGapFill();
   }
-  if (anyRoleVariants) {
-    // Show/hide the per-role pickers + default each opted-in role to the AI's
-    // recommendation. Then opportunistically fire the per-role recommend (one
-    // Haiku call) only when opted in and a role still lacks one.
-    _applyRoleIntros(_composeUseRoleIntros);
-    if (_composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
-  }
+  // A3 — the section itself now also renders for a role with zero saved
+  // variants (it can carry a draft card), so show/hide must run whenever ANY
+  // section exists, not only when saved variants do. The recommend call keeps
+  // its original `anyRoleVariants` guard: it SELECTS among saved variants and
+  // has nothing to do when there are none.
+  _applyRoleIntros(_composeUseRoleIntros);
+  if (anyRoleVariants && _composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
   // Compose-step inline preview was removed in the 2026-05-25 punch list
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
   // Step 6 (Output) where it's clearly relevant.
+  // A2 — release the "Composing…" hold SYNCHRONOUSLY, immediately BEFORE the
+  // attribute set below: with the bg counter already at zero this line is the
+  // one that makes Compose.SETTLED observable, so flushing after it would leave
+  // a window where a settled reader still sees the overlay. Ordering only.
+  _settleComposeIfIdle();
   // Terminal render reached — re-set the settle marker cleared at entry (above).
   list.setAttribute('data-compose-ready', '1');
   _restoreScrollY(_scrollY);
@@ -7526,9 +7714,13 @@ async function _refreshLiveEditPreview(editorId, docType, frameId) {
 // server (it overwrites llm_summary_recommendation on each call). The
 // route returns the same shape as a fresh composition refresh, so we
 // reload composition after to surface the recommendation chips.
+// A2 — the label is the chip's text while this leg of the arrival volley runs;
+// declared once so the increment and its `finally` decrement cannot drift apart.
+const _BG_LABEL_RECOMMEND_SUMMARY = 'Choosing your positioning…';
+
 async function _fireRecommendSummary() {
   if (_composeApplicationId == null || !lastContextPath) return;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_RECOMMEND_SUMMARY);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-summary`,
@@ -7546,7 +7738,7 @@ async function _fireRecommendSummary() {
   } catch {
     // Non-blocking — Compose still works without the recommendation.
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_RECOMMEND_SUMMARY);
   }
 }
 
@@ -7554,6 +7746,8 @@ async function _fireRecommendSummary() {
 // positioning summary (Sonnet) at Compose, then refresh so the editable draft
 // shows. `force` just repaints the placeholder for an explicit Regenerate; the
 // route always overwrites composition_overrides.summary_text.
+const _BG_LABEL_DRAFT_SUMMARY = 'Drafting your positioning summary…';
+
 async function _fireDraftSummary(force, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   if (force) {
@@ -7579,7 +7773,7 @@ async function _fireDraftSummary(force, btn) {
   const claimed = _composeApplicationId;
   _draftSummaryFiredForApp = claimed;
   let persisted = false;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_DRAFT_SUMMARY);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-summary`,
@@ -7605,7 +7799,7 @@ async function _fireDraftSummary(force, btn) {
     // Release the claim on every non-success path, so the draft can be retried —
     // by the next loadComposition() pass, or by the user hitting Regenerate.
     if (!persisted && _draftSummaryFiredForApp === claimed) _draftSummaryFiredForApp = null;
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_DRAFT_SUMMARY);
     _clearBtnPending(btn, 'Regenerate');
   }
 }
@@ -7632,10 +7826,12 @@ function _failDraftSummary(msg) {
 // resurfaces a decided-on proposal. `btn` is the clicked button (present only for
 // the explicit trigger); its presence gates in-flight UI feedback + a result
 // toast so the silent auto-fire keeps its original non-blocking behavior.
+const _BG_LABEL_GAP_FILL = 'Finding gaps this résumé doesn’t cover yet…';
+
 async function _fireDraftGapFill(btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   _setBtnPending(btn, 'Regenerating…');
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_GAP_FILL);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/draft-gap-fill`,
@@ -7660,7 +7856,7 @@ async function _fireDraftGapFill(btn) {
     // over the corpus set; the explicit Regenerate surfaces a toast instead.
     if (btn) _toast('Network error regenerating suggestions.', true);
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_GAP_FILL);
     _clearBtnPending(btn, 'Regenerate suggestions');
   }
 }
@@ -7937,18 +8133,30 @@ function _renderSkillRow(it) {
       style: 'background:var(--brand);color:var(--bg-0);',
     }));
   }
-  // Pin toggle
+  // A2 (feat/compose-wait-ux) — pin/drop were a 📌/📍 and ✕/↩ pair of
+  // `.btn-icon` glyph buttons: the meaning had to be recovered from a `title`
+  // tooltip, and 📌-vs-📍 is a distinction most people cannot read at 12px.
+  // Switched to the SAME word-button idiom the compose bullet rows already use
+  // (`.corpus-action-btn` + the `.on` state class, _renderBulletRow_compose),
+  // so one affordance vocabulary covers both lists. The `.skill-pin` /
+  // `.skill-drop` classes are KEPT — `Compose.SKILL_DROP`
+  // (ui_pages/selectors.py) and `WizardComposePage.drop_skill()` select on
+  // them, and nothing selects on the glyphs.
   const pinBtn = _el('button', {
-    className: 'btn-icon skill-pin', title: 'Pin (always include)',
-    textContent: it.pinned ? '📌' : '📍',
+    className: 'corpus-action-btn skill-pin' + (it.pinned ? ' on' : ''),
+    title: 'Pin (always include this skill)',
+    textContent: it.pinned ? 'Pinned' : 'Pin',
   });
+  pinBtn.type = 'button';
   pinBtn.onclick = () => _toggleSkillPin(row);
   meta.appendChild(pinBtn);
   // Drop toggle
   const dropBtn = _el('button', {
-    className: 'btn-icon skill-drop', title: it.excluded ? 'Restore' : 'Drop (hide)',
-    textContent: it.excluded ? '↩' : '✕',
+    className: 'corpus-action-btn delete skill-drop' + (it.excluded ? ' on' : ''),
+    title: it.excluded ? 'Restore this skill' : 'Drop (hide this skill)',
+    textContent: it.excluded ? 'Dropped' : 'Drop',
   });
+  dropBtn.type = 'button';
   dropBtn.onclick = () => _toggleSkillDrop(row);
   meta.appendChild(dropBtn);
   // Reorder up/down
@@ -7963,12 +8171,30 @@ function _renderSkillRow(it) {
   return row;
 }
 
+// A2 — repaint both skill buttons from `_skillState` in one place. The two
+// togglers below each used to hand-write the glyphs, which is why the emoji
+// swap could not be done in the renderer alone: the first click would have
+// written a 📌 straight back over the word (blast-radius dossier row 50).
+function _refreshSkillRowActions(row) {
+  const s = row._skillState; if (!s) return;
+  const pin = row.querySelector('.skill-pin');
+  if (pin) {
+    pin.textContent = s.pinned ? 'Pinned' : 'Pin';
+    pin.classList.toggle('on', !!s.pinned);
+  }
+  const drop = row.querySelector('.skill-drop');
+  if (drop) {
+    drop.textContent = s.excluded ? 'Dropped' : 'Drop';
+    drop.classList.toggle('on', !!s.excluded);
+    drop.title = s.excluded ? 'Restore this skill' : 'Drop (hide this skill)';
+  }
+}
+
 function _toggleSkillPin(row) {
   const s = row._skillState; if (!s) return;
   s.pinned = !s.pinned;
   if (s.pinned) { s.excluded = false; row.classList.remove('skill-excluded'); }
-  const btn = row.querySelector('.skill-pin');
-  if (btn) btn.textContent = s.pinned ? '📌' : '📍';
+  _refreshSkillRowActions(row);
   _scheduleCompositionSave();
 }
 
@@ -7977,10 +8203,7 @@ function _toggleSkillDrop(row) {
   s.excluded = !s.excluded;
   if (s.excluded) { s.pinned = false; }
   row.classList.toggle('skill-excluded', s.excluded);
-  const pin = row.querySelector('.skill-pin');
-  if (pin) pin.textContent = s.pinned ? '📌' : '📍';
-  const drop = row.querySelector('.skill-drop');
-  if (drop) { drop.textContent = s.excluded ? '↩' : '✕'; drop.title = s.excluded ? 'Restore' : 'Drop (hide)'; }
+  _refreshSkillRowActions(row);
   _scheduleCompositionSave();
 }
 
@@ -8024,10 +8247,12 @@ function _collectSkillState() {
 // Fire recommend-skills (Haiku ordering). Idempotent server-side. Reloads
 // composition after so the new order + chips render. `explicit` distinguishes a
 // user click (always run) from the auto-fire on first load.
+const _BG_LABEL_RECOMMEND_SKILLS = 'Tailoring skills to this job…';
+
 async function _fireRecommendSkills(explicit, btn) {
   if (_composeApplicationId == null || !lastContextPath) return;
   _setBtnPending(btn, 'Tailoring…');
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_RECOMMEND_SKILLS);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-skills`,
@@ -8040,7 +8265,7 @@ async function _fireRecommendSkills(explicit, btn) {
   } catch {
     if (explicit) _toast('Network error tailoring skills.', true);
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_RECOMMEND_SKILLS);
     _clearBtnPending(btn, 'Tailor skills to this JD');
   }
 }
@@ -8213,7 +8438,29 @@ async function _onRoleIntrosToggle(checked) {
   } catch (e) {
     _toast('Autosave failed: ' + e.message, true);
   }
-  if (checked) _maybeFireRecommendExperienceSummaries();
+  if (!checked) return;
+  // Serialized on purpose: both calls read-modify-write the SAME context file
+  // and each ends in a loadComposition(). context_transaction makes the write
+  // safe, but firing them concurrently would race two full re-renders against
+  // each other. Recommend (cheap Haiku selection over what already exists)
+  // first; draft (Sonnet authoring) only after.
+  await _maybeFireRecommendExperienceSummaries();
+  await _maybeFireDraftExperienceSummaries();
+}
+
+// A3 — draft per-role intros when the user opts in, and only then. Deliberately
+// NOT an arrival auto-fire like gap-fill's: role intros are opt-in (the toggle
+// is off by default), so auto-drafting on every Compose arrival would spend a
+// Sonnet call per application on a feature most applications never turn on.
+// Latched twice — the server's has_experience_summary_drafts (durable, key
+// presence) and _roleIntroDraftFiredForApp (in-session, covers the window
+// between the POST and the reload that observes it).
+async function _maybeFireDraftExperienceSummaries() {
+  if (_composeApplicationId == null) return;
+  if (_roleIntroDraftFiredForApp === _composeApplicationId) return;
+  if (_composeHasRoleIntroDrafts) return;
+  _roleIntroDraftFiredForApp = _composeApplicationId;
+  await _fireDraftExperienceSummaries();
 }
 
 // Show/hide each role's picker for the current toggle state. When on, default
@@ -8280,11 +8527,21 @@ function _renderComposeRoleIntro(exp) {
   header.appendChild(addBtn);
   section.appendChild(header);
 
+  // A3 — the JD-fitted draft card, when draft_experience_summaries produced one
+  // for this role. Rendered ABOVE the saved variants and BEFORE the empty-state
+  // return: a role with zero saved variants is exactly the role a draft is most
+  // useful for, so the old early return would have hidden it.
+  if (summary.draft) {
+    section.appendChild(_renderRoleIntroDraftCard(summary.draft, exp.id));
+  }
+
   if (!variants.length) {
-    section.appendChild(_el('div', {
-      className: 'compose-empty-experience',
-      textContent: 'No intro variants yet — add one to use a per-role summary line.',
-    }));
+    if (!summary.draft) {
+      section.appendChild(_el('div', {
+        className: 'compose-empty-experience',
+        textContent: 'No intro variants yet — add one to use a per-role summary line.',
+      }));
+    }
     return section;
   }
 
@@ -8341,18 +8598,25 @@ function _toggleRoleIntroChoice(expId, summaryId) {
 // Fire the per-role recommend (one batched Haiku call) only when opted in and a
 // role with 2+ variants still lacks a recommendation. Reloads composition on
 // success so the recommendation chips + defaults surface.
+// Deliberately NOT declared `async`, even though one caller now awaits it: the
+// unawaited caller inside loadComposition() relies on `_markComposeBgReload(1)`
+// running SYNCHRONOUSLY before `_settleComposeIfIdle()` a few lines later (A2's
+// settle contract). Returning the promise from a plain function keeps that
+// synchronous prefix provably intact while still being awaitable.
 function _maybeFireRecommendExperienceSummaries() {
   let needs = false;
   document.querySelectorAll('#composeList .compose-role-intro[data-exp-id]').forEach(sec => {
     const n = sec.querySelectorAll('.role-intro-variant').length;
     if (n > 1 && !sec.dataset.recommendedId) needs = true;
   });
-  if (needs) _fireRecommendExperienceSummaries();
+  return needs ? _fireRecommendExperienceSummaries() : Promise.resolve();
 }
+
+const _BG_LABEL_ROLE_INTROS = 'Choosing a role intro for each job…';
 
 async function _fireRecommendExperienceSummaries() {
   if (_composeApplicationId == null || !lastContextPath) return;
-  _markComposeBgReload(1);
+  _markComposeBgReload(1, _BG_LABEL_ROLE_INTROS);
   try {
     const res = await fetch(
       `/api/applications/${_composeApplicationId}/recommend-experience-summaries`,
@@ -8364,7 +8628,7 @@ async function _fireRecommendExperienceSummaries() {
   } catch {
     // Non-blocking — Compose still works without the recommendation.
   } finally {
-    _markComposeBgReload(-1);
+    _markComposeBgReload(-1, _BG_LABEL_ROLE_INTROS);
   }
 }
 
@@ -8401,6 +8665,162 @@ async function _addComposeRoleIntro(expId) {
   } finally {
     _markComposeBgReload(-1);
   }
+}
+
+// ============================================================
+// A3 (Epic A) — per-role intro DRAFTING (analyzer.draft_experience_summaries)
+//
+// The picker above SELECTS among intros the candidate already wrote
+// (recommend_experience_summaries). This lane AUTHORS a new one per role,
+// fitted to this JD, in ONE batched call for every role — never one per role.
+// A draft is transient until the user keeps it; keeping saves it into the
+// CANONICAL per-role variant store (ExperienceSummaryItem, pending review),
+// never the legacy denormalized Experience.summary column (work item 59).
+// ============================================================
+
+const _BG_LABEL_ROLE_INTRO_DRAFTS = 'Writing a role intro for each job…';
+
+// Per-application once-only latch, mirroring _gapFillFiredForApp: the server's
+// has_experience_summary_drafts (key presence, not list length) is the durable
+// half; this is the in-session half that stops a re-loop between the POST and
+// the reload that observes it.
+let _roleIntroDraftFiredForApp = null;
+
+// One editable draft card. `edit in place` is the textarea itself: Keep sends
+// whatever is in it, so the user's wording always wins over the model's.
+function _renderRoleIntroDraftCard(draft, expId) {
+  const card = _el('div', { className: 'compose-role-intro-draft' });
+  card.dataset.key = draft.key;
+  card.dataset.expId = String(expId);
+
+  const head = _el('div', { className: 'row-meta' });
+  head.appendChild(_el('span', {
+    className: 'corpus-row-flag', textContent: 'Suggested for this job',
+    style: 'background:var(--brand);color:var(--bg-0);',
+  }));
+  card.appendChild(head);
+
+  const ta = _el('textarea', {
+    className: 'role-intro-draft-text',
+    rows: 2,
+    value: draft.text || '',
+  });
+  ta.dataset.expId = String(expId);
+  card.appendChild(ta);
+
+  if (draft.rationale) {
+    card.appendChild(_el('div', { className: 'edit-hint', textContent: draft.rationale }));
+  }
+  const quote = ((draft.evidence || {}).quote || '').trim();
+  if (quote) {
+    card.appendChild(_el('div', {
+      className: 'edit-hint', textContent: 'Grounded in: “' + quote + '”',
+    }));
+  }
+
+  const actions = _el('div', { className: 'row-meta' });
+  const keep = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-keep', textContent: 'Keep',
+  });
+  keep.type = 'button';
+  keep.onclick = () => _decideRoleIntroDraft(draft.key, 'keep', ta.value);
+  actions.appendChild(keep);
+  const reject = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-reject', textContent: 'Reject',
+  });
+  reject.type = 'button';
+  reject.onclick = () => _decideRoleIntroDraft(draft.key, 'reject', '');
+  actions.appendChild(reject);
+  card.appendChild(actions);
+  return card;
+}
+
+// Keep (saves a pending ExperienceSummaryItem + chooses it for this application)
+// or reject (drops the transient draft). Reloads composition on success — the
+// reload is what re-seeds chosen_experience_summary_ids + the toggle from the
+// server, so the client's next wholesale /composition save re-sends them rather
+// than clobbering what this route just wrote.
+async function _decideRoleIntroDraft(key, decision, text) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  if (decision === 'keep' && !(text || '').trim()) {
+    _toast('Intro text cannot be empty.', true);
+    return;
+  }
+  _markComposeBgReload(1);
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/experience-summary-decide`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context_path: lastContextPath, key, decision, text: text || '',
+        }) },
+    );
+    if (res.ok) await loadComposition();
+    else _toast('Could not update the suggested role intro.', true);
+  } catch {
+    _toast('Network error updating the suggested role intro.', true);
+  } finally {
+    _markComposeBgReload(-1);
+  }
+}
+
+// Fire the batched drafting call. `btn` is present only for the explicit
+// "Draft intros for this job" trigger; its absence keeps the auto-fire silent
+// and non-blocking, exactly like _fireDraftGapFill.
+async function _fireDraftExperienceSummaries(btn) {
+  if (_composeApplicationId == null || !lastContextPath) return;
+  _setBtnPending(btn, 'Drafting…');
+  _markComposeBgReload(1, _BG_LABEL_ROLE_INTRO_DRAFTS);
+  try {
+    const res = await fetch(
+      `/api/applications/${_composeApplicationId}/draft-experience-summaries`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }) },
+    );
+    if (res.ok) {
+      if (btn) {
+        const body = await res.json().catch(() => ({}));
+        const n = (body.drafts || []).length;
+        _toast(n
+          ? `${n} role intro${n === 1 ? '' : 's'} to review.`
+          : 'No grounded role intros could be drafted.');
+      }
+      // Awaited — settle-gate bracket (see _fireDraftSummary for the rationale).
+      await loadComposition();
+    } else if (btn) {
+      _toast('Could not draft role intros.', true);
+    }
+  } catch {
+    if (btn) _toast('Network error drafting role intros.', true);
+  } finally {
+    _markComposeBgReload(-1, _BG_LABEL_ROLE_INTRO_DRAFTS);
+    _clearBtnPending(btn, 'Draft intros for this job');
+  }
+}
+
+// The explicit control row, rendered next to the "Add role intros" toggle.
+// Batched like gap-fill, so it lives once above the cards rather than per card.
+function _renderRoleIntroDraftControls(data) {
+  const total = (data.experiences || [])
+    .filter(e => (e.summary || {}).draft).length;
+  const wrap = _el('div', {
+    className: 'role-intro-draft-controls',
+    style: 'margin:6px 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;',
+  });
+  wrap.appendChild(_el('span', {
+    className: 'edit-hint',
+    textContent: total
+      ? `${total} drafted role intro${total === 1 ? '' : 's'} to review below.`
+      : 'No drafted role intros right now.',
+  }));
+  const btn = _el('button', {
+    className: 'btn-secondary btn-sm role-intro-draft-regen',
+    textContent: 'Draft intros for this job',
+  });
+  btn.type = 'button';
+  btn.onclick = () => _fireDraftExperienceSummaries(btn);
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 // Pick the strongest bullets from a score-sorted list using a quality
@@ -8826,28 +9246,46 @@ function _renderBulletRow_compose(b, opts = {}) {
     meta.appendChild(_el('span', {
       className: 'corpus-row-flag pending', textContent: 'Pending',
     }));
+  }
+  // A2 (feat/compose-wait-ux) — in-place Edit on EVERY suggested bullet, not
+  // only the `is_pending_review` ones. Before this, a bullet the AI put in front
+  // of you that you'd already approved (or that came straight from the corpus)
+  // had no way to be fixed without leaving the tailor flow for the Career Corpus
+  // tab and finding it again — a round trip the "edit it where you see it"
+  // affordance already existed for one row type and not the others.
+  // Same route as before (`PUT /api/bullets/<id>`, the one the Corpus tab uses)
+  // and therefore the same corpus-wide effect, which the modal now states
+  // plainly: on a non-pending bullet that effect is no longer self-evident.
+  // Deliberately appended to `.row-meta`, NOT `.row-actions` — `_refreshComposeRow`
+  // addresses the action buttons BY INDEX (`btns[0..2]`), so a fourth button
+  // there would put that contract one edit away from breaking.
+  const editBtn = _el('button', {
+    className: 'corpus-action-btn compose-bullet-edit', textContent: 'Edit',
+  });
+  editBtn.type = 'button';
+  editBtn.title = 'Edit this bullet — the change saves to your career corpus';
+  editBtn.onclick = () => _editComposeBullet(b, row);
+  meta.appendChild(editBtn);
+  if (b.is_pending_review) {
     // Walkthrough D3: edit + approve a proposed bullet INLINE in the tailor flow
     // (both persist straight to the corpus via the same routes the Corpus tab
     // uses), so the user never has to leave Compose to keep a proposed change.
-    const editBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'Edit',
-    });
-    editBtn.onclick = () => _editComposeBullet(b, row);
     const approveBtn = _el('button', {
-      className: 'corpus-action-btn', textContent: 'Approve',
+      className: 'corpus-action-btn compose-bullet-approve', textContent: 'Approve',
     });
+    approveBtn.type = 'button';
     approveBtn.onclick = async () => {
       try {
         await _postJson(`/api/bullets/${b.id}/accept`, {});
         b.is_pending_review = false;
         meta.querySelector('.corpus-row-flag.pending')?.remove();
-        editBtn.remove();
+        // A2 — Edit SURVIVES approval now that it is no longer pending-only;
+        // only Approve retires (there is nothing left to approve).
         approveBtn.remove();
         await _refreshOnboardingBanner();
         _toast('Bullet approved — saved to your corpus');
       } catch (e) { _toast('Approve failed: ' + e.message, true); }
     };
-    meta.appendChild(editBtn);
     meta.appendChild(approveBtn);
   }
   const tagWrap = _el('span', { className: 'tag-chip-wrap' });
@@ -8857,13 +9295,20 @@ function _renderBulletRow_compose(b, opts = {}) {
   return row;
 }
 
-// Walkthrough D3 — edit a proposed (pending-review) bullet from the Compose step.
-// PUT /api/bullets/<id> persists the new text to the corpus (same route the
-// Career Corpus tab uses); the row updates in place. Approval is a separate click.
+// Walkthrough D3 — edit a bullet from the Compose step. PUT /api/bullets/<id>
+// persists the new text to the corpus (same route the Career Corpus tab uses);
+// the row updates in place. Approval is a separate click.
+// A2 — reachable from every compose bullet row now, not just the pending-review
+// ones, so the subtitle can no longer say "this proposed bullet": on an already-
+// approved corpus bullet the edit is corpus-wide and affects future applications
+// too, and that has to be said before the user commits to it, not after.
 async function _editComposeBullet(b, row) {
   const result = await openFormModal({
     title: 'Edit bullet',
-    subtitle: 'Edit this proposed bullet. Your change saves to your career corpus.',
+    subtitle: b.is_pending_review
+      ? 'Edit this proposed bullet. Your change saves to your career corpus.'
+      : 'This edits the bullet in your career corpus, so it applies to future '
+        + 'applications too — not just this one.',
     submitLabel: 'Save',
     fields: [
       { name: 'text', label: 'Bullet', type: 'textarea', required: true,
@@ -9015,7 +9460,17 @@ async function _postComposition(state) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || `HTTP ${res.status}`);
   }
-  return true;
+  // Item 20 (adversarial review, finding 1) — returns the SERVER's `frozen`, not a
+  // bare "the POST succeeded". A `freeze: true` save can land 200 and still write a
+  // document /api/generate refuses to assemble deterministically (contentless, or a
+  // context whose analyze-time career_corpus snapshot is empty), in which case the
+  // server runs the legacy LLM path. `saveCompositionThenNext` sets
+  // `_compositionFrozen` from this and `_wizardReachable` opens Step 5 on it, over
+  // copy promising "no AI variation" — so this has to be the server's answer to the
+  // same question, never the client's own guess at it. Non-freeze autosaves get
+  // `frozen: false` and ignore the return.
+  const body = await res.json().catch(() => ({}));
+  return body.frozen === true;
 }
 
 // Debounced (~300ms) optimistic autosave. The DOM is already updated by the
@@ -9135,10 +9590,12 @@ async function saveCompositionThenNext() {
     // Generation-experience re-architecture — Save-and-continue FREEZES the
     // approved composition (the single content contract downstream renders). The
     // debounced autosave omits `freeze`, so only this explicit action snapshots.
-    // F-09: only claim the deterministic-assembly copy when the freeze POST
-    // actually landed (_postComposition returns false on its no-app/no-context
-    // guard — e.g. a degraded resume with no live context file — and throws on
-    // HTTP failure, caught below).
+    // F-09 + item 20: only claim the deterministic-assembly copy when the server
+    // says this freeze produced a document it will actually assemble from.
+    // `_postComposition` returns the response's `frozen` — false on its
+    // no-app/no-context guard (e.g. a degraded resume with no live context file),
+    // false when the freeze landed but resolved to nothing the assemble path can
+    // use, and it throws on HTTP failure (caught below).
     _compositionFrozen = (await _postComposition({ ...state, freeze: true })) === true;
     _toast(`Composition saved (${state.pinned.length} pinned, ${state.added.length} added, ${state.excluded.length} excluded)`);
   } catch (e) {
@@ -9223,8 +9680,8 @@ async function _loadTemplatePicker() {
   const body = await res.json().catch(() => ({}));
   // Brand-new user: config exists but no Candidate row yet (the read
   // endpoint now signals this via 200 + needs_onboarding). Mirror
-  // _loadOwnedPersonas / refreshApplications and surface the onboarding CTA
-  // instead of a misleading "Failed to load templates" error. Return early —
+  // _loadOwnedPersonas and surface the onboarding CTA instead of a
+  // misleading "Failed to load templates" error. Return early —
   // the <select> hydration + live-preview kickoff below both assume a
   // populated body.
   if (_needsOnboarding(res, body)) {

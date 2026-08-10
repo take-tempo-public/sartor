@@ -135,6 +135,9 @@ class ExperienceSummaryItem(_PermissiveModel):
     end_date: str | None = None
     display_order: int
     summary: str | None = None
+    # Soft-retire flag for the whole role. Retired rows are omitted from the
+    # default list response and returned only with ?include_retired=1.
+    is_active: bool = True
     official_title: str | None = None
     title_count: int
     bullet_count_active: int

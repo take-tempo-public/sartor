@@ -1,0 +1,25 @@
+Senior Platform Engineer — Developer Platform
+
+Meridian-scale logistics company, ~400 engineers, ~1,200 services.
+
+About the role
+You will own the paved road: the internal developer platform that every product
+team ships through. This is a deploy-reliability and developer-experience role,
+not a general backend role — success is measured in how fast and how safely other
+teams ship, not in features you ship yourself.
+
+What you will do
+- Own deployment tooling and the service templates product teams start from.
+- Drive down deploy time and change-failure rate across the estate.
+- Run and improve incident review; turn findings into platform changes.
+- Partner with product teams on migration off legacy VM-based deploys.
+
+Requirements
+- Deep production Kubernetes experience at meaningful scale.
+- A track record of measurably improving deploy speed or reliability.
+- Experience owning developer-facing internal tooling that other teams adopt.
+- Comfortable operating a production on-call rotation.
+
+Nice to have
+- Streaming data infrastructure experience.
+- Prior experience introducing golden-path templates or paved-road tooling.

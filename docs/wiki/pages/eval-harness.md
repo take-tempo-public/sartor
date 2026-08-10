@@ -15,6 +15,11 @@
 `evals/runner.py` loads fixtures, runs the **real** analyze → clarify → generate pipeline
 against each, then dispatches per-rubric grading to a Haiku judge and writes one JSONL
 record per grading to `evals/results/{timestamp}.jsonl` ([`evals/runner.py:run_suite`](../../../evals/runner.py)).
+Result records are at **`schema_version 3`** — v2's float scores plus
+`fixture_hash` / `anchor_version` / `suite` / `rubric_version` / `model_snapshots` /
+`baseline_comparison` / `phase_latencies_ms` / `grounding_signals`, and (F-14) a
+`jd_label`; the dashboard normalizes all three versions at read time rather than
+rewriting files ([`evals/README.md`](../../../evals/README.md) §"Interpreting results").
 The harness lives under `evals/` — **off the P1 hardening boundary** — so it may
 orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `clarify`,
 `generate`) rather than duplicating call logic, which still lives in `analyzer.py`
@@ -31,6 +36,49 @@ orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `cla
 A fixture is a directory of `jd.txt` + `resume.{md,docx,pdf}` + `expected.json`; its SHA-256
 `hash` over those bytes is stamped on every record ([`evals/runner.py:_load_fixture`](../../../evals/runner.py)).
 The three synthetic fixtures are `data-scientist-junior`, `pm-senior`, `sre-mid-level`.
+
+## Naming the posting a run graded (F-14 `jd_label`)
+
+A fixture directory name is a slug (`pm-senior`), and `jd_file` is whatever the
+browser or CLI happened to save the JD as — neither names the actual job posting. So
+every eval-side artifact now carries a best-effort, **deterministic** `(title,
+company)` label derived from the JD's **own header text** by
+[`hardening.py:extract_jd_label`](../../../hardening.py), read at fixture load and
+stamped onto every emitted record ([`evals/runner.py:_load_fixture`](../../../evals/runner.py)
+sets `fixture["jd_label"]`; each `run_suite` / `_run_iteration_phase` record writes
+`"jd_label": fixture["jd_label"]`).
+
+Three properties are load-bearing and stated in the function's own docstring:
+
+- It reads only the JD's first `_LABEL_HEADER_LINES` (6) non-blank lines, never the
+  body — so it stays cheap and cannot pick up a company named in a duty bullet.
+- **Title resolves before company**, because company-first misreads a title with no
+  recognized title noun (e.g. "Machine Learning Practitioner") as a company.
+- It is **fail-open by design** — each field is independently `""` on a miss — and
+  therefore must never feed a fail-closed check. The closed check next to it,
+  `ensure_anchor_covered_by_annotations`, stays keyed on `jd_file`: two different
+  postings at the same company would trivially "agree" on a label
+  ([`hardening.py:extract_jd_label`](../../../hardening.py)) `[synthesis]`.
+
+It is deliberately kept a **separate scan** from
+[`hardening.py:extract_company_terms`](../../../hardening.py) even though it reuses
+that function's constants — `extract_company_terms` feeds `compute_keyword_overlap`
+and is baselined in `evals/baseline_v1.json`, so merging the two would shift scored
+behavior as a side effect of tuning a display string
+([`hardening.py:extract_company_terms`](../../../hardening.py) docstring says so
+outright). For the same reason `fixture_hash` never includes the label — label
+derivation must not change what a rerun would hash
+([`evals/README.md`](../../../evals/README.md), the `fixture_hash` row).
+
+The label propagates without ever being re-derived downstream: `build_bootstrap_document`
+projects a top-level `jd_labels` index out of `per_jd`
+([`evals/bootstrap.py:build_bootstrap_document`](../../../evals/bootstrap.py)), the
+annotation template mirrors that index verbatim
+([`evals/annotation.py:build_annotation_template`](../../../evals/annotation.py)), and
+`collate_expected` looks the **anchor's** label up from it by `anchor_name`
+([`evals/annotation.py:collate_expected`](../../../evals/annotation.py)). One
+derivation, three carriers — so the carriers cannot drift from each other
+`[synthesis]`.
 
 `--subset smoke` keeps only the `grounding` rubric (~grounding-only, cheap);
 `full` runs every `*.md` in `evals/rubrics/` ([`evals/runner.py:_select_rubrics`](../../../evals/runner.py)).
@@ -111,6 +159,69 @@ signal and `size: 1` marks a JD-specific candidate to annotate ([`evals/bootstra
 Like the runner it orchestrates LLM calls but every collation step is LLM-free; output is
 guarded under `evals/fixtures/real/` by a `_within` write check ([`evals/bootstrap.py:_resolve_output_path`](../../../evals/bootstrap.py)).
 
+Skill extraction splits a résumé's skill line on commas / semicolons / pipes / middots
+— but **only outside brackets**. `_split_skill_line` delegates to the shared
+[`json_resume.py:split_outside_brackets`](../../../json_resume.py) primitive so a
+parenthetical never fragments the entry it belongs to ("Eval Framework Design
+(LLM-as-judge, rubric-based)" stays one skill, not two)
+([`evals/bootstrap.py:_split_skill_line`](../../../evals/bootstrap.py), item 15). The
+primitive is public and shared with `json_resume._parse_skills` precisely so the eval
+side and the render side cannot disagree about where a skill ends — see
+[[document-rendering]] `[synthesis]`.
+
+## The corpus-mode drafting probe (Epic A sprint A3)
+
+[`evals/corpus_drafting_probe.py`](../../../evals/corpus_drafting_probe.py) is a
+separate, small harness for validating a **corpus-mode** Compose drafting call —
+first built for `analyzer.py:draft_experience_summaries`. It exists because
+`--suite synthetic`'s fixtures are file-based (`resume.md` + `jd.txt`) and can never
+reach a corpus-mode call at all, and adding a corpus fixture as a flat sibling under
+`evals/fixtures/synthetic/` would be silently picked up by `_select_fixtures` as a
+broken `--suite synthetic` fixture (no `resume.*` file). The fixture instead lives
+nested one level under `evals/fixtures/synthetic/corpus/role-summary-drafting/`
+(`seed.json` + `jd.txt` + a hand-written `analysis.json`, no `resume.*`) — inside the
+required `evals/fixtures/synthetic/` prefix (for `tests/test_zero_pii_clone.py`'s
+allowlist) but out of `_select_fixtures`'s per-fixture grading loop. **The "three
+synthetic fixtures" claim above is still accurate**: `_select_fixtures`'s `iterdir()`
+does still pick up the `.../synthetic/corpus/` directory itself as a spurious
+candidate, but `_load_fixture` fails to find a `jd.txt`/`resume.*` directly inside it,
+`run_suite` catches and skips it, and the 3 real fixtures grade normally
+([`evals/corpus_drafting_probe.py`](../../../evals/corpus_drafting_probe.py) docstring).
+Scoring is deterministic only — the L0 fabricated-specifics check and grounding
+overlap from `hardening.py`, against `hardening.py:assemble_source_union` — with no
+LLM judge, because no rubric exists yet for a one-line role intro. Results are
+recorded in [`evals/TUNING_LOG.md`](../../../evals/TUNING_LOG.md), the same home
+prompt-tuning results already use, not a new artifact `[synthesis]`.
+
+## Annotation-pin integrity (items 11 and 13)
+
+The bootstrap doc an `annotations.json` was built from is what its `cluster_index`
+values key into, so collating against a *different* bootstrap silently grades one JD's
+output against another JD's human-vetted expectations. Item 11 pinned the read to
+`annotations.json`'s own `bootstrap_source` path; item 13 found that a **path** check
+was not enough — a real fixture had had that same path overwritten in place, and the
+eval graded a Zoox JD against Faros ground truth with nothing to catch it. Two
+mechanisms now close it, both fail-closed:
+
+- **Content, not just path.** `build_annotation_template` stamps a
+  `bootstrap_fingerprint` (sha256 hex[:12] of the source's content) alongside
+  `bootstrap_source` ([`evals/annotation.py:build_annotation_template`](../../../evals/annotation.py),
+  [`evals/annotation.py:fingerprint`](../../../evals/annotation.py) — a deliberate copy
+  of `scripts/verify_doc_template.py`'s convention rather than a cross-boundary import,
+  since `evals/` must not depend on `scripts/`). Console-side resolution verifies it and
+  refuses to substitute a different bootstrap — see [[diagnostics-console]].
+  Annotations predating the field are unaffected; it is best-effort at write time
+  (an unreadable source leaves it blank) and fail-closed only at read time.
+- **The anchor must appear in the annotations.**
+  [`evals/annotation.py:ensure_anchor_covered_by_annotations`](../../../evals/annotation.py)
+  raises `ValueError` unless `pick_anchor_jd`'s result is a member of the annotated
+  bullets' `jd_files`. It is a plain membership check with no normalization, because
+  `_bullet_item_template` copies the name verbatim from the same cluster — so when the
+  annotations really were built from the bootstrap just read, the strings are
+  byte-identical. It runs **before** `collate_expected` in both drivers
+  ([`evals/annotation.py:_cmd_collate`](../../../evals/annotation.py) and the console
+  route), so a mismatch aborts instead of writing a corrupt fixture.
+
 ## Prompt-override A/B tuning
 
 The primitive that A/Bs a candidate system prompt **without editing the persona constants**:
@@ -119,7 +230,7 @@ duration, makes `_resolve_system_prompt` return the candidate text for the named
 the `_BASE_SYSTEM_PROMPTS` registry, and makes [`analyzer.py:effective_prompt_version`](../../../analyzer.py)
 return a stable `candidate:<sha256[:12]>` so the run is **quarantined** from score-over-time.
 The default (empty/None) path is byte-identical — the resolver returns the identical constant
-object and the version stays `PROMPT_VERSION` (`2026-07-08.4` at HEAD), so the analyze→generate
+object and the version stays `PROMPT_VERSION` (`2026-08-09.1` at HEAD), so the analyze→generate
 cache is untouched `[synthesis]`. `run_suite` enters the context over the whole fixture loop
 when `--prompt-overrides` supplies a name→text mapping
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)); unknown constant names raise
@@ -129,7 +240,7 @@ Override scope is the named system-prompt constants only, not the dynamic user-p
 ## Two entry points, one core
 
 `run_suite` is the importable core; `main` is the CLI wrapper. The same core also backs the
-localhost `POST /api/eval/run` console route, which passes a `progress` sartor to stream
+localhost `POST /api/eval/run` console route, which passes a `progress` callback to stream
 per-fixture/per-rubric milestones to the browser dashboard; the default `progress=None` path
 makes every `_emit` a no-op so the written bytes are unchanged `[synthesis]`
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)). An optional `cancel_check`
@@ -150,5 +261,10 @@ or console SSE routes) surfaces a real error instead of a phantom "0 pass / 0 fa
 - [[code-module-map]] — where `evals/` sits in the module graph.
 - [[generation-and-grounding]] — the grounding contract the `grounding` rubric scores against.
 - [[prompt-version-discipline]] — why `PROMPT_VERSION` and `candidate:<hash>` matter for attribution.
-- [[diagnostics-console]] — the dashboard + `/api/eval/run` route that share `run_suite`.
+- [[deterministic-llm-boundary]] — why `hardening.extract_jd_label` lives on the
+  LLM-free side even though only the eval path uses it.
+- [[diagnostics-console]] — the dashboard + `/api/eval/run` route that share `run_suite`;
+  where the `bootstrap_fingerprint` check fails closed and where `jd_label` is rendered.
+- [[document-rendering]] — `json_resume.split_outside_brackets`, the skill-split
+  primitive `evals/bootstrap.py` shares with the render path.
 - [[non-dependency-downloads]] — the optional `--grounding-signals` model weights extra.

@@ -37,13 +37,15 @@ call carries a `call_kind` string for JSONL telemetry + the dashboard, with a
 | `iterate_clarify` | [`clarify_iteration`](../../../analyzer.py) | Iteration-time interview; **no `model=` override → Sonnet** `[synthesis]`. |
 | `draft_summary` | [`draft_positioning_summary`](../../../analyzer.py) | Generation-experience re-architecture: drafts the JD-tailored two-sentence positioning summary ONCE at Compose. Fired by `POST /api/applications/<id>/draft-summary` ([`blueprints/applications.py:draft_application_summary`](../../../blueprints/applications.py)). Explicit `model=SONNET_MODEL`, not the bare default. Short-circuits without a call when there is no JD `[synthesis]`. |
 | `draft_gap_fill` | [`draft_gap_fill_bullets`](../../../analyzer.py) | Generation-experience re-architecture Phase 3: drafts GROUNDED gap-fill bullets (evidence-or-nothing) for JD requirements the corpus doesn't cover, for accept/retire. Fired by `POST /api/applications/<id>/draft-gap-fill` ([`blueprints/applications.py:draft_application_gap_fill`](../../../blueprints/applications.py)), both the once-per-application auto-fire and the explicit "Regenerate suggestions" affordance. Explicit `model=SONNET_MODEL`. Short-circuits without a call when there is no corpus or no JD `[synthesis]`. |
+| `draft_experience_summary` | [`draft_experience_summaries`](../../../analyzer.py) | Epic A sprint A3: drafts a GROUNDED, JD-fitted one-line intro for EACH included role, BATCHED — one call for every role, never one call per role. Fired by `POST /api/applications/<id>/draft-experience-summaries` ([`blueprints/applications.py:draft_application_experience_summaries`](../../../blueprints/applications.py)), gated on the "Add role intros" opt-in (not an arrival auto-fire, unlike gap-fill — most applications never turn this on). Explicit `model=SONNET_MODEL`. Short-circuits without a call when there is no JD or no staged role target `[synthesis]`. |
 | `draft_surgical_refinement` | [`draft_surgical_refinement`](../../../analyzer.py) | Generation-experience re-architecture item (a): drafts ONE scoped, single-item refinement (a sharpened bullet or the positioning summary — never a whole-document rewrite) from a free-text note against the frozen `approved_composition`. Fired by `POST /api/applications/<id>/draft-refinement` ([`blueprints/applications.py:draft_application_refinement`](../../../blueprints/applications.py)). Explicit `model=SONNET_MODEL`. Short-circuits without a call when there is no frozen composition, no JD, or no note `[synthesis]`. |
 
 Note the name mismatch: the function is `clarify_iteration()` but its `call_kind`
 string is `"iterate_clarify"` ([`analyzer.py:clarify_iteration`](../../../analyzer.py)).
-The first four omit `model=` and inherit the Sonnet default; the three Compose
-drafting calls (`draft_summary`, `draft_gap_fill`, `draft_surgical_refinement`) pass
-`model=SONNET_MODEL` explicitly instead `[synthesis]`.
+The first four omit `model=` and inherit the Sonnet default; the four Compose
+drafting calls (`draft_summary`, `draft_gap_fill`, `draft_experience_summary`,
+`draft_surgical_refinement`) pass `model=SONNET_MODEL` explicitly instead
+`[synthesis]`.
 
 ## Haiku 4.5 — structured selection (explicit `model=HAIKU_MODEL`)
 
@@ -107,8 +109,9 @@ rubrics) ([`analyzer.py:analyze`](../../../analyzer.py)) `[synthesis]`.
 
 Calls that pass a non-default `system_prompt` (the `clarify` variants, `critique_proposal`,
 the `recommend_*`/`suggest_skills`/`suggest_skills_from_corpus` family, `extract_experiences`,
-and the three Compose drafting calls `draft_positioning_summary` / `draft_gap_fill_bullets` /
-`draft_surgical_refinement`) pay one cache-miss on the system block; the cheap small calls
+and the four Compose drafting calls `draft_positioning_summary` / `draft_gap_fill_bullets` /
+`draft_experience_summaries` / `draft_surgical_refinement`) pay one cache-miss on the system
+block; the cheap small calls
 also pass `cached_user_prefix=""` because there is no long static block worth caching
 ([`analyzer.py:_call_llm`](../../../analyzer.py)) `[synthesis]`.
 Only `analyze_synthesis` and `generate` ride the heavy corpus-prefix cache — see

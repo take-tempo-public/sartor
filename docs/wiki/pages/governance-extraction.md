@@ -81,7 +81,9 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
 
 2. **Per-doc extraction boundaries — RESOLVED**
    Each source doc retains descriptive content + adds a pointer to the canonical rule home.
-   The extraction boundaries are codified in `charter.md`'s citation map (table at the end) —
+   The extraction boundaries are codified in `charter.md`'s citation map — not a table, but
+   the inline `[src: …]` tag carried by every clause (`charter.md`'s "Evidence base" preamble:
+   "Every clause is tagged `[src: …]` so the extraction is a verifiable citation map") —
    six source docs (vision.md, AGENTS.md, SECURITY.md, CONTRIBUTING.md, PRODUCT_SHAPE.md, RELEASE_ARC.md)
    now reference rather than restate the rules `[synthesis]`.
 
@@ -116,6 +118,31 @@ page's own grounding rule, the clauses are not restated here; the durable home i
   discipline this page's own history already practiced (a dated `[src: adopted …]`
   tag per amendment) — see `enforcement.md`'s "Parallel-session isolation (W-1)" row,
   which tracked the W-1 citation gap (**F-gov-03**) as open until this landed.
+
+## The extraction checklist nobody had: enforcement reach (2026-08-05)
+
+This page's whole premise is that governance can be lifted out of descriptive docs into
+a portable constitutional home. `enforcement.md` now carries the section that says what
+*travels* when you do it — [`enforcement.md` §"Enforcement reach — WHICH agents each
+gate actually binds"](../../governance/enforcement.md) — and it is explicitly framed as
+**the extraction checklist**, "read this before extracting governance."
+
+The load-bearing fact: **a clause enforced only by a Claude Code hook does not travel**
+— not to Codex, Cursor or Aider today, and not into a governance package extracted
+into another project tomorrow. Guards route through three adapters with very different
+coverage (a tool-agnostic opt-in git-hook path; a CI/`gate.py` path that binds everyone;
+and a Claude-Code-only PreToolUse path). C-7's `require_evidence_before_fix`, C-10's
+`require_consumer_enumeration`, the C-8/C-12 context hooks, and `verify_binary_on_path`
+are all on the third. `verify_binary_on_path` additionally has **no planned git-native
+path** — it parses a Bash command string, a shape a `pre-commit` hook never sees, so
+there is no equivalent input to route it from.
+
+The split was invisible from any single file, which is exactly why it went unrecorded
+until 2026-08-05. It is now declared as a **stated limit rather than papered over**
+(C-0), tracked by work item 50, and held in place by
+`tests/test_enforcement_coverage.py`, which derives the routing from the adapter at
+runtime — so a future branch that closes the gap, widens it, or adds a new Claude-only
+guard has to say so in the diff `[synthesis]`.
 
 ## Related
 

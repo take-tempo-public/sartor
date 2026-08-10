@@ -1,0 +1,27 @@
+{
+  "_why_this_file_is_hand_written": "The drafting call reads context_set['llm_analysis'] for the JD breakdown. Running the real analyze pass just to produce it would add two paid calls (extraction + synthesis) to a probe whose whole point is to measure ONE call. These values are a faithful hand-read of jd.txt in the shape analyzer.analyze emits, frozen so the probe is comparable run-to-run. If jd.txt changes, re-read this by hand or the probe silently scores against a stale breakdown.",
+  "essential_skills": [
+    "Kubernetes",
+    "deployment tooling",
+    "developer platform",
+    "deploy reliability",
+    "on-call"
+  ],
+  "preferred_skills": [
+    "streaming data infrastructure",
+    "golden-path templates",
+    "incident review"
+  ],
+  "industry_keywords": [
+    "paved road",
+    "internal developer platform",
+    "change-failure rate",
+    "service templates",
+    "logistics"
+  ],
+  "comparison": {
+    "strengths": [],
+    "gaps": [],
+    "title_alignment": ""
+  }
+}

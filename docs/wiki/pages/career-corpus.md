@@ -8,7 +8,10 @@
 > flow in `static/app.js`; the accept routes in
 > `blueprints/corpus/curation.py`; the Education/Certification CRUD in
 > `blueprints/corpus/career_assets.py`; the corpus-wide skill suggestion route in
-> `blueprints/corpus/skills.py`; mirrors the in-app corpus help.
+> `blueprints/corpus/skills.py`; role retire/restore in
+> `blueprints/corpus/experiences.py` (`delete_experience`, `update_experience`),
+> whose exclusions land in `blueprints/corpus/skills.py` and
+> `blueprints/corpus/curation.py`; mirrors the in-app corpus help.
 
 ---
 
@@ -29,6 +32,22 @@ Everything new starts as **pending review**. Accept items one at a time, by role
 or all at once. Reviewing and accepting is worth the few minutes: it's how sartor
 learns which of your accomplishments are real and ready to use, which sharpens
 every résumé it writes afterwards.
+
+## Retiring roles
+
+Some roles stop being worth showing — an early job, a short contract, something
+that no longer fits the work you're going after. Retire the whole role with the
+**Soft-retire experience** button on its card.
+
+A retired role drops out of everything sartor writes from: it can't appear in a
+résumé, it stops seeding skill suggestions, and it no longer turns up in duplicate
+or merge suggestions. It also disappears from the corpus list — tick **Show
+retired** to see it again, dimmed and flagged.
+
+Nothing is deleted. Click **Restore experience** to bring the role back whenever
+you want. One thing to know: restoring the role doesn't un-retire bullets you had
+retired individually beforehand — those stay retired, and you restore them the
+same way you always have, one at a time. `[synthesis]`
 
 ## Skills
 Skills are candidate-level, not tied to any one role. Import a résumé and any skills
@@ -62,5 +81,6 @@ from your accepted corpus for that posting. Edits you make *inside* a tailored
 application affect only that application — your corpus changes only when you edit it
 here, or when you accept a clarifying answer as a new bullet.
 
-See [[using-sartor]] for the whole first run, and [[candidate-memory]] for where
-clarifying answers are kept.
+See [[using-sartor]] for the whole first run, [[candidate-memory]] for where
+clarifying answers are kept, and [[frontend-wizard]] for how the corpus panel
+itself is built.

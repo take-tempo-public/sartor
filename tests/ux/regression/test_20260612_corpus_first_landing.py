@@ -27,7 +27,7 @@ from playwright.sync_api import Page
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from ui_pages import BasePage, CorpusPage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Corpus, PriorApps, TopTabs
+from ui_pages.selectors import Corpus, TopTabs, Wizard
 
 
 def _wait_tab_active(page: Page, tab_id: str) -> None:
@@ -65,7 +65,11 @@ def test_populated_corpus_lands_on_tailor(page: Page, live_server: str, ux_app: 
     UserPickerPage(page, live_server).select("alice")
 
     _wait_tab_active(page, "topTabTailor")
-    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    # A4 (feat/prior-apps-pipeline): PriorApps.PANEL (the removed Applications
+    # panel) used to be the "Tailor's content actually rendered" proxy here;
+    # Wizard.JD_TEXT (also hidden/shown by the same hideAllPanels()/wizardInit()
+    # pair) is the equivalent still-present check.
+    page.wait_for_selector(Wizard.JD_TEXT, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
 
 @pytest.mark.ux

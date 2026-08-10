@@ -65,30 +65,6 @@ def _seed_analyze_only_app(ux_app: ModuleType, candidate_id: int) -> int:
     return aid
 
 
-def _seed_pending_proposal(candidate_id: int, application_run_id: int) -> None:
-    """One pending ProposalReview tied to the run, so the card renders the pill."""
-    from db.models import Bullet, Experience, ProposalReview
-    from db.session import get_session
-
-    s = get_session()
-    try:
-        exp = s.query(Experience).filter_by(candidate_id=candidate_id).first()
-        assert exp is not None
-        bullet = s.query(Bullet).filter_by(experience_id=exp.id).first()
-        assert bullet is not None
-        s.add(
-            ProposalReview(
-                application_run_id=application_run_id,
-                bullet_id=bullet.id,
-                original_text="proposed",
-                decision="pending",
-            )
-        )
-        s.commit()
-    finally:
-        s.close()
-
-
 @pytest.mark.ux
 @pytest.mark.slow
 def test_analyze_only_application_resumes_to_step_1(
@@ -118,25 +94,34 @@ def test_analyze_only_application_resumes_to_step_1(
 
 @pytest.mark.ux
 @pytest.mark.slow
-def test_card_company_editable_and_pill_relabeled(
+def test_card_company_editable_and_persists(
     page: Page,
     live_server: str,
     ux_app: ModuleType,
 ) -> None:
+    """#24: setting a company in the detail modal persists — reopening the
+    modal shows the saved value.
+
+    A4 (feat/prior-apps-pipeline): this used to also assert the relabeled
+    proposal pill (`PriorApps.PENDING_PILL`, "N to review") and the edit
+    echoing onto a card (`PriorApps.card_company()`) — both lived on the
+    now-removed Applications panel's card and have no DOM home anymore
+    (Pipeline rows carry neither a pending-proposals pill nor a company echo
+    outside the modal — see docs/dev/blast-radius/prior-apps-pipeline.md's
+    Deferred #3). The underlying `pending_proposals` VALUE stays covered at
+    the route level (`tests/test_application_routes.py::test_pending_proposals_per_run`).
+    """
     cid = seed_user(ux_app, "alice")
-    seed_exp_with_bullets(cid)  # gives the pending proposal a real bullet FK
     aid = seed_application(cid, title="Staff PM", company="", jd_text="Own the roadmap.")
-    rid = seed_run(aid, iteration=0)
-    _seed_pending_proposal(cid, rid)
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
 
-    # #24: the relabeled, legible proposal pill (was "1 pending").
-    expect(page.locator(PriorApps.PENDING_PILL)).to_have_text("1 to review")
-
-    # #24: setting a company in the detail modal persists onto the card.
     prior = PriorAppsPage(page, live_server)
     prior.open_detail(aid)
     prior.set_company("Acme Robotics")
-    expect(page.locator(PriorApps.card_company(aid))).to_have_text("Acme Robotics")
+    # blur() triggers an async PUT; wait for its toast before re-reading, so
+    # the reopen below observes the SAVED value, not a race against the fetch.
+    expect(page.locator("#_corpusToast")).to_have_text("Company saved")
+    prior.open_detail(aid)  # reopen fresh — proves it round-trips through GET
+    expect(page.locator(PriorApps.COMPANY_INPUT)).to_have_value("Acme Robotics")

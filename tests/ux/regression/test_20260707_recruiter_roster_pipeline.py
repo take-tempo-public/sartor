@@ -132,16 +132,26 @@ def test_pipeline_board_groups_by_status_and_switches_candidate(
     count_text = page.locator(Pipeline.COUNT).text_content() or ""
     assert "2" in count_text
 
-    # Clicking a row switches candidates, hands off to the Tailor tab, AND
-    # opens that specific application's detail modal — "linking into that
-    # candidate+application", not just the candidate.
+    # Clicking a row switches candidates AND opens that specific application's
+    # detail modal IN PLACE on the Pipeline tab — "linking into that
+    # candidate+application", not just the candidate. A4 (feat/prior-apps-
+    # pipeline): this used to tab-switch to Tailor first; it no longer does —
+    # the panel that switch used to land on was removed, and Pipeline is now
+    # the sole surface this modal opens from.
     pipeline.click_row("Staff Eng @ Acme")
     page.wait_for_function(
         "(u) => document.getElementById('userSelect').value === u",
         arg="alice",
         timeout=DEFAULT_TIMEOUT_MS,
     )
-    _wait_tab_active(page, "topTabTailor")
     page.wait_for_selector(PriorApps.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     modal_title = page.locator("#appDetailModalTitle").text_content() or ""
     assert "staff eng" in modal_title.lower()
+
+    # Stayed on Pipeline throughout -- never switched to Tailor. This is the
+    # crux of the A4 rewrite: the OLD code asserted `_wait_tab_active(page,
+    # "topTabTailor")` here instead, and that assertion would now time out
+    # and fail (Tailor's aria-selected never becomes "true" on this path).
+    _wait_tab_active(page, "topTabPipeline")
+    assert page.get_attribute("#topTabTailor", "aria-selected") == "false"
+    assert page.locator(Pipeline.BOARD).is_visible()

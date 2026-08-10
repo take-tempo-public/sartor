@@ -72,8 +72,36 @@ docstring: "Localhost-only by guard. Reads JSONL log files; never writes.") `[sy
 
 Schema drift is absorbed at read time, not on disk:
 [`_normalize_eval_record`](../../../dashboard/routes.py) coerces legacy
-(schema_version 1, int scores, no `prompt_version`) and current (v2, float, with
-`deterministic_metrics`) records to one shape — stored files are never rewritten.
+(schema_version 1, int scores, no `prompt_version`), v2 (float, with
+`deterministic_metrics`) and v3 records to one shape — stored files are never
+rewritten. It `setdefault`s a blank F-14 `jd_label` for records predating that field.
+
+Two limits of that normalization are handled explicitly rather than assumed away,
+both worth knowing before adding a tile that renders records directly `[synthesis]`:
+
+- `setdefault` fills a **missing** key but never coerces a **present malformed** one,
+  so a record carrying `"jd_label": "Acme"` would reach Jinja as a bare string where
+  `.title` resolves to Python's `str.title` **method**.
+  [`dashboard/routes.py:_jd_label_display`](../../../dashboard/routes.py) is the
+  guard: non-dict in, `""` out; otherwise `title · company` with blanks dropped.
+- `evals/results/*.jsonl` also holds non-eval reports from other tools (a
+  `vector_before_after_*.jsonl` comparison run) that share the directory and lack
+  `fixture`/`score` entirely. Every aggregation already gated on a truthy `fixture`;
+  the recent-evals list is the one place rendering individual records, so it applies
+  the same gate inside its `itertools.islice` rather than crashing on an `Undefined`
+  attribute ([`dashboard/routes.py:index`](../../../dashboard/routes.py)).
+
+[`dashboard/routes.py:_fixture_jd_labels`](../../../dashboard/routes.py) builds **one**
+most-recent-non-blank-label-per-fixture map shared by the heatmap header and the
+baseline-health rows. Deliberately one map rather than each table capturing labels in
+its own loop: the two apply different record filters, so independently computing
+"latest per fixture" is not guaranteed to pick the same record — and two tables
+disagreeing about the same fixture's identity is worse than no label
+([`dashboard/routes.py:_fixture_jd_labels`](../../../dashboard/routes.py) docstring).
+The rendered gloss is clamped (`.jd-label`, `max-width: 12rem` + ellipsis) because
+`table.heatmap` is `width:auto` with no `overflow-x` wrapper, so an unclamped label
+would inflate every column
+([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html)).
 
 The aggregation helpers are **pure** (record list in, dict out, no I/O except
 [`_load_baseline`](../../../dashboard/routes.py)) so they unit-test without a live
@@ -96,9 +124,17 @@ runtime CDN; lazy-init on open):
   grader crashes do not chart as 0-scores), the (rubric × fixture) HSL heatmap
   ([`_rubric_fixture_heatmap`](../../../dashboard/routes.py); cells with
   `judge_error` render empty), top-20 failure
-  modes ([`_failure_mode_frequency`](../../../dashboard/routes.py)), and the
+  modes ([`_failure_mode_frequency`](../../../dashboard/routes.py)), the
   quality-vs-latency Pareto scatter
-  ([`_pareto_data`](../../../dashboard/routes.py))
+  ([`_pareto_data`](../../../dashboard/routes.py)), and a **recent evals** tile —
+  the most recent 200 records as `timestamp / fixture / jd label / rubric / score /
+  prompt v / run / status / failed rules`. That table existed before the v1.0.5
+  tabbed-console redesign (`edde81d`) deleted it and was **restored** by item 32 as
+  a Quality-tab tile ([`evals/README.md`](../../../evals/README.md) §"How to read
+  the dashboard"; [`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
+  `data-detail="recent"`). Note what it does *not* show: the three deterministic
+  ride-along metrics (`verb_diversity`, `specificity_density`, `grounding_overlap`)
+  are **not** dashboard columns — read the raw JSONL for those.
 - **Groundedness** — the L0 score over time, deduped one-point-per-run
   ([`_groundedness_trend`](../../../dashboard/routes.py) via
   [`_dedup_by_run`](../../../dashboard/routes.py)) plus the latest run's
@@ -178,6 +214,45 @@ after the view returns and the app context is gone) `[synthesis]`:
   **no paid calls**) backfills NLI/MiniCheck pre-scores over a throwaway
   in-memory SQLite.
 
+### Collate fails closed on a mismatched pin (items 11 → 13)
+
+[`blueprints/diagnostics.py:_resolve_bootstrap_pin`](../../../blueprints/diagnostics.py)
+decides which bootstrap doc a fixture's routes read, and now returns
+`(path, stale_reason)` rather than a bare path. Item 11 pinned the read to
+`annotations.json`'s own `bootstrap_source` so a later bootstrap run — which always
+gets its own `bootstrap-<timestamp>.json`
+([`_new_bootstrap_path`](../../../blueprints/diagnostics.py)) — could not silently
+misalign an in-progress annotation. Item 13 found that fix checked only that the
+**path** existed, never that its **content** still matched: a run overwriting that
+same path in place still resolved silently, producing a real fixture whose `jd.txt`
+and `expected.json` came from different postings.
+
+So when the annotation carries a `bootstrap_fingerprint` (see [[eval-harness]]), the
+resolver re-fingerprints the pinned file and, on a mismatch, sets `stale_reason` and
+returns `path=None` — it deliberately does **not** fall through to the newest
+`bootstrap-*.json`, because silently substituting a different bootstrap is the exact
+failure being guarded. `annotation_collate` turns that into an HTTP **409** before
+writing anything, and a second **409** when
+`ensure_anchor_covered_by_annotations` rejects the anchor
+([`blueprints/diagnostics.py:annotation_collate`](../../../blueprints/diagnostics.py)).
+Annotations predating the field are unaffected — the check is skipped, not
+failed `[synthesis]`. `_resolve_bootstrap_path` survives as a thin
+convenience wrapper that discards the reason, for the read-only callers.
+
+The same routes surface F-14 labels so a JD's identity is visible at the moment it
+matters: `annotation_fixtures` passes the bootstrap's `jd_labels` through to the
+fixture dropdown; the collate response adds `anchor_jd_label` next to `anchor_jd`, and
+the server log line names both; and the bootstrap SSE `done` event carries `jd_labels`
+plus a company-preferred-title-fallback-`?` summary in its log line
+([`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py)). Browser-side,
+`jdLabelText` / `jdLabelsSummary` in
+[`dashboard.html`](../../../dashboard/templates/dashboard.html) mirror
+`_jd_label_display` — a deliberate duplication, since the payload crosses the wire as
+JSON and cannot share the one Python rule. `jdLabelsSummary` refuses to single out a
+posting when a bootstrap covers more than one, rendering a count + names instead:
+there is no single "the" identity until an anchor is resolved at collate time
+`[synthesis]`.
+
 **Paid-run single-flight lock:** A global client-side `window.sartorRunLock`
 ([`dashboard.html`](../../../dashboard/templates/dashboard.html)) prevents
 concurrent execution of the five paid-run buttons in `LOCK_BTN_IDS` (eval / tune /
@@ -189,14 +264,21 @@ feature in the Annotate tab) deliberately does not acquire it and may run in
 parallel with paid runs `[synthesis]`.
 
 **Run cancellation (disconnect-as-cancel):** Each SSE route polls its result queue
-with a [`_HEARTBEAT_INTERVAL_S`](../../../blueprints/diagnostics.py) `5`-second timeout
-instead of blocking forever on `queue.get()` (lines 541, 808, 1040, 1246),
+with a [`blueprints/diagnostics.py:_HEARTBEAT_INTERVAL_S`](../../../blueprints/diagnostics.py)
+`5.0`-second timeout instead of blocking forever on `queue.get()` — one
+`events.get(timeout=_HEARTBEAT_INTERVAL_S)` inside each of
+[`annotation_score_grounding`](../../../blueprints/diagnostics.py),
+[`annotation_bootstrap_stream`](../../../blueprints/diagnostics.py),
+[`eval_run_stream`](../../../blueprints/diagnostics.py) and
+[`tune_run_stream`](../../../blueprints/diagnostics.py) —
 yielding a plain SSE comment line (`: heartbeat\n\n`) when the timeout expires.
 Without periodic yields, a closed tab is invisible to Werkzeug until the blocking
 worker call finishes — with the heartbeat, a disconnect is noticed within 5 seconds
 `[synthesis]`. When the client closes the fetch or clicks the Cancel button (both fire
 `GeneratorExit` into the generator), each SSE route wraps its stream body in
-`try/except GeneratorExit` (lines 607–614, 915–922, 1084–1092, 1298–1306) to
+`try/except GeneratorExit` — one block per route, in the same four functions
+(`annotation_score_grounding`, `annotation_bootstrap_stream`, `eval_run_stream`,
+`tune_run_stream`) — to
 capture the disconnect, set a `threading.Event(cancel_event)`, and pass
 `cancel_check=cancel_event.is_set` into its evals-layer call
 ([`run_grounding_signals`](../../../blueprints/diagnostics.py),
@@ -204,7 +286,7 @@ capture the disconnect, set a `threading.Event(cancel_event)`, and pass
 [`run_suite`](../../../blueprints/diagnostics.py) for both eval and tune) so worker
 threads can short-circuit their loops on cancellation `[synthesis]`. The
 `tune_run_stream` route has an additional optimization: its baseline-then-candidate
-worker checks `if not cancel_event.is_set()` (line 1221) before starting the expensive
+worker checks `if not cancel_event.is_set()` before starting the expensive
 candidate run, so a disconnect during baseline skips the candidate entirely rather than
 launching a second full paid run the client gave up on `[synthesis]`. Cancellation is
 signalled by client disconnect rather than a separate `POST /cancel` route because

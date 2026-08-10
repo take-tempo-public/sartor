@@ -39,5 +39,12 @@ class BasePage:
         return self.rail_step(step).is_enabled()
 
     def goto_step(self, step: int) -> None:
-        """Click the rail button for a step (no-op if the step is locked)."""
+        """Click the rail button for a step.
+
+        The step must be reachable: a locked step renders `disabled`, which never
+        satisfies Playwright's actionability wait, so this raises a timeout rather
+        than no-op'ing. Use :meth:`rail_step_enabled` (or assert on
+        :meth:`rail_step`) when the point of the test IS the lock — Step 5 is
+        gated on a frozen composition (item 20).
+        """
         self.rail_step(step).click()

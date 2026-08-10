@@ -24,9 +24,11 @@ monolith-to-blueprints split, see [[engineering-workstreams]]) moved every
 `dashboard/` blueprint. At HEAD, `app.py` is a ~296-line composition root
 (`create_app()` factory + `register_blueprints()` + `main()`) carrying **zero**
 `@app.route` decorators [`app.py`](../../../app.py); the route count that used
-to live in one file (93 at the walk's 2026-06-07 reading) is now **117**
-`@<bp>.route` decorators spread across the nine blueprint modules
-`[synthesis]`. The seven blueprints that moved out of the monolith
+to live in one file (93 at the walk's 2026-06-07 reading) is now **119**
+`@<bp>.route` decorators spread across the nine blueprint modules — up from 117
+after Epic A sprint A3 added two routes to `blueprints/applications.py`
+(`draft-experience-summaries`, `experience-summary-decide`) `[synthesis]`. The
+seven blueprints that moved out of the monolith
 (analysis/generation/corpus/templates/applications/users/diagnostics) register
 with **no** `url_prefix`, so every URL they carry stays byte-identical to the
 monolith; `assistant_bp` (`/api/assistant`) and `dashboard_bp` (`/_dashboard`)
@@ -134,7 +136,41 @@ A GET/POST pair on the application's context file:
   the context file in place. The handler **rebuilds `composition_overrides`
   wholesale**, so the debounced autosave sends the full state each time
   `[synthesis]` — this is the clobber surface tracked in the compose memory.
-  Ownership rides `_load_application_owned`; `_within` gates `context_path`.
+  Ownership rides `_load_application_owned`; `_within` gates `context_path`. The
+  response's `frozen` field is **not** an echo of the request's `freeze` flag: it
+  is [`hardening.py:frozen_composition_doc`](../../../hardening.py) applied in-lock
+  to the dict about to be written, so a freeze that resolved to a document
+  `/api/generate` would refuse to assemble answers `false` (Epic A item 20) — see
+  [[corpus-to-output-reach]].
+
+## Experiences CRUD — `blueprints/corpus/experiences.py`
+
+The role-curation surface — experiences, bullets, titles, and per-role summary
+variants — lives in
+[`blueprints/corpus/experiences.py`](../../../blueprints/corpus/experiences.py).
+Soft-retired rows (`is_active=0`) stay in the DB to preserve audit chains;
+hard-delete is refused `[synthesis]`.
+
+Three routes implement soft-retire semantics:
+
+- [`list_experiences`](../../../blueprints/corpus/experiences.py)
+  (`GET /api/users/<username>/experiences`) hides soft-retired roles by default;
+  pass `?include_retired=1` to show them.
+- [`update_experience`](../../../blueprints/corpus/experiences.py)
+  (`PUT /api/experiences/<id>`) accepts `is_active`, which is where RESTORE
+  lands. The loader `_load_experience_for_candidate` deliberately does NOT filter
+  on `is_active` — a filter there would 404 every mutation on a retired role,
+  this restore route first among them `[synthesis]`.
+- [`delete_experience`](../../../blueprints/corpus/experiences.py)
+  (`DELETE /api/experiences/<id>`) sets `is_active=0` on the role AND cascades to
+  its bullets; the role-level flag is the load-bearing half, and the response
+  carries `is_active` `[synthesis]`.
+
+The response serializers
+[`_experience_summary_dict`](../../../blueprints/corpus/_shared.py) and
+[`_experience_detail_dict`](../../../blueprints/corpus/_shared.py) emit the
+role's own `is_active`. That flag is always emitted regardless of
+`?include_retired`, which governs child rows only `[synthesis]`.
 
 ## Corpus-completer routes (Sprint 6.6 B.4 / B.5) — `blueprints/applications.py`
 
