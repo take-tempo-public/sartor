@@ -13,3 +13,5 @@
 {"event": "generated", "doc": "docs/dev/handoffs/prior-apps-pipeline.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "f42b2ea", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T07:53:04Z", "fingerprint": "978891b32864"}
 {"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T07:57:34Z"}
 {"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T08:05:49Z"}
+{"event": "failed", "doc": "docs/dev/handoffs/pre-epic-b-intermediate-steps.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "6917d30", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T15:51:26Z", "fingerprint": "7f7c79a7a8ce"}
+{"event": "generated", "doc": "docs/dev/handoffs/pre-epic-b-intermediate-steps.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "6917d30", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T15:51:49Z", "fingerprint": "0c4e114fa3a0"}
