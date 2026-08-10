@@ -24,6 +24,40 @@ markdown is CRLF on a Windows checkout (`core.autocrlf=true`, no `*.md` rule
 in `.gitattributes`) and LF in CI -- the same class of bug
 `scripts/verify_doc_template.py`'s `fingerprint` already fixed once.
 
+Board-staleness deferral (`docs/dev/work/BOARD_DEFERRAL.md`)
+---------------------------------------------------------------------------
+`check` normally fails whenever `BOARD.md` doesn't match a fresh render --
+correct almost always, but `docs/dev/epic-a-chain-design-corrections.md`
+§15.2 authorizes an explicit, named, epic-scoped exception: a chain epic may
+defer `BOARD.md` regeneration to its close, filing items per-sprint without
+regenerating the board each time. A well-formed `docs/dev/work/BOARD_DEFERRAL.md`
+marker (fenced ```toml frontmatter naming `epic`, `declared`, and
+`authorization`) is the ONLY thing that tolerates staleness -- there is no
+separate flag to also set. Absent the marker, or if it is malformed (missing
+or empty any of the three fields, invalid TOML, no fence), behavior is
+byte-identical to no-deferral: `check()`'s `deferral_path` parameter defaults
+to `None`, so nothing about this mechanism changes any existing caller unless
+it opts in by passing the path. When a deferral IS exercised, `main()`'s
+`check` output names it unmissably rather than printing a plain "OK" -- see
+`check_with_deferral()`. `board --write` never reads the marker: it always
+regenerates from source, regardless of whether staleness is currently being
+tolerated.
+
+A well-formed marker is not, on its own, proof that the epic it names is real
+or still running -- an adversarial review flagged that `epic` is free text
+nobody verified against actual backlog state, so `check_with_deferral()` also
+cross-checks it: the named epic must match a real `docs/dev/work/items/*.md`
+entry with `kind = "epic"` and `status != "closed"` (matched via that item's
+declared `branches`, see `_find_deferral_epic()`), or the marker grants
+nothing -- same fail-closed treatment as a structurally malformed marker, just
+with a distinct error message so the CLI can tell the two apart. **What this
+still does not verify** (deliberately, per C-12 -- declare the gap rather than
+silently narrow it): that the *current* branch is actually a member of the
+named epic. A marker naming a real, open epic that the working branch has
+nothing to do with still passes today; closing that is out of scope here and
+tracked as a future design-pass data point rather than solved by branch
+introspection now.
+
 Usage:
 
     python -m scripts.work_items check
@@ -46,6 +80,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 _WORK_DIR = _REPO_ROOT / "docs" / "dev" / "work"
 _ITEMS_DIR = _WORK_DIR / "items"
 _BOARD_PATH = _WORK_DIR / "BOARD.md"
+_BOARD_DEFERRAL_PATH = _WORK_DIR / "BOARD_DEFERRAL.md"
 
 _WIP_CEILING = 10
 _STATUS_ORDER = ("open", "blocked", "deferred", "watching")
@@ -117,6 +152,20 @@ class ParsedFile:
     item_id: int | None
     item: Item | None
     errors: list[str]
+
+
+@dataclass(frozen=True)
+class BoardDeferral:
+    """A validated `docs/dev/work/BOARD_DEFERRAL.md` marker. Its mere existence, well
+    formed, is the entire exemption -- there is no separate boolean to also flip, so
+    there is exactly one place to check and exactly one place to delete when the
+    deferral ends (charter C-11: a mechanism with a second switch is a mechanism with
+    a second way to leave it on by accident)."""
+
+    epic: str
+    declared: str
+    authorization: str
+    path: Path
 
 
 def _split_frontmatter(content: str) -> str | None:
@@ -453,6 +502,10 @@ def _render_item_line(item: Item) -> str:
 
 _REGEN_HINT = "run `python -m scripts.work_items board --write`"
 
+#: Required fields of a well-formed `BOARD_DEFERRAL.md`. All three are non-empty
+#: strings or the marker grants nothing -- see `_read_board_deferral()`.
+_DEFERRAL_REQUIRED_FIELDS = ("epic", "declared", "authorization")
+
 
 def _board_status(board_path: Path, generated: str) -> str | None:
     """An error message if `board_path` doesn't match `generated`, else None."""
@@ -464,17 +517,139 @@ def _board_status(board_path: Path, generated: str) -> str | None:
     return None
 
 
-def check(items_dir: Path, board_path: Path) -> list[str]:
-    """The full `check` rule set: structural/cross-file validation, then
-    (only if that passed) board staleness -- a broken backlog can't produce
-    a trustworthy board to compare against."""
+def _read_board_deferral(deferral_path: Path | None) -> BoardDeferral | None:
+    """Parse and validate a `BOARD_DEFERRAL.md` marker. Returns `None` on ANY
+    problem -- no path given, file missing, no ```toml fence, invalid TOML, or any
+    of `epic` / `declared` / `authorization` absent or empty -- so a malformed
+    marker is indistinguishable from no marker at all: fail closed on bad input,
+    never fail open. This mirrors `parse_file()`'s own required-field checks
+    rather than inventing a second validation shape."""
+    if deferral_path is None or not deferral_path.is_file():
+        return None
+    toml_text = _split_frontmatter(deferral_path.read_text(encoding="utf-8"))
+    if toml_text is None:
+        return None
+    try:
+        data: dict[str, Any] = tomllib.loads(toml_text)
+    except tomllib.TOMLDecodeError:
+        return None
+
+    values: dict[str, str] = {}
+    for key in _DEFERRAL_REQUIRED_FIELDS:
+        value = data.get(key)
+        if not isinstance(value, str) or not value.strip():
+            return None
+        values[key] = value.strip()
+
+    return BoardDeferral(
+        epic=values["epic"],
+        declared=values["declared"],
+        authorization=values["authorization"],
+        path=deferral_path,
+    )
+
+
+def _deferral_names_branch(deferral_epic: str, item: Item) -> bool:
+    """True if `item` (expected to be `kind = "epic"`) is the epic
+    `BoardDeferral.epic` names. `BoardDeferral.epic` is free prose (e.g.
+    `"epic/a-app-core (board item 36 -- ...)"`, the real marker's current
+    value) -- there is no structured id field to compare directly. Every real
+    epic item declares its `branches`, though, so matching on whether a
+    declared branch string appears literally inside the marker's free-text
+    `epic` field ties the claim to something nobody hand-types into the
+    marker in isolation: the branch name has to already be true of a real
+    backlog item."""
+    return any(branch and branch in deferral_epic for branch in item.branches)
+
+
+def _find_deferral_epic(
+    deferral: BoardDeferral, items: dict[int, Item]
+) -> tuple[Item | None, str | None]:
+    """Cross-check `BoardDeferral.epic` against the real backlog. Returns
+    `(matched_item, None)` if a `kind = "epic"` item with `status != "closed"`
+    matches (see `_deferral_names_branch`); otherwise `(None, message)` where
+    `message` distinguishes "no epic in the backlog matches this claim at
+    all" from "it matches, but that epic is closed" -- two different failure
+    shapes a fixer needs to tell apart, even though both mean the deferral
+    grants nothing."""
+    candidates = sorted(
+        (
+            i
+            for i in items.values()
+            if i.kind == "epic" and _deferral_names_branch(deferral.epic, i)
+        ),
+        key=lambda i: i.id,
+    )
+    if not candidates:
+        return None, (
+            f'{_rel(deferral.path)}: names epic {deferral.epic!r}, but no `kind = "epic"` item '
+            f"in the backlog declares a matching `branches` entry -- deferral grants nothing "
+            f"(the claimed epic is not a real backlog item)"
+        )
+    open_candidates = [i for i in candidates if i.status != "closed"]
+    if not open_candidates:
+        ids = ", ".join(str(i.id) for i in candidates)
+        if len(candidates) > 1:
+            return None, (
+                f"{_rel(deferral.path)}: names epic {deferral.epic!r}, which matches backlog "
+                f'items {ids}, but they are all status = "closed" -- deferral grants nothing '
+                f"(the epic it names is not open)"
+            )
+        return None, (
+            f"{_rel(deferral.path)}: names epic {deferral.epic!r}, which matches backlog "
+            f'item {ids}, but it is status = "closed" -- deferral grants nothing '
+            f"(the epic it names is not open)"
+        )
+    return open_candidates[0], None
+
+
+def check_with_deferral(
+    items_dir: Path,
+    board_path: Path,
+    deferral_path: Path | None = None,
+) -> tuple[list[str], BoardDeferral | None]:
+    """The full `check` rule set, reporting whether a `BoardDeferral` was actually
+    EXERCISED -- i.e. it suppressed a genuine staleness failure -- not merely
+    whether a marker file exists. Structural/cross-file validation always runs
+    unconditionally; only the BOARD.md-staleness rule is ever tolerated, and only
+    when `board_path` really is stale AND `deferral_path` names a well-formed
+    marker (`_read_board_deferral`) whose `epic` field also names a real, open
+    `kind = "epic"` backlog item (`_find_deferral_epic`). Returns `(errors,
+    None)` whenever no deferral applied: no `deferral_path` given, no marker, a
+    malformed marker, a marker naming an epic that isn't real or isn't open, or
+    BOARD.md was not stale to begin with. Omitting `deferral_path` (the
+    default) reproduces pre-deferral behavior byte-for-byte -- nothing about
+    this mechanism can affect a caller that doesn't opt in."""
     items, errors = structural_errors(items_dir)
     if errors:
-        return errors
+        return errors, None
 
     stale = _board_status(board_path, render_board(items))
-    if stale is not None:
+    if stale is None:
+        return errors, None
+
+    deferral = _read_board_deferral(deferral_path)
+    if deferral is None:
         errors.append(stale)
+        return errors, None
+
+    _matched_epic, epic_error = _find_deferral_epic(deferral, items)
+    if epic_error is not None:
+        errors.append(stale)
+        errors.append(epic_error)
+        return errors, None
+
+    return errors, deferral
+
+
+def check(items_dir: Path, board_path: Path, deferral_path: Path | None = None) -> list[str]:
+    """The full `check` rule set: structural/cross-file validation, then
+    (only if that passed) board staleness -- a broken backlog can't produce
+    a trustworthy board to compare against. Thin wrapper over
+    `check_with_deferral()` for callers that only need the error list; see that
+    function for the `(errors, deferral)` shape the CLI uses to print an
+    unmissable deferral notice rather than a quietly-green run."""
+    errors, _deferral = check_with_deferral(items_dir, board_path, deferral_path)
     return errors
 
 
@@ -497,17 +672,31 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     if args.command == "check":
-        errors = check(_ITEMS_DIR, _BOARD_PATH)
+        errors, deferral = check_with_deferral(_ITEMS_DIR, _BOARD_PATH, _BOARD_DEFERRAL_PATH)
         if errors:
             print("work_items: FAILED", file=sys.stderr)
             for error in errors:
                 print(f"  {error}", file=sys.stderr)
             return 1
         count = len(list(_ITEMS_DIR.glob("*.md")))
-        print(f"work_items: OK ({count} files)")
+        if deferral is not None:
+            print(
+                f"work_items: OK ({count} files) -- BOARD.md staleness DEFERRED for "
+                f"{deferral.epic} per {_rel(deferral.path)} ({deferral.authorization}) "
+                f"-- NOT actually current"
+            )
+        else:
+            print(f"work_items: OK ({count} files)")
         return 0
 
-    # args.command == "board"
+    # args.command == "board" -- the deferral marker is deliberately never consulted
+    # here, in either mode. `--write` always regenerates from source regardless of
+    # staleness, so a deferral can never make it produce a wrong board. The
+    # read-only mode (below) intentionally stays exactly as strict as `check` was
+    # BEFORE the deferral mechanism existed -- `board` is a manual convenience
+    # command, not gate-wired (only `check` is, per scripts/gate.py), so leaving it
+    # unconditionally strict costs nothing and gives a second, deferral-blind way to
+    # see the real staleness state at any time.
     items, errors = structural_errors(_ITEMS_DIR)
     if errors:
         print("work_items: board FAILED -- fix `check` errors first", file=sys.stderr)
@@ -518,7 +707,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     generated = render_board(items)
     if args.write:
         _BOARD_PATH.write_text(generated, encoding="utf-8", newline="\n")
-        print(f"work_items: wrote {_BOARD_PATH.relative_to(_REPO_ROOT).as_posix()}")
+        print(f"work_items: wrote {_rel(_BOARD_PATH)}")
         return 0
 
     stale = _board_status(_BOARD_PATH, generated)

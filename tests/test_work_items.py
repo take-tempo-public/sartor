@@ -8,9 +8,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from scripts import work_items as work_items_module
 from scripts.work_items import (
     Item,
     check,
+    check_with_deferral,
+    main,
     parse_file,
     render_board,
     structural_errors,
@@ -52,6 +57,48 @@ def _write_item(tmp_path: Path, filename: str, text: str) -> Path:
     items_dir.mkdir(exist_ok=True)
     path = items_dir / filename
     path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _write_open_epic(tmp_path: Path, *, id: int = 36, branch: str = "epic/a-app-core") -> Path:
+    """Write a `kind = "epic"`, `status = "open"` item whose `branches` include
+    `branch` -- the same string `_write_deferral`'s default `epic` text names --
+    so tests exercising the deferral's epic cross-check (`_find_deferral_epic`)
+    have a real matching backlog item to point at without re-typing the
+    frontmatter each time."""
+    text = _item_text(id=id, kind="epic", extra=f'branches = ["{branch}"]\n')
+    return _write_item(tmp_path, f"{id:04d}-epic.md", text)
+
+
+def _write_deferral(
+    tmp_path: Path,
+    *,
+    epic: str | None = "epic/a-app-core",
+    declared: str | None = "2026-08-09",
+    authorization: str | None = "docs/dev/epic-a-chain-design-corrections.md, section 15.2",
+    filename: str = "BOARD_DEFERRAL.md",
+    raw: str | None = None,
+) -> Path:
+    """Write a BOARD_DEFERRAL.md-shaped marker for tests. Passing `raw` writes it
+    verbatim (for TOML-syntax/no-fence cases); otherwise a field set to `None` is
+    OMITTED from the frontmatter (missing), and any other value is written as-is
+    (an empty or whitespace-only string tests the "present but blank" case)."""
+    path = tmp_path / filename
+    if raw is not None:
+        path.write_text(raw, encoding="utf-8")
+        return path
+    lines = ["```toml"]
+    if epic is not None:
+        lines.append(f'epic = "{epic}"')
+    if declared is not None:
+        lines.append(f'declared = "{declared}"')
+    if authorization is not None:
+        lines.append(f'authorization = "{authorization}"')
+    lines.append("```")
+    lines.append("")
+    lines.append("# Test deferral marker")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
     return path
 
 
@@ -427,8 +474,399 @@ class TestRealBacklog:
         assert items, "expected the migrated backlog to be non-empty"
 
     def test_committed_board_is_up_to_date(self) -> None:
+        # Mirrors the real CLI (`main()`'s `check` subcommand), which always passes
+        # the real BOARD_DEFERRAL.md path -- so this bridge test reflects what
+        # `python -m scripts.work_items check` actually does, deferral included.
+        # When no deferral is active, this is byte-identical to passing no
+        # deferral_path at all: see TestBoardDeferral for that guarantee in
+        # isolation.
         errors = check(
             _REPO_ROOT / "docs" / "dev" / "work" / "items",
             _REPO_ROOT / "docs" / "dev" / "work" / "BOARD.md",
+            work_items_module._BOARD_DEFERRAL_PATH,
         )
         assert errors == []
+
+
+class TestBoardDeferral:
+    """Charter C-11: a durable, committed, auditable exemption -- never an env var,
+    never a second flag to also flip. See docs/dev/work/BOARD_DEFERRAL.md for the
+    real, currently-active marker this mechanism was built to satisfy."""
+
+    # --- (a) no-marker behavior is unchanged -- regression-critical ------------------
+
+    def test_no_deferral_path_is_byte_identical_to_pre_deferral_check(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        # check()'s default (deferral_path omitted entirely) must reproduce EXACTLY
+        # today's pre-deferral behavior: a stale board still fails, full stop.
+        errors = check(tmp_path / "items", tmp_path / "BOARD.md")
+        assert any("stale" in e for e in errors)
+
+    def test_absent_marker_file_behaves_like_no_deferral(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        errors, deferral = check_with_deferral(
+            tmp_path / "items", tmp_path / "BOARD.md", tmp_path / "does-not-exist.md"
+        )
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_cli_check_output_is_plain_ok_without_a_marker(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        items, _errors = structural_errors(tmp_path / "items")
+        (tmp_path / "BOARD.md").write_text(render_board(items), encoding="utf-8")
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", tmp_path / "no-marker.md")
+        rc = main(["check"])
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert out.strip() == "work_items: OK (1 files)"
+
+    # --- (b) a valid marker tolerates staleness AND names it unmissably --------------
+
+    def test_valid_marker_tolerates_staleness_and_reports_it(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert errors == []
+        assert deferral is not None
+        assert deferral.epic == "epic/a-app-core"
+        assert deferral.declared == "2026-08-09"
+        assert "15.2" in deferral.authorization
+        assert deferral.path == marker
+
+    def test_check_wrapper_tolerates_with_valid_marker(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        assert check(tmp_path / "items", tmp_path / "BOARD.md", marker) == []
+
+    def test_valid_marker_also_tolerates_a_missing_board_file(self, tmp_path: Path) -> None:
+        # A missing BOARD.md and a mismatched BOARD.md are both `_board_status`
+        # staleness outcomes -- the marker's job is to tolerate BOARD.md staleness
+        # broadly, not just the "exists but wrong" sub-case.
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path)
+        marker = _write_deferral(tmp_path)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert errors == []
+        assert deferral is not None
+
+    def test_valid_marker_never_tolerates_structural_errors(self, tmp_path: Path) -> None:
+        # A dangling epic reference is a structural error -- the marker only ever
+        # touches the BOARD.md-staleness rule, never the rules that keep the
+        # backlog itself honest.
+        text = _item_text(id=1, status="deferred", extra='blocked_on = "x"\nepic = 99\n')
+        _write_item(tmp_path, "0001-a.md", text)
+        marker = _write_deferral(tmp_path)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("epic 99 not found" in e for e in errors)
+
+    def test_cli_check_output_names_the_deferral_unmissably(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", marker)
+        rc = main(["check"])
+        out = capsys.readouterr().out
+        assert rc == 0
+        # A green run under an active deferral must look visibly different from a
+        # genuinely-clean run, in the same line a human or CI would actually read.
+        assert "OK" in out
+        assert "DEFERRED" in out
+        assert "epic/a-app-core" in out
+        assert "BOARD_DEFERRAL.md" in out
+        assert "NOT actually current" in out
+
+    # --- (c) a malformed/incomplete marker grants NOTHING -- fail closed -------------
+
+    def test_marker_missing_epic_field_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, epic=None)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_marker_missing_authorization_field_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, authorization=None)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_marker_missing_declared_field_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, declared=None)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_empty_marker_file_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, raw="")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_marker_with_blank_field_grants_nothing(self, tmp_path: Path) -> None:
+        # A field present but whitespace-only is still "missing" once stripped --
+        # same effective failure as never having set the key.
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, declared="   ")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_marker_with_invalid_toml_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, raw="```toml\nepic = [unterminated\n```\n")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_marker_without_toml_fence_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, raw='epic = "x"\ndeclared = "x"\nauthorization = "x"\n')
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+
+    def test_malformed_marker_error_output_matches_no_marker_output_exactly(
+        self, tmp_path: Path
+    ) -> None:
+        # The literal requirement: a malformed marker must fail EXACTLY as if no
+        # marker existed at all -- not almost, not with extra noise appended.
+        # Compare the two error lists for equality rather than substring-matching
+        # each independently.
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        no_marker_errors, no_marker_deferral = check_with_deferral(
+            tmp_path / "items", tmp_path / "BOARD.md", tmp_path / "absent.md"
+        )
+        malformed = _write_deferral(tmp_path, epic=None, filename="malformed.md")
+        malformed_errors, malformed_deferral = check_with_deferral(
+            tmp_path / "items", tmp_path / "BOARD.md", malformed
+        )
+        assert malformed_errors == no_marker_errors
+        assert malformed_deferral is no_marker_deferral is None
+
+    def test_cli_check_output_with_malformed_marker_matches_no_marker_output(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, authorization=None)
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", marker)
+        rc = main(["check"])
+        out, err = capsys.readouterr()
+        assert rc == 1
+        assert out == ""
+        assert "FAILED" in err
+        assert "stale" in err
+        assert "DEFERRED" not in err
+
+    # --- (d) `board --write` is unaffected by the marker's presence ------------------
+
+    def test_board_write_regenerates_correctly_regardless_of_marker_presence(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", marker)
+        rc = main(["board", "--write"])
+        assert rc == 0
+        items, _errors = structural_errors(tmp_path / "items")
+        assert (tmp_path / "BOARD.md").read_text(encoding="utf-8") == render_board(items)
+        # The write made the board genuinely current -- a plain check() with NO
+        # deferral_path at all now passes too, independent of the marker's
+        # continued presence on disk.
+        assert check(tmp_path / "items", tmp_path / "BOARD.md") == []
+
+    def test_board_write_output_unaffected_by_marker_presence(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", tmp_path / "no-marker.md")
+        rc_without_marker = main(["board", "--write"])
+        out_without_marker = capsys.readouterr().out
+        board_without_marker = (tmp_path / "BOARD.md").read_text(encoding="utf-8")
+
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", marker)
+        rc_with_marker = main(["board", "--write"])
+        out_with_marker = capsys.readouterr().out
+        board_with_marker = (tmp_path / "BOARD.md").read_text(encoding="utf-8")
+
+        assert rc_without_marker == rc_with_marker == 0
+        assert out_without_marker == out_with_marker
+        assert board_without_marker == board_with_marker
+
+
+class TestDeferralEpicCrossCheck:
+    """A well-formed marker used to grant the exemption on prose alone -- `epic`
+    is free text nobody verified against real backlog state, so a marker naming
+    ANY string passed structurally. This closes that: the named epic must match
+    a real `kind = "epic"` item with `status != "closed"` (`_find_deferral_epic`),
+    or the marker grants nothing, same as a structurally malformed one -- see
+    `TestBoardDeferral` group (c) for that half. Does NOT verify the current
+    branch is actually part of the named epic -- deliberately out of scope,
+    see the module docstring and docs/dev/work/BOARD_DEFERRAL.md."""
+
+    def test_marker_naming_real_open_epic_grants_deferral(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        deferral = work_items_module._read_board_deferral(marker)
+        assert deferral is not None
+        items, errors = structural_errors(tmp_path / "items")
+        assert errors == []
+        matched, error = work_items_module._find_deferral_epic(deferral, items)
+        assert error is None
+        assert matched is not None
+        assert matched.id == 36
+
+    def test_marker_naming_real_closed_epic_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        text = _item_text(
+            id=36,
+            kind="epic",
+            status="closed",
+            extra=(
+                'resolution = "done"\n'
+                'verified_by = ["tests/x.py::test_y"]\n'
+                'branches = ["epic/a-app-core"]\n'
+            ),
+        )
+        _write_item(tmp_path, "0036-epic.md", text)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+        assert any("matches backlog item 36" in e and 'status = "closed"' in e for e in errors)
+        # Distinct from the malformed-marker message -- a fixer needs to know
+        # WHICH problem this is.
+        assert not any("does not open with" in e or "invalid TOML" in e for e in errors)
+
+    def test_marker_naming_nonexistent_epic_grants_nothing(self, tmp_path: Path) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        # No epic item at all in this backlog -- the marker's claim is unfounded.
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, epic="epic/does-not-exist-anywhere")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("stale" in e for e in errors)
+        assert any(
+            'no `kind = "epic"` item' in e and "not a real backlog item" in e for e in errors
+        )
+
+    def test_marker_naming_epic_string_that_is_only_a_substring_of_a_real_branch_fails(
+        self, tmp_path: Path
+    ) -> None:
+        # The match direction is branch-in-marker, not marker-in-branch -- a marker
+        # cannot claim a shorter, vaguer string and have it match a longer real
+        # branch name it merely happens to prefix.
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        _write_open_epic(tmp_path, branch="epic/a-app-core-and-then-some")
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path, epic="epic/a-app-core")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("not a real backlog item" in e for e in errors)
+
+    def test_structural_errors_still_short_circuit_before_the_epic_check(
+        self, tmp_path: Path
+    ) -> None:
+        # A dangling epic reference on an unrelated item is a structural error --
+        # it must fail there, never reach board staleness or the epic cross-check.
+        text = _item_text(id=1, status="deferred", extra='blocked_on = "x"\nepic = 99\n')
+        _write_item(tmp_path, "0001-a.md", text)
+        marker = _write_deferral(tmp_path, epic="epic/does-not-exist-anywhere")
+        errors, deferral = check_with_deferral(tmp_path / "items", tmp_path / "BOARD.md", marker)
+        assert deferral is None
+        assert any("epic 99 not found" in e for e in errors)
+        assert not any("not a real backlog item" in e for e in errors)
+
+    def test_cli_check_output_distinguishes_closed_epic_from_malformed_marker(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _write_item(tmp_path, "0001-a.md", _item_text(id=1))
+        text = _item_text(
+            id=36,
+            kind="epic",
+            status="closed",
+            extra=(
+                'resolution = "done"\n'
+                'verified_by = ["tests/x.py::test_y"]\n'
+                'branches = ["epic/a-app-core"]\n'
+            ),
+        )
+        _write_item(tmp_path, "0036-epic.md", text)
+        (tmp_path / "BOARD.md").write_text("stale content", encoding="utf-8")
+        marker = _write_deferral(tmp_path)
+        monkeypatch.setattr(work_items_module, "_ITEMS_DIR", tmp_path / "items")
+        monkeypatch.setattr(work_items_module, "_BOARD_PATH", tmp_path / "BOARD.md")
+        monkeypatch.setattr(work_items_module, "_BOARD_DEFERRAL_PATH", marker)
+        rc = main(["check"])
+        out, err = capsys.readouterr()
+        assert rc == 1
+        assert out == ""
+        assert "FAILED" in err
+        assert "stale" in err
+        assert 'status = "closed"' in err
+        assert "DEFERRED" not in err
+
+
+class TestRealBacklogDeferralEpic:
+    """Bridge test: the real, currently-active `BOARD_DEFERRAL.md` names Epic A
+    (item 36) -- confirm it is a real `kind = "epic"` item with a non-closed
+    status right now, so the stronger check does not silently defeat the live
+    deferral it was built to keep working."""
+
+    def test_epic_a_item_is_a_real_open_epic(self) -> None:
+        items, errors = structural_errors(_REPO_ROOT / "docs" / "dev" / "work" / "items")
+        assert errors == []
+        epic_a = items[36]
+        assert epic_a.kind == "epic"
+        assert epic_a.status != "closed"
+
+    def test_real_deferral_marker_names_epic_a_and_verifies(self) -> None:
+        items, errors = structural_errors(_REPO_ROOT / "docs" / "dev" / "work" / "items")
+        assert errors == []
+        deferral = work_items_module._read_board_deferral(work_items_module._BOARD_DEFERRAL_PATH)
+        assert deferral is not None, "the real BOARD_DEFERRAL.md is expected to be well-formed"
+        matched, error = work_items_module._find_deferral_epic(deferral, items)
+        assert error is None
+        assert matched is not None
+        assert matched.id == 36
