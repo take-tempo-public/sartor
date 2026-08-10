@@ -63,6 +63,10 @@ def _binds_get_client(tree: ast.AST) -> bool:
     way. A local `from x import _get_client` inside a function body would also
     match; that is deliberate, since such a module still needs patching (the
     name it resolves at call time is the real one).
+
+    **Known limit (C-0), not exploitable today:** this does NOT match
+    `import web_infra` + `web_infra._get_client()` module-attribute access — no
+    blueprint at HEAD uses that form (work item 70).
     """
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and any(
