@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 33 | Epics 6 | Closed 21
+**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 37 | Epics 6 | Closed 21
 
 ## Open
 
@@ -59,6 +59,10 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **74** -- refreshPipeline() refetches the entire cross-candidate roster on 7 trigger sites -- wider payload, no N+1, revisit if roster grows (`agent`) -- refreshApplications() (1 candidate) replaced by refreshPipeline() (whole roster) at 7 sites -- disclosed trade, no N+1.
 - **75** -- Retired roles reach the A3 draft_experience_summaries prompt -- frozen snapshot never intersected against live is_active (`agent`) -- _build_experience_summary_targets reads the frozen snapshot, not live is_active -- a retired role can reach Sonnet.
 - **76** -- BOARD_DEFERRAL.md's declared field has no expiry bound -- an unbounded exemption, and the gap itself was undisclosed (`user`) -- declared is checked for presence only, never as a date -- the staleness exemption never expires on its own.
+- **77** -- Nothing asserts a UX test that can reach an LLM route actually calls install_llm_stubs -- third instance of this class (`agent`) -- pytest -m ux is documented LLM-free; nothing gates that each LLM-reachable UX test calls install_llm_stubs.
+- **78** -- Unattributed billed alice/draft_summary row in llm_calls.jsonl, 2026-07-28 -- source unresolved, leading hypothesis unverified (`user`) -- One alice/draft_summary billed row predates the fixed test and doesn't match its token shape -- source unresolved.
+- **79** -- scripts/ci_wait.py crashed twice in one session on wrapper faults -- correct verdict, failed delivery, exit 2 indistinguishable from a real bug (`agent`) -- ci_wait's verdict was right twice but delivery crashed on encoding + TLS faults, both requiring a manual re-run.
+- **80** -- Merging to main while a long-running PR is open goes stale under strict branch protection -- sequencing guidance, not a defect (`agent`) -- Dependabot merges staled Epic A's open PR under strict:true, costing an update-branch cycle plus ~6 min CI.
 
 ## Epics
 
