@@ -5,10 +5,10 @@
 > docstring-coverage, and the mypy `--strict` ratchet — reached its §6 exit
 > criterion (rung 8, `chore/kit-mypy-strict-uipages-exit`): every non-exempt
 > production module carries the strict override, enforced by construction via
-> `tests/test_mypy_strict_roster_gate.py`. **Commitment (3) — skills/hooks
-> packaging coherence — stays open**, deferred to the v1.1.0-gate window
-> (`feat/portable-enforcement-core`, 8.7). This document remains authoritative
-> for that remaining commitment; read §4/§6 for the phase log and exit proof.
+> `tests/test_mypy_strict_roster_gate.py`. **Commitment (3)'s status is the
+> `DOC-STATUS` comment directly below this blockquote — do not re-derive it
+> here** (single-home; this paragraph predates that comment and is superseded
+> by it). Read §4/§6 for the phase log and exit proof.
 > Canonical: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) carry-forward
 > ledger, "Agent-coding-practices kit-adoption — staged commitments".
 <!-- DOC-STATUS(kit-adoption): ALL THREE STAGED COMMITMENTS DONE as of 2026-07-24 (feat/context-structure-review-skill) — RELEASE_CHECKLIST.md's kit-adoption ledger row is CLOSED. Phases 1-2 (commitments 1+2) SHIPPED 2026-07-10, §6 exit reached; commitment (3)'s hooks half [re-home out of .claude-plugin/ to root hooks/, PX-37 dispatcher] SHIPPED 2026-07-20 (chore/hook-dispatcher); the context-structure-review skill import (§3 Decision 5, §4 Phase 5) SHIPPED 2026-07-24, completing commitment (3)'s skills half. Owner confirmed the four-parallel end-state (commands/agents/skills/hooks all at root) satisfies commitment (3) now, independent of the 8.7 feat/portable-enforcement-core window's own timing. Canonical: RELEASE_CHECKLIST.md carry-forward ledger (now closed). -->
@@ -761,10 +761,12 @@ The kit-adoption arc is **not free-floating** — it overlays planned work:
 - **Now / current window:** Phase 0 (done) → Phase 1 quick wins → Phase 2 ratchet begins →
   Phase 3 boundary refactor. The local pre-commit gates run today (no remote needed).
 - **At 8.7 (`feat/portable-enforcement-core` + `release/public-prep`):** the kit's gates fold
-  into the shared enforcement core; **CI-blocking activates when the GitHub remote lands**
-  (today there is no remote — `ci.yml` is committed but dormant); hooks re-home out of
-  `.claude-plugin/` and the `commands/ agents/ skills/ hooks/` families reach the clean
-  four-parallel end-state. See `RELEASE_CHECKLIST.md` 8.7 + Carry-forward ledger.
+  into the shared enforcement core; hooks re-home out of `.claude-plugin/` and the
+  `commands/ agents/ skills/ hooks/` families reach the clean four-parallel end-state.
+  **Landed** — see the `DOC-STATUS` comment above and
+  [`../governance/enforcement.md`](../governance/enforcement.md) "Implementation status"
+  for current ship state (single-home; do not re-derive here). See
+  `RELEASE_CHECKLIST.md` 8.7 + Carry-forward ledger.
 - **WS-2-full (recurring):** the Phase 2 strict ratchet *is* WS-2-full; the full strict
   end-state lands across the v1.0.8 tail → 1.1.x.
 - **Post-8.7 (separate project):** Fumadocs renders the OpenAPI spec + the wiki markdown into

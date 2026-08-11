@@ -50,7 +50,7 @@ entry point; it imports/links Governance, it does not surrender the rules.
 | (ii) | Per-doc extraction boundaries | **§3 table** — spine is the constitution's `[src: …]` citation map | Each source doc loses only its *canonical* rule (descriptive prose stays) + gains a pointer; the draft already specifies the spans clause-by-clause. |
 | (iii) | AGENTS.md shape | **Inline rules + pointer** (NOT a pure import shell) | AGENTS.md is read raw by non-Claude agents (Codex/Cursor/Aider per its own purpose statement); `@import` is a Claude-Code convention. A pure shell would leave a dangling import and strip every guardrail for non-Claude agents — a direct F-gov-05 violation. Extract-don't-restate is still honored: the charter is *binding*; AGENTS.md holds an explicitly-subordinate operational mirror. |
 | — | Graduation scope | **All four draft files graduate on `feat/`** | `constitution.md`→`charter.md`, `enforcement-practices.md`→`enforcement.md`, `metrics-and-rubrics.md`→`metrics.md` (all v1.0.7-targeted in their own front-matter), and `extraction-playbook.md`→`docs/dev/EXTRACTION.md` as a low-risk one-event graduation. |
-| — | Enforcement portability | **Split: decide now, migrate later** | Target architecture recorded below (§5); the two hook fixes (PX-24/28) land in place on `feat/`; the portable-core migration is a follow-on branch clustered with the v1.0.8 gate epic when the remote/CI activates (Sprint 8.7). |
+| — | Enforcement portability | **Split: decide now, migrate later** (decided 2026-06-15; **executed 2026-07-08** on `feat/portable-enforcement-core` — see §5's status note and [`enforcement.md`](../governance/enforcement.md) "Implementation status" for current ship state) | Target architecture recorded below (§5); the two hook fixes (PX-24/28) landed in place on `feat/`; the portable-core migration landed as the follow-on branch clustered with the v1.0.8 gate epic. |
 
 ---
 
@@ -222,7 +222,20 @@ now exist) → CLAUDE.md path fix → CHANGELOG.
 
 ## 5. Enforcement-portability decision + sequencing (the owner agenda item)
 
-**Context (verified at HEAD).** The portable-capable hooks (`require-feature-branch`,
+> **Status (reconciled 2026-08-11, single-home per this doc's own §2 cite-don't-re-fix
+> rule):** everything below this note is the **decision record as made on
+> `design/governance-extraction` (2026-06-15)** — historical, not current ship state.
+> The SPLIT decision executed: the portable-enforcement-core migration **landed
+> 2026-07-08 on `feat/portable-enforcement-core`** — `scripts/enforcement/` now holds
+> `guards/` (one implementation per rule) and `adapters/` (the three consumers designed
+> below: Claude PreToolUse, `.githooks/` via `core.hooksPath`, and the CI backstop), plus
+> `ci_backstop.py`. The git remote referenced throughout as "Sprint 8.7" / "when it
+> arrives" is live — CI is not latent. Canonical ship-state home:
+> [`../governance/enforcement.md`](../governance/enforcement.md) "Implementation status"
+> — do not re-correct or duplicate here; cite that section.
+
+**Context, as designed 2026-06-15 (historical — see status note above).** The
+portable-capable hooks (`require-feature-branch`,
 `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`,
 `validate-context`) are wired **Claude-only** in `.claude/settings.json`. CI
 (`.github/workflows/ci.yml`: ruff+mypy+pytest 3-version matrix + label-gated eval-smoke)

@@ -54,12 +54,19 @@ effort-language everywhere else).
   (`memory-architecture.md`). The avatar (an Operation surface) depends on it; it depends
   only inward on Substrate.
 - **Readiness signal:** the only one that exists — the extraction-readiness condition
-  above (F-gov-08). But **F-arch-09** (WEAKENED → revised): `recall/` is **design-only,
-  not committed**; the landed in-place evidence is `run_suite()`. Readiness is
-  *specified*, not yet *measurable against code*.
-- **Extraction gate:** boundary-lint green on the committed package **+** a second
-  consumer imports `recall.assemble()` without touching sartor internals — cannot fire
-  until the package + its lint exist.
+  above (F-gov-08). **F-arch-09 has since landed further:** `recall/` is committed (the
+  Stage 0 core plus the Stage 1 tiers under `recall/sources/` — `git_grep_source.py`,
+  `session_source.py`, `vector_source.py`), and condition 1's boundary-lint is a
+  committed, passing test (`tests/test_recall_boundary.py`, verified 5/5 green at
+  HEAD `3fa20a3`). Condition 1 (boundary-clean) is now *measurable against code*, not
+  merely specified. Conditions 2 (contract-frozen, N=2 cycles) and 3 (second-consumer)
+  are **not verified here** — the only importer found at HEAD is the in-repo
+  `blueprints/assistant.py` (empirical note: a sibling project's design pass is
+  evaluating `recall/` for reuse, which is the shape a second consumer would take, but
+  that has not landed — declared, not filled in).
+- **Extraction gate:** boundary-lint green on the committed package (met — see above)
+  **+** a second consumer imports `recall.assemble()` without touching sartor internals
+  (still open — no second consumer found at HEAD).
 - **Harvest moment:** post-v1.1.0 — Stage 0/1 ship inside v1.0.7; physical extraction is
   "packaging only" once boundary-clean holds across N cycles.
 - **Relationship:** **dependency** (W-4 intent: recall → product). sartor. becomes a
@@ -71,9 +78,12 @@ effort-language everywhere else).
   SECURITY, PRODUCT_SHAPE, RELEASE_ARC) — the "mixed-doc crux." **As of v1.0.7 the
   in-repo extraction has landed** ([`../governance/`](../governance/) — `charter.md` +
   `enforcement.md` + `metrics.md`); each source doc keeps its prose and points back. The
-  compliance agent **does not exist** yet; its precedent is the read-only subagent
-  pattern (F-gov-09: `prompt-archaeologist` carries `tools: [Read, Grep, Glob]`, "Does
-  NOT apply the diff").
+  compliance agent **exists**: [`../../agents/compliance-witness.md`](../../agents/compliance-witness.md)
+  + [`../../commands/compliance-witness.md`](../../commands/compliance-witness.md),
+  shipped Sprint 7.7 (`4e8b1df`, 2026-06-16), read-only by tool grant (`Read, Grep, Glob,
+  Bash`, no `Edit`/`Write`/`Task`) — the read-only subagent pattern this section's
+  precedent named (F-gov-09: `prompt-archaeologist`) is now the agent itself, not just
+  its precedent.
 - **Readiness signal:** trigger-language (F-gov-08). The design home
   (`docs/governance/`) is built; `@import`/pointer is the load-bearing safety condition
   (F-gov-05).
@@ -111,7 +121,7 @@ effort-language everywhere else).
 
 ### (d) doc-grounded assistant (operator stack)
 
-- **Coupling to host:** the assistant is the **avatar** — a callback Operation surface
+- **Coupling to host:** the assistant is the **avatar** — a Sartor Operation surface
   (Flask SSE + one Haiku call) consuming `recall.assemble()`. It is the LLM in the stack;
   `recall/` is its deterministic feed. W-4 intent: product **within the operator stack**.
 - **Readiness signal:** trigger-language (F-gov-08). The **memory→context** leg is richly
@@ -158,8 +168,8 @@ effort-language everywhere else).
 
 | Incubant | Coupling | Readiness today | Extraction gate (observable) | Harvest | Relationship |
 |---|---|---|---|---|---|
-| (a) recall/ | lowest (design invariant) | condition written; **design-only** (F-arch-09) | boundary-lint green on committed pkg + 2nd consumer | post-v1.1.0 | dependency |
-| (b) governance + compliance agent | **in-repo extract landed v1.0.7**; agent absent | trigger-language (F-gov-08) | 2nd project adopts constitution + witness agent runs | after in-repo extract (done) + agent-station | dependency (`@import` link required) |
+| (a) recall/ | lowest (design invariant) | committed, boundary-lint green (F-arch-09) | boundary-lint met; 2nd consumer still open | post-v1.1.0 | dependency |
+| (b) governance + compliance agent | **in-repo extract landed v1.0.7**; agent shipped Sprint 7.7 | trigger-language (F-gov-08) | 2nd project adopts constitution + witness agent runs | after in-repo extract (done) + agent-station | dependency (`@import` link required) |
 | (c) LLM-wiki + loop | committed; lives *inside* (a) | sentinel-honest seam, no condition | recall's gate + code cold-ingest fired (F-docs-10 **landed**) | with (a) | dependency on memory product |
 | (d) doc-grounded assistant | avatar = Operation surface on recall | memory leg designed; **governance leg has no home** (F-gov-10) | triad complete; 2nd project boots on same recall + gov | after (a)+(b) | dependency on both |
 | (e) grounding three-tier | highest (hot-path L0 woven in) | **"still research"**; UNCALIBRATED (F-eval-08) | research-resolved (calibrated, F-eval-09 reconciled) *then* standard | post-v2 | likely frozen copy |
@@ -170,9 +180,10 @@ effort-language everywhere else).
 
 - **Modularize in place — don't pre-abstract.** Hold a clean seam from day one; defer
   physical extraction to second-use (`memory-architecture.md` decision #6). `run_suite()`
-  (F-arch-09) and the C-6 deterministic core are the landed evidence this is genuinely
-  practiced — cite *those*, not the uncommitted `recall/`, when the pattern graduates to
-  governance.
+  (F-arch-09), the C-6 deterministic core, and `recall/`'s own committed boundary-lint
+  (`tests/test_recall_boundary.py`) are the landed evidence this is genuinely
+  practiced — cite these, not a system with no committed contract yet, when the
+  pattern graduates to governance.
 - **Extraction contracts as written invariants.** Each incubant declares its public
   surface + inward-only dependency rule as a contract future agents build against — the
   way AGENTS.md governs. recall's is the model (one entry point, four types, hard import
