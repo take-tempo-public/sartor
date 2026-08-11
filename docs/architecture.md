@@ -40,8 +40,10 @@ boundary, charter C-6):
    `corpus_to_json_resume.py:225`) decides the authoritative set,
    with the user's pins/excludes/adds always winning. Sonnet 5
    drafts JD-tailored content: `draft_positioning_summary`
-   (summary) and `draft_gap_fill_bullets` (new bullet proposals,
-   accept/retire), plus Haiku `recommend_skills`/`suggest_skills`.
+   (summary), `draft_gap_fill_bullets` (new bullet proposals,
+   accept/retire), and `draft_experience_summaries` (one batched call
+   drafting a per-role intro line for every included role, keep/reject),
+   plus Haiku `recommend_skills`/`suggest_skills`.
    User curates, then **"Save and continue" freezes** the
    composition into `approved_composition` — deterministic from
    that point on.
@@ -72,8 +74,9 @@ Full sequence diagram — rendered inline below (the single source; see [The fou
 %% a Sonnet 5 synthesis pass (the analyze→generate cache writer) — it
 %% produces strategy + keywords only, never bullet selection.
 %% All résumé TAILORING happens at Compose: recommend_bullets (Haiku)
-%% proposes an advisory shortlist; draft_positioning_summary and
-%% draft_gap_fill_bullets (both Sonnet 5) draft JD-tailored content;
+%% proposes an advisory shortlist; draft_positioning_summary,
+%% draft_gap_fill_bullets and draft_experience_summaries (all Sonnet 5,
+%% the last BATCHED across roles) draft JD-tailored content;
 %% recommend_skills/suggest_skills (Haiku) handle skills. "Save and
 %% continue" freezes the composition (approved_composition) —
 %% Generate then assembles the résumé body with ZERO LLM calls
@@ -152,6 +155,12 @@ sequenceDiagram
     SO-->>ANL: proposed new bullets, JD-driven + corpus-grounded
     ANL-->>APP: proposals
     APP->>FS: write llm_gap_fill_proposals (transient — accept creates a pending Bullet)
+    FE->>APP: POST /api/applications/&#60;id&#62;/draft-experience-summaries (on "Add role intros" opt-in, or explicit)
+    APP->>ANL: draft_experience_summaries(ctx, jd)
+    ANL->>SO: call_kind="draft_experience_summary" (ONE call, every included role)
+    SO-->>ANL: one JD-fitted intro line per role (roles with thin evidence omitted)
+    ANL-->>APP: drafts
+    APP->>FS: write llm_experience_summary_drafts (transient — keep creates a pending ExperienceSummaryItem)
     FE->>APP: POST .../recommend-skills or /suggest-skills (auto or user "Suggest")
     APP->>ANL: recommend_skills / suggest_skills
     ANL->>HK: call_kind="recommend_skill" / "suggest_skill"
@@ -352,7 +361,6 @@ erDiagram
         string end_date "YYYY-MM or NULL=current"
         text summary
         int is_active "soft-retire"
-        int is_pending_review
     }
 
     experience_title {
@@ -561,7 +569,7 @@ Full picture — rendered inline below.
 %% 
 graph LR
     accTitle: Sartor LLM call routing and cost tiers
-    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer, check_refinement_scope), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
+    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_experience_summary, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer, check_refinement_scope), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
     subgraph SO[Sonnet 5 — heavy reasoning]
         direction TB
         A1[analyze_synthesis<br/>cache writer<br/>strategy + keywords only]
@@ -571,6 +579,7 @@ graph LR
         A6[draft_summary<br/>Compose-time drafting]
         A7[draft_gap_fill<br/>Compose-time drafting]
         A8[draft_surgical_refinement<br/>post-generate reword, no new facts]
+        A9[draft_experience_summary<br/>Compose-time drafting<br/>BATCHED — one call, all roles]
     end
 
     subgraph HK[Haiku 4.5 — structured selection]
@@ -604,6 +613,7 @@ graph LR
     R_DS[/POST /api/applications/&lt;id&gt;/draft-summary/] --> A6
     R_DG[/POST /api/applications/&lt;id&gt;/draft-gap-fill/] --> A7
     R_DR[/POST /api/applications/&lt;id&gt;/draft-refinement/] --> A8
+    R_DES[/POST /api/applications/&lt;id&gt;/draft-experience-summaries/] --> A9
     R_RSK[/POST /api/applications/&lt;id&gt;/recommend-skills/] --> H6
     R_SSK[/POST /api/applications/&lt;id&gt;/suggest-skills/] --> H7
     R_SSC[/POST /api/users/&lt;u&gt;/corpus/skills/suggest-from-corpus/] --> H8
@@ -652,9 +662,11 @@ Era 4 section.
 
 **Sonnet 5** (`claude-sonnet-5`) handles heavy reasoning:
 `analyze_synthesis`, `iterate_clarify`, `generate` (legacy/not-frozen
-path only), `generate_cover_letter`, and the three Compose-time
+path only), `generate_cover_letter`, and the four Compose-time
 drafting calls — `draft_summary`, `draft_gap_fill`,
-`draft_surgical_refinement`. These calls produce large JSON
+`draft_experience_summary` (batched: ONE call covering every included
+role, never one per role), `draft_surgical_refinement`.
+These calls produce large JSON
 responses. `analyze` is a **two-pass** call — a Haiku
 extraction pass feeds the Sonnet synthesis pass.
 

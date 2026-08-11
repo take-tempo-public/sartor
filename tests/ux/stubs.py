@@ -18,11 +18,40 @@ Binding styles (confirmed by reading `app.py`):
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Iterator
 from types import ModuleType
 from typing import Any
 
 import pytest
+
+#: Every blueprint module that binds `_get_client` at module import time and so
+#: must have it neutralized before any UX flow can touch its routes. Kept as
+#: DATA, not as a series of hand-written `monkeypatch.setattr` lines, because
+#: `tests/test_ux_stub_coverage.py` compares this tuple against an AST walk of
+#: `blueprints/**.py` and fails closed when a new blueprint imports
+#: `_get_client` without being added here.
+#:
+#: **Why a gate and not a note (charter C-11).** This exact omission has now
+#: been found three times: item 21 (`check_refinement_scope` unstubbed, so every
+#: UX refinement flow silently exercised only the fail-open path), item 22's
+#: diagnosis (a prophylactic `draft_surgical_refinement` gap), and item 34
+#: (`blueprints/corpus/skills.py` + `proposals.py` — a REAL billed Anthropic
+#: call on any developer machine with a `.api_key`, which is the documented
+#: norm here). Item 34's own hand-written list was itself already stale: it
+#: named two corpus modules and missed `blueprints/corpus/curation.py` and
+#: `blueprints/assistant.py`, both equally unpatched. A fourth enumeration
+#: would rot the same way, so the enumeration is now derived and checked.
+_GET_CLIENT_BLUEPRINT_MODULES: tuple[str, ...] = (
+    "blueprints.analysis",
+    "blueprints.applications",
+    "blueprints.assistant",
+    "blueprints.corpus.curation",
+    "blueprints.corpus.proposals",
+    "blueprints.corpus.skills",
+    "blueprints.diagnostics",
+    "blueprints.generation",
+)
 
 # Shaped to exactly what `_renderAnalysis` (static/app.js) reads, so the
 # Step-1 render never throws: string-array skills, {category,signal} hidden
@@ -412,6 +441,35 @@ def fake_draft_surgical_refinement(
     }
 
 
+def fake_draft_experience_summaries(
+    client: Any, ctx: Any, username: str = "", run_id: str = ""
+) -> dict[str, Any]:
+    """A3 — return ONE deterministic role-intro draft per staged role target, so
+    the Compose role-intro draft lane renders (keep/reject cards) and the
+    `has_experience_summary_drafts` latch flips, without a real Sonnet call.
+    Drafts off the caller's OWN staged targets (never fixture-fixed ids that
+    would not exist in a real corpus), mirroring the demo_fixtures selection
+    shims."""
+    targets = ctx.get("experience_summary_targets") if isinstance(ctx, dict) else None
+    out: list[dict[str, Any]] = []
+    for t in targets or []:
+        if not isinstance(t, dict):
+            continue
+        try:
+            eid = int(t["experience_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        out.append(
+            {
+                "experience_id": eid,
+                "text": "Stubbed role intro for this job.",
+                "evidence": {"bullet_id": None, "summary_item_id": None, "quote": ""},
+                "rationale": "Stub: no real drafting was performed.",
+            }
+        )
+    return {"drafts": out}
+
+
 def fake_check_refinement_scope(client: Any, note: str) -> dict[str, Any]:
     """Deterministic in-scope verdict for the refinement scope-check gate
     (`/api/validate-refinement`). Unstubbed, this call previously reached the
@@ -432,33 +490,30 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     offline. Apply before navigating."""
     import analyzer
     import blueprints.analysis as analysis_bp_mod
-    import blueprints.applications as applications_bp_mod
-    import blueprints.diagnostics as diagnostics_bp_mod
     import blueprints.generation as generation_bp_mod
 
+    # `_get_client` on EVERY blueprint that binds it at import time — the routes
+    # resolve the bare name from their own module namespace, so it has to be
+    # patched there rather than on `ux_app`. Driven off
+    # `_GET_CLIENT_BLUEPRINT_MODULES` (see its comment: item 34's billed-API
+    # risk, and the gate that keeps this list from rotting again).
+    for _mod_name in _GET_CLIENT_BLUEPRINT_MODULES:
+        monkeypatch.setattr(importlib.import_module(_mod_name), "_get_client", lambda: None)
     # The analysis seam (analyze/clarify/iterate-clarify) moved to
     # blueprints/analysis.py (Sprint 8.3b): those routes resolve the bare names
     # from the blueprint module's namespace, so patch THERE, not on `ux_app`.
     monkeypatch.setattr(analysis_bp_mod, "analyze_streaming", fake_analyze_streaming)
     monkeypatch.setattr(analysis_bp_mod, "clarify", fake_clarify)
     monkeypatch.setattr(analysis_bp_mod, "clarify_iteration", fake_clarify_iteration)
-    monkeypatch.setattr(analysis_bp_mod, "_get_client", lambda: None)
     # The generation seam (generate/cover-letter) moved to blueprints/generation.py
     # (Sprint 8.3c): the streaming generate route resolves `generate_streaming` +
-    # `_get_client` from the blueprint module → patch THERE.
-    monkeypatch.setattr(generation_bp_mod, "_get_client", lambda: None)
+    # `check_refinement_scope` from the blueprint module → patch THERE.
     monkeypatch.setattr(generation_bp_mod, "generate_streaming", fake_generate_streaming)
     monkeypatch.setattr(generation_bp_mod, "check_refinement_scope", fake_check_refinement_scope)
-    # The diagnostics seam (annotation/bootstrap/eval/tune) moved to
-    # blueprints/diagnostics.py (Sprint 8.3h — the last seam; app.py no longer imports
-    # `_get_client`): the bootstrap route resolves it from that module → patch THERE.
-    monkeypatch.setattr(diagnostics_bp_mod, "_get_client", lambda: None)
-    # The applications seam (per-application recommend/suggest) moved to
-    # blueprints/applications.py (Sprint 8.3f): the Compose recommend/suggest routes
-    # resolve `_get_client` from that module → patch THERE. The analyzer
-    # recommend_*/suggest_* funcs are imported locally from `analyzer`, so the
-    # analyzer.* stubs below already cover them.
-    monkeypatch.setattr(applications_bp_mod, "_get_client", lambda: None)
+    # The applications seam (per-application recommend/suggest/draft) moved to
+    # blueprints/applications.py (Sprint 8.3f). The analyzer recommend_*/suggest_*/
+    # draft_* funcs are imported locally from `analyzer` inside each route, so the
+    # analyzer.* stubs below cover them.
     monkeypatch.setattr(analyzer, "recommend_bullets", fake_recommend_bullets)
     monkeypatch.setattr(analyzer, "recommend_summaries", fake_recommend_summaries)
     monkeypatch.setattr(analyzer, "draft_positioning_summary", fake_draft_positioning_summary)
@@ -475,3 +530,6 @@ def install_llm_stubs(ux_app: ModuleType, monkeypatch: pytest.MonkeyPatch) -> No
     # seam as the three above. Prophylactic (O-10): no UX test reaches this
     # today (see fake_draft_surgical_refinement's own docstring).
     monkeypatch.setattr(analyzer, "draft_surgical_refinement", fake_draft_surgical_refinement)
+    # A3 — the batched per-role intro drafter, imported locally inside its route
+    # (blueprints/applications.py) → patch on the analyzer module, same seam.
+    monkeypatch.setattr(analyzer, "draft_experience_summaries", fake_draft_experience_summaries)

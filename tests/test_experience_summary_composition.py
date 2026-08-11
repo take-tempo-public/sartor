@@ -245,6 +245,145 @@ class TestPostComposition:
         assert r.status_code == 400
 
 
+class TestPendingLeakGuard:
+    """A3 close-out (blast-radius D5, adversarial-review finding): a
+    kept-but-unreviewed (is_pending_review=1) ExperienceSummaryItem must only
+    be visible/selectable/renderable for the application that KEPT it
+    (composition_overrides.accepted_experience_summary_ids), never for another
+    application sharing the same candidate-scoped role. Mirrors the Bullet
+    gap-fill pending-leak guard (test_gap_fill_decide.py /
+    corpus_to_json_resume.TestPendingLeakGuard)."""
+
+    def _seed_pending(self, output_dir, eid):
+        from db.models import ExperienceSummaryItem
+        from db.session import get_session
+
+        session = get_session()
+        try:
+            item = ExperienceSummaryItem(
+                experience_id=eid,
+                text="Drafted for a different application.",
+                display_order=99,
+                is_active=1,
+                is_pending_review=1,
+                source="llm_proposed",
+            )
+            session.add(item)
+            session.commit()
+            return item.id
+        finally:
+            session.close()
+
+    def test_get_picker_excludes_unaccepted_pending_variant(self, comp_app):
+        """The picker must not surface a pending draft that THIS application's
+        context never accepted — it belongs to some other application."""
+        _app, output_dir = comp_app
+        _cid, aid, eid, vids, ctx_path = _seed(output_dir)
+        pending_id = self._seed_pending(output_dir, eid)
+        client = _app.app.test_client()
+        r = client.get(f"/api/applications/{aid}/composition?context_path={ctx_path}")
+        assert r.status_code == 200
+        exp = next(e for e in r.get_json()["experiences"] if e["id"] == eid)
+        variant_ids = {v["id"] for v in exp["summary"]["variants"]}
+        assert pending_id not in variant_ids
+        assert variant_ids == set(vids)
+
+    def test_get_picker_includes_pending_variant_accepted_by_this_application(self, comp_app):
+        _app, output_dir = comp_app
+        _cid, aid, eid, vids, ctx_path = _seed(output_dir)
+        pending_id = self._seed_pending(output_dir, eid)
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        ctx["composition_overrides"] = {
+            "accepted_experience_summary_ids": [pending_id],
+        }
+        Path(ctx_path).write_text(json.dumps(ctx), encoding="utf-8")
+        client = _app.app.test_client()
+        r = client.get(f"/api/applications/{aid}/composition?context_path={ctx_path}")
+        exp = next(e for e in r.get_json()["experiences"] if e["id"] == eid)
+        variant_ids = {v["id"] for v in exp["summary"]["variants"]}
+        assert pending_id in variant_ids
+
+    def test_post_composition_rejects_unaccepted_pending_pick(self, comp_app):
+        """Server-side enforcement, independent of the picker: even if a client
+        sends a foreign pending id directly, the save must 400 it."""
+        _app, output_dir = comp_app
+        _cid, aid, eid, _vids, ctx_path = _seed(output_dir)
+        pending_id = self._seed_pending(output_dir, eid)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+            },
+        )
+        assert r.status_code == 400
+
+    def test_post_composition_accepts_pending_pick_when_accepted(self, comp_app):
+        _app, output_dir = comp_app
+        _cid, aid, eid, _vids, ctx_path = _seed(output_dir)
+        pending_id = self._seed_pending(output_dir, eid)
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        ctx["composition_overrides"] = {
+            "accepted_experience_summary_ids": [pending_id],
+        }
+        Path(ctx_path).write_text(json.dumps(ctx), encoding="utf-8")
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): pending_id},
+            },
+        )
+        assert r.status_code == 200, r.get_data(as_text=True)
+        ctx_after = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        assert ctx_after["composition_overrides"]["chosen_experience_summary_ids"] == {
+            str(eid): pending_id
+        }
+
+    def test_accepted_ledger_survives_a_save_that_omits_it(self, comp_app):
+        """accepted_experience_summary_ids is server-owned (only KEEP writes it);
+        the client never resends it, so a save that legitimately clobbers every
+        OTHER composition_overrides key must still carry this one forward —
+        otherwise a KEEP's acceptance would be silently dropped by the very next
+        autosave."""
+        _app, output_dir = comp_app
+        _cid, aid, eid, vids, ctx_path = _seed(output_dir)
+        pending_id = self._seed_pending(output_dir, eid)
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        ctx["composition_overrides"] = {
+            "accepted_experience_summary_ids": [pending_id],
+        }
+        Path(ctx_path).write_text(json.dumps(ctx), encoding="utf-8")
+
+        client = _app.app.test_client()
+        # An unrelated save (picks a DIFFERENT, approved variant) that never
+        # mentions accepted_experience_summary_ids at all.
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "use_experience_summaries": True,
+                "chosen_experience_summary_ids": {str(eid): vids[0]},
+            },
+        )
+        assert r.status_code == 200, r.get_data(as_text=True)
+        ctx_after = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        assert ctx_after["composition_overrides"]["accepted_experience_summary_ids"] == [pending_id]
+
+
 class TestApplyChosenToSnapshot:
     def test_injects_chosen_text_when_opted_in(self, comp_app):
         _app, output_dir = comp_app

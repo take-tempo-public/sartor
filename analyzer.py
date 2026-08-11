@@ -46,6 +46,102 @@ class LLMResponseError(Exception):
         super().__init__(f"LLM response failed validation: {validation_error}")
 
 
+class LLMConfigurationError(LLMResponseError):
+    """Raised when no Anthropic credential resolves, so no call can be attempted.
+
+    **Why it subclasses `LLMResponseError` — this is deliberate, not sloppy
+    taxonomy.** Every LLM route in `blueprints/` pairs exactly two handlers
+    (`anthropic.APIConnectionError` + `LLMResponseError`); a keyless client
+    matched neither, because the Anthropic SDK refuses a credential-less request
+    with a bare **`TypeError`** raised at request-build time inside
+    `anthropic/_client.py::_validate_headers` — before any network I/O, so
+    `APIConnectionError` never fires. That `TypeError` escaped to Flask as an
+    unhandled **500** (observed: PR #117's required check, 3/3 in CI, from
+    `POST /api/applications/<id>/draft-summary`). Inheriting from
+    `LLMResponseError` gives all 19 `except LLMResponseError` sites across five
+    blueprint modules a coherent, cause-naming failure **without editing any of
+    them** — the alternative, a standalone class, would have left every one of
+    them 500-ing, which is the defect itself.
+
+    Known limit (C-0): the resulting HTTP status stays 502 and those sites' copy
+    still says "malformed". The cause travels verbatim in `validation_error`,
+    which every one of them already puts in the response `detail` and in its own
+    `logger.error` line. Correcting status + copy means 19 edits and is deferred
+    (`docs/dev/blast-radius/prior-apps-pipeline.md`, second surface, Deferred #4).
+    """
+
+    def __init__(self, detail: str) -> None:
+        """Store the credential cause in the `validation_error` slot callers already read."""
+        super().__init__(raw="", validation_error=detail)
+
+    def __str__(self) -> str:
+        """Report the configuration cause without `LLMResponseError`'s validation framing."""
+        return f"Anthropic client is not configured: {self.validation_error}"
+
+
+# Substring of the Anthropic SDK's own credential-refusal message
+# (`anthropic/_client.py::_validate_headers`, verified against anthropic==0.88.0).
+# Used ONLY to re-label that one exception — see `_call_llm_streaming`.
+_SDK_NO_AUTH_MARKER = "Could not resolve authentication method"
+
+# Human-facing remediation, kept in one place so the route `detail`, the server
+# log, and the test assertion all read the same string.
+_NO_CREDENTIAL_DETAIL = (
+    "the Anthropic client resolved no credential (neither `api_key` nor "
+    "`auth_token` is set). Set ANTHROPIC_API_KEY, or create a `.api_key` file "
+    "at the repo root."
+)
+
+
+def _assert_client_has_credential(client: anthropic.Anthropic, call_kind: str) -> None:
+    """Refuse the call up front when the client is KNOWN to carry no credential.
+
+    The SDK itself only refuses at request-build time and does it with a bare
+    `TypeError`, which no caller in this codebase catches (see
+    `LLMConfigurationError`). Checking here — the single `client.messages` call
+    site — converts a server crash into a deliberate, catchable domain error at
+    all 19 handler sites at once.
+
+    Deliberately NOT a blanket `except TypeError` around the SDK call: that
+    would swallow genuine programming errors (a wrong argument, a `None` where a
+    dict is expected) and turn real bugs into polite messages.
+
+    **Positive determination only.** The check refuses when both credential
+    slots are PRESENT AND FALSY (`anthropic.Anthropic(api_key="")` — exactly
+    what `web_infra.clients._get_client()` builds with no key on the box).
+    An object exposing neither slot is passed straight through untouched, which
+    is not a nicety — it is what keeps two existing behaviors intact:
+
+    - `MagicMock(spec=anthropic.Anthropic)` (nine tests in
+      `tests/test_extract_experiences.py`, plus `test_analyzer_model_selection`)
+      exposes no `api_key` at all, because the SDK declares it as an
+      instance attribute, so it is absent from `dir(anthropic.Anthropic)` and a
+      spec'd mock refuses it. A naive `getattr(..., None)` check would have
+      failed every one of those tests.
+    - `tests/ux/stubs.py::install_llm_stubs` patches `_get_client` to return
+      `None`. Passing that through means an UNSTUBBED analyzer call still fails
+      with the same loud `AttributeError` it always did, instead of being
+      relabeled as a configuration problem — the missing-stub signal keeps its
+      original shape.
+
+    Known limit (C-0): a credential resolved through neither slot (an
+    `AnthropicBedrock` / `AnthropicVertex` client) is not inspectable here.
+    Not reachable today — `_get_client()` constructs `anthropic.Anthropic(
+    api_key=...)` and nothing else — and the message-matched `TypeError`
+    backstop in `_call_llm_streaming` covers whatever this cannot see.
+    """
+    unset = object()
+    api_key = getattr(client, "api_key", unset)
+    auth_token = getattr(client, "auth_token", unset)
+    if api_key is unset and auth_token is unset:
+        return  # not an inspectable SDK client — leave its own failure mode alone
+    if api_key is not unset and api_key:
+        return
+    if auth_token is not unset and auth_token:
+        return
+    raise LLMConfigurationError(f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}")
+
+
 # Required keys per call. _parse_or_retry uses these to detect shape drift
 # (e.g. the model returns valid JSON but omits a section) and trigger a retry.
 # Keep in sync with the JSON spec in analyze()/generate() prompts.
@@ -327,6 +423,12 @@ class DraftGapFillResponse(_LLMResponse):
     proposals: Any
 
 
+class DraftExperienceSummariesResponse(_LLMResponse):
+    """`draft_experience_summaries()` output — one JD-fitted role intro per role, batched."""
+
+    drafts: Any
+
+
 class DraftSurgicalRefinementResponse(_LLMResponse):
     """`draft_surgical_refinement()` output — ONE scoped bullet/summary proposal, or none."""
 
@@ -390,7 +492,7 @@ class RefinementScopeResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-07-08.4"  # merge-train assignment for fix/review-surface-and-flows: NEW SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT constant + suggest_skills_from_corpus (corpus-wide skill discovery, no JD in view) — genuine prompt-text addition the branch deliberately left unbumped; orchestrator assigns .4 on landing (stacks on .3's fix/output-identity-and-dates generate-prompt tightening)
+PROMPT_VERSION = "2026-08-09.1"  # Epic A sprint A3 (feat/role-summary-drafting): NEW DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT constant + draft_experience_summaries (batched per-role intro drafting at Compose, one call for all included roles). Genuine prompt-text addition -> bumped in the same changeset per AGENTS.md "LLM prompts". Supersedes 2026-07-08.4 (SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT).
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -1238,11 +1340,27 @@ def _call_llm_streaming(
         }
         if effective_model == SONNET_MODEL:
             stream_kwargs["thinking"] = {"type": "disabled"}
+        # Inside the try (not above it) on purpose: the `finally` below still
+        # emits the one `status="error"` telemetry row a failed call has always
+        # emitted, so this changes the failure's TYPE, not its observability.
+        _assert_client_has_credential(client, call_kind)
         with client.messages.stream(**stream_kwargs) as stream:
             for delta in stream.text_stream:
                 chunks.append(delta)
                 yield delta
             final = stream.get_final_message()
+    except TypeError as exc:
+        status = "error"
+        # Backstop for SDK drift only. The pre-check above already covers every
+        # path to this message in anthropic==0.88.0; if a later SDK grows another
+        # one, re-label it here rather than 500. Narrow BY CONSTRUCTION — the
+        # message match means no ordinary TypeError (a real programming error)
+        # can be swallowed; anything else re-raises untouched.
+        if _SDK_NO_AUTH_MARKER in str(exc):
+            raise LLMConfigurationError(
+                f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}"
+            ) from exc
+        raise
     except Exception:
         status = "error"
         raise
@@ -4401,6 +4519,239 @@ Requirements missing from the resume: {missing_str or "(none)"}
     return {"proposals": proposals}
 
 
+DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT = """You are a senior resume writer drafting the ONE-LINE intro that sits under each role heading on a candidate's resume, fitted to ONE specific job. You are given every role the candidate is putting on THIS resume inside <role_targets> — each with its company, the title being used, the dates, the bullets already selected for that role (with numeric ids), and any intro variants the candidate has already written for it (with numeric ids). The target job is in <jd>, the analyst's JD breakdown in <analysis>, confirmed facts the candidate told us for THIS application in <clarifications>, and confirmed facts they told us for OTHER applications in <prior_clarifications> (D5 — the corpus is candidate-scoped, so a fact confirmed for one job is real for all of them).
+
+Your task: for EACH <role> in <role_targets>, draft ONE intro line that frames what that role WAS in the language this JD cares about. Treat each role independently — the framing that fits one role says nothing about another. Return one entry per role you can honestly draft for, and omit the rest.
+
+GROUNDING — this is the rule that matters most:
+- Every claim in an intro must trace to that ROLE's own <bullets>, that role's own <existing_intros>, <clarifications>, or <prior_clarifications>. Cite the one piece of evidence you leaned on hardest.
+- NEVER borrow evidence from a DIFFERENT role. Scope, headcount, and metrics do not travel between employers.
+- NEVER manufacture a team size, a budget, a duration, a seniority level, a technology, a customer count, or a metric the source does not state. Reframe and sharpen what is there; do not invent.
+- NEVER restate the title or the dates — the resume already prints them directly above the intro. An intro that says "Senior Platform Engineer at Acme from 2021 to 2024" wastes the only line the role gets.
+- When a role's evidence is thin, write a shorter, honest line — or omit the role entirely. Omitting is always allowed and is better than padding. The candidate reviews, edits, or rejects every draft before it reaches their resume, so precision beats recall.
+
+Style: ONE sentence, under 30 words. Third person, no pronouns, no first person. Concrete scope and domain over adjectives. No filler ("results-driven", "proven track record", "passionate about"), no buzzword stacking.
+
+Worked examples:
+  OK  (role e7 "Staff Engineer @ Acme"; bullet b12 "Migrated 40 services to Kubernetes, cutting deploy time 60%"; JD wants platform reliability):
+      {"experience_id": 7, "text": "Owned the platform migration that moved 40 production services onto Kubernetes and cut deploy time 60%.", "evidence": {"bullet_id": 12, "summary_item_id": null, "quote": "Migrated 40 services to Kubernetes, cutting deploy time 60%."}, "rationale": "The JD leads on deploy reliability at scale; this is the role's strongest deploy-reliability evidence."}
+  OK  (role e3; the candidate's own existing intro s44 reads "Ran the billing org through a replatform"; JD is fintech platform):
+      {"experience_id": 3, "text": "Ran the billing organization through a full replatform, in the payments domain this role is built around.", "evidence": {"bullet_id": null, "summary_item_id": 44, "quote": "Ran the billing org through a replatform"}, "rationale": "Reframes the candidate's own intro toward the JD's payments language without adding scope."}
+  NOT OK (borrows another role's number): role e5 has no headcount anywhere, but role e9 says "led a 12-person team" -> drafting "Led a 12-person team at <e5's company>". The headcount belongs to a different employer.
+  NOT OK (invents a metric): evidence says "improved checkout performance" -> drafting "improved checkout performance 45%". The 45% is fabricated; keep it qualitative.
+  NOT OK (restates the heading): "Senior Data Engineer at Northwind, 2019-2023, responsible for data pipelines." Adds nothing the heading does not already print.
+
+Output JSON only, this exact shape:
+{
+  "drafts": [
+    {
+      "experience_id": <int, the numeric id of the role this intro belongs to>,
+      "text": "the one-sentence role intro",
+      "evidence": {"bullet_id": <int> | null, "summary_item_id": <int> | null, "quote": "the exact source text this intro leans on"},
+      "rationale": "one sentence tying the evidence to what the JD asks for"
+    },
+    ...
+  ]
+}
+
+Return {"drafts": []} when no role has evidence you can honestly fit to this JD. Use numeric ids only (the number after the e/b/s prefix), and never emit two entries for the same experience_id."""
+
+
+def _experience_summary_targets_block(targets: list[dict[str, Any]]) -> str:
+    """XML-format the per-role drafting targets for `draft_experience_summaries`.
+
+    One ``<role>`` per included experience carrying its heading facts, the
+    bullets already selected for this resume, and the candidate's existing
+    intro variants — the three grounding sources the prompt names. Mirrors
+    ``_experience_summary_items_block`` / ``_corpus_block`` conventions
+    (numeric ids only, escaped text). Pure string builder, no LLM call.
+    """
+    from xml.sax.saxutils import escape
+
+    lines = ["<role_targets>"]
+    for t in targets:
+        try:
+            eid = int(t.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        attrs = f'id="{eid}"'
+        for name in ("company", "title"):
+            value = str(t.get(name) or "").strip()
+            if value:
+                attrs += f' {name}="{escape(value)}"'
+        span = str(t.get("span") or "").strip()
+        if span:
+            attrs += f' dates="{escape(span)}"'
+        lines.append(f"  <role {attrs}>")
+
+        lines.append("    <bullets>")
+        for b in t.get("bullets") or []:
+            if not isinstance(b, dict):
+                continue
+            text = str(b.get("text") or "").strip()
+            if not text:
+                continue
+            try:
+                bid = int(b.get("id", 0))
+            except (TypeError, ValueError):
+                continue
+            lines.append(f'      <bullet id="{bid}">{escape(text)}</bullet>')
+        lines.append("    </bullets>")
+
+        lines.append("    <existing_intros>")
+        for s in t.get("existing_intros") or []:
+            if not isinstance(s, dict):
+                continue
+            text = str(s.get("text") or "").strip()
+            if not text:
+                continue
+            try:
+                sid = int(s.get("id", 0))
+            except (TypeError, ValueError):
+                continue
+            label = str(s.get("label") or "").strip()
+            iattrs = f'id="{sid}"'
+            if label:
+                iattrs += f' label="{escape(label)}"'
+            lines.append(f"      <intro {iattrs}>{escape(text)}</intro>")
+        lines.append("    </existing_intros>")
+        lines.append("  </role>")
+    lines.append("</role_targets>")
+    return "\n".join(lines)
+
+
+def draft_experience_summaries(
+    client: anthropic.Anthropic,
+    context_set: ContextSet,
+    *,
+    username: str = "",
+    run_id: str = "",
+) -> dict[str, Any]:
+    """A3 — draft a JD-fitted one-line intro for EACH included role, BATCHED (Sonnet).
+
+    **One call for all roles, never one per role.** Per-role calls would multiply
+    cost and latency by the corpus size for a task the model does better with every
+    role in view at once (it can keep the framings distinct instead of writing the
+    same sentence N times). This mirrors `recommend_experience_summaries`'s batch
+    shape, keyed by `experience_id`; that function stays the SELECTOR over existing
+    variants and is untouched — this one AUTHORS new candidate text.
+
+    The caller stages `context_set["experience_summary_targets"]` as a list of
+    `{experience_id, company, title, span, bullets: [{id, text}],
+    existing_intros: [{id, text, label}]}` — one entry per role included in THIS
+    application's composition. The JD, analysis, clarifications and (D5) prior
+    clarifications ride on the context.
+
+    Returns::
+
+        {"drafts": [{"experience_id": int, "text": str,
+                     "evidence": {"bullet_id": int|null,
+                                  "summary_item_id": int|null, "quote": str},
+                     "rationale": str}, ...]}
+
+    Grounded in that role's OWN bullets + its own existing intro variants +
+    clarifications + prior clarifications — the same posture as the other three
+    Compose drafting calls, and `hardening.assemble_source_union` is widened to
+    the same set so the deterministic grounding metric does not report a
+    legitimately-reframed intro as fabrication. Nothing is auto-applied: each
+    draft is transient until the user explicitly keeps it, which is what creates
+    a pending `ExperienceSummaryItem`.
+
+    Short-circuits WITHOUT an LLM call when there is no JD or no staged role
+    target, so a JD-less / empty-corpus context is free. At most one draft per
+    `experience_id` survives (a duplicate second entry is dropped), and a draft
+    naming a role that was not staged is dropped — the model does not get to
+    widen its own scope.
+    """
+    if _demo_mode_active():  # F-19 — canned, no Anthropic call (grounded drafts not faked).
+        return demo_fixtures.demo_draft_experience_summaries()
+    raw_targets = context_set.get("experience_summary_targets") or []
+    targets_in = list(raw_targets) if isinstance(raw_targets, list) else []
+    targets: list[dict[str, Any]] = []
+    for t in targets_in:
+        if not isinstance(t, dict):
+            continue
+        try:
+            int(t.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        targets.append(t)
+
+    jd_value = context_set.get("jd_text", "")
+    jd_str = (str(jd_value) if jd_value else "").strip()
+    if not targets or not jd_str:
+        return {"drafts": []}
+
+    targets_block = _experience_summary_targets_block(targets)
+    analysis = context_set.get("llm_analysis") or {}
+    essential = ", ".join(analysis.get("essential_skills", []) or [])
+    preferred = ", ".join(analysis.get("preferred_skills", []) or [])
+    keywords = ", ".join(analysis.get("industry_keywords", []) or [])
+    clar = context_set.get("clarifications") or {}
+    clar_lines = (
+        [str(v).strip() for v in clar.values() if str(v).strip()] if isinstance(clar, dict) else []
+    )
+    clar_block = "\n".join(f"- {line}" for line in clar_lines) or "(none)"
+    prior_block = _prior_clarifications_block(context_set.get("prior_clarifications"))
+
+    user_prompt = f"""<task>For each role, draft ONE grounded one-sentence intro fitted to this JD (evidence or omit the role). Output JSON only.</task>
+
+{targets_block}
+
+<jd>
+{jd_str}
+</jd>
+
+<analysis>
+Essential skills the JD names: {essential or "(none surfaced)"}
+Preferred skills: {preferred or "(none)"}
+Industry keywords: {keywords or "(none)"}
+</analysis>
+
+<clarifications>
+{clar_block}
+</clarifications>
+
+<prior_clarifications>
+{prior_block}
+</prior_clarifications>"""
+
+    result = _parse_or_retry(
+        client,
+        user_prompt,
+        cached_user_prefix="",  # one-shot per application
+        response_model=DraftExperienceSummariesResponse,
+        call_kind="draft_experience_summary",
+        username=username,
+        run_id=run_id,
+        system_prompt=_resolve_system_prompt("DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT"),
+        model=SONNET_MODEL,
+    )
+    # Normalize: coerce ids, drop empties, drop drafts for roles we did not
+    # stage, and keep only the FIRST draft per role. `known` is a set so the
+    # membership test stays O(1) rather than rescanning `targets` per draft.
+    known = {int(t["experience_id"]) for t in targets}
+    drafts: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for d in result.get("drafts") or []:
+        if not isinstance(d, dict):
+            continue
+        try:
+            eid = int(d.get("experience_id"))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        text = str(d.get("text") or "").strip()
+        if not text or eid not in known or eid in seen:
+            continue
+        seen.add(eid)
+        d["experience_id"] = eid
+        d["text"] = text
+        if not isinstance(d.get("evidence"), dict):
+            d["evidence"] = {"bullet_id": None, "summary_item_id": None, "quote": ""}
+        drafts.append(d)
+    return {"drafts": drafts}
+
+
 def _current_composition_block(doc: dict[str, Any] | None) -> str:
     """Emit a compact ``<current_resume>`` block from a frozen ``approved_composition`` doc.
 
@@ -4573,6 +4924,7 @@ _BASE_SYSTEM_PROMPTS: dict[str, str] = {
     "RECOMMEND_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_SUMMARIES_SYSTEM_PROMPT,
     "DRAFT_SUMMARY_SYSTEM_PROMPT": DRAFT_SUMMARY_SYSTEM_PROMPT,
     "DRAFT_GAP_FILL_SYSTEM_PROMPT": DRAFT_GAP_FILL_SYSTEM_PROMPT,
+    "DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT": DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT,
     "RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT": RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT,
     "RECOMMEND_SKILLS_SYSTEM_PROMPT": RECOMMEND_SKILLS_SYSTEM_PROMPT,

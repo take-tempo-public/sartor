@@ -1311,6 +1311,13 @@ class TestFindContextPathForRun:
         assert app_app._find_context_path_for_run("alice", 7) is None
 
 
+# One corpus role, in the shape `db.build_context.build_context_set_from_db`
+# emits. Item 20's frozen-composition predicate reads `career_corpus` (a frozen
+# analyze-time snapshot of the candidate's ACTIVE experiences), so a test that
+# needs "the server will assemble this deterministically" has to carry one.
+_CORPUS_ROLE = {"id": 1, "company": "Acme", "titles": ["Staff Engineer"], "bullets": []}
+
+
 def _analyze_ctx(run_id, **extra):
     """Minimal post-analyze context_set payload for the #4 resume-state tests
     (the keys `_build_resume_state` reads to classify a pre-generate step)."""
@@ -1538,6 +1545,139 @@ class TestResumeState:
         assert rs["resume_md"] == "# Resume"
         assert "analysis" not in rs
         assert "has_composition" not in rs
+        assert "has_frozen_composition" not in rs
+
+    # --- item 20 (fix/wizard-rail-frozen-composition-gate): the Step-5 rail is
+    # hard-gated on a frozen composition, and `_compositionFrozen` is otherwise a
+    # session-only client flag — so a resumed application has to be TOLD whether
+    # its saved context carries an approved_composition, or Generate stays locked
+    # on a run that legitimately froze one. ---
+
+    def test_resume_state_reports_a_frozen_composition(self, app_app):
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_frozen_iter0.json",
+            _analyze_ctx(
+                rid,
+                career_corpus=[_CORPUS_ROLE],
+                composition_overrides={"pinned": [1]},
+                approved_composition={
+                    "basics": {"name": "Alice", "summary": "Platform engineer."},
+                    "work": [{"name": "Acme", "position": "Staff Engineer"}],
+                    "skills": [{"name": "Python"}],
+                },
+            ),
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["has_frozen_composition"] is True
+
+    def test_resume_state_reports_no_frozen_composition_before_the_freeze(self, app_app):
+        """Compose was reached (overrides saved by the debounced autosave) but
+        Save-and-continue never ran, so nothing was frozen. `has_composition` and
+        `has_frozen_composition` are different questions and must not collapse."""
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_unfrozen_iter0.json",
+            _analyze_ctx(rid, composition_overrides={"pinned": [1]}),
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["has_composition"] is True
+        assert rs["has_frozen_composition"] is False
+
+    def test_resume_state_frozen_flag_survives_into_a_pre_generate_step(self, app_app):
+        """The flag rides the pre-generate branch too, not only the Step-6 merge —
+        a user who froze and then navigated back resumes at Step 3 and must still
+        be able to reach Generate."""
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0)  # no generated résumé → pre-generate branch
+        _write_context_file(
+            app_app,
+            "alice",
+            "context_frozen_pregen_iter0.json",
+            _analyze_ctx(
+                rid,
+                career_corpus=[_CORPUS_ROLE],
+                composition_overrides={"pinned": [1]},
+                approved_composition={"basics": {"summary": "x"}, "work": [], "skills": []},
+            ),
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["target_step"] == 3
+        assert rs["has_frozen_composition"] is True
+
+    # --- adversarial review, finding 1 -------------------------------------
+    # `has_frozen_composition` decides whether the Step-5 rail OPENS;
+    # `blueprints.generation._frozen_composition` decides whether /api/generate
+    # actually assembles deterministically. They have to be ONE predicate. Where
+    # they disagree the rail admits a run the server then hands to the legacy
+    # full-LLM `generate()`, under Step-5 copy that claims "Assembled instantly
+    # from your approved composition ... no AI variation" — the exact claim item
+    # 20 exists to keep off a non-deterministic run.
+    #
+    # Each test below asserts the AGREEMENT, not two independent expectations, so
+    # a future change to either half fails here rather than in the field.
+
+    def test_frozen_flag_agrees_with_the_assemble_gate_on_an_empty_document(self, app_app):
+        """A freeze that produced a CONTENTLESS document (no work, no summary, no
+        skills) — e.g. every role soft-retired between analyze and Save-and-continue,
+        so `build_json_resume_from_corpus` emits nothing. `approved_composition` IS
+        a dict, but `_frozen_composition` returns None and the server runs the LLM."""
+        from blueprints.generation import _frozen_composition
+
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        ctx = _analyze_ctx(
+            rid,
+            career_corpus=[_CORPUS_ROLE],
+            composition_overrides={"pinned": []},
+            approved_composition={"basics": {"name": "Alice"}, "work": [], "skills": []},
+        )
+        _write_context_file(app_app, "alice", "context_empty_frozen_iter0.json", ctx)
+
+        assert _frozen_composition(ctx) is None, (
+            "precondition: the server refuses to assemble this document"
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["has_frozen_composition"] is False
+
+    def test_frozen_flag_agrees_with_the_assemble_gate_on_an_empty_corpus(self, app_app):
+        """A candidate with zero ACTIVE roles at analyze time: `career_corpus` is
+        `[]`, so `_frozen_composition` returns None however complete the frozen
+        document looks. This is the case the superseded decision 2 kept the weaker
+        predicate for — the rail must be closed, because the copy behind it would
+        claim determinism the server is not going to deliver."""
+        from blueprints.generation import _frozen_composition
+
+        cid = _seed_candidate()
+        aid = _seed_application(cid)
+        rid = _seed_run(aid, iteration=0, generated_resume_md="# Resume")
+        ctx = _analyze_ctx(
+            rid,
+            career_corpus=[],
+            composition_overrides={"pinned": []},
+            approved_composition={
+                "basics": {"name": "Alice", "summary": "Platform engineer."},
+                "work": [],
+                "skills": [],
+            },
+        )
+        _write_context_file(app_app, "alice", "context_nocorpus_frozen_iter0.json", ctx)
+
+        assert _frozen_composition(ctx) is None, (
+            "precondition: no career_corpus → the server refuses to assemble"
+        )
+        rs = app_app.app.test_client().get(f"/api/applications/{aid}").get_json()["resume_state"]
+        assert rs["has_frozen_composition"] is False
 
 
 class TestUpdateMeta:

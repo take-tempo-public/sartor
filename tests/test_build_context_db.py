@@ -689,6 +689,149 @@ class TestPriorClarifications:
         assert capped[0]["question"] == "q2"
 
 
+class TestExperienceSummaryItemsStaging:
+    """A3 (feat/role-summary-drafting): per-role intro variants are staged
+    DURABLY on ctx["experience_summary_items"], for the same reason
+    prior_clarifications is — `_synthesize_resume_markdown` never emits them, so
+    `hardening.assemble_source_union` cannot see this real corpus text otherwise
+    and reports a chosen-or-reframed intro as fabrication."""
+
+    def test_empty_when_no_variants_exist(self, db_session):
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_no_intros",
+        )
+        assert ctx["experience_summary_items"] == []
+
+    def test_active_variants_are_grouped_by_role_in_corpus_order(self, db_session):
+        from db.models import ExperienceSummaryItem
+
+        c = _seed_full_candidate(db_session)
+        exps = (
+            db_session.query(Experience)
+            .filter_by(candidate_id=c.id)
+            .order_by(Experience.start_date.desc(), Experience.id)
+            .all()
+        )
+        assert len(exps) >= 2, "fixture must have at least two roles for the ordering assertion"
+        db_session.add_all(
+            [
+                ExperienceSummaryItem(
+                    experience_id=exps[0].id,
+                    text="Ran the platform group.",
+                    label="scale framing",
+                    display_order=0,
+                    is_active=1,
+                    is_pending_review=0,
+                    source="manual",
+                    has_outcome=0,
+                ),
+                ExperienceSummaryItem(
+                    experience_id=exps[0].id,
+                    text="Retired framing.",
+                    display_order=1,
+                    is_active=0,  # retired -> excluded
+                    is_pending_review=0,
+                    source="manual",
+                    has_outcome=0,
+                ),
+                ExperienceSummaryItem(
+                    experience_id=exps[1].id,
+                    text="Built the first CI system.",
+                    display_order=0,
+                    is_active=1,
+                    is_pending_review=0,
+                    source="manual",
+                    has_outcome=0,
+                ),
+            ]
+        )
+        db_session.commit()
+
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_with_intros",
+        )
+        groups = ctx["experience_summary_items"]
+        assert [g["experience_id"] for g in groups] == [exps[0].id, exps[1].id]
+        assert [i["text"] for i in groups[0]["items"]] == ["Ran the platform group."]
+        assert groups[0]["items"][0]["label"] == "scale framing"
+        assert [i["text"] for i in groups[1]["items"]] == ["Built the first CI system."]
+
+    def test_pending_variant_excluded(self, db_session):
+        """A3 close-out (blast-radius D5, adversarial-review finding): a
+        kept-but-unreviewed (is_pending_review=1) variant is never staged into
+        the grounding union at run-creation time — there is no "accepted for
+        this run" set yet at this point in the flow, so only APPROVED
+        (is_pending_review=0) variants are eligible. Otherwise an unreviewed
+        draft from a DIFFERENT application (or an earlier, not-yet-reviewed
+        draft on this same candidate) would be laundered into the
+        anti-fabrication grounding source for a run that never accepted it."""
+        from db.models import ExperienceSummaryItem
+
+        c = _seed_full_candidate(db_session)
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).first()
+        db_session.add(
+            ExperienceSummaryItem(
+                experience_id=exp.id,
+                text="Unreviewed pending intro.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=1,
+                source="llm_proposed",
+                has_outcome=0,
+            )
+        )
+        db_session.commit()
+
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_pending_excluded",
+        )
+        assert ctx["experience_summary_items"] == []
+
+    def test_the_union_actually_sees_them(self, db_session):
+        """The point of staging is the metric, so assert the whole path, not just
+        the staging step — a key nothing reads would be dead weight."""
+        from db.models import ExperienceSummaryItem
+        from hardening import assemble_source_union
+
+        c = _seed_full_candidate(db_session)
+        exp = db_session.query(Experience).filter_by(candidate_id=c.id).first()
+        db_session.add(
+            ExperienceSummaryItem(
+                experience_id=exp.id,
+                text="Ran a platform group of 12 across three products.",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            )
+        )
+        db_session.commit()
+
+        ctx, _app, _run = build_context_set_from_db(
+            db_session,
+            candidate_username="casey",
+            jd_text="x",
+            run_id="run_union",
+        )
+        union = assemble_source_union(ctx)
+        assert "Ran a platform group of 12 across three products." in union
+        # And it is NOT already reachable via resume.text — if it were, this whole
+        # widening would be redundant. This is the falsifier for the change.
+        assert "Ran a platform group of 12" not in ctx["resume"]["text"]
+
+
 # ---------------------------------------------------------------------------
 # Phase B.2: structured career_corpus payload
 # ---------------------------------------------------------------------------

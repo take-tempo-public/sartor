@@ -65,7 +65,7 @@ _SCAN_EXCLUDE_PARTS = frozenset(
 )
 
 # The complete, reviewed inventory of `call_kind="<literal>"` keyword arguments in
-# production code, repo-wide, as of this branch — 20 distinct literals across 23 call
+# production code, repo-wide, as of this branch — 21 distinct literals across 24 call
 # sites (analyze_extraction / analyze_synthesis / generate each fire from two branches
 # of their own function; every other literal has one call site). A call kind added
 # later fails this test until someone deliberately updates this set — and, if it's
@@ -90,6 +90,7 @@ EXPECTED_CALL_KINDS = frozenset(
         "promote_clarification_to_bullet",
         "draft_summary",
         "draft_gap_fill",
+        "draft_experience_summary",
         "draft_surgical_refinement",
         "extract_experiences",
     }
@@ -344,6 +345,39 @@ class TestNeverLoggedKindsEmitTelemetry:
         assert [p["name"] for p in result["proposals"]] == ["Terraform"]
         assert len(_telemetry) == 1
         _assert_priced_ok_row(_telemetry[0], call_kind="suggest_skill_from_corpus")
+
+    def test_draft_experience_summary_emits_telemetry_row(self, _telemetry):
+        """A3 — a call kind added on `feat/role-summary-drafting`. It is a
+        never-logged kind BY CONSTRUCTION (it did not exist until this branch),
+        which is exactly the class this test file was built to keep instrumented:
+        the four legs of the new-call-kind checklist are only real if the funnel
+        is proven, not assumed."""
+        from analyzer import draft_experience_summaries
+
+        client = _QueuedFakeClient(
+            '{"drafts": [{"experience_id": 5, "text": "Owned the platform migration.", '
+            '"evidence": {"bullet_id": 12, "summary_item_id": null, "quote": "Migrated 40 '
+            'services."}, "rationale": "closest to the JD"}]}'
+        )
+        ctx = {
+            "jd_text": "Senior platform engineer, reliability at scale.",
+            "experience_summary_targets": [
+                {
+                    "experience_id": 5,
+                    "company": "Acme",
+                    "title": "Staff Engineer",
+                    "span": "2021-01–present",
+                    "bullets": [{"id": 12, "text": "Migrated 40 services."}],
+                    "existing_intros": [],
+                }
+            ],
+        }
+
+        result = draft_experience_summaries(client, ctx)
+
+        assert result["drafts"][0]["experience_id"] == 5
+        assert len(_telemetry) == 1
+        _assert_priced_ok_row(_telemetry[0], call_kind="draft_experience_summary")
 
     def test_promote_clarification_to_bullet_emits_telemetry_row(self, _telemetry):
         from analyzer import promote_clarification_to_bullet

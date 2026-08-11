@@ -20,11 +20,13 @@
 - [`pages/project-self-assessment.md`](pages/project-self-assessment.md) — the Q5
   state-of-the-work: strengths, watch-outs, ambiguous calls, with presentation flags.
 - [`pages/consistency-tracks-enforcement.md`](pages/consistency-tracks-enforcement.md) —
-  the Q2 finding: the code is consistent exactly where a hook or linter enforces it.
+  the Q2 finding: the code is consistent exactly where a hook or linter enforces it;
+  plus how it became charter clause C-11, and the named Claude-Code-only reach gap.
 - [`pages/non-dependency-downloads.md`](pages/non-dependency-downloads.md) — the Q3
   provenance of everything `pip install` does not hand you (the eval-stack input).
 - [`pages/engineering-workstreams.md`](pages/engineering-workstreams.md) — the WS-1…WS-4
-  backlog (blueprints · strict typing · test-suite pass · the wiki) + phase mapping.
+  backlog (blueprints · strict typing · test-suite pass · the wiki) + phase mapping;
+  and what it became — the v1.1.0 Final March epics A–E.
 - [`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) — why this wiki is shaped as it
   is (the WS-4 design rationale; defers to [`SCHEMA.md`](SCHEMA.md) for the conventions).
 - [`pages/governance-extraction.md`](pages/governance-extraction.md) — the
@@ -47,7 +49,7 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/iteration-audit-chain.md`](pages/iteration-audit-chain.md) — per-generate
   child context files; `parent_context_path` as the immutable audit trail.
 - [`pages/corpus-data-model.md`](pages/corpus-data-model.md) — the SQLite corpus schema
-  + the unified Corpus-Item lifecycle; alembic head 0010.
+  + the unified Corpus-Item lifecycle; alembic head 0016.
 - [`pages/corpus-to-output-reach.md`](pages/corpus-to-output-reach.md) — how curation
   reaches the deliverable: JSON-Resume build + the `composition_overrides` shape.
 - [`pages/application-audit-chain.md`](pages/application-audit-chain.md) — the per-apply
@@ -61,11 +63,13 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/route-surface.md`](pages/route-surface.md) — the `app.py` Flask routes, the
   security gate, and the B.4/B.5 corpus-completer routes.
 - [`pages/frontend-wizard.md`](pages/frontend-wizard.md) — the six-step wizard, the
-  Compose cards, the live preview, and smart landing.
+  Compose cards + the "Composing…" wait gate, the live preview, smart landing, and
+  the corpus panel's section order.
 - [`pages/document-rendering.md`](pages/document-rendering.md) — the deterministic
   markdown → JSON-Resume → docx/pdf/md render path.
 - [`pages/eval-harness.md`](pages/eval-harness.md) — the offline eval system: suites,
-  rubric judges, baseline/anchors, bootstrap, prompt-override A/B.
+  rubric judges, baseline/anchors, bootstrap, prompt-override A/B, the F-14 `jd_label`,
+  and annotation-pin integrity.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
   `/_dashboard` console + the SSE eval/tune/annotation loop; disconnect-as-cancel run
   cancellation.

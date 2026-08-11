@@ -32,7 +32,7 @@ from playwright.sync_api import Page
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from ui_pages import BasePage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Header, PriorApps, TopTabs, UserPicker
+from ui_pages.selectors import Header, TopTabs, UserPicker, Wizard
 
 
 @pytest.mark.ux
@@ -45,9 +45,12 @@ def test_wordmark_routes_home(page: Page, live_server: str, ux_app: ModuleType) 
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
-    # A user is selected → the applications panel is up. Move off the default
+    # A user is selected → the wizard's Step-1 JD-entry panel is up (A4,
+    # feat/prior-apps-pipeline: this used to check the now-removed Applications
+    # panel; Wizard.JD_TEXT is hidden/shown by the same hideAllPanels()/
+    # wizardInit() pair panelApplications used to be). Move off the default
     # tab so "home" has a tab to restore, not just a user to deselect.
-    page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
+    page.wait_for_selector(Wizard.JD_TEXT, state="visible", timeout=DEFAULT_TIMEOUT_MS)
     page.click(TopTabs.CORPUS)
 
     # Click the wordmark — the home route.
@@ -64,4 +67,4 @@ def test_wordmark_routes_home(page: Page, live_server: str, ux_app: ModuleType) 
     assert panel.is_visible()
     assert "not-collapsible" in (panel.get_attribute("class") or "")
     # The flow panel that was up while a user was selected is gone.
-    assert page.locator(PriorApps.PANEL).is_hidden()
+    assert page.locator(Wizard.JD_TEXT).is_hidden()

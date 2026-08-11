@@ -1,0 +1,217 @@
+{
+  "seed_schema_version": 1,
+  "generator": "hand-authored synthetic fixture (evals/fixtures/synthetic/corpus/role-summary-drafting)",
+  "exported_at": "2026-08-09T00:00:00Z",
+  "candidate_username": "syn_roleintro",
+  "candidate": {
+    "username": "syn_roleintro",
+    "name": "Morgan Reyes",
+    "email": "morgan@example.invalid",
+    "phone": "555-0113",
+    "linkedin_url": null,
+    "website_url": null,
+    "notes": null,
+    "profile_text": "Platform engineer who works on deploy reliability and developer tooling."
+  },
+  "tags": [],
+  "experiences": [
+    {
+      "id": 101,
+      "company": "Meridian Freight",
+      "location": "Remote",
+      "start_date": "2022-03",
+      "end_date": null,
+      "display_order": 0,
+      "summary": null,
+      "is_active": true,
+      "titles": [
+        {
+          "id": 201,
+          "title": "Staff Platform Engineer",
+          "is_official": true,
+          "truthful_enough_to_use": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": []
+        }
+      ],
+      "bullets": [
+        {
+          "id": 301,
+          "text": "Migrated 40 production services from bespoke VMs to Kubernetes, cutting median deploy time from 22 minutes to 9.",
+          "display_order": 0,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "xyz",
+          "has_outcome": true,
+          "tag_links": []
+        },
+        {
+          "id": 302,
+          "text": "Built the platform team's first golden-path service template, adopted by 6 of 8 product teams within two quarters.",
+          "display_order": 1,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "car",
+          "has_outcome": true,
+          "tag_links": []
+        },
+        {
+          "id": 303,
+          "text": "Ran the incident review process for the platform org and drove the runbook rewrite that followed.",
+          "display_order": 2,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "manual",
+          "has_outcome": false,
+          "tag_links": []
+        }
+      ],
+      "summary_items": [
+        {
+          "id": 401,
+          "text": "Platform engineer on the team that owns deploys, service templates and incident review.",
+          "label": "generalist framing",
+          "display_order": 0,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "manual",
+          "has_outcome": false
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "company": "Calder Analytics",
+      "location": "Chicago, IL",
+      "start_date": "2019-06",
+      "end_date": "2022-02",
+      "display_order": 1,
+      "summary": null,
+      "is_active": true,
+      "titles": [
+        {
+          "id": 202,
+          "title": "Senior Software Engineer",
+          "is_official": true,
+          "truthful_enough_to_use": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": []
+        }
+      ],
+      "bullets": [
+        {
+          "id": 304,
+          "text": "Replaced a nightly batch export with a streaming pipeline, dropping data freshness lag from 18 hours to under 5 minutes.",
+          "display_order": 0,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "xyz",
+          "has_outcome": true,
+          "tag_links": []
+        },
+        {
+          "id": 305,
+          "text": "Owned the on-call rotation for the ingestion service across a team of five engineers.",
+          "display_order": 1,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "manual",
+          "has_outcome": false,
+          "tag_links": []
+        }
+      ],
+      "summary_items": []
+    },
+    {
+      "id": 103,
+      "company": "Hollis & Co",
+      "location": "Chicago, IL",
+      "start_date": "2016-08",
+      "end_date": "2019-05",
+      "display_order": 2,
+      "summary": null,
+      "is_active": true,
+      "titles": [
+        {
+          "id": 203,
+          "title": "Software Engineer",
+          "is_official": true,
+          "truthful_enough_to_use": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": []
+        }
+      ],
+      "bullets": [
+        {
+          "id": 306,
+          "text": "Wrote the internal reporting service used by the finance and operations teams.",
+          "display_order": 0,
+          "is_active": true,
+          "is_pending_review": false,
+          "source": "primary:resume.md",
+          "pattern_kind": "manual",
+          "has_outcome": false,
+          "tag_links": []
+        }
+      ],
+      "summary_items": []
+    }
+  ],
+  "summary_items": [
+    {
+      "id": 501,
+      "text": "Platform engineer focused on deploy reliability and the developer experience around it.",
+      "label": "default",
+      "display_order": 0,
+      "is_active": true,
+      "is_pending_review": false,
+      "source": "manual",
+      "has_outcome": false,
+      "tag_links": []
+    }
+  ],
+  "skills": [
+    {
+      "id": 601,
+      "name": "Kubernetes",
+      "category": "platform",
+      "display_order": 0,
+      "is_active": true,
+      "is_pending_review": false,
+      "source": "imported",
+      "tag_links": []
+    },
+    {
+      "id": 602,
+      "name": "Python",
+      "category": "language",
+      "display_order": 1,
+      "is_active": true,
+      "is_pending_review": false,
+      "source": "imported",
+      "tag_links": []
+    }
+  ],
+  "educations": [
+    {
+      "id": 701,
+      "institution": "University of Illinois",
+      "degree": "BS",
+      "area": "Computer Science",
+      "study_type": null,
+      "start_date": "2012-08",
+      "end_date": "2016-05",
+      "display_order": 0,
+      "is_active": true
+    }
+  ],
+  "certifications": []
+}

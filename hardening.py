@@ -283,6 +283,31 @@ class ContextSet(_ContextSetRequired, total=False):
     # access. Absent on legacy (file-based) contexts — the default path (and
     # --suite synthetic) stay byte-identical. total=False.
     prior_clarifications: list[PriorClarification]
+    # A3 (feat/role-summary-drafting): the candidate's ACTIVE per-role intro
+    # variants (ExperienceSummaryItem rows), grouped by experience. Staged
+    # durably at context-build time (db.build_context.build_context_set_from_db,
+    # corpus-mode only) for the same reason prior_clarifications is: it is
+    # legitimate grounding source material that does NOT appear in the
+    # synthesized `resume.text` (_synthesize_resume_markdown emits titles +
+    # bullets + skills + education + certifications, never intro variants), so
+    # a metric scored without it reports a chosen-or-reworked role intro as
+    # fabrication. Read by assemble_source_union below and by
+    # analyzer.recommend_experience_summaries / draft_experience_summaries,
+    # which the /recommend-experience-summaries + /draft-experience-summaries
+    # routes ALSO stage transiently with a fresher DB read (the route copy wins
+    # in-memory; the durable copy is what survives to disk). Absent on legacy
+    # file-based contexts. Element shape:
+    #   {"experience_id": int, "company": str,
+    #    "items": [{"id": int, "text": str, "label": str|None,
+    #               "has_outcome": bool}, ...]}
+    # Typed `list[Any]`, deliberately, and NOT as a nested TypedDict: this value
+    # is read back off JSON on disk (or staged by a route), so every consumer
+    # defensively isinstance-checks each element before touching it. A precise
+    # element type would make mypy declare those live runtime guards
+    # `unreachable` — which is a type-checker artifact, not a fact about the
+    # data — and would ALSO break list-invariance against the
+    # `list[dict[str, Any]]` the routes build. total=False.
+    experience_summary_items: list[Any]
 
 
 # Common English stop words to exclude from keyword extraction
@@ -1799,6 +1824,67 @@ def save_context_set(context_set: ContextSet, username: str, base_dir: str = "ou
     return str(path)
 
 
+def frozen_composition_doc(context_set: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the frozen ``approved_composition`` doc a context will ASSEMBLE from, else None.
+
+    **The single definition of "this context is frozen."** Generation-experience
+    re-architecture Phase 4 made this the deterministic-assemble gate; it lives here,
+    in the module that owns the ``ContextSet`` contract, because more than one seam
+    has to ask the question and they must not answer it differently:
+
+    - ``blueprints/generation.py::_frozen_composition`` — decides whether
+      ``/api/generate`` assembles deterministically or falls through to the legacy
+      full-LLM ``generate()``.
+    - ``blueprints/applications.py::_pre_generate_hydration`` (``has_frozen_composition``)
+      and the ``/composition`` freeze response's ``frozen`` field — together decide
+      whether the Step-5 wizard rail OPENS (``_wizardReachable`` in static/app.js).
+
+    Neither of those seams could host it. ``blueprints/applications.py`` cannot import
+    ``blueprints/generation.py``: ``generation`` imports ``blueprints.templates``, which
+    imports ``blueprints.applications``, so the reverse edge would close an import cycle.
+    ``hardening`` imports no blueprint at all and both already import it, so it is the
+    only shared home that costs nothing structurally.
+
+    Those two were separate implementations of "frozen" for one sprint and disagreed:
+    the client's asked only "is there an ``approved_composition`` dict?", so a freeze
+    that produced a CONTENTLESS document (or a context whose analyze-time
+    ``career_corpus`` snapshot is empty) opened the rail onto Step-5 copy claiming
+    "Assembled instantly … no AI variation" over a run the server then handed to the
+    LLM. Adding a second copy of this predicate is how that recurs — call this.
+
+    Present ONLY when all three hold:
+
+    1. the context is corpus-mode (``career_corpus`` non-empty) — a legacy file-based
+       context, or a candidate with zero ACTIVE roles at analyze time, has none;
+    2. ``approved_composition`` is a dict — Compose's Save-and-continue (freeze) wrote
+       one; the debounced autosave never does;
+    3. that document has CONTENT — any of ``work`` / ``basics.summary`` / ``skills``.
+
+    Otherwise None, and the caller falls through to the UNCHANGED ``generate()`` LLM
+    path, so legacy + ``--suite synthetic`` stay byte-identical.
+
+    Deterministic and allocation-free: at most six ``dict.get`` lookups on an
+    already-loaded dict, short-circuiting on the first miss, and the document is
+    returned BY REFERENCE — no copy, no traversal of ``work``/``skills`` beyond a
+    truthiness test. Cheap enough to call on every resume-state build and on every
+    composition save, which is why the fix is "call this from all three seams" rather
+    than "cache the answer somewhere".
+
+    Args:
+        context_set: A loaded context dict (a ``ContextSet`` or the plain ``json.loads``
+            of a ``context_*.json`` — both are read by key only).
+    """
+    if not context_set.get("career_corpus"):
+        return None
+    doc = context_set.get("approved_composition")
+    if not isinstance(doc, dict):
+        return None
+    basics = doc.get("basics")
+    summary = basics.get("summary") if isinstance(basics, dict) else None
+    has_content = bool(doc.get("work") or summary or doc.get("skills"))
+    return doc if has_content else None
+
+
 def summarize_recent_edits(context_set: ContextSet) -> str:
     """Compact text summary of what the candidate edited since last generation.
 
@@ -1855,6 +1941,19 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
     it over-reports legitimately-reused facts as fabrication. Returned as a
     list of raw text blocks (empty entries skipped).
 
+    A3 (feat/role-summary-drafting) adds a FIFTH source for the same reason:
+    the candidate's own per-role intro variants
+    (`context_set["experience_summary_items"]`). These are real, candidate-owned
+    corpus text, but they are NOT part of the synthesized `resume.text` in
+    corpus mode (`db.build_context._synthesize_resume_markdown` emits titles,
+    bullets, skills, education and certifications — never intro variants), so
+    without this a role intro the candidate already wrote, or a
+    `draft_experience_summaries` reframing of one, scores as fabricated.
+    Widened here because `draft_experience_summaries` is shown these variants
+    as grounding material, and the prompt-side and metric-side source sets must
+    not diverge. Absent on legacy file-based contexts -> the union is unchanged
+    and `--suite synthetic` stays byte-identical.
+
     This is the single source-union definition, shared by
     compute_iteration_signals (the iteration clarifier) and the eval-time L0
     fabricated-specifics check, so the two can never score against divergent
@@ -1880,6 +1979,17 @@ def assemble_source_union(context_set: ContextSet) -> list[str]:
         prior_ans = prior.get("answer") if isinstance(prior, dict) else None
         if prior_ans:
             source_texts.append(str(prior_ans))
+    # A3: per-role intro variants. One pass over an already-materialized list —
+    # no re-scan, no DB access (this module is deterministic, C-6).
+    for group in context_set.get("experience_summary_items") or []:
+        if not isinstance(group, dict):
+            continue
+        for variant in group.get("items") or []:
+            if not isinstance(variant, dict):
+                continue
+            variant_text = str(variant.get("text") or "").strip()
+            if variant_text:
+                source_texts.append(variant_text)
     return source_texts
 
 

@@ -70,6 +70,7 @@ from hardening import (
     ContextSet,
     compute_date_grounding,
     context_transaction,
+    frozen_composition_doc,
     save_iteration_context,
 )
 from web_infra import (
@@ -786,22 +787,20 @@ def save_edits() -> ResponseReturnValue:
 def _frozen_composition(context_set: ContextSet) -> dict[str, Any] | None:
     """Return the frozen ``approved_composition`` doc for a corpus context, else None.
 
-    Generation-experience re-architecture Phase 4 — the deterministic-assemble gate.
-    Present ONLY when Compose has frozen an approved_composition (Save-and-continue)
-    AND this is a corpus context (``career_corpus``). A corpus context that predates
-    the freeze, or any legacy file-based context (no ``career_corpus``), returns None
-    and falls through to the UNCHANGED generate() LLM path — so legacy + --suite
-    synthetic stay byte-identical.
+    Generation-experience re-architecture Phase 4 — the deterministic-assemble gate,
+    and this module's name for it. The predicate itself is
+    ``hardening.frozen_composition_doc``, which is also what decides whether the
+    Step-5 wizard rail opens (`blueprints/applications.py::_pre_generate_hydration`
+    and the ``/composition`` freeze response). Item 20's adversarial review: those
+    were two implementations that disagreed, so the rail admitted runs this function
+    then refused — under copy claiming determinism. ONE predicate, ONE implementation;
+    the reasons for each of its three conditions live on it, not here.
+
+    Kept as a named wrapper rather than an import alias because it is a documented
+    seam of this module: ``evals/runner.py`` imports it by this name alongside
+    ``_assemble_from_frozen_composition``, and the two belong together.
     """
-    if not context_set.get("career_corpus"):
-        return None
-    doc = context_set.get("approved_composition")
-    if not isinstance(doc, dict):
-        return None
-    basics = doc.get("basics")
-    summary = basics.get("summary") if isinstance(basics, dict) else None
-    has_content = bool(doc.get("work") or summary or doc.get("skills"))
-    return doc if has_content else None
+    return frozen_composition_doc(context_set)
 
 
 def _assemble_from_frozen_composition(
