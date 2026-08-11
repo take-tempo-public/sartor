@@ -3,9 +3,8 @@ schema = 1
 id = 84
 kind = "item"
 title = "Build the N=1 baseline of the proposed chain-orchestration pipeline, pending owner authorization"
-status = "blocked"
+status = "open"
 decision_owner = "user"
-blocked_on = "owner decision on §16.7 of docs/dev/epic-a-chain-design-corrections.md -- whether to pursue this design at all, and if so, whether to authorize the N=1 baseline as the first concrete step"
 refs = [
   "docs/dev/epic-a-chain-design-corrections.md",
 ]
@@ -31,6 +30,21 @@ envelope. This item exists to make the next concrete build step legible and
 trackable once authorized, not to authorize it.
 
 ## Updates
+
+### 2026-08-11 — owner resolved §16.7: pursue the design; N=1 baseline authorized
+
+The owner answered §16.7's decision points in-session (branch
+`fix/retired-roles-a3-prompt`, asked directly per the pre-Epic-B handoff's
+"First move" step 3): **(1) pursue the C+drift design** rather than shelving
+it as reference material, and **(2) the N=1 baseline build is authorized** as
+the next concrete step. Status flips `blocked` → `open` accordingly. Decision
+point (3) is unchanged — nothing here widens N past 1, retires or merges
+`AGENT_HANDOFF_TEMPLATE.md`, builds the ledger extension (§16.5.2.2), or
+resumes any Epic B chain under the old §11 envelope; each stays its own
+later, owner-gated decision. Building the pipeline is a full-session piece of
+work and was NOT taken on this branch (this session's one branch is item 75's
+fix, per the one-branch-per-session rule) — it is the natural next-session
+candidate.
 
 ### 2026-08-11 — filed during the pre-Epic-B robustness design pass
 

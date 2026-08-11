@@ -163,9 +163,18 @@ def run(fixture: str = DEFAULT_FIXTURE, *, dry_run: bool = False) -> dict[str, A
 
         # Reuse the ROUTE's own target builder rather than reimplementing it —
         # a probe that stages its inputs differently from production measures a
-        # prompt production never sends.
+        # prompt production never sends. That includes the live is_active
+        # intersection (item 75), staged here exactly as the route stages it.
+        from db.models import Experience
+
         intros_by_exp = _active_intros_by_experience(session, application.candidate_id)
-        targets = _build_experience_summary_targets(ctx, intros_by_exp)
+        active_exp_ids = {
+            row[0]
+            for row in session.query(Experience.id).filter_by(
+                candidate_id=application.candidate_id, is_active=1
+            )
+        }
+        targets = _build_experience_summary_targets(ctx, intros_by_exp, active_exp_ids)
         ctx["experience_summary_targets"] = targets
         ctx["jd_text"] = jd_text
 

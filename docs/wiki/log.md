@@ -1705,3 +1705,22 @@ explicit "RELEASE_ARC is authoritative and moves — re-check it, not this page"
 list** (a bullet count, a named existing rule) that this addition would make stale — it is a
 pure addition, and every existing pointer/claim on all three pages remains accurate. No page
 edit needed; confirmed by reading, not assumed from the pointer pattern.
+
+## 2026-08-11 — verified no-edit (`fix/retired-roles-a3-prompt`)
+
+**Scoped check, not a diff-window pass — `.last_ingest_sha` NOT advanced.** The branch's
+close-out sweep found two wiki-relevant changed files per
+`scripts.wiki_relevance.is_wiki_relevant()`: `blueprints/applications.py` and
+`evals/corpus_drafting_probe.py` (item 75 — `_build_experience_summary_targets` now takes
+a live `active_exp_ids` set from both consumers, so a role soft-retired after analyze
+never reaches the A3 drafting prompt off its frozen bullets).
+
+**Checked every page citing the changed symbols** (`draft_experience_summaries` /
+`corpus_drafting_probe` — [[corpus-to-output-reach]], [[context-set-contract]],
+[[eval-harness]], [[generation-and-grounding]], [[llm-call-catalog]],
+[[prompt-version-discipline]]): every claim describes behavior the fix does not change —
+the batched one-call shape, the transient-drafts contract, the probe's reuse of the
+route's own target builder (still true; it now also stages the identical live filter),
+and prompt/caching facts. The "every included role" phrasing on
+[[corpus-to-output-reach]] becomes strictly MORE accurate, not stale. No page edit
+needed; confirmed by reading each citation's surrounding claim, not assumed from titles.

@@ -3,13 +3,19 @@ schema = 1
 id = 75
 kind = "item"
 title = "Retired roles reach the A3 draft_experience_summaries prompt -- frozen snapshot never intersected against live is_active"
-status = "watching"
+status = "closed"
 decision_owner = "agent"
+branches = ["fix/retired-roles-a3-prompt"]
 refs = [
   "blueprints/applications.py",
   "db/build_context.py",
   "corpus_to_json_resume.py",
+  "evals/corpus_drafting_probe.py",
 ]
+verified_by = [
+  "tests/test_draft_experience_summaries.py::TestDraftExperienceSummariesRoute::test_retired_role_never_reaches_the_draft_prompt",
+]
+resolution = "Both consumers of _build_experience_summary_targets (the A3 route and evals/corpus_drafting_probe.py) now pass a live active_exp_ids set (same query shape as the gap-fill lane's cand_exp_ids); the helper skips frozen-snapshot roles not in it, and the 'mirrors exactly' docstring was fixed in the same change, never alone. Diagnosis: docs/dev/diagnosis/retired-roles-a3-prompt.md."
 summary = "_build_experience_summary_targets reads the frozen snapshot, not live is_active -- a retired role can reach Sonnet."
 ```
 
@@ -70,6 +76,19 @@ frozen `career_corpus` snapshot whose id is not in that set, before the
 `if not bullets and not existing_intros: continue` check runs.
 
 ## Updates
+
+### 2026-08-11 -- fixed on `fix/retired-roles-a3-prompt` (C-7 reproduction first)
+
+Reproduction written and observed failing on HEAD `7a6d8e7` BEFORE the fix
+("retired role 2 reached the draft targets: [1, 2]" -- full fenced run in the
+diagnosis dossier). Fix is the candidate shape the filing sketched: the route
+queries live active experience ids (ids-only, mirroring `cand_exp_ids`) and
+the helper drops frozen-snapshot roles not in the set, before the
+bullets/intros omission rule runs. One consumer the filing did not name was
+found by the gate's mypy step: `evals/corpus_drafting_probe.py` imports the
+route's helper for production-identical staging and now applies the same
+intersection. Docstring corrected in the same change per this item's own
+"never alone" rule.
 
 ### 2026-08-10 -- filed at `feat/prior-apps-pipeline` close-out (final Epic A adversarial review)
 

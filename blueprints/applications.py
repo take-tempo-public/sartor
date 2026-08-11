@@ -2697,7 +2697,9 @@ def gap_fill_decide(application_id: int) -> ResponseReturnValue:
 
 
 def _build_experience_summary_targets(
-    ctx: dict[str, Any], intros_by_exp: dict[int, list[dict[str, Any]]]
+    ctx: dict[str, Any],
+    intros_by_exp: dict[int, list[dict[str, Any]]],
+    active_exp_ids: set[int],
 ) -> list[dict[str, Any]]:
     """Build `experience_summary_targets` from an ALREADY-LOADED context dict.
 
@@ -2706,8 +2708,14 @@ def _build_experience_summary_targets(
     role's heading facts, the bullets currently selected for it, and the intro
     variants the candidate has already written for it.
 
+    Only roles in `active_exp_ids` (live `Experience.is_active`, queried by the
+    caller — the same live filter the gap-fill lane's `cand_exp_ids` applies)
+    are eligible: the frozen `career_corpus` snapshot outlives soft-retirement,
+    so a role retired after analyze must be dropped here or its frozen bullets
+    would carry it to the drafting prompt (item 75).
+
     The effective-bullet rule mirrors
-    `corpus_to_json_resume.build_json_resume_from_corpus` exactly —
+    `corpus_to_json_resume.build_json_resume_from_corpus` —
     ``(recommended ∪ pinned ∪ added ∪ accepted_generated) − excluded`` when a
     recommendation exists for that role, else all-active minus excluded — so a
     drafted intro is grounded in the bullets that will actually sit under it.
@@ -2771,6 +2779,8 @@ def _build_experience_summary_targets(
         try:
             eid = int(exp.get("id"))  # type: ignore[arg-type]
         except (TypeError, ValueError):
+            continue
+        if eid not in active_exp_ids:
             continue
         rec_ids = rec_by_exp.get(eid)
         bullets: list[dict[str, Any]] = []
@@ -2918,7 +2928,17 @@ def draft_application_experience_summaries(application_id: int) -> ResponseRetur
             return jsonify({"error": "context_path does not match application"}), 400
 
         intros_by_exp = _active_intros_by_experience(session, candidate.id)
-        targets = _build_experience_summary_targets(ctx, intros_by_exp)
+        # Live is_active intersection (item 75) — same query shape as the
+        # gap-fill lane's cand_exp_ids, ids-only since that's all the filter needs.
+        from db.models import Experience
+
+        active_exp_ids = {
+            row[0]
+            for row in session.query(Experience.id).filter_by(
+                candidate_id=candidate.id, is_active=1
+            )
+        }
+        targets = _build_experience_summary_targets(ctx, intros_by_exp, active_exp_ids)
 
         # Stage transient inputs for the LLM call; the fresh in-lock write below
         # never carries them to disk.

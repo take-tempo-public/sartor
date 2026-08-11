@@ -520,6 +520,42 @@ class TestDraftExperienceSummariesRoute:
         # e2 has no recommendation at all -> the all-active fallback applies.
         assert [b["id"] for b in by_id[s.e2]["bullets"]] == [s.b2]
 
+    def test_retired_role_never_reaches_the_draft_prompt(self, intro_app):
+        """Item 75: a role soft-retired AFTER analyze must not be staged as a
+        draft target — the frozen `career_corpus` snapshot still carries its
+        bullets, and bullets alone must not carry a retired role to Sonnet.
+        Mirrors the live `is_active` filter the gap-fill lane already applies
+        (`cand_exp_ids`)."""
+        _app, output_dir = intro_app
+        s = _seed_intro(output_dir)
+
+        from db.models import Experience
+        from db.session import get_session
+
+        session = get_session()
+        try:
+            session.query(Experience).filter_by(id=s.e2).update({"is_active": 0})
+            session.commit()
+        finally:
+            session.close()
+
+        seen: dict = {}
+
+        def _stub(client, context_set, *, username="", run_id=""):
+            seen["targets"] = context_set.get("experience_summary_targets")
+            return {"drafts": []}
+
+        with patch("analyzer.draft_experience_summaries", _stub):
+            r = _app.app.test_client().post(
+                f"/api/applications/{s.aid}/draft-experience-summaries",
+                json={"context_path": s.ctx_path},
+            )
+        assert r.status_code == 200, r.get_data(as_text=True)
+        staged = [t["experience_id"] for t in seen["targets"]]
+        assert s.e2 not in staged, f"retired role {s.e2} reached the draft targets: {staged}"
+        # The still-active role is unaffected by the filter.
+        assert staged == [s.e1]
+
     def test_404_unknown_application(self, intro_app):
         _app, _output_dir = intro_app
         r = _app.app.test_client().post(
