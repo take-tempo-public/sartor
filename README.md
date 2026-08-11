@@ -1,9 +1,5 @@
 # Sartor
 
-*(Formerly named **Callback** — renamed in July 2026 to avoid confusion with the
-recruiting term "callback" [getting called back for an interview]. Same project,
-new name; see [`CHANGELOG.md`](CHANGELOG.md) for the rename record.)*
-
 > **Purpose:** the product front door — what Sartor is, who it's for, and where to go deeper. Also the home page the hosted docs site renders.
 > **Audience:** `user` — the one place all three audiences (job seeker · coach · developer) meet; routes developers onward to the dev-tier homes.
 > **Authoritative for:** the product positioning, the three-audience cumulative ladder, and at-a-glance orientation + the documentation map. Everything else is **cited**; the linked canonical home governs on conflict.

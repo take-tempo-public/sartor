@@ -1,0 +1,4 @@
+{"event": "plan-archived", "session": "92c2e82d-a080-4ba0-8c3f-5f56be9863a3", "branch": "docs/extraction-governance-drift-reconcile", "archive_id": "20260811T215616Z-142537ca4cdd", "plan": "floofy-splashing-crown.md", "ts": "2026-08-11T21:56:19Z"}
+{"event": "compacted", "session": "92c2e82d-a080-4ba0-8c3f-5f56be9863a3", "branch": "docs/extraction-governance-drift-reconcile", "trigger": "unknown", "ts": "2026-08-11T22:17:44Z"}
+{"event": "compacted", "session": "92c2e82d-a080-4ba0-8c3f-5f56be9863a3", "branch": "docs/extraction-governance-drift-reconcile", "trigger": "unknown", "ts": "2026-08-11T22:30:50Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/extraction-governance-drift-reconcile.md", "session": "92c2e82d-a080-4ba0-8c3f-5f56be9863a3", "branch": "docs/extraction-governance-drift-reconcile", "commit": "3fa20a3", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5", "ts": "2026-08-11T22:56:52Z", "fingerprint": "a182d475376f"}

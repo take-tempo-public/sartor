@@ -34,8 +34,10 @@ witness/best-effort — and that is correct, not a gap (D-4, E-1, T-C).
   (F-gov-04, F-gov-06).
 - **CI gate** — a workflow step whose non-zero exit fails the check. Today: `ruff` +
   `mypy` + `pytest` (3-version matrix) + a label-gated grounding-only eval-smoke
-  (F-qe-rel-05, F-qe-rel-10). CI is committed but **latent** until the git remote
-  activates (Sprint 8.7).
+  (F-qe-rel-05, F-qe-rel-10). **CI is live, not latent** — the git remote
+  (`take-tempo-public/sartor`) is active and `main` carries branch protection with 6
+  required status checks (`strict: true`), verified via
+  `gh api repos/take-tempo-public/sartor/branches/main/protection` this session.
 - **Convention-only** — documented, AST/grep-true, but no mechanism fails on a
   regression.
 - **Tribal / witness-prose** — lives in `AGENTS.md`/`CLAUDE.md` or memory; relies on
@@ -62,7 +64,7 @@ exists, the honest register is mechanism-and-effort, not "never."
 
 | Gate | What it runs | Why it must be CI, not local | Finding | Ship state |
 |---|---|---|---|---|
-| **UX / a11y / PDF job** | dedicated job that `playwright install chromium` + `pytest -m ux` as a **required** check | E-2 promises "machine-checked in CI, free forever"; the tier *silently skips* without a browser, so the promise is local-only | F-qe-rel-01 **(P0)**, F-expa11y-01, F-expa11y-05 | **SHIPPED v1.1.0** — the job runs in `ci.yml` and is one of the 4 required checks in `main`'s branch protection |
+| **UX / a11y / PDF job** | dedicated job that `playwright install chromium` + `pytest -m ux` as a **required** check | E-2 promises "machine-checked in CI, free forever"; the tier *silently skips* without a browser, so the promise is local-only | F-qe-rel-01 **(P0)**, F-expa11y-01, F-expa11y-05 | **SHIPPED v1.1.0** — the job runs in `ci.yml` and is one of the **6** required checks in `main`'s branch protection (re-derived from the live protection this session, not the prior "4") |
 | **Egress falsifiability** | socket/allowlist test (row A) | makes C-2 falsifiable; would have caught the CDN fetch | F-qe-rel-02 **(P0)** | **SHIPPED** (PX-08) |
 | **Import-boundary** | AST test (row A) | makes C-6 fail-closed | F-arch-01, F-qe-rel-04 | **SHIPPED v1.0.8 Sprint 8.3a** (PX-20) |
 | **E-2 machine badges** | Dependabot (pip · github-actions · npm), OpenSSF Scorecard (`scorecard.yml`, re-scored on every push to `main`), REUSE/SPDX lint, CodeQL SAST | E-1 prefers machine-run measures *because they keep themselves honest*; none existed | F-qe-rel-03, F-sec-08, F-sec-09 | **SHIPPED v1.1.0** (`chore/scorecard-and-docs-voice`) — REUSE reports **compliant** (633/633 files); Scorecard's `Code-Review` + `Fuzzing` checks stay at 0 as *reasoned accepted gaps* ([`../dev/keep-ledger.md`](../dev/keep-ledger.md) SC-01/SC-02), deliberately not gamed. No pip lockfile yet — that remains an open owner decision |
@@ -211,7 +213,8 @@ the Claude plugin, with CI as the server-side backstop — was **decided (split)
 implementation per rule in `scripts/enforcement/guards/`, three consumers (the Claude
 PreToolUse adapter, the opt-in native git hooks at
 [`../../.githooks/`](../../.githooks/) via `core.hooksPath`, and the CI backstop step
-in `.github/workflows/ci.yml`, itself still latent until the git remote activates). The
+in `.github/workflows/ci.yml`, itself live — the git remote is active and `main`'s
+branch protection enforces it as a required check). The
 migration also fixed the two `block-merge-to-main` defects filed against it (the
 `merge-base`/`merge-tree` false positive, and resolving HEAD against the invocation's
 own cwd instead of the hook process's ambient cwd — see

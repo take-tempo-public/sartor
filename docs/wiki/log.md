@@ -1724,3 +1724,32 @@ route's own target builder (still true; it now also stages the identical live fi
 and prompt/caching facts. The "every included role" phrasing on
 [[corpus-to-output-reach]] becomes strictly MORE accurate, not stale. No page edit
 needed; confirmed by reading each citation's surrounding claim, not assumed from titles.
+
+## 2026-08-11 — verified no-edit (`docs/extraction-governance-drift-reconcile`)
+
+**Scoped check, not a diff-window pass — `.last_ingest_sha` NOT advanced.** The branch
+also removed `README.md:3-5`'s "Formerly named Callback" rename-disclosure blockquote
+(owner-directed retirement — a short-lived note explicitly meant to retire, not a
+correction). `README.md` is wiki-relevant. Checked every page citing `README.md`
+([[diagnostics-console]], [[eval-harness]], [[excellence-walk]]) — every hit is a
+different `README.md` (`dashboard/`, `evals/`, `excellence-walk/`), not the root file;
+none cites the removed passage. No page edit needed.
+
+The branch
+reconciled four stale claims (external-survey-flagged, verified against HEAD before any
+edit) in `docs/dev/EXTRACTION.md`, `docs/dev/governance-extraction-design.md`,
+`docs/governance/enforcement.md`, and `docs/dev/kit-adoption-design.md` — `recall/`'s
+"design-only, not committed" claim, the compliance agent's "does not exist yet" claim,
+the portable-enforcement-core's "pending decision" framing, and the CI "latent until the
+remote activates" claim (verified stale via live `gh api branches/main/protection`: 6
+required contexts, `strict: true`). All four are wiki-relevant per
+`scripts.wiki_relevance.is_wiki_relevant()`.
+
+**Checked every page citing the four files** (`grep -rl` across `docs/wiki/pages/` for
+each path — [[consistency-tracks-enforcement]], [[engineering-workstreams]],
+[[governance-extraction]]): every citation is a **pointer** to an unrelated section
+(§C2, §"Enforcement reach", §6 mypy-strict) or a generic cross-reference — none restates
+or depends on the specific stale prose corrected on this branch (the "design-only" /
+"does not exist yet" / "latent" phrasing does not appear verbatim or paraphrased on any
+of the three pages). No page edit needed; confirmed by reading each citation's
+surrounding claim, not assumed from the pointer pattern.
