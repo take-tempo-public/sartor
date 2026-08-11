@@ -36,7 +36,7 @@ from playwright.sync_api import Page, Response
 from tests.ux.seeding import write_user_config
 from ui_pages import BasePage, UserPickerPage
 from ui_pages.base import DEFAULT_TIMEOUT_MS
-from ui_pages.selectors import Corpus, Memory, Personas, PriorApps, TopTabs
+from ui_pages.selectors import Corpus, Memory, Personas, TopTabs
 
 
 @pytest.mark.ux
@@ -55,16 +55,29 @@ def test_new_user_tab_sweep_has_no_4xx(page: Page, live_server: str, ux_app: Mod
     page.on("response", _on_response)
 
     BasePage(page, live_server).load()
-    # onUserSelect fires the eager reads (applications + personas) immediately.
+    # onUserSelect fires the eager persona read immediately (A4, feat/prior-
+    # apps-pipeline: it used to also eagerly read applications; that read is
+    # gone from the frontend entirely — see the sweep-loop comment below for
+    # why Pipeline's own read, GET /api/candidates/roster, is not swept here:
+    # it is not a /api/users/<u>/... URL, so it is outside this regression's
+    # 409-class scope even if it were added).
     UserPickerPage(page, live_server).select("robert")
     page.wait_for_load_state("networkidle")
 
     # Sweep every tab that fires a passive read on activation.
+    # A4 (feat/prior-apps-pipeline): the (TopTabs.TAILOR, PriorApps.PANEL) row
+    # that used to be here exercised GET /api/users/<u>/applications, fired by
+    # the Applications panel's own refresh on tab activation. That panel (and
+    # its refreshApplications() call) is gone, and nothing else calls that
+    # endpoint from the browser anymore (verified: zero remaining frontend
+    # callers) — the row is removed rather than left asserting on a network
+    # call that can no longer fire. The endpoint's needs-onboarding behavior
+    # stays covered server-side
+    # (tests/test_application_routes.py::test_missing_candidate_returns_200_needs_onboarding).
     for tab, panel in (
         (TopTabs.CORPUS, Corpus.PANEL),  # GET /experiences (+ /duplicates)
         (TopTabs.PERSONAS, Personas.PANEL),  # GET /personas (owned + picker)
         (TopTabs.MEMORY, Memory.PANEL),  # GET /clarifications
-        (TopTabs.TAILOR, PriorApps.PANEL),  # GET /applications
     ):
         page.click(tab)
         page.wait_for_selector(panel, state="visible", timeout=DEFAULT_TIMEOUT_MS)

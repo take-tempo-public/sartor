@@ -641,12 +641,18 @@ def _insert_or_merge_experience(
                 report.bullets_created += 1
         return
 
+    # Only LIVE roles are merge targets. Without the is_active filter a résumé
+    # re-import would match a role the user retired and silently resurrect it by
+    # merging into it — no error, no user-visible signal. A retired role instead
+    # falls through to the create path, producing a fresh live role the user can
+    # see and decide about.
     existing = (
         session.query(Experience)
         .filter_by(
             candidate_id=candidate_id,
             company=company,
             start_date=start_date,
+            is_active=1,
         )
         .first()
     )

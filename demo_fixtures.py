@@ -312,6 +312,11 @@ def demo_draft_gap_fill_bullets() -> dict[str, Any]:
     return {"proposals": []}
 
 
+def demo_draft_experience_summaries() -> dict[str, Any]:
+    """Canned draft_experience_summaries() result — empty, for the same grounding reason as `demo_suggest_skills`. A role intro is authored prose about a real employer; a canned one would be an invented claim about a real job, so demo mode drafts nothing."""
+    return {"drafts": []}
+
+
 def demo_draft_surgical_refinement(note: str) -> dict[str, Any]:
     """Canned draft_surgical_refinement() result — proposes nothing, for the same grounding reason as `demo_suggest_skills`. `note` is accepted (mirrors the real signature) but unused — a demo run must never claim it targeted a real item."""
     return {

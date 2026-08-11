@@ -112,6 +112,12 @@ def _seed(
         "application_id": aid,
         "iteration": 0,
         "llm_analysis": {"essential_skills": ["ai-platform"]},
+        # Every real analyze goes through `db.build_context.build_context_set_from_db`,
+        # so a context that can carry a freeze is corpus-mode by construction. It is
+        # load-bearing here, not decoration: `hardening.frozen_composition_doc` — the
+        # one predicate behind BOTH `/api/generate`'s deterministic-assemble gate and
+        # the `frozen` field this route returns — answers None without it (item 20).
+        "career_corpus": [{"id": 1, "company": "Acme", "titles": ["Senior PM"], "bullets": []}],
     }
     if with_recommendation and variant_ids:
         ctx["llm_summary_recommendation"] = {
@@ -377,6 +383,54 @@ class TestPostCompositionFreeze:
         assert ctx["composition_overrides"]["summary_text"] == "Drafted but not yet frozen."
         # ... but no snapshot until the explicit Save-and-continue.
         assert "approved_composition" not in ctx
+
+    def test_freeze_reports_unfrozen_when_the_snapshot_has_no_content(self, composition_app):
+        """Adversarial review, finding 1 — `frozen` answers "will /api/generate
+        assemble this deterministically", not "was a freeze requested".
+
+        The candidate here has no experiences, no skills, and no summary is drafted
+        or pinned, so the freeze writes a real `approved_composition` dict that
+        resolves to nothing: `work: []`, no `basics.summary`, `skills: []`. The
+        snapshot IS persisted (the freeze ran), but `hardening.frozen_composition_doc`
+        rejects it, so `/api/generate` will run the legacy full-LLM `generate()`.
+
+        The client sets `_compositionFrozen` from this field and `_wizardReachable`
+        opens Step 5 on it, over copy promising "no AI variation" — answering `true`
+        here is exactly how item 20's defect survived its first fix.
+        """
+        from blueprints.generation import _frozen_composition
+
+        _app, output_dir = composition_app
+        _cid, aid, ctx_path, _ = _seed(_app, output_dir, with_variants=False)
+        client = _app.app.test_client()
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={"context_path": ctx_path, "pinned": [], "excluded": [], "added": []},
+        )
+        assert r.status_code == 200
+
+        r = client.post(
+            f"/api/applications/{aid}/composition",
+            json={
+                "context_path": ctx_path,
+                "pinned": [],
+                "excluded": [],
+                "added": [],
+                "freeze": True,
+            },
+        )
+        assert r.status_code == 200
+        ctx = json.loads(Path(ctx_path).read_text(encoding="utf-8"))
+        # The freeze DID run and DID persist a snapshot — the response is not
+        # reporting a failed save.
+        doc = ctx["approved_composition"]
+        assert isinstance(doc, dict)
+        assert doc["work"] == []
+        assert doc["skills"] == []
+        assert "summary" not in doc["basics"]
+        # ... and the server's own assemble gate refuses it, so the field says so.
+        assert _frozen_composition(ctx) is None
+        assert r.get_json()["frozen"] is False
 
     def test_edited_flag_persists(self, composition_app):
         _app, output_dir = composition_app

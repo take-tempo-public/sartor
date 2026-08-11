@@ -3112,3 +3112,122 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
    so a lane's "exact spend" claim for an eval run is necessarily an
    estimate unless that gap gets closed — worth a future PX row, not fixed
    here (out of this lane's scope).
+
+---
+
+## Role-summary JD-fitting — 2026-08-09 — `feat/role-summary-drafting` (Epic A, sprint A3) — `2026-07-08.4` → `2026-08-09.1`
+
+1. **What changed?** A NEW batched Compose drafting call,
+   `analyzer.draft_experience_summaries` (`call_kind="draft_experience_summary"`,
+   Sonnet), with a new `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT` constant
+   registered in `_BASE_SYSTEM_PROMPTS` (16 → 17 keys). It drafts the one-line
+   intro that sits under each role heading, fitted to the JD, in **one call for
+   every included role** — never one call per role. Grounding sources per role:
+   that role's own selected bullets, that role's own existing
+   `ExperienceSummaryItem` variants, this application's `<clarifications>`, and
+   (D5) `<prior_clarifications>`. `hardening.assemble_source_union` widened to
+   match, from four sources to five, by folding in
+   `context_set["experience_summary_items"]` — which
+   `db.build_context.build_context_set_from_db` now stages **durably** (it was
+   previously only ever staged transiently by the `/recommend-experience-summaries`
+   route, so it never survived to a persisted `context_*.json`).
+   `recommend_experience_summaries` is untouched and remains the SELECTOR.
+
+2. **Why?** Per-role intros were selectable but not authorable: a candidate with
+   no saved intro variant for a role had nothing to select, and a candidate with
+   variants had only generic ones written for no particular job. And the
+   grounding metric could not see intro variants at all — corpus-mode
+   `resume.text` is synthesized by `_synthesize_resume_markdown`, which emits
+   titles, bullets, skills, education and certifications, and never intro
+   variants. So a role intro the candidate wrote *themselves* was invisible to
+   `assemble_source_union` and scored as if fabricated. That gap pre-dates this
+   branch (it applied to any intro `recommend_experience_summaries` picked); A3
+   is what made it worth closing.
+
+3. **Result? (targeted corpus-mode probe, NOT a `--suite synthetic` run.)**
+   `--suite synthetic` is file-based (`resume.md` + `jd.txt`) and cannot reach a
+   corpus-mode drafting call at all — the same reason the D5 entry above used a
+   sandbox candidate rather than the suite. The difference here is that the
+   sandbox is now a **committed synthetic fixture**
+   (`evals/fixtures/synthetic/corpus/role-summary-drafting/`: `seed.json` + `jd.txt` +
+   a hand-written `analysis.json`) driven by a small harness
+   (`python -m evals.corpus_drafting_probe`), so the run is repeatable and
+   comparable across `PROMPT_VERSION`s. Scoring is deterministic only (L0
+   fabricated-specifics + grounding overlap against
+   `hardening.assemble_source_union`); there is no LLM judge, because this repo
+   has no rubric for a one-line role intro and inventing one would be a larger
+   change than the call being measured.
+
+   Two real runs at `2026-08-09.1`, each ONE Sonnet call:
+
+   | Run | drafts / roles staged | L0 bullets / specifics | `fabricated_specifics_rate` | `grounding_overlap` | cost (USD) |
+   |---|---|---|---|---|---|
+   | 1 (`probe_99b007075f`) | 2 / 3 | 2 / 6 | **0.364** (flagged `22`, `9 m`) | 0.298 | 0.015408 |
+   | 2 (`probe_d1a796c6dd`) | 2 / 3 | 2 / 3 | **0.0** | 0.349 | 0.009713 |
+
+   **Total spend: USD 0.025121** (run 2 was cheaper purely on a prompt-cache
+   read: `cache_create=1616` on run 1, `cache_read=1616` on run 2).
+
+   Both runs omitted the third role — the one whose only bullet is "Wrote the
+   internal reporting service used by the finance and operations teams," i.e.
+   the role with no JD-relevant evidence. That is the prompt's
+   "omit rather than pad" instruction working, not a failure.
+
+   **No before/after delta exists and none is claimed:** the call is new, so
+   there is nothing to diff against. These two runs ARE the baseline.
+
+4. **Learned?**
+
+   a. **A `fabricated_specifics_rate` of 0.0 is meaningless until you check
+      `total_bullets`.** The probe's first version passed the drafted intros to
+      `compute_fabricated_specifics` as bare sentences. That function splits its
+      input on `hardening.BULLET_LINE_RE` (`^\s*[-*•]\s+`) and returns
+      `rate 0.0` on **zero** matched units — so the first result was a vacuous
+      pass that looked like a clean one. The probe now prefixes each draft with
+      `- ` (a scoring-unit adapter, not a claim about rendering) and reports
+      `l0_total_bullets` / `l0_total_specifics` alongside the rate so the two
+      kinds of zero can be told apart. **Any future harness feeding L0 anything
+      other than a rendered résumé needs this check.**
+
+   b. **Run 1's two flags are a real L0 false-positive class, worth knowing
+      before anyone treats this metric as a gate.** Source: "cutting median
+      deploy time from 22 minutes to 9." Draft: "cutting median deploy time from
+      22 to 9 minutes." Both numbers are grounded; the *unit attachment* moved,
+      so `22` (bare) and `9 m` were absent from the source specific-set and both
+      flagged. This is the documented paraphrase caveat, but the reframing task
+      here makes it much more likely than in bullet generation — a role intro is
+      a rewrite by construction. Expect a nonzero rate on this call and read
+      `flagged_samples`; do not set a floor on the rate.
+
+   c. **The union widening's metric effect was NOT demonstrated by these runs,
+      and saying so is the finding.** The A/B (same drafts, scored against the
+      5-source union and the pre-A3 4-source union) returned **identical** rates
+      in both runs, because this fixture's single intro variant — "Platform
+      engineer on the team that owns deploys, service templates and incident
+      review" — contains no number and no entity that is not already in the
+      bullets, and L0 only scores numbers and entities. The widening is
+      justified structurally (the intro text is genuinely absent from
+      `resume.text`, asserted directly in
+      `tests/test_build_context_db.py::TestExperienceSummaryItemsStaging::test_the_union_actually_sees_them`)
+      and its metric consequence is proved deterministically in
+      `tests/test_hardening.py::TestAssembleSourceUnion::test_widening_changes_the_l0_verdict_on_intro_sourced_specifics`
+      — an intro carrying a headcount is flagged against the old union and
+      grounded against the new one. **What would exercise it live:** a fixture
+      whose intro variant carries a specific absent from every bullet, and a
+      run in which the model actually reuses it. Not added here rather than
+      re-cut the baseline the same hour it was recorded.
+
+   d. **A corpus seed could not carry per-role intro variants at all until this
+      branch.** `scripts/export_corpus_seed.py` serialized titles, bullets and
+      the *legacy denormalized* `experience.summary` column, but not the
+      canonical `ExperienceSummaryItem` rows — so every seeded role arrived with
+      zero variants and one of the three grounding sources was untestable from a
+      seed. Both sides now carry `experiences[].summary_items`;
+      `SEED_SCHEMA_VERSION` stays at **1** because the key is optional on read,
+      the same back-compat rule `experience.is_active` set.
+
+   e. **Cost shape for this call.** ~1,166 input + ~385 output tokens per run at
+      Sonnet rates, one call regardless of role count, so the batched design
+      keeps this flat as a corpus grows. A per-role implementation of the same
+      feature would have been 3 calls on a 3-role fixture and ~N on a real
+      corpus.

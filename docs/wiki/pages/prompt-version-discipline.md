@@ -22,7 +22,8 @@ confuse it with RELEASE versioning** ([`docs/governance/charter.md:D-7`](../../.
 ## What `PROMPT_VERSION` is
 
 A single module-level string, [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py)
-(`"2026-06-13.1"` at this ingest). Its own comment says to bump it when
+(`"2026-08-09.1"` at this ingest — Epic A sprint A3, `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT`).
+Its own comment says to bump it when
 `SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`, **or any per-call prompt template**
 changes, because it "labels every JSONL telemetry record so quality regressions
 can be attributed to a revision."
@@ -65,9 +66,25 @@ Resolution happens at every call site through
 active override for `name` else falls back to the baseline in the
 [`analyzer.py:_BASE_SYSTEM_PROMPTS`](../../../analyzer.py) registry. That registry
 maps each overridable constant name (`SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`,
-`RECOMMEND_SYSTEM_PROMPT`, … 11 keys) to its baseline value and is defined at
-module end, after every constant exists. **Override scope is exactly those named
-system-prompt constants** — not the dynamic user-prompt builders `[synthesis]`.
+`RECOMMEND_SYSTEM_PROMPT`, … **17 keys** at this ingest) to its baseline value and
+is defined at module end, after every constant exists. **Override scope is exactly
+those named system-prompt constants** — not the dynamic user-prompt builders
+`[synthesis]`.
+
+The registry **grows** as calls join the shared funnel — it is not a fixed list.
+The most recent addition is `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT` (Epic A
+sprint A3, 2026-08-09), registered alongside the new
+`analyzer.py:draft_experience_summaries` call. Before that, `SCOPE_CHECK_SYSTEM_PROMPT`
+(item 21, 2026-08-02) arrived when `check_refinement_scope` stopped calling
+`client.messages.create` directly and moved onto `_parse_or_retry` with a named
+persona constant; registering it is what makes that call A/B-able at all
+([`analyzer.py:_BASE_SYSTEM_PROMPTS`](../../../analyzer.py),
+[`analyzer.py:check_refinement_scope`](../../../analyzer.py)) `[synthesis]`. So a
+count quoted anywhere (including the number above, and
+`blueprints/diagnostics.py:tune_run_stream`'s docstring, which was reworded from
+"the eight keys" to "the registered keys" for exactly this reason) is a snapshot;
+`sorted(_BASE_SYSTEM_PROMPTS)` is the live answer, and the `ValueError` in
+[`analyzer.py:prompt_overrides`](../../../analyzer.py) prints it.
 
 ## Quarantine: `candidate:<hash>` never pollutes the baseline
 
@@ -111,7 +128,7 @@ no-op). This is the substrate the `/prompt-tune` and v1.0.4 tuning loop build on
 
 ## A second version: AVATAR_PROMPT_VERSION
 
-The doc-grounded assistant ("avatar", Sprint 7.5) is a **separate LLM subsystem** from the résumé pipeline — a different persona and **not an eval target** — so it carries its own [`analyzer.py:AVATAR_PROMPT_VERSION`](../../../analyzer.py) (`"2026-06-19.1"` at this ingest, per the inline comment at [`analyzer.py:283–289`](../../../analyzer.py)). When `AVATAR_SYSTEM_PROMPT` (the avatar's persona, defined at [`analyzer.py:519–540`](../../../analyzer.py)) changes, bump `AVATAR_PROMPT_VERSION` in the same commit; a tweak to the avatar's prompt should not force a bump to `PROMPT_VERSION`, which would muddy résumé score-over-time attribution on the dashboard `[synthesis]`. The avatar persona is intentionally **not** in the `_BASE_SYSTEM_PROMPTS` registry — the prompt-override machinery is résumé-scoped by construction, so the avatar is out of its reach.
+The doc-grounded assistant ("avatar", Sprint 7.5) is a **separate LLM subsystem** from the résumé pipeline — a different persona and **not an eval target** — so it carries its own [`analyzer.py:AVATAR_PROMPT_VERSION`](../../../analyzer.py) (`"2026-07-08.1"` at this ingest, per its own inline comment). When `AVATAR_SYSTEM_PROMPT` (the avatar's persona, [`analyzer.py:AVATAR_SYSTEM_PROMPT`](../../../analyzer.py)) changes, bump `AVATAR_PROMPT_VERSION` in the same commit; a tweak to the avatar's prompt should not force a bump to `PROMPT_VERSION`, which would muddy résumé score-over-time attribution on the dashboard `[synthesis]`. The avatar persona is intentionally **not** in the `_BASE_SYSTEM_PROMPTS` registry — the prompt-override machinery is résumé-scoped by construction, so the avatar is out of its reach.
 
 It is a **source-level discipline marker, not a telemetry field.** The lone stamp site [`analyzer.py:effective_prompt_version`](../../../analyzer.py) writes `PROMPT_VERSION` (or a `candidate:<hash>`) onto *every* funnelled call's JSONL — including the avatar's `avatar_answer` ([`analyzer.py` `_emit_call_log`](../../../analyzer.py)); it has no `AVATAR_PROMPT_VERSION` branch. So bumping `AVATAR_PROMPT_VERSION` does **not** create a second telemetry series — its whole job is to record the avatar-prompt revision in source **without** bumping `PROMPT_VERSION`, keeping the résumé score-over-time join key stable. The avatar's calls are already separable in telemetry by `call_kind="avatar_answer"`, and the avatar is not an eval target `[synthesis]`.
 

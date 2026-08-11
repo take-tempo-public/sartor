@@ -91,8 +91,10 @@ class Help:
     # `_maybeAutoOpenHelp`/`_maybeFireTourStop`. Seeding their `cb_help_seen:`
     # flags models a returning user so auto-modals never overlay a fresh
     # browser context's first interaction. Panels that only carry an on-demand
-    # (i) (panelAnalysis/panelApplications/panelPersonas/panelMemory) never
-    # auto-open, so they're intentionally absent. Single source of truth for
+    # (i) (panelAnalysis/panelPersonas/panelMemory) never auto-open, so
+    # they're intentionally absent (panelApplications used to be a third
+    # example of this — A4, `feat/prior-apps-pipeline`, removed the panel
+    # itself, not just its tour-stop absence). Single source of truth for
     # both `tests/ux/conftest.py`'s autouse suppression fixture and
     # `scripts/capture_screenshots.py` — keep in sync with `static/app.js` if
     # a new auto-firing block is ever registered.
@@ -285,27 +287,19 @@ class Wizard:
 
 
 class PriorApps:
-    """Selectors for the Prior Applications panel and detail modal."""
+    """Selectors for the shared application-detail modal.
 
-    PANEL = "#panelApplications"
-    LIST = "#applicationsList"
+    A4 (`feat/prior-apps-pipeline`): the per-candidate Applications panel that
+    used to host this modal's card-click navigation was removed; the Pipeline
+    board (`ui_pages.pipeline.PipelinePage`) is now the sole production entry
+    point into it.
+    """
+
     MODAL = "#appDetailModal"
     RESUME_BUTTON = "#btnResumeApp"
     # #24 — editable job-title / company inputs in the detail modal.
     TITLE_INPUT = "#appDetailTitle"
     COMPANY_INPUT = "#appDetailCompany"
-    # #24 — the relabeled (was "N pending") proposal pill on a card.
-    PENDING_PILL = ".application-card-pending"
-
-    @staticmethod
-    def card(app_id: int) -> str:
-        """Return the card selector for an application id."""
-        return f"#app-card-{app_id}"
-
-    @staticmethod
-    def card_company(app_id: int) -> str:
-        """Return the company-field selector within an application card."""
-        return f"#app-card-{app_id} .application-card-company"
 
 
 class Personas:
@@ -332,6 +326,10 @@ class Pipeline:
     COLUMN = ".pipeline-column"
     ROW = ".pipeline-row"
     COUNT = "#pipelineCount"
+    # A4 (feat/prior-apps-pipeline) — the per-row company field (F-15's
+    # captured-employer display, formerly only on the removed Applications
+    # panel's card).
+    ROW_COMPANY = ".pipeline-row-company"
 
 
 class Memory:
@@ -549,6 +547,14 @@ class Compose:
     SKILLS_CARD = "#composeList .skills-card"
     SKILL_ROW = ".compose-skill-row"
     SKILL_DROP = ".skill-drop"
+    # A2 (feat/compose-wait-ux) — the pin half of the pair. Both are word buttons
+    # on the `.corpus-action-btn` idiom now (they were 📌/📍 and ✕/↩ glyphs); the
+    # CLASS hooks above/below are unchanged, so drop_skill() is unaffected.
+    SKILL_PIN = ".skill-pin"
+    # A2 — in-place Edit, now on every compose bullet row rather than only the
+    # `is_pending_review` ones.
+    BULLET_EDIT = ".compose-bullet-edit"
+    BULLET_APPROVE = ".compose-bullet-approve"
     # Settle signal: loadComposition() (static/app.js) clears this on #composeList
     # at entry (before its fetch) and sets it after the final synchronous append,
     # so a *stably present* marker proves the auto-recommend re-render cascade
@@ -563,4 +569,27 @@ class Compose:
     # ONLY (READY present + bg-pending absent) state is the true terminal render —
     # making this a deterministic settle signal (no timing heuristic). Consumed by
     # WizardComposePage._wait_settled.
+    #
+    # A2 (feat/compose-wait-ux) — this contract now has a SECOND consumer, and
+    # the fact matters to anyone editing the two strings above. The product's own
+    # "Composing…" wait gate (`_holdComposingBusy` / `_flushComposeSettleWaiters`
+    # in static/app.js) waits on the SAME two signals, read from their in-app
+    # source rather than from the DOM. It deliberately does not widen, narrow or
+    # otherwise redefine either selector: `data-compose-ready` is still cleared at
+    # loadComposition()'s entry and set only at its terminal render, and
+    # `data-compose-bg-pending` is still present iff the counter is > 0.
+    # The one guarantee A2 adds — relied on by the busy-state regression tests —
+    # is ORDERING: the gate's release runs SYNCHRONOUSLY immediately before
+    # whichever DOM mutation makes SETTLED true, so a reader that observes SETTLED
+    # can never also observe the wait overlay still up. Enumeration + the
+    # alternatives rejected: docs/dev/blast-radius/compose-wait-ux.md.
     SETTLED = "#composeList[data-compose-ready]:not([data-compose-bg-pending])"
+    # A2 — the in-panel wait block for the arrival volley, on the same idiom as
+    # the analyze/generate streaming panels (#analysisPending / #generatePending).
+    PENDING = "#composePending"
+    # A2 — the app-wide "working…" banner _setBusy() creates (static/app.js).
+    # Lived as a bare literal in tests/ux/regression/test_20260708_busy_states_
+    # and_chip.py; registered here because A2's tests need it too and two copies
+    # of one selector string in two files is the drift this registry prevents.
+    BUSY_BANNER = "#_busyBanner"
+    BUSY_BANNER_TEXT = "#_busyBanner .cb-busy-text"

@@ -100,6 +100,15 @@ class Experience(Base):
     end_date: Mapped[str | None] = mapped_column(String)  # YYYY-MM / YYYY; NULL = current
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     summary: Mapped[str | None] = mapped_column(Text)
+    # Soft-retire flag (parity with Bullet.is_active): 1 = live, 0 = retired.
+    # Retire used to be implemented purely as a cascade onto child bullets, which
+    # is a no-op for a role that has none — it returned 200 and left the role
+    # visible and still rendering into generated output
+    # (docs/dev/diagnosis/experience-soft-retire.md). Retired roles are hidden
+    # from the corpus unless include_retired is set and never reach generation;
+    # restore via PUT {is_active: true}. Kept (not hard-deleted) because
+    # application_bullet / application_run_title reference the tree for audit.
+    is_active: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[str] = mapped_column(String, nullable=False, default=utc_now)
     updated_at: Mapped[str] = mapped_column(
         String, nullable=False, default=utc_now, onupdate=utc_now

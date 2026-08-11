@@ -13,6 +13,212 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed: prior applications live in Pipeline now, not a second per-candidate list (`feat/prior-apps-pipeline`, Epic A / A4)
+
+The Tailor tab's "Prior applications" panel — a per-candidate list of past
+applications, foldable, with its own status filter and show-retired toggle —
+duplicated what the cross-candidate Pipeline board (Wave 2 recruiter tier,
+F-17) already showed. Removed. Clicking a Pipeline row now opens the shared
+application-detail modal **in place**, on the Pipeline tab, instead of first
+switching to the Tailor tab as it used to.
+
+Everything the panel's cards offered beyond browsing is unchanged and reached
+the same way it always was: the detail modal's status transitions
+(Mark submitted / Got interview / …), retire/restore, editable title/company,
+and "Resume in wizard". Two panel-card-only affordances have no Pipeline
+equivalent and are not carried forward: the per-card "N to review"
+pending-proposals pill (the count is still visible inside the detail modal)
+and echoing an edited company back onto a list card (the modal's own
+re-hydration on reopen still proves the edit persisted).
+
+`ui_pages/selectors.py`'s `PriorApps` class is now scoped to the shared modal
+only (`MODAL`, `RESUME_BUTTON`, `TITLE_INPUT`, `COMPANY_INPUT`); the
+now-removed `PANEL`, `LIST`, `PENDING_PILL`, `card()`, `card_company()`
+members are gone. `ui_pages/prior_apps.py`'s `PriorAppsPage.open_detail()`
+opens the modal directly rather than replaying a panel-card click.
+
+### Added: JD-fitted role intros, drafted for every role in one call (`feat/role-summary-drafting`, Epic A / A3)
+
+Compose could already *pick* the best per-role intro from ones the candidate had
+written; it could not *write* one. A candidate with no saved intro for a role had
+nothing to pick, and a candidate with saved intros had only generic ones written
+for no particular job. New `analyzer.draft_experience_summaries` (Sonnet,
+`call_kind="draft_experience_summary"`) drafts the one-line intro that sits under
+each role heading, fitted to this JD — **one call covering every included role,
+never one call per role**, so cost stays flat as a corpus grows. Grounded per
+role in that role's own selected bullets, that role's own existing intro
+variants, this application's clarifications, and (D5) confirmed clarifications
+from the candidate's other applications; the prompt is explicit that evidence
+never travels between employers, and omitting a role is always allowed and
+preferred over padding one. `PROMPT_VERSION` `2026-07-08.4` → `2026-08-09.1`.
+`recommend_experience_summaries` is untouched and remains the selector.
+
+Each draft surfaces on its role's Compose card as an editable keep/reject card.
+Keeping saves it into the **canonical** per-role variant store
+(`ExperienceSummaryItem`, `source='llm_proposed'`, pending review) and selects it
+for this application — never into the legacy denormalized `Experience.summary`
+cache, so the two summary editors a corpus role card already carries stay two.
+Two new routes, `POST /api/applications/<id>/draft-experience-summaries` and
+`POST /api/applications/<id>/experience-summary-decide`.
+
+**Grounding widened to match, and this closes a gap that pre-dates the feature.**
+In corpus mode the résumé text handed to the grounding metric is synthesized from
+titles, bullets, skills, education and certifications — never from per-role intro
+variants. So an intro the candidate wrote themselves was invisible to
+`hardening.assemble_source_union` and scored as though fabricated, which was
+already true for any intro the recommender picked. The union now folds in
+`context_set["experience_summary_items"]` (four sources → five), and
+`db.build_context.build_context_set_from_db` stages that key **durably** rather
+than leaving it a transient route-staged value that never reached disk. Legacy
+file-based contexts never populate it, so `--suite synthetic` is unchanged.
+
+Also: corpus seeds now round-trip per-role intro variants
+(`experiences[].summary_items` in `scripts/export_corpus_seed.py` +
+`evals/seed_import.py`; `SEED_SCHEMA_VERSION` stays at 1 — the key is optional on
+read), without which a seeded corpus could not exercise that grounding source at
+all. A committed synthetic corpus fixture plus a small deterministic harness
+(`python -m evals.corpus_drafting_probe`) gives the call a repeatable
+corpus-mode measurement, since `--suite synthetic` is file-based and cannot reach
+corpus drafting; results, costs and two honest negative findings are in
+[`evals/TUNING_LOG.md`](evals/TUNING_LOG.md).
+
+### Fixed: the UX harness could make a real, billed API call (work item 34)
+
+`tests/ux/stubs.py::install_llm_stubs` neutralized `_get_client` on four
+blueprints by hand. Four others bound it and were missed — `blueprints/corpus/`'s
+`skills`, `proposals` and `curation`, plus `blueprints/assistant` — so any UX test
+reaching one of their routes on a machine with a real `.api_key` would have made a
+live Anthropic call with nothing asserting the cost. Work item 34 named two of the
+four; enumerating fresh found all four, which is why the fix is a gate rather than
+two more lines: `tests/test_ux_stub_coverage.py` AST-walks `blueprints/**.py` and
+fails closed when the set of modules binding `_get_client` and the set the harness
+patches disagree in **either** direction. This is the third instance of the same
+omission (items 21, 22, 34), which under charter C-11 makes a mechanism the
+required response.
+
+### Added: a visible wait state across the Compose arrival volley (`feat/compose-wait-ux`, Epic A / A2)
+
+The Compose panel became visible the moment the wizard navigated to it — which is
+when the background volley of drafting requests **starts**, not when it finishes —
+so the step read as done while cards were still being torn down and rebuilt
+underneath. Compose now holds a "Composing your tailored résumé" wait state,
+reusing the two idioms already in the app (the app-wide busy banner and the
+analyze/generate streaming-panel block) rather than inventing a third, released
+when the volley settles or after a declared 20-second cap.
+
+**The settle contract is unchanged.** The UX harness's `data-compose-ready` /
+`data-compose-bg-pending` signals keep their exact meanings; the product reads the
+same two signals instead of redefining either. The one guarantee added is
+**ordering** — the release runs synchronously immediately before the DOM mutation
+that makes "settled" observable, so nothing can observe a settled Compose with the
+overlay still up. Widening the settle definition to include the banner was
+considered and rejected in writing: it would invert the direction of the contract
+and break a regression test that deliberately observes an *unsettled* state.
+
+Alongside it: the background-reload chip now names the leg in flight instead of
+always reading "Updating suggestions…" (counter arithmetic and its attribute
+invariants are behaviourally unchanged); the Skills card's pin/drop glyph buttons
+become the word-button idiom the compose bullet rows already use, keeping their
+existing classes so nothing selecting on them breaks; and in-place Edit extends to
+**every** suggested bullet rather than only pending-review ones, surviving
+approval — with the modal subtitle branching, because on an already-approved bullet
+the corpus-wide effect of an edit is no longer self-evident.
+
+Two declared limits, stated rather than papered over: the app-wide busy banner has
+no CSS rule backing its body class, so it advises rather than blocks input
+(board item 63), and past the 20-second cap the panel reads as done while a render
+may still be cascading (board item 64 tracks a related unproven-reachability
+guard). The grep-complete consumer enumeration — 55 rows, written before the first
+edit, including the correction that there are **12** background-reload call sites
+rather than the 9 the plan quoted from a historical fix — is in
+[`docs/dev/blast-radius/compose-wait-ux.md`](docs/dev/blast-radius/compose-wait-ux.md).
+
+### Fixed: the wizard rail let Generate run the retired full-LLM path (`fix/wizard-rail-frozen-composition-gate`, Epic A / item 20)
+
+Step 5 (Generate) opened on nothing more than "an analysis exists". A user who
+analyzed and then clicked **5 · Generate** on the rail arrived having never passed
+through **3 · Compose**, so no composition had been frozen — and with no approved
+composition to assemble, generation fell through to the **legacy full-LLM path**
+the frozen-composition re-architecture retired for corpus-mode users. The step's
+own copy already branched between a "the AI writes it" and a "assembled from your
+approved composition" variant *because both paths were live*.
+
+Step 5 is now hard-gated: the rail button is disabled unless generation will
+actually assemble from an approved composition, and it says why rather than
+greying out mutely. The refusal text and the button's tooltip come from one
+source, so they cannot drift apart.
+
+**"Will it assemble?" is one question with one answer.** The rail asks the same
+predicate the generate route itself applies, rather than its own approximation of
+it — because the copy behind the rail promises "same input, same résumé, no AI
+variation", and only the generate route knows whether that is true. A first cut of
+this fix used the looser test "did Save and continue run?", which is not the same
+question: a save can complete and still leave nothing to assemble from (every role
+retired, the positioning draft cleared), and the rail would have opened on it.
+That gap is closed by construction now — the predicate has one implementation and
+three callers, and the tests assert their *agreement* rather than checking each
+side's expectations separately.
+
+**The server-side fallback is deliberately unchanged.** It remains correct for the
+cases that legitimately have nothing to assemble — a candidate with no active
+roles, or a pre-corpus context — and two committed route tests pin it. The rail is
+the gate; the fallback is the floor. A user in that state is not stuck: the earlier
+steps stay open, so the way forward is to put content back into the composition (or
+the corpus) and come through again.
+
+Found while fixing it, and fixed with it: resuming a prior application reported it
+as *unfrozen* regardless of what its saved context held, because the "is it
+frozen?" flag lived only in the browser session. That was harmless while Step 5 was
+ungated and would have become a lock-out the moment it wasn't — a resumed run that
+genuinely had a frozen composition would have found Generate greyed out. The
+resume payload now carries the fact. Evidence, the widened instrument that caught
+that second defect, and the alternatives killed along the way are in
+[`docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md`](docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md).
+
+### Fixed: retiring a role with zero bullets silently did nothing (`fix/experience-soft-retire`, Epic A / A1b)
+
+`DELETE /api/experiences/<id>` implemented "retire" as a cascade onto the role's
+child bullets and nothing else — `Experience` carried no retire flag of its own.
+For a role with **zero** bullets that affected zero rows, still returned `200`, and
+left the role listed in the corpus and still rendering into generated output. Fixed
+by giving `Experience` the `is_active` soft-retire column its three siblings
+(`Bullet`, `ExperienceTitle`, `Application`) already have, via new alembic revision
+`0016_experience_is_active` — native `op.add_column` behind a `PRAGMA table_info`
+guard, deliberately **not** `batch_alter_table`, because `experience` is the CASCADE
+parent of `experience_title`, `bullet` *and* `experience_summary_item` and a batch
+recreate would delete all three. **No backfill**, and that is a decision, not an
+omission: the old retire left no recoverable signature on the row, and "every bullet
+retired" is indistinguishable from "no bullets typed in yet", so inferring
+retirement would have hidden live roles.
+
+Generation is closed at the two chokepoints that cover it transitively —
+`db/build_context.py` (prompt, synthesized résumé, corpus snapshot) and
+`corpus_to_json_resume.py` (rendered `work[]`, and its order-aligned
+`work_provenance`, filtered at the shared query so the two cannot drift apart).
+A retired role also drops out of the review queue, merge suggestions, skill
+proposals, compositions and role-intro staging, and — the subtlest one — no longer
+acts as a silent merge target for a résumé re-import, which used to resurrect it
+with no user-visible signal. Restore lands on `PUT /api/experiences/<id>
+{"is_active": true}`; `_load_experience_for_candidate` deliberately does **not**
+filter, since a filter there would 404 every mutation on a retired role, the restore
+route first among them. Restoring a role does not resurrect bullets the user retired
+individually. In the UI the existing "Show retired" checkbox now governs the role
+list as well as card contents, retired cards render dimmed with a `RETIRED` flag and
+a Restore button, and the count reports live roles only.
+
+`context_set` is **unchanged**: `hardening.CorpusExperience` deliberately does not
+carry the flag — filtering upstream means a retired role never reaches the payload,
+so adding a key to a persisted, frozen-snapshot contract would buy nothing and cost
+every reader an absence-tolerant branch forever. Evidence (four-layer reproduction,
+with a passing control arm) in
+[`docs/dev/diagnosis/experience-soft-retire.md`](docs/dev/diagnosis/experience-soft-retire.md);
+the grep-complete consumer enumeration, its decisions, and four corrections to the
+prior `[REPORTED]` audit — including two raw-SQL sites it recorded as nonexistent,
+one of which breaks — in
+[`docs/dev/blast-radius/experience-soft-retire.md`](docs/dev/blast-radius/experience-soft-retire.md).
+Also corrects `docs/architecture.md`'s ER diagram, which claimed `experience` had
+both `is_active` and `is_pending_review` when it had neither.
+
 ### Fixed: plan-approval marker survives a PR-channel merge — item 45 closed (`fix/plan-approval-marker-pr-merge`)
 
 The prior session's staged fix design (D3(b): a `SessionStart` reconciler stamping

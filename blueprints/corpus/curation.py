@@ -162,6 +162,7 @@ def list_corpus_duplicates(username: str) -> ResponseReturnValue:
             session.query(Experience)
             .filter_by(
                 candidate_id=candidate.id,
+                is_active=1,  # a retired role does not belong in the review queue
             )
             .order_by(Experience.start_date.desc(), Experience.id.desc())
             .all()
@@ -338,8 +339,10 @@ def list_merge_suggestions(username: str) -> ResponseReturnValue:
                 }
             )
         experiences = (
+            # Retired roles are excluded: suggesting a merge with a role the user
+            # just retired is noise, and acting on it would resurrect it.
             session.query(Experience)
-            .filter_by(candidate_id=candidate.id)
+            .filter_by(candidate_id=candidate.id, is_active=1)
             .order_by(Experience.start_date.desc(), Experience.id.desc())
             .all()
         )

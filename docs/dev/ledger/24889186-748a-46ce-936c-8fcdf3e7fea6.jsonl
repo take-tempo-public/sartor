@@ -1,0 +1,18 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/wizard-rail-frozen-composition-gate.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/chain-execution-instruments", "commit": "f35b22d", "actor": "amodal1", "agent": "claude-code", "ts": "2026-08-09T21:06:38Z", "fingerprint": "07a4f977d4e9"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-09T21:48:05Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-09T22:27:46Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-09T23:21:10Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-09T23:40:44Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-09T23:50:27Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-10T00:22:04Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/role-summary-drafting", "trigger": "unknown", "ts": "2026-08-10T04:56:44Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T06:05:16Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T06:41:34Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T07:10:06Z"}
+{"event": "failed", "doc": "docs/dev/handoffs/prior-apps-pipeline.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "f42b2ea", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T07:52:24Z", "fingerprint": "73d85330bfca"}
+{"event": "generated", "doc": "docs/dev/handoffs/prior-apps-pipeline.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "f42b2ea", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T07:53:04Z", "fingerprint": "978891b32864"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T07:57:34Z"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T08:05:49Z"}
+{"event": "failed", "doc": "docs/dev/handoffs/pre-epic-b-intermediate-steps.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "6917d30", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T15:51:26Z", "fingerprint": "7f7c79a7a8ce"}
+{"event": "generated", "doc": "docs/dev/handoffs/pre-epic-b-intermediate-steps.md", "session": "24889186-748a-46ce-936c-8fcdf3e7fea6", "branch": "feat/prior-apps-pipeline", "commit": "6917d30", "actor": "amodal1", "agent": "claude-opus-5", "ts": "2026-08-10T15:51:49Z", "fingerprint": "0c4e114fa3a0"}
+{"event": "compacted", "session": "unknown", "branch": "feat/prior-apps-pipeline", "trigger": "unknown", "ts": "2026-08-10T22:53:01Z"}

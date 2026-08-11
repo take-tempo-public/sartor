@@ -1,4 +1,4 @@
-"""PriorAppsPage — the Prior Applications panel + resume-into-wizard flow."""
+"""PriorAppsPage — the shared application-detail modal + resume-into-wizard flow."""
 
 from __future__ import annotations
 
@@ -7,26 +7,25 @@ from ui_pages.selectors import PriorApps
 
 
 class PriorAppsPage(BasePage):
-    """Page Object for the Prior Applications panel + resume-into-wizard flow."""
+    """Page Object for the shared application-detail modal + resume-into-wizard flow.
+
+    A4 (`feat/prior-apps-pipeline`): the per-candidate Applications panel that
+    used to host card-click navigation into this modal was removed — the
+    Pipeline board (`ui_pages.pipeline.PipelinePage`) is now the sole UI
+    journey into it, exercised end-to-end by
+    `tests/ux/regression/test_20260707_recruiter_roster_pipeline.py`. Callers
+    here only need "this application's detail modal is open" as a setup step
+    (Resume in wizard, meta edits, …), so `open_detail()` calls the same
+    global JS function production code calls either way,
+    `_showApplicationDetail(app_id)`, directly — decoupled from `currentUser`
+    and from replaying the Pipeline row's `onUserSelect()` cascade, which
+    would otherwise risk perturbing wizard state a caller may have already
+    built up before opening the modal.
+    """
 
     def open_detail(self, app_id: int) -> None:
-        """Open a prior-app card's detail modal.
-
-        F-23: the panel defaults to a collapsed short summary once a tailoring
-        session is active (a returning visitor's own expand/collapse choice,
-        persisted, can also leave it either way) — expand it first if needed so
-        the card is actually interactable.
-        """
-        self.page.wait_for_selector(PriorApps.PANEL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
-        panel = self.page.locator(PriorApps.PANEL)
-        if "collapsed" in (panel.get_attribute("class") or ""):
-            panel.locator(".panel-header").click()
-            self.page.wait_for_selector(
-                f"{PriorApps.PANEL}:not(.collapsed)", timeout=DEFAULT_TIMEOUT_MS
-            )
-        card = self.page.locator(PriorApps.card(app_id))
-        card.wait_for(state="visible", timeout=DEFAULT_TIMEOUT_MS)
-        card.click()
+        """Open an application's detail modal directly, by id."""
+        self.page.evaluate("(id) => _showApplicationDetail(id)", app_id)
         self.page.wait_for_selector(PriorApps.MODAL, state="visible", timeout=DEFAULT_TIMEOUT_MS)
 
     def resume_visible(self) -> bool:

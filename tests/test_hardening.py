@@ -655,6 +655,84 @@ class TestAssembleSourceUnion:
         ctx: dict = {"resume": {"text": "primary resume body"}}
         assert assemble_source_union(ctx) == ["primary resume body"]
 
+    def test_experience_summary_items_widen_the_union(self):
+        """A3 (feat/role-summary-drafting): per-role intro variants are real
+        candidate-owned corpus text that the corpus-mode `resume.text` synthesis
+        does NOT emit (db.build_context._synthesize_resume_markdown writes
+        titles + bullets + skills + education + certifications, never intros).
+        Without them in the union, a role intro the candidate wrote themselves —
+        or a draft_experience_summaries reframing of one — scores as fabricated."""
+        ctx: dict = {
+            "resume": {"text": "primary resume body"},
+            "experience_summary_items": [
+                {
+                    "experience_id": 7,
+                    "company": "Acme",
+                    "items": [
+                        {"id": 44, "text": "Ran the platform group of 12."},
+                        {"id": 45, "text": "   "},  # empty -> dropped
+                    ],
+                },
+                {"experience_id": 9, "company": "Northwind", "items": []},
+                "not-a-dict",  # defensively skipped, not fatal
+            ],
+        }
+        union = assemble_source_union(ctx)
+        assert "Ran the platform group of 12." in union
+        assert len(union) == 2  # primary + the one non-empty variant
+
+    def test_widening_changes_the_l0_verdict_on_intro_sourced_specifics(self):
+        """The falsifiable A/B behind the widening, run deterministically rather
+        than inferred: a specific that lives ONLY in a per-role intro variant is
+        flagged as fabricated against the pre-A3 union and grounded against the
+        A3 one. Without this the widening is a plausible story — the corpus-mode
+        probe run on this branch happened NOT to exercise it, because that
+        fixture's intro variant carries no numbers or novel entities
+        (`evals/TUNING_LOG.md`, A3 entry). Scored through
+        `compute_fabricated_specifics` because that is the metric the widening
+        exists to keep honest."""
+        wide: dict = {
+            "resume": {
+                "text": (
+                    "## Experience\n"
+                    "### Acme, Staff Engineer 2021 — Present\n"
+                    "- Migrated services to Kubernetes.\n"
+                )
+            },
+            "experience_summary_items": [
+                {
+                    "experience_id": 1,
+                    "company": "Acme",
+                    "items": [{"id": 9, "text": "Led a platform group of 14 engineers."}],
+                }
+            ],
+        }
+        narrow = {k: v for k, v in wide.items() if k != "experience_summary_items"}
+        # A drafted intro that reuses the candidate's own headcount.
+        generated = "- Led a platform group of 14 engineers through the Kubernetes migration.\n"
+
+        wide_out = compute_fabricated_specifics(generated, assemble_source_union(wide))
+        narrow_out = compute_fabricated_specifics(generated, assemble_source_union(narrow))
+
+        # Guard against a vacuous pass: L0 splits on BULLET_LINE_RE and returns
+        # 0.0 for ZERO scored units, so a rate comparison means nothing unless a
+        # unit was actually scored.
+        assert wide_out["total_bullets"] == 1
+        assert wide_out["total_specifics"] >= 1
+
+        assert wide_out["fabricated_specifics_rate"] == 0.0, wide_out["flagged_samples"]
+        assert narrow_out["fabricated_specifics_rate"] > 0.0
+        assert any("14" in str(s) for s in narrow_out["flagged_samples"])
+
+    def test_absent_experience_summary_items_unaffected(self):
+        """Legacy (file-based) contexts never populate experience_summary_items,
+        so --suite synthetic's union stays byte-identical to pre-A3."""
+        ctx: dict = {
+            "resume": {"text": "primary resume body"},
+            "supplemental_resumes": [{"text": "supplemental body"}],
+        }
+        assert assemble_source_union(ctx) == ["primary resume body", "supplemental body"]
+
 
 class TestCallCost:
     def test_known_sonnet_record(self):

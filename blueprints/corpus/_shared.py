@@ -33,7 +33,12 @@ if TYPE_CHECKING:
 
 
 def _experience_summary_dict(exp: Experience) -> dict[str, Any]:
-    """Compact experience row for the Career Corpus list view."""
+    """Compact experience row for the Career Corpus list view.
+
+    Carries the role's own `is_active` so the "Show retired" toggle has something
+    to branch on — without it the list JSON cannot distinguish a retired role from
+    a live one (see docs/dev/diagnosis/experience-soft-retire.md).
+    """
     official = next((t for t in exp.titles if t.is_official), None)
     active_titles = [t for t in exp.titles if t.is_active]
     active_bullets = [b for b in exp.bullets if b.is_active]
@@ -46,6 +51,7 @@ def _experience_summary_dict(exp: Experience) -> dict[str, Any]:
         "end_date": exp.end_date,
         "display_order": exp.display_order,
         "summary": exp.summary,
+        "is_active": bool(exp.is_active),
         "official_title": official.title if official else None,
         "title_count": len(active_titles),
         "bullet_count_active": len(active_bullets),
@@ -77,6 +83,10 @@ def _experience_detail_dict(exp: Experience, *, include_retired: bool = False) -
     Retired titles + bullets (is_active=0) are excluded by default so the corpus
     only ever shows live rows; pass ``include_retired=True`` (the route's
     ?include_retired=1) to surface them for the "show retired" toggle.
+
+    The ROLE's own ``is_active`` is always emitted regardless of that flag — the
+    caller already holds this row by id, and hiding its state would just make the
+    restore affordance un-renderable. ``include_retired`` governs child rows only.
     """
     titles = sorted(
         (t for t in exp.titles if include_retired or t.is_active),
@@ -94,6 +104,7 @@ def _experience_detail_dict(exp: Experience, *, include_retired: bool = False) -
         "end_date": exp.end_date,
         "display_order": exp.display_order,
         "summary": exp.summary,
+        "is_active": bool(exp.is_active),
         "titles": [
             {
                 "id": t.id,

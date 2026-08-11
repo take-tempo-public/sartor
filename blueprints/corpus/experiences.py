@@ -53,7 +53,10 @@ logger = logging.getLogger(__name__)
 def list_experiences(username: str) -> ResponseReturnValue:
     """Return the candidate's experiences in newest-first display order.
 
-    Used by the Career Corpus tab's timeline.
+    Used by the Career Corpus tab's timeline. Soft-retired roles (is_active=0) are
+    hidden unless ?include_retired=1 — the same "show retired" contract
+    `get_experience` uses for titles/bullets and `list_applications` uses for
+    prior applications.
     """
     from db.models import Candidate, Experience
     from db.session import get_session, init_db
@@ -61,6 +64,8 @@ def list_experiences(username: str) -> ResponseReturnValue:
     safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
+
+    include_retired = request.args.get("include_retired") in ("1", "true", "yes")
 
     # Wrapped with logger.exception (2026-05-26) — see list_bundled_personas
     # for rationale. The frontend surfaces "Failed to load corpus." on 500
@@ -75,14 +80,10 @@ def list_experiences(username: str) -> ResponseReturnValue:
                 # list_user_personas). Success shape is a bare array; the
                 # needs-onboarding case is the discriminated object.
                 return jsonify({"experiences": [], "needs_onboarding": True})
-            rows = (
-                session.query(Experience)
-                .filter_by(
-                    candidate_id=candidate.id,
-                )
-                .order_by(Experience.start_date.desc(), Experience.id.desc())
-                .all()
-            )
+            q = session.query(Experience).filter_by(candidate_id=candidate.id)
+            if not include_retired:
+                q = q.filter(Experience.is_active == 1)
+            rows = q.order_by(Experience.start_date.desc(), Experience.id.desc()).all()
             return jsonify([_experience_summary_dict(e) for e in rows])
         finally:
             session.close()
@@ -133,10 +134,13 @@ def create_experience(username: str) -> ResponseReturnValue:
             ),
         )
 
+        # Seed display_order from the LIVE role count — counting retired rows too
+        # would leave a gap in the sequence every time a role is retired.
         existing = (
             session.query(Experience)
             .filter_by(
                 candidate_id=candidate.id,
+                is_active=1,
             )
             .count()
         )
@@ -184,10 +188,15 @@ def get_experience(experience_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experiences/<int:experience_id>", methods=["PUT"])
 def update_experience(experience_id: int) -> ResponseReturnValue:
-    """Update company / location / dates / summary on an experience.
+    """Update company / location / dates / summary / is_active on an experience.
 
     Body fields are all optional — only those present in the payload are
     written. Returns the updated detail dict.
+
+    `is_active` is where RESTORE lands (mirrors update_bullet / update_experience_title):
+    PUT {"is_active": true} un-retires a role. Note that `_load_experience_for_candidate`
+    deliberately does NOT filter on is_active — a filter there would 404 every
+    mutation on a retired role, this restore route first among them.
     """
     from db.session import get_session, init_db
 
@@ -222,6 +231,12 @@ def update_experience(experience_id: int) -> ResponseReturnValue:
             exp.summary = (data.get("summary") or "").strip() or None
         if "display_order" in data and isinstance(data["display_order"], int):
             exp.display_order = data["display_order"]
+        if "is_active" in data:
+            # Restore (true) makes the role eligible again; retire (false) is the
+            # same state DELETE leaves, minus the bullet cascade. Restoring does
+            # NOT reactivate bullets — those carry their own flag and their own
+            # user intent.
+            exp.is_active = 1 if data["is_active"] else 0
 
         session.commit()
         session.refresh(exp)
@@ -235,11 +250,21 @@ def update_experience(experience_id: int) -> ResponseReturnValue:
 
 @corpus_bp.route("/api/experiences/<int:experience_id>", methods=["DELETE"])
 def delete_experience(experience_id: int) -> ResponseReturnValue:
-    """Soft-retire an experience: set is_active=0 on all its bullets.
+    """Soft-retire an experience: is_active=0 on the role AND on all its bullets.
 
     Hard-delete is refused because application_bullet rows have NO cascade
-    on bullet_id (preserves audit chain). The experience row itself stays,
-    but with no active bullets it vanishes from the corpus selection pool.
+    on bullet_id (preserves audit chain), so both levels are soft flags.
+
+    The role-level flag is the load-bearing half. Until it existed this route set
+    is_active=0 on child bullets only, on the theory that a role with no active
+    bullets is invisible in practice — which is a no-op for a role that has zero
+    bullets. It affected zero rows, still returned 200, and left the role listed
+    in the corpus and still rendering into generated output
+    (docs/dev/diagnosis/experience-soft-retire.md observes it at four layers).
+    The bullet cascade is kept as well, so restoring a role does not silently
+    resurrect bullets the user retired one at a time before retiring the role.
+
+    Restore via PUT /api/experiences/<id> {"is_active": true}.
     """
     from db.models import Bullet
     from db.session import get_session, init_db
@@ -253,9 +278,10 @@ def delete_experience(experience_id: int) -> ResponseReturnValue:
         if not _safe_username(candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]):
             return jsonify({"error": "Candidate validation failed"}), 403
 
+        exp.is_active = 0
         retired = session.query(Bullet).filter_by(experience_id=exp.id).update({"is_active": 0})
         session.commit()
-        return jsonify({"retired_bullets": retired, "experience_id": exp.id})
+        return jsonify({"retired_bullets": retired, "experience_id": exp.id, "is_active": False})
     except Exception:
         session.rollback()
         raise

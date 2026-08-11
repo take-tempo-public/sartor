@@ -169,43 +169,11 @@
       </div>
     </section>
 
-    <!-- APPLICATIONS (Phase D.3) -->
-    <section class="cb-panel hidden" id="panelApplications">
-      <div class="panel-header cb-bg-teal">Prior applications<span id="applicationsHeaderCount" class="panel-header-summary"></span></div>
-      <div class="panel-body">
-        <div class="edit-hint">
-          Past applications stored in the DB. Click a card to view its
-          iteration history. Pending proposals are flagged in violet.
-        </div>
-        <!-- B.8 Part 1: lifecycle-status filter (server-side via ?status=).
-             Card labels follow the canonical semantics table — a submitted
-             application reads NO RESPONSE until an outcome is reported. -->
-        <div class="form-row" style="margin-bottom:8px">
-          <label for="applicationsStatusFilter" class="sr-only">Filter applications by status</label>
-          <select id="applicationsStatusFilter" onchange="refreshApplications()"
-                  aria-label="Filter applications by status">
-            <option value="">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">No response yet</option>
-            <option value="interview">Got interview</option>
-            <option value="rejected">Rejected</option>
-            <option value="withdrawn">Withdrawn</option>
-          </select>
-          <label class="applications-show-retired">
-            <input type="checkbox" id="applicationsShowRetired"
-                   onchange="toggleApplicationsRetired(this.checked)">
-            Show retired
-          </label>
-        </div>
-        <div id="applicationsList" class="application-list">
-          <div class="corpus-empty-experience">Loading…</div>
-        </div>
-        <div class="form-row" style="margin-top:8px">
-          <button class="cb-btn cb-bg-teal" onclick="refreshApplications()">Refresh</button>
-          <span class="edit-hint" id="applicationsCount" style="margin:0">0 applications</span>
-        </div>
-      </div>
-    </section>
+    <!-- (A4, feat/prior-apps-pipeline: the "Prior applications" panel
+         (Phase D.3) that used to live here was removed — Pipeline is now the
+         sole surface for browsing past applications, and clicking a row
+         there opens the shared #appDetailModal in place. See
+         docs/dev/blast-radius/prior-apps-pipeline.md.) -->
 
     <!-- (Workstream B1.3: USER CONFIGURATION moved to the Settings
          drawer; only the wizard + dynamic surfaces live in the
@@ -330,10 +298,23 @@
              recommend / gap-fill) that already reloads Compose silently.
              Driven from the SAME data-compose-bg-pending counter the UX
              settle gate depends on (_markComposeBgReload); never toggled
-             independently. -->
+             independently. A2 (feat/compose-wait-ux) added a per-call LABEL to
+             that counter, so this text is now set from JS to name whichever leg
+             of the cascade is running; the counter itself is unchanged, and the
+             chip is still never toggled from a second source of truth. -->
         <span id="composeBgChip" class="compose-bg-chip hidden" aria-live="polite">Updating suggestions…</span>
       </div>
       <div class="panel-body">
+        <!-- A2 (feat/compose-wait-ux) — in-flight block for the ARRIVAL volley,
+             on the same idiom as #analysisPending / #generatePending. The panel
+             becomes visible when wizardGoTo(3) fires loadComposition(), which is
+             when the background cascade STARTS; this block (and the _setBusy
+             banner beside it) stay up until that cascade reaches its terminal
+             render, so "Compose is visible" stops reading as "Compose is done". -->
+        <div class="analysis-pending hidden" id="composePending" aria-live="polite">
+          <span class="analysis-pending-dot" aria-hidden="true"></span>
+          Composing your tailored résumé — picking bullets, positioning and skills…
+        </div>
         <div class="edit-hint">
           The AI picked the strongest bullets for this job. Pin to force-
           include, exclude to drop, or open <em>find more</em> to add
@@ -772,6 +753,46 @@
             <div id="summaryVariantsList"></div>
           </section>
 
+          <!-- Section order (Epic A sprint A1, owner-decided 2026-08-08):
+               Summary → Work Experience → Education → Certifications → Skills.
+               Work Experience leads because it is the corpus's substance and the
+               section users edit most; credentials (Education, Certifications)
+               stay adjacent; Skills closes the panel. Every ui_pages/ selector
+               for these is ID-based, so this order is presentational only —
+               keep it that way (no :nth-child coupling). -->
+          <div id="corpusExperienceList" class="corpus-experience-list"></div>
+
+          <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
+               Corpus Item, same chrome as the Skills editor below. No
+               pending-review lifecycle (a human types these directly; see
+               db/models.py Education). Reorder is two ↑/↓ buttons per row
+               (mirrors the Compose bullet-list keyboard-reorder affordance —
+               .reorder-controls/.reorder-btn — since neither the Skills nor
+               Summary-variant editors have reorder chrome to copy). -->
+          <section class="education-editor-section" id="educationEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Education</div>
+              <button class="corpus-action-btn" onclick="openEducationAdd()">+ Add education</button>
+            </div>
+            <div class="edit-hint" id="educationEditorEmptyHint" style="margin-bottom:8px">
+              Schools and degrees the résumé can surface.
+            </div>
+            <div id="educationEditorList"></div>
+          </section>
+
+          <!-- F-04 (UX-W1, 2026-07-07) — Certifications editor. Same shape
+               as the Education editor immediately above. -->
+          <section class="certifications-editor-section" id="certificationsEditorSection" style="display:none">
+            <div class="corpus-section-header">
+              <div class="corpus-section-title">Certifications</div>
+              <button class="corpus-action-btn" onclick="openCertificationAdd()">+ Add certification</button>
+            </div>
+            <div class="edit-hint" id="certificationsEditorEmptyHint" style="margin-bottom:8px">
+              Professional certifications the résumé can surface.
+            </div>
+            <div id="certificationsEditorList"></div>
+          </section>
+
           <!-- B.5 (Sprint 6.6) — Skills editor. Candidate-level skill Corpus
                Items: add / retire / tag the canonical skills, and review
                (approve / deny) skills the AI proposed from a JD. Per-application
@@ -806,39 +827,6 @@
               <div id="skillsEditorDenied"></div>
             </details>
           </section>
-
-          <!-- F-04 (UX-W1, 2026-07-07) — Education editor. Candidate-level
-               Corpus Item, same chrome as the Skills editor above. No
-               pending-review lifecycle (a human types these directly; see
-               db/models.py Education). Reorder is two ↑/↓ buttons per row
-               (mirrors the Compose bullet-list keyboard-reorder affordance —
-               .reorder-controls/.reorder-btn — since neither the Skills nor
-               Summary-variant editors have reorder chrome to copy). -->
-          <section class="education-editor-section" id="educationEditorSection" style="display:none">
-            <div class="corpus-section-header">
-              <div class="corpus-section-title">Education</div>
-              <button class="corpus-action-btn" onclick="openEducationAdd()">+ Add education</button>
-            </div>
-            <div class="edit-hint" id="educationEditorEmptyHint" style="margin-bottom:8px">
-              Schools and degrees the résumé can surface.
-            </div>
-            <div id="educationEditorList"></div>
-          </section>
-
-          <!-- F-04 (UX-W1, 2026-07-07) — Certifications editor. Same shape
-               as the Education editor immediately above. -->
-          <section class="certifications-editor-section" id="certificationsEditorSection" style="display:none">
-            <div class="corpus-section-header">
-              <div class="corpus-section-title">Certifications</div>
-              <button class="corpus-action-btn" onclick="openCertificationAdd()">+ Add certification</button>
-            </div>
-            <div class="edit-hint" id="certificationsEditorEmptyHint" style="margin-bottom:8px">
-              Professional certifications the résumé can surface.
-            </div>
-            <div id="certificationsEditorList"></div>
-          </section>
-
-          <div id="corpusExperienceList" class="corpus-experience-list"></div>
         </div>
       </section>
     </div>

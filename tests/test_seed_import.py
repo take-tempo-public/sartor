@@ -44,6 +44,7 @@ def _seed_candidate(session) -> None:
         Certification,
         Education,
         Experience,
+        ExperienceSummaryItem,
         ExperienceTitle,
         ExperienceTitleTag,
         Skill,
@@ -92,6 +93,34 @@ def _seed_candidate(session) -> None:
     session.add(title)
     session.flush()
     session.add(ExperienceTitleTag(experience_title_id=title.id, tag_id=tag.id, confidence=1.0))
+
+    # A3 — per-role intro variants, one live and one retired, so the round-trip
+    # covers both the key's presence and its faithful-snapshot flag semantics.
+    session.add_all(
+        [
+            ExperienceSummaryItem(
+                experience_id=e.id,
+                text="Ran reliability for the streaming platform.",
+                label="reliability framing",
+                display_order=0,
+                is_active=1,
+                is_pending_review=0,
+                source="manual",
+                has_outcome=0,
+            ),
+            ExperienceSummaryItem(
+                experience_id=e.id,
+                text="Retired intro.",
+                label=None,
+                display_order=1,
+                is_active=0,
+                is_pending_review=0,
+                source="imported",
+                has_outcome=0,
+            ),
+        ]
+    )
+    session.flush()
 
     active = Bullet(
         experience_id=e.id,
@@ -217,6 +246,45 @@ class TestRoundTrip:
 
             flags = {b.text: b.is_active for b in fresh.query(Bullet).all()}
         assert flags == {"Cut p99 latency 40%.": 1, "Retired bullet.": 0}
+
+    def test_experience_summary_items_round_trip(self, db_session) -> None:
+        """A3 — per-role intro variants ride the seed, so a corpus-backed eval of
+        `analyzer.draft_experience_summaries` sees the same grounding source the
+        live product does. Before this branch the seed carried titles + bullets
+        + the LEGACY denormalized `experience.summary` column, but not the
+        canonical `ExperienceSummaryItem` rows, so every seeded role arrived with
+        zero intro variants and that third grounding source was untestable."""
+        _seed_candidate(db_session)
+        seed = export_seed(db_session, candidate_username="alex")
+        intros = seed["experiences"][0]["summary_items"]
+        assert [i["text"] for i in intros] == [
+            "Ran reliability for the streaming platform.",
+            "Retired intro.",
+        ]
+
+        with seeded_session(seed) as (fresh, _username):
+            from db.models import ExperienceSummaryItem
+
+            rows = fresh.query(ExperienceSummaryItem).order_by(ExperienceSummaryItem.id).all()
+            assert [(r.text, r.is_active, r.source) for r in rows] == [
+                ("Ran reliability for the streaming platform.", 1, "manual"),
+                ("Retired intro.", 0, "imported"),
+            ]
+            assert rows[0].label == "reliability framing"
+
+    def test_seed_without_summary_items_key_still_imports(self, db_session) -> None:
+        """Back-compat, the same rule `experience.is_active` set: a seed exported
+        before A3 has no `summary_items` key at all. It must import as a role with
+        no intros, NOT raise — which is why SEED_SCHEMA_VERSION stays at 1."""
+        _seed_candidate(db_session)
+        seed = export_seed(db_session, candidate_username="alex")
+        for exp in seed["experiences"]:
+            exp.pop("summary_items", None)
+
+        with seeded_session(seed) as (fresh, _username):
+            from db.models import ExperienceSummaryItem
+
+            assert fresh.query(ExperienceSummaryItem).count() == 0
 
     def test_tag_links_round_trip(self, db_session) -> None:
         """The bullet/title/summary tag links resolve to the imported tags with

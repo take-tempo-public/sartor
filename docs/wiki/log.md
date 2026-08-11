@@ -1167,3 +1167,522 @@ two-path slice and advancing the checkpoint would misrepresent that backlog as c
 Drift after this branch: **20 wiki-relevant files against the 75-file block threshold** —
 unchanged from the entry above, per the measurement in this entry's own correction note.
 Not a merge blocker; the backlog stays queued for the next bounded catch-up pass.
+
+## 2026-08-08 — scoped close-out relevance check (`feat/corpus-polish`)
+
+Epic A sprint A1a — a presentational reorder of the Career corpus panel plus two row-density
+changes. Three of this branch's changed paths classify **wiki-relevant** via
+`scripts/wiki_relevance.py`: `templates/index.html`, `static/app.js`, `static/style.css`.
+The rest classify irrelevant and are accounted for, not overlooked:
+`docs/dev/work/items/0058-*.md` / `0059-*.md` and `docs/dev/work/BOARD.md` (per-item filings
+plus the file generated from them), and `docs/dev/ledger/*.jsonl` (provenance records).
+
+**Pages edited (0). Pages verified no-edit:** grepped every `docs/wiki/pages/*.md` for
+`panelCorpus` / `corpus panel` / `section order` / `skillsEditorSection` / `Summary variants`.
+Two hits, both in a **Grounding:** header rather than in body prose —
+[`pages/career-corpus.md`](pages/career-corpus.md) line 6 and
+[`pages/importing-your-experience.md`](pages/importing-your-experience.md) line 7. Both cite
+by **ID selector** (`#panelCorpus`, `#educationEditorSection`, `#certificationsEditorSection`,
+`#corpusIngestFile`), not by line number, and every one of those IDs still exists, unrenamed,
+in the reordered markup — verified by an ID-set diff across the whole panel, which came back
+identical at 34 IDs before and after.
+
+The distinction that makes this a no-edit rather than a convenient skip: **neither page
+documents the section *order*.** They describe what the corpus is and how it fills up. A
+reader following either page finds every element it names, in a panel whose sequence it never
+asserted. Had either page said "Skills sits above Education," this would have been a required
+edit. No scribe/auditor spend — $0.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12. The
+checkpoint remains `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30) and still lags the
+backlog the entries above document; this branch inspected only its own three-path slice.
+Drift after this branch: **22 wiki-relevant files against the 75-file block threshold**, up 2
+from the 20 above. Measured, not reasoned: of this branch's three relevant paths,
+`static/app.js` was **already** in the drift set from earlier branches, while
+`templates/index.html` and `static/style.css` are new to it. Not a merge blocker; the backlog
+stays queued for the next bounded catch-up pass.
+
+---
+
+## 2026-08-08 — `fix/experience-soft-retire` (Epic A, sprint A1b) — scoped diff pass
+
+**Mode:** diff, window `7c15c2e` → working tree (this branch's own slice only, per the
+close-out per-branch rule). **Not** the `.last_ingest_sha` window.
+
+**Sources read:** the branch's 17 wiki-relevant paths — the `Experience.is_active`
+soft-retire column (`db/models.py`, `db/migrations/versions/0016_experience_is_active.py`),
+its consumer filters (`db/build_context.py`, `corpus_to_json_resume.py`,
+`blueprints/corpus/{experiences,_shared,curation,skills}.py`, `blueprints/applications.py`,
+`onboarding/{corpus_import,review_cli}.py`, `evals/seed_import.py`,
+`scripts/export_corpus_seed.py`, `web_infra/openapi.py`) and the UI
+(`static/app.js`, `static/style.css`).
+
+**Pages changed (7, none created):** `corpus-data-model` (the load-bearing one — a fourth
+carrier of the `is_active` pattern, chain head `0015`→`0016`), `corpus-to-output-reach`
+(the two generation chokepoints), `route-surface` (three changed route contracts),
+`career-corpus`, `frontend-wizard`, `importing-your-experience`, `openapi-api-reference`.
+
+**Verified no-edit (checked, not skipped):** `context-set-contract` and
+`application-audit-chain` — the `context_set` shape and frozen-snapshot semantics
+deliberately did *not* change, which is itself the recorded decision; `code-module-map` —
+no module added or removed.
+
+**Auditor catch-rate: 4 findings / 7 pages audited.** One DRIFTED cite
+(`importing-your-experience` carried bare line numbers against the repo's path/symbol
+convention), one DRIFTED label (`frontend-wizard` said the button reads "Restore" when it
+reads "Restore experience"), one UNSUPPORTED structural defect (a one-way `[[career-corpus]]`
+backlink with no return half), and one audience-tier violation (`career-corpus` is stamped
+`user — no technical background assumed` and had acquired function names and module paths in
+its body prose). All four repaired by the orchestrator; author never graded its own page.
+
+**Two classes the auditors did NOT catch**, recorded so the catch-rate is not read as
+completeness: (1) every scribe emitted its new paragraphs as single unwrapped lines against
+pages wrapped at ~78 columns — cosmetic, but it would have made every future diff on those
+pages a one-line churn; (2) `index.md`'s `corpus-data-model` entry read "alembic head 0010",
+stale since before this branch and now doubly so. Both were found by reading the diffs
+directly. The grounding auditors are scoped to cite/claim verification and would not be
+expected to see either — that scoping is the point, not a defect, but it means a human (or
+orchestrator) diff read remains load-bearing.
+
+**One claim graded softer than the rest:** `corpus-to-output-reach`'s frozen-snapshot
+consequence was marked SUPPORTED on the reasoning that it "logically follows", not by
+tracing the re-render path. It agrees with the independently-recorded decision in
+`docs/dev/blast-radius/experience-soft-retire.md`, so it is not suspect — but it is
+inference, and should not later be cited as observed.
+
+**`.last_ingest_sha` deliberately NOT advanced** — declared, not silently left, per C-12.
+The checkpoint stays `65b0f88f5c2469484a3ed2ad8edbe28991f56df1` (2026-07-30). This pass
+inspected one branch's slice; advancing the checkpoint would assert the whole backlog had
+been ingested.
+
+**Drift after this branch: 36 wiki-relevant files against the 75-file block threshold**, up
+14 from 22. Measured, not reasoned (`scripts/wiki_relevance.is_wiki_relevant` over
+`65b0f88f…`→HEAD versus this branch's own changed set): of this branch's 17 relevant paths,
+`static/app.js`, `static/style.css` and `docs/architecture.md` were already in the drift set;
+the other 14 are new to it. **Stated limitation:** those 14 are precisely the files this pass
+just documented, but the counter measures "changed since checkpoint", not "wiki coverage
+current" — so correctly-ingested work still inflates the number while the checkpoint is
+deliberately held back. Now near half the threshold; the backlog wants a bounded catch-up
+pass before it approaches 75.
+
+---
+
+## 2026-08-09 — `feat/compose-wait-ux` (Epic A, sprint A2 branch) — **widened catch-up pass; checkpoint ADVANCED**
+
+**Mode:** full `.last_ingest_sha` window — `65b0f88f5c2469484a3ed2ad8edbe28991f56df1`
+(2026-07-30) → `2a0b37a5c1105637fc283b0ac6df8c9d90a1e817` (HEAD). Deliberately **not**
+a scoped per-branch pass. Why it exists at all:
+[`../dev/epic-a-chain-design-corrections.md`](../dev/epic-a-chain-design-corrections.md)
+§11.11 — the freshness counter measures *files changed since the checkpoint*, so
+correctly-ingested work still inflated it while every honest scoped pass declined to
+advance the marker. A ratchet that is never zeroed cannot engage. Zeroing it is what
+makes every later sprint's per-branch advance a truthful, cheap claim.
+
+**Drift, verbatim.**
+
+- Before: `wiki_freshness: OK — 36 file(s) changed since the last ingest (< 75-file block threshold).`
+- After: `wiki_freshness: OK — 0 file(s) changed since the last ingest (< 75-file block threshold).`
+
+**The relevant set: 36 of 247 changed paths**, derived mechanically
+(`scripts.wiki_relevance.is_wiki_relevant` over `git diff --name-only <ckpt> HEAD`), not
+by judgment: `.gitignore`, `AGENTS.md`, `CLAUDE.md`, `analyzer.py`,
+`blueprints/applications.py`, `blueprints/corpus/{_shared,curation,experiences,skills}.py`,
+`blueprints/diagnostics.py`, `corpus_to_json_resume.py`, `dashboard/routes.py`,
+`dashboard/templates/dashboard.html`, `db/build_context.py`,
+`db/migrations/versions/0016_experience_is_active.py`, `db/models.py`,
+`docs/architecture.md`, `docs/dev/AGENT_HANDOFF_TEMPLATE.md`, `docs/dev/RELEASE_ARC.md`,
+`docs/dev/work/SCHEMA.md`, `docs/governance/{charter,enforcement}.md`,
+`evals/{README.md,annotation.py,bootstrap.py,runner.py,seed_import.py}`, `hardening.py`,
+`json_resume.py`, `onboarding/{corpus_import,review_cli}.py`,
+`scripts/export_corpus_seed.py`, `static/app.js`, `static/style.css`,
+`templates/index.html`, `web_infra/openapi.py`.
+
+**Pages edited (9; none created).**
+
+- `eval-harness` — F-14 `jd_label` (one derivation in `hardening.extract_jd_label`, three
+  carriers, never re-derived); result records are `schema_version 3`; the item 11 → 13
+  annotation-pin integrity pair (`bootstrap_fingerprint` + the fail-closed
+  `ensure_anchor_covered_by_annotations`); `split_outside_brackets` in skill extraction.
+  Also corrected `progress sartor` → `progress callback` — collateral damage from the
+  product rename, which must never touch the recruiting sense of "callback".
+- `diagnostics-console` — `_resolve_bootstrap_pin` returning `(path, stale_reason)` and
+  failing **closed** with an HTTP 409 rather than substituting a newer bootstrap; the
+  second 409 on an uncovered anchor; the restored recent-evals tile (item 32) and what it
+  pointedly does *not* render; `_jd_label_display` / `_fixture_jd_labels` and why the
+  label map is shared rather than per-table.
+- `frontend-wizard` — the A2 "Composing…" wait gate (`_holdComposingBusy` /
+  `_flushComposeSettleWaiters`, the ordering guarantee against `Compose.SETTLED`, the
+  `_composeApplicationId` guard, the 20 s cap as a **declared** tradeoff); the labelled
+  `_markComposeBgReload` chip; A1a's corpus panel section order + compacted skill rows
+  with the three cascade/scoping constraints; item 31's `_statusGen` and `SELECT_READY`.
+- `consistency-tracks-enforcement` — a dated "what happened next" section: the Q2 finding
+  became charter **C-11**; the closure bar, the C-10 gate + its dual registry audit, the
+  handoff recurrence section; and the **enforcement reach gap** — consistency tracks
+  enforcement, and enforcement tracks which agent you are.
+- `governance-extraction` — `enforcement.md`'s new "Enforcement reach" section read as
+  what it says it is: the extraction checklist. A Claude-Code-only clause does not travel.
+- `engineering-workstreams` — the v1.1.0 Final March epics A–E as the live plan of record,
+  plus the two bounded Epic-A-only process amendments.
+- `deterministic-llm-boundary` — `hardening.extract_jd_label` on the deterministic side;
+  removed a leftover internal contradiction (the page said "no exceptions remain" and
+  then, 14 lines later, called the scope check "the lone by-design exception").
+- `document-rendering` — `json_resume.split_outside_brackets`, its two documented
+  degenerate-input behaviors, and why it is public/shared with `evals/bootstrap.py`.
+- `prompt-version-discipline` — `PROMPT_VERSION` `2026-06-13.1` → `2026-07-08.4`;
+  `_BASE_SYSTEM_PROMPTS` 11 → **16** keys, reframed as a growing registry rather than a
+  fixed list; `AVATAR_PROMPT_VERSION` `2026-06-19.1` → `2026-07-08.1`, and its two bare
+  line-number cites (`analyzer.py:283–289`, `analyzer.py:519–540` — both drifted; the real
+  definitions are at lines 402 and 642) replaced with symbol cites per SCHEMA's own
+  stated preference.
+
+`index.md` one-liners refreshed for the four pages whose scope changed.
+
+**Verified no-edit (checked, not skipped).**
+
+- `.gitignore` — a `personas/bundled/tmp*` re-ignore. No page describes ignore rules.
+- `AGENTS.md` / `CLAUDE.md` — the C-10/C-11/C-12 operational mirror and the
+  `require-consumer-enumeration` hook entry. Binding text lives in `docs/governance/`
+  and is **cited, never restated** (SCHEMA "The contract lives elsewhere", D5); the
+  wiki-side coverage went into `consistency-tracks-enforcement` + `governance-extraction`.
+- `docs/architecture.md` — its two changes (the `check_refinement_scope` routing diagram,
+  and dropping a non-existent `is_pending_review` from the `experience` ER entity) were
+  already correctly reflected in `llm-call-catalog` and `corpus-data-model`. Confirmed
+  against `db/models.py:Experience`, which has no such column.
+- `llm-call-catalog` — already carries the item-21 `check_refinement_scope` entry from an
+  earlier pass; re-read, still accurate at HEAD.
+- `corpus-data-model` — already at alembic head `0016` with `Experience.is_active`
+  (sprint A1b's pass); no further change in this window.
+- `route-surface` — the changed corpus route contracts were covered by A1b, and the
+  diagnostics write surface is deferred to `diagnostics-console` by design, which this
+  pass updated instead.
+- `code-module-map` — no module added or removed in the window; its
+  `scripts/work_items.py` entry already describes the C-11 closure bar.
+- `evals/seed_import.py`, `onboarding/*`, `scripts/export_corpus_seed.py`,
+  `web_infra/openapi.py`, `blueprints/corpus/*`, `blueprints/applications.py`,
+  `corpus_to_json_resume.py`, `db/*` — the `is_active` consumer set, fully covered by
+  sprint A1b's pass; re-checked for changes outside that slice, none found.
+
+**`.last_ingest_sha` ADVANCED** to `2a0b37a5c1105637fc283b0ac6df8c9d90a1e817`. This is the
+first advance since 2026-07-30 and it is claimed honestly: the whole 36-path relevant set
+above was worked source-by-source, each either edited into a page or given a
+verified-no-edit line here. From here a per-branch pass's own slice **is** the whole delta,
+so advancing the checkpoint at each branch close-out becomes truthful and cheap — the
+owner's stated goal.
+
+**Stated limits (C-0 / C-12 — named, not papered over).**
+
+1. **Author ≠ auditor, and this pass had no auditor.** Every cite was verified against the
+   working tree as it was written (symbols confirmed present in `static/app.js`,
+   `dashboard/routes.py`, `blueprints/diagnostics.py`, `evals/annotation.py`,
+   `hardening.py`, `json_resume.py`, `evals/bootstrap.py`, `evals/runner.py`,
+   `analyzer.py`, plus `tests/test_enforcement_coverage.py`,
+   `tests/test_work_items_closure_bar.py::TestGrandfatherListIsClosed` and
+   `scripts/verify_doc_template.py:required_headings`) — but self-verification is not an
+   audit. The nine pages above are the audit list.
+2. **One claim was written wrong and corrected mid-pass**, recorded so the correction is
+   not invisible: the 2026-08-09 RELEASE_ARC amendment was first summarized as "one gate
+   run after the last sprint." It is not — it is one run *per sprint*, after the commit,
+   dropping the vacuous pre-commit run. Caught by reading `RELEASE_ARC.md:1713` rather
+   than trusting the paraphrase.
+3. **Depth is uneven by design.** Prioritized by "would a reader be actively misled" — so
+   the Epic A UX work, the eval/annotation integrity pair and the governance clauses got
+   full sections, while `.gitignore` and the AGENTS/CLAUDE mirrors got a decision and a
+   line. A path being in the verified-no-edit list means a decision was made and recorded,
+   not that it was read as closely as an edited one.
+
+---
+
+## 2026-08-09 — grounding audit of the A2 catch-up pass (9 pages, author ≠ auditor)
+
+**What:** the nine pages the `feat/compose-wait-ux` catch-up pass edited (the stated limit
+1 above — "the nine pages above are the audit list") were handed to independent read-only
+`wiki-grounding-auditor` agents. **Author ≠ auditor was preserved:** no page was audited by
+the context that wrote it.
+
+**Aggregate verdict: 6 DRIFTED, 0 UNSUPPORTED.** Five pages clean, four needed attention.
+
+| page | verdict |
+|---|---|
+| `consistency-tracks-enforcement` | CLEAN |
+| `deterministic-llm-boundary` | CLEAN |
+| `document-rendering` | CLEAN |
+| `eval-harness` | CLEAN |
+| `prompt-version-discipline` | CLEAN |
+| `governance-extraction` | 1 DRIFTED |
+| `engineering-workstreams` | 1 DRIFTED |
+| `diagnostics-console` | 3 DRIFTED |
+| `frontend-wizard` | 1 DRIFTED |
+
+**All six re-anchored in this branch**, each re-verified against the working tree as it was
+rewritten:
+
+1. `governance-extraction` — claimed the extraction boundaries live in `charter.md`'s
+   "citation map (table at the end)". There is **no table**: the map is the inline
+   `[src: …]` tag on every clause (`charter.md` "Evidence base" preamble). Description
+   corrected; the RESOLVED decision it describes is unaffected.
+2. `engineering-workstreams` — a `[synthesis]` claim credited `[[governance-extraction]]`
+   as the recorder of W-1's still-serial posture. It is not the canonical home:
+   `docs/governance/charter.md`'s **"Posture" paragraph** under W-1 is, and
+   `docs/dev/RELEASE_ARC.md` §"Cadence + process" is what ties the sprint structure to
+   W-1.3. Re-anchored to both; the `[[governance-extraction]]` backlink survives in
+   `## Related`, where it is accurate.
+3. `diagnostics-console` — three cite groups rotted by roughly +48/+58 lines against
+   `blueprints/diagnostics.py`. **The code was correct; only the anchors were stale.** All
+   three re-anchored to **symbols, not line numbers**: the queue-poll sites now name
+   `_HEARTBEAT_INTERVAL_S` plus the four routes that poll on it
+   (`annotation_score_grounding`, `annotation_bootstrap_stream`, `eval_run_stream`,
+   `tune_run_stream`); the `except GeneratorExit` blocks name the same four functions; and
+   the `if not cancel_event.is_set()` check drops its bare line number and stays described
+   by its role inside `tune_run_stream`.
+4. `frontend-wizard` — named the help-seen constant `CB_HELP_SEEN_PREFIX`, which does not
+   exist. It is `SEEN_PREFIX` on the `Help` class in `ui_pages/selectors.py:87`. Rewritten
+   to the durable string form `cb_help_seen:` plus a symbol cite to
+   `ui_pages/selectors.py:Help.SEEN_PREFIX`.
+
+**Method note carried forward.** Findings 3 and 4 are the same class: a bare line number or
+a guessed constant name rots while the code stays right. Re-anchoring preferred
+symbol/function cites throughout, which is what `SCHEMA.md` already asks for. This
+recurrence is filed in the branch handoff's recurrences section, where it is stated plainly
+that **no fail-closed mechanism was authored** for it (a `docs/wiki/` lint rejecting bare
+`path:line` cites would be a new enforcement surface arriving at close-out — an owner
+decision under the Epic A envelope's flag-stop rule, not a closer's call).
+
+**Not re-audited:** the re-anchors above were written by this closing context and therefore
+have no independent auditor of their own. Stated, not papered over (C-0).
+
+---
+
+## 2026-08-09 — incremental wiki pass, Epic A sprint A3 close (item 20, the Step-5 rail gate)
+
+**Checkpoint:** `2a0b37a` → `3e2b8a5136c1ce1e1fd820d865742d3e5d9ab846`. **Drift before: 4.
+Drift after: 0.**
+
+**This is the first genuinely incremental pass** since the ratchet was zeroed on A2. The
+relevant set was derived mechanically, not by judgement: `git diff --name-only 2a0b37a HEAD`
+(29 files) filtered through `scripts/wiki_relevance.py:is_wiki_relevant`, leaving **4**:
+
+- `hardening.py`
+- `blueprints/applications.py`
+- `blueprints/generation.py`
+- `static/app.js`
+
+**The change being documented.** Item 20 made the Step-5 wizard rail a hard gate and gave
+client and server **one** predicate to gate on — the new public
+`hardening.frozen_composition_doc`. Previously the client asked only "is there an
+`approved_composition` dict?" while `/api/generate` applied a stricter test, so the rail
+could open onto Step-5 copy promising deterministic assembly over a run the server then
+handed to the legacy LLM `generate()`.
+
+**Pages edited (4) — this is the audit list.** Author ≠ auditor: all four were written by
+this closing context and are **not** audited here.
+
+| page | edit |
+|---|---|
+| `corpus-to-output-reach` | New `## One predicate: "will this context assemble deterministically?"` section — the three conditions, the three call sites, why one implementation, and the allocation-free cost argument for calling rather than caching. `hardening.py` added to Sources. Reach path 2's description of `_frozen_composition` corrected (it no longer implements the test). |
+| `frontend-wizard` | Step-5 gate added to the `_wizardReachable` description; new paragraphs on the hard gate's condition (the server's, not a client re-derivation), the deliberate empty-`career_corpus` lock-out and why it isn't a wall-in, and `_wizardLockReason` as the one message source for the toast + the previously-silent greyed-button `title`. `_compositionFrozen`'s two setters (`_postComposition`'s returned `frozen`; `resumeApplicationIntoWizard`'s `has_frozen_composition`) documented in the freeze section. |
+| `context-set-contract` | The `approved_composition` bullet now names `frozen_composition_doc` as the one predicate and says why it lives in `hardening.py` — the module that owns this contract. |
+| `route-surface` | The composition POST's response `frozen` field is not an echo of the request's `freeze` flag; it is the predicate applied in-lock to the dict about to be written. |
+
+Backlinks reconciled bidirectionally: `context-set-contract` ↔ `frontend-wizard` added
+(both directions); the `corpus-to-output-reach` ↔ `frontend-wizard` pair already existed and
+its `corpus-to-output-reach` line was sharpened to name the shared predicate.
+
+**Verified no-edit** (source changed, or page cites a changed symbol, and the page's existing
+claims still hold at HEAD):
+
+- `pipeline-stages` — cites `blueprints/generation.py:_frozen_composition` for the Step-5
+  frozen-vs-legacy branch. The symbol still exists with unchanged semantics (it is now a
+  named wrapper delegating to `hardening.frozen_composition_doc`), and the page describes the
+  branch, not the predicate's implementation. Claim unaffected.
+- `document-rendering` — same symbol, same reason; the page's subject is what happens *after*
+  the gate returns a doc.
+- `deterministic-llm-boundary` — `hardening.py` gained a new public function, but the page
+  claims only that the module carries no LLM call. `frozen_composition_doc` is pure dict
+  reads; the claim is strengthened, not challenged.
+- `llm-call-catalog`, `iteration-audit-chain`, `corpus-data-model` — mention
+  `approved_composition` as data, never the freeze predicate. No cite touched by this diff.
+
+**Cite convention.** Every cite added in this pass is a **symbol** cite
+(`hardening.py:frozen_composition_doc`, `app.js:_wizardLockReason`,
+`blueprints/applications.py:_pre_generate_hydration`), never a bare `path:line` — following
+the previous entry's carried-forward method note. That convention is still **unenforced**:
+`SCHEMA.md` prefers it, and nothing rejects a bare line cite.
+
+## 2026-08-09 — grounding-audit corrections to the item-20 pass (3 findings applied)
+
+Independent auditors grounding-audited the item-20 pass logged directly above (author ≠
+auditor — that pass's four pages were all written by the closing context and were **not**
+self-audited). Three findings, all applied here; each premise was re-verified against the
+code before editing rather than taken on the auditors' word.
+
+| # | finding | fix |
+|---|---|---|
+| 1 | Off-by-one cost claim. `corpus-to-output-reach` and the `hardening.frozen_composition_doc` docstring both said "at most **five** `dict.get` lookups". The worst case is **six**: `career_corpus`, `approved_composition`, `basics`, `basics.get("summary")`, `doc.get("work")`, `doc.get("skills")` — the last reached only when `work` and `summary` are both falsy in the `or`-chain. | Both places corrected to six. The allocation-free / by-reference / short-circuit parts of the claim re-audited as correct and left alone. |
+| 2 | `context-set-contract` conflated two counts, saying the predicate is asked at "three seams across `blueprints/generation.py`, `blueprints/applications.py` and the wizard rail". Two *implementations* once existed and disagreed (that is the drift the shared helper fixed); **three** *call sites* exist today (`generation.py:_frozen_composition`, `applications.py:_pre_generate_hydration`, `applications.py:save_application_composition`); the wizard rail is neither — it reads the server's flag and never computes the predicate. | Sentence rewritten so the two counts are distinct and the rail is described as a **consumer** of the decision. Now consistent with the docstring's own "those two … / all three seams" language. |
+| 3 | True claim cited to a source that does not contain it. The page said the predicate lives in `hardening.py` because `applications` cannot import `generation` (cycle: `generation` → `templates` → `applications`). The cycle is real, but the rationale appeared in neither the cited source nor the docstring, which said only "because more than one seam has to ask the question and they must not answer it differently". | Fixed by making it **sourced**, not by weakening the page: the import-cycle rationale was added to the `frozen_composition_doc` docstring, next to the code it explains, so the page's citation is now honest. |
+
+**Import cycle verified first-hand**, not inherited: `blueprints/generation.py` imports
+`blueprints.templates`; `blueprints/templates.py` imports `blueprints.applications`
+(`_load_application_owned`); `blueprints/applications.py` imports no `blueprints.generation`
+at all (its only two matches for the string are a docstring and a comment). `hardening.py`
+imports no blueprint, and both blueprints already import it — so it is the only shared home
+that costs nothing structurally. That last sentence is now in the docstring.
+
+**Sources touched:** `hardening.py` (`frozen_composition_doc` docstring only — the module is
+deterministic under charter C-6, and no logic, import, or behavior changed). It is in
+`ACKNOWLEDGED_NOT_GATED` in `scripts/enforcement/blast_radius.py`, confirmed before editing,
+so no C-10 blast-radius dossier is owed.
+
+**Cite convention.** Symbol cites throughout, no bare `path:line` — carried forward from the
+two entries above. Still **unenforced**: `SCHEMA.md` prefers it, nothing rejects a line cite.
+
+---
+
+## 2026-08-10 — Epic A close-out wiki pass, the epic's own remaining delta (`feat/prior-apps-pipeline`)
+
+**Deliberately deferred, now due.** Per
+[`../dev/epic-a-chain-design-corrections.md`](../dev/epic-a-chain-design-corrections.md)
+§15.2 ("light per sprint, one full close-out at the epic end"), this pass covers the
+delta the incremental A2/item-20 passes above did not: `.last_ingest_sha`
+(`3e2b8a5`, item 20's tip) → this branch. **`.last_ingest_sha` deliberately NOT
+advanced** — the orchestrator advances it after the grounding audits on this pass's
+pages pass, so a finding can still be repaired first (per this session's own
+instructions).
+
+**Scope, derived mechanically.** `git diff --name-only 3e2b8a5 HEAD` (68 files)
+filtered through `scripts/wiki_relevance.py:is_wiki_relevant` → **18**: `analyzer.py`,
+`blueprints/applications.py`, `corpus_to_json_resume.py`, `db/build_context.py`,
+`demo_fixtures.py`, `docs/architecture.md`, `docs/dev/work/BOARD_DEFERRAL.md`,
+`evals/TUNING_LOG.md`, `evals/corpus_drafting_probe.py`,
+`evals/fixtures/synthetic/corpus/role-summary-drafting/{analysis.json,jd.txt,seed.json}`,
+`evals/seed_import.py`, `hardening.py`, `scripts/export_corpus_seed.py`,
+`static/app.js`, `static/style.css`, `templates/index.html` — confirmed to match
+the count and list this session was handed, not assumed.
+
+**What changed.** Two Epic A sprints: **A3** (`feat/role-summary-drafting`,
+`7d3ff33`) — a new batched Sonnet call, `analyzer.py:draft_experience_summaries`,
+drafting a JD-fitted one-line role intro for EVERY included role in ONE call;
+two new routes (`draft-experience-summaries`, `experience-summary-decide`); a new
+durable `ContextSet` key (`experience_summary_items`) staged by
+`db/build_context.py:_experience_summary_groups`; `hardening.py:assemble_source_union`
+widened to a fifth grounding source; a per-application acceptance ledger
+(`accepted_experience_summary_ids`) closing a cross-application pending-variant leak
+at four read sites; a new targeted eval probe (`evals/corpus_drafting_probe.py`) plus
+a nested synthetic corpus fixture. **A4** (`feat/prior-apps-pipeline`, `3cfb98d`) — the
+standalone "Prior applications" panel removed entirely; `_renderPipelineRow`'s click
+handler now re-asserts Pipeline and opens the shared detail modal in place, instead of
+switching to Tailor.
+
+**Pages edited (9).**
+
+| page | edit |
+|---|---|
+| `context-set-contract` | New `experience_summary_items` optional-field bullet; the source-union enumeration extended with the A3 fifth source. |
+| `corpus-to-output-reach` | New `accepted_experience_summary_ids` override-table row; new "Drafting a role intro (A3) and the pending-leak guard" section (the author/select split, the KEEP/REJECT flow, the four read sites the guard closes); the Role-intro resolution bullet updated to name the guard. |
+| `llm-call-catalog` | New `draft_experience_summary` Sonnet table row; "three Compose drafting calls" → "four" in both places that phrase appeared. |
+| `prompt-version-discipline` | `PROMPT_VERSION` `2026-07-08.4` → `2026-08-09.1`; `_BASE_SYSTEM_PROMPTS` **16 → 17 keys**; "most recent addition" updated from `SCOPE_CHECK_SYSTEM_PROMPT` to `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT`. |
+| `eval-harness` | `PROMPT_VERSION` mention corrected to `2026-08-09.1`; new "The corpus-mode drafting probe (Epic A sprint A3)" section — `evals/corpus_drafting_probe.py`, why it exists, why the nested fixture doesn't disturb the existing "three synthetic fixtures" claim. |
+| `route-surface` | Route count **117 → 119** (two new `blueprints/applications.py` routes). |
+| `frontend-wizard` | **Corrected a stale claim** the 2026-07-13 pass had itself corrected the other direction: `_renderPipelineRow` no longer switches to Tailor (A4 removed that panel) — it re-asserts Pipeline and opens the detail modal in place. New paragraph on the A3 role-intro drafting UI (draft card, Keep/Reject, the serialize-not-race ordering against the recommend call). Concept line updated. |
+| `generation-and-grounding` | "three drafting calls that accept `prior_clarifications`" → four (added `draft_experience_summaries`); new paragraph on the A3 fifth source-union widen. |
+| `pipeline-stages` | Compose-authors-content sentence extended to name `draft_application_experience_summaries`. |
+
+**Countable claims verified mechanically, not asserted** (this epic's own grounding
+audits found every substantive error was a countable claim, so every number below was
+re-derived from source in this session, not carried over from the branch's own
+commit messages):
+
+- `_BASE_SYSTEM_PROMPTS` keys: `python -c "..."` parsing the dict literal in
+  `analyzer.py` → **17**, matching the DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT
+  addition.
+- Total `@<bp>.route` decorators: `grep -rn "^@[a-zA-Z_]*\.route" blueprints/`
+  (anchored at line start, excluding `__pycache__`) → **118**, plus
+  `dashboard/routes.py`'s **1** → **119** total. Cross-checked against the same
+  count run at the `3e2b8a5` checkpoint commit (`git show 3e2b8a5:<path> | grep
+  -c ...` per file): blueprints **116** + dashboard **1** = **117**, exactly
+  reconciling with the page's pre-existing 117 and the +2 this delta's two new
+  routes account for — the before/after figures agree, not just the after one.
+  A naive `grep -c "@applications_bp.route" blueprints/applications.py` (the
+  exact command the module's own docstring suggests) returns **23**, one over
+  the true **22**, because it also matches the docstring's own literal mention
+  of that grep command — caught only by rerunning with a line-start anchor.
+  Flagged so the next session doesn't trust that docstring's suggested command
+  literally.
+- `blueprints/applications.py` routes: **22**, confirmed both via the anchored
+  grep and via a diff read of the two routes A3 added.
+- Pending-leak guard read sites: **4**, confirmed by grepping
+  `accepted_experience_summary_ids` in `blueprints/applications.py` (2 sites:
+  the GET picker filter at the `esi_rows` comprehension, the POST validator) and
+  `corpus_to_json_resume.py` (2 sites: `build_json_resume_from_corpus`'s read +
+  pass-through, `_resolve_chosen_experience_summary_text`'s check).
+- `draft_experience_summaries` reads `context_set["prior_clarifications"]`:
+  confirmed by reading the function body (`_prior_clarifications_block(...)` call)
+  and the system prompt's own `<prior_clarifications>` block — this is what makes
+  it a fourth call in the D5 list on `generation-and-grounding`, not three.
+
+**Every one of the 18 relevant sources, accounted for.** 6 drove the 9 page edits
+above (`analyzer.py`, `blueprints/applications.py`, `corpus_to_json_resume.py`,
+`db/build_context.py`, `hardening.py`, `static/app.js`); `evals/corpus_drafting_probe.py`
+drove the new `eval-harness` section. The remaining **11 verified no-edit** (checked,
+not skipped):
+
+- `docs/architecture.md` — already correctly updated by the A3 branch itself (both
+  Mermaid diagrams gained `draft_experience_summaries`/A9, the routing-tier prose
+  updated to "four Compose-time drafting calls"); the wiki cites this file, never
+  duplicates it (D5), so nothing to re-anchor.
+- `docs/dev/work/BOARD_DEFERRAL.md` — a governance/gate-mechanism document (the
+  `check_with_deferral()` staleness exemption for `python -m scripts.work_items
+  check`), the same process-record character `scripts/wiki_relevance.py` already
+  wholesale-excludes for `docs/dev/diagnosis/` and `docs/dev/handoffs/` and that the
+  2026-08-08 `docs/epic-a-chain-design-corrections` pass treated the same way; it
+  defaults relevant only because it sits directly under `docs/dev/work/`, not
+  `docs/dev/work/items/`. Grepped every `docs/wiki/pages/*.md` for `BOARD_DEFERRAL` /
+  `check_with_deferral` / `board staleness` — zero hits, nothing to re-anchor. Not a
+  product/architecture concept the wiki curates.
+- `evals/TUNING_LOG.md` — the A3 tuning entry it gained is now the target of the new
+  `eval-harness` "corpus-mode drafting probe" section's own citation; the log itself
+  is referenced, never duplicated (D5), same as every prior `TUNING_LOG.md` entry.
+- `demo_fixtures.py`'s new `demo_draft_experience_summaries` — no wiki page
+  documents demo mode / `_demo_mode_active` at all (grepped, zero hits); a
+  pre-existing coverage gap this diff does not worsen in a way that breaks an
+  existing claim.
+- `evals/seed_import.py` / `scripts/export_corpus_seed.py` — both gained
+  `ExperienceSummaryItem` round-trip support; no wiki page enumerates the seed
+  format's entity list (grepped for `seed_import`/`export_corpus_seed`/round-trip
+  language — the hits are all unrelated round-trip mentions elsewhere), so no claim
+  to update.
+- `evals/fixtures/synthetic/corpus/role-summary-drafting/{analysis.json,jd.txt,seed.json}`
+  — fixture data, not cited by content anywhere; covered at the mechanism level by
+  the new `eval-harness` "corpus-mode drafting probe" section instead.
+- `static/style.css` — grepped for the removed `.application-card*` family and the
+  new `.compose-role-intro-draft*` classes across `docs/wiki/pages/*.md`; zero hits
+  either way. No page cites CSS class names for this surface.
+- `templates/index.html` — the "Prior applications" panel markup (`#panelApplications`)
+  it removed is not cited by any page directly; the fact of the removal is captured
+  through the `static/app.js`-driven `frontend-wizard` fix above (`_renderPipelineRow`
+  no longer opens that panel because the panel is gone). Grepped for `panelApplications`
+  across `docs/wiki/pages/*.md` — zero hits, confirming no dangling reference existed
+  to clean up either.
+
+**Pages checked and confirmed still accurate** (not sources from the 18, but pages a
+changed source cites — inspected in case the change reached them, not assumed safe):
+`corpus-data-model` (no DB model or migration file changed in this delta — confirmed
+`git diff 3e2b8a5 HEAD --name-only | grep -i "db/models\|migrations"` returns nothing
+— so the alembic-head-`0016` claim and the corpus-item table are still current);
+`application-audit-chain`, `iteration-audit-chain`, `deterministic-llm-boundary`,
+`document-rendering`, `code-module-map` (grepped each for
+`draft_experience_summar`/`experience_summary`/`recommend_experience`/`IterationLog`
+action names/`corpus_drafting_probe`; no claim on any of these five references
+anything this delta touched, and `code-module-map`'s `evals/` row is already
+deliberately non-exhaustive — cites only `runner.py` — so needs no new entry);
+`career-corpus`, `importing-your-experience`, `tailoring-a-resume` (user-tier — none
+currently describe role intros at all, grepped, so A3 introduces a coverage gap, not
+a false claim; per the established convention that content passes are separate
+branches, not folded into a code-diff pass — see the 2026-06-14 / 2026-06-25 entries
+above — left for a dedicated content pass rather than authored here).
+
+**Author ≠ auditor not yet run.** This pass's nine edited pages are the audit list —
+none were graded by the context that wrote them. `git add -A` staged; not committed
+(orchestrator's step). `.last_ingest_sha` left at `3e2b8a5` on purpose, per this
+session's instructions, so a grounding-audit finding can still be repaired before the
+checkpoint advances.
