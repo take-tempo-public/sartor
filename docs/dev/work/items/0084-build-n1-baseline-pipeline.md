@@ -1,0 +1,39 @@
+```toml
+schema = 1
+id = 84
+kind = "item"
+title = "Build the N=1 baseline of the proposed chain-orchestration pipeline, pending owner authorization"
+status = "blocked"
+decision_owner = "user"
+blocked_on = "owner decision on §16.7 of docs/dev/epic-a-chain-design-corrections.md -- whether to pursue this design at all, and if so, whether to authorize the N=1 baseline as the first concrete step"
+refs = [
+  "docs/dev/epic-a-chain-design-corrections.md",
+]
+summary = "implementer->refuter->judge->closer as a Workflow script, N=1; provably >= robust as today's process per the design."
+```
+
+**What this is.** The smallest buildable version of the architecture proposed
+in `docs/dev/epic-a-chain-design-corrections.md` §16: a fresh implementer,
+Sonnet refuter, judge, and closer, run for exactly one ordinary sprint (N=1)
+as a Workflow script. At N=1 this pipeline **is** the current normal
+handoff process, plus the refuter step (proven valuable — caught the item-20
+defect — but currently absent from `AGENT_HANDOFF_TEMPLATE.md`) and a real,
+correlated audit trail. §16.5.1 argues this is provably at least as robust as
+today's process, since the boundary reviewer is still the owner, exactly as
+today.
+
+**Explicitly blocked, not merely deferred.** §16.7 names three decision
+points for the owner: whether to pursue the design at all; whether, if
+pursued, to authorize N=1 as the first step; and — not decided by this item
+or implied by its filing — whether to ever widen N past 1, retire or merge
+`AGENT_HANDOFF_TEMPLATE.md`, or resume any Epic B chain under the old §11
+envelope. This item exists to make the next concrete build step legible and
+trackable once authorized, not to authorize it.
+
+## Updates
+
+### 2026-08-11 — filed during the pre-Epic-B robustness design pass
+
+Filed as the concrete next-step pointer for the design pass's own
+recommendation, `status = "blocked"` from the moment of filing since the
+owner's decision has not yet been made.

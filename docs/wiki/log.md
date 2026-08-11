@@ -1686,3 +1686,22 @@ none were graded by the context that wrote them. `git add -A` staged; not commit
 (orchestrator's step). `.last_ingest_sha` left at `3e2b8a5` on purpose, per this
 session's instructions, so a grounding-audit finding can still be repaired before the
 checkpoint advances.
+
+## 2026-08-11 — verified no-edit (`docs/pre-epic-b-review`)
+
+**Scoped check, not a diff-window pass — `.last_ingest_sha` NOT advanced.** The branch's
+own close-out sweep found exactly one wiki-relevant changed file per
+`scripts.wiki_relevance.is_wiki_relevant()`: [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md)
+(a widened `## v1.1.0 Final March` "Cadence + process" bullet — chain epics now declare
+coherence-drift review checkpoints alongside close-out intervals — plus a new sequencing
+norm batching `main`-moving merges around a long-running epic PR).
+
+**Checked every page that cites `RELEASE_ARC.md`** (`grep -rl "RELEASE_ARC" docs/wiki/pages/`
+— [[engineering-workstreams]], [[excellence-walk]], [[governance-extraction]]) — every
+citation is a **pointer** to a Phase/section ("§Phase 4.5", "§Phase 4.7", "§Phase 4.8",
+"§'Cadence + process' ties the sprint board→stage→commit→gate sequence together") or an
+explicit "RELEASE_ARC is authoritative and moves — re-check it, not this page" disclaimer
+(`engineering-workstreams.md:79`). **None restates specific content of the "Cadence + process"
+list** (a bullet count, a named existing rule) that this addition would make stale — it is a
+pure addition, and every existing pointer/claim on all three pages remains accurate. No page
+edit needed; confirmed by reading, not assumed from the pointer pattern.

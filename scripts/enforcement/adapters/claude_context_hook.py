@@ -118,6 +118,38 @@ _COMPACTION_NOTICE = (
 )
 
 
+#: Pre-Epic-B robustness design pass (2026-08-11). Sessions bounded to roughly one branch's
+#: worth of work measured 1-5 compactions in this repo's own ledger history; sessions that
+#: chained multiple sprints in one continuous window measured 11 and 14. This threshold sits
+#: just above the single-branch range -- a deliberate margin, not a precise measurement.
+_COMPACTION_THRESHOLD = 5
+
+#: Deliberately EXTERNAL, unlike a self-assessed "I'm running low" -- stop 3 of Epic A already
+#: falsified that an agent's own predicted remaining capacity is a reliable trigger (it declared
+#: a limit early, then worked productively well past the point it had declared). Advisory only:
+#: PreCompact cannot block (see the module docstring), and neither does this -- it fires on
+#: SessionStart, where the only lever is what enters context, not whether the session continues.
+_COMPACTION_THRESHOLD_NOTICE = (
+    "=== COMPACTION THRESHOLD ({n} on record this session/branch) ===",
+    "",
+    "This count is EXTERNAL evidence, not a self-assessment of how much capacity remains.",
+    "Treat it, not how capable you currently feel, as the signal to seriously consider",
+    "handing off now rather than continuing further sprints/branches in this session.",
+    "",
+)
+
+
+def compaction_threshold_notice(payload: dict[str, Any]) -> str:
+    """A deterministic nudge once `compaction_count` crosses `_COMPACTION_THRESHOLD` ("" below
+    it). Fires on EVERY SessionStart, not only `source == "compact"` like `compaction_notice`
+    above -- the count must stay visible even on a fresh, non-compacted start within the same
+    session lineage, since that is exactly when a hand-off decision is still actionable."""
+    count = compaction_count(payload)
+    if count < _COMPACTION_THRESHOLD:
+        return ""
+    return "\n".join(line.format(n=count) for line in _COMPACTION_THRESHOLD_NOTICE)
+
+
 def _ledger_shard(payload: dict[str, Any]) -> Path | None:
     """This session's provenance-ledger shard (`docs/dev/prov/SPEC.md`), or None."""
     session = payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID")
@@ -149,10 +181,35 @@ def record_compaction(payload: dict[str, Any]) -> bool:
     shard = _ledger_shard(payload)
     if shard is None:
         return False
+    # `session` mirrors `_ledger_shard`'s own fallback three lines up -- prior to this fix it
+    # read `payload.get("session_id", "unknown")` with NO environment fallback, so every row
+    # in every shard recorded "unknown" even though the SHARD FILENAME (which does fall back
+    # to CLAUDE_CODE_SESSION_ID) was always correct. Verified: 52/52 historical rows across
+    # every ledger shard in this repo had `"session": "unknown"`. Two adjacent functions, same
+    # input, different fallback behavior -- this brings them into agreement.
+    session = payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID") or "unknown"
     record = {
         "event": "compacted",
-        "session": payload.get("session_id", "unknown"),
+        "session": session,
         "branch": git_branch(str(_project_dir(payload))),
+        # `agent_id` / `agent_type` are present in the PreToolUse payload inside a subagent
+        # per the Claude Code hooks reference (see docs/dev/epic-a-chain-design-corrections.md
+        # §14.7); captured here too, when present, so a `compacted` row can be attributed to
+        # a subagent rather than conflated with the orchestrator's own compactions -- pure
+        # enrichment of an existing non-blocking record, omitted (not null-padded) when absent
+        # so a main-session compaction's row stays exactly as it was before this change.
+        **({"agent_id": payload["agent_id"]} if payload.get("agent_id") else {}),
+        **({"agent_type": payload["agent_type"]} if payload.get("agent_type") else {}),
+        # KNOWN GAP, not fixed here (C-12: declare, don't guess-fix): `trigger` also reads
+        # "unknown" in all 52 historical rows, but unlike `session` above, the code's own
+        # handling is already correct and already tested
+        # (tests/test_c12_disclosure_gate.py:156-168 round-trips a literal `{"trigger": "auto"}`
+        # payload through this exact function and asserts it comes through unchanged). That
+        # means the defect, if real, is upstream -- either real PreCompact payloads in this
+        # harness never carry a `trigger` key, or it arrives under a different name -- and
+        # verifying which requires inspecting a live payload, not guessing a fallback with
+        # nothing to fall back to (unlike `session_id`, there is no known environment-variable
+        # equivalent for `trigger`). Filed as a work item rather than silently patched.
         "trigger": payload.get("trigger", "unknown"),
         "ts": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
@@ -178,7 +235,7 @@ def restore_evidence(payload: dict[str, Any]) -> str:
     Silent unless there is genuinely something to say — a hook that greets every session with
     boilerplate trains the reader to skip it, and then it is worthless on the day it matters.
     """
-    notice = compaction_notice(payload)
+    notice = compaction_notice(payload) + compaction_threshold_notice(payload)
     branch, path, text = _dossier(payload)
     if not branch.startswith("fix/") or text is None:
         return notice  # C-12: the loss is announced even with no dossier to replay
