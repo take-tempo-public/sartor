@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: retired roles no longer reach the A3 intro-drafting prompt (`fix/retired-roles-a3-prompt`, item 75)
+
+`_build_experience_summary_targets` read the analyze-time frozen
+`career_corpus` snapshot and never intersected it against live
+`Experience.is_active`, so a role soft-retired after analyze could still be
+staged as a drafting target — wasted Sonnet tokens on a role that can never
+render, be kept, or reach the grounding union. Both consumers (the
+`/draft-experience-summaries` route and `evals/corpus_drafting_probe.py`) now
+pass a live set of active experience ids — the same filter the gap-fill lane
+already applied — and the helper drops frozen-snapshot roles not in it. The
+docstring's "mirrors `build_json_resume_from_corpus` exactly" claim is
+accurate again for retirement, and was corrected in the same change as the
+code, per the item's own rule. Diagnosis:
+`docs/dev/diagnosis/retired-roles-a3-prompt.md`.
+
 ### Changed: prior applications live in Pipeline now, not a second per-candidate list (`feat/prior-apps-pipeline`, Epic A / A4)
 
 The Tailor tab's "Prior applications" panel — a per-candidate list of past
