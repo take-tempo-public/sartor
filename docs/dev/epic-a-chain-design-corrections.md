@@ -790,6 +790,7 @@ Directive 2(a) asks that **cases be gathered before governance is written**, inc
 | 2026-08-09 | `context-set-contract` — import-cycle rationale **true but not in the cited source** | **Attribution**, not drift | Item-20 audit |
 | 2026-08-09 | **False drift:** the freshness counter reported 36 files stale while the pages were current — it counts *changed since checkpoint*, not *coverage current*. A1b's own log recorded this and declined the advance under C-12 | **NO — counted as drift, was not drift** | `docs/wiki/log.md`; §11.11 |
 | 2026-08-09 | **False drift:** after item 20's own wiki pass, drift read 1 for `hardening.py`, whose docstring change was documented **in the same commit** | **NO — counted as drift, was not drift** | `wiki_freshness` at `0435e68` |
+| 2026-08-11 | **False drift, mechanical, new sub-class:** `docs/dev/work/BOARD_DEFERRAL.md` counted as drift because it was **deleted** (`6c4aeda`). `scripts/wiki_freshness.py:105-110` runs `git diff --name-only` and counts every wiki-relevant line with no filter on change status, so a deletion counts identically to an addition — and a deleted file can never be "ingested," so its only exit is the checkpoint advancing past it. First case with a mechanical cause traced to a specific line rather than a judgement about page content | **NO — counted as drift, was not drift** | pre-Epic-B design pass, §16.1 |
 
 ### 12.6 The delegation-seam problem (directive 3) — data needed before any design
 
@@ -1465,6 +1466,461 @@ satisfied by such a run.
    enforcement surface mid-chain the owner's call).
 4. The §15.3 close-out-interval requirement is lifted into `RELEASE_ARC.md`'s epic-planning
    section, so Epic B's design declares its intervals or argues for having none.
+
+---
+
+## 16. Pre-Epic-B robustness design pass — full-lifecycle review and a proposed architecture (2026-08-11)
+
+> **STATUS: THE PROPOSED ARCHITECTURE (§16.4–§16.5) GOVERNS NOTHING YET.** It requires an
+> explicit owner decision (§16.7) before any part of it is built. The concrete items in §16.6
+> ("What landed on this branch") are facts, already true on this branch — they are not
+> proposals. **"This kind of chain isn't viable" was named by the owner as an acceptable
+> outcome of this pass, not a conclusion to avoid** — nothing below should be read as having
+> pre-decided otherwise.
+
+### 16.0 Owner directive that created this pass (2026-08-11)
+
+Not a checklist request — a real design pass: is a multi-sprint autonomous chain viable at
+all, and if so, what would make it **at least as robust as the normal one-branch-one-session,
+user-gated handoff process**? Cover the full lifecycle — handoff → orchestrator → subagents →
+gate → PR → CI — prefer deterministic mechanisms over prose discipline, and design for graceful
+degradation as much as prevention. Operating principle, stated by the owner: **stopping for
+input at a significant decision beats a mistake that poisons the system.**
+
+### 16.1 Evidence gathered
+
+**16.1.A — The chain's own outcome, already on record above.** Epic A took **4 stops** (§12.1)
+against a "run completes with no stop" generalization bar (§12.4). **H-9 FALSIFIED** (§15.6.1),
+**H-6 confounded/inconclusive**, H-7 supported n=1, H-8 cost-confirmed/catch-rate-inconclusive.
+Ceremony ran **~40% of sprint cost** (F10, §12.2).
+
+**16.1.B — [VERIFIED] The orchestrator's own compaction pattern, measured this session.**
+`docs/dev/ledger/*.jsonl`, 52 `compacted` receipts grouped by real session (the **filename** is
+the session ID, reliably — the row's own `"session"` field was not, see 16.1.D):
+
+| Session | Branches in one continuous window | Compactions |
+|---|---|---|
+| `c42da573` | `feat/corpus-polish` (≈1 sprint) | 3 |
+| `d05ae572` | `fix/experience-soft-retire` (≈1 sprint close, 14 wiki subagents, 24 edits) | 3 |
+| `aaa7857e` (stop 3) | A2 + item 20 + `feat/chain-execution-instruments` | 11 |
+| `24889186` (stop 4) | A3 + A4 + `docs/post-epic-a-findings` | 14 |
+
+Sessions bounded to ~1 sprint stayed low even when ceremony-heavy; sessions that chained
+multiple sprints in one continuous window jumped sharply. This is the central empirical anchor
+for §16.3–§16.4 below.
+
+**16.1.C — [VERIFIED] Subagent-vs-orchestrator compaction is currently unattributable.** Every
+ledger shard mixes orchestrator self-compactions and subagent compactions with no distinguishing
+field (until the fix in 16.1.D/16.6 below). This means the framing "subagents blow context more
+in chain mode" is **not** something this session's data supports — 16.1.B's comparison is
+session-level aggregate, not subagent-attributed. Honest status before this branch: unmeasured,
+not confirmed.
+
+**16.1.D — [VERIFIED] Two concrete telemetry defects**, found by reading the code that produces
+the ledger (`scripts/enforcement/adapters/claude_context_hook.py`, pre-fix):
+
+- **D1 — `"session"` and `"trigger"` were always `"unknown"`.** `record_compaction()` read
+  `payload.get("session_id", "unknown")` / `payload.get("trigger", "unknown")` with **no
+  environment fallback** — unlike `_ledger_shard()` three lines above it, which does fall back
+  to `CLAUDE_CODE_SESSION_ID` and is why the shard **filename** was always right even though the
+  field inside every row was not. Verified: zero non-`"unknown"` `session` values across all 52
+  historical rows, all history. **Fixed on this branch** (§16.6) for `session`; `trigger` is a
+  separate, NOT-fixed finding — `tests/test_c12_disclosure_gate.py:156-168` already round-trips
+  a literal `{"trigger": "auto"}` payload through this exact function correctly, so the code's
+  own handling was never the defect. If real PreCompact payloads in this harness never carry a
+  `trigger` key (or carry it under a different name), that is upstream of this file and was not
+  guessed at — filed as a work item instead (C-12: declare, don't guess-fix).
+- **D2 — `agent_id`/`agent_type` were never captured**, even though §14.7 already proved they're
+  present in the payload inside a subagent. **Fixed on this branch** (§16.6) — pure enrichment
+  of an existing, non-blocking, already-durable ledger; no new enforcement surface, no
+  C-11/§11.6.5 question.
+
+**16.1.E — [VERIFIED] The hook/guard infrastructure a hypothetical §14.7 seam gate would live
+in, mapped exhaustively this session.** Zero hits for `agent_id`/`agent_type`/`isSidechain`/
+`parent_tool_use_id` anywhere in `scripts/enforcement/`, `hooks/`, `.claude/settings.json`,
+`tests/` — confirms §14.7's "implementation gap, not platform limit" reading. No existing guard
+reads any identity field — all six Edit|Write guards (`claude_dispatcher.py:42-49`) read only
+`tool_input` (+`tool_name` in one); the only identity-adjacent read anywhere is `session_id` at
+`claude_context_hook.py:123`, in a non-blocking lifecycle adapter. A seam gate would be the
+first identity-based PreToolUse guard in this repo. Measured build cost: six coordinated edits
+including two governance tripwires designed to make such a change deliberate —
+`tests/test_governance_hooks_gate.py:110-122` ("changing this count is a governance change —
+make it deliberately") and `tests/test_enforcement_coverage.py:41-54,118-122` (`EXTRACTION_GAP`
+pinned to exactly three names). **The strongest argument against building it, absent from
+§14.7's own framing:** such a guard is structurally Claude-Code-only (the field doesn't exist
+for `git_hook.py`), so it lands in `EXTRACTION_GAP` and makes **open item 50** ("C-7/C-10
+enforced by Claude Code hooks only") strictly worse, not better. See §16.4.2 — the proposed
+architecture may make this question moot rather than needing an answer either way.
+
+**16.1.F — [VERIFIED] The normal handoff process's own actual safety net**
+(`docs/dev/AGENT_HANDOFF_TEMPLATE.md`, read in full this session). One branch = one session,
+human-reviewed at every transition. **The normal template has no adversarial-refuter step
+anywhere** — not in Hard Constraints, not in the Branch close-out checklist. The pattern is
+entirely a chain-specific addition (§11.9's corrected seam) despite item 20 proving its value.
+The template's own handoff-trigger discipline (C-8, "a thin context is a handoff trigger") is
+**self-assessed**, exactly like stop 3's falsified premise — it has simply never needed an
+external trigger because branch scope already bounds session length by construction, not
+because it has a mechanism.
+
+**16.1.G — [REPORTED] Final-mile / CI-stage friction**, already filed. Item 79 —
+`scripts/ci_wait.py`, "the single definition of green," crashed twice producing PR #117
+(Windows cp1252 encoding fault on a failing check's log tail; a transient TLS fault on a poll),
+both collapsing to exit 2, indistinguishable from a real failure, both requiring a manual
+re-run. Item 80 — Dependabot merges staled Epic A's open PR under `strict: true`, costing a
+full CI re-cycle. Sequencing gap, not a defect — the fix is a norm, now lifted into
+`RELEASE_ARC.md` (§16.6).
+
+### 16.2 Two hypotheses tested against the data (owner-raised)
+
+**H-scope: small sprint scope reduces compaction risk.** Partially right, but 16.1.B points at
+a different dominant lever: sessions bounded to ~1 sprint stayed low (3, 3) even when
+ceremony-heavy; sessions chaining multiple sprints jumped sharply (11, 14). Scope reduces the
+load *each* sprint adds, but doesn't bound accumulation *across* sprints in one continuous
+orchestrator — which the chain's design intentionally never reset.
+
+**H-ambiguity: normal-flow user Q&A resolves ambiguity cheaply; C-7 forces the chain to pay for
+the same resolution by searching, since §11.8 assigns every non-halt-point decision to the
+orchestrator alone.** Structurally plausible, **[INFERRED] — not measured**. The known cost
+drivers (F10: 761 docs / 392 production lines in A1b; A2's 650,996 tokens on nine grounding
+auditors, §12.2) are dominated by wiki/ceremony spend, not clearly isolable as ambiguity-driven
+search. Worth testing cheaply in a future sprint (tag orchestrator-alone decisions a
+flag-stop-shy chain would otherwise have asked about) — not something to build a mechanism on
+yet.
+
+### 16.3 Design evolution (recorded so the reasoning is inspectable, not just the conclusion)
+
+Four shapes were compared, each addressing the finding in 16.1.B/H-scope — that accumulation
+*across* sprints in one continuous orchestrator, not sprint size alone, is the dominant driver:
+
+- **A — burst of 1–3 sprints + investigator agent at each boundary.** Fresh orchestrator per
+  burst; a fresh investigator reviews the outgoing burst's handoff plus real repo state before
+  drafting the next burst's brief — mechanizing the same fresh-eyes property that makes the
+  normal handoff reliable. Rejected as the final shape only because C has a harder ceiling.
+- **B — fixed-N burst, deterministic gate only, no investigator.** Cheapest (no LLM call at the
+  boundary), but only checks plain facts (gate status, diff-stat) — misses a bad *judgment* call
+  the way a human reviewing a handoff would catch it. Rejected: doesn't clear the "at least as
+  robust as normal handoff" bar, since a human's review is a judgment, not a status check.
+- **C — no persistent orchestrator; a fully fresh judge every single sprint.** Hard ceiling: no
+  agent ever spans more than one sprint's tool calls — the strongest compaction-safety property
+  of any shape considered, and the one most directly aligned with charter C-8 ("durable before
+  deep"): cross-sprint pattern memory (needed for C-11 recurrence recognition) is forced into an
+  explicit, deterministically-threaded log rather than trusted to any agent's own context, which
+  is exactly the discipline C-8 already asks for elsewhere. **Selected as the base shape.**
+- **C+drift — C, plus an explicit coherence-drift review layer.** C's own exposure is that no
+  agent ever holds the epic's *trajectory* in view — the threaded log is a lossy compression of
+  facts, not a running sense of whether sprints are still cohering with the original design.
+  This layer closes that gap. **Selected as the final shape** — §16.4.
+
+### 16.4 The proposed design
+
+**Naming note, to avoid colliding with this repo's existing overloaded "drift"** (wiki cite-rot,
+item 65): the phenomenon addressed below is called **coherence drift** or **trajectory drift**
+throughout — sprints cumulatively wandering from the epic's original design even though each
+one looks locally reasonable in isolation. Any future doc/work-item using this concept should
+use one of these terms explicitly, not bare "drift."
+
+**16.4.1 Structure.**
+
+1. **A deterministic monitor** — proposed as a Workflow script (§16.5.3) — carries the epic's
+   continuity. It holds no LLM context of its own and never accrues it across sprints.
+2. **Per sprint, a fully fresh cast:** implementer (branch, dossier, code, tests, stage —
+   reports, commits nothing) → Sonnet refuter (staged diff, told to refute — already proven,
+   caught the item-20 defect) → a freshly spawned judge (evaluates the refuter's verdict: fix /
+   defer / escalate) → closer (commit, gate, file items, board). No agent here ever spans more
+   than one sprint.
+3. **Coherence-drift review, two trigger paths, both routed into the same escalation primitive
+   (below):**
+   - **Pre-scheduled**, declared at epic-planning time by the same act that already declares
+     close-out intervals (§15.3, widened in `RELEASE_ARC.md` — §16.6) — the planner assesses
+     sprint size/risk and names drift-review checkpoints in the same up-front declaration, not a
+     parallel scheduling mechanism.
+   - **Reactive**, on a deterministic threshold using signals the pipeline already produces (no
+     new instrumentation): sprints-since-last-review as a backstop counter, and cumulative
+     **deferred** (not fixed) refuter findings since the last review as a compounding-risk proxy.
+4. **One unified escalation primitive**, used by both the coherence-drift trigger and the
+   compaction/ripcord case: any agent (implementer, refuter, judge) can raise a flag; the
+   monitor's response is always the same — spin up one independent review agent with a wider
+   view (the epic's original design brief, the diff since the last review, the threaded findings
+   log, and — if triggered by an explicit flag — **the flagging agent's own words, verbatim,
+   never paraphrased on the way through**) — which then clears it, requests a targeted fix, or
+   escalates to the owner. **Owner-decided refinement: escalate to one more independent review
+   before fully stopping**, rather than stopping on the first flag alone. This reuses the
+   existing §11.5/§11.6 halt-point and flag-stop vocabulary rather than growing a parallel
+   taxonomy.
+5. **A deterministic compaction-count notice** — **built on this branch, already landed
+   (§16.6)** — rides the existing `SessionStart` injection path (advisory only; `PreCompact`
+   cannot block): once `compaction_count()` crosses a threshold within the current scope, it
+   injects an explicit notice that this is an **external** signal to hand off, not a
+   self-assessment — directly answering stop 3's falsified premise that self-predicted context
+   limits are reliable.
+
+**16.4.2 What this means for the §11.9 delegation-seam question.** Under this design, there is
+no long-lived orchestrator that could degrade into an implementer over time — the exact shape of
+stop 1's failure. Each judge is fresh and scoped to one decision; only the implementer ever
+touches the working tree, and that was always true. **The seam question §14.7 raised may become
+moot rather than needing a technical answer either way** — see §18 (delegation-seam write-up)
+below, which is informed by this finding rather than carrying the old framing forward unexamined.
+
+### 16.5 Staged rollout and audit trail
+
+**16.5.1 Staged rollout — evidence-gated, not a switch.** The owner's own standing directive
+(§12.0: *"we gather data, instrument, test, and then implement. no guesses by over-anxious and
+over-confident agents"*) governs the rollout, not enthusiasm for the design:
+
+- **Burst size N is the one tunable dial.** At **N=1**, this pipeline *is* today's normal
+  handoff process, plus the refuter (a proven, currently missing check) and a real audit trail —
+  provably at least as robust, since the boundary reviewer is still the owner, exactly as today.
+- **Widen N only once real runs earn it**, one step at a time — never assumed from this design's
+  own internal logic.
+- **This design could, in principle, replace the normal handoff process entirely** — at N=1 it
+  *is* the normal process, hardened, not a separate parallel track. **That is exactly why it
+  must not be adopted wholesale on no evidence:** this design has **zero validated runs**, and
+  the old chain design's n=1 already failed its own bar. **Retiring or merging
+  `AGENT_HANDOFF_TEMPLATE.md`** into this structure is its own later, explicitly owner-gated
+  decision, made only once N=1 evidence exists — not something this design pass commits to.
+
+**16.5.2 Audit trail — a prerequisite, not an add-on.**
+
+1. **D1/D2 (16.1.D) had to land first, and did (§16.6).** Every compaction event was previously
+   unattributable; nothing else here is investigable until they're fixed.
+2. **Extend the existing provenance-ledger schema** (`docs/dev/prov/SPEC.md`, same `schema=1`
+   discipline already used for handoffs and compaction) with new event types
+   (`burst_started`, `sprint_judged`, `flag_raised`, `coherence_drift_checked`,
+   `escalated_to_human`, `ripcord_pulled`), each carrying an epic/burst/sprint correlation
+   triple. One ledger format, not a parallel logging system. **Not built on this branch** — it
+   depends on §16.7's decision.
+3. **Build as an actual Workflow script, not a hand-rolled loop — a real capability argument,
+   not convenience.** The Workflow harness's own `journal.jsonl` already records every agent's
+   structured return value (materially reducing what needs to be hand-built for "what did each
+   agent decide"), and `resumeFromRunId` replays the longest unchanged prefix of completed calls
+   on an interrupted run — recovery from a mid-pipeline crash is a tool-native property, not
+   something to build from scratch. (Actually running a built pipeline is its own later,
+   explicitly opted-into step — this observation only bears on *how* to build it, and does not
+   authorize building or running it.)
+
+### 16.6 What landed on this branch (facts, not proposals)
+
+- `scripts/enforcement/adapters/claude_context_hook.py`: D1 fixed (`record_compaction`'s
+  `session` field now mirrors `_ledger_shard`'s environment fallback); D2 added (`agent_id`/
+  `agent_type` captured when present, omitted — not null-padded — when absent); the
+  `trigger`-field mystery explicitly NOT guess-fixed, filed as its own work item instead
+  (`docs/dev/work/BOARD.md`, not this document — filed at this branch's close-out).
+  `compaction_threshold_notice()` added — advisory, fires on every `SessionStart` once
+  `compaction_count()` reaches 5 (calibrated just above the single-branch range measured in
+  16.1.B, a deliberate margin not a precise measurement), wired into `restore_evidence()`.
+  15 tests added/passing in `tests/test_c12_disclosure_gate.py::TestM3CompactionDisclosure`.
+- `docs/dev/RELEASE_ARC.md`: the cadence section now requires a chain epic's design to declare
+  **both** its close-out intervals (§15.3) **and** its coherence-drift review checkpoints (16.4)
+  in the same up-front planning act; and a sequencing norm (item 80) to batch `main`-moving
+  merges around a long-running epic PR rather than interleaving them.
+- This section (§16) itself, plus §17–§19 following.
+
+### 16.7 Decision points for the owner
+
+1. **Pursue this design at all**, versus treat the design-pass output as reference material and
+   continue with the normal handoff process unmodified.
+2. **If pursued: authorize building the N=1 baseline** (implementer → refuter → judge → closer,
+   for a single ordinary session, as a Workflow script) as the next concrete step — the smallest
+   version that is provably at least as robust as today's process, per §16.5.1.
+3. **Not decided by this branch, and not implied by anything above:** widening N past 1;
+   retiring or merging `AGENT_HANDOFF_TEMPLATE.md`; building the audit-trail ledger extension
+   (16.5.2.2); or resuming any Epic B chain under the old §11 envelope.
+
+---
+
+## 17. Post-Epic-A review, directive 2(a) — cite-rot governance, written FROM the case log (2026-08-11)
+
+Per the owner's explicit instruction (§12.0 directive 2(a)): governance is written **from** the
+9 aggregated cases in §12.5, not designed first and back-filled. All 9 read in full before this
+section was written; the patterns below are what the case log actually shows, not what a cite-rot
+lint tool would be designed to catch in the abstract.
+
+**The 9 cases split cleanly into three categories, and each has a different, already-answered
+question.**
+
+1. **Genuine content drift (5 of 9)** — stale anchors, a renamed constant, an undercounted
+   constant, two miscounted claims. **Every one of these was caught by the existing
+   countable-claim canary or a grounding audit already deployed** (§15.5) — none needed a new
+   detection mechanism to surface. §15.5's own finding is confirmed again here: "a page that
+   miscounts is a page that was written from memory," and the mechanism already built for
+   exactly this (verify countable claims mechanically, open a full audit only on variance) is
+   what caught all five.
+2. **Attribution, not drift (1 of 9)** — true content, simply uncited. Also caught by the
+   grounding-audit process (the same item-20 audit that found the real-drift cases on that
+   page), but this is invisible to any file-based freshness metric — it is a content-quality
+   question the canary/audit pair already answers, not something `wiki_freshness.py` could ever
+   detect.
+3. **False drift (3 of 9)** — and **all three share one root cause**: the freshness counter
+   measures *files changed since the checkpoint*, not *content correctness*, and none of the
+   three cases involved a documentation problem at all. Case 7 (§11.11) is the counter
+   penalizing correctly-scoped, honestly-declined passes. Case 8 is the counter missing a
+   same-commit docstring update. Case 9 (§16.1.D, this session) is the counter treating a file
+   **deletion** identically to new content needing ingestion. This is item 65's already-diagnosed
+   class (§11.11) — a metric measuring a proxy, not the target — now confirmed **three
+   independent times**, not once.
+
+**The governance answer this data actually supports, stated plainly rather than designed from
+scratch:**
+
+- **No new cite-rot lint tool is needed.** §12.4's original deferral reasoning — "a lint written
+  now would need a grandfather list that itself rots" — is validated as the right call by this
+  case log: the mechanism already built (countable-claim canary + grounding audit) caught
+  **100% of the real drift and attribution cases (6 of 6)** with no separate lint. Building a
+  second detector for a class the first one already catches would be adding a parallel
+  mechanism to solve an already-solved problem.
+- **What actually needs fixing is the existing freshness counter's false-positive modes** — now
+  confirmed at 3 instances, the C-11 bar for "a recurring class, not a first sighting." This is
+  **not a separate governance question from directive 2(b)** — it is the same underlying defect
+  in `scripts/wiki_freshness.py`'s `drift_count()`. Directives 2(a) and 2(b) converge on one fix,
+  not two: item 65's own sketched options (coherence-shaped drift; per-path checkpoints; relabel
+  the metric as a tripwire and say so in its own output) remain the candidate directions, now
+  with case 9's deletion-filter as a concrete, verified third data point to fold in. See §18
+  below for the full policy review this feeds.
+- **Per C-11**, three confirmed instances of the same class is the point at which "watching" with
+  no mechanism stops being a defensible response. **No fix is built on this branch** (it is a
+  production-code change to `scripts/wiki_freshness.py`, and this is a governance-interval,
+  no-application-code branch) — filed as a work item instead, `decision_owner = "user"` since it
+  redesigns an existing enforcement/reporting surface (§11.6.5-equivalent reasoning: a new or
+  redesigned metric is the owner's call).
+
+## 18. Post-Epic-A review, directive 2(b) — the full wiki-freshness policy review (2026-08-11)
+
+**Precondition check, per the owner's own stated gate** ("Not now... aggregating every relevant
+case, so the decision rests on how the system has actually behaved over time" — §12.0 directive
+2(b)): **[VERIFIED]** `docs/wiki/.last_ingest_sha` = `f42b2ea` at this session's HEAD (`a7e8eda`),
+drift = **2 of 75** — a genuinely working, un-backlogged baseline, confirmed independently this
+session (not carried from the prior handoff's own assertion, per that handoff's own explicit
+caveat that it had not re-checked the value). The precondition directive 2(b) said this review
+should wait for is now met.
+
+**The review, informed by §17's converged finding:**
+
+1. **Per-commit maintenance is already the norm and is working.** Item 35 (2026-08-04) made
+   small per-branch incremental updates standard, and the drift-2 baseline above is the direct
+   evidence it holds — the backlog that motivated §11.11's original diagnosis (36, en route to a
+   projected 40-60 by Epic A's own estimate) has not recurred since the epic-close zeroing.
+2. **A verify-on-PR test is not a new proposal — it already exists**, and is where §17's false-
+   positive finding actually bites. `scripts/wiki_freshness.py`'s `check()` (imported by
+   `scripts/enforcement/guards/block_merge_to_main.py`) is the actual merge-blocking gate. It is
+   correctly wired; its *definition of drift* is what §17 found wrong in 3 of 9 measured cases.
+   Fixing the metric (not building a new gate) is therefore the whole of what a "complete
+   review" recommends doing.
+3. **Recommendation, not a decision** (`decision_owner = "user"`, matching item 65's own framing
+   — a redesigned enforcement/reporting surface is the owner's call): of item 65's three sketched
+   options, **option 1 (redefine drift as coverage-shaped: wiki-relevant files changed since the
+   checkpoint that no page currently cites)** is the one this session's case log most directly
+   supports — it would have correctly excluded case 9 (a deleted file cited nowhere), and cases
+   7/8 are both instances of "the checkpoint gap grew even though nothing is actually stale,"
+   which a coverage-shaped definition addresses at the root rather than patching each new false-
+   positive shape as it's found (deletions, same-commit docstring updates, and whatever the next
+   shape turns out to be). Option 2 (per-path checkpoints) and option 3 (keep the metric, relabel
+   it a tripwire) remain live alternatives — not foreclosed by this review, only ranked.
+4. **Not built on this branch** — filed as one work item (folding case 9's deletion-filter in as
+   a concrete sub-finding), per the same reasoning as §17.
+
+## 19. §14.7 delegation-seam adversarial pass — outcome (2026-08-11)
+
+Per §15.7 precondition 3: three independent Sonnet reviewers, each **instructed to refute**, on
+three distinct lenses, run in parallel against a candidate `agent_id`-gated PreToolUse guard
+(§14.7's finding: `agent_id`/`agent_type` are present in the payload inside a subagent, so §11.9's
+seam — "the orchestrator never touches the working tree" — is technically gateable). Each
+reviewer was handed §16.1.E's mapped enforcement surface (zero existing identity-reading guards,
+the two governance tripwires, the `EXTRACTION_GAP`/item-50 finding) so the pass argued from the
+real surface, not the idea of one.
+
+**Reviewer 1 — stop-prevention lens. Verdict: PARTIALLY REFUTED**, and this is the most
+consequential single finding of the pass. The handoff's own pre-recorded read (§15.7's citation,
+"a seam gate would have prevented none of the four stops") does **not** survive intact:
+
+- **Stop 1 — refuted, materially.** §11.1's own transcript-count table records the orchestrating
+  session (`c42da573`) making **16 `Edit` / 8 `Write`** calls directly — "implemented A1a by
+  hand" — before launching its one implementer `Agent`. A live PreToolUse guard fires at the
+  tool-call boundary, mechanically, on every one of those calls, independent of whether the
+  orchestrator ever read §11.9 — exactly the same way every OTHER guard in this repo already
+  works (`require-feature-branch` blocks an edit on `main` whether or not the agent read the
+  branch policy). The original framing — "the orchestrator self-selected out of the envelope by
+  not reading it, so the guard wouldn't have mattered" — was a category error: a hard gate does
+  not share prose's dependency on voluntary compliance, which is the entire point of a
+  fail-closed mechanism (C-11).
+- **Stop 2 — genuinely open, not a clean zero.** The same table records `d05ae572` (stop 2)
+  making **24 own `Edit` / 6 own `Write`** calls during close-out — 30 concrete blockable
+  targets in a session the original framing characterized as having none. Whether blocking them
+  would have shortened the session or averted the owner interrupt is unproven either way.
+- **Stops 3 and 4 — conceded in full, no counter-case found.** Stop 3 was a self-declared
+  context-limit *prediction* that turned out wrong, with no hand-implementation pathology to
+  block. Stop 4 is foreclosed explicitly by §12.7's own text: "a stall is the absence of an
+  action, and no PreToolUse guard fires on an agent that simply stops."
+
+**Reviewer 2 — ordinary-workflow-cost lens. Verdict: the claim under test is FALSE, and not
+narrowly.** The proposal as literally specified — block any `Edit`/`Write` lacking `agent_id` —
+would block the **single most common workflow in this repo outright**: `agent_id` is present
+only inside a subagent call (§14.7), so an ordinary top-level `AGENT_HANDOFF_TEMPLATE.md` session
+(one agent, one branch, direct edits, human review between sessions) is structurally
+indistinguishable from "the orchestrator editing directly" at the PreToolUse layer. Correctly
+scoping it would require a hand-set "chain mode" marker plus an orchestrator-path exemption list
+for §11.9's own already-sanctioned direct writes — **new trusted-but-unverified state of exactly
+the shape already found wrong twice in this document** (§11.12's unbacked halt points, the
+wiki-freshness wrong-proxy counter, §17/§18 above). Concrete, non-trivial maintenance cost
+confirmed: ripples into `tests/test_governance_hooks_gate.py`'s pinned nine-rule count,
+`tests/test_enforcement_coverage.py`'s pinned `EXTRACTION_GAP`, the dispatcher's `_GUARD_ORDER`,
+and a new guard module carrying its own exemption logic. **Independently confirms 16.1.E's
+finding**: the guard would land in `EXTRACTION_GAP`, making open item 50 worse.
+
+**Reviewer 3 — false-authority lens. Verdict: §14.6's standing caution SURVIVES, on a narrower
+basis than it applied to the two withdrawn instruments — worth crediting the narrowing, not just
+the survival.** The enforceability-specific objections that killed the earlier proposals (§14.5's
+B1/B3/B4) genuinely do **not** carry over to a harness-native PreToolUse check — real progress.
+But the substantive claim survives intact: `agent_id` presence is orthogonal to **F6** (a
+subagent that silently compacted mid-run can still emit an `Edit` carrying a perfectly valid
+`agent_id` — the implementer's own words, quoted in §12.2, are "I have not verified whose context
+it refers to… I received no compaction notice in my own"), and is satisfiable **by letter, not
+spirit** — a "B5-mutation": the orchestrator can dispatch a pro-forma `Agent` call that types
+dictated content verbatim, passing the guard while gutting the seam's actual purpose. The real
+risk: a green "seam gate: PASS" substituting for, rather than complementing, the **proven**
+Sonnet-refuter line-level read (`RELEASE_ARC.md`'s own W-1 restatement: "the owning session reads
+the full diff of every subagent contribution before committing"). The worst-case scenario — a
+silent mid-run compaction or a rubber-stamp delegation — is exactly when this guard is most
+confidently green, matching §14.6's own framing precisely.
+
+**Synthesis and recommendation: do not build the seam gate as originally conceived — but the
+real problem it would have caught is real, and is addressed structurally rather than by a
+bolted-on gate.** Reviewer 1 establishes that stop 1's hand-implementation failure mode is a
+genuine, non-hypothetical case such a guard would catch. Reviewers 2 and 3 establish that
+building it — as specified, or scoped correctly — costs more than it's worth: it breaks ordinary
+work without new ungated state, that new state reproduces an already-diagnosed governance risk,
+and even a correctly-scoped version risks displacing the one review mechanism already proven to
+work. **§16.4.2's design finding resolves this without a gate**: under the proposed C+drift
+architecture, no persistent orchestrator exists that could degrade into an implementer the way
+`c42da573` did — each judge is fresh and scoped to one sprint's decision, and only the
+implementer ever touches the working tree. Stop 1's failure mode is structurally unavailable in
+that design, not policed against in this one. The adversarial pass **confirms** §16.4.2's "may
+become moot" framing rather than merely repeating it.
+
+## 20. Post-Epic-A review, directive 3 — the delegation-seam write-up (2026-08-11)
+
+Per §12.0 directive 3 and §12.6's own instruction not to design a mechanism from that section
+alone: this write-up is informed by §19's adversarial pass, not a restatement of §14.7's probe.
+
+**The enforceability question is answered, precisely, not approximately.** §14.7 proved
+`agent_id`/`agent_type` are available in the payload; §19 shows what that availability is
+actually worth: real for one specific, already-observed failure shape (hand-implementation
+during a sprint), and not worth building for the other three stops or for the general case,
+given the ordinary-workflow cost and the false-authority risk §19's other two reviewers found.
+**"Gateable" and "worth gating" turned out to be different questions, and this document had
+previously only answered the first one.**
+
+**Recommendation: do not build a §11.9 enforcement gate on the current (persistent-orchestrator)
+chain design.** If the owner authorizes pursuing the proposed architecture (§16, decision point
+§16.7), the question becomes moot by construction rather than needing its own answer — recorded
+here as the reason no further instrument work is proposed in this space. If the owner instead
+declines the redesign and any future chain work continues under something resembling the current
+§11 envelope, the seam question would need to be revisited on its own terms, informed by §19's
+findings rather than starting over.
+
+**What this does NOT overturn.** §14.7's factual finding stands — the fields are genuinely
+available, unlike the two earlier withdrawn instruments' fatal enforceability problems. The
+reason for not building is cost and risk on this specific design, not a return to "it can't be
+done."
 
 ---
 

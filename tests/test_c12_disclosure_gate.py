@@ -196,3 +196,96 @@ class TestM3CompactionDisclosure:
         monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
         assert ctx.record_compaction({"cwd": str(tmp_path)})
         assert (tmp_path / "docs" / "dev" / "ledger" / "sess-env.jsonl").is_file()
+
+    def test_record_session_field_matches_the_payload_not_unknown(self, tmp_path: Path) -> None:
+        """**The RED this fix exists for (D1).**
+
+        Before this fix, `record_compaction`'s own `record["session"]` field read
+        `payload.get("session_id", "unknown")` with no environment fallback — unlike
+        `_ledger_shard` three lines above it, which does fall back to
+        `CLAUDE_CODE_SESSION_ID`. Every historical row in every ledger shard in this repo
+        (52/52, across all sessions) carried `"session": "unknown"` even though the shard
+        FILENAME was always correct. This asserts the field inside the row, not just the
+        filename.
+        """
+        payload = {"session_id": "sess-3", "cwd": str(tmp_path)}
+        ctx.record_compaction(payload)
+        shard = tmp_path / "docs" / "dev" / "ledger" / "sess-3.jsonl"
+        record = json.loads(shard.read_text(encoding="utf-8").strip())
+        assert record["session"] == "sess-3"
+
+    def test_record_session_field_falls_back_to_the_environment(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Same fallback the shard filename already used — now the row's own field agrees."""
+        monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "sess-env-2")
+        monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+        ctx.record_compaction({"cwd": str(tmp_path)})
+        shard = tmp_path / "docs" / "dev" / "ledger" / "sess-env-2.jsonl"
+        record = json.loads(shard.read_text(encoding="utf-8").strip())
+        assert record["session"] == "sess-env-2"
+
+    def test_agent_id_and_agent_type_are_captured_when_present(self, tmp_path: Path) -> None:
+        """D2: pure enrichment — a subagent's `compacted` row is now attributable.
+
+        `agent_id`/`agent_type` are documented as present in the PreToolUse payload inside a
+        subagent (docs/dev/epic-a-chain-design-corrections.md §14.7). This is the first place
+        this repo's enforcement code captures either field.
+        """
+        payload = {
+            "session_id": "sess-4",
+            "cwd": str(tmp_path),
+            "agent_id": "agent-abc123",
+            "agent_type": "general-purpose",
+        }
+        ctx.record_compaction(payload)
+        shard = tmp_path / "docs" / "dev" / "ledger" / "sess-4.jsonl"
+        record = json.loads(shard.read_text(encoding="utf-8").strip())
+        assert record["agent_id"] == "agent-abc123"
+        assert record["agent_type"] == "general-purpose"
+
+    def test_agent_id_and_agent_type_are_omitted_not_null_when_absent(self, tmp_path: Path) -> None:
+        """A main-session compaction's row stays exactly as it was before this change —
+        no `null`-padded keys cluttering the common case."""
+        payload = {"session_id": "sess-5", "cwd": str(tmp_path)}
+        ctx.record_compaction(payload)
+        shard = tmp_path / "docs" / "dev" / "ledger" / "sess-5.jsonl"
+        record = json.loads(shard.read_text(encoding="utf-8").strip())
+        assert "agent_id" not in record
+        assert "agent_type" not in record
+
+    def test_no_threshold_notice_below_the_threshold(self, tmp_path: Path) -> None:
+        payload = {"session_id": "sess-6", "cwd": str(tmp_path)}
+        for _ in range(ctx._COMPACTION_THRESHOLD - 1):
+            ctx.record_compaction(payload)
+        assert ctx.compaction_threshold_notice(payload) == ""
+
+    def test_threshold_notice_fires_at_the_threshold_and_is_external_not_self_assessed(
+        self, tmp_path: Path
+    ) -> None:
+        """**The RED this mechanism exists for.** Stop 3 of Epic A falsified an agent's own
+        predicted remaining capacity as a reliable handoff trigger — this asserts the notice
+        names an external count, not a feeling, as the signal."""
+        payload = {"session_id": "sess-7", "cwd": str(tmp_path)}
+        for _ in range(ctx._COMPACTION_THRESHOLD):
+            ctx.record_compaction(payload)
+        notice = ctx.compaction_threshold_notice(payload)
+        assert f"{ctx._COMPACTION_THRESHOLD} on record" in notice
+        assert "EXTERNAL evidence, not a self-assessment" in notice
+
+    def test_threshold_notice_fires_on_a_fresh_non_compacted_start(self, tmp_path: Path) -> None:
+        """Unlike `compaction_notice`, this must NOT require `source == "compact"` — the count
+        has to stay visible on an ordinary fresh start within the same session lineage, since
+        that is exactly when a hand-off decision is still actionable."""
+        payload = {"session_id": "sess-8", "cwd": str(tmp_path)}
+        for _ in range(ctx._COMPACTION_THRESHOLD):
+            ctx.record_compaction(payload)
+        # no "source" key at all -- an ordinary (non-post-compaction) SessionStart
+        assert ctx.compaction_threshold_notice(payload) != ""
+        assert ctx.compaction_notice(payload) == ""  # the OTHER notice correctly stays silent
+
+    def test_restore_evidence_includes_the_threshold_notice(self, tmp_path: Path) -> None:
+        payload = {"session_id": "sess-9", "cwd": str(tmp_path)}
+        for _ in range(ctx._COMPACTION_THRESHOLD):
+            ctx.record_compaction(payload)
+        assert "COMPACTION THRESHOLD" in ctx.restore_evidence(payload)

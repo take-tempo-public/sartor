@@ -1768,6 +1768,41 @@ and the public v1.1.0 cut. Code lands first (A–C), documentation after UI stab
 - Implementation may be delegated to subagents with precise briefs; the owning
   session **reads the full diff of every subagent contribution before committing**
   (W-1 posture: direct line-level verification).
+- **A chain epic's design must declare its intra-epic close-out intervals AND
+  its coherence-drift review checkpoints — where each falls and why — or carry
+  a written justification for having none.** Silence is not a permissible
+  answer for either. Both are stated to the **planning** agent and the
+  **orchestrating** agent, in this durable section, not discovered at run
+  time, and both are sized by the same up-front assessment of sprint size and
+  risk — one planning act, not two. Lifted from
+  [`docs/dev/epic-a-chain-design-corrections.md`](epic-a-chain-design-corrections.md)
+  §15.3 and the pre-Epic-B robustness design pass (owner direction, 2026-08-09
+  and 2026-08-11), per §15.7's own precondition that the close-out-interval
+  requirement move into epic-planning before Epic B starts.
+  - **Close-out intervals, rationale:** Epic A's ceremony ran at roughly **40%
+    of sprint cost** (§12.2 finding F10 — 2.86M subagent tokens for ~800 lines
+    of production code across two sprints). Owner tolerance: 10–20% is
+    comfortable, 40% acceptable *only if* it prevents a compounded missed
+    failure costing days of churn. Epic A's own choice (§15.2: light per
+    sprint, one full close-out at the epic end) is that epic's answer, **not**
+    a default B–E inherit — each epic's own brief must state its own answer.
+  - **Coherence-drift checkpoints, rationale:** "coherence drift" (sprints
+    cumulatively wandering from the epic's original design though each looks
+    locally reasonable in isolation — distinct from the wiki cite-rot sense of
+    "drift" used elsewhere in this repo, e.g. item 65; do not conflate the
+    two) has no agent holding the epic's full trajectory in view once no
+    single orchestrator spans the whole epic. A checkpoint schedule, sized to
+    the same sprint-size/risk read as the close-out intervals, is how that gap
+    gets closed without reinventing a second scheduling mechanism.
+- **Batch `main`-moving merges (Dependabot or otherwise) either before a
+  long-running epic PR opens or after it lands — never interleaved mid-flight.**
+  Under `strict: true` branch protection, an unrelated merge to `main` stales
+  an open PR and costs a full CI re-cycle even though nothing about the PR
+  itself was wrong (board item 80 — observed on PR #117: two Dependabot merges
+  cost a `gh pr update-branch` plus ~6 minutes of CI). The existing
+  `gh pr update-branch` resolution mechanism in this document is unchanged and
+  still correct; this is a sequencing norm to avoid needing it, not a new
+  gate.
 
 ### Session models
 
