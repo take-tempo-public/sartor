@@ -83,6 +83,25 @@ undercount is a separate, deliberate governance-count correction (C-10 would mak
 count ten, not nine) and is out of scope for this branch's own two deliverables — named
 here rather than silently absorbed into this edit or silently left for the next reader to
 rediscover from scratch.
+
+**Amended 2026-08-12** (`feat/interrogative-prompt-witness`, work item 87): two changes,
+both deliberate:
+
+- **``interrogative-witness`` is a TENTH enforced blocker RULE** (owner-directed
+  2026-08-12): the first Edit/Write after each user prompt is refused ONCE with the
+  interrogative-vs-directive consideration, and the refusal self-clears. Semantically the
+  item calls it a momentum WITNESS — but this file's taxonomy is mechanical (reaches
+  ``exit 2`` = blocker), and classifying a hook that can refuse a tool call as a
+  never-exit-2 witness would be the exact "gate quietly becomes a nudge" (in reverse)
+  this gate exists to block. It runs inside ``edit-write-dispatcher.sh``, so
+  ``DISPATCHED_GUARD_NAMES`` grows with it; ``BLOCKER_HOOKS`` is unchanged (no new
+  on-disk blocker file). The C-10 undercount above remains open and is again NOT
+  absorbed here — the count goes 9 → 10 for this branch's own guard only.
+- **``interrogative-prompt-witness`` (UserPromptSubmit) is a FOURTH category**,
+  ``PROMPT_WITNESS_HOOKS``: it fires on prompt submission — before any tool, so neither
+  a PreToolUse gate nor a PostToolUse nudge — always exits 0, and injects a
+  non-blocking reminder via plain stdout (the UserPromptSubmit context channel, same
+  as SessionStart's). Asserted below rather than assumed, the context-hook way.
 """
 
 from __future__ import annotations
@@ -104,14 +123,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / "hooks"
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 
-# The nine enforced RULES (governance invariant — grew by one on
-# feat/verify-dont-assume-guard; only the on-disk file layout has moved since
-# PX-37, not the count of enforced behaviors, until this branch's own addition).
+# The ten enforced RULES (governance invariant — grew by one on
+# feat/verify-dont-assume-guard, and again on feat/interrogative-prompt-witness:
+# interrogative-witness is mechanically a blocker — its one-shot, self-clearing
+# refusal reaches exit 2 — even though item 87 frames it as a momentum witness;
+# see the 2026-08-12 docstring amendment above).
 BLOCKER_RULE_NAMES = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
         "check-plan-approved",
+        "interrogative-witness",
         "require-evidence-before-fix",
         "require-feature-branch",
         "route-security-lint",
@@ -152,6 +174,7 @@ DISPATCHED_GUARD_NAMES = frozenset(
         "block-secrets",
         "validate-context",
         "route-security-lint",
+        "interrogative-witness",
     }
 )
 
@@ -176,6 +199,20 @@ WITNESS_HOOKS = frozenset(
         "wiki-freshness-reminder",
     }
 )
+
+# The prompt witness (work item 87) — fires on UserPromptSubmit, before any
+# tool runs, so it is neither a PreToolUse gate nor a PostToolUse nudge; always
+# exit 0. Its stdout is injected into context (the UserPromptSubmit channel),
+# which is the whole mechanism: a non-blocking "the deliverable is the ANSWER"
+# reminder when the prompt classifies as a question. Its Edit|Write pause
+# sibling is the `interrogative-witness` RULE above, not a file here.
+PROMPT_WITNESS_HOOKS = frozenset(
+    {
+        "interrogative-prompt-witness",
+    }
+)
+
+PROMPT_WITNESS_EVENT = "UserPromptSubmit"
 
 # The two context hooks (charter C-8) — they gate nothing. They carry evidence ACROSS
 # a context boundary: `restore-evidence` replays the dossier into a fresh (or
@@ -224,25 +261,27 @@ def _wired_by_event() -> dict[str, set[str]]:
 # 1. Every hook script is classified (no unclassified hook can sneak in).
 # --------------------------------------------------------------------------- #
 def test_every_hook_is_classified() -> None:
-    """The set of hook scripts equals BLOCKER ∪ WITNESS ∪ CONTEXT — a new hook (or a
-    deletion) fails until it is deliberately classified here."""
+    """The set of hook scripts equals BLOCKER ∪ WITNESS ∪ PROMPT-WITNESS ∪ CONTEXT — a
+    new hook (or a deletion) fails until it is deliberately classified here."""
     on_disk = _hook_stems()
-    classified = BLOCKER_HOOKS | WITNESS_HOOKS | CONTEXT_HOOKS
+    classified = BLOCKER_HOOKS | WITNESS_HOOKS | PROMPT_WITNESS_HOOKS | CONTEXT_HOOKS
     unclassified = sorted(on_disk - classified)
     missing = sorted(classified - on_disk)
     assert not unclassified, (
         f"Unclassified hook script(s): {unclassified}. Add each to BLOCKER_HOOKS "
-        "(reaches exit 2), WITNESS_HOOKS (always exit 0, PostToolUse nudge), or "
+        "(reaches exit 2), WITNESS_HOOKS (always exit 0, PostToolUse nudge), "
+        "PROMPT_WITNESS_HOOKS (always exit 0, UserPromptSubmit context injection), or "
         "CONTEXT_HOOKS (session-lifecycle; carries evidence across a context boundary)."
     )
     assert not missing, f"Classified hook(s) missing from disk: {missing}."
 
 
-def test_the_three_categories_are_disjoint() -> None:
+def test_the_four_categories_are_disjoint() -> None:
     """A hook cannot be two things at once — that is how a gate quietly becomes a nudge."""
     assert not (BLOCKER_HOOKS & WITNESS_HOOKS)
     assert not (BLOCKER_HOOKS & CONTEXT_HOOKS)
     assert not (WITNESS_HOOKS & CONTEXT_HOOKS)
+    assert not (PROMPT_WITNESS_HOOKS & (BLOCKER_HOOKS | WITNESS_HOOKS | CONTEXT_HOOKS))
 
 
 # --------------------------------------------------------------------------- #
@@ -259,10 +298,12 @@ def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
     code the dispatcher's own ``exec`` propagates. Per-guard block/allow
     coverage through the real wrappers: ``tests/test_enforcement_core.py``.
     """
-    assert len(BLOCKER_RULE_NAMES) == 9, (
-        "Nine enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
-        "(charter C-7) and verify-binary-on-path (feat/verify-dont-assume-guard). Changing "
-        "this count is a governance change — make it deliberately."
+    assert len(BLOCKER_RULE_NAMES) == 10, (
+        "Ten enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
+        "(charter C-7), verify-binary-on-path (feat/verify-dont-assume-guard), and "
+        "interrogative-witness (work item 87 — a one-shot, self-clearing pause, but it "
+        "reaches exit 2 and this count is mechanical). Changing this count is a "
+        "governance change — make it deliberately."
     )
 
     # Standalone blockers: the script text itself must reach exit 2. Both
@@ -344,6 +385,47 @@ def test_wiring_matches_witness_blocker_split() -> None:
         f"{WITNESS_EVENT} hooks {sorted(wired.get(WITNESS_EVENT, set()))} != the three "
         f"witnesses {sorted(WITNESS_HOOKS)}. Witnesses observe after the tool runs."
     )
+
+
+def test_prompt_witness_is_wired_on_user_prompt_submit() -> None:
+    """The prompt witness only strips momentum if it fires when the prompt arrives.
+
+    Wired anywhere else it is silently useless (its stdout-injection channel is
+    UserPromptSubmit-specific), and nothing else may ride that event without a
+    deliberate edit here.
+    """
+    wired = _wired_by_event()
+    assert wired.get(PROMPT_WITNESS_EVENT, set()) == PROMPT_WITNESS_HOOKS, (
+        f"{PROMPT_WITNESS_EVENT} must wire exactly {sorted(PROMPT_WITNESS_HOOKS)}, "
+        f"found {sorted(wired.get(PROMPT_WITNESS_EVENT, set()))}."
+    )
+
+
+def test_prompt_witness_never_gates(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The UserPromptSubmit half is fail-open by design (work item 87): always exit 0.
+
+    Textually the shim carries no `exit 2`, and behaviorally the adapter returns 0
+    on a real payload AND on garbage stdin — a prompt hook that can wedge prompt
+    submission would be a worse defect than the momentum failure it mitigates.
+    (Its Edit|Write sibling is deliberately NOT here: that half reaches exit 2
+    once per prompt and is counted in BLOCKER_RULE_NAMES above.)
+    """
+    from scripts.enforcement.adapters import prompt_witness_hook
+    from scripts.enforcement.guards import interrogative_witness
+
+    for stem in sorted(PROMPT_WITNESS_HOOKS):
+        text = _hook_text(stem)
+        assert "prompt_witness_hook.py" in text, (
+            f"{stem}.sh must delegate to the prompt-witness adapter."
+        )
+        assert "exit 2" not in text, f"{stem}.sh is a prompt witness — it must never gate."
+
+    monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path))
+    payload = {"session_id": "gate-test", "prompt": "is this hook fail-open?"}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    assert prompt_witness_hook.main(["prompt_witness_hook.py"]) == 0
+    monkeypatch.setattr("sys.stdin", io.StringIO("{never json"))
+    assert prompt_witness_hook.main(["prompt_witness_hook.py"]) == 0
 
 
 def test_context_hooks_are_wired_on_their_lifecycle_events() -> None:

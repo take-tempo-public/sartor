@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Claude Code PreToolUse dispatcher for the Edit|Write guard set (PX-37 hook-dispatcher).
 
-Runs all six Edit|Write guards — require-feature-branch, require-evidence-
+Runs all seven Edit|Write guards — require-feature-branch, require-evidence-
 before-fix, require-consumer-enumeration, block-secrets, validate-context,
-route-security-lint — in one process against one stdin read, replacing the
+route-security-lint, interrogative-witness — in one process against one stdin
+read, replacing the
 separate settings.json hook entries that each execed `claude_hook.py <name>` on
 their own. `check-plan-approved.sh` is NOT one of them (different mechanism, not
 a scripts/enforcement/guards/ guard) and stays wired as its own top-level entry.
@@ -37,7 +38,10 @@ from scripts.enforcement.guards.result import GuardResult  # noqa: E402
 
 # The Edit|Write guards this dispatcher replaces one settings.json entry each
 # for. Order matches the pre-consolidation PreToolUse/Edit|Write array, with
-# require-consumer-enumeration (C-10) appended next to its C-7 sibling
+# require-consumer-enumeration (C-10) appended next to its C-7 sibling and
+# interrogative-witness (item 87's one-shot momentum pause) appended last —
+# by the time its self-clearing refusal fires, every real guard above has
+# already had its say in the same aggregated message
 # (check-plan-approved excluded — it stays its own separate top-level hook).
 _GUARD_ORDER: tuple[str, ...] = (
     "require-feature-branch",
@@ -46,6 +50,7 @@ _GUARD_ORDER: tuple[str, ...] = (
     "block-secrets",
     "validate-context",
     "route-security-lint",
+    "interrogative-witness",
 )
 
 

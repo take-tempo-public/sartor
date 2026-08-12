@@ -984,9 +984,10 @@ class TestGitHookAdapter:
 
 class TestEditWriteDispatcher:
     """PX-37: require-feature-branch, require-evidence-before-fix,
-    require-consumer-enumeration, block-secrets, validate-context, and
-    route-security-lint all run in one process, and every blocked guard's messages
-    appear — proving there's no short-circuit."""
+    require-consumer-enumeration, block-secrets, validate-context,
+    route-security-lint, and (since work item 87) interrogative-witness all run
+    in one process, and every blocked guard's messages appear — proving there's
+    no short-circuit."""
 
     def test_guard_order_is_exactly_the_edit_write_guards(self) -> None:
         assert set(claude_dispatcher._GUARD_ORDER) == {
@@ -996,6 +997,7 @@ class TestEditWriteDispatcher:
             "block-secrets",
             "validate-context",
             "route-security-lint",
+            "interrogative-witness",
         }
 
     def test_allow_when_all_five_allow(self, tmp_path: Path) -> None:

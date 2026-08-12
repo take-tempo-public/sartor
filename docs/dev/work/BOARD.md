@@ -2,12 +2,11 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 41 | Epics 6 | Closed 23
+**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 42 | Epics 6 | Closed 23
 
 ## Open
 
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
-- **87** -- Interrogative-prompt witness: hook mechanism so a question is answered, not acted on — build before Epic B run 3 (`user`) -- owner-directed: fail-open witness hooks so a question gets an ANSWER, not action; lands BEFORE the B1a run.
 
 ## Blocked
 
@@ -68,6 +67,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **83** -- Consolidate the ad hoc nohup+redirect+poll gate-launch pattern into one canonical utility (`user`) -- F1/F2/F3/F5/F11/F13 each independently got a different piece of backgrounding wrong; codify the pattern once.
 - **84** -- Build the N=1 baseline of the proposed chain-orchestration pipeline, pending owner authorization (`user`) -- implementer->refuter->judge->closer as a Workflow script, N=1; provably >= robust as today's process per the design.
 - **85** -- PreCompact payload's trigger field reads 'unknown' in 100% of historical ledger rows despite correct code handling (`agent`) -- trigger is 'unknown' in all 52 ledger rows; the code round-trips it correctly when present -- the payload may lack it.
+- **87** -- Interrogative-prompt witness: hook mechanism so a question is answered, not acted on — build before Epic B run 3 (`user`) -- owner-directed: fail-open witness hooks so a question gets an ANSWER, not action; lands BEFORE the B1a run.
 
 ## Epics
 

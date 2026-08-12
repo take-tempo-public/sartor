@@ -3,7 +3,7 @@ schema = 1
 id = 87
 kind = "item"
 title = "Interrogative-prompt witness: hook mechanism so a question is answered, not acted on — build before Epic B run 3"
-status = "open"
+status = "watching"
 decision_owner = "user"
 refs = [
   "docs/dev/handoffs/fix-n1-args-guard-hardening.md",
@@ -84,3 +84,34 @@ Filed at the close of the `fix/n1-args-guard-hardening` follow-up
 conversation. The handoff `docs/dev/handoffs/fix-n1-args-guard-hardening.md`
 names this item's branch as the next branch, ahead of
 `fix/b1-stale-template-companions`.
+
+### 2026-08-12 — BUILT (`feat/interrogative-prompt-witness`); status → watching pending first live fire
+
+Both witnesses landed per the spec above: the UserPromptSubmit heuristic
+(`hooks/interrogative-prompt-witness.sh` →
+`scripts/enforcement/adapters/prompt_witness_hook.py`, always exit 0,
+reminder injected via plain stdout) and the first-Edit/Write-per-prompt
+pause (`scripts/enforcement/guards/interrogative_witness.py`, dispatched as
+`interrogative-witness` inside `edit-write-dispatcher.sh` — one
+self-clearing refusal per prompt). Consumer enumeration written before the
+first edit: `docs/dev/blast-radius/interrogative-prompt-witness.md`.
+Verified by `tests/test_interrogative_witness.py` (34 tests: classifier per
+the spec list, pause-once lifecycle, every fail-open path, adapter exit-0)
+plus the amended pins in `tests/test_governance_hooks_gate.py` (tenth
+blocker rule + new prompt-witness category), `tests/test_enforcement_core.py`
+(dispatcher exact set), `tests/test_enforcement_coverage.py` (Claude-only
+reach, by nature). Suite-wide state isolation via an autouse fixture in
+`tests/conftest.py` (the item-33 shape).
+
+Manual end-to-end through the real shims (byte-correct JSON, 2026-08-12,
+building session): `bash hooks/interrogative-prompt-witness.sh` printed the
+reminder and exited 0 on `"is the gate green?"`, stayed silent (exit 0) on a
+directive; `bash hooks/edit-write-dispatcher.sh` with the same session id
+then exited 2 with the PAUSE message (including the
+classified-as-QUESTION line) and exited 0 on the identical retry.
+
+**Why watching, not closed (C-0):** hooks load at session start, so the
+building session itself ran unhooked — no live UserPromptSubmit firing has
+been observed yet. The B1a run session (Epic B run 3) is the first session
+these witnesses protect; close on that session's first observed
+reminder/pause, or on any earlier live sighting.

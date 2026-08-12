@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: interrogative-prompt witness — a question gets an answer, not begun work (`feat/interrogative-prompt-witness`, item 87)
+
+Third recorded instance of the class (owner: recurring since before this
+project existed): a session with a hot execution frame treats an
+interrogative prompt as a work order — answers it, then unilaterally starts
+"fixing" something nobody asked about. Prose memories failed to hold at the
+decisive moment, which is charter C-11's own measurement about prose
+discipline generally, so this lands as a mechanism: two cooperating,
+fail-open witnesses (owner-directed 2026-08-12).
+
+On **UserPromptSubmit**, a cheap heuristic — trailing `?` or an
+interrogative lead word (`is/are/should/why/what/how/…`) — injects a
+non-blocking "the deliverable is the ANSWER" reminder into context
+(`hooks/interrogative-prompt-witness.sh` →
+`adapters/prompt_witness_hook.py`; always exit 0). On the first
+**Edit/Write after each user prompt**, a new `interrogative-witness` guard
+in the Edit|Write dispatcher refuses ONCE with the
+interrogative-vs-directive question and self-clears — re-running the same
+call proceeds; one pause per prompt, never two
+(`scripts/enforcement/guards/interrogative_witness.py`).
+
+Stated limits (C-0/C-11): intent classification is not deterministic — these
+are witnesses that force the consideration and strip momentum, not gates
+that prove intent; every failure path (no state, corrupt state, unwritable
+state dir) fails open, matching the owner's stated trust in momentum-free
+judgment. Mechanically the pause reaches exit 2, so
+`tests/test_governance_hooks_gate.py` counts it honestly as the tenth
+blocker rule and adds a fourth hook category (prompt witness) for the
+always-exit-0 UserPromptSubmit half. Reach: Claude Code only **by nature**
+(git hooks have no user prompt) — declared in
+`tests/test_enforcement_coverage.py` and `docs/governance/enforcement.md`
+rather than left for the governance extraction to rediscover.
+
 ### Fixed: retired roles no longer reach the A3 intro-drafting prompt (`fix/retired-roles-a3-prompt`, item 75)
 
 `_build_experience_summary_targets` read the analyze-time frozen

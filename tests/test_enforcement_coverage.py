@@ -51,6 +51,9 @@ _BINDS_NON_CLAUDE_AGENTS: dict[str, bool] = {
     "verify_binary_on_path": False,  # feat/verify-dont-assume-guard — Claude Code PreToolUse only;
     # no git-native adapter was built (out of scope for this branch — the Bash-command-string
     # parsing this guard does has no equivalent in a git pre-commit/pre-push hook's input shape)
+    "interrogative_witness": False,  # work item 87 — Claude Code only BY NATURE, not by gap:
+    # the "triggering user prompt" it pauses on is a Claude-session concept with no git-hook
+    # equivalent at all, so unlike C-7/C-10 there is no clause here for another tool to enforce
 }
 
 #: Guards whose clause has **no** tool-agnostic enforcement at all. Kept as its own constant
@@ -116,6 +119,7 @@ class TestTheExtractionGapIsPinned:
         point: that is a governance-coverage change and it should not land silently.
         """
         assert sorted(EXTRACTION_GAP) == [
+            "interrogative_witness",
             "require_consumer_enumeration",
             "require_evidence_before_fix",
             "verify_binary_on_path",

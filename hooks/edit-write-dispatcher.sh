@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Edit|Write: runs the six Edit/Write guards in one
+# PreToolUse hook on Edit|Write: runs the seven Edit/Write guards in one
 # process (require-feature-branch, require-evidence-before-fix,
 # require-consumer-enumeration, block-secrets, validate-context,
-# route-security-lint) instead of six separate hook entries, aggregating every
+# route-security-lint, interrogative-witness) instead of separate hook
+# entries, aggregating every
 # blocked guard's messages before exiting — the settings.json
 # PreToolUse/Edit|Write consolidation (PX-37).
 #
