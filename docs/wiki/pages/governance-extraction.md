@@ -130,17 +130,17 @@ gate actually binds"](../../governance/enforcement.md) — and it is explicitly 
 The load-bearing fact: **a clause enforced only by a Claude Code hook does not travel**
 — not to Codex, Cursor or Aider today, and not into a governance package extracted
 into another project tomorrow. Guards route through three adapters with very different
-coverage (a tool-agnostic opt-in git-hook path; a CI/`gate.py` path that binds everyone;
+coverage (per [`enforcement.md` §"Enforcement reach"](../../governance/enforcement.md) — a tool-agnostic opt-in git-hook path; a CI/`gate.py` path that binds everyone;
 and a Claude-Code-only PreToolUse path). C-7's `require_evidence_before_fix`, C-10's
-`require_consumer_enumeration`, the C-8/C-12 context hooks, and `verify_binary_on_path`
-are all on the third. `verify_binary_on_path` additionally has **no planned git-native
+`require_consumer_enumeration`, `interrogative_witness`, the C-8/C-12 context hooks, and `verify_binary_on_path`
+are all on the third. `verify_binary_on_path` has **no planned git-native
 path** — it parses a Bash command string, a shape a `pre-commit` hook never sees, so
-there is no equivalent input to route it from.
+there is no equivalent input to route it from. `interrogative_witness`, by contrast, is Claude Code only **by nature, not by gap** `[synthesis]` — it enforces a pause based on whether the user prompt is a question or directive, a property of Claude *sessions* that git hooks do not have, so extraction closes nothing here.
 
 The split was invisible from any single file, which is exactly why it went unrecorded
 until 2026-08-05. It is now declared as a **stated limit rather than papered over**
 (C-0), tracked by work item 50, and held in place by
-`tests/test_enforcement_coverage.py`, which derives the routing from the adapter at
+`tests/test_enforcement_coverage.py`, which derives the routing from `git_hook.py` at
 runtime — so a future branch that closes the gap, widens it, or adds a new Claude-only
 guard has to say so in the diff `[synthesis]`.
 

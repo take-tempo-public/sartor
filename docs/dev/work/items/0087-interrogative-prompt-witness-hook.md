@@ -3,8 +3,14 @@ schema = 1
 id = 87
 kind = "item"
 title = "Interrogative-prompt witness: hook mechanism so a question is answered, not acted on — build before Epic B run 3"
-status = "watching"
+status = "closed"
 decision_owner = "user"
+verified_by = [
+  "tests/test_interrogative_witness.py",
+  "tests/test_governance_hooks_gate.py::test_prompt_witness_never_gates",
+  "docs/dev/work/items/0087-interrogative-prompt-witness-hook.md (2026-08-12 live-fire update: PAUSE observed in the building session itself after hot-load)",
+]
+resolution = "Both witnesses built per spec on feat/interrogative-prompt-witness (UserPromptSubmit heuristic reminder + one-shot self-clearing Edit/Write pause, both fail-open), verified by 34 tests + manual shim runs, and then LIVE-verified in the building session itself: the harness hot-loaded the new settings.json hooks mid-session, a task-notification turn armed the state (correctly silent, non-question), and the pause fired on the next Edit with the exact spec message, self-clearing on retry."
 refs = [
   "docs/dev/handoffs/fix-n1-args-guard-hardening.md",
   "hooks/edit-write-dispatcher.sh",
@@ -115,3 +121,21 @@ building session itself ran unhooked — no live UserPromptSubmit firing has
 been observed yet. The B1a run session (Epic B run 3) is the first session
 these witnesses protect; close on that session's first observed
 reminder/pause, or on any earlier live sighting.
+
+### 2026-08-12 — LIVE FIRE observed in the building session; closed
+
+The "hooks load at session start" premise above was wrong in the useful
+direction: the harness **hot-loaded** the new `UserPromptSubmit` wiring
+mid-session. A background-task notification (delivered as a user-turn
+event) ran the classifier with the session's real id — correctly silent
+(not a question) while arming the per-prompt state — and the session's next
+`Edit` (a wiki cite re-anchor) was refused once with the exact PAUSE
+message, then proceeded on the identical retry. Both halves observed live:
+classification+arming, and the one-shot self-clearing pause. That is the
+close condition named above ("any earlier live sighting"), so status →
+`closed`. Two facts worth keeping: (1) settings.json hook edits can take
+effect in the session that makes them — do not assume a session is
+unprotected just because it predates the wiring; (2) task notifications
+count as prompt-receipt events for the witness, so long autonomous runs get
+one pause per notification turn — observed friction cost: one clean retry,
+as designed.

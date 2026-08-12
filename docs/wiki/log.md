@@ -1801,3 +1801,34 @@ normalization or ignore rules (the 2026-08-11 sweep recorded the same for
 charter's extract-don't-restate rule): `cite-don't-restate`, `charter D5`, and `D-5`
 each grep to zero hits across `docs/wiki/pages/` — no page restates the corrected
 label. Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out self-update (`feat/interrogative-prompt-witness`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest;
+checkpoint NOT advanced — scoped passes never honestly can, see item 65).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../CLAUDE.md`](../../CLAUDE.md) and
+[`../governance/enforcement.md`](../governance/enforcement.md). Classifier run over
+the branch diff, not eyeballed.
+
+**Pages edited (2), via the wiki-scribe subagent (one per page, author≠auditor):**
+[`governance-extraction`](pages/governance-extraction.md) and
+[`consistency-tracks-enforcement`](pages/consistency-tracks-enforcement.md) — both
+enumerate the Claude-Code-only guard roster from `enforcement.md` §"Enforcement
+reach", which grew by `interrogative_witness` (work item 87) on this branch; each
+roster extended plus the by-nature-not-by-gap distinction, `[synthesis]`-tagged.
+
+**Auditor verdicts (wiki-grounding-auditor, one per page):**
+`consistency-tracks-enforcement` — 10 SUPPORTED / 0 DRIFTED / 0 UNSUPPORTED.
+`governance-extraction` — 16 SUPPORTED / 1 DRIFTED / 0 UNSUPPORTED; the DRIFT was
+pre-existing prose ("derives the routing from the adapter" where source and test both
+name `git_hook.py`) — re-anchored to `git_hook.py` per the auditor's suggestion.
+Catch-rate this run: 1 caught / 2 pages audited.
+
+**Pages verified no-edit:** for the `CLAUDE.md` hook-list addition — its only wiki
+cites are the `@import` mention in `governance-extraction` (line 49-51, unaffected)
+and no page restates the hook roster (grep for `wiki-freshness-reminder` / "hook
+list" across `docs/wiki/pages/`: zero hits). Checked, not skipped.

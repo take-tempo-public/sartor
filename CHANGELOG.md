@@ -44,7 +44,10 @@ blocker rule and adds a fourth hook category (prompt witness) for the
 always-exit-0 UserPromptSubmit half. Reach: Claude Code only **by nature**
 (git hooks have no user prompt) — declared in
 `tests/test_enforcement_coverage.py` and `docs/governance/enforcement.md`
-rather than left for the governance extraction to rediscover.
+rather than left for the governance extraction to rediscover. Live-verified
+in the building session itself: the harness hot-loaded the new wiring
+mid-session and the pause fired (and self-cleared) on the session's next
+edit — the item-87 close condition, observed rather than assumed.
 
 ### Fixed: retired roles no longer reach the A3 intro-drafting prompt (`fix/retired-roles-a3-prompt`, item 75)
 
