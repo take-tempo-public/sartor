@@ -10,8 +10,14 @@
 > loss included an overnight window burned by serial questions. **Run 3 is a
 > test of the chain's window discipline as much as of the sprint's code.**
 > The B1a sprint brief is unused and still valid.
+>
+> **Re-sequenced 2026-08-12 (owner-directed, post-close):** ONE branch now
+> comes before the run — **work item 87**, the interrogative-prompt witness
+> hook, so run 3's invoking session is protected against the
+> question-treated-as-work-order failure class that surfaced (third recorded
+> instance) right after this branch closed. Build it, land it, THEN run B1a.
 
-**Branch to create:** `fix/b1-stale-template-companions` (branch off `epic/b-render-ats`)
+**Branch to create:** `feat/interrogative-prompt-witness` (branch off `epic/b-render-ats`; item 87 — then `fix/b1-stale-template-companions` for the B1a run)
 **Base branch:** `main` (Epic B reaches `main` as ONE epic PR at the epic close — not now)
 
 ---
@@ -70,10 +76,14 @@ A→E, strictly sequential.
   `5b8bafc` (PR #126).
 - ~~`fix/n1-args-guard-hardening`~~ ✓ — this session: refuter fixes hardened +
   mutant-verified, C-11 CRLF gate, runbook step 0a. Merged into the epic
-  branch (ff), prunable.
+  branch (ff), pruned.
 - **`epic/b-render-ats`** ← the epic umbrella, UNMERGED and staying that way
   until the epic close. Now carries invocability fixes AND the hardening.
-- **`fix/b1-stale-template-companions`** ← **next: yours.** Cut it fresh off
+- **`feat/interrogative-prompt-witness`** ← **next: yours (item 87,
+  owner-directed).** The witness hook(s) that strip momentum when a prompt is
+  a question — full spec in the item file. Own branch off the epic tip, own
+  session, gate green, ff-merge back. **Lands BEFORE the B1a run.**
+- **`fix/b1-stale-template-companions`** ← after item 87. Cut it fresh off
   the epic tip, record the real base sha in the brief, run sprint B1a through
   the pipeline.
 - B1a → B1b → B2 ← the three Epic B pipeline runs, none started.
@@ -123,6 +133,16 @@ green gate), containing:
 **Gate:** green on this tree — watched to its own `gate: all steps passed.`
 terminal line, `RERUN`-swept. The exact counts are in the closing commit
 message; confirm against `git log` rather than trusting prose (C-12).
+
+**C-12 disclosure, post-hoc:** a compaction occurred in the closing session
+at `2026-08-12T16:57:25Z` (ledger `docs/dev/ledger/27a20406-...jsonl`),
+between the handoff's re-validation and the gate-green commit, and was **not
+announced when it happened** — noticed only when a later verification diff
+exposed the ledger row. Post-compaction outputs (gate terminal line, commit,
+ff-merge, pointer) were verified against live git/command output rather than
+recalled context, but treat any un-cited prose from that window accordingly.
+Its `trigger` field reads `unknown` — item 85's standing observation, one
+more data point.
 
 **Still true: no agent has ever been spawned by this pipeline.** agentType
 bare-name dispatch, `phase()` grouping, escalation routing, `journal.jsonl`,
@@ -208,7 +228,21 @@ session.
 
 ## What this branch should build
 
-**This is Epic B run 1, attempt 3 — the sprint itself, through the pipeline.**
+**First, the pre-run branch (owner-directed 2026-08-12):**
+
+0. **`feat/interrogative-prompt-witness` — work item 87, its own branch and
+   session, BEFORE the run.** Two fail-open witnesses per the item's spec: a
+   UserPromptSubmit heuristic that injects a non-blocking "this prompt reads
+   as a question — the deliverable is the ANSWER" reminder, and a
+   first-Edit/Write-per-turn pause that forces the interrogative-vs-directive
+   consideration explicitly. Witness, not gate — intent classification is not
+   deterministic, and the C-0 label saying so goes in the implementation.
+   Wire through the dispatcher pattern (`hooks/edit-write-dispatcher.sh`,
+   PX-37). Gate green, ff-merge into the epic branch, then hand off to the
+   run session.
+
+**Then, Epic B run 1, attempt 3 — the sprint itself, through the pipeline
+(a fresh session, protected by the hook above):**
 
 1. **Kickoff preflight (runbook step 0a — do this FIRST, in one message):**
    read the standing context in full; run

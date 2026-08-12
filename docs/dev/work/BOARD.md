@@ -2,11 +2,12 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 41 | Epics 6 | Closed 23
+**Open 5 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 41 | Epics 6 | Closed 23
 
 ## Open
 
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
+- **87** -- Interrogative-prompt witness: hook mechanism so a question is answered, not acted on — build before Epic B run 3 (`user`) -- owner-directed: fail-open witness hooks so a question gets an ANSWER, not action; lands BEFORE the B1a run.
 
 ## Blocked
 
