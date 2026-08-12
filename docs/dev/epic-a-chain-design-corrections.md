@@ -1621,7 +1621,7 @@ use one of these terms explicitly, not bare "drift."
 
 **16.4.1 Structure.**
 
-1. **A deterministic monitor** — proposed as a Workflow script (§16.5.3) — carries the epic's
+1. **A deterministic monitor** — proposed as a Workflow script (§16.5.2.3) — carries the epic's
    continuity. It holds no LLM context of its own and never accrues it across sprints.
 2. **Per sprint, a fully fresh cast:** implementer (branch, dossier, code, tests, stage —
    reports, commits nothing) → Sonnet refuter (staged diff, told to refute — already proven,

@@ -3,7 +3,7 @@ schema = 1
 id = 84
 kind = "item"
 title = "Build the N=1 baseline of the proposed chain-orchestration pipeline, pending owner authorization"
-status = "open"
+status = "watching"
 decision_owner = "user"
 refs = [
   "docs/dev/epic-a-chain-design-corrections.md",
@@ -30,6 +30,26 @@ envelope. This item exists to make the next concrete build step legible and
 trackable once authorized, not to authorize it.
 
 ## Updates
+
+### 2026-08-11 — BUILT on `feat/n1-baseline-pipeline`; watching until the first authorized run
+
+The authorized build landed: `.claude/workflows/n1-baseline.mjs` (the pipeline
+script — two stages bracketing the invoking session's gate runs, escalation
+primitive with a no-reviewer short-circuit for §11.5 halt points and hook
+blocks, drift layer inert at N=1 by construction), `agents/n1-refuter.md` +
+`agents/n1-judge.md` (read-only role definitions), the contract/runbook at
+`docs/dev/n1-baseline-pipeline.md`, and the structural gate
+`tests/test_n1_pipeline.py` (29 tests, RED-fixture scanner teeth first).
+
+**Status `watching`, not `closed` — owner decision this session, taken on an
+adversarial reviewer's finding:** the structural tests certify
+self-consistency with the design docs, not harness compatibility — the
+Workflow API the script targets has zero committed instances in this repo and
+the script has never been executed (running is its own owner opt-in,
+§16.5.2.3). Closing on `verified_by = ["tests/test_n1_pipeline.py"]` would be
+exactly the "closure resting on weaker evidence than it claims" pattern the
+closure bar exists for. Close when the first authorized run supplies real run
+evidence.
 
 ### 2026-08-11 — owner resolved §16.7: pursue the design; N=1 baseline authorized
 

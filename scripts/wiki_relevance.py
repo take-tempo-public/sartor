@@ -86,6 +86,13 @@ IRRELEVANT_FILES = frozenset(
         # wiki page. Consumer enumeration:
         # docs/dev/blast-radius/epic-a-chain-design-corrections.md
         "docs/dev/epic-a-chain-design-corrections.md",
+        # contract/runbook for the N=1 baseline pipeline (item 84) — agent
+        # orchestration tooling, same character as the hooks/ / commands/ /
+        # agents/ / .claude/ prefixes above ("agent tooling, not product");
+        # zero validated runs at classification time. Revisit on the first
+        # authorized run. Consumer enumeration:
+        # docs/dev/blast-radius/n1-baseline-pipeline.md
+        "docs/dev/n1-baseline-pipeline.md",
     }
 )
 

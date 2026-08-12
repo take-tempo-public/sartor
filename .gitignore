@@ -103,6 +103,8 @@ ehthumbs.db
 # ---- Claude Code session files (machine-specific, not project state) ----
 .claude/*
 !.claude/settings.json
+# committed Workflow scripts ARE project state (the N=1 baseline pipeline, item 84)
+!.claude/workflows/
 CLAUDE.local.md
 
 # ---- Playwright (β.3) — Chromium binary is ~150MB and lives outside
