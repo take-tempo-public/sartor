@@ -31,6 +31,149 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 — FIRST RUN ATTEMPTED (Epic B run 1): blocked at invocation by CRLF line endings
+
+The owner authorized Epic B run 1 (sprint B1a) this session and the pipeline was
+invoked for the first time. **It never started** — the `Workflow` tool call was
+rejected before any agent spawned:
+
+```
+The permission handler returned updatedInput for Workflow that failed schema
+validation: path ["script"], message "script contains control characters that
+would be hidden in the approval dialog"
+```
+
+**Observed (C-7), not inferred.** The permission layer inlines the file named by
+`scriptPath` into a `script` field and validates it; a `\r` (0x0D) trips the
+control-character check. Established by a deterministic two-arm probe with dummy
+scripts that spawn no agents (scratchpad, not committed):
+
+| Arm | Bytes | Only difference | Result |
+|---|---|---|---|
+| `probe_crlf.mjs` | 143 | CRLF | rejected — **identical** error, `path: ["script"]` |
+| `probe_lf.mjs` | 137 | LF | `{"probe":"ok"}`, 0 agents, 60 ms (run `wf_e47f2d49-7f0`) |
+
+A byte scan of `.claude/workflows/n1-baseline.mjs` found **no control characters
+other than its 507 CRLF pairs** — CRLF is the whole of the trigger.
+
+**Root cause is a `.gitattributes` gap, not a defect in the pipeline script.**
+The committed blob is correct (0 CRLF). `.gitattributes` pins `*.js text eol=lf`
+but has **no `*.mjs` rule**, so `.mjs` falls through to `* text=auto`; with this
+clone's `core.autocrlf=true`, the file checks out CRLF in the Windows working
+tree. `.claude/workflows/n1-baseline.mjs` is the repo's only `.mjs` outside
+`docs-site/`, so nothing else surfaced this.
+
+**Experiment results banked (the §"What this experiment measures" list):**
+
+1. **Harness compatibility — partially discharged.** C-0 limit 1 said script
+   loading and the Workflow API were unverified. The LF probe proves the harness
+   loads a script, honors `meta`, and returns its value. What is *newly* known to
+   be broken is narrower and environmental: `scriptPath` + CRLF on a Windows
+   checkout.
+2. **`agentType` bare-name dispatch (C-0 limit 2) is STILL unverified** — the
+   probe spawned 0 agents. Do not record it as tested.
+
+**Scope note:** the fix is a one-line `.gitattributes` addition plus a working-tree
+renormalize. That is outside sprint B1a's scope (the companion regen guard), and
+it blocks **all three** Epic B runs, not just this one — surfaced to the owner as
+a scope decision rather than folded in silently. Owner approved; landed on the
+epic branch as `34ad528`.
+
+### 2026-08-12 — SECOND invocation blocker: `args` arrives as a JSON string, not an object
+
+With CRLF fixed, the pipeline was invoked again and failed a second time — still
+before any agent spawned (0 agents, 20 ms):
+
+```
+Error: args.sprintBriefPath and args.epicBriefPath are required — the pipeline
+never invents its own brief
+```
+
+**The script is behaving correctly; the harness boundary is not.** `cfg` is built
+as `{ ...defaults, ...(args || {}) }` (`n1-baseline.mjs:267`). Spreading a *string*
+yields index-keyed characters, so `cfg.sprintBriefPath` is `undefined` and the
+guard fires exactly as designed — it refused to invent a brief, which is the
+behavior we want.
+
+**Observed (C-7), not inferred.** A dummy probe returning `typeof args` (no agents,
+`wf_733613af-2c5`, 14 ms), invoked with a normal object arg:
+
+```json
+{"typeofArgs":"string","isString":true,"keys":null,"sprintBriefPath":null,
+ "raw":"{\"stage\": \"sprint\", \"sprintBriefPath\": \"docs/dev/handoffs/epic-b-b1a-brief.md\"}"}
+```
+
+`args` arrives as a **JSON string** in this environment regardless of how it is
+passed. This **contradicts the documented Workflow contract**, which states args
+are exposed to the script "verbatim" and warns specifically against passing a
+JSON-encoded string because "a stringified list reaches the script as one string."
+Here the harness does the stringifying itself.
+
+**Consequence for C-0 limit 1:** the limit said the Workflow API was unverified.
+It is now verified in part and *falsified* in part — script loading, `meta`,
+`phase`, and return values work; **object-arg marshalling does not match its
+documented contract.** Any future script written to that contract has the same
+defect. This is a finding about the harness, not about this pipeline.
+
+**Cost of the fix:** one defensive line (`typeof args === 'string' ? JSON.parse(args)
+: args`). `tests/test_n1_pipeline.py` contains **no** reference to args handling
+(grep-checked: zero matches for `args`, `defaults`, `sprintBriefPath`), so nothing
+in the structural gate is coupled to it.
+
+**Still unverified after two attempts: bare-name `agentType` dispatch (C-0 limit 2).**
+Both failures occurred before any agent spawned. No sprint work has happened yet.
+
+### 2026-08-12 — both blockers fixed; pipeline PROVEN INVOCABLE; B1a handed to a fresh session
+
+Owner decision this session: apply the fix **and** a regression test, then hand
+off rather than continuing into the sprint. Done on `epic/b-render-ats`:
+
+- `.gitattributes`: `*.mjs text eol=lf` + a comment recording why (`34ad528`).
+- `n1-baseline.mjs`: `args` is normalized before the spread — a JSON string is
+  parsed, a real object still passes through, and a non-object is a loud caller
+  error rather than a silent empty config.
+- `tests/test_n1_pipeline.py`: a **behavioral** regression test. It lifts the real
+  normalization block out of the script and executes it under node with a string
+  arg, an object arg, and a RED arm. Shown to fail: with the fix reverted it errors
+  with "the args-normalization block is missing from n1-baseline.mjs".
+
+  **CORRECTION (same day, after adversarial review — this entry originally called
+  the test "the C-11 fail-closed mechanism this recurrence required"; that claim
+  was an overstatement and is withdrawn).** Three independent refuters were run
+  against these fixes and all three found real defects. On this test specifically:
+  deleting the *validation guard* leaves every assertion green (so the guard half
+  does **not** fail closed), and a template literal containing a copy of the block
+  makes the test pass while the real script is reverted — because it regexes raw
+  source and never routes through this file's own `blank_non_code()` scanner. The
+  regex also breaks on 8 of 9 behavior-preserving edits, each emitting a
+  confidently-worded and false "block is missing" message. **The parse half is a
+  mechanism; the validation half is prose.** Full reports, with the remedies, are
+  the appendix of `docs/dev/handoffs/epic-b-render-ats.md`.
+
+  **The CRLF half got no mechanism at all**, and that gap is declared rather than
+  left silent (C-11): nothing asserts `.gitattributes` covers the repo's text
+  extensions, and **80 `.jsonl`, 12 `.tsx`, and 9 `.ts` files remain unpinned**, so
+  a future workflow script authored as `.ts` recreates the identical blocker. This
+  is the **third** instance of the class — `scripts/work_items.py:22-26` records a
+  prior CRLF/LF bug noting `verify_doc_template.py`'s `fingerprint` "already fixed
+  once."
+
+**Invocability verified end-to-end, with zero agents spawned** (`wf_af5e441a-faa`,
+13 ms). Invoking `stage: 'finalize'` with both brief paths and no `commitMessage`
+now fails on the **`commitMessage`** guard — which sits *after* the args parse —
+instead of the `sprintBriefPath` guard. The string arg parsed and both paths
+resolved; the script advances past the blocker that stopped it twice.
+
+**What remains unverified (C-0, stated not papered over):** bare-name `agentType`
+dispatch for `n1-refuter` / `n1-judge` (limit 2), `phase()` grouping, the
+escalation routing, `journal.jsonl` contents, and the §11.9 accounting check.
+**No agent has ever been spawned by this pipeline.** The next run is still the
+first real test of everything downstream of invocation — do not read "invocable"
+as "working".
+
+Item stays `watching`: the closure bar wants first-run evidence, and a run that
+never reached its first agent is not that.
+
 ### 2026-08-11 — BUILT on `feat/n1-baseline-pipeline`; watching until the first authorized run
 
 The authorized build landed: `.claude/workflows/n1-baseline.mjs` (the pipeline

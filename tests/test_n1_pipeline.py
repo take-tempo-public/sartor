@@ -392,6 +392,80 @@ class TestScriptStructure:
         )
         assert result.returncode == 0, result.stderr
 
+    def test_args_normalization_tolerates_a_json_string(self, script_src: str) -> None:
+        """`args` arriving as a JSON string must still resolve to real config.
+
+        Not a hypothetical. Observed 2026-08-12 on Epic B run 1: the Workflow
+        harness delivered `typeof args === 'string'` even though the caller
+        passed an object, contradicting the documented "verbatim" contract
+        (probe run wf_733613af-2c5). The old `{ ...defaults, ...(args || {}) }`
+        spread turned that string into index-keyed characters, every
+        required-arg guard fired, and the pipeline could not be invoked at all
+        -- twice, before a single agent spawned.
+
+        This executes the REAL normalization block lifted out of the script, so
+        deleting or weakening it fails here rather than at the next run.
+        """
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("node not on PATH")
+
+        match = re.search(
+            r"^const rawArgs = .*?^const cfg = \{ \.\.\.defaults, \.\.\.\(rawArgs \|\| \{\}\) \}$",
+            script_src,
+            re.MULTILINE | re.DOTALL,
+        )
+        assert match is not None, (
+            "the args-normalization block is missing from n1-baseline.mjs -- a JSON-string "
+            "`args` will silently spread into index-keyed characters and block invocation"
+        )
+        block = match.group(0)
+
+        def run(prelude: str) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(  # noqa: S603 - fixed argv, no shell, source via stdin
+                [node, "--input-type=module"],
+                input=(
+                    f"{prelude}\nconst defaults = {{ stage: 'sprint' }}\n"
+                    f"{block}\nconsole.log(JSON.stringify(cfg))\n"
+                ),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                check=False,
+            )
+
+        as_string = run('const args = \'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        assert as_string.returncode == 0, as_string.stderr
+        assert '"sprintBriefPath":"a.md"' in as_string.stdout
+        assert '"epicBriefPath":"b.md"' in as_string.stdout
+        assert '"stage":"sprint"' in as_string.stdout, "defaults must still apply"
+
+        # A real object must keep working -- the fix cannot be string-only.
+        as_object = run("const args = { sprintBriefPath: 'a.md', epicBriefPath: 'b.md' }")
+        assert as_object.returncode == 0, as_object.stderr
+        assert '"sprintBriefPath":"a.md"' in as_object.stdout
+
+        # Teeth: the pre-fix spread really did fail this way, so a green result
+        # above is discrimination and not an assertion that passes on anything.
+        red_spread = subprocess.run(  # noqa: S603 - fixed argv, no shell, source via stdin
+            [node, "--input-type=module"],
+            input=(
+                'const args = \'{"sprintBriefPath":"a.md"}\'\n'
+                "const defaults = { stage: 'sprint' }\n"
+                "const cfg = { ...defaults, ...(args || {}) }\n"
+                "console.log(JSON.stringify(cfg.sprintBriefPath ?? null))\n"
+            ),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        assert red_spread.returncode == 0, red_spread.stderr
+        assert red_spread.stdout.strip() == "null", (
+            "the pre-fix spread should lose sprintBriefPath -- if it does not, this "
+            "test is no longer measuring the defect it was written for"
+        )
+
 
 def _frontmatter(path: Path) -> dict[str, object]:
     text = path.read_text(encoding="utf-8")

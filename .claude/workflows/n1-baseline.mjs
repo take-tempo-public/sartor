@@ -264,7 +264,19 @@ const defaults = {
   driftBackstop: 3, // reactive: sprints since the last coherence review
   deferredDriftThreshold: 5, // reactive: cumulative deferred refuter findings since the last review
 }
-const cfg = { ...defaults, ...(args || {}) }
+// The Workflow contract documents `args` as reaching the script verbatim, and
+// warns callers NOT to pass a JSON-encoded string. Observed 2026-08-12 (Epic B
+// run 1, probe wf_733613af-2c5): the harness delivers `typeof args === 'string'`
+// anyway, even when the caller passes a real object. Spreading a string yields
+// index-keyed characters, so every required-arg guard below fired and the
+// pipeline could not be invoked at all. Normalize defensively rather than
+// trusting the documented contract; a non-JSON string is a caller error and is
+// surfaced as one, never silently swallowed.
+const rawArgs = typeof args === 'string' && args.trim() !== '' ? JSON.parse(args) : args
+if (rawArgs !== undefined && rawArgs !== null && typeof rawArgs !== 'object') {
+  throw new Error(`args must be an object (or a JSON object string); got ${typeof rawArgs}`)
+}
+const cfg = { ...defaults, ...(rawArgs || {}) }
 
 if (!cfg.sprintBriefPath || !cfg.epicBriefPath) {
   throw new Error('args.sprintBriefPath and args.epicBriefPath are required — the pipeline never invents its own brief')
