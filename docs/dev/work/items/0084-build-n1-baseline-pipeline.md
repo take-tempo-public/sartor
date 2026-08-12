@@ -31,6 +31,56 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (run 3 preflight, `fix/b1-stale-template-companions`) — the item-87 pause can silently consume itself, and that is what keeps it from killing a run
+
+Preflight for Epic B run 1 attempt 3 surfaced an interaction between the item-87
+interrogative witness and this pipeline's escalation routing that **no document
+records**, and two observations that bound it. Filed before the run, not after.
+
+**The hazard.** The item-87 pause refuses the first `Edit`/`Write` after each
+recorded prompt with exit 2. The implementer is instructed
+(`.claude/workflows/n1-baseline.mjs:51-55`) that a hook block is "an immediate
+structured return, not a problem to solve" → it returns `kind: "hook_block"` →
+`escalate()` (`n1-baseline.mjs:189-191`) short-circuits to `stop` with **no
+reviewer spawned**. The implementer's first act is writing the diagnosis
+dossier. So a self-clearing, benign witness would have stopped run 1 dead —
+the hook built to protect this session killing it.
+
+**Observed (C-7), not inferred.** Both facts come from reading the guard's own
+per-session state file at
+`%TEMP%/sartor-interrogative-witness/<session_id>.json`:
+
+1. **The pause is consumed *silently* by a call blocked for a different
+   reason.** A throwaway `Edit` on this branch surfaced only
+   `check-plan-approved.sh`'s `PLAN RETIRED` message — no PAUSE text anywhere —
+   yet the state file read
+   `{"prompt_seq": 1, "interrogative": false, "witnessed": true}` immediately
+   after. Both PreToolUse entries ran; `interrogative_witness.decide()` marked
+   `witnessed` before returning its refusal (`guards/interrogative_witness.py:187`),
+   and the aggregated message the agent sees can carry another guard's text
+   instead. **A consumed pause is therefore not always a visible one.**
+2. **Tool-answer turns do not re-arm it.** `prompt_seq` stayed at **1** across an
+   `AskUserQuestion` round trip *and* an `ExitPlanMode` approval — a subsequent
+   `Edit` was not paused. Only a real `UserPromptSubmit` calls `record_prompt`.
+
+**Consequence, and the mitigation actually used.** The risk is far narrower than
+it first looks: the state arms once per user prompt, and the invoking session
+can consume it deliberately before the `Workflow` call — which is what happened
+here (the base-sha edit to the B1a brief drew the block; the state was already
+`witnessed: true` by the time the pipeline was invoked). Residual exposure is a
+mid-run **task-notification** turn, which item 87's own closing update records
+as a prompt-receipt event. The owner pre-authorized, for that specific case
+only, verifying the flag's `verbatim` is exactly the interrogative-witness PAUSE
+and resuming via `resumeFromRunId`; any other hook name still stops for the
+owner.
+
+**Stated limit (C-0).** Whether subagents share the parent `session_id` — the
+premise that makes a subagent able to consume the main agent's pause at all — is
+**inherited, not re-derived**: it is asserted as a known limit in
+`guards/interrogative_witness.py`'s module docstring (lines 35-37) and was not
+verified in this preflight. No agent has been spawned yet, so it remains
+untested here too.
+
 ### 2026-08-12 (later, `fix/n1-args-guard-hardening`) — both refuter-broken halves hardened; C-11 mechanisms now real
 
 The next session (per the epic handoff's 7-item specification) re-placed the

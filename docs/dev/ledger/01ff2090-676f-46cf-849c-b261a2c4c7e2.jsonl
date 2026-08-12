@@ -1,0 +1,2 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/feat-interrogative-prompt-witness.md", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "epic/b-render-ats", "commit": "247c810", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-12T22:23:50Z", "fingerprint": "abd6bdc088a7"}
+{"event": "plan-archived", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "fix/b1-stale-template-companions", "archive_id": "20260812T223546Z-142537ca4cdd", "plan": "federated-inventing-starlight.md", "ts": "2026-08-12T22:35:48Z"}
