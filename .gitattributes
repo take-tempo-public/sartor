@@ -7,6 +7,7 @@
 *.html  text eol=lf
 *.css   text eol=lf
 *.js    text eol=lf
+*.mjs   text eol=lf
 *.json  text eol=lf
 *.txt   text eol=lf
 *.sh    text eol=lf
@@ -27,6 +28,14 @@
 .githooks/pre-commit text eol=lf
 .githooks/pre-merge-commit text eol=lf
 .githooks/pre-push text eol=lf
+
+# Why `*.mjs` is pinned separately from `*.js` (2026-08-12): without it, `.mjs`
+# fell through to `* text=auto` and checked out CRLF on a Windows clone
+# (`core.autocrlf=true`). The Workflow harness inlines the file named by
+# `scriptPath` and its permission validator rejects any `\r` as a control
+# character, so `.claude/workflows/n1-baseline.mjs` could not be invoked at all
+# — Epic B run 1 was blocked at invocation until this line existed. Observed by
+# a two-arm probe: identical dummy scripts, CRLF rejected / LF ran clean.
 
 # Binary — never diff or mangle
 *.docx  binary
