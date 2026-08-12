@@ -403,30 +403,46 @@ class TestScriptStructure:
         required-arg guard fired, and the pipeline could not be invoked at all
         -- twice, before a single agent spawned.
 
-        This executes the REAL normalization block lifted out of the script, so
-        deleting or weakening it fails here rather than at the next run.
+        Rewritten 2026-08-12 after three adversarial refuters broke the first
+        version (appendix of docs/dev/handoffs/epic-b-render-ats.md): the span
+        is located in blank_non_code() output so a copy of the block hiding in
+        a comment or template literal can never satisfy it; the executed
+        snippet is the REAL region -- defaults, normalization, and both
+        required-arg guards, nothing hand-supplied; and every arm asserts the
+        discriminating error MESSAGE, so deleting the validation guard, the
+        Array.isArray check, or the JSON.parse try/catch each fails a specific
+        arm.
+
+        Known limit (C-0): whether `args` is even the binding name the harness
+        injects cannot be pinned by a unit test; the probes prove it is today.
         """
         node = shutil.which("node")
         if node is None:
             pytest.skip("node not on PATH")
 
-        match = re.search(
-            r"^const rawArgs = .*?^const cfg = \{ \.\.\.defaults, \.\.\.\(rawArgs \|\| \{\}\) \}$",
-            script_src,
-            re.MULTILINE | re.DOTALL,
+        # Anchor in the BLANKED source (offsets preserved 1:1), then slice the
+        # real source at the same span -- per TestScannerHasTeeth, a match in
+        # a comment or template literal cannot satisfy these anchors.
+        blanked = blank_non_code(script_src)
+        start = re.search(r"^const defaults = \{", blanked, re.MULTILINE)
+        end = re.search(r"^const report = \{", blanked, re.MULTILINE)
+        assert start is not None and end is not None and start.start() < end.start(), (
+            "the defaults .. required-arg-guard region is missing from "
+            "n1-baseline.mjs -- a JSON-string `args` will silently spread into "
+            "index-keyed characters and block invocation"
         )
-        assert match is not None, (
-            "the args-normalization block is missing from n1-baseline.mjs -- a JSON-string "
-            "`args` will silently spread into index-keyed characters and block invocation"
+        assert "rawArgs" in blanked[start.start() : end.start()], (
+            "the args-normalization block is gone from the code (not comments) "
+            "between `const defaults` and `const report` -- the harness delivers "
+            "args as a JSON string (wf_733613af-2c5) and nothing normalizes it"
         )
-        block = match.group(0)
+        region = script_src[start.start() : end.start()]
 
-        def run(prelude: str) -> subprocess.CompletedProcess[str]:
+        def run(args_literal: str) -> subprocess.CompletedProcess[str]:
             return subprocess.run(  # noqa: S603 - fixed argv, no shell, source via stdin
                 [node, "--input-type=module"],
                 input=(
-                    f"{prelude}\nconst defaults = {{ stage: 'sprint' }}\n"
-                    f"{block}\nconsole.log(JSON.stringify(cfg))\n"
+                    f"const args = {args_literal}\n{region}\nconsole.log(JSON.stringify(cfg))\n"
                 ),
                 capture_output=True,
                 text=True,
@@ -434,36 +450,53 @@ class TestScriptStructure:
                 check=False,
             )
 
-        as_string = run('const args = \'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        # The incident shape: a JSON object string must resolve to real config,
+        # with the REAL defaults applied.
+        as_string = run('\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
         assert as_string.returncode == 0, as_string.stderr
         assert '"sprintBriefPath":"a.md"' in as_string.stdout
         assert '"epicBriefPath":"b.md"' in as_string.stdout
-        assert '"stage":"sprint"' in as_string.stdout, "defaults must still apply"
+        assert '"stage":"sprint"' in as_string.stdout, "the real defaults must apply"
 
         # A real object must keep working -- the fix cannot be string-only.
-        as_object = run("const args = { sprintBriefPath: 'a.md', epicBriefPath: 'b.md' }")
+        as_object = run("{ sprintBriefPath: 'a.md', epicBriefPath: 'b.md' }")
         assert as_object.returncode == 0, as_object.stderr
         assert '"sprintBriefPath":"a.md"' in as_object.stdout
 
-        # Teeth: the pre-fix spread really did fail this way, so a green result
-        # above is discrimination and not an assertion that passes on anything.
-        red_spread = subprocess.run(  # noqa: S603 - fixed argv, no shell, source via stdin
-            [node, "--input-type=module"],
-            input=(
-                'const args = \'{"sprintBriefPath":"a.md"}\'\n'
-                "const defaults = { stage: 'sprint' }\n"
-                "const cfg = { ...defaults, ...(args || {}) }\n"
-                "console.log(JSON.stringify(cfg.sprintBriefPath ?? null))\n"
-            ),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            check=False,
+        # Empty/absent/null args must reach the REAL required-arg guard, which
+        # names what is actually missing (the first version's carve-out threw a
+        # misleading "got string" for an empty string instead).
+        for literal in ("''", "undefined", "'null'"):
+            absent = run(literal)
+            assert absent.returncode != 0, f"args={literal} must fail the required-arg guard"
+            assert "sprintBriefPath and args.epicBriefPath are required" in absent.stderr, (
+                f"args={literal}: expected the required-arg diagnostic, got: {absent.stderr[:200]}"
+            )
+
+        # A non-JSON string is a caller error that NAMES args. Deleting the
+        # try/catch fails here: the raw SyntaxError carries no such prefix.
+        not_json = run("'not json'")
+        assert not_json.returncode != 0
+        assert "args arrived as a string that is not valid JSON" in not_json.stderr, (
+            f"expected the authored wrapper naming args, got: {not_json.stderr[:200]}"
         )
-        assert red_spread.returncode == 0, red_spread.stderr
-        assert red_spread.stdout.strip() == "null", (
-            "the pre-fix spread should lose sprintBriefPath -- if it does not, this "
-            "test is no longer measuring the defect it was written for"
+
+        # An array is rejected BY NAME. Deleting Array.isArray or the whole
+        # validation guard fails here: an array that slips the guard spreads
+        # index-keyed and dies on the required-arg guard message instead.
+        as_array = run('\'["a.md","b.md"]\'')
+        assert as_array.returncode != 0
+        assert "got array" in as_array.stderr, (
+            f"expected the guard to reject an array by name, got: {as_array.stderr[:200]}"
+        )
+
+        # The committed form of the wf_af5e441a-faa discriminating signal:
+        # finalize without commitMessage must get PAST the args parse and fail
+        # on the commitMessage guard, not the args guard.
+        finalize = run('\'{"stage":"finalize","sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        assert finalize.returncode != 0
+        assert "commitMessage is required" in finalize.stderr, (
+            f"expected the finalize guard past the args parse, got: {finalize.stderr[:200]}"
         )
 
 
@@ -506,7 +539,23 @@ class TestRunbookDoc:
 
     def test_literal_gate_invocation(self, doc_src: str) -> None:
         assert "nohup python -m scripts.gate > gate1.log 2>&1 &" in doc_src
-        assert "`tasklist`" in doc_src
+        # The wait is on the gate log's own terminal line, NEVER process-name
+        # polling: `tasklist | grep python.exe` matches nothing on this machine
+        # (the interpreter is python3.13.exe), so a poll loop exits instantly
+        # and a mid-run log reads as finished (observed 2026-08-12, twice).
+        assert 'until grep -qE "^gate: (all steps passed|FAILED)" gate1.log' in doc_src
+        assert "**never** process-name polling" in doc_src
+
+    def test_preflight_decision_batch_step_present(self, doc_src: str) -> None:
+        """Runbook step 0a: one batched preflight question set at kickoff.
+
+        Epic B run 1's overnight window was lost to serial owner questions at
+        5-10 minute intervals; the run never started. The chain exists to use
+        long uninterrupted windows, so the kickoff discipline is part of the
+        contract this file pins.
+        """
+        assert "Preflight decision batch" in doc_src
+        assert "one batch, in one message" in doc_src
 
     def test_invocation_is_by_script_path(self, doc_src: str) -> None:
         assert "scriptPath: '.claude/workflows/n1-baseline.mjs'" in doc_src

@@ -85,6 +85,27 @@ therefore runs in two stages bracketing the main-loop gate:
    without one; the pipeline then stops correctly rather than proceeding —
    never create or touch the marker to unblock it). The feature branch exists
    and is checked out. The sprint brief and epic design brief exist as files.
+0a. **Preflight decision batch — ONE batch, BEFORE the first Workflow call
+   (added 2026-08-12; Epic B run 1's overnight window was lost to serial
+   owner questions at 5–10 minute intervals, and the run never started).**
+   The chain exists to exploit long uninterrupted windows; a question asked
+   mid-window forfeits the window. So, at kickoff, the invoking session:
+   - reads the sprint brief, the epic design brief, and this runbook **in
+     full, before asking anything** — a question answerable from those files
+     or the repo is not an owner question, and asking it anyway is the
+     failure mode this step exists to close;
+   - runs the pipeline's own structural gate cheaply
+     (`python -m pytest tests/test_n1_pipeline.py tests/test_gitattributes_coverage.py -q`)
+     so invocability failures surface at kickoff, not overnight;
+   - enumerates EVERY owner decision the whole run could need — the
+     per-session run-start opt-in (never inherited from a handoff), scope
+     calls the brief names, branch hygiene, anything its own reading
+     surfaced — and asks them in **one batch, in one message**;
+   - states, in the same message, the expected uninterrupted window and the
+     contract for it: after kickoff the owner hears from this session only
+     via the pipeline's escalation primitive (that is the pipeline working)
+     or the run's completion report. A new ad-hoc question after kickoff is
+     a preflight defect — file it as one at close-out.
 1. **Sprint stage:**
    `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'sprint', sprintBriefPath, epicBriefPath, ...}})`.
    On `status: 'escalated_to_owner'`: surface the escalation's **verbatim**
@@ -98,8 +119,14 @@ therefore runs in two stages bracketing the main-loop gate:
    findings F1–F13 are the graveyard of variants; that item is the future
    consolidation, not yet built):
    `nohup python -m scripts.gate > gate1.log 2>&1 &` from a **foreground**
-   call; poll with `tasklist` (or `Get-CimInstance`) — **never** `| tee`,
-   **never** `kill -0`, **never** the harness's `run_in_background`.
+   call; wait on the gate's **own terminal line** —
+   `until grep -qE "^gate: (all steps passed|FAILED)" gate1.log; do sleep 20; done`
+   (`scripts/gate.py` prints exactly one of those two) — **never** `| tee`,
+   **never** `kill -0`, **never** the harness's `run_in_background`, and
+   **never** process-name polling: `tasklist | grep python.exe` matches
+   nothing on this machine (the interpreter is `python3.13.exe`), so the wait
+   loop returns instantly and a mid-run log reads as finished (observed
+   2026-08-12, twice).
 4. **Step-6 assertion** (the corrected close ordering's actual mechanism —
    "Without it this is vigilance, not enforcement"): `git diff --quiet` passes
    **and** `git status --porcelain --untracked-files=all` is empty. The tree

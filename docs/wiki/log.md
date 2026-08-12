@@ -1775,3 +1775,29 @@ adds two session-model clauses (Fable = design/planning scope; Sonnet-subagent d
 — grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: zero
 hits; no page restates the session-model table or its surrounding rules. Checked, not
 skipped.
+
+---
+
+## 2026-08-12 — scoped close-out relevance check (`fix/n1-args-guard-hardening`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+This entry also discharges the check owed by `epic/b-render-ats`'s `34ad528` (the
+`*.mjs` pin — carried forward as open item #5 in
+[`../dev/handoffs/epic-b-render-ats.md`](../dev/handoffs/epic-b-render-ats.md)): same
+file, same conclusion, checked together here.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 3** —
+[`../../.gitattributes`](../../.gitattributes), [`../../.gitignore`](../../.gitignore),
+and [`../../AGENTS.md`](../../AGENTS.md). Classifier run over the branch diff, not
+eyeballed. (The pipeline script under `.claude/workflows/`, `tests/` (including the new
+`tests/test_gitattributes_coverage.py`), `scripts/work_items.py` (docstring-only
+correction), and the `docs/dev/` runbook/brief/diagnosis/work-item edits all classify
+irrelevant.)
+
+**Pages edited (0). Pages verified no-edit:** `grep -rn` across `docs/wiki/pages/` for
+`gitattributes`, `CRLF`, and line-ending prose: zero hits — no page describes checkout
+normalization or ignore rules (the 2026-08-11 sweep recorded the same for
+`.gitignore`). For the `AGENTS.md` one-line citation correction ("charter D5" → the
+charter's extract-don't-restate rule): `cite-don't-restate`, `charter D5`, and `D-5`
+each grep to zero hits across `docs/wiki/pages/` — no page restates the corrected
+label. Checked, not skipped.

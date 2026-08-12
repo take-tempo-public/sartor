@@ -31,6 +31,41 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (later, `fix/n1-args-guard-hardening`) — both refuter-broken halves hardened; C-11 mechanisms now real
+
+The next session (per the epic handoff's 7-item specification) re-placed the
+work on a proper `fix/*` branch with a diagnosis dossier
+(`docs/dev/diagnosis/n1-args-guard-hardening.md`) and closed every defect the
+three refuters found:
+
+- **args guard rewritten** (`n1-baseline.mjs`): `JSON.parse` in try/catch
+  naming `args` (R1-3); empty/whitespace string treated as absent args so the
+  required-arg guard names what is actually missing (R1-2); arrays rejected by
+  name via `Array.isArray` (R1-4).
+- **Regression test rewritten** (`test_args_normalization_tolerates_a_json_string`):
+  anchored through `blank_non_code()` so a copy of the block in a comment or
+  template literal cannot satisfy it (R2-2); executes the REAL region —
+  defaults, normalization, both required-arg guards, nothing hand-supplied
+  (R2-3); asserts discriminating error messages per arm, including the
+  committed form of the `wf_af5e441a-faa` finalize signal; tautological red arm
+  deleted (R2-5). **Mutant-verified in-session: all five acceptance-bar mutants
+  fail the test** (guard deleted, Array.isArray deleted, try/catch deleted,
+  full revert, revert + template-literal spoof) — the artifact is in the
+  dossier. The validation half is now a mechanism, not prose.
+- **CRLF half got its mechanism** (the C-11 gap declared in the previous
+  entry): `tests/test_gitattributes_coverage.py` asks `git check-attr` for
+  every tracked file and fails on any whose text/eol resolution would fall to
+  `core.autocrlf` — the pre-pin run enumerated 116 offenders (its own red arm);
+  `.gitattributes` now pins them all. Verified: 0 committed blobs carry CR, so
+  the pins changed no content and produced no phantom diffs.
+- `gate*.log` gitignored (accounting-check noise); `scripts/work_items.py`'s
+  false `*.md` claim corrected in place.
+
+Still true and unchanged: **no agent has ever been spawned by this pipeline**
+— agentType dispatch, `phase()` grouping, escalation routing, `journal.jsonl`,
+and the §11.9 accounting check remain unverified until run 3. Item stays
+`watching`.
+
 ### 2026-08-12 — FIRST RUN ATTEMPTED (Epic B run 1): blocked at invocation by CRLF line endings
 
 The owner authorized Epic B run 1 (sprint B1a) this session and the pipeline was

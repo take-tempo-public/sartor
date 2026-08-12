@@ -50,6 +50,17 @@ font-name capture gap (both B1b, run 2); everything in B2 (run 3); any refactor
 of `docx_to_persona_html.py` beyond the guard + stamp. The chain has already
 lost a sprint to scope drift — file discoveries as work items instead.
 
+## Kickoff preflight — before the first Workflow call
+
+Runbook step **0a** (`docs/dev/n1-baseline-pipeline.md` §"The runbook") is
+binding for this run: read the standing context in full, run the structural
+tests, then put **every** owner decision in **one batch at kickoff** — at
+minimum the per-session run-start opt-in, plus anything your own reading
+surfaces. After kickoff, the owner hears from this session only via the
+escalation primitive or the completion report. Two invocation attempts have
+already died before any agent spawned; the third run is a test of the *chain's*
+ability to use an uninterrupted window, not just of the sprint's code.
+
 ## First move
 
 This is a `fix/*` branch: the first artifact is the diagnosis dossier at

@@ -269,12 +269,26 @@ const defaults = {
 // run 1, probe wf_733613af-2c5): the harness delivers `typeof args === 'string'`
 // anyway, even when the caller passes a real object. Spreading a string yields
 // index-keyed characters, so every required-arg guard below fired and the
-// pipeline could not be invoked at all. Normalize defensively rather than
-// trusting the documented contract; a non-JSON string is a caller error and is
-// surfaced as one, never silently swallowed.
-const rawArgs = typeof args === 'string' && args.trim() !== '' ? JSON.parse(args) : args
-if (rawArgs !== undefined && rawArgs !== null && typeof rawArgs !== 'object') {
-  throw new Error(`args must be an object (or a JSON object string); got ${typeof rawArgs}`)
+// pipeline could not be invoked at all. Normalize defensively in both
+// directions rather than trusting the documented contract: a JSON object
+// string is parsed, a real object passes through untouched, an empty string
+// counts as absent args (so the required-arg guard below names what is
+// actually missing), and anything else is a loud caller error naming `args`.
+let rawArgs = args
+if (typeof rawArgs === 'string') {
+  const trimmed = rawArgs.trim()
+  if (trimmed === '') {
+    rawArgs = undefined
+  } else {
+    try {
+      rawArgs = JSON.parse(trimmed)
+    } catch (err) {
+      throw new Error(`args arrived as a string that is not valid JSON: ${err.message}`)
+    }
+  }
+}
+if (Array.isArray(rawArgs) || (rawArgs !== undefined && rawArgs !== null && typeof rawArgs !== 'object')) {
+  throw new Error(`args must be a plain object (or a JSON object string); got ${Array.isArray(rawArgs) ? 'array' : typeof rawArgs}`)
 }
 const cfg = { ...defaults, ...(rawArgs || {}) }
 
