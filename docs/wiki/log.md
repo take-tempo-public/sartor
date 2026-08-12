@@ -1753,3 +1753,25 @@ or depends on the specific stale prose corrected on this branch (the "design-onl
 "does not exist yet" / "latent" phrasing does not appear verbatim or paraphrased on any
 of the three pages). No page edit needed; confirmed by reading each citation's
 surrounding claim, not assumed from the pointer pattern.
+
+---
+
+## 2026-08-11 — scoped close-out relevance check (`feat/n1-baseline-pipeline`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../.gitignore`](../../.gitignore) and [`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md).
+Classifier run over the full committed + working diff, not eyeballed. (The pipeline script
+under `.claude/workflows/`, both `agents/` role files, `scripts/wiki_relevance.py` itself,
+the new `docs/dev/n1-baseline-pipeline.md` (classified irrelevant this branch — agent
+tooling, revisit on first authorized run), `tests/`, `docs/dev/blast-radius/`,
+`docs/dev/ledger/`, the corrections doc, and `docs/dev/work/` all classify irrelevant.)
+
+**Pages edited (0). Pages verified no-edit:** the `.gitignore` change is a two-line
+re-include of `.claude/workflows/` — no page describes ignore rules (the 2026-08-08 full
+sweep recorded the same finding for `.gitignore` explicitly). The `RELEASE_ARC.md` change
+adds two session-model clauses (Fable = design/planning scope; Sonnet-subagent delegation)
+— grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: zero
+hits; no page restates the session-model table or its surrounding rules. Checked, not
+skipped.

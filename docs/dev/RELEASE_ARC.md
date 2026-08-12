@@ -1810,6 +1810,16 @@ The owner sets `/model` at each session launch; every march handoff's **First mo
 names the next sprint's prescription. Epic-end adversarial reviews run as Opus
 subagents regardless of session model.
 
+Two standing clauses, decided on screen during the march design sprint and
+re-confirmed by the owner 2026-08-11 (refined wording; this fold-in discharges
+the recovery recorded in session transcript `b6ced217`): **epics run on Opus
+and Sonnet, without Fable** — the Epic B test specifically runs with Opus;
+**Fable handles design and planning at a higher scope** (replanning/design
+checkpoints), with Opus also an option for that role. Within any session,
+**mechanical chunks may be delegated to Sonnet subagents**, provided the
+session reads the full diff before committing — the per-sprint prescription is
+a floor for the session, not a ceiling on delegation.
+
 | Sprint | Model | Why |
 |---|---|---|
 | A1 | Opus | schema migration + retired-role blast-radius audit |
