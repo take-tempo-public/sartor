@@ -76,3 +76,20 @@ known artifact, not a new occurrence** — no second failure of this test appear
 anywhere in the 30-run window (which spans both before and after this item's own
 2026-08-04 filing date). The item's own escalation signal ("if this blocks a second
 PR, it stops being a watch item") has not fired. No status change.
+
+### 2026-08-12 — second member of the class observed (`feat/interrogative-prompt-witness` gate run)
+
+`tests/ux/regression/test_20260708_busy_states_and_chip.py::test_restore_scroll_y_loses_to_post_restore_growth`
+failed its own control arm under full-suite load — `assert filler_present,
+"growth trigger didn't fire -- experiment invalid, not a defect finding"`
+(`[chip2-experiment] before=300 after=300 filler_present=False`) — during a
+`python -m scripts.gate` run whose diff touched only hooks/enforcement (no
+app or JS code). 5/5 isolated re-runs pass on the same tree; the same gate
+run also produced item 62's documented XPASS flip in the same file. Same
+shape as this item's original finding: the control assertion is itself a
+timing race under load. No mechanism authored on that branch (declared,
+C-11): the right fix — skip-vs-fail semantics for an invalid experiment
+arm, or a load-tolerant trigger wait — is a deliberate design choice for
+the UX-flake cluster (46/47/62), not a drive-by edit from a hooks branch;
+an always-skipping experiment silently rots, which is presumably why the
+author made invalid-experiment a FAILURE.

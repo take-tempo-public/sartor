@@ -156,12 +156,8 @@ def _load_state(path: Path) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-_PAUSE_HEADER = (
-    "PAUSE (interrogative-witness): first Edit/Write since the last user prompt."
-)
-_PAUSE_CLASSIFIED = (
-    "The prompt-receipt heuristic classified that prompt as a QUESTION."
-)
+_PAUSE_HEADER = "PAUSE (interrogative-witness): first Edit/Write since the last user prompt."
+_PAUSE_CLASSIFIED = "The prompt-receipt heuristic classified that prompt as a QUESTION."
 _PAUSE_BODY: tuple[str, ...] = (
     "Was the triggering prompt an INTERROGATIVE needing an answer, or a"
     " directive calling for action?",
