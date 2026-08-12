@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/n1-baseline-pipeline.md", "session": "06958323-c75b-4863-b27b-cf0d44a07c43", "branch": "main", "commit": "31d2574", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-12T01:45:39Z", "fingerprint": "00e1b41de0cc"}
+{"event": "plan-archived", "session": "06958323-c75b-4863-b27b-cf0d44a07c43", "branch": "docs/epic-b-briefs", "archive_id": "20260812T020232Z-142537ca4cdd", "plan": "polymorphic-hatching-wind.md", "ts": "2026-08-12T02:02:34Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/epic-b-briefs.md", "session": "06958323-c75b-4863-b27b-cf0d44a07c43", "branch": "docs/epic-b-briefs", "commit": "31d2574", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-12T03:46:04Z", "fingerprint": "94a52246ccf0"}
+{"event": "compacted", "session": "06958323-c75b-4863-b27b-cf0d44a07c43", "branch": "docs/epic-b-briefs", "trigger": "unknown", "ts": "2026-08-12T03:47:20Z"}
