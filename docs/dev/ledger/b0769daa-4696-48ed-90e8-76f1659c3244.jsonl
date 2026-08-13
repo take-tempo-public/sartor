@@ -1,1 +1,2 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/fix-n1-scope-dedup.md", "session": "b0769daa-4696-48ed-90e8-76f1659c3244", "branch": "epic/b-render-ats", "commit": "9d3bec5", "actor": "amodal1", "agent": "anthropic/claude-fable-5", "ts": "2026-08-13T21:18:08Z", "fingerprint": "ce03e2c96ad9"}
+{"event": "compacted", "session": "b0769daa-4696-48ed-90e8-76f1659c3244", "branch": "fix/b1-education-render", "trigger": "unknown", "ts": "2026-08-13T22:51:12Z"}

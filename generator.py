@@ -21,7 +21,7 @@ from docx.shared import Inches, Pt
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
-from json_resume import format_date_range
+from json_resume import education_position_text, format_date_range
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
@@ -496,8 +496,18 @@ def _capture_proto(p: Paragraph) -> dict[str, Any]:
     """Capture a paragraph's formatting into a serializable prototype.
 
     Captures alignment, vertical spacing, tab stops, and the primary run's
-    bold/size. Run italic and color are intentionally not captured — they
-    are typically inline (`*text*`) rather than role-based.
+    bold/size/typeface. Run italic and color are intentionally not captured —
+    they are typically inline (`*text*`) rather than role-based.
+
+    `run_font_name` reads the run's DIRECT formatting, which is where most real
+    résumés put their typeface — a template that never uses Word's named styles
+    otherwise arrives here with its font invisible, and the download comes back in
+    the theme default. Mirrors `docx_to_persona_html.extract_persona_style`,
+    which has read `run0.font.name` for the HTML companion since it shipped; the
+    two capture routines walk the same `.docx` and disagreeing about whether a
+    typeface exists is exactly the divergence to avoid. `None` when the run
+    inherits from a style — never invent a name, or a document that correctly
+    inherits would get its font frozen at capture time.
     """
     run0 = p.runs[0] if p.runs else None
     pf = p.paragraph_format
@@ -508,6 +518,7 @@ def _capture_proto(p: Paragraph) -> dict[str, Any]:
         "tab_stops": [(t.position.pt, t.alignment) for t in (pf.tab_stops or [])],
         "run_bold": bool(run0.bold) if (run0 and run0.bold is not None) else None,
         "run_size_pt": run0.font.size.pt if (run0 and run0.font.size) else None,
+        "run_font_name": run0.font.name if (run0 and run0.font.name) else None,
     }
 
 
@@ -586,13 +597,15 @@ def _apply_para_proto(p: Paragraph, proto: dict[str, Any] | None) -> None:
 
 
 def _apply_run_proto(run: Run, proto: dict[str, Any] | None) -> None:
-    """Apply run-level formatting (bold, font size) from a proto."""
+    """Apply run-level formatting (bold, font size, typeface) from a proto."""
     if not proto:
         return
     if proto.get("run_bold") is not None:
         run.bold = proto["run_bold"]
     if proto.get("run_size_pt"):
         run.font.size = Pt(proto["run_size_pt"])
+    if proto.get("run_font_name"):
+        run.font.name = proto["run_font_name"]
 
 
 def _add_inline_runs_with_proto(
@@ -602,7 +615,16 @@ def _add_inline_runs_with_proto(
 
     The proto format acts as a baseline (inline ** / * still wins over base bold).
     Tab characters in `text` are preserved; the paragraph's tab stops handle them.
+
+    An emphasized segment takes the proto's size and TYPEFACE but not its bold —
+    the emphasis already decided that. Without the typeface here a captured font
+    would silently drop at every `**bold**` boundary, i.e. mid-line. Built once
+    up front rather than re-allocated per emphasized segment.
     """
+    inline_base = {
+        "run_size_pt": (proto or {}).get("run_size_pt"),
+        "run_font_name": (proto or {}).get("run_font_name"),
+    }
     segments = _INLINE_RE.split(text)
     for seg in segments:
         if not seg:
@@ -611,15 +633,15 @@ def _add_inline_runs_with_proto(
             run = paragraph.add_run(seg[3:-3])
             run.bold = True
             run.italic = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         elif seg.startswith("**") and seg.endswith("**"):
             run = paragraph.add_run(seg[2:-2])
             run.bold = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         elif seg.startswith("*") and seg.endswith("*"):
             run = paragraph.add_run(seg[1:-1])
             run.italic = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         else:
             run = paragraph.add_run(seg)
             _apply_run_proto(run, proto)
@@ -884,7 +906,9 @@ def _write_docx_from_json_resume(
             emit_entry_header(
                 _entry_header_text(
                     str(ed.get("institution") or ""),
-                    str(ed.get("area") or ""),
+                    # `area — studyType` via the one canonical joiner, so the .docx
+                    # header line is the same string the preview and the .md render.
+                    education_position_text(ed),
                     ed.get("startDate"),
                     ed.get("endDate"),
                 )

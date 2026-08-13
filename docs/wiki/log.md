@@ -1920,3 +1920,44 @@ Grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: 
 hits outside this log's own prior entries — no page restates the session-model table
 or its surrounding rules, exactly as the 2026-08-11 fold-in entry found. Checked, not
 skipped.
+
+## 2026-08-13 — scoped close-out relevance check (`fix/b1-education-render`, B1b)
+
+**Trigger:** intra-epic sprint close-out (Epic B, B1b — 2 of 3), scoped to this
+branch's own staged diff, not a full ingest. Per `epic-b-design-brief.md`
+§"Close-out intervals," the full wiki pass (ingest + `.last_ingest_sha` advance) is
+**deferred to the epic close** unless drift exceeds the 40-file margin —
+`python -m scripts.wiki_freshness` reports **17 of 75** at this branch's tip
+(pre-commit; unchanged from B1b's own predecessor sprint), well under the margin, so
+that deferral stands. This entry is the still-owed scoped relevance check, not the
+deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the
+full staged diff — 5 of 10 changed files):** `corpus_to_json_resume.py`,
+`generator.py`, `json_resume.py`, `personas/bundled/classic.html`,
+`personas/bundled/spacious.html`. (`docs/dev/blast-radius/`, `docs/dev/diagnosis/`,
+and `tests/` classify irrelevant, matching every prior branch's classification.)
+
+**Pages edited (0). Pages verified no-edit** (grepped for the new/changed symbols
+by name, then read the surrounding claim, not assumed from the classifier alone):
+
+- `education_position_text`, `split_education_position`,
+  `EDUCATION_FIELD_SEPARATOR`, `_collect_education`, `run_font_name` — zero hits
+  anywhere under `docs/wiki/pages/`. New symbols this sprint introduces; nothing
+  existed to go stale.
+- [`document-rendering`](pages/document-rendering.md) — the only page citing
+  `classic.html`/`spacious.html` by name (`:164`, the PDF-render fallback path) and
+  `generator.py:_write_docx_from_json_resume` (`:36`, `:120`, plus
+  `downloading-your-documents.md:11`). Both mentions describe *which file/function
+  renders*, not education-field completeness or font-capture completeness — neither
+  claim is made false by this branch (which adds a `studyType` span and a captured
+  `run_font_name`, changes no routing).
+- [`code-module-map`](pages/code-module-map.md) — cites
+  `generator.py:_write_docx_from_json_resume` in its module table as one notable
+  function; same reasoning, a name citation with no behavioral claim.
+- [`deterministic-llm-boundary`](pages/deterministic-llm-boundary.md) — cites the
+  companion generator's font capture (a different module,
+  `docx_to_persona_html.py`, unrelated to this branch's `generator.py` proto-dict
+  change).
+
+Checked, not skipped.

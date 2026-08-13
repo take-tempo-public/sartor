@@ -907,11 +907,20 @@ def _collect_education(session: Session, candidate_id: int) -> list[dict[str, An
     (career_assets.py's F-04 docstring — no LLM-proposal path, no per-application
     pin/exclude layer to apply), so every active row renders, unconditionally.
     Field mapping (`blueprints/corpus/_shared.py._education_to_dict`):
-    institution -> institution, degree -> area (the renderers' one "position
-    line" slot — generator.py/classic.html only ever read institution+area),
-    field -> studyType (carried for schema completeness; not yet surfaced by
-    any renderer), start_date/end_date -> startDate/endDate (ISO; formatted at
-    the presentation boundary by json_resume.format_date_range).
+    institution -> institution, degree -> area, field -> studyType,
+    start_date/end_date -> startDate/endDate (ISO; formatted at the presentation
+    boundary by json_resume.format_date_range).
+
+    **This mapping is the reverse of the JSON Resume convention** (where
+    `studyType` is the degree and `area` the field of study), and it is
+    deliberately NOT flipped: which column really holds which is a question about
+    stored `Education` rows, not about renderers, and answering it needs a data
+    audit (owner constraint). Instead every renderer shows BOTH fields, joined by
+    `json_resume.education_position_text` — `.docx` via `generator.py`, `.md` via
+    `json_resume_to_markdown`, and all four bundled personas inline. Before
+    `fix/b1-education-render` (2026-08-13), Classic, Spacious, the `.docx` writer and
+    the markdown round-trip dropped `studyType` entirely; Modern and Tech rendered it.
+    See `docs/dev/diagnosis/b1-education-render.md`.
     """
     from db.models import Education
 

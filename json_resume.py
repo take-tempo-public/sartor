@@ -387,11 +387,17 @@ def _entry_from_chunk(chunk: list[str], kind: str) -> dict[str, Any]:
         if position:
             entry["position"] = position
     elif kind == "education":
-        # name → institution; position used as 'studyType / area' fallback
+        # name → institution; position carries `area — studyType` (either half may
+        # be absent). Splitting here rather than in `_split_h3_header` keeps the
+        # education-only rule out of a helper that work/ and project/ entries share.
         if name:
             entry["institution"] = name
         if position:
-            entry["area"] = position
+            area, study_type = split_education_position(position)
+            if area:
+                entry["area"] = area
+            if study_type:
+                entry["studyType"] = study_type
     else:  # project
         if name:
             entry["name"] = name
@@ -616,6 +622,56 @@ def format_date_range(start: object, end: object) -> str:
     return f"{s} – {e}"
 
 
+#: Separator between an education entry's `area` and `studyType` on the single
+#: "position line" every renderer gives a degree. EM dash (U+2014), deliberately
+#: NOT the EN dash (U+2013) `format_date_range` puts between dates: the two must
+#: stay distinguishable. `_split_h3_header` prefers `", "` on the left (pre-TAB)
+#: segment (`:453`), so WHEN AN INSTITUTION IS PRESENT this em dash is never
+#: consumed as the name/position boundary. When the institution is ABSENT the
+#: left segment is ambiguous and `_split_h3_header`'s `" — "` fallback (`:455-456`)
+#: DOES collide with it: the whole `"Area — StudyType"` string re-parses into
+#: `institution`, and `studyType` is lost on that cycle. This is pre-existing
+#: behavior the emitter's `f"{a}, {b}" if (a and b) else (a or b)` idiom shares
+#: with institution-less `work`/`project` entries, unchanged by this branch — see
+#: `docs/dev/diagnosis/b1-education-render.md` F1.
+EDUCATION_FIELD_SEPARATOR = " — "
+
+
+def education_position_text(entry: Mapping[str, Any]) -> str:
+    """Join an education entry's `area` and `studyType` into one position line.
+
+    **Render both; never flip.** `corpus_to_json_resume._collect_education` maps
+    `Education.degree -> area` and `Education.field -> studyType` — the reverse of
+    the JSON Resume convention, where `studyType` is the degree. Which column really
+    holds which is a question about stored data, not about renderers, so every
+    surface shows both fields and none of them reorders the pair. Changing the
+    mapping needs a data audit (owner constraint; see
+    `docs/dev/diagnosis/b1-education-render.md` F-2).
+
+    The single canonical helper for this join — used by `generator.py` (.docx) and
+    `json_resume_to_markdown` (.md), and mirrored inline by the persona Jinja
+    templates, which cannot import. That is the same "one presentation-boundary
+    helper" arrangement `format_date_range` has, and for the same reason: Classic,
+    Spacious, the `.docx` writer and the markdown round-trip had each silently
+    dropped `studyType` before this helper existed — Modern and Tech had not.
+    """
+    parts = [str(entry.get(key) or "").strip() for key in ("area", "studyType")]
+    return EDUCATION_FIELD_SEPARATOR.join(p for p in parts if p)
+
+
+def split_education_position(position: str) -> tuple[str, str]:
+    """Inverse of `education_position_text`: `"Area — StudyType"` → `(area, studyType)`.
+
+    A position carrying no separator is all `area` — which is both the pre-2026-08-13
+    on-disk form and what a hand-written résumé produces, so the common case parses
+    exactly as it always did.
+    """
+    if EDUCATION_FIELD_SEPARATOR in position:
+        area, study_type = position.split(EDUCATION_FIELD_SEPARATOR, 1)
+        return area.strip(), study_type.strip()
+    return position.strip(), ""
+
+
 def json_resume_to_markdown(doc: dict[str, Any]) -> str:
     """Serialize a JSON Resume v1.0 dict back to normalized résumé markdown.
 
@@ -689,7 +745,10 @@ def json_resume_to_markdown(doc: dict[str, Any]) -> str:
                 continue
             lines.append("")
             inst = str(e.get("institution") or "").strip()
-            area = str(e.get("area") or "").strip()
+            # `area — studyType`, so the field of study survives the round-trip
+            # (`_entry_from_chunk` splits it back apart). An entry with no
+            # `studyType` serializes byte-identically to the pre-2026-08-13 form.
+            area = education_position_text(e)
             header = f"{inst}, {area}" if (inst and area) else (inst or area)
             dates = format_date_range(e.get("startDate"), e.get("endDate"))
             if dates:

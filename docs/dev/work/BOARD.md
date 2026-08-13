@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 42 | Epics 6 | Closed 25
+**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
@@ -68,6 +68,9 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **84** -- Build the N=1 baseline of the proposed chain-orchestration pipeline, pending owner authorization (`user`) -- implementer->refuter->judge->closer as a Workflow script, N=1; provably >= robust as today's process per the design.
 - **85** -- PreCompact payload's trigger field reads 'unknown' in 100% of historical ledger rows despite correct code handling (`agent`) -- trigger is 'unknown' in all 52 ledger rows; the code round-trips it correctly when present -- the payload may lack it.
 - **88** -- Integration coverage for the four companion-resolution call sites (3 preview routes + PDF render) (`agent`) -- The 3 preview routes + _render_pdf_from_json pass the refreshed companion; today only a manual grep verifies it.
+- **90** -- Institution-less/name-less markdown emitter ambiguity misroutes fields on round-trip (work, education, projects alike) (`agent`) -- A first-field-less entry emits ambiguous markdown that misroutes on re-parse; the fix spans three entry kinds.
+- **91** -- spacious.html does not render education[].score while classic.html does (`user`) -- Inconsistent GPA rendering between two bundled personas; no record of whether Spacious omits it deliberately.
+- **92** -- generator.emit_bullet bypasses run-proto typography — bullets inherit no template fonts at all (`agent`) -- Bullets bypass the run-proto path, so no captured template typography (size/bold/font) applies to them.
 
 ## Epics
 
