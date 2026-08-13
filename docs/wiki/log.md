@@ -1832,3 +1832,70 @@ Catch-rate this run: 1 caught / 2 pages audited.
 cites are the `@import` mention in `governance-extraction` (line 49-51, unaffected)
 and no page restates the hook roster (grep for `wiki-freshness-reminder` / "hook
 list" across `docs/wiki/pages/`: zero hits). Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out self-update (`fix/b1-stale-template-companions`, Epic B sprint B1a)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest;
+checkpoint NOT advanced — a scoped pass never honestly can, see item 65). Drift at
+check time: 14 of 75 (`python -m scripts.wiki_freshness`), well under both the
+75-file block threshold and the epic's own 40-file deferral margin
+(`../dev/handoffs/epic-b-design-brief.md` §"Close-out intervals") — the full pass +
+`.last_ingest_sha` advance stays correctly deferred to the epic close.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 3** —
+[`../../docx_to_persona_html.py`](../../docx_to_persona_html.py),
+[`../../blueprints/templates.py`](../../blueprints/templates.py), and
+[`../../generator.py`](../../generator.py). Classifier run over the branch diff, not
+eyeballed (`tests/test_docx_to_persona_html.py`, `CHANGELOG.md`, and the
+`docs/dev/{diagnosis,blast-radius,work}/` dossiers/board all classify irrelevant).
+
+**Pages edited (1), hand-authored by the closer (no scribe/auditor pair spun up for
+a one-paragraph factual correction):**
+[`document-rendering`](pages/document-rendering.md) §"`.pdf` — Playwright Chromium"
+— the page named `pdf_render.py:html_template_path_for` as *the* HTML-companion
+resolver for the PDF path. This branch's own diff (B1a, the stale-imported-template-
+companion fix) changes that: `generator.py:_render_pdf_from_json` (`:259-261`) now
+calls `docx_to_persona_html.py:resolve_companion_html`, which regenerates a
+companion whose sidecar-stamped `skeleton_version` predates the shipped skeleton;
+`html_template_path_for` is demoted to an internal existence check
+`resolve_companion_html` calls, not the entry point callers use directly. Corrected
+in place, with a pointer to the diagnosis dossier. `[synthesis]` unchanged elsewhere
+on the page.
+
+**Pages verified no-edit (checked every page citing the three changed files, or the
+specific new/changed symbols, by name — not assumed from the classifier alone):**
+
+- `docx_to_persona_html` symbols (`resolve_companion_html`, `generate_companion`,
+  `skeleton_version`, `companion_stamp_is_current`) — zero hits anywhere under
+  `docs/wiki/pages/` before this entry's own edit. The persona-companion resolution
+  subsystem is a coverage gap, not a drift case: nothing existed to go stale.
+- [`deterministic-llm-boundary`](pages/deterministic-llm-boundary.md) — cites
+  `docx_to_persona_html.py` as one of the 8 deterministic (no-LLM) modules and
+  describes it as "emits an HTML+CSS live-preview companion." Still true; this
+  branch adds a staleness-refresh path to the same deterministic module, no LLM
+  call anywhere in the diff (verified: `git grep -n anthropic` over the branch's
+  changed files returns nothing).
+- [`code-module-map`](pages/code-module-map.md) — cites `pdf_render.py:
+  html_template_path_for` in its module table as one notable function of
+  `pdf_render.py`. The function still exists with its original pure-resolver
+  contract (`tests/test_pdf_render.py:41-62` still asserts exactly that shape,
+  unchanged by this branch) — the table doesn't claim callers use it directly, so
+  it isn't made false by the routing change; left as is.
+- [`corpus-to-output-reach`](pages/corpus-to-output-reach.md) — describes
+  `blueprints/templates.py:preview_application_html`'s three-tier
+  `composition_overrides` priority (frozen / cached / fresh JSON Resume content).
+  Orthogonal to this branch: the diff changes *which HTML template file* backs a
+  render, never *which JSON Resume content* is rendered.
+- [`editing-and-refining`](pages/editing-and-refining.md) — cites
+  `blueprints/templates.py:preview_edited_html` once, in the frontmatter source
+  list only; no body claim describes its internal companion-resolution mechanism.
+- [`resume-templates`](pages/resume-templates.md) — cites `docx_to_persona_html.py`
+  for `extract_persona_style` (typography extraction), a different function this
+  branch does not touch.
+- `frontend-wizard.md:378`'s "companion editor" is the co-located preview-pane UI
+  concept (`#resumePreview`/`#coverPreviewFrame`), an unrelated sense of the word —
+  confirmed by reading, not assumed from the string match.
+
+Checked, not skipped.

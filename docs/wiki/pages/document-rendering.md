@@ -152,9 +152,16 @@ and bullets are stripped to plain text.
 through a Jinja2 HTML template + persona CSS, writes the result to a temp file in the
 template's own directory (so the relative `<link href="...css">` resolves under
 Chromium's file:// same-origin), and prints via headless Chromium `page.pdf()`
-(Letter, fixed margins). The HTML companion is resolved by
-[`pdf_render.py:html_template_path_for`](../../../pdf_render.py) (the `.html` sibling
-of the `.docx`); `_render_pdf_from_json` falls back to bundled `classic.html` and
+(Letter, fixed margins). The HTML companion (the `.html` sibling of the `.docx`) is
+resolved by
+[`docx_to_persona_html.py:resolve_companion_html`](../../../docx_to_persona_html.py),
+which generates the companion lazily when absent AND regenerates it when a
+sidecar-stamped `skeleton_version` shows it predates the currently-shipped HTML
+skeleton (a pre-2026-07-09 imported template otherwise froze at its clone-time
+skeleton forever — B1a, `docs/dev/diagnosis/b1-stale-template-companions.md`); the
+lower-level [`pdf_render.py:html_template_path_for`](../../../pdf_render.py) is now
+an internal existence check `resolve_companion_html` calls, not the resolution
+entry point itself. `_render_pdf_from_json` falls back to bundled `classic.html` and
 raises `FileNotFoundError` if none exists [`generator.py`](../../../generator.py).
 Playwright (not WeasyPrint) was chosen because the same HTML+CSS feeds the in-app
 live preview ([`pdf_render.py:render_html_string`](../../../pdf_render.py)) — true

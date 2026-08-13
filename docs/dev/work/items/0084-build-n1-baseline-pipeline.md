@@ -31,6 +31,120 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (run 3 resumed, `fix/b1-stale-template-companions`) — THE PIPELINE COMPLETED END TO END; four of five experiment measures now have data
+
+After the namespace fix (`2807979`), `resumeFromRunId: wf_9bb80d14-c94` ran the
+pipeline to `status: "ready_for_gate"`. **Every stage executed for the first
+time.** 5 agents, 0 errors, 548,436 subagent tokens, 210 tool calls, 2,239,687 ms
+(~37 min).
+
+**Resume behaved exactly as designed** — the decisive practical finding. The
+implementer replayed from cache (`cached: true`, 0 new tokens) because its
+`(prompt, opts)` were untouched; only the refuter call's `opts` changed, so it
+and everything downstream ran live. The 22 minutes and 169k tokens of the first
+attempt were **not** re-spent. C-0 limit 4 was honored before trusting it: the
+cached return was eyeballed in `journal.jsonl` and is a substantive result with
+`flags: []`, not a block-description.
+
+| Stage | Dispatch | Model | Tokens | Tools | Duration |
+|---|---|---|---|---|---|
+| implementer | default | opus | cached | — | — |
+| refuter | `sartor:n1-refuter` | claude-sonnet-5 | 131,065 | 67 | 10m30s |
+| judge | `sartor:n1-judge` | claude-opus-5[1m] | 70,934 | 15 | 3m13s |
+| closer | default | claude-sonnet-5 | 287,935 | 115 | 21m32s |
+| refuter-recheck | `sartor:n1-refuter` | claude-sonnet-5 | 58,502 | 13 | 2m04s |
+
+**The adversarial layer did real work — this is the first evidence it functions
+inside the pipeline rather than in principle.** The refuter raised two
+evidence-cited findings; the judge dispositioned both with reasoning that
+engaged the code rather than the summaries:
+
+- **F1 (MED → judged `fix`)** — `companion_stamp_is_current`'s docstring said
+  "the sidecar's PRESENCE is the ownership test" while the implementation tested
+  *readability*: `_read_sidecar` returned `None` for absent AND corrupt, and both
+  mapped to "current". A corrupt sidecar would freeze a companion forever — the
+  very class the sprint exists to close, reachable through a trigger the fix
+  itself introduced. The judge **narrowed the refuter's severity honestly**
+  (degrades to today's behavior, not a new harm) while still landing it
+  pre-commit, because leaving it ships a false docstring claim (C-0). It gave
+  the closer an exact four-line prescription including the ordering that keeps
+  the hot path free of an extra `stat()`.
+- **F2 (LOW → judged `defer`)** — no integration test covers the four
+  companion-resolution call sites. The judge **reproduced the gap but rejected
+  the refuter's "unverified rewrite" characterization**, showing the swap
+  provably behavior-preserving by inspection, and deferred because closing it is
+  a test-architecture decision (the PDF tests are Playwright-gated and skip in
+  the default `pytest`). Filed as item 88.
+
+The closer applied F1 with a parametrized regression test, filed items 88 and
+89, regenerated the board, and wrote + validated the handoff. The recheck
+cleared F1 and reconfirmed nothing.
+
+**Experiment measures, updated:**
+
+1. **Harness compatibility — discharged.** Every documented mechanism worked
+   once the namespace was right: `agentType` dispatch, `phase()` grouping,
+   schema-forced returns, `journal.jsonl`, and `resumeFromRunId`'s
+   longest-unchanged-prefix caching.
+2. **Escalation behavior — STILL UNTESTED after three runs.** `escalations: []`;
+   no agent raised a flag of any kind, and the one real failure (the dispatch
+   throw) bypassed the primitive entirely because a harness error is not a flag.
+   **Do not record this as working.** Nothing has ever traversed
+   `routeFlags`/`escalate` in a live run.
+3. **Inter-sprint brief sufficiency — partially tested, and it surfaced a
+   design defect.** The closer wrote the full `AGENT_HANDOFF_TEMPLATE.md`
+   ceremony rather than the lighter `EPIC_SPRINT_BRIEF_TEMPLATE.md` the epic
+   declared, because `n1-baseline.mjs`'s closer prompt hardcodes the former
+   unconditionally. It followed the machine-sourced instruction, noticed the
+   contradiction, and **filed it (item 89) instead of silently resolving it** —
+   the behavior the design wants. B1b's fresh cast is the real test of whether
+   the artifact suffices.
+4. **Run-report/accounting fidelity — PASSES again, 14/14 exact cover.** Second
+   consecutive pass, now across four agents' combined writes. Note for whoever
+   maintains the check: the implementer reports repo-relative paths and the
+   closer absolute ones, so the comparison must normalize before diffing.
+5. **Owner interruption count — 2.** The step-0a preflight batch, and the
+   dispatch-failure decision. Both were at genuine decision boundaries; neither
+   was a question answerable from the repo.
+
+**Two honesty events worth keeping, both from the agents themselves:**
+
+- The **refuter self-disclosed** running `pytest` on four test files, outside
+  its sanctioned read-only-Bash allowance, rather than let it pass silently.
+  That is C-0 limit 3 of this contract ("the read-only-Bash boundary is
+  instruction, not construction") demonstrated live — the boundary held only
+  because the agent chose to surface crossing it, exactly as the limit says.
+- The provenance ledger records a **`failed` validation at 01:04:21 followed by
+  `generated` at 01:04:52** on the same handoff: `verify_doc_template.py`
+  rejected the closer's first attempt, it fixed the file and revalidated. The
+  failed row survives in the ledger rather than being overwritten.
+
+**The step-6 assertion has a structural false-positive source: the session's own
+provenance ledger.** Gate #1 went green, then the assertion failed on
+`docs/dev/ledger/<session>.jsonl` carrying one working-tree-column change. Looked
+rather than re-staged: the delta was a single `compacted` receipt appended at
+`01:31:20Z` by the `capture-before-compact` PreCompact hook *while the gate ran*.
+No content changed. Any gate run long enough to span a compaction can trip this,
+and gate runs here are 15-20 minutes. Recorded rather than papered over, with the
+handling written into the runbook's step 4 — the honest disposition is that
+gate #2 on the committed tree is what actually closes the window, which is the
+argument for the two-gate shape that Epic A's one-gate amendment traded away.
+
+**Two compactions occurred in this session** (`01:17:25Z`, `01:31:20Z`), both
+disclosed to the owner when found and both reconciled against git rather than
+against recollection (C-8/C-12). Neither cost a fact: branch, commit chain, epic
+tip and `main` all verified unchanged from the repo after each.
+
+**The invoking session's gate caught what the closer's self-verification
+missed** — an argument for the two-gate shape, not against it. The closer
+reported "`ruff check` / `ruff format --check` clean, 24/24 pytest" and
+explicitly noted it did not run the full gate; gate #1 then failed at
+`mypy .` on `tests/test_docx_to_persona_html.py:488`
+(`Item "None" of "Path | None" has no attribute "exists"`) in a test the closer
+itself added. Fixed in the invoking session with `assert resolved is not None`.
+**A subagent's targeted verification is not a gate**, and the role boundary that
+keeps the gate in the main loop is what made this visible.
+
 ### 2026-08-12 (run 3, `fix/b1-stale-template-companions`) — FIRST AGENT EVER SPAWNED; C-0 limit 2 FALSIFIED at the refuter
 
 Run `wf_9bb80d14-c94`. **The pipeline spawned a real agent for the first time
@@ -152,15 +266,23 @@ per-session state file at
 3. **Not every task notification re-arms it either — refining item 87's
    closing claim.** That entry records "task notifications count as
    prompt-receipt events, so long autonomous runs get one pause per
-   notification turn." Observed here: the notification announcing run
-   `wf_9bb80d14-c94`'s failure took `prompt_seq` 1 → **2** and did arm the
-   pause (which fired on the next `Edit`), but the notification announcing
-   probe `wf_d5ab3682-071`'s completion left `prompt_seq` at **2** and armed
-   nothing — the next `Edit` ran unpaused. So the per-notification pause is
-   **not** uniform, and the friction of a long autonomous run is lower than
-   item 87 predicted. What distinguishes the two was not established here
-   (failure-vs-success and foreground-vs-background both covary); recorded as
-   an open question rather than guessed at.
+   notification turn." Observed across this session's four background
+   notifications, read from the state file each time:
+
+   | # | Notification | Armed? |
+   |---|---|---|
+   | 1 | run `wf_9bb80d14-c94` FAILED (dispatch throw) | **yes** (`prompt_seq` 1→2) |
+   | 2 | probe `wf_d5ab3682-071` completed (6.2s) | **no** (stayed at 2) |
+   | 3 | run `wf_9bb80d14-c94` completed (37 min) | **yes** |
+   | 4 | gate-waiter background command killed | **yes** |
+
+   So **3 of 4** — the per-notification pause is real but *not* uniform, and
+   long-autonomous-run friction is lower than item 87 predicted. Success vs.
+   failure is **not** the discriminator (rows 2 and 3 are both successes and
+   differ); neither is short-vs-long alone, without more data. Recorded as an
+   open question rather than guessed at (C-12). `AskUserQuestion` answers and
+   `ExitPlanMode` approvals never arm it — only a real `UserPromptSubmit`
+   calls `record_prompt`.
 
 **Consequence, and the mitigation actually used.** The risk is far narrower than
 it first looks: the state arms once per user prompt, and the invoking session

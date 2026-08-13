@@ -12,6 +12,7 @@ Deterministic module (charter C-6). Covers:
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -77,8 +78,11 @@ def test_generate_companion_writes_html_css_sidecar(tmp_path) -> None:
     skeleton = (_BUNDLED / "classic.html").read_text(encoding="utf-8")
     assert html == skeleton.replace('href="classic.css"', 'href="mine.css"')
 
-    sidecar = tmp_path / "mine.persona.json"
-    assert '"layout_fidelity": "full"' in sidecar.read_text(encoding="utf-8")
+    sidecar = json.loads((tmp_path / "mine.persona.json").read_text(encoding="utf-8"))
+    assert sidecar["layout_fidelity"] == "full"
+    # The skeleton stamp rides along so a later skeleton change can invalidate
+    # this companion (B1a) — asserted explicitly, not left to widen silently.
+    assert sidecar["skeleton_version"] == d.skeleton_version()
 
 
 def test_generate_companion_resolvable_via_html_template_path_for(tmp_path) -> None:
@@ -272,3 +276,242 @@ def test_detect_layout_fidelity_flags_tables(tmp_path) -> None:
 def test_generate_companion_missing_docx_returns_none(tmp_path) -> None:
     """Best-effort: an unreadable .docx yields None (caller falls back to Classic)."""
     assert d.generate_companion(tmp_path / "does-not-exist.docx") is None
+
+
+# ---------------------------------------------------------------------------
+# B1a — stale imported-template companions
+#
+# A companion is a CLONE of personas/bundled/classic.html, so it goes stale when
+# the skeleton changes. The original guard compared only the user's .docx mtime,
+# which can never notice OUR file changing: a companion cloned before the
+# `date_range` Jinja global landed (2026-07-09, 67b83cc) rendered raw ISO dates
+# with no "– Present" forever. Diagnosis:
+# docs/dev/diagnosis/b1-stale-template-companions.md
+# ---------------------------------------------------------------------------
+
+#: One current role — endDate empty is the DB's NULL-means-current convention,
+#: and is exactly the case the missing `date_range` call renders wrongly.
+_CURRENT_ROLE_DOC = {
+    "basics": {"name": "Ada Lovelace"},
+    "work": [
+        {
+            "name": "Analytical Engines Ltd",
+            "position": "Principal Engineer",
+            "startDate": "2023-04",
+            "endDate": "",
+        }
+    ],
+}
+
+
+def _stage_pre_date_range_companion(tmp_path: Path, stem: str = "imported") -> Path:
+    """Stage a companion exactly as a pre-2026-07-09 import left it, and return the .docx.
+
+    The stale `.html` is the current skeleton with its `date_range(...)` calls
+    rewritten back to the raw interpolation the pre-image used, so the fixture
+    reproduces the defect's shape without depending on git history being
+    reachable (CI checkouts are shallow). The sidecar is byte-for-byte what
+    every pre-fix generation wrote: `layout_fidelity` and nothing else.
+    """
+    docx = tmp_path / f"{stem}.docx"
+    shutil.copy(_BUNDLED / "classic.docx", docx)
+
+    skeleton = (_BUNDLED / "classic.html").read_text(encoding="utf-8")
+    stale = skeleton.replace(
+        "{{ date_range(job.startDate, job.endDate) }}",
+        '{{ job.startDate or "" }}{% if job.startDate and job.endDate %} – {% endif %}'
+        '{{ job.endDate or "" }}',
+    ).replace(
+        "{{ date_range(ed.startDate, ed.endDate) }}",
+        '{{ ed.startDate or "" }}{% if ed.startDate and ed.endDate %} – {% endif %}'
+        '{{ ed.endDate or "" }}',
+    )
+    assert "date_range(" not in stale, "fixture must reproduce a pre-date_range skeleton"
+
+    docx.with_suffix(".html").write_text(
+        stale.replace('href="classic.css"', f'href="{stem}.css"'), encoding="utf-8"
+    )
+    docx.with_suffix(".css").write_text("/* companion css */\n", encoding="utf-8")
+    (tmp_path / f"{stem}.persona.json").write_text(
+        json.dumps({"layout_fidelity": "full"}, indent=2), encoding="utf-8"
+    )
+    return docx
+
+
+def test_stale_skeleton_companion_is_regenerated(tmp_path) -> None:
+    """THE B1a regression: an old-skeleton companion refreshes on next use.
+
+    Fails on HEAD before the fix for two independent reasons — there was no
+    resolution entry point that could refresh an existing companion, and the
+    mtime guard returned the stale pair unchanged.
+    """
+    docx = _stage_pre_date_range_companion(tmp_path)
+    html_path = docx.with_suffix(".html")
+    assert "date_range(" not in html_path.read_text(encoding="utf-8")
+    # The guard's old condition is satisfied, so mtime alone would skip forever.
+    assert html_path.stat().st_mtime >= docx.stat().st_mtime
+
+    resolved = d.resolve_companion_html(docx)
+
+    assert resolved == html_path
+    assert "date_range(" in html_path.read_text(encoding="utf-8")
+    sidecar = json.loads((tmp_path / "imported.persona.json").read_text(encoding="utf-8"))
+    assert sidecar["skeleton_version"] == d.skeleton_version()
+    assert sidecar["layout_fidelity"] == "full"  # the existing marker survives
+
+
+def test_stale_companion_render_restores_present_and_month_year(tmp_path) -> None:
+    """The user-visible acceptance bar: `04-2023 – Present` comes back."""
+    from pdf_render import render_html_string
+
+    docx = _stage_pre_date_range_companion(tmp_path)
+
+    before = render_html_string(_CURRENT_ROLE_DOC, html_template_path=docx.with_suffix(".html"))
+    assert "Present" not in before
+    assert "2023-04" in before  # raw ISO leaks through the stale clone
+
+    resolved = d.resolve_companion_html(docx)
+    assert resolved is not None
+    after = render_html_string(_CURRENT_ROLE_DOC, html_template_path=resolved)
+    assert "04-2023 – Present" in after
+
+
+def test_generate_companion_regenerates_on_skeleton_stamp_mismatch(tmp_path) -> None:
+    """The guard itself keys on the skeleton, not just the user's file timestamps."""
+    docx = tmp_path / "mine.docx"
+    shutil.copy(_BUNDLED / "modern.docx", docx)
+    d.generate_companion(docx)
+    html_path = docx.with_suffix(".html")
+    sidecar = tmp_path / "mine.persona.json"
+
+    # Freshly generated: a second call is still a no-op cache hit.
+    mtime = html_path.stat().st_mtime_ns
+    d.generate_companion(docx)
+    assert html_path.stat().st_mtime_ns == mtime
+
+    # Now pretend it was cloned from a different skeleton.
+    sidecar.write_text(
+        json.dumps({"layout_fidelity": "full", "skeleton_version": "0" * 16}, indent=2),
+        encoding="utf-8",
+    )
+    result = d.generate_companion(docx)
+
+    assert result is not None
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["skeleton_version"] == (
+        d.skeleton_version()
+    )
+
+
+@pytest.mark.parametrize(
+    "sidecar_body",
+    [
+        pytest.param("{not valid json", id="truncated"),
+        pytest.param("[]", id="non-dict"),
+    ],
+)
+def test_unreadable_sidecar_is_treated_as_stale_not_bundled(tmp_path, sidecar_body) -> None:
+    """A present-but-unreadable sidecar is ours (presence is the ownership test) —
+
+    not a bundled hand-authored companion — so it must self-heal like any other
+    stale companion, not freeze forever the way an absent sidecar (genuinely
+    bundled) correctly does.
+    """
+    docx = _stage_pre_date_range_companion(tmp_path)
+    html_path = docx.with_suffix(".html")
+    sidecar_path = tmp_path / "imported.persona.json"
+    sidecar_path.write_text(sidecar_body, encoding="utf-8")
+
+    resolved = d.resolve_companion_html(docx)
+
+    assert resolved == html_path
+    assert "date_range(" in html_path.read_text(encoding="utf-8")
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar["skeleton_version"] == d.skeleton_version()
+
+
+def test_current_companion_not_regenerated(tmp_path) -> None:
+    """The other half of the acceptance bar: no needless .docx re-parse per preview.
+
+    A stamp bug that invalidated every companion would turn each preview request
+    into a python-docx parse — this asserts the resolve path leaves a current
+    companion byte-identical.
+    """
+    docx = tmp_path / "mine.docx"
+    shutil.copy(_BUNDLED / "tech.docx", docx)
+    generated = d.generate_companion(docx)
+    assert generated is not None
+    html_path, css_path = generated
+    html_mtime = html_path.stat().st_mtime_ns
+    css_mtime = css_path.stat().st_mtime_ns
+
+    assert d.resolve_companion_html(docx) == html_path
+    assert d.resolve_companion_html(docx) == html_path
+
+    assert html_path.stat().st_mtime_ns == html_mtime
+    assert css_path.stat().st_mtime_ns == css_mtime
+
+
+def test_resolve_companion_html_does_not_touch_bundled_companions() -> None:
+    """Hand-authored bundled companions are NOT classic-skeleton clones — never rewrite them.
+
+    They carry no `.persona.json`, and that absence is the ownership test the
+    refresh keys on. Without it, adding regenerate-on-mismatch would overwrite
+    modern/tech/spacious with the Classic skeleton the moment a preview resolved
+    a bundled persona.
+    """
+    for stem in ("classic", "modern", "spacious", "tech"):
+        assert not (_BUNDLED / f"{stem}.persona.json").exists(), (
+            "a bundled sidecar would make the ownership test unsound"
+        )
+
+    before = {
+        stem: (_BUNDLED / f"{stem}.html").read_bytes() for stem in ("modern", "spacious", "tech")
+    }
+
+    for stem in ("modern", "spacious", "tech"):
+        resolved = d.resolve_companion_html(_BUNDLED / f"{stem}.docx")
+        assert resolved == _BUNDLED / f"{stem}.html"
+
+    for stem, content in before.items():
+        assert (_BUNDLED / f"{stem}.html").read_bytes() == content
+
+
+def test_resolve_companion_html_generates_when_absent(tmp_path) -> None:
+    """Unchanged behavior for the case the old resolve-then-generate pair handled."""
+    docx = tmp_path / "fresh.docx"
+    shutil.copy(_BUNDLED / "spacious.docx", docx)
+    assert not docx.with_suffix(".html").exists()
+
+    resolved = d.resolve_companion_html(docx)
+
+    assert resolved is not None
+    assert resolved == docx.with_suffix(".html")
+    assert resolved.exists()
+
+
+def test_resolve_companion_html_missing_docx_returns_none(tmp_path) -> None:
+    """No companion and no readable .docx → None, so callers fall back to Classic."""
+    assert d.resolve_companion_html(tmp_path / "does-not-exist.docx") is None
+
+
+def test_resolve_companion_html_keeps_stale_companion_when_refresh_fails(tmp_path) -> None:
+    """A failed refresh must not downgrade the preview to bundled Classic.
+
+    Returning None here would swap the user's own typography for Classic's on a
+    transient failure; returning the stale companion keeps today's behavior.
+    """
+    docx = _stage_pre_date_range_companion(tmp_path)
+    html_path = docx.with_suffix(".html")
+    stale_bytes = html_path.read_bytes()
+    docx.unlink()  # regeneration cannot read the source .docx
+
+    assert d.resolve_companion_html(docx) == html_path
+    assert html_path.read_bytes() == stale_bytes
+
+
+def test_skeleton_version_tracks_the_shipped_skeleton() -> None:
+    """The stamp is a content hash, so it cannot drift from the skeleton it describes."""
+    import hashlib
+
+    expected = hashlib.sha256((_BUNDLED / "classic.html").read_bytes()).hexdigest()[:16]
+    assert d.skeleton_version() == expected

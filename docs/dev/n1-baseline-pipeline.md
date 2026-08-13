@@ -122,6 +122,18 @@ therefore runs in two stages bracketing the main-loop gate:
      per-session run-start opt-in (never inherited from a handoff), scope
      calls the brief names, branch hygiene, anything its own reading
      surfaced — and asks them in **one batch, in one message**;
+   - **consumes the item-87 interrogative-witness pause deliberately, with its
+     own `Edit`/`Write`, before the first `Workflow` call.** That witness
+     refuses the first edit after an armed prompt turn with exit 2 and
+     self-clears. If the refusal instead lands on a subagent's first edit, the
+     agent is told (correctly, per Binding rule 3) to return
+     `kind: "hook_block"`, and `escalate()` short-circuits that straight to
+     `escalated_to_owner` with no reviewer — so a benign, self-clearing witness
+     stops the whole run. Recording the branch's base sha or a work-item note
+     is a natural edit to spend it on. Residual risk is a mid-run task
+     notification re-arming it (observed arming on most, but not all,
+     notifications — counts in work item 84); that case is the owner's call,
+     not a thing to route around;
    - states, in the same message, the expected uninterrupted window and the
      contract for it: after kickoff the owner hears from this session only
      via the pipeline's escalation primitive (that is the pipeline working)
@@ -150,9 +162,20 @@ therefore runs in two stages bracketing the main-loop gate:
    2026-08-12, twice).
 4. **Step-6 assertion** (the corrected close ordering's actual mechanism —
    "Without it this is vigilance, not enforcement"): `git diff --quiet` passes
-   **and** `git status --porcelain --untracked-files=all` is empty. The tree
-   the gate examined is the tree that commits — if either fails, the window
-   reopened; stop and look.
+   **and** `git status --porcelain --untracked-files=all` shows no untracked
+   files and no working-tree-column changes. The tree the gate examined is the
+   tree that commits — if either fails, the window reopened; stop and look.
+   (The assertion runs with the sprint's work already staged, so "empty" means
+   *no drift since the pre-gate `git add -A`* — staged entries are expected.)
+   **Known benign drift source, observed 2026-08-12 (run 3):** the session's
+   own `docs/dev/ledger/<session>.jsonl` can gain a `compacted` receipt
+   *during* the gate, because the `capture-before-compact` PreCompact hook
+   appends on the harness's schedule, not yours. That trips this assertion
+   without any content having changed. "Stop and look" still applies — look,
+   confirm the delta is exactly one hook-written audit row, say so, then
+   re-stage and let **gate #2** examine the committed tree, which is precisely
+   the gap the second gate run closes. Do not pre-authorize the pattern: a
+   ledger row is benign, an unexplained edit to a tracked source file is not.
 5. **Finalize stage:**
    `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'finalize', commitMessage, sprintBriefPath, epicBriefPath}})`
    — commit only; the handoff is already in the tree from the Close phase.

@@ -49,6 +49,38 @@ in the building session itself: the harness hot-loaded the new wiring
 mid-session and the pause fired (and self-cleared) on the session's next
 edit — the item-87 close condition, observed rather than assumed.
 
+### Fixed: imported templates previewed with frozen dates forever (`fix/b1-stale-template-companions`, Epic B / B1a)
+
+A `.docx` persona imported before 2026-07-09 previewed a current role as the
+raw stored `2023-04` instead of `04-2023 – Present`, and nothing a user could
+do in the app fixed it. The preview companion is a **clone** of
+`personas/bundled/classic.html`, and the regeneration guard compared only the
+user's `.docx` mtime — a condition that can notice their file changing but
+never ours. So when `67b83cc` moved the skeleton onto the canonical
+`date_range()` helper, every companion cloned before it kept rendering the old
+raw interpolation, with no call to the global for `pdf_render` to register.
+
+Two things were wrong, not one. The guard was fixed by stamping the sidecar:
+`skeleton_version` — a cached SHA-256 of the shipped skeleton, deliberately a
+content hash rather than a hand-bumped constant so it cannot drift from what it
+describes — now rides in `<stem>.persona.json` beside `layout_fidelity`, and a
+mismatch forces regeneration. A pre-fix sidecar simply lacks the key, which is
+the staleness signal, so no migration is needed. But the guard alone would have
+changed nothing: the four preview/PDF resolution sites called
+`generate_companion` **only when the companion was absent**, so for a stale one
+the guard was never reached at all. They now route through a single
+`resolve_companion_html` entry point that generates when absent, refreshes when
+stale, and returns the companion otherwise — each caller's bundled-Classic
+fallback unchanged.
+
+The four hand-authored bundled companions are **not** classic-skeleton clones
+and carry no `.persona.json`; that absence is the ownership test the refresh
+keys on, so they can never be overwritten — previously they were protected only
+by the existence check this change removes. Covered by a dedicated regression
+test. Deterministic throughout (charter C-6). Diagnosis:
+`docs/dev/diagnosis/b1-stale-template-companions.md`; consumer enumeration:
+`docs/dev/blast-radius/b1-stale-template-companions.md`.
+
 ### Fixed: retired roles no longer reach the A3 intro-drafting prompt (`fix/retired-roles-a3-prompt`, item 75)
 
 `_build_experience_summary_targets` read the analyze-time frozen

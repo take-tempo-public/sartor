@@ -26,6 +26,15 @@ mutually consistent), and record an honest `layout_fidelity` marker
 (`full` vs `typography_only`) in a `<stem>.persona.json` sidecar so callers/logs
 know when the preview is a typographic approximation of a fancier source.
 
+Staleness: because the companion is a *clone* of the skeleton, it goes out of
+date when the skeleton does — and the original guard could only see the user's
+`.docx` mtime, never ours, so a companion imported before the `date_range`
+global entered `classic.html` (2026-07-09, `67b83cc`) rendered raw ISO dates
+without `– Present` forever. The sidecar therefore also carries a
+`skeleton_version` content stamp, and `resolve_companion_html` — the entry point
+every preview/PDF read path uses — regenerates on a mismatch. The 4 hand-authored
+bundled companions have no sidecar and are never touched by that refresh.
+
 The role-classification heuristics mirror `generator._capture_template_styles`
 (centered top-3 = name/subtitle/contact; bold + right-tab = job_title; bold =
 section_heading; the non-bold after a job_title = job_subtitle; else body) so the
@@ -34,8 +43,10 @@ preview reads the .docx the same way the download does.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -420,19 +431,88 @@ def _build_html(css_filename: str) -> str:
     return skeleton.replace('href="classic.css"', f'href="{css_filename}"')
 
 
+#: Sidecar key carrying the stamp of the skeleton a companion was cloned from.
+_SKELETON_VERSION_KEY = "skeleton_version"
+
+
+def _sidecar_path_for(docx: Path) -> Path:
+    """The `<stem>.persona.json` sidecar beside a persona `.docx`."""
+    return docx.with_name(docx.stem + ".persona.json")
+
+
+@lru_cache(maxsize=1)
+def skeleton_version() -> str:
+    """Content stamp of the shipped HTML skeleton this module clones.
+
+    A *content hash*, deliberately not a hand-maintained constant: the stamp
+    cannot drift from the artifact it describes, so a future edit to
+    `classic.html` refreshes every generated companion without anyone
+    remembering to bump a number. Cached for the life of the process — the
+    skeleton is a shipped file that cannot change under a running app, and the
+    staleness check below sits on the preview request path.
+    """
+    return hashlib.sha256(_SKELETON_HTML.read_bytes()).hexdigest()[:16]
+
+
+def _read_sidecar(sidecar: Path) -> dict[str, Any] | None:
+    """Parse the fidelity sidecar; None when it is absent or unreadable."""
+    try:
+        loaded = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def companion_stamp_is_current(sidecar: Path) -> bool:
+    """Whether a companion this module OWNS was cloned from today's skeleton.
+
+    The sidecar's PRESENCE is the ownership test, and it is load-bearing —
+    not its readability. `generate_companion` has written one since its first
+    commit (`ba034a5`), so every generated companion has one — while the 4
+    hand-authored bundled companions (`personas/bundled/*.html`) have none,
+    and are NOT classic-skeleton clones. An ABSENT sidecar is therefore read
+    as "current," which is what stops a regeneration from overwriting
+    `modern.html` / `tech.html` / `spacious.html` with the Classic skeleton.
+    A PRESENT-but-unreadable sidecar (corrupt JSON, truncated write, wrong
+    shape) is ours by the same presence test, and unreadable means we cannot
+    prove it is current — so it is treated as stale and left to self-heal on
+    the next resolve, rather than freezing at an old skeleton forever.
+
+    A companion generated before this stamp shipped has a sidecar carrying only
+    `layout_fidelity`; the missing key compares unequal, which is exactly the
+    staleness signal — no migration is needed.
+    """
+    data = _read_sidecar(sidecar)
+    if data is None:
+        # Absent -> not ours (a hand-authored bundled companion): protected.
+        # Present but unreadable -> ours, and we cannot prove it is current,
+        # so treat it as stale and let it self-heal rather than freeze at an
+        # old skeleton forever.
+        return not sidecar.exists()
+    return data.get(_SKELETON_VERSION_KEY) == skeleton_version()
+
+
 def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[Path, Path] | None:
     """Write `<stem>.html` + `<stem>.css` next to an uploaded persona `.docx`.
 
     Returns `(html_path, css_path)`, or None if the .docx can't be read (the
     caller falls back to the bundled Classic companion — no worse than before).
-    Idempotent: skips regeneration when both companions exist and are newer than
-    the source .docx, unless `force=True`. Best-effort by design — a failure here
-    must never break upload or preview.
+    Idempotent: skips regeneration when both companions exist, are newer than the
+    source .docx, AND were cloned from the skeleton this app currently ships —
+    unless `force=True`. Best-effort by design: a failure here must never break
+    upload or preview.
+
+    The mtime arm alone froze imported companions forever: it can only notice the
+    *user's* file changing, never *ours*, so a companion cloned before the
+    `date_range` global entered `classic.html` (2026-07-09, `67b83cc`) kept
+    rendering raw ISO dates with no `– Present`. Prefer `resolve_companion_html`
+    on any read path — this function is only reached there when the companion is
+    absent or already known stale.
     """
     docx = Path(docx_path)
     html_path = docx.with_suffix(".html")
     css_path = docx.with_suffix(".css")
-    sidecar = docx.with_name(docx.stem + ".persona.json")
+    sidecar = _sidecar_path_for(docx)
 
     try:
         if (
@@ -440,6 +520,7 @@ def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[P
             and html_path.exists()
             and css_path.exists()
             and html_path.stat().st_mtime >= docx.stat().st_mtime
+            and companion_stamp_is_current(sidecar)
         ):
             return html_path, css_path
 
@@ -447,7 +528,13 @@ def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[P
         css_path.write_text(_build_css(knobs), encoding="utf-8")
         html_path.write_text(_build_html(css_path.name), encoding="utf-8")
         sidecar.write_text(
-            json.dumps({"layout_fidelity": knobs["layout_fidelity"]}, indent=2),
+            json.dumps(
+                {
+                    "layout_fidelity": knobs["layout_fidelity"],
+                    _SKELETON_VERSION_KEY: skeleton_version(),
+                },
+                indent=2,
+            ),
             encoding="utf-8",
         )
         logger.info(
@@ -459,3 +546,45 @@ def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[P
     except Exception as exc:  # best-effort; a companion failure must never break upload/preview
         logger.warning("Persona companion generation failed for %s: %s", docx, exc)
         return None
+
+
+def resolve_companion_html(docx_path: str | Path) -> Path | None:
+    """Resolve a persona `.docx`'s preview companion, refreshing it if it is stale.
+
+    The single read-path entry point for preview / PDF rendering, replacing the
+    `html_template_path_for(...)` → `if None: generate_companion(...)` pair those
+    callers used to spell out. That pair only ever generated a **missing**
+    companion, so an existing-but-stale one was never reconsidered on any read
+    path — `generate_companion`'s guard was not merely wrong there, it was never
+    reached.
+
+    Three outcomes, in order:
+
+    * companion absent → generate it (unchanged behavior);
+    * companion present but owned-and-stale → regenerate from today's skeleton;
+    * companion present and current (or not ours) → return it untouched.
+
+    Returns None only when no companion can be produced, so every caller's
+    existing bundled-Classic fallback keeps working exactly as before. A stale
+    companion whose *regeneration* fails is returned as-is rather than dropped:
+    that preserves the user's own typography with dates that are wrong today
+    anyway, instead of introducing a visible fallback-to-Classic regression on a
+    transient failure.
+
+    Cost on a current companion is one `exists()`, one ~90-byte JSON read and a
+    cached hash — no `.docx` parse. The expensive python-docx pass still happens
+    only on an actual miss, so this stays cheap enough for a per-request path.
+    """
+    docx = Path(docx_path)
+    html_path = docx.with_suffix(".html")
+
+    if not html_path.exists():
+        companion = generate_companion(docx)
+        return companion[0] if companion else None
+
+    if companion_stamp_is_current(_sidecar_path_for(docx)):
+        return html_path
+
+    logger.info("Persona companion for %s predates the current skeleton; refreshing", docx.name)
+    companion = generate_companion(docx, force=True)
+    return companion[0] if companion else html_path

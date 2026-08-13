@@ -248,20 +248,17 @@ def _render_pdf_from_json(
     persona doesn't ship an .html companion yet — keeps the output
     path working as more personas pick up HTML companions over time.
     """
-    from pdf_render import html_template_path_for, render_pdf
+    from pdf_render import render_pdf
 
     html_template: Path | None = None
     if docx_template_path:
-        html_template = html_template_path_for(docx_template_path)
-        if html_template is None:
-            # Lazily generate the companion so a PDF of an uploaded template
-            # honors its own typography instead of falling back to Classic
-            # (walkthrough B2 — mirrors the live-preview route). Deterministic.
-            from docx_to_persona_html import generate_companion
+        # Resolve the companion, generating it lazily when absent and refreshing
+        # it when it predates the current HTML skeleton, so a PDF of an uploaded
+        # template honors its own typography (walkthrough B2 — mirrors the
+        # live-preview route) AND its current date formatting. Deterministic.
+        from docx_to_persona_html import resolve_companion_html
 
-            companion = generate_companion(docx_template_path)
-            if companion is not None:
-                html_template = companion[0]
+        html_template = resolve_companion_html(docx_template_path)
 
     if html_template is None:
         # Fallback: bundled Classic. The path resolves relative to the
