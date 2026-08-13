@@ -31,6 +31,93 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (run 3, `fix/b1-stale-template-companions`) — FIRST AGENT EVER SPAWNED; C-0 limit 2 FALSIFIED at the refuter
+
+Run `wf_9bb80d14-c94`. **The pipeline spawned a real agent for the first time
+in its existence**, the implementer completed a full sprint of work, and the run
+then died at the refuter spawn. 2 agents attempted, 1 done, 1 error, 169,429
+subagent tokens, 89 tool uses, 1,319,095 ms (~22 min).
+
+**C-0 limit 2 is no longer unverified — it is falsified.** Verbatim:
+
+```
+Error: agent({agentType}): agent type 'n1-refuter' not found. Available agents:
+claude, claude-code-guide, Explore, feature-dev:code-architect,
+feature-dev:code-explorer, feature-dev:code-reviewer, general-purpose, Plan,
+sartor:compliance-witness, sartor:eval-judge, sartor:git-flow, sartor:headhunter,
+sartor:n1-judge, sartor:n1-refuter, sartor:prompt-archaeologist,
+sartor:tune-drafter, sartor:ux-onboarding-designer, sartor:wiki-grounding-auditor,
+sartor:wiki-scribe, statusline-setup
+```
+
+Bare-name `agentType` dispatch does **not** resolve. The agents exist and are
+registered — as `sartor:n1-refuter` / `sartor:n1-judge`, carrying the plugin
+namespace `CLAUDE.md` already documents for commands and subagents
+(`/sartor:…`, `sartor:…`). The build followed "the repo's subagent-dispatch
+convention" as the limit itself said; the convention it needed was the
+namespaced one. Sites: `n1-baseline.mjs:384,403,476` (refute, judge,
+refuter-recheck) and the structural pin at `tests/test_n1_pipeline.py:323-324`,
+which asserts the bare-name counts and so currently pins the defect.
+
+**This is the third invocation-boundary failure in a row, and the pattern is
+now the finding.** CRLF at the permission layer, `args` arriving stringified,
+and now namespace-qualified agent dispatch — three separate harness-contract
+assumptions, each verified only against documentation or repo convention, each
+costing a run. None was detectable by `tests/test_n1_pipeline.py`, whose own
+stated scope is self-consistency with the design docs, not harness
+compatibility. That limit has now been paid for three times.
+
+**What the run nonetheless discharged — experiment measures 1 and 4:**
+
+- **Harness compatibility (measure 1):** `phase()` grouping, `agent()` dispatch
+  for the *default* agent type with an explicit `model`, structured-schema
+  return, `journal.jsonl`, and the transcript tree all work. What is broken is
+  narrower than "the API": bare-name custom `agentType` resolution.
+- **Run-report/accounting fidelity (measure 4) — PASSES, first measurement
+  ever.** The implementer's `filesWritten` (7 entries) covers
+  `git status --porcelain` **exactly**: `CHANGELOG.md`,
+  `blueprints/templates.py`, the two dossiers, `docx_to_persona_html.py`,
+  `generator.py`, `tests/test_docx_to_persona_html.py`. No unreported tracked
+  file; no claimed file absent. The §11.9 check is real, not theoretical.
+- **Escalation behavior (measure 2) is still untested** — `flags: []`; the run
+  died on a harness throw, which is not routed through the escalation
+  primitive at all. A dispatch error is not a flag, so nothing surfaced
+  verbatim; the invoking session learned of it only from the task
+  notification. Worth noting as a gap in the primitive's coverage.
+
+**Independently verified, not taken on the subagent's word (C-12).** The
+implementer reported ruff/mypy clean and 267 passing tests. Re-run in the
+invoking session against its staged tree: `ruff check .` all passed;
+`ruff format --check .` 354 files formatted; `mypy` clean on all three changed
+production files; `pytest tests/test_docx_to_persona_html.py tests/test_pdf_render.py
+tests/test_bundled_templates.py -q` → **61 passed**, zero reruns. A batch of
+Pyright diagnostics delivered alongside the failure notification reported
+`resolve_companion_html` and `html_template_path_for` as undefined in
+`blueprints/templates.py` — **a stale mid-edit snapshot**, falsified by the
+above and by the definition at `docx_to_persona_html.py:543` with
+function-local imports at each call site. Pyright is not in
+`scripts/gate.py`; ruff and mypy are.
+
+**Unadjudicated, and the reason this run cannot simply be resumed to
+completion without a decision:** the implementer reports that the sprint
+brief's specified fix *would not have fixed the bug* — the guard at
+`docx_to_persona_html.py:438-444` is never reached on the preview path,
+because all four resolution sites call `generate_companion` only when the
+companion is **absent**, and a stale companion is present. It widened scope to
+add `resolve_companion_html()` and rewire those four sites, citing §11.8
+(in-scope-and-small is the implementer's to decide and record). That may well
+be correct — it cites a pristine-worktree reproduction at HEAD `acdb737` — but
+**the refuter and judge that exist precisely to adjudicate a scope widening
+never ran.** The claim is recorded here as the implementer's, unadjudicated.
+
+**Live item-87 sighting, second observed instance.** Writing *this* entry drew
+the PAUSE: the task notification announcing the run's failure re-armed the
+witness, exactly as the preflight entry below predicted, and the next `Edit`
+was refused once and proceeded on the identical retry. The hazard that entry
+describes is therefore real and not hypothetical — had the notification landed
+while a subagent held the next `Edit`, the pipeline would have converted a
+self-clearing witness into `kind: "hook_block"` and stopped the run.
+
 ### 2026-08-12 (run 3 preflight, `fix/b1-stale-template-companions`) — the item-87 pause can silently consume itself, and that is what keeps it from killing a run
 
 Preflight for Epic B run 1 attempt 3 surfaced an interaction between the item-87
