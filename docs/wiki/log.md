@@ -1899,3 +1899,24 @@ specific new/changed symbols, by name — not assumed from the classifier alone)
   confirmed by reading, not assumed from the string match.
 
 Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out relevance check (`fix/n1-invoker-loop`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 1** —
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md). Classifier run over the full staged
+diff, not eyeballed. (The pipeline script under `.claude/workflows/`, the runbook
+`docs/dev/n1-baseline-pipeline.md`, the sprint-brief template and briefs under
+`docs/dev/handoffs/`, `docs/dev/diagnosis/`, `docs/dev/ledger/`, `docs/dev/work/`, and
+`tests/` all classify irrelevant — same classifications as the two prior n1 branches.)
+
+**Pages edited (0). Pages verified no-edit:** the `RELEASE_ARC.md` change is a dated
+amendment to §"Session models" (invoking-session model for N=1 pipeline runs = owner's
+choice of Fable or Opus, stated at invocation; sprint-internal casting unchanged).
+Grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: zero
+hits outside this log's own prior entries — no page restates the session-model table
+or its surrounding rules, exactly as the 2026-08-11 fold-in entry found. Checked, not
+skipped.

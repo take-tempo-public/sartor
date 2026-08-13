@@ -597,6 +597,68 @@ class TestScriptStructure:
             f"expected the finalize guard past the args parse, got: {finalize.stderr[:200]}"
         )
 
+        # Item 89's closeoutKind: an unknown value is a loud caller error BY
+        # NAME; 'intra_epic' without a nextSprintBriefPath fails on the guard
+        # that names the missing arg (the closer writes the NEXT sprint's brief
+        # there -- the pipeline never invents its own paths).
+        bad_kind = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md","closeoutKind":"weekly"}\''
+        )
+        assert bad_kind.returncode != 0, "an unknown closeoutKind must be rejected"
+        assert "closeoutKind" in bad_kind.stderr, (
+            f"expected the guard to reject closeoutKind by name, got: {bad_kind.stderr[:200]}"
+        )
+        intra_no_next = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md","closeoutKind":"intra_epic"}\''
+        )
+        assert intra_no_next.returncode != 0, "intra_epic without nextSprintBriefPath must fail"
+        assert "nextSprintBriefPath" in intra_no_next.stderr, (
+            f"expected the missing-arg guard by name, got: {intra_no_next.stderr[:200]}"
+        )
+
+    def test_closer_ceremony_branches_on_closeout_kind(self, script_src: str) -> None:
+        """Item 89, fixed 2026-08-12: the closer prompt must branch on the
+        close-out kind instead of hardcoding the full session ceremony.
+
+        The epic's owner-approved cadence (epic-b-design-brief.md "Close-out
+        intervals") is light per sprint -- the next sprint's brief from
+        EPIC_SPRINT_BRIEF_TEMPLATE.md -- with the full AGENT_HANDOFF_TEMPLATE.md
+        ceremony ONCE at the epic close. Run 1's closer, following the
+        un-branched prompt, wrote the full ceremony instead and the declared
+        per-sprint artifact (epic-b-b1b-brief.md) was never produced; the
+        invoking session then treated the session-terminating ceremony as the
+        end of the epic (item 84, tenth failure).
+        """
+        blanked = blank_non_code(script_src)
+        assert "closeoutKind" in blanked, "closeoutKind must exist in CODE, not just prose"
+        assert "'intra_epic'" in script_src
+        assert "'terminal'" in script_src
+        assert "EPIC_SPRINT_BRIEF_TEMPLATE.md" in script_src, (
+            "the intra-epic branch must direct the closer to the sprint-brief template"
+        )
+        assert "AGENT_HANDOFF_TEMPLATE.md" in script_src, (
+            "the terminal branch must keep the full handoff ceremony"
+        )
+
+    def test_harness_throw_is_captured_as_escalation(self, script_src: str) -> None:
+        """Retro suggestion #1 (run 3), built 2026-08-12: a thrown agent() call
+        must become a structured escalation, not a dead workflow.
+
+        Three consecutive runs died at an invocation boundary OUTSIDE
+        routeFlags/escalate entirely -- `escalations: []` every time, the
+        invoking session learning of the failure only from a task notification
+        (run wf_9bb80d14-c94: 22 min + 169k tokens spent before the throw
+        surfaced). The stage bodies are wrapped so a harness throw returns a
+        report with a kind:'harness_throw' stop escalation carrying the error
+        text verbatim.
+        """
+        assert "kind: 'harness_throw'" in script_src
+        blanked = blank_non_code(script_src)
+        catches = re.findall(r"\bcatch\b", blanked)
+        # Exactly two: the args JSON.parse catch, and the stage-body wrapper.
+        # A third catch is a structure change -- make it deliberately, here.
+        assert len(catches) == 2, f"expected exactly 2 catch sites in code, found {len(catches)}"
+
 
 def _frontmatter(path: Path) -> dict[str, object]:
     text = path.read_text(encoding="utf-8")
@@ -658,5 +720,22 @@ class TestRunbookDoc:
     def test_invocation_is_by_script_path(self, doc_src: str) -> None:
         assert "scriptPath: '.claude/workflows/n1-baseline.mjs'" in doc_src
 
-    def test_states_never_run_limit(self, doc_src: str) -> None:
-        assert "BUILT, NEVER RUN" in doc_src
+    def test_states_run_history_and_per_session_opt_in(self, doc_src: str) -> None:
+        """Replaced test_states_never_run_limit 2026-08-12: the header's
+        'BUILT, NEVER RUN' was falsified by run 3 (wf_9bb80d14-c94 spawned real
+        agents). The invariant that survives the falsification is pinned
+        instead: the doc records real run history and running remains a
+        per-session owner opt-in (tightened, not deleted -- the
+        test_enforcement_core.py precedent)."""
+        assert "BUILT, NEVER RUN" not in doc_src, "falsified 2026-08-12 -- do not restore"
+        assert "FIRST RUN 2026-08-12" in doc_src
+        assert "owner opt-in" in doc_src
+
+    def test_epic_loop_step_present(self, doc_src: str) -> None:
+        """Runbook step 9 (added 2026-08-12): the invoking session manages the
+        flow ACROSS an epic's runs -- consume the closer-written brief, merge,
+        report the boundary, continue or stop cleanly. Its absence is why run 3
+        ended a three-sprint epic after one sprint (item 84, tenth failure)."""
+        assert "The epic loop" in doc_src
+        assert "report the sprint boundary to the owner NOW" in doc_src
+        assert "verify the next-sprint brief exists" in doc_src

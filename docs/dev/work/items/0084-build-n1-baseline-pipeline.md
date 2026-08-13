@@ -31,6 +31,53 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (`fix/n1-invoker-loop`, the owner-directed polish round) — the TENTH failure named; the invoker loop built; invoker model now the owner's per-run choice
+
+**The tenth failure (the run-3 retrospective recorded nine; this one surfaced
+only after the handoff was committed):** the invoking session's job was to
+manage the flow across the whole epic — consume each closer-written brief and
+continue to the next run — and no committed document said so. The runbook ran
+steps 0–8, one sprint, and stopped; the closer prompt hardcoded the
+session-terminating full ceremony every sprint (item 89); and the epic-level
+authorization ("run the epic as a test") was never reconciled against the
+sprint-scoped handoff. Run 3's invoker followed the committed instructions,
+performed a single-branch close-out after one sprint of a three-sprint epic,
+reported no boundary, and the owner lost a day to a stopped epic that read as
+running. **Epic-level score after three attempts: 0/3 — the owner's count, and
+the fair one.** All four failure boundaries to date (CRLF, stringified `args`,
+bare-name dispatch, invoker scope) are process/harness boundaries; none is the
+sprint's subject matter.
+
+**Fixes landed on this branch** (evidence trail:
+`docs/dev/diagnosis/n1-invoker-loop.md`, red-first): the runbook's **epic loop
+(step 9)** — merge, verify the next brief, **report the boundary immediately**,
+context check on external signals, continue or stop cleanly; **step 0a scope
+reconciliation** (epic authorization vs sprint brief — surface, never guess;
+never re-ask what the record grants); **item 89 fixed** — the closer branches
+on `closeoutKind` (intra-epic → `EPIC_SPRINT_BRIEF_TEMPLATE.md`, terminal →
+full ceremony); **harness throws → `kind: 'harness_throw'` escalations**
+(retro #1 — the boundary class that cost three runs now surfaces verbatim
+instead of dying with `escalations: []`); closer self-verifies with the gate's
+static steps (retro #2); repo-relative accounting paths (retro #4); the
+brief-as-hypothesis rule in the implementer prompt and the sprint-brief
+template (retro #5). The owed `epic-b-b1b-brief.md` was authored in the
+declared format. Retro #6 (item 58's fingerprint gate) deliberately NOT built
+here — a new enforcement surface, deferred with this written reason; item 58
+stays watching.
+
+**Owner decisions recorded (2026-08-12, on screen):** the remainder of Epic B
+(B1b, B2, epic close + PR) is authorized one sprint per run with the invoker
+managing the flow — recorded in `epic-b-design-brief.md` §"Execution mode +
+authorization record"; the **invoking-session model is the owner's choice of
+Fable or Opus, stated at invocation** — recorded as a dated amendment in
+`RELEASE_ARC.md` §"Session models". Record each run's actual invoker model
+here when the run happens.
+
+**Item stays `watching`:** escalation routing (reviewers, halt points, and now
+the harness_throw boundary) has still never fired live — `escalations: []` on
+every run to date. The close condition is unchanged, and the call is the
+owner's (`decision_owner = "user"`).
+
 ### 2026-08-12 (run 3 resumed, `fix/b1-stale-template-companions`) — THE PIPELINE COMPLETED END TO END; four of five experiment measures now have data
 
 After the namespace fix (`2807979`), `resumeFromRunId: wf_9bb80d14-c94` ran the

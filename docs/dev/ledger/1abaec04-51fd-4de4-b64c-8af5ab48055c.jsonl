@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/fix-b1-stale-template-companions.md", "session": "1abaec04-51fd-4de4-b64c-8af5ab48055c", "branch": "epic/b-render-ats", "commit": "d8f0a8f", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-13T03:27:56Z", "fingerprint": "e55c82d5bdd2"}
+{"event": "plan-archived", "session": "1abaec04-51fd-4de4-b64c-8af5ab48055c", "branch": "fix/n1-invoker-loop", "archive_id": "20260813T040653Z-142537ca4cdd", "plan": "atomic-plotting-hopper.md", "ts": "2026-08-13T04:06:55Z"}
+{"event": "compacted", "session": "1abaec04-51fd-4de4-b64c-8af5ab48055c", "branch": "fix/n1-invoker-loop", "trigger": "unknown", "ts": "2026-08-13T04:36:34Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/fix-n1-invoker-loop.md", "session": "1abaec04-51fd-4de4-b64c-8af5ab48055c", "branch": "fix/n1-invoker-loop", "commit": "d8f0a8f", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-13T04:53:42Z", "fingerprint": "c3a4b05c638e"}

@@ -3,9 +3,13 @@ schema = 1
 id = 89
 kind = "item"
 title = "n1-baseline.mjs's closer prompt hardcodes the full AGENT_HANDOFF_TEMPLATE.md ceremony every sprint, contradicting the epic's own declared lighter cadence"
-status = "watching"
+status = "closed"
+resolution = "Fixed 2026-08-12 on fix/n1-invoker-loop (the owner-directed polish round -- the mid-epic scope concern that correctly deferred this on B1a's closing turn was discharged by the owner scheduling the polish round between runs). The closer prompt now branches on args.closeoutKind: 'intra_epic' (a next sprint follows in this epic) writes the NEXT sprint's brief at args.nextSprintBriefPath from EPIC_SPRINT_BRIEF_TEMPLATE.md; 'terminal' (epic close or standalone branch) keeps the full AGENT_HANDOFF_TEMPLATE.md + verify_doc_template.py ceremony. Board regeneration deliberately stays in BOTH branches -- scripts/gate.py's work_items-check step binds board freshness on every gate run, so the design brief's deferral of it was unimplementable (corrected there, dated). Default is 'terminal': the conservative reading for any caller that does not say otherwise."
+verified_by = [
+  "tests/test_n1_pipeline.py::TestScriptStructure::test_closer_ceremony_branches_on_closeout_kind",
+]
 decision_owner = "agent"
-branches = ["fix/b1-stale-template-companions"]
+branches = ["fix/b1-stale-template-companions", "fix/n1-invoker-loop"]
 refs = [
   ".claude/workflows/n1-baseline.mjs",
   "docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md",
@@ -77,5 +81,19 @@ heavier cadence was worth the cost this time — record, don't retrofit mid-epic
 (the design brief's own stated policy for cadence changes).
 
 ## Updates
+
+### 2026-08-12 — CLOSED on `fix/n1-invoker-loop` (the polish round)
+
+The conditional the design's own contract already named (session-end vs.
+intra-epic transition) now exists in the script: `closeoutKind` +
+`nextSprintBriefPath` args, guards rejecting an unknown kind or a missing
+brief path by name, and the closer prompt branching between the two
+ceremonies. Pinned red-first by
+`tests/test_n1_pipeline.py::TestScriptStructure::test_closer_ceremony_branches_on_closeout_kind`
+(failed at `d8f0a8f`, green after — the diagnosis dossier
+`docs/dev/diagnosis/n1-invoker-loop.md` records the run). The §11.6.5 concern
+that correctly deferred this mid-epic was discharged by the owner scheduling
+this polish round between runs 1 and 2. First live exercise of the
+intra-epic path: run 4 (B1b), whose closer writes `epic-b-b2-brief.md`.
 
 ### 2026-08-12 — filed during `fix/b1-stale-template-companions` close-out (B1a closer)

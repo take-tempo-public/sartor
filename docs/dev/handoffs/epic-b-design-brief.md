@@ -26,15 +26,38 @@ NEVER RUN).
 - **Owner decision, 2026-08-11 (session `06958323`):** run the epic as a test,
   as written in the recorded docs; the inter-sprint handoff is an explicit test
   vector; the owner watches the console and is the live interrupt.
-- **Invoking-session model: Opus** — per `docs/dev/RELEASE_ARC.md` §"Session
-  models" ("epics run on Opus and Sonnet, without Fable — the Epic B test
-  specifically runs with Opus"). No amendment was needed or made.
+- **Invoking-session model: the owner's choice of Fable or Opus, stated at
+  invocation** — amended 2026-08-12 per `docs/dev/RELEASE_ARC.md` §"Session
+  models" (dated amendment there carries the rationale). ~~Opus, no amendment
+  needed~~ superseded. Sprint-internal agents are unchanged: the model table
+  below and the role frontmatter stay authoritative.
 - **This brief records intent; it does not discharge the run confirmation.**
   Each run session confirms the run with the owner at its start
   (`docs/dev/n1-baseline-pipeline.md` header: running is its own owner opt-in).
   Item 84 (`watching`) is where first-run evidence lands.
-- If Epic B succeeds, Epic C repeats the experiment (Opus monitor — already the
-  recorded prescription). That is a later owner decision, not authorized here.
+- If Epic B succeeds, Epic C repeats the experiment (monitor model again the
+  owner's per-run choice). That is a later owner decision, not authorized here.
+
+**Owner decision, 2026-08-12 (on screen, after run 1 closed sprint B1a):** the
+**remainder of Epic B — run 2 (B1b), run 3 (B2), then the epic close-out and
+the epic PR — is authorized to run through the pipeline, one sprint per run,**
+and this record is the authorization: an invoking session does not ask for
+epic-level permission again. What the invoker still confirms per session is
+the **run opt-in** (the bullet above — "may I start this run now") and any
+genuine decision the records do not settle; what it never re-asks is what this
+paragraph grants — which sprints may run, the license to continue to the next
+sprint at each boundary per the runbook's epic loop
+(`docs/dev/n1-baseline-pipeline.md` step 9), and the invoking model the owner
+stated at launch. **The invoking session's job between runs is to MANAGE THE
+FLOW:** consume the closer-written next-sprint brief, run the sprint,
+ff-merge on gate #2 green, **report the boundary to the owner immediately**,
+and continue — or stop cleanly on a degraded context with the exact resume
+state named. Per-session sprint scope is whatever the owner's invocation
+message states (default: one sprint per session). Context for the record:
+run 1's invoker instead performed a session-terminating close-out after one
+sprint and reported nothing — the owner lost a day to a stopped epic that
+read as running (item 84, tenth failure; the scoping conflict this paragraph
+now closes).
 
 ## Goal + scope
 
@@ -112,8 +135,20 @@ swept for `RERUN`, the refuter pass.
 **Deferred to the epic close** (scheduled, not skipped): the wiki pass +
 `.last_ingest_sha` advance, full grounding audits, the full
 `AGENT_HANDOFF_TEMPLATE.md` ceremony with `verify_doc_template.py` validation,
-`BOARD.md` regeneration, the epic-level adversarial review, experiment outcomes
-recorded (below).
+~~`BOARD.md` regeneration~~ (correction 2026-08-12: board regeneration cannot
+be deferred — the gate's own `work_items check` step binds board freshness on
+every gate run, `scripts/gate.py`, so it stays per-sprint; run 1's closer
+already regenerated it, correctly), the epic-level adversarial review,
+experiment outcomes recorded (below).
+
+**Wiring note, 2026-08-12 (item 89 fixed):** this cadence is now enacted by
+the pipeline itself — `n1-baseline.mjs` branches its closer on
+`args.closeoutKind` (`'intra_epic'` → the next sprint's brief from
+`EPIC_SPRINT_BRIEF_TEMPLATE.md`; `'terminal'` → the full handoff ceremony),
+pinned by `tests/test_n1_pipeline.py::TestScriptStructure::test_closer_ceremony_branches_on_closeout_kind`.
+The invoking session passes `'intra_epic'` + `nextSprintBriefPath` on every
+sprint with a successor (B1b → names `epic-b-b2-brief.md`) and `'terminal'`
+on the epic's last (B2).
 
 **Wiki backstop, re-derived not inherited:** drift is **11 of 75** at authoring
 (`python -m scripts.wiki_freshness`, 2026-08-11). Each run's monitor re-runs it

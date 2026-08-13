@@ -260,6 +260,16 @@ const defaults = {
   implementerModel: 'opus',
   closerModel: 'sonnet',
   reviewerModel: 'opus',
+  // Item 89: which close-out ceremony the closer runs. 'terminal' (a genuine
+  // session end — the epic close, or a standalone non-epic branch) = the full
+  // AGENT_HANDOFF_TEMPLATE.md ceremony; 'intra_epic' (there is a next sprint
+  // in this same epic) = the NEXT sprint's brief from
+  // EPIC_SPRINT_BRIEF_TEMPLATE.md, per the epic's declared light cadence
+  // (epic-b-design-brief.md "Close-out intervals"). 'terminal' is the default
+  // deliberately: the conservative reading (more ceremony, not less) for any
+  // caller that does not say otherwise.
+  closeoutKind: 'terminal',
+  nextSprintBriefPath: '', // required when closeoutKind is 'intra_epic'; named by the invoking session
   driftCheckpoints: [], // pre-scheduled review sprints, declared at epic planning (RELEASE_ARC cadence rule)
   driftBackstop: 3, // reactive: sprints since the last coherence review
   deferredDriftThreshold: 5, // reactive: cumulative deferred refuter findings since the last review
@@ -298,6 +308,12 @@ if (!cfg.sprintBriefPath || !cfg.epicBriefPath) {
 if (cfg.stage === 'finalize' && !cfg.commitMessage) {
   throw new Error('args.commitMessage is required for stage "finalize" — the commit message is composed by the invoking session from the run report, never invented by an agent')
 }
+if (cfg.closeoutKind !== 'terminal' && cfg.closeoutKind !== 'intra_epic') {
+  throw new Error(`args.closeoutKind must be 'terminal' or 'intra_epic'; got ${JSON.stringify(cfg.closeoutKind)}`)
+}
+if (cfg.stage === 'sprint' && cfg.closeoutKind === 'intra_epic' && !cfg.nextSprintBriefPath) {
+  throw new Error("args.nextSprintBriefPath is required when closeoutKind is 'intra_epic' — the closer writes the NEXT sprint's brief there, and the pipeline never invents its own paths")
+}
 
 const report = { stage: cfg.stage, escalations: [], agents: {} }
 const ctxBase = {
@@ -307,6 +323,18 @@ const ctxBase = {
   findingsSoFar: [],
 }
 
+// Error boundary (retro #1, built 2026-08-12). A throw from the harness itself
+// (an unresolvable agentType, an API failure surfacing as an exception)
+// previously killed the whole workflow OUTSIDE the escalation primitive — the
+// invoking session saw only a task notification and `escalations: []` (three
+// consecutive runs died at an invocation boundary this way; wf_9bb80d14-c94
+// alone spent 22 min + 169k tokens before its throw surfaced). The try below
+// converts any stage-body throw into the same structured stop every other
+// owner-bound signal uses. The caller-error guards above stay OUTSIDE it on
+// purpose: a misinvocation should still throw loudly at invocation time,
+// before any agent spawns. The stage bodies keep their original indentation —
+// the wrapper is an error boundary, not a scope.
+try {
 if (cfg.stage === 'finalize') {
   // Invoked ONLY after the main loop reports gate #1 green AND the step-6
   // assertion passed (git diff --quiet, and git status --porcelain
@@ -354,14 +382,20 @@ ${cfg.sprintBriefPath} and the epic design brief at ${cfg.epicBriefPath}.
 The invoking session has already created the feature branch — verify with
 "git branch --show-current" and STOP with a halt_point flag if it is wrong.
 
+The brief's named fix site is a HYPOTHESIS under C-0, not a spec: reproduce
+the defect and verify the named mechanism is reachable on the failing path
+BEFORE implementing it. Run 3's brief named an unreachable guard —
+implementing it literally would have shipped green with the user-visible
+defect intact.
+
 Do the sprint's work: blast-radius dossier and (on a fix/* branch) diagnosis
 dossier as the hooks require, code, tests. When done: "git add -A". Then STOP.
 You COMMIT NOTHING — never run "git commit".
 You NEVER run "python -m scripts.gate".
-Report every file you wrote in filesWritten — the run's accounting invariant
-is that the union of all agents' filesWritten covers "git status --porcelain"
-exactly; a file you wrote but did not report reads as hand-implementation
-drift (§11.9).
+Report every file you wrote in filesWritten, as repo-RELATIVE paths with
+forward slashes (never absolute) — the run's accounting invariant is that the
+union of all agents' filesWritten covers "git status --porcelain" exactly; a
+file you wrote but did not report reads as hand-implementation drift (§11.9).
 `, { label: 'implementer', phase: 'Implement', model: cfg.implementerModel, schema: IMPLEMENTER_SCHEMA })
     report.agents.implementer = implementer
     if (!implementer) { report.status = 'agent_failed'; break sprintLoop }
@@ -426,6 +460,32 @@ Refuter findings: ${JSON.stringify(refuter.findings)}
 
     // -- Close -------------------------------------------------------------
     phase('Close')
+    // Item 89 (fixed 2026-08-12): the ceremony branches on closeoutKind — the
+    // epic's declared cadence is light per sprint, full ceremony once at the
+    // epic close. Board regen (step 3) deliberately stays in BOTH branches:
+    // the gate's own "work_items check" step binds board freshness on every
+    // gate run (scripts/gate.py), so deferring it is unimplementable.
+    const closeoutStep = cfg.closeoutKind === 'intra_epic'
+      ? `4. Intra-epic sprint transition (item 89 — the epic's declared light
+   cadence, epic-b-design-brief.md §"Close-out intervals"): write the NEXT
+   sprint's brief at ${cfg.nextSprintBriefPath} from
+   docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md (READ IT FIRST — it is a
+   floor, not a form: every section present, "none" stated explicitly rather
+   than deleted; a fresh agent must be able to run the next sprint from the
+   brief plus its pointers alone, without a transcript). Do NOT write the
+   full docs/dev/AGENT_HANDOFF_TEMPLATE.md ceremony — that is owed ONCE, at
+   the epic close, not per sprint. Report the brief's path as handoffPath
+   and set handoffValidated to false (verify_doc_template.py validation is
+   deferred to the epic close by design).`
+      : `4. Write the next-agent handoff at docs/dev/handoffs/<branch-slug>.md from
+   docs/dev/AGENT_HANDOFF_TEMPLATE.md (READ IT FIRST; reproduce every
+   verbatim-marked section byte-for-byte), stamped per docs/dev/prov/SPEC.md
+   §1 — the stamp's commit field is HEAD at generation time; the doc's own
+   commit does not exist yet, and that is correct (SPEC §1). Validate it:
+   "python scripts/verify_doc_template.py docs/dev/handoffs/<branch-slug>.md
+   docs/dev/AGENT_HANDOFF_TEMPLATE.md --event generated --agent <agent-id>".
+   A failed result is authoring corruption in the handoff — fix the file,
+   never silence the check.`
     const closer = await agent(`
 ${ENVELOPE}
 You are the closer (§11.9.4). The corrected close ordering
@@ -437,25 +497,24 @@ are NOT yours) governs. In order:
 2. File each deferred finding as a work item under docs/dev/work/items/:
    ${JSON.stringify(toDefer)}
 3. Regenerate the board: "python -m scripts.work_items board --write".
-4. Write the next-agent handoff at docs/dev/handoffs/<branch-slug>.md from
-   docs/dev/AGENT_HANDOFF_TEMPLATE.md (READ IT FIRST; reproduce every
-   verbatim-marked section byte-for-byte), stamped per docs/dev/prov/SPEC.md
-   §1 — the stamp's commit field is HEAD at generation time; the doc's own
-   commit does not exist yet, and that is correct (SPEC §1). Validate it:
-   "python scripts/verify_doc_template.py docs/dev/handoffs/<branch-slug>.md
-   docs/dev/AGENT_HANDOFF_TEMPLATE.md --event generated --agent <agent-id>".
-   A failed result is authoring corruption in the handoff — fix the file,
-   never silence the check.
+${closeoutStep}
 5. Run the wiki-relevance check on this branch's diff
    (scripts/wiki_relevance.py classification); make any required scoped wiki
    edit now, or record the explicit verified-no-edit finding in
    docs/wiki/log.md.
+6. Before reporting: run the gate's STATIC steps on your own work — "ruff
+   check" and "ruff format --check" on every file you touched, and
+   "python -m mypy ." — and fix what they flag. Run 3's gate #1 failed on a
+   mypy union-attr error in closer-authored test code; these three checks
+   are yours. The full gate is NOT (see the ban below).
 Then "git add -A" (the handoff, any filed items, the board, and the session
 ledger shard all ride the same staging) and STOP. You COMMIT NOTHING — never
 run "git commit"; the commit happens in the finalize stage after the invoking
 session's gate #1 and step-6 assertion.
 You NEVER run "python -m scripts.gate".
-Report every file you wrote in filesWritten.
+Report every file you wrote in filesWritten, as repo-RELATIVE paths with
+forward slashes (never absolute — the accounting comparison runs on
+repo-relative form).
 `, { label: 'closer', phase: 'Close', model: cfg.closerModel, schema: CLOSER_SCHEMA })
     report.agents.closer = closer
     if (!closer) { report.status = 'agent_failed'; break sprintLoop }
@@ -520,14 +579,30 @@ there is not another.
 
   if (!report.status) {
     // Accounting invariant (§11.9's owner-check, restored to falsifiability):
-    // the runbook compares this union against "git status --porcelain".
+    // the runbook compares this union against "git status --porcelain" — both
+    // sides on repo-relative, forward-slash form (retro #4: run 3's check
+    // passed only because a hand normalization bridged the implementer's
+    // relative paths and the closer's absolute ones).
+    const normalizeReportedPath = (p) => String(p).replace(/\\/g, '/').replace(/^\.\//, '')
     const claimed = [
       ...(report.agents.implementer?.filesWritten || []),
       ...(report.agents.closer?.filesWritten || []),
-    ]
+    ].map(normalizeReportedPath)
     report.status = 'ready_for_gate'
     report.accounting = { claimedFilesWritten: [...new Set(claimed)] }
   }
+}
+} catch (err) {
+  report.escalations.push({
+    outcome: 'stop',
+    flag: {
+      kind: 'harness_throw',
+      clause: 'C-0 limit 1 (docs/dev/n1-baseline-pipeline.md "Stated limits")',
+      verbatim: `harness throw in stage '${cfg.stage}': ${err && err.message ? err.message : String(err)}`,
+    },
+    reviews: [],
+  })
+  report.status = 'escalated_to_owner'
 }
 
 return report

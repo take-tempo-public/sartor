@@ -8,9 +8,17 @@
 > **Audience:** the invoking session (the "deterministic monitor" host) of a
 > future, **separately owner-authorized** pipeline run; and reviewers of the
 > pipeline's structure.
-> **Status: BUILT, NEVER RUN.** Running this pipeline on a real sprint is its
-> own owner opt-in — nothing in this doc, the script, or its tests authorizes
-> a run.
+> **Status: BUILT; FIRST RUN 2026-08-12** (Epic B run 1, sprint B1a — run
+> `wf_9bb80d14-c94` died at the refuter spawn, its `resumeFromRunId`
+> continuation completed all five phases; item 84 holds the evidence trail and
+> the run-3 retrospective in
+> `docs/dev/handoffs/fix-b1-stale-template-companions.md` holds the cost
+> accounting). Running this pipeline on a real sprint remains a **per-session
+> owner opt-in** — nothing in this doc, the script, or its tests authorizes a
+> run by itself. An epic's own authorization record (e.g.
+> `epic-b-design-brief.md` §"Execution mode + authorization record") can
+> pre-authorize the epic's remaining sprints; step 0a below says how to
+> consume that record without re-asking for what it already grants.
 
 ---
 
@@ -36,13 +44,19 @@ today (§16.5.1).
 
 ## Stated limits (C-0) — read these before trusting anything below
 
-1. **The Workflow-harness API this script targets has zero committed instances
-   in this repo, and the script has never been executed.** Every structural
-   test in [`tests/test_n1_pipeline.py`](../../tests/test_n1_pipeline.py)
-   certifies self-consistency with the design docs — **not harness
-   compatibility**. First-run behavior (script loading, `agent()` semantics,
-   `phase()` grouping, `journal.jsonl`, `resumeFromRunId`) is unverified until
-   the owner authorizes the first run.
+1. ~~**The Workflow-harness API this script targets has zero committed instances
+   in this repo, and the script has never been executed.**~~ — **PARTIALLY
+   ATTESTED 2026-08-12 (run 3).** Script loading, `agent()` semantics,
+   `phase()` grouping, `journal.jsonl`, and `resumeFromRunId` (a cache replay
+   with 0 new tokens after an opts-only change) were all observed live on the
+   B1a run. What has NOT changed: every structural test in
+   [`tests/test_n1_pipeline.py`](../../tests/test_n1_pipeline.py) certifies
+   self-consistency with the design docs — **not harness compatibility** — and
+   **escalation routing remains UNTESTED after three runs** (`escalations: []`
+   every time; no halt-point, hook-block, or flag-stop has ever traveled the
+   primitive live). The `harness_throw` error boundary added 2026-08-12
+   (retro #1) is likewise untested until something actually throws inside a
+   run — stated plainly rather than claimed.
 2. ~~**Agent-type resolution by bare name (`n1-refuter` / `n1-judge`) is likewise
    unverified until first run**~~ — **FALSIFIED 2026-08-12, run `wf_9bb80d14-c94`.**
    Bare names do **not** resolve. The harness rejected `'n1-refuter'` and listed
@@ -79,10 +93,13 @@ today (§16.5.1).
 | Escalation reviewer(s) | default agent | `args.reviewerModel` (default `opus`) | read via instruction (spawned with a wider view) | §16.4.1 item 4 |
 | Finalize closer | default agent | `args.closerModel` | commit only | §11.9.4 (commit step) |
 
-Model policy (owner decision, 2026-08-11, recorded in `RELEASE_ARC.md`
-§"Session models"): epics run on Opus and Sonnet — never Fable inside a sprint
-pipeline. Frontmatter is the single source of truth for `agentType`-dispatched
-models; the script passes `model:` explicitly on every default-type agent.
+Model policy (owner decision 2026-08-11 plus the 2026-08-12 amendment, both
+recorded in `RELEASE_ARC.md` §"Session models"): **sprint-internal agents** run
+on Opus and Sonnet — never Fable inside a sprint pipeline; the **invoking
+session's** model is the **owner's choice of Fable or Opus, stated at
+invocation** and recorded per run in item 84. Frontmatter is the single source
+of truth for `agentType`-dispatched models; the script passes `model:`
+explicitly on every default-type agent.
 
 ## The runbook — what the invoking session does
 
@@ -118,10 +135,24 @@ therefore runs in two stages bracketing the main-loop gate:
      run `wf_9bb80d14-c94` spent before throwing. Keep `agentTypes` equal to the
      literals `tests/test_n1_pipeline.py::test_every_agent_type_literal_resolves_to_a_registered_agent`
      pins;
-   - enumerates EVERY owner decision the whole run could need — the
-     per-session run-start opt-in (never inherited from a handoff), scope
-     calls the brief names, branch hygiene, anything its own reading
-     surfaced — and asks them in **one batch, in one message**;
+   - **reconciles the scope BEFORE asking anything: the epic's authorization
+     record vs. this run's sprint brief.** The two must name the same unit of
+     work for this session; a conflict is surfaced verbatim in the batch,
+     never resolved by guess (run 3's tenth failure — item 84: an epic-level
+     authorization and a sprint-scoped handoff, never reconciled; the invoker
+     ran one sprint, executed a session-terminating ceremony, and the epic
+     silently stopped). The inverse discipline binds equally: a decision the
+     epic's authorization record ALREADY grants — which sprints may run, the
+     invoker's license to continue to the next sprint at each boundary, the
+     invoking model the owner stated at launch — is **not re-asked**;
+     re-asking a recorded authorization is itself a preflight defect (the
+     "needed authorization" stall the owner has already rejected on screen,
+     2026-08-12);
+   - enumerates EVERY owner decision the whole run could genuinely still
+     need — the per-session run-start opt-in (never inherited from a
+     handoff), scope calls the brief names but the record does not settle,
+     branch hygiene, anything its own reading surfaced — and asks them in
+     **one batch, in one message**;
    - **consumes the item-87 interrogative-witness pause deliberately, with its
      own `Edit`/`Write`, before the first `Workflow` call.** That witness
      refuses the first edit after an armed prompt turn with exit 2 and
@@ -140,7 +171,10 @@ therefore runs in two stages bracketing the main-loop gate:
      or the run's completion report. A new ad-hoc question after kickoff is
      a preflight defect — file it as one at close-out.
 1. **Sprint stage:**
-   `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'sprint', sprintBriefPath, epicBriefPath, ...}})`.
+   `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'sprint', sprintBriefPath, epicBriefPath, closeoutKind, nextSprintBriefPath, ...}})`
+   — `closeoutKind: 'intra_epic'` (plus `nextSprintBriefPath`) on every sprint
+   that has a successor in the same epic; `'terminal'` (the default) only on
+   the epic's last sprint or a standalone branch.
    On `status: 'escalated_to_owner'`: surface the escalation's **verbatim**
    text to the owner and stop — that is the pipeline working, not failing.
    On `status: 'ready_for_gate'`, continue.
@@ -188,6 +222,49 @@ therefore runs in two stages bracketing the main-loop gate:
 8. **Durable capture (C-8):** the run report and the Workflow `journal.jsonl`
    are the audit trail; write the report (or its path) into the branch's
    durable record in the turn you receive it, not at close-out.
+9. **The epic loop — an epic is SEVERAL runs, and managing the flow between
+   them is the invoking session's job** (added 2026-08-12: run 3 ended the
+   session after one sprint of a three-sprint epic, and the owner lost a day
+   believing the epic was running — item 84, tenth failure). After gate #2 is
+   green for a sprint that is NOT the epic's last:
+   - **ff-merge the sprint branch into the epic branch**
+     (`git checkout <epic-branch> && git merge --ff-only <sprint-branch>`),
+     then prune the sprint branch. This is intra-epic housekeeping, not the
+     owner-gated PR ceremony — that fires once, at the epic close (step 7
+     stays owner-only, unchanged).
+   - **verify the next-sprint brief exists** — the intra-epic closer wrote it
+     (`closeoutKind: 'intra_epic'` + `nextSprintBriefPath`). If it is
+     missing, that is a pipeline defect: stop and surface it; do not
+     improvise a brief (the pipeline never invents one).
+   - **report the sprint boundary to the owner NOW, in one short message:**
+     sprint done, both gates green (rerun-sweep result included), epic
+     progress (run n of m), what starts next. This report is per-sprint and
+     immediate — never deferred to a session-end summary. Run 3's missing
+     boundary report is exactly how a stopped epic read as a running one for
+     a day.
+   - **assess context budget as a first-class constraint (C-8), on external
+     signals only** — a `compacted` receipt in the session's ledger shard, a
+     harness context warning; never a self-assessed "feels fine". If the
+     context is degraded: STOP here cleanly. The next-sprint brief is already
+     on disk, so the resume state is exactly three things — the epic branch
+     tip, the next sprint's brief path, this runbook. Say them to the owner
+     and end the session; a fresh invoker resumes with zero loss. Continuing
+     degraded is how run 3 spent its remaining budget on close-out ceremony
+     instead of the epic.
+   - **otherwise: cut the next sprint branch off the epic tip and return to
+     step 0** with the next sprint's `sprintBriefPath` — and, when that next
+     sprint is the epic's LAST, `closeoutKind: 'terminal'` so its closer
+     writes the full handoff ceremony. Step 0's preconditions are re-checked
+     each iteration; in particular the plan-approval marker retires when a
+     branch merges, so expect one marker re-approval per sprint boundary —
+     that is the reconciler working, not a blocker (never hand-create the
+     marker).
+
+   **The full close-out ceremony — `AGENT_HANDOFF_TEMPLATE.md` +
+   `verify_doc_template.py`, the wiki pass + `.last_ingest_sha` advance, the
+   epic-level adversarial review, the PR — runs ONCE, at the epic close,
+   never at an intra-epic boundary.** Per-sprint, the epic brief's own
+   "per-sprint floor" list is the whole obligation.
 
 ## Escalation — the unified primitive (§16.4.1 item 4)
 
@@ -235,3 +312,5 @@ three route into the escalation primitive as `kind: 'coherence_drift'`.
 | `driftCheckpoints` | no | `[]` | pre-scheduled drift-review sprint indices |
 | `driftBackstop` | no | `3` | reactive counter (inert at N=1) |
 | `deferredDriftThreshold` | no | `5` | reactive counter (inert at N=1) |
+| `closeoutKind` | no | `'terminal'` | `'intra_epic'` = a next sprint follows in this epic: the closer writes ITS brief from `EPIC_SPRINT_BRIEF_TEMPLATE.md` (the declared light cadence — item 89); `'terminal'` = a genuine session/epic close: the full `AGENT_HANDOFF_TEMPLATE.md` ceremony |
+| `nextSprintBriefPath` | intra_epic only | — | where the closer writes the next sprint's brief (e.g. `docs/dev/handoffs/epic-b-b2-brief.md`) — named by the invoking session, never invented by the pipeline |

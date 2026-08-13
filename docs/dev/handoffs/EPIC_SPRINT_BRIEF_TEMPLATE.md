@@ -65,6 +65,12 @@ travels.>`
 `<Scope, from the epic's own brief. And explicitly what is OUT of scope — the chain has
 already lost a sprint to scope drift.>`
 
+> **A named fix site in this section is a HYPOTHESIS, not a spec (C-0).** The implementer
+> verifies the named mechanism is reachable on the failing path — by reproducing the defect —
+> before implementing it. B1a's brief named an unreachable guard
+> (`docx_to_persona_html.py:438-444`); implemented literally, the sprint would have shipped
+> green with the user-visible defect intact (run-3 retrospective, "What went wrong" #3).
+
 ## First move
 
 `<The concrete first action. If the branch is a fix/*, the first artifact is the diagnosis
