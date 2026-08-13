@@ -171,10 +171,14 @@ therefore runs in two stages bracketing the main-loop gate:
      or the run's completion report. A new ad-hoc question after kickoff is
      a preflight defect — file it as one at close-out.
 1. **Sprint stage:**
-   `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'sprint', sprintBriefPath, epicBriefPath, closeoutKind, nextSprintBriefPath, ...}})`
-   — `closeoutKind: 'intra_epic'` (plus `nextSprintBriefPath`) on every sprint
-   that has a successor in the same epic; `'terminal'` (the default) only on
-   the epic's last sprint or a standalone branch.
+   `Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {stage: 'sprint', sprintBriefPath, epicBriefPath, epicSprintIndex, epicSprintCount, nextSprintBriefPath, ...}})`
+   — the close-out ceremony is **derived** from the sprint's position, never
+   chosen: `epicSprintIndex < epicSprintCount` (a successor sprint exists) →
+   the intra-epic next-sprint brief, and `nextSprintBriefPath` is required;
+   `epicSprintIndex == epicSprintCount` (the epic's last sprint, or a
+   standalone 1-of-1 branch) → the terminal full ceremony. A caller-supplied
+   `closeoutKind` is **rejected by name** (`fix/n1-scope-dedup` — run 3's
+   epic ended one sprint in on a caller default; item 84, tenth failure).
    On `status: 'escalated_to_owner'`: surface the escalation's **verbatim**
    text to the owner and stop — that is the pipeline working, not failing.
    On `status: 'ready_for_gate'`, continue.
@@ -252,9 +256,10 @@ therefore runs in two stages bracketing the main-loop gate:
      degraded is how run 3 spent its remaining budget on close-out ceremony
      instead of the epic.
    - **otherwise: cut the next sprint branch off the epic tip and return to
-     step 0** with the next sprint's `sprintBriefPath` — and, when that next
-     sprint is the epic's LAST, `closeoutKind: 'terminal'` so its closer
-     writes the full handoff ceremony. Step 0's preconditions are re-checked
+     step 0** with the next sprint's `sprintBriefPath` and its position args
+     (`epicSprintIndex` advanced by one; on the epic's LAST sprint
+     index == count derives the terminal full-handoff ceremony — no
+     ceremony arg exists to get wrong). Step 0's preconditions are re-checked
      each iteration; in particular the plan-approval marker retires when a
      branch merges, so expect one marker re-approval per sprint boundary —
      that is the reconciler working, not a blocker (never hand-create the
@@ -312,5 +317,6 @@ three route into the escalation primitive as `kind: 'coherence_drift'`.
 | `driftCheckpoints` | no | `[]` | pre-scheduled drift-review sprint indices |
 | `driftBackstop` | no | `3` | reactive counter (inert at N=1) |
 | `deferredDriftThreshold` | no | `5` | reactive counter (inert at N=1) |
-| `closeoutKind` | no | `'terminal'` | `'intra_epic'` = a next sprint follows in this epic: the closer writes ITS brief from `EPIC_SPRINT_BRIEF_TEMPLATE.md` (the declared light cadence — item 89); `'terminal'` = a genuine session/epic close: the full `AGENT_HANDOFF_TEMPLATE.md` ceremony |
-| `nextSprintBriefPath` | intra_epic only | — | where the closer writes the next sprint's brief (e.g. `docs/dev/handoffs/epic-b-b2-brief.md`) — named by the invoking session, never invented by the pipeline |
+| `epicSprintIndex` | sprint stage | — | this sprint's 1-based position in its epic (a standalone branch is 1 of 1). The ceremony DERIVES from it — index < count → the closer writes the next sprint's brief from `EPIC_SPRINT_BRIEF_TEMPLATE.md` (the declared light cadence — item 89); index == count → the full `AGENT_HANDOFF_TEMPLATE.md` ceremony. `closeoutKind` is **no longer a caller arg** and is rejected by name (`fix/n1-scope-dedup`) |
+| `epicSprintCount` | sprint stage | — | total sprints in the epic (from the epic brief's Sprint → run table) |
+| `nextSprintBriefPath` | when index < count | — | where the closer writes the next sprint's brief (e.g. `docs/dev/handoffs/epic-b-b2-brief.md`) — named by the invoking session, never invented by the pipeline |

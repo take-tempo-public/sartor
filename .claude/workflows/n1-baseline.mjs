@@ -260,16 +260,21 @@ const defaults = {
   implementerModel: 'opus',
   closerModel: 'sonnet',
   reviewerModel: 'opus',
-  // Item 89: which close-out ceremony the closer runs. 'terminal' (a genuine
-  // session end — the epic close, or a standalone non-epic branch) = the full
-  // AGENT_HANDOFF_TEMPLATE.md ceremony; 'intra_epic' (there is a next sprint
-  // in this same epic) = the NEXT sprint's brief from
-  // EPIC_SPRINT_BRIEF_TEMPLATE.md, per the epic's declared light cadence
-  // (epic-b-design-brief.md "Close-out intervals"). 'terminal' is the default
-  // deliberately: the conservative reading (more ceremony, not less) for any
-  // caller that does not say otherwise.
-  closeoutKind: 'terminal',
-  nextSprintBriefPath: '', // required when closeoutKind is 'intra_epic'; named by the invoking session
+  // Item 89 + fix/n1-scope-dedup: which close-out ceremony the closer runs is
+  // DERIVED from the sprint's position in its epic, never chosen by the
+  // caller. Run 3's invoker ended a three-sprint epic after one sprint
+  // because the ceremony was a caller decision with a session-terminating
+  // default (item 84, tenth failure); the decision point is removed rather
+  // than re-instructed. epicSprintIndex < epicSprintCount → a successor
+  // sprint exists → 'intra_epic' (the NEXT sprint's brief from
+  // EPIC_SPRINT_BRIEF_TEMPLATE.md, per the epic's declared light cadence —
+  // epic-b-design-brief.md "Close-out intervals"); index === count → the
+  // epic's LAST sprint → 'terminal' (the full AGENT_HANDOFF_TEMPLATE.md
+  // ceremony). Reproducing the wrong ceremony now requires an affirmatively
+  // false count, not an omitted arg.
+  epicSprintIndex: 0, // REQUIRED for stage 'sprint': this sprint's 1-based position in the epic
+  epicSprintCount: 0, // REQUIRED for stage 'sprint': total sprints in the epic
+  nextSprintBriefPath: '', // required when a successor sprint exists; named by the invoking session
   driftCheckpoints: [], // pre-scheduled review sprints, declared at epic planning (RELEASE_ARC cadence rule)
   driftBackstop: 3, // reactive: sprints since the last coherence review
   deferredDriftThreshold: 5, // reactive: cumulative deferred refuter findings since the last review
@@ -300,6 +305,9 @@ if (typeof rawArgs === 'string') {
 if (Array.isArray(rawArgs) || (rawArgs !== undefined && rawArgs !== null && typeof rawArgs !== 'object')) {
   throw new Error(`args must be a plain object (or a JSON object string); got ${Array.isArray(rawArgs) ? 'array' : typeof rawArgs}`)
 }
+if (rawArgs && 'closeoutKind' in rawArgs) {
+  throw new Error("args.closeoutKind is no longer accepted — the ceremony is derived from epicSprintIndex/epicSprintCount (fix/n1-scope-dedup: a caller-chosen ceremony ended run 3's epic one sprint in; item 84, tenth failure)")
+}
 const cfg = { ...defaults, ...(rawArgs || {}) }
 
 if (!cfg.sprintBriefPath || !cfg.epicBriefPath) {
@@ -308,11 +316,21 @@ if (!cfg.sprintBriefPath || !cfg.epicBriefPath) {
 if (cfg.stage === 'finalize' && !cfg.commitMessage) {
   throw new Error('args.commitMessage is required for stage "finalize" — the commit message is composed by the invoking session from the run report, never invented by an agent')
 }
-if (cfg.closeoutKind !== 'terminal' && cfg.closeoutKind !== 'intra_epic') {
-  throw new Error(`args.closeoutKind must be 'terminal' or 'intra_epic'; got ${JSON.stringify(cfg.closeoutKind)}`)
-}
-if (cfg.stage === 'sprint' && cfg.closeoutKind === 'intra_epic' && !cfg.nextSprintBriefPath) {
-  throw new Error("args.nextSprintBriefPath is required when closeoutKind is 'intra_epic' — the closer writes the NEXT sprint's brief there, and the pipeline never invents its own paths")
+if (cfg.stage === 'sprint') {
+  const idx = cfg.epicSprintIndex
+  const count = cfg.epicSprintCount
+  if (!Number.isInteger(idx) || !Number.isInteger(count) || idx < 1 || count < 1 || idx > count) {
+    throw new Error(`args.epicSprintIndex and args.epicSprintCount are required for stage "sprint" (1-based integers, index <= count); got index=${JSON.stringify(cfg.epicSprintIndex)} count=${JSON.stringify(cfg.epicSprintCount)} — the ceremony derives from the sprint's position, never from a caller default`)
+  }
+  cfg.closeoutKind = idx < count ? 'intra_epic' : 'terminal'
+  if (cfg.closeoutKind === 'intra_epic' && !cfg.nextSprintBriefPath) {
+    throw new Error("args.nextSprintBriefPath is required when a successor sprint exists (epicSprintIndex < epicSprintCount) — the closer writes the NEXT sprint's brief there, and the pipeline never invents its own paths")
+  }
+} else {
+  // finalize commits only; no ceremony is run, and the closer prompt that
+  // reads closeoutKind is never built. Set the conservative value anyway so
+  // the field is never undefined in the report.
+  cfg.closeoutKind = 'terminal'
 }
 
 const report = { stage: cfg.stage, escalations: [], agents: {} }

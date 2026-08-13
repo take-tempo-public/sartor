@@ -549,17 +549,34 @@ class TestScriptStructure:
             )
 
         # The incident shape: a JSON object string must resolve to real config,
-        # with the REAL defaults applied.
-        as_string = run('\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        # with the REAL defaults applied and the ceremony DERIVED from the
+        # sprint's position (fix/n1-scope-dedup: closeoutKind is no longer a
+        # caller decision -- run 3's epic ended one sprint in on a caller
+        # default; item 84, tenth failure).
+        as_string = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md"}\''
+        )
         assert as_string.returncode == 0, as_string.stderr
         assert '"sprintBriefPath":"a.md"' in as_string.stdout
         assert '"epicBriefPath":"b.md"' in as_string.stdout
         assert '"stage":"sprint"' in as_string.stdout, "the real defaults must apply"
+        assert '"closeoutKind":"intra_epic"' in as_string.stdout, (
+            "index 2 of 3 has a successor sprint -- closeoutKind must DERIVE to "
+            "intra_epic, never be caller-chosen"
+        )
 
         # A real object must keep working -- the fix cannot be string-only.
-        as_object = run("{ sprintBriefPath: 'a.md', epicBriefPath: 'b.md' }")
+        # index == count is the epic's LAST sprint: terminal, no next brief.
+        as_object = run(
+            "{ sprintBriefPath: 'a.md', epicBriefPath: 'b.md',"
+            " epicSprintIndex: 3, epicSprintCount: 3 }"
+        )
         assert as_object.returncode == 0, as_object.stderr
         assert '"sprintBriefPath":"a.md"' in as_object.stdout
+        assert '"closeoutKind":"terminal"' in as_object.stdout, (
+            "the epic's last sprint (index == count) must derive terminal"
+        )
 
         # Empty/absent/null args must reach the REAL required-arg guard, which
         # names what is actually missing (the first version's carve-out threw a
@@ -597,24 +614,57 @@ class TestScriptStructure:
             f"expected the finalize guard past the args parse, got: {finalize.stderr[:200]}"
         )
 
-        # Item 89's closeoutKind: an unknown value is a loud caller error BY
-        # NAME; 'intra_epic' without a nextSprintBriefPath fails on the guard
-        # that names the missing arg (the closer writes the NEXT sprint's brief
-        # there -- the pipeline never invents its own paths).
-        bad_kind = run(
-            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md","closeoutKind":"weekly"}\''
+        # fix/n1-scope-dedup: closeoutKind is DERIVED, never accepted. A caller
+        # supplying it -- even a previously-valid value -- is rejected by name
+        # with the no-longer-accepted diagnostic. (Run 3's session-terminating
+        # ceremony mid-epic was a caller decision; the decision point is gone.)
+        caller_kind = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md",'
+            '"closeoutKind":"intra_epic"}\''
         )
-        assert bad_kind.returncode != 0, "an unknown closeoutKind must be rejected"
-        assert "closeoutKind" in bad_kind.stderr, (
-            f"expected the guard to reject closeoutKind by name, got: {bad_kind.stderr[:200]}"
+        assert caller_kind.returncode != 0, "a caller-supplied closeoutKind must be rejected"
+        assert "no longer accepted" in caller_kind.stderr, (
+            f"expected the no-longer-accepted diagnostic naming closeoutKind, "
+            f"got: {caller_kind.stderr[:200]}"
         )
+
+        # A sprint-stage call without the position args is a loud caller error
+        # naming epicSprintIndex/epicSprintCount -- the ceremony cannot default.
+        no_position = run('\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        assert no_position.returncode != 0, (
+            "stage 'sprint' without epicSprintIndex/epicSprintCount must fail loudly"
+        )
+        assert "epicSprintIndex" in no_position.stderr, (
+            f"expected the position-args guard by name, got: {no_position.stderr[:200]}"
+        )
+
+        # A successor sprint exists (index < count) but no nextSprintBriefPath:
+        # fails on the guard that names the missing arg (the closer writes the
+        # NEXT sprint's brief there -- the pipeline never invents its own paths).
         intra_no_next = run(
-            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md","closeoutKind":"intra_epic"}\''
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3}\''
         )
-        assert intra_no_next.returncode != 0, "intra_epic without nextSprintBriefPath must fail"
+        assert intra_no_next.returncode != 0, "index < count without nextSprintBriefPath must fail"
         assert "nextSprintBriefPath" in intra_no_next.stderr, (
             f"expected the missing-arg guard by name, got: {intra_no_next.stderr[:200]}"
         )
+
+        # Nonsense positions are rejected by the same guard: index past count,
+        # zero, and non-integer each name the position args.
+        for bad in (
+            '"epicSprintIndex":4,"epicSprintCount":3',
+            '"epicSprintIndex":0,"epicSprintCount":3',
+            '"epicSprintIndex":1.5,"epicSprintCount":3',
+        ):
+            bad_pos = run(
+                f'\'{{"sprintBriefPath":"a.md","epicBriefPath":"b.md",{bad},"nextSprintBriefPath":"c.md"}}\''
+            )
+            assert bad_pos.returncode != 0, f"invalid position ({bad}) must fail"
+            assert "epicSprintIndex" in bad_pos.stderr, (
+                f"invalid position ({bad}): expected the guard by name, got: {bad_pos.stderr[:200]}"
+            )
 
     def test_closer_ceremony_branches_on_closeout_kind(self, script_src: str) -> None:
         """Item 89, fixed 2026-08-12: the closer prompt must branch on the
@@ -658,6 +708,88 @@ class TestScriptStructure:
         # Exactly two: the args JSON.parse catch, and the stage-body wrapper.
         # A third catch is a structure change -- make it deliberately, here.
         assert len(catches) == 2, f"expected exactly 2 catch sites in code, found {len(catches)}"
+
+
+def _cr_offenders(paths: list[Path]) -> list[str]:
+    """Return the workflow files whose WORKING-TREE bytes contain a CR."""
+    return [p.name for p in paths if b"\r" in p.read_bytes()]
+
+
+class TestWorkflowWorkingTreeBytes:
+    """fix/n1-scope-dedup (S3): the CRLF class is a WORKING-TREE defect.
+
+    `.gitattributes` (`*.mjs text eol=lf`) and tests/test_gitattributes_coverage.py
+    govern CHECKOUT-time normalization; nothing governs bytes a tool writes
+    AFTER checkout. Observed live 2026-08-13: a session ledger shard carried 2
+    CR bytes in the working tree while `git check-attr` reported
+    `text: set, eol: lf`. A single CR in a workflow script is rejected by the
+    Workflow permission layer before any agent spawns ("script contains
+    control characters…") -- the class that blocked Epic B run 1 twice
+    (item 84; probe wf_e47f2d49-7f0). Both scripts are covered, probe
+    included -- run 1's gap was scoped to the one script it knew about.
+    """
+
+    def test_checker_flags_synthetic_cr(self, tmp_path: Path) -> None:
+        crlf = tmp_path / "crlf.mjs"
+        crlf.write_bytes(b"export const meta = {}\r\n")
+        clean = tmp_path / "clean.mjs"
+        clean.write_bytes(b"export const meta = {}\n")
+        assert _cr_offenders([crlf, clean]) == ["crlf.mjs"], (
+            "the checker itself must flag a CR byte -- if this fails, the "
+            "real-tree assertion below proves nothing"
+        )
+
+    def test_workflow_scripts_are_cr_free_in_the_working_tree(self) -> None:
+        workflows = sorted((REPO_ROOT / ".claude" / "workflows").glob("*.mjs"))
+        assert workflows, "no workflow scripts found -- the glob itself is broken"
+        offenders = _cr_offenders(workflows)
+        assert offenders == [], (
+            f"CR bytes in working-tree workflow script(s) {offenders}: the "
+            "Workflow permission layer rejects any script containing CR before "
+            "an agent spawns (item 84, run 1). Re-normalize the file (git "
+            "checkout -- <file> after confirming no un-staged content is lost)."
+        )
+
+
+class TestEpicStateBanner:
+    """fix/n1-scope-dedup (S4): the SessionStart epic-state banner.
+
+    Run 3 stopped a three-sprint epic after one sprint, and the next sessions
+    had no way to know (item 84, tenth failure -- the owner lost a day). The
+    banner derives Epic B's remainder from committed briefs at the epic tip
+    (NOT branch refs -- runbook step 9 prunes those for exactly the sprints
+    that finished) and injects it at every session start until the epic lands.
+    """
+
+    def test_remainder_derivation_is_exhaustive(self) -> None:
+        from scripts.enforcement.adapters.claude_context_hook import epic_remainder
+
+        # Mid-epic, before B1b's closer wrote the B2 brief: everything remains.
+        assert epic_remainder(b2_brief_exists=False, epic_on_main=False) == [
+            "B1b (sprint 2 of 3)",
+            "B2 (sprint 3 of 3)",
+            "epic close + PR",
+        ]
+        # B2's brief committed at the tip proves B1b's closer finished.
+        assert epic_remainder(b2_brief_exists=True, epic_on_main=False) == [
+            "B2 (sprint 3 of 3)",
+            "epic close + PR",
+        ]
+        # The epic landed on main: the banner retires itself entirely.
+        assert epic_remainder(b2_brief_exists=True, epic_on_main=True) == []
+        assert epic_remainder(b2_brief_exists=False, epic_on_main=True) == []
+
+    def test_banner_is_fail_open_and_non_directive(self) -> None:
+        """Live smoke on this repo: never raises, and while the epic is
+        mid-flight it names the remainder WITHOUT reading as tasking (a banner
+        that reads as a work order recreates the item-87 class in reverse)."""
+        from scripts.enforcement.adapters.claude_context_hook import epic_state_banner
+
+        banner = epic_state_banner({"cwd": str(REPO_ROOT)})
+        assert isinstance(banner, str)
+        if banner:
+            assert "NOT a work order" in banner
+            assert "owner's explicit opt-in" in banner
 
 
 def _frontmatter(path: Path) -> dict[str, object]:

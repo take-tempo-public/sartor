@@ -31,6 +31,46 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-13 (`fix/n1-scope-dedup`, owner-directed hardening review — NOT a run) — 0-for-4 investigated from source; adversarial review killed the hook-gate proposals; the scope sentence is now owner-ratified and single-sourced
+
+Session `7225a213` (Fable — review/hardening role, no pipeline invocation).
+Mandate: independent investigation of all four failed runs from source
+(transcripts + git + committed docs, never prior agents' accounts);
+deterministic-fix proposals scoped to this pipeline; adversarial review by
+three separately invoked Opus agents; owner approval; implement survivors
+only. Full record with citations:
+`docs/dev/diagnosis/n1-pipeline-hardening-review.md` (now also the durable
+citation for the prompt-rewrite corruption instance — "entire epic" silently
+became "one sprint" in a task prompt, owner-caught).
+
+**Review verdicts:** the Workflow-matcher invocation-gate hook, the blocking
+Stop-hook session-end guard, a new epic-plan JSON, in-pipeline dispatch
+probes, and gate receipts were ALL killed (unmeasured harness contracts — the
+exact class that cost runs 1–3; a live derivation deadlock against step 9's
+own prune; a per-boundary plan-re-approval deadlock; laundering risk on the
+scope sentence; scope leaks into shared surfaces). **Implemented survivors
+(owner-approved plan, 2026-08-13):** S1 the "(default: one sprint per
+session)" sentence — the planted contradiction behind run 4's guess — is
+DELETED and replaced by the owner-RATIFIED scope sentence (typed selection at
+the checkpoint), single-sourced in `epic-b-design-brief.md` §"Execution mode
++ authorization record"; S2 `closeoutKind` is no longer a caller arg —
+`n1-baseline.mjs` derives it from required `epicSprintIndex`/`epicSprintCount`
+(red-first: the derivation arm failed on the pre-fix script exactly as
+predicted, then 43/43 structural green); S3 a CR-byte working-tree assertion
+over `.claude/workflows/*.mjs` (the class was live in a ledger shard this very
+day); S4 the SessionStart epic-state banner (context, not a gate) — every
+fresh session sees Epic B's remainder derived from committed briefs at the
+epic tip, so a stopped epic can never again hide behind a session boundary;
+S5 log-only measurement hooks staged in machine-local settings so harness
+facts exist before any hook-based control is reconsidered. Stated residue,
+unenforced: a sincerely-wrong stop; prompt fidelity outside the repo;
+paraphrase of the ratified sentence; escalation routing still never fired
+live. Prior cleanup on this branch's base: the run-4 false record corrected
+(`43dd351` — "the false claim plus its correction is the honest record") and
+the renamed `docs/n1-0for4-analysis` branch folded + pruned. **Item stays
+`watching`** — nothing here is run evidence; the next authorized invoker runs
+the ENTIRE remaining epic per the ratified sentence.
+
 ### 2026-08-12 (Epic B run 2 invoker, sprint B1b) — invocation record: invoker model FABLE (first Fable-invoked run)
 
 Per the 2026-08-12 §"Session models" amendment, recording this run's actual

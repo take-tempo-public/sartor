@@ -81,7 +81,8 @@ From `RELEASE_ARC.md` §Epic B (B1, second bullet) via `epic-b-design-brief.md` 
 **Explicitly OUT of scope:** everything in B2 (`feat/ats-conformance` — dates,
 month hard-block, fonts, structural ATS tests; design brief row 3); pre-authoring
 B2's brief by hand (this run's **closer** writes `epic-b-b2-brief.md` via
-`closeoutKind: 'intra_epic'`); widening N past 1 (owner-reserved, §16.7); the
+the derived intra-epic ceremony — sprint 2 of 3); widening N past 1
+(owner-reserved, §16.7); the
 watching-bucket triage; any refactor beyond the numbered list above.
 
 ## First move
@@ -95,7 +96,8 @@ Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {
   stage: 'sprint',
   sprintBriefPath: 'docs/dev/handoffs/epic-b-b1b-brief.md',
   epicBriefPath: 'docs/dev/handoffs/epic-b-design-brief.md',
-  closeoutKind: 'intra_epic',
+  epicSprintIndex: 2,
+  epicSprintCount: 3,
   nextSprintBriefPath: 'docs/dev/handoffs/epic-b-b2-brief.md',
 }})
 ```

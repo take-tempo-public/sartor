@@ -52,12 +52,28 @@ stated at launch. **The invoking session's job between runs is to MANAGE THE
 FLOW:** consume the closer-written next-sprint brief, run the sprint,
 ff-merge on gate #2 green, **report the boundary to the owner immediately**,
 and continue — or stop cleanly on a degraded context with the exact resume
-state named. Per-session sprint scope is whatever the owner's invocation
-message states (default: one sprint per session). Context for the record:
-run 1's invoker instead performed a session-terminating close-out after one
-sprint and reported nothing — the owner lost a day to a stopped epic that
-read as running (item 84, tenth failure; the scoping conflict this paragraph
-now closes).
+state named.
+
+**The owner-ratified scope sentence (2026-08-13, typed selection at the
+review session's checkpoint — the SINGLE source for session scope; cite it,
+never restate it):**
+
+> The pipeline test is the ENTIRE remaining Epic B — B1b, then B2, then the
+> epic close-out to PR-ready — run continuously by one invoking session that
+> manages the flow at every boundary. Stopping before PR-ready is a failure
+> unless an escalation is awaiting the owner or the owner has said stop;
+> partial completion is not success.
+
+(A sentence previously here — "Per-session sprint scope is whatever the
+owner's invocation message states (default: one sprint per session)" — was an
+agent codification of an ambiguous owner utterance, contradicted the runbook
+step-9 continue default granted three sentences earlier, and directly caused
+run 4's scope guess. Deleted, not amended — `fix/n1-scope-dedup`;
+`docs/dev/diagnosis/n1-scope-dedup.md`.) Context for the record: run 1's
+invoker instead performed a session-terminating close-out after one sprint
+and reported nothing — the owner lost a day to a stopped epic that read as
+running (item 84, tenth failure; the scoping conflict this paragraph now
+closes).
 
 ## Goal + scope
 
@@ -146,9 +162,12 @@ the pipeline itself — `n1-baseline.mjs` branches its closer on
 `args.closeoutKind` (`'intra_epic'` → the next sprint's brief from
 `EPIC_SPRINT_BRIEF_TEMPLATE.md`; `'terminal'` → the full handoff ceremony),
 pinned by `tests/test_n1_pipeline.py::TestScriptStructure::test_closer_ceremony_branches_on_closeout_kind`.
-The invoking session passes `'intra_epic'` + `nextSprintBriefPath` on every
-sprint with a successor (B1b → names `epic-b-b2-brief.md`) and `'terminal'`
-on the epic's last (B2).
+The invoking session passes the sprint's position args
+(`epicSprintIndex`/`epicSprintCount`, from the Sprint → run table above: B1b
+is 2 of 3, B2 is 3 of 3) plus `nextSprintBriefPath` when a successor exists
+(B1b → names `epic-b-b2-brief.md`); the ceremony DERIVES from the position —
+a caller-supplied `closeoutKind` is rejected by name (`fix/n1-scope-dedup`,
+2026-08-13, removing the caller decision that ended run 3's epic early).
 
 **Wiki backstop, re-derived not inherited:** drift is **11 of 75** at authoring
 (`python -m scripts.wiki_freshness`, 2026-08-11). Each run's monitor re-runs it

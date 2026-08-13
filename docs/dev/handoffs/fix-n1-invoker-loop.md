@@ -247,6 +247,13 @@ one got none, stated plainly.**
 
 ## What this branch should build
 
+> **Superseded (2026-08-13, `fix/n1-scope-dedup`):** item 4's
+> stop-after-one-sprint default below was one of the contradictory scope
+> encodings that caused run 4's guess (item 84, eleventh failure). The single
+> source for session scope is now the owner-ratified sentence in
+> `epic-b-design-brief.md` §"Execution mode + authorization record" — read it
+> there. This section is preserved unedited as the historical record.
+
 **This branch's own work is complete — see "What just landed". The NEXT
 session is Epic B run 2: sprint B1b through the pipeline.**
 
