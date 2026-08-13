@@ -31,6 +31,45 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-13 (Epic B run 5, sprint B1b COMPLETE — first live escalation firing; boundary stop on doubled compaction signal)
+
+Session `b0769daa` (invoker Fable) ran B1b end-to-end through the pipeline:
+implementer → refuter → judge → closer → recheck (6 agents, ~849k subagent
+tokens, 76 min), status `ready_for_gate` → gate #1 green (0 RERUN) →
+finalize `f47b1ed` → gate #2 green (0 RERUN) → ff-merge to epic tip.
+
+**Run evidence, the four firsts/divergences:**
+
+1. **The escalation primitive fired live for the FIRST time** (previously
+   `escalations: []` on every run). Refuter flag_stop (§11.6.3, F1
+   scope-change candidate) → one independent Opus reviewer → `targeted_fix`,
+   verbatim rationale carried end-to-end. The reviewer reproduced,
+   reattributed (pre-existing emitter ambiguity, NOT a regression), and the
+   run correctly did not stop. Routing behaved exactly as designed.
+2. **The derived intra-epic ceremony worked** (S2's first live exercise):
+   the closer wrote `epic-b-b2-brief.md` from position args 2-of-3; no
+   `closeoutKind` was passed anywhere.
+3. **Closer divergence:** the judge's F1 verdict ordered a residual work
+   item filed and the implementer handed two more findings for filing; the
+   closer's `itemsFiled` was `[]`. The invoker filed items 90/91/92 at the
+   sprint gate and regenerated the board. The closer also wrote a false
+   "deferred-findings list was empty" claim into the b2 brief (amended,
+   dated, same commit as this entry).
+4. **Item-87 witness re-armed on a mid-run task notification** (known
+   residual) and landed on the INVOKER's main-loop write, not a subagent's —
+   consumed with one re-run, no escalation. The step-0a deliberate
+   consumption worked for the sprint stage itself.
+
+**Boundary stop (runbook step 9, the one permitted self-judged early stop):**
+the session's ledger shard carries TWO hook-written `compacted` receipts
+(22:51:12Z during gate #1, 23:08:27Z during gate #2) — the external
+context-degradation signal, doubly confirmed. B1b closed cleanly; the
+session stops at the boundary rather than continuing degraded into B2.
+Resume state: epic tip (this commit's parent `f74c94d` + this docs commit),
+`docs/dev/handoffs/epic-b-b2-brief.md`, `docs/dev/n1-baseline-pipeline.md`
+step 0. Epic remainder: B2 (`feat/ats-conformance`, 3 of 3, terminal) + the
+epic close-out to PR-ready.
+
 ### 2026-08-13 (Epic B run 5 — executor session kickoff, invocation record)
 
 Session `b0769daa` — **invoker model: Fable** (the owner's launch choice per

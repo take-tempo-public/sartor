@@ -114,7 +114,8 @@ any refactor beyond the six items above; touching `_split_h3_header`'s `" — "`
 fallback or the general institution-less/name-less emitter ambiguity across
 `work`/`education`/`projects` that B1b's refuter surfaced and the judge explicitly
 declined to fix (Consumer #11 in `docs/dev/blast-radius/b1-education-render.md`) —
-that is a separate, unfiled work item, not this sprint's to pick up.
+that is a separate work item (filed as **item 90** by the invoking session,
+2026-08-13), not this sprint's to pick up.
 
 ## First move
 
@@ -161,10 +162,19 @@ each re-verified live before being implemented.
 - **The doc-count corrections (F2) are cosmetic, not behavioral** — nothing about
   which surfaces render `studyType` changed; only the prose describing the count was
   wrong and is now fixed in five places. No code implication for B2.
-- **No new work items were filed by this sprint's closer** — the deferred-findings
+- ~~**No new work items were filed by this sprint's closer** — the deferred-findings
   list handed to the closer was empty; all three refuter findings were fixed in-branch
   rather than deferred. If a future session wants the general institution-less/
-  name-less emitter ambiguity tracked on `BOARD.md`, that is still open to file.
+  name-less emitter ambiguity tracked on `BOARD.md`, that is still open to file.~~
+  **Amended 2026-08-13 by the invoking session, after this brief was authored:** the
+  claim above was false when written — the implementer's report handed TWO deferred
+  findings to the closer and the judge's F1 verdict ordered a third filed. The
+  invoker filed all three at the sprint gate: **item 90** (the institution-less
+  emitter ambiguity — so it is no longer "open to file"), **item 91** (spacious GPA
+  inconsistency), **item 92** (emit_bullet proto bypass). The divergence is recorded
+  in item 84's run evidence. B2's preflight should treat items 90–92 as already on
+  the board, and item 90's scope boundary (do not touch `_split_h3_header`) as
+  filed, not pending.
 
 ## Open risks handed forward
 
