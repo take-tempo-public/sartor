@@ -7,3 +7,4 @@
 {"event": "compacted", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "fix/b1-stale-template-companions", "trigger": "unknown", "ts": "2026-08-13T01:31:20Z"}
 {"event": "compacted", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "fix/b1-stale-template-companions", "trigger": "unknown", "ts": "2026-08-13T01:55:12Z"}
 {"event": "generated", "doc": "docs/dev/handoffs/fix-b1-stale-template-companions.md", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "fix/b1-stale-template-companions", "commit": "6cbac2f", "actor": "amodal1", "agent": "anthropic/claude-opus-5", "ts": "2026-08-13T01:58:49Z", "fingerprint": "e55c82d5bdd2"}
+{"event": "compacted", "session": "01ff2090-676f-46cf-849c-b261a2c4c7e2", "branch": "fix/b1-stale-template-companions", "trigger": "unknown", "ts": "2026-08-13T02:03:06Z"}

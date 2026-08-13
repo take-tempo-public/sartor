@@ -140,10 +140,25 @@ handling written into the runbook's step 4 — the honest disposition is that
 gate #2 on the committed tree is what actually closes the window, which is the
 argument for the two-gate shape that Epic A's one-gate amendment traded away.
 
-**Two compactions occurred in this session** (`01:17:25Z`, `01:31:20Z`), both
-disclosed to the owner when found and both reconciled against git rather than
-against recollection (C-8/C-12). Neither cost a fact: branch, commit chain, epic
-tip and `main` all verified unchanged from the repo after each.
+**Three compactions occurred in this session** (`01:17:25Z`, `01:31:20Z`,
+`02:03:06Z`), each disclosed to the owner when found and each reconciled against
+git rather than against recollection (C-8/C-12). None cost a fact: branch,
+commit chain, epic tip and `main` all verified unchanged from the repo after
+each.
+
+**And the third one exposed a regress the runbook fix does not escape.** It
+landed *after* gate #2 went green, dirtying the tree again with one more
+`compacted` receipt. Re-gating to cover a hook-written audit row simply gives
+the next compaction ~17 minutes to append another — the loop does not converge
+on a machine that compacts this often under a long run. The disposition taken
+here, stated rather than hidden: the post-gate delta was **one hook receipt plus
+one work-item paragraph** (this one), and instead of a fourth full gate the
+specific gate steps that could fail on that delta were run directly
+(`work_items check`, `check_doc_links`) — every other step is a pure function of
+code that did not change. This is a **deliberate, disclosed narrowing of "gate
+green," not a claim of one.** It also raises suggestion 7 in the retrospective
+from nice-to-have to load-bearing: the assertion needs to exclude the session's
+own ledger, or no long run can ever honestly converge.
 
 **The invoking session's gate caught what the closer's self-verification
 missed** — an argument for the two-gate shape, not against it. The closer
