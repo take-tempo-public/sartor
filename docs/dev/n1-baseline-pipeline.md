@@ -43,9 +43,19 @@ today (§16.5.1).
    compatibility**. First-run behavior (script loading, `agent()` semantics,
    `phase()` grouping, `journal.jsonl`, `resumeFromRunId`) is unverified until
    the owner authorizes the first run.
-2. **Agent-type resolution by bare name (`n1-refuter` / `n1-judge`) is likewise
-   unverified until first run** — it follows the repo's subagent-dispatch
-   convention, not an observed Workflow-harness behavior.
+2. ~~**Agent-type resolution by bare name (`n1-refuter` / `n1-judge`) is likewise
+   unverified until first run**~~ — **FALSIFIED 2026-08-12, run `wf_9bb80d14-c94`.**
+   Bare names do **not** resolve. The harness rejected `'n1-refuter'` and listed
+   `sartor:n1-refuter` / `sartor:n1-judge` among the available agents: dispatch
+   requires the **plugin namespace**, the same one `CLAUDE.md` documents for
+   commands and subagents (`/sartor:…`, `sartor:…`). The script now dispatches
+   `sartor:n1-refuter` / `sartor:n1-judge` at all three call sites, and
+   `tests/test_n1_pipeline.py` pins the namespaced form (its previous
+   assertion pinned the bare form, and so pinned the defect). Cost: 22 minutes
+   and 169k subagent tokens, spent *after* the implementer had finished a full
+   sprint — the throw happened at the refuter spawn. Two mechanisms answer this
+   under C-11; see step 0a below and `unregistered_agent_types` in
+   `tests/test_n1_pipeline.py`.
 3. **The read-only-Bash boundary on the refuter and judge is instruction, not
    construction.** Their tool grant removes `Edit`/`Write`/`Task` by
    construction; nothing mechanically stops a `Bash` write. Both role files
@@ -63,8 +73,8 @@ today (§16.5.1).
 | Role | Dispatch | Model | Tree access | Spec |
 |---|---|---|---|---|
 | Implementer | default agent | `args.implementerModel` (default `opus`) | full — writes code/tests/dossiers, stages; **commits nothing** | §11.9.1 |
-| Refuter | `agentType: 'n1-refuter'` | frontmatter: `claude-sonnet-5` (owner's call) | read-only grant | §11.9.2, [`agents/n1-refuter.md`](../../agents/n1-refuter.md) |
-| Judge | `agentType: 'n1-judge'` | frontmatter: `claude-opus-5` | read-only grant | §11.9.3 / §16.4.1, [`agents/n1-judge.md`](../../agents/n1-judge.md) |
+| Refuter | `agentType: 'sartor:n1-refuter'` | frontmatter: `claude-sonnet-5` (owner's call) | read-only grant | §11.9.2, [`agents/n1-refuter.md`](../../agents/n1-refuter.md) |
+| Judge | `agentType: 'sartor:n1-judge'` | frontmatter: `claude-opus-5` | read-only grant | §11.9.3 / §16.4.1, [`agents/n1-judge.md`](../../agents/n1-judge.md) |
 | Closer | default agent | `args.closerModel` (default `sonnet`) | full — applies confirmed fixes, files items, board, handoff, stages; **no commit, no gate** | §11.9.4 |
 | Escalation reviewer(s) | default agent | `args.reviewerModel` (default `opus`) | read via instruction (spawned with a wider view) | §16.4.1 item 4 |
 | Finalize closer | default agent | `args.closerModel` | commit only | §11.9.4 (commit step) |
@@ -97,6 +107,17 @@ therefore runs in two stages bracketing the main-loop gate:
    - runs the pipeline's own structural gate cheaply
      (`python -m pytest tests/test_n1_pipeline.py tests/test_gitattributes_coverage.py -q`)
      so invocability failures surface at kickoff, not overnight;
+   - **runs the live dispatch probe and STOPS unless it returns
+     `verdict: "ok_to_run"`** —
+     `Workflow({scriptPath: '.claude/workflows/n1-agent-probe.mjs', args: {agentTypes: ['sartor:n1-refuter', 'sartor:n1-judge']}})`.
+     The structural gate above certifies self-consistency with the design docs;
+     it cannot certify that the harness resolves an `agentType`, and three runs
+     have now died at that boundary. Only a real spawn answers that question.
+     Measured: 6.2s, ~67k subagent tokens (run `wf_d5ab3682-071`) — the
+     system-prompt floor of two spawns, against the 169k tokens and 22 minutes
+     run `wf_9bb80d14-c94` spent before throwing. Keep `agentTypes` equal to the
+     literals `tests/test_n1_pipeline.py::test_every_agent_type_literal_resolves_to_a_registered_agent`
+     pins;
    - enumerates EVERY owner decision the whole run could need — the
      per-session run-start opt-in (never inherited from a handoff), scope
      calls the brief names, branch hygiene, anything its own reading

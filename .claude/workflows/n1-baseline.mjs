@@ -381,7 +381,7 @@ Fold in item 52's structural re-check: doc links resolve, hook modes intact,
 and "python -m scripts.work_items check" passes (read-only validation — run
 it). Implementer's report, for orientation only:
 ${JSON.stringify({ filesWritten: implementer.filesWritten, dossierPaths: implementer.dossierPaths })}
-`, { label: 'refuter', phase: 'Refute', agentType: 'n1-refuter', schema: REFUTER_SCHEMA })
+`, { label: 'refuter', phase: 'Refute', agentType: 'sartor:n1-refuter', schema: REFUTER_SCHEMA })
     report.agents.refuter = refuter
     if (!refuter) { report.status = 'agent_failed'; break sprintLoop }
     ctxBase.findingsSoFar = refuter.findings
@@ -400,7 +400,7 @@ be filed as a work item), or "escalate" (a CONFIRMED finding whose fix would
 change sprint SCOPE rather than correct implementation — §11.6.3; also raise
 it as a flag_stop flag, in your own words).
 Refuter findings: ${JSON.stringify(refuter.findings)}
-`, { label: 'judge', phase: 'Judge', agentType: 'n1-judge', schema: JUDGE_SCHEMA })
+`, { label: 'judge', phase: 'Judge', agentType: 'sartor:n1-judge', schema: JUDGE_SCHEMA })
     report.agents.judge = judge
     if (!judge) { report.status = 'agent_failed'; break sprintLoop }
     routed = await routeFlags(judge.flags, { ...ctxBase, source: 'judge', phase: 'Judge' }, report.escalations)
@@ -473,7 +473,7 @@ For each: "cleared" (the fix holds) or "reconfirmed" (still failing — cite
 the evidence). A reconfirmed finding is a §11.6.3 boundary: also raise it as
 a flag_stop flag in your own words. This is the ONE bounded re-check round —
 there is not another.
-`, { label: 'refuter-recheck', phase: 'Close', agentType: 'n1-refuter', schema: RECHECK_SCHEMA })
+`, { label: 'refuter-recheck', phase: 'Close', agentType: 'sartor:n1-refuter', schema: RECHECK_SCHEMA })
       report.agents.recheck = recheck
       if (!recheck) { report.status = 'agent_failed'; break sprintLoop }
       routed = await routeFlags(recheck.flags, { ...ctxBase, source: 'refuter-recheck', phase: 'Close' }, report.escalations)

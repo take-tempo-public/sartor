@@ -149,6 +149,18 @@ per-session state file at
 2. **Tool-answer turns do not re-arm it.** `prompt_seq` stayed at **1** across an
    `AskUserQuestion` round trip *and* an `ExitPlanMode` approval — a subsequent
    `Edit` was not paused. Only a real `UserPromptSubmit` calls `record_prompt`.
+3. **Not every task notification re-arms it either — refining item 87's
+   closing claim.** That entry records "task notifications count as
+   prompt-receipt events, so long autonomous runs get one pause per
+   notification turn." Observed here: the notification announcing run
+   `wf_9bb80d14-c94`'s failure took `prompt_seq` 1 → **2** and did arm the
+   pause (which fired on the next `Edit`), but the notification announcing
+   probe `wf_d5ab3682-071`'s completion left `prompt_seq` at **2** and armed
+   nothing — the next `Edit` ran unpaused. So the per-notification pause is
+   **not** uniform, and the friction of a long autonomous run is lower than
+   item 87 predicted. What distinguishes the two was not established here
+   (failure-vs-success and foreground-vs-background both covary); recorded as
+   an open question rather than guessed at.
 
 **Consequence, and the mitigation actually used.** The risk is far narrower than
 it first looks: the state arms once per user prompt, and the invoking session

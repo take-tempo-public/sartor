@@ -229,6 +229,58 @@ def _split(src: str, span: tuple[int, int]) -> tuple[str, str]:
     return src[span[0] : span[1]], blank_non_code(src)[span[0] : span[1]]
 
 
+#: Plugin namespace every `agentType` literal must carry. Subagents load
+#: namespaced via the `sartor-tools` marketplace (`CLAUDE.md` sec. "Skill +
+#: subagent catalog"); bare-name dispatch does NOT resolve -- falsified live
+#: on run `wf_9bb80d14-c94`, 2026-08-12, which died with "agent type
+#: 'n1-refuter' not found" after listing `sartor:n1-refuter` as available.
+PLUGIN_NAMESPACE = "sartor"
+
+
+def agent_type_literals(src: str) -> list[str]:
+    """Every `agentType` literal in CODE context, in source order.
+
+    Located in the blanked source so a copy inside a comment or a template
+    literal cannot register (the R2-2 finding from the args-guard hardening:
+    a regex over raw source is satisfiable by a decoy). Blanking preserves
+    length, so the value is read back out of the RAW source at the same
+    offsets -- the contents of the literal are blanked, its delimiters are not.
+    """
+    blanked = blank_non_code(src)
+    found: list[str] = []
+    for m in re.finditer(r"agentType:\s*'", blanked):
+        close = src.find("'", m.end())
+        if close != -1:
+            found.append(src[m.end() : close])
+    return found
+
+
+def unregistered_agent_types(src: str) -> list[str]:
+    """`agentType` literals that would not resolve, in source order.
+
+    A literal fails if it carries no `sartor:` namespace, or if the name it
+    namespaces has no `agents/<name>.md` definition. This is the deterministic
+    half of the item-84 dispatch mechanism: it cannot prove the harness
+    resolves a name (only a live spawn does -- see
+    `.claude/workflows/n1-agent-probe.mjs`), but it fails closed on the two
+    shapes that have actually cost runs: a bare name, and a name with no
+    backing role file.
+    """
+    bad: list[str] = []
+    for literal in agent_type_literals(src):
+        namespace, sep, bare = literal.partition(":")
+        # `not bare` is ordered ahead of the path build on purpose: `or`
+        # short-circuits, so an empty name never constructs `agents/.md`.
+        if (
+            not sep
+            or namespace != PLUGIN_NAMESPACE
+            or not bare
+            or not (REPO_ROOT / "agents" / f"{bare}.md").is_file()
+        ):
+            bad.append(literal)
+    return bad
+
+
 # ---------------------------------------------------------------------------
 # Teeth: the scanner must reject bad input before it is trusted (the
 # test_doc_single_home_gate.py red-fixture precedent).
@@ -272,6 +324,37 @@ class TestScannerHasTeeth:
     def test_forbidden_token_in_comment_is_not_flagged(self) -> None:
         red = "// Date.now() is banned here\nconst t = 1\n"
         assert "Date.now(" not in blank_non_code(red)
+
+    # -- teeth for the agentType cross-check --------------------------------
+    # Each red arm is a shape that has cost, or could cost, a real run.
+
+    def test_cross_check_rejects_a_bare_name(self) -> None:
+        # The exact shape that killed run wf_9bb80d14-c94.
+        red = "await agent(`p`, { label: 'r', agentType: 'n1-refuter' })\n"
+        assert agent_type_literals(red) == ["n1-refuter"]
+        assert unregistered_agent_types(red) == ["n1-refuter"]
+
+    def test_cross_check_rejects_a_namespaced_name_with_no_role_file(self) -> None:
+        red = "await agent(`p`, { agentType: 'sartor:n1-nonexistent' })\n"
+        assert unregistered_agent_types(red) == ["sartor:n1-nonexistent"]
+
+    def test_cross_check_rejects_a_foreign_namespace(self) -> None:
+        red = "await agent(`p`, { agentType: 'other:n1-refuter' })\n"
+        assert unregistered_agent_types(red) == ["other:n1-refuter"]
+
+    def test_cross_check_accepts_a_registered_namespaced_name(self) -> None:
+        green = "await agent(`p`, { agentType: 'sartor:n1-refuter' })\n"
+        assert unregistered_agent_types(green) == []
+
+    def test_cross_check_ignores_a_commented_out_agent_type(self) -> None:
+        # A decoy in a comment must not register as a real dispatch site --
+        # nor satisfy the pin above (the R2-2 decoy finding, item 84).
+        red = "// agentType: 'n1-refuter'\nconst y = 1\n"
+        assert agent_type_literals(red) == []
+
+    def test_cross_check_ignores_an_agent_type_inside_template_text(self) -> None:
+        red = "const p = `write agentType: 'n1-refuter' in your report`\n"
+        assert agent_type_literals(red) == []
 
 
 # ---------------------------------------------------------------------------
@@ -319,10 +402,25 @@ class TestScriptStructure:
         assert with_model == 5
         assert with_agent_type == 3
 
-    def test_agent_type_dispatch_is_bare_names(self, script_src: str) -> None:
-        assert script_src.count("agentType: 'n1-refuter'") == 2  # refute + recheck
-        assert script_src.count("agentType: 'n1-judge'") == 1
-        assert "sartor:n1-" not in script_src  # plugin-namespace dispatch is unattested
+    def test_agent_type_dispatch_is_namespaced(self, script_src: str) -> None:
+        # INVERTED 2026-08-12. This test previously asserted bare names and
+        # `"sartor:n1-" not in script_src` on the stated ground that
+        # "plugin-namespace dispatch is unattested" -- so the gate was pinning
+        # the defect shut. Run `wf_9bb80d14-c94` attested it the other way:
+        # the harness rejected 'n1-refuter' and listed 'sartor:n1-refuter'
+        # among the available agents. Tightened to the new invariant rather
+        # than deleted (tests/test_enforcement_core.py's own precedent).
+        assert script_src.count("agentType: 'sartor:n1-refuter'") == 2  # refute + recheck
+        assert script_src.count("agentType: 'sartor:n1-judge'") == 1
+        assert "agentType: 'n1-" not in script_src  # no un-namespaced dispatch survives
+
+    def test_every_agent_type_literal_resolves_to_a_registered_agent(self, script_src: str) -> None:
+        assert agent_type_literals(script_src) == [
+            "sartor:n1-refuter",
+            "sartor:n1-judge",
+            "sartor:n1-refuter",
+        ]
+        assert unregistered_agent_types(script_src) == []
 
     def test_refuter_reads_staged_diff_and_is_told_to_refute(self, script_src: str) -> None:
         assert "git diff --staged" in script_src
