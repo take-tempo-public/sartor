@@ -31,6 +31,21 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-13 (Epic B run 5 — executor session kickoff, invocation record)
+
+Session `b0769daa` — **invoker model: Fable** (the owner's launch choice per
+RELEASE_ARC §"Session models", 2026-08-12 amendment; recorded here per that
+amendment's per-run requirement). Scope: the ENTIRE Epic B remainder — B1b,
+B2, epic close-out to PR-ready — per the owner-ratified scope sentence,
+single-sourced in `epic-b-design-brief.md` §"Execution mode + authorization
+record" (cited, not restated). Run opt-in: the owner's pointer-delivery
+message consuming `docs/dev/handoffs/fix-n1-scope-dedup.md` (its First move
+names that message as the opt-in for the entire remainder). Base: epic tip
+`9d3bec5` (ff-merge of `fix/n1-scope-dedup` verified); sprint branch
+`fix/b1-education-render` cut per the brief. Preflight structural gate:
+46 passed, 0 reruns. S5 measurement recording owed this kickoff (first
+sprint after the hardening round).
+
 ### 2026-08-13 (`fix/n1-scope-dedup`, owner-directed hardening review — NOT a run) — 0-for-4 investigated from source; adversarial review killed the hook-gate proposals; the scope sentence is now owner-ratified and single-sourced
 
 Session `7225a213` (Fable — review/hardening role, no pipeline invocation).

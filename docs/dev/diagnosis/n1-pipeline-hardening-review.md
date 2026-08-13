@@ -170,6 +170,43 @@ scope-creep/minimality lenses — killed four and gutted one:
   Workflow; payload shape; subagent coverage; Stop contract) passively.
   Record the results HERE before any hook-based control is considered again.
 
+## S5 measurement results (2026-08-13, executor session `b0769daa` kickoff — recorded here per S5's own instruction, probe hooks deleted after)
+
+Measured passively on the executor session's step-0a probe call
+(`wf_23457bb9-ae5`, the live dispatch probe, 2 subagents, 3.8s):
+
+1. **PreToolUse DOES fire for the Workflow tool.** Exactly one event for the
+   main-loop `Workflow` call, timestamped at invocation (21:24:27Z). Payload
+   carries `hook_event_name`, `tool_name: "Workflow"`, `tool_use_id`,
+   session/prompt ids, `permission_mode` (`bypassPermissions` on this
+   machine), `effort`, and — notably — `tool_input` with the **structured**
+   args verbatim: `args` as a real JSON object (not stringified) and
+   `scriptPath` in the relative form passed. The run-1 permission-layer
+   rewrite (`updatedInput … path ["script"]`) is **not visible at the hook
+   point** — whatever rewriting occurs happens after PreToolUse.
+2. **Workflow-internal agent spawns do NOT fire PreToolUse(Workflow).** The
+   probe run spawned 2 subagents; the log gained zero additional events. A
+   Workflow-matcher hook sees only the top-level tool call — it has no
+   visibility into in-run dispatch, so it could never have caught the
+   run-1/run-3 agentType failures.
+3. **Stop fires at TURN end, not workflow completion** (log unchanged across
+   the probe's launch→completion window). Payload carries
+   `stop_hook_active`, the full `last_assistant_message` text, and a
+   `background_tasks` array (id/type/status/description/command). Four
+   entries captured from review session `7225a213` — including one at
+   17:39:24Z showing the gate's background waiter still `running` in
+   `background_tasks` at the moment the harness stopped it: the durable
+   artifact of the collateral-kill the executor handoff's Gate paragraph
+   describes.
+
+Implication recorded for any future hook-based control: a blocking Stop hook
+would have fired with the gate waiter listed as running (measurement 3 is
+the shape such a hook would see), but a Workflow-matcher gate remains blind
+to everything inside a run (measurement 2) — consistent with the
+adversarial verdicts that killed both. The probe hooks are deleted from
+`.claude/settings.local.json` as of this recording; re-stage them from this
+doc's S5 entry if a future measurement round is authorized.
+
 ## Stated residue (C-11/C-12 — declared, not papered over)
 
 - A **sincerely-wrong stop** is not prevented by anything that survived;
