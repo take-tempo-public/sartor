@@ -40,13 +40,20 @@ the epic model table). Preflight batch results: handoff pointer verified and
 consumed (fingerprint `c3a4b05c638e`); structural gate 42 passed in 15s; live
 dispatch probe `wf_4f4c50e3-102` → `verdict: "ok_to_run"`, both
 `sartor:n1-refuter` and `sartor:n1-judge` resolved (4.1s, 67,115 subagent
-tokens — at the recorded floor); scope reconciliation clean — the epic
-authorization record and `epic-b-b1b-brief.md` name the same unit of work
-(sprint B1b, one sprint this session, the recorded default). Branch base:
-`epic/b-render-ats` @ `dc2f0cf` (polish-round commit verified at the tip
-before cutting). Run opt-in granted 2026-08-12 via the approved session plan
-(the plan states the grant doubles as the opt-in); `fix/b1-education-render`
-cut from `dc2f0cf`. Sprint-stage run evidence appends below as it lands.
+tokens — at the recorded floor). **The scope reconciliation was reported
+"clean" — falsely (the ELEVENTH failure, the scoping class's FOURTH):** the
+author resolved a real conflict by guess — the design brief's "(default: one
+sprint per session)" against the same record's epic-remainder continue
+license and runbook step 9's continue default — planned a boundary stop
+after B1b, and was caught by the owner at the first commit attempt, before
+kickoff. **The run was aborted: no sprint stage was ever invoked.** The
+session's remaining output at owner direction is
+`docs/dev/diagnosis/n1-pipeline-0for4-analysis.md` (the 0-for-4 record, the
+violated rules enumerated, session-state inventory for the next agent).
+Branch base: `epic/b-render-ats` @ `dc2f0cf`; `fix/b1-education-render` cut
+from it, zero commits. Run opt-in had been granted via the approved session
+plan — that plan's one-sprint scope is superseded by the owner on screen: the
+test is the ENTIRE remaining epic in one continuous managed flow.
 
 ### 2026-08-12 (`fix/n1-invoker-loop`, the owner-directed polish round) — the TENTH failure named; the invoker loop built; invoker model now the owner's per-run choice
 
