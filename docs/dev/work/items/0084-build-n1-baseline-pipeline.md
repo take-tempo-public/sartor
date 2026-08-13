@@ -119,6 +119,16 @@ cleared F1 and reconfirmed nothing.
   rejected the closer's first attempt, it fixed the file and revalidated. The
   failed row survives in the ledger rather than being overwritten.
 
+**Full run-3 retrospective — owner-directed, and the actionable home for the
+polish round:** `docs/dev/handoffs/fix-b1-stale-template-companions.md`
+§"Run-3 retrospective". It carries the run's cost table (10 agents, 845,591
+subagent tokens, ~3.5 h for a 139-line production diff), the nine things that
+went wrong, what held, and eight ranked suggestions. **The highest-value one:
+a thrown `agent()` kills the workflow OUTSIDE `routeFlags`/`escalate`, which is
+why escalation routing is still untested after three runs and why each failure
+reached the owner as a bare task notification rather than as verbatim
+escalation text.**
+
 **The step-6 assertion has a structural false-positive source: the session's own
 provenance ledger.** Gate #1 went green, then the assertion failed on
 `docs/dev/ledger/<session>.jsonl` carrying one working-tree-column change. Looked

@@ -303,6 +303,159 @@ available mechanism-fix is itself an out-of-scope change under §11.6.5.**
 
 ---
 
+## Run-3 retrospective — every hiccup, observation, and suggestion (owner-directed)
+
+> **Owner directive, 2026-08-12:** *"durably document everything that went wrong
+> on this run, observations, suggestions… include in the next handoff."* Written
+> by the **invoking session**, not the closer — most of it happened outside any
+> agent's view. Owner's own summary of the run: *"we're getting closer, but
+> still, not one hiccupless run."* That is the bar. Nine things went wrong; none
+> was caused by the sprint's own subject matter.
+
+### Cost of the run, stated plainly
+
+| Phase | Agents | Subagent tokens | Wall clock |
+|---|---|---|---|
+| Sprint attempt 1 (died at refuter spawn) | 2 (1 done, 1 error) | 169,429 | ~22 min |
+| Dispatch probe | 2 | 66,695 | 6.2 s |
+| Sprint resumed (full pipeline) | 5 | 548,436 | ~37 min |
+| Finalize | 1 | 61,031 | 43 s |
+| **Total** | **10** | **845,591** | |
+
+Plus **three** gate #1 attempts (two red) and gate #2 — roughly 60-80 minutes of
+gate wall-clock. Session total ≈ 3.5 hours for a sprint whose production diff is
+139 lines in one deterministic module. **The sprint was not the cost; the
+harness and process boundaries were.**
+
+### What went wrong
+
+1. **Bare-name `agentType` dispatch does not resolve — the expensive one.**
+   `agentType: 'n1-refuter'` threw; the real names are `sartor:n1-refuter` /
+   `sartor:n1-judge`. Cost 22 min + 169k tokens **because the implementer runs
+   first and the throw lands at the refuter spawn** — a full sprint of work
+   completed before the failure surfaced. Third consecutive invocation-boundary
+   failure (CRLF → stringified `args` → namespace), each a harness-contract
+   assumption verified only against docs or repo convention.
+   **Fixed** (`2807979`), **plus both C-11 mechanisms** below.
+2. **The structural gate was pinning the defect shut.**
+   `test_agent_type_dispatch_is_bare_names` asserted `"sartor:n1-" not in
+   script_src` on the stated ground that namespaced dispatch was "unattested."
+   A test asserting the *absence* of a thing because it is unverified is
+   encoding an assumption, not an invariant. **Inverted, not deleted.**
+3. **The sprint brief's specified fix would not have fixed the bug.** The brief
+   (authored at epic planning) named `docx_to_persona_html.py:438-444` as the
+   fix site; that guard is **unreachable on the preview path**. Had the
+   implementer followed the brief literally, B1a would have shipped green with
+   the user-visible defect intact. Caught only because the implementer
+   reproduced the defect before implementing.
+4. **The closer's self-verification did not match the gate.** It ran `ruff` and
+   `pytest` but **not `mypy`**; gate #1 then failed on a `union-attr` error in a
+   test the closer itself wrote (`tests/test_docx_to_persona_html.py:488`).
+5. **The closer wrote a broken relative link** in this handoff — `../wiki/…`
+   from `docs/dev/handoffs/` resolves to `docs/dev/wiki/…`. Caught by gate #1's
+   `test_doc_links`. Correct depth is `../../`.
+6. **Amending this handoff after its `generated` stamp** drifts its fingerprint
+   and would C-9-block the next session — **board item 58, hit live.** Required
+   an explicit re-stamp (and again for this very section).
+7. **The step-6 assertion tripped on the session's own provenance ledger.** A
+   `compacted` receipt was appended by the PreCompact hook *during* gate #1.
+   No content changed. Any gate run long enough to span a compaction can do
+   this. Handling now written into the runbook's step 4.
+8. **Two compactions occurred** (`01:17:25Z`, `01:31:20Z`), both disclosed and
+   both reconciled against git rather than recollection (C-8/C-12). Neither
+   cost a fact — but note the session had *no* in-band signal of either; the
+   ledger receipt was the only evidence.
+9. **The gate waiter was killed while the gate itself ran fine.** Background
+   task status is not trustworthy — the gate's own terminal line in its log is.
+   Also confirmed: `tasklist | grep python.exe` matches **nothing** here (the
+   interpreter is `python3.13.exe`), exactly as the runbook warns.
+
+### Observations — what actually held
+
+- **`resumeFromRunId` is the single most valuable harness behavior confirmed.**
+  After the namespace fix, the implementer replayed from cache (`cached: true`,
+  0 new tokens) because only the refuter call's `opts` changed. The 22 minutes
+  and 169k tokens were **not** re-spent. C-0 limit 4 was honored first —
+  `journal.jsonl` was read to confirm the cached return was substantive and not
+  a block-description.
+- **The adversarial layer earned its cost on its first live outing.** F1 was
+  real and subtle: `companion_stamp_is_current`'s docstring claimed *presence*
+  was the ownership test while the code tested *readability*, so a corrupt
+  sidecar would freeze a companion forever — the exact class the sprint exists
+  to close, via a trigger the fix itself introduced.
+- **The judge judged rather than rubber-stamped.** It confirmed F1 but
+  **narrowed the refuter's severity** honestly, and on F2 it reproduced the gap
+  while **rejecting the refuter's "unverified rewrite" framing** as
+  overstated — then deferred with reasoning about Playwright-gated tests.
+- **The agents were honest in ways no mechanism forced.** The refuter
+  self-disclosed running `pytest` outside its sanctioned read-only-Bash
+  allowance (C-0 limit 3 is instruction, not construction — it held only
+  because the agent chose to surface crossing it). The closer filed item 89
+  against the pipeline rather than silently resolving a contradiction it found.
+  The ledger preserves a `failed` handoff validation followed 31 s later by
+  `generated`, rather than hiding the first attempt.
+- **The two-gate shape justified itself twice** — items 4 and 5 above were both
+  in artifacts written by pipeline agents, both past their self-verification.
+  Epic A's one-gate amendment would have shipped both.
+- **The §11.9 accounting check passed twice**, exactly covering
+  `git status --porcelain` both times.
+
+### Suggestions for the polish round — ranked by expected value
+
+1. **Route harness throws into the escalation primitive.** *(highest value —
+   this is the gap that has now cost three runs.)* A thrown `agent()` kills the
+   workflow **outside** `routeFlags`/`escalate` entirely, so nothing surfaces
+   verbatim and the invoking session learns of it only from a task
+   notification. **Escalation routing remains UNTESTED after three runs** —
+   `escalations: []` every time, no flag ever raised. Wrapping each `agent()`
+   in a try/catch that converts a throw into a `kind: 'hook_block'`-style
+   escalation would both fix the blindness and finally exercise measure 2.
+2. **Make the closer's verification match the gate's static steps.** Its prompt
+   should name `ruff check` + `ruff format --check` + `mypy` explicitly. One of
+   two gate failures this run was a `mypy` error in closer-authored code.
+3. **Fix item 89** — branch the closer prompt on epic-internal sprint
+   transition (`EPIC_SPRINT_BRIEF_TEMPLATE.md`) vs. terminal close
+   (`AGENT_HANDOFF_TEMPLATE.md`). Currently every sprint pays the full ceremony
+   the epic's own cadence design argued against paying more than once.
+4. **Normalize paths in the §11.9 accounting check.** The implementer reports
+   repo-relative paths, the closer absolute ones; comparing them naively
+   produces false drift. It passed here only because the check was done by
+   hand with normalization.
+5. **Treat sprint briefs as hypotheses, not specs.** B1a's named fix site was
+   materially wrong (item 3 above). Suggest the sprint-brief template carry an
+   explicit instruction: *verify the named fix site is reachable on the failing
+   path before implementing it* — the brief's fix location is itself a claim
+   under C-0.
+6. **Give item 58 a mechanism.** Amending a handoff post-stamp is now a
+   confirmed live failure, hit twice in this one session. A pre-commit check
+   comparing each handoff's content fingerprint to its latest ledger row would
+   fail closed.
+7. **Make the step-6 assertion ledger-aware** — or accept the false positive
+   and keep the documented "look, confirm it is exactly a hook-written audit
+   row, then re-stage" handling now in the runbook.
+8. **Consider whether the invoking session should hold the plan-approval
+   ceremony cost.** Every run pays a stale-marker flush plus a full ceremony
+   before any work, because the previous branch's marker retires on merge.
+   Not a defect — but it is a fixed per-run tax worth pricing deliberately.
+
+### For the C-epic run test specifically
+
+The owner's stated next step is a polish round, then a handoff for a **C epic
+run test**. Two things that should be settled before that run, neither
+resolvable by an agent alone:
+
+- **Epic B is not finished** — B1b (`fix/b1-education-render`) and B2
+  (`feat/ats-conformance`) are unstarted, and the epic PR to `main` has not
+  been opened. Whether Epic C's run test precedes, follows, or replaces them is
+  an owner sequencing decision; this handoff does not assume one.
+- **Item 84's status.** The pipeline has now run end-to-end and produced real
+  first-run evidence, which was its stated close condition. But escalation
+  routing is still untested, so closing it would rest on weaker evidence than
+  the item claims — precisely the pattern C-11's closure bar exists for. It is
+  left `watching`, and the call is the owner's (`decision_owner = "user"`).
+
+---
+
 ## What this branch should build
 
 **This branch's own work is complete — see "What just landed" above. The
