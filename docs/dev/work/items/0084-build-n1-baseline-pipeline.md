@@ -31,6 +31,23 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-12 (Epic B run 2 invoker, sprint B1b) — invocation record: invoker model FABLE (first Fable-invoked run)
+
+Per the 2026-08-12 §"Session models" amendment, recording this run's actual
+invoker model: **Fable** (the owner's launch choice for this session; sprint-
+internal casting unchanged — implementer Opus, refuter Sonnet, judge Opus per
+the epic model table). Preflight batch results: handoff pointer verified and
+consumed (fingerprint `c3a4b05c638e`); structural gate 42 passed in 15s; live
+dispatch probe `wf_4f4c50e3-102` → `verdict: "ok_to_run"`, both
+`sartor:n1-refuter` and `sartor:n1-judge` resolved (4.1s, 67,115 subagent
+tokens — at the recorded floor); scope reconciliation clean — the epic
+authorization record and `epic-b-b1b-brief.md` name the same unit of work
+(sprint B1b, one sprint this session, the recorded default). Branch base:
+`epic/b-render-ats` @ `dc2f0cf` (polish-round commit verified at the tip
+before cutting). Run opt-in granted 2026-08-12 via the approved session plan
+(the plan states the grant doubles as the opt-in); `fix/b1-education-render`
+cut from `dc2f0cf`. Sprint-stage run evidence appends below as it lands.
+
 ### 2026-08-12 (`fix/n1-invoker-loop`, the owner-directed polish round) — the TENTH failure named; the invoker loop built; invoker model now the owner's per-run choice
 
 **The tenth failure (the run-3 retrospective recorded nine; this one surfaced
