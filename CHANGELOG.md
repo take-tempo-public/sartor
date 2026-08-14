@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: LF pinned at the third ledger writer, plus the writer-side gate the class was missing (`feat/ats-conformance`, items 84/94–97)
+
+Caught at Epic B run 6's preflight, before the sprint was invoked — the fifth
+instance of the working-tree CR-byte class, from a writer the previous branch's
+fix did not cover:
+
+- **Fixed:** `hooks/lib/retire-approved-plan.sh` appends its `plan-archived`
+  ledger receipt from an embedded-Python heredoc that opened the shard in text
+  mode with **no `newline=`**, so Windows translated `\n` to `\r\n`. It now
+  matches the two Python writers. A grep-complete enumeration found exactly
+  three ledger appenders; this was the only one still unpinned.
+- **Added:** `tests/test_verify_doc_template.py::TestLedgerWritersPinLf` — the
+  **writer-side** half of the class. The existing sweep catches a shard that is
+  already dirty; this fails closed when a *new* ledger writer ships without the
+  flag, which is exactly how the class reached a fifth instance. Curated list
+  plus discovery scan (the egress-allowlist dual-check pattern), both arms
+  carrying non-vacuity self-tests so a matcher that finds zero call sites cannot
+  pass while checking nothing.
+- **Docs:** the N=1 runbook's epic-loop step now records that pruning an
+  already-merged branch **retires the plan-approval marker** (the trigger is the
+  stamped branch ceasing to exist, not merge-to-main), and directs the prune to
+  happen after the sprint stage — a live marker is a step-0 precondition.
+
+No product/runtime code changed; `PROMPT_VERSION` untouched.
+
 ### Fixed + changed: LF-explicit ledger writes; N=1 pipeline run-report digests + closer filing reconciliation (`fix/n1-invoker-context-budget`, items 84/93)
 
 The run-5 method review's owner-approved mitigations (evidence dossier:

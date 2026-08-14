@@ -108,6 +108,48 @@ From `RELEASE_ARC.md` §Epic B (B2) via `epic-b-design-brief.md` row 3:
 > exemption in item 2 in particular should be confirmed against the corpus UI before
 > the month-block logic is written, not assumed from this brief.
 
+### Amended 2026-08-14 by the run-6 invoking session — four corrections to the sites above
+
+Run 6's implementer reproduced all six defects and completed a grep-complete consumer
+enumeration **before** its first edit (`docs/dev/blast-radius/ats-conformance.md`, 52
+decided rows, committed) — then the run stopped on a hook block with zero production
+code written. Its enumeration contradicted this brief in four places. **Three were
+independently re-verified at HEAD by the invoker; one was REFUTED.** They are folded in
+here because the pipeline hands the implementer *this file*, not the session handoff.
+
+1. **VERIFIED — a SECOND generate entry point that neither brief names.**
+   `run_generation_stream` at `blueprints/generation.py:1162` (the SSE route) carries its
+   own duplicated preamble: its own `_is_pre_corpus_context` guard at `:1206` and its own
+   `_frozen_composition` resolution at `:1226`. **Implementing the month hard block
+   (item 2 above) only at `/api/generate` ships green with the defect fully reachable
+   over SSE.** Both entry points must be covered.
+2. **VERIFIED — there are FOUR date validators, not two.** `blueprints/corpus/experiences.py`
+   validates `start_date` **and** `end_date` at both create and edit: `:119`, `:122`,
+   `:222`, `:227` (all four `re.fullmatch(r"\d{4}(-\d{2})?", …)`). This brief's
+   `~:115-123` / `~:218-227` citations name only the start-date pair, so fixing exactly
+   what is cited leaves **year-only END dates still passing**.
+3. **REFUTED — do not inherit this one.** Run 6's implementer reported that
+   `tests/test_render_parity.py` "contains zero date literals" and concluded on that
+   basis that `RELEASE_ARC.md:1930` (which names the file as needing an update) is "a
+   false claim in the scope of record." **The file does contain a date literal** —
+   `tests/test_render_parity.py:178`, `"### Acme, Staff Engineer\t2022-01 – present\n"`,
+   the `UNSAFE_MD` fixture feeding `TestAtsScrubAndIdentityOverrideParity`. The narrower
+   observation survives (that test asserts scrub/identity parity, never a date string),
+   but the scope document is **not** established as wrong, and a date-format change flows
+   through that fixture. Treat the file as **open**, not settled.
+4. **UNVERIFIED (the implementer's own reasoning, not re-checked by the invoker) —
+   flagged because acting on it wrongly is a data-loss regression.** `_DATE_RE` in
+   `onboarding/extract_experiences.py:197` should stay permissive: tightening it to
+   month-required would make a failing `start_date` send the whole role down the
+   `experiences_dropped` path (`onboarding/corpus_import.py:616`), so the role vanishes
+   instead of arriving flagged — which is the opposite of item 4's intent. The
+   pre-existing year-only fixture at `tests/test_corpus_import.py:430` is named as the
+   assertion that catches this. **Re-verify before relying on it.**
+
+**Line numbers in this amendment were read at `f8785e9` and drift with every edit to
+those files — re-anchor before trusting any of them** (this brief's own
+`format_month_year` citation has now drifted twice, see Open risks below).
+
 **Explicitly OUT of scope:** anything in B1a/B1b (already landed or landing this
 sprint's predecessor); widening N past 1 (owner-reserved); the watching-bucket triage;
 any refactor beyond the six items above; touching `_split_h3_header`'s `" — "`

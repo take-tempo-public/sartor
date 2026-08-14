@@ -285,6 +285,20 @@ therefore runs in two stages bracketing the main-loop gate:
      the marker retires on the main merge): expect one re-approval at the
      epic close, not per sprint boundary. Benign both ways — but never
      hand-create the marker.
+   - **PRUNE AFTER THE SPRINT STAGE, NEVER BEFORE IT** (run 6, 2026-08-14 —
+     corrects the bullet above). The marker's retirement trigger is the
+     **stamped branch ceasing to exist**, not merge-to-main alone: pruning an
+     already-ff-merged `fix/*` branch that the marker happened to name retired
+     it immediately, and the very next edit was blocked with `PLAN RETIRED` on
+     a freshly-cut `feat/*` branch nowhere near a main merge. Because a live
+     marker is a **step-0 precondition** — without it every pipeline
+     subagent's first `Edit` is blocked and `escalate()` short-circuits that
+     `hook_block` to `escalated_to_owner` with no reviewer — pruning before
+     invoking costs a full re-approval ceremony inside the run window. Do the
+     intra-epic prune *after* the sprint returns, or run the ceremony
+     knowingly before invoking. Recovery, if it fires anyway, is the
+     documented clean path: let the flush land **on the branch**, then
+     `EnterPlanMode` → plan → `ExitPlanMode`. Never hand-create the marker.
 
    **The full close-out ceremony — `AGENT_HANDOFF_TEMPLATE.md` +
    `verify_doc_template.py`, the wiki pass + `.last_ingest_sha` advance, the

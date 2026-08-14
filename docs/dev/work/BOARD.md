@@ -2,11 +2,13 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 4 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 6 / 10 ceiling** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
+- **94** -- The item-87 interrogative-witness pause kills N=1 pipeline runs: subagents share the invoker's session_id and eat its one-shot pause (`user`) -- Run 6 died to a benign self-clearing witness; the fix needs a discriminator whose existence is unverified.
+- **96** -- Sprint briefs prescribe an implementer model in prose while their copy-paste First-move block omits the arg, so the script default silently wins (`agent`) -- Following a brief's First-move block exactly produces a model the same brief's prose forbids.
 
 ## Blocked
 
@@ -14,6 +16,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **5** -- Grounding-score persistence gap blocks calibrated L1/L2 metric layers (`agent`) -- First diagnosed 2026-07-09 on robert-bootstrap; independently re-found 2026-07-28 on the SAME fixture, still unfixed. [blocked on: the annotate-flow scorer never writes NLI/MiniCheck scores back into the fixture's annotations.json]
 - **8** -- Compose-time rewrite latitude - the 'generate but don't invent' dial (`user`) -- Design doc landed (COMPOSE_REWRITE_DIAL.md); nothing built yet - read it before touching refinement/grounding code. [depends on: 6] [blocked on: evidence-gated on the PX-39 real-corpus run producing a comparison; owner has now excluded the Microsoft JD from that run]
 - **93** -- Epic C planning must deliberately choose the invoker session shape: per-sprint fresh sessions vs continuous window with the step-9 tripwire (`user`) -- Run 5 reproduced the accumulation signature at the INVOKER level; the one deterministic fix is the session boundary. [blocked on: owner decision at Epic C planning — the choice lives in the epic's own authorization-record scope sentence]
+- **95** -- The owner's mid-run-pause pre-authorization names resumeFromRunId, which replays a blocked agent's block-description as success (`user`) -- The pre-authorized recovery would silently skip the sprint's implementation instead of resuming it. [blocked on: owner amendment — the pre-authorization is the owner's own recorded standing decision, so only the owner can restate it]
+- **97** -- Owner direction: evaluate moving chain orchestration OUT of sartor to an external, user-configurable task system, with sartor syncing its dev mapping to it (`user`) -- Orchestration may belong outside the project; sartor's job becomes keeping ARC/CHECKLIST/ledger/BOARD in sync. [blocked on: owner design decision — this is a strategic redirect the owner raised; the tool choice and the scope of any sync layer are the owner's]
 
 ## Deferred
 

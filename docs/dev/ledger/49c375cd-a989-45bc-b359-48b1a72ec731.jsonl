@@ -1,2 +1,5 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/fix-n1-invoker-context-budget.md", "session": "49c375cd-a989-45bc-b359-48b1a72ec731", "branch": "epic/b-render-ats", "commit": "dc60ba9", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-14T01:46:19Z", "fingerprint": "a110ed7994e4"}
 {"event": "plan-archived", "session": "49c375cd-a989-45bc-b359-48b1a72ec731", "branch": "feat/ats-conformance", "archive_id": "20260814T015809Z-142537ca4cdd", "plan": "compressed-wobbling-quokka.md", "ts": "2026-08-14T01:58:10Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/feat-ats-conformance.md", "session": "49c375cd-a989-45bc-b359-48b1a72ec731", "branch": "feat/ats-conformance", "commit": "f8785e9", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-14T18:26:33Z", "fingerprint": "37bd4188f8af"}
+{"event": "compacted", "session": "49c375cd-a989-45bc-b359-48b1a72ec731", "branch": "feat/ats-conformance", "trigger": "unknown", "ts": "2026-08-14T18:33:56Z"}
+{"event": "compacted", "session": "49c375cd-a989-45bc-b359-48b1a72ec731", "branch": "feat/ats-conformance", "trigger": "unknown", "ts": "2026-08-14T18:34:08Z"}
