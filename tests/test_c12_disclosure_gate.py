@@ -164,6 +164,21 @@ class TestM3CompactionDisclosure:
         ctx.record_compaction(payload)
         assert ctx.compaction_count(payload) == 2
 
+    def test_receipt_bytes_are_lf_only(self, tmp_path: Path) -> None:
+        """**The RED for the CRLF ledger class (fix/n1-invoker-context-budget).**
+
+        `record_compaction` opened the shard in text mode with no `newline=` argument, so
+        on Windows every appended row's `\\n` was translated to CRLF in the WORKING TREE —
+        the same post-checkout byte class S3 caught in workflow scripts
+        (tests/test_n1_pipeline.py::TestWorkflowWorkingTreeBytes), observed live in real
+        shards on 2026-08-13 (twice) and 2026-08-14. `.gitattributes` governs checkout,
+        not what a tool writes afterwards.
+        """
+        payload = {"session_id": "sess-lf", "cwd": str(tmp_path)}
+        assert ctx.record_compaction(payload)
+        raw = (tmp_path / "docs" / "dev" / "ledger" / "sess-lf.jsonl").read_bytes()
+        assert b"\r" not in raw, f"hook-written receipt carries CR bytes: {raw!r}"
+
     def test_notice_reports_the_running_count(self, tmp_path: Path) -> None:
         payload = {"session_id": "sess-2", "cwd": str(tmp_path), "trigger": "manual"}
         ctx.record_compaction(payload)

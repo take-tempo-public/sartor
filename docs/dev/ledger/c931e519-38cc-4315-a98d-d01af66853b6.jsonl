@@ -1,0 +1,3 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/fix-b1-education-render.md", "session": "c931e519-38cc-4315-a98d-d01af66853b6", "branch": "epic/b-render-ats", "commit": "f465de2", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-14T00:05:38Z", "fingerprint": "f9b3725540ad"}
+{"event": "compacted", "session": "c931e519-38cc-4315-a98d-d01af66853b6", "branch": "fix/n1-invoker-context-budget", "trigger": "unknown", "ts": "2026-08-14T00:49:01Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/fix-n1-invoker-context-budget.md", "session": "c931e519-38cc-4315-a98d-d01af66853b6", "branch": "fix/n1-invoker-context-budget", "commit": "f465de2", "actor": "amodal1", "agent": "claude-fable-5", "ts": "2026-08-14T01:13:17Z", "fingerprint": "a110ed7994e4"}

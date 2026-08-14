@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed + changed: LF-explicit ledger writes; N=1 pipeline run-report digests + closer filing reconciliation (`fix/n1-invoker-context-budget`, items 84/93)
+
+The run-5 method review's owner-approved mitigations (evidence dossier:
+`docs/dev/diagnosis/n1-invoker-context-budget.md`):
+
+- **Fixed:** both provenance-ledger shard writers
+  (`scripts/enforcement/adapters/claude_context_hook.py`,
+  `scripts/verify_doc_template.py`) now append with `newline="\n"` — text-mode
+  append was translating `\n` to CRLF on Windows, putting CR bytes in
+  working-tree shards that checkout-time `.gitattributes` pins cannot prevent
+  (4th+ recorded instance; reproduced live, red-first tests). 81 working-tree
+  shards renormalized with zero content delta (79 were stale pre-pin
+  materializations). A CR-byte working-tree sweep over `docs/dev/ledger/*.jsonl`
+  (`tests/test_verify_doc_template.py::TestLedgerWorkingTreeBytes`) now fails
+  closed on the class — the C-11 mechanism the run-5 handoff declared owed.
+- **Changed:** `n1-baseline.mjs` run reports now carry per-agent **digests** at
+  the return boundary (full returns stay in the harness `journal.jsonl`;
+  escalation `verbatim` text and the §11.9 accounting union stay complete) —
+  the invoker-context reducer for run 5's measured ~24k-char report. The closer
+  prompt enumerates all three filing-obligation sources, `CLOSER_SCHEMA`
+  requires `filingsOrdered`, and a deterministic `filingDivergence` report
+  field surfaces unfiled obligations (run 5's closer divergence, item 84;
+  machine-readable subset only — stated C-0 limit). Runbook: invoker-scoped
+  kickoff reading (labeled unenforced) and the plan-stamp late-bind prediction
+  corrected to observed behavior. Item 93 records the Epic-C invoker
+  session-shape decision for the owner.
+
 ### Added: interrogative-prompt witness — a question gets an answer, not begun work (`feat/interrogative-prompt-witness`, item 87)
 
 Third recorded instance of the class (owner: recurring since before this

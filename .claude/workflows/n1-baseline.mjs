@@ -134,9 +134,10 @@ const JUDGE_SCHEMA = {
 
 const CLOSER_SCHEMA = {
   type: 'object',
-  required: ['fixesApplied', 'itemsFiled', 'boardRegenerated', 'handoffPath', 'handoffValidated', 'filesWritten', 'flags'],
+  required: ['fixesApplied', 'filingsOrdered', 'itemsFiled', 'boardRegenerated', 'handoffPath', 'handoffValidated', 'filesWritten', 'flags'],
   properties: {
     fixesApplied: { type: 'array', items: { type: 'string' } },
+    filingsOrdered: { type: 'array', items: { type: 'string' }, description: 'every filing obligation recognized, from all three sources: judge defer verdicts, filings ordered inside fix-verdict rationales, implementer-handed findings (run 5, item 84: two of three sources were missed)' },
     itemsFiled: { type: 'array', items: { type: 'string' } },
     boardRegenerated: { type: 'boolean' },
     handoffPath: { type: 'string' },
@@ -173,6 +174,54 @@ const FINALIZE_SCHEMA = {
     filesWritten: { type: 'array', items: { type: 'string' } },
     flags: { type: 'array', items: FLAG },
   },
+}
+
+// ---------------------------------------------------------------------------
+// Report digests — the invoker-context reducer (fix/n1-invoker-context-budget).
+// The harness's journal.jsonl already records every agent's FULL structured
+// return (§16.5.2.3, verified live on run 3); returning the same objects again
+// in the run report landed ~24k chars in the invoking session's chat surface
+// per sprint (run 5 measurement, item 84) while adding no information — and
+// the invoker is the one context in this design that must NOT accrue
+// (§16.4.1 item 1). The report keeps escalation verbatims in full (§16.4.1
+// item 4 — never trimmed, never paraphrased) and the full accounting union
+// (§11.9); each agent entry becomes a bounded digest, with journal.jsonl as
+// the durable detail record.
+// ---------------------------------------------------------------------------
+
+const digestImplementer = (a) => a && {
+  summary: a.summary,
+  filesWrittenCount: (a.filesWritten || []).length,
+  dossierPaths: a.dossierPaths,
+  flagCount: (a.flags || []).length,
+}
+const digestRefuter = (a) => a && {
+  findings: (a.findings || []).map((f) => ({ id: f.id, severity: f.severity })),
+  flagCount: (a.flags || []).length,
+}
+const digestJudge = (a) => a && {
+  verdicts: (a.verdicts || []).map((v) => ({ findingId: v.findingId, decision: v.decision })),
+  flagCount: (a.flags || []).length,
+}
+const digestCloser = (a) => a && {
+  fixesAppliedCount: (a.fixesApplied || []).length,
+  filingsOrdered: a.filingsOrdered,
+  itemsFiled: a.itemsFiled,
+  boardRegenerated: a.boardRegenerated,
+  handoffPath: a.handoffPath,
+  handoffValidated: a.handoffValidated,
+  filesWrittenCount: (a.filesWritten || []).length,
+  flagCount: (a.flags || []).length,
+}
+const digestRecheck = (a) => a && {
+  reconfirmed: a.reconfirmed,
+  cleared: a.cleared,
+  flagCount: (a.flags || []).length,
+}
+const digestFinalize = (a) => a && {
+  commitSha: a.commitSha,
+  filesWrittenCount: (a.filesWritten || []).length,
+  flagCount: (a.flags || []).length,
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +382,9 @@ if (cfg.stage === 'sprint') {
   cfg.closeoutKind = 'terminal'
 }
 
-const report = { stage: cfg.stage, escalations: [], agents: {} }
+// agents holds DIGESTS only (see the digest block above); full returns are in
+// this run's journal.jsonl — journalRef points readers there.
+const report = { stage: cfg.stage, escalations: [], agents: {}, journalRef: 'journal.jsonl' }
 const ctxBase = {
   sprintBriefPath: cfg.sprintBriefPath,
   epicBriefPath: cfg.epicBriefPath,
@@ -372,7 +423,7 @@ Do NOT push, do NOT open a PR, do NOT merge (§11.5.1 — owner halt points).
 Do NOT edit any file. You NEVER run "python -m scripts.gate".
 Report the commit sha.
 `, { label: 'finalize', phase: 'Finalize', model: cfg.closerModel, schema: FINALIZE_SCHEMA })
-  report.agents.finalize = fin
+  report.agents.finalize = digestFinalize(fin)
   if (!fin) {
     report.status = 'agent_failed'
   } else {
@@ -389,6 +440,10 @@ Report the commit sha.
 if (cfg.stage === 'sprint') {
   let cumulativeDeferred = 0
   let lastReviewSprint = 0
+  // Full filesWritten lists for the §11.9 accounting union. Accumulated from
+  // the loop-scoped locals because report.agents now holds digests
+  // (filesWrittenCount, not the lists themselves).
+  const claimedRaw = []
 
   sprintLoop: for (let sprint = 0; sprint < N && !report.status; sprint++) {
     // -- Implement ---------------------------------------------------------
@@ -415,8 +470,9 @@ forward slashes (never absolute) — the run's accounting invariant is that the
 union of all agents' filesWritten covers "git status --porcelain" exactly; a
 file you wrote but did not report reads as hand-implementation drift (§11.9).
 `, { label: 'implementer', phase: 'Implement', model: cfg.implementerModel, schema: IMPLEMENTER_SCHEMA })
-    report.agents.implementer = implementer
+    report.agents.implementer = digestImplementer(implementer)
     if (!implementer) { report.status = 'agent_failed'; break sprintLoop }
+    claimedRaw.push(...(implementer.filesWritten || []))
     let routed = await routeFlags(implementer.flags, { ...ctxBase, source: 'implementer', phase: 'Implement' }, report.escalations)
     if (routed.stopped) { report.status = 'escalated_to_owner'; break sprintLoop }
 
@@ -434,7 +490,7 @@ and "python -m scripts.work_items check" passes (read-only validation — run
 it). Implementer's report, for orientation only:
 ${JSON.stringify({ filesWritten: implementer.filesWritten, dossierPaths: implementer.dossierPaths })}
 `, { label: 'refuter', phase: 'Refute', agentType: 'sartor:n1-refuter', schema: REFUTER_SCHEMA })
-    report.agents.refuter = refuter
+    report.agents.refuter = digestRefuter(refuter)
     if (!refuter) { report.status = 'agent_failed'; break sprintLoop }
     ctxBase.findingsSoFar = refuter.findings
     routed = await routeFlags(refuter.flags, { ...ctxBase, source: 'refuter', phase: 'Refute' }, report.escalations)
@@ -453,7 +509,7 @@ change sprint SCOPE rather than correct implementation — §11.6.3; also raise
 it as a flag_stop flag, in your own words).
 Refuter findings: ${JSON.stringify(refuter.findings)}
 `, { label: 'judge', phase: 'Judge', agentType: 'sartor:n1-judge', schema: JUDGE_SCHEMA })
-    report.agents.judge = judge
+    report.agents.judge = digestJudge(judge)
     if (!judge) { report.status = 'agent_failed'; break sprintLoop }
     routed = await routeFlags(judge.flags, { ...ctxBase, source: 'judge', phase: 'Judge' }, report.escalations)
     if (routed.stopped) { report.status = 'escalated_to_owner'; break sprintLoop }
@@ -512,8 +568,19 @@ are NOT yours) governs. In order:
 1. Apply exactly these confirmed fixes (judge verdicts + reviewer-requested
    targeted fixes) — nothing else:
    ${JSON.stringify({ judge: toFix, reviewers: reviewerFixes.map((r) => r.reviews[r.reviews.length - 1]?.rationale) })}
-2. File each deferred finding as a work item under docs/dev/work/items/:
-   ${JSON.stringify(toDefer)}
+2. File work items for EVERY filing obligation, not only the deferred list —
+   run 5's closer filed nothing because it treated the deferred list as the
+   whole obligation (item 84, run-5 entry 3). The three sources:
+   (a) each judge "defer" verdict listed below;
+   (b) any filing ORDERED inside a judge "fix" verdict's rationale (re-read
+       step 1's payload with that question);
+   (c) any finding the implementer's report hands over for filing.
+   FIRST enumerate every obligation you recognize from all three sources into
+   filingsOrdered (one short label each). THEN file each one as a work item
+   under docs/dev/work/items/ and record the created ids in itemsFiled. A
+   filingsOrdered entry with no matching itemsFiled entry is reported to the
+   invoking session as a divergence.
+   Deferred verdicts: ${JSON.stringify(toDefer)}
 3. Regenerate the board: "python -m scripts.work_items board --write".
 ${closeoutStep}
 5. Run the wiki-relevance check on this branch's diff
@@ -534,10 +601,30 @@ Report every file you wrote in filesWritten, as repo-RELATIVE paths with
 forward slashes (never absolute — the accounting comparison runs on
 repo-relative form).
 `, { label: 'closer', phase: 'Close', model: cfg.closerModel, schema: CLOSER_SCHEMA })
-    report.agents.closer = closer
+    report.agents.closer = digestCloser(closer)
     if (!closer) { report.status = 'agent_failed'; break sprintLoop }
+    claimedRaw.push(...(closer.filesWritten || []))
     routed = await routeFlags(closer.flags, { ...ctxBase, source: 'closer', phase: 'Close' }, report.escalations)
     if (routed.stopped) { report.status = 'escalated_to_owner'; break sprintLoop }
+
+    // Filing-obligation reconciliation (run 5, item 84 entry 3: judge-ordered
+    // filings skipped with itemsFiled: []). Deterministic over the
+    // machine-readable subset ONLY (C-0): it compares the closer's OWN
+    // enumeration against its filings and the judge's defer count. An
+    // obligation the closer never recognized into filingsOrdered remains
+    // prompt-discipline, unenforced — a second live recurrence of that shape
+    // demands a real mechanism (C-11). Not a run-stop: the invoking session
+    // sees the divergence in the report and reconciles before finalize.
+    const filingsOrdered = closer.filingsOrdered || []
+    const itemsFiled = closer.itemsFiled || []
+    if (filingsOrdered.length > itemsFiled.length || (toDefer.length > 0 && itemsFiled.length === 0)) {
+      report.filingDivergence = {
+        filingsOrdered,
+        itemsFiled,
+        deferredVerdictCount: toDefer.length,
+        note: 'closer recognized more filing obligations than items filed (or deferred verdicts exist with none filed) — reconcile before finalize (item 84, run-5 entry 3)',
+      }
+    }
 
     // -- Bounded fix re-check (one round; §11.6.3 on a re-confirmation) ----
     if (toFix.length > 0 || reviewerFixes.length > 0) {
@@ -551,7 +638,7 @@ the evidence). A reconfirmed finding is a §11.6.3 boundary: also raise it as
 a flag_stop flag in your own words. This is the ONE bounded re-check round —
 there is not another.
 `, { label: 'refuter-recheck', phase: 'Close', agentType: 'sartor:n1-refuter', schema: RECHECK_SCHEMA })
-      report.agents.recheck = recheck
+      report.agents.recheck = digestRecheck(recheck)
       if (!recheck) { report.status = 'agent_failed'; break sprintLoop }
       routed = await routeFlags(recheck.flags, { ...ctxBase, source: 'refuter-recheck', phase: 'Close' }, report.escalations)
       if (routed.stopped) { report.status = 'escalated_to_owner'; break sprintLoop }
@@ -602,10 +689,9 @@ there is not another.
     // passed only because a hand normalization bridged the implementer's
     // relative paths and the closer's absolute ones).
     const normalizeReportedPath = (p) => String(p).replace(/\\/g, '/').replace(/^\.\//, '')
-    const claimed = [
-      ...(report.agents.implementer?.filesWritten || []),
-      ...(report.agents.closer?.filesWritten || []),
-    ].map(normalizeReportedPath)
+    // claimedRaw accumulated from the loop-scoped agent locals above —
+    // report.agents holds digests without the filesWritten lists.
+    const claimed = claimedRaw.map(normalizeReportedPath)
     report.status = 'ready_for_gate'
     report.accounting = { claimedFilesWritten: [...new Set(claimed)] }
   }

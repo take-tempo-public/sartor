@@ -233,6 +233,62 @@ class TestLedger:
     def test_missing_ledger_dir_returns_empty(self, tmp_path: Path) -> None:
         assert read_ledger(tmp_path / "does-not-exist") == []
 
+    def test_appended_shard_bytes_are_lf_only(self, tmp_path: Path) -> None:
+        """**The RED for the CRLF ledger class (fix/n1-invoker-context-budget).**
+
+        `append_ledger_event` opened the shard in text mode with no `newline=` argument,
+        so on Windows every appended row's `\\n` was translated to CRLF in the WORKING
+        TREE. Observed live: this very branch's session shard carried 1 CR byte written
+        by `--event consumed` (dossier: docs/dev/diagnosis/n1-invoker-context-budget.md).
+        """
+        ledger_dir = tmp_path / "ledger"
+        append_ledger_event(ledger_dir, "sess-lf", {"event": "generated", "doc": "x.md", "ts": "t"})
+        raw = (ledger_dir / "sess-lf.jsonl").read_bytes()
+        assert b"\r" not in raw, f"appended ledger row carries CR bytes: {raw!r}"
+
+
+def _cr_offenders(paths: list[Path]) -> list[str]:
+    """Return the ledger shards whose WORKING-TREE bytes contain a CR.
+
+    Deliberately a local mirror of tests/test_n1_pipeline.py::_cr_offenders rather than a
+    cross-test-module import — same two lines, no coupling between test modules.
+    """
+    return [p.name for p in paths if b"\r" in p.read_bytes()]
+
+
+class TestLedgerWorkingTreeBytes:
+    """fix/n1-invoker-context-budget: the CRLF class is a WORKING-TREE defect.
+
+    Mirrors tests/test_n1_pipeline.py::TestWorkflowWorkingTreeBytes (S3), widened to the
+    provenance-ledger shards: `.gitattributes` pins `*.jsonl` at CHECKOUT, but both
+    ledger writers append AFTER checkout, and until this branch they emitted platform
+    line endings — a shard carried CR bytes in the working tree on three separate
+    sessions (2026-08-13 ×2, 2026-08-14) while every committed blob was clean. This
+    sweep makes the class fail closed in the gate's pytest step instead of surfacing as
+    unexplained working-tree drift during a pipeline run's step-6 assertion.
+    """
+
+    def test_checker_flags_synthetic_cr(self, tmp_path: Path) -> None:
+        crlf = tmp_path / "crlf.jsonl"
+        crlf.write_bytes(b'{"event": "compacted"}\r\n')
+        clean = tmp_path / "clean.jsonl"
+        clean.write_bytes(b'{"event": "compacted"}\n')
+        assert _cr_offenders([crlf, clean]) == ["crlf.jsonl"], (
+            "the checker itself must flag a CR byte -- if this fails, the "
+            "real-tree assertion below proves nothing"
+        )
+
+    def test_ledger_shards_are_cr_free_in_the_working_tree(self) -> None:
+        shards = sorted((_REPO_ROOT / "docs" / "dev" / "ledger").glob("*.jsonl"))
+        assert shards, "no ledger shards found -- the glob itself is broken"
+        offenders = _cr_offenders(shards)
+        assert offenders == [], (
+            f"CR bytes in working-tree ledger shard(s) {offenders}: a ledger writer is "
+            "emitting platform line endings again (see "
+            "docs/dev/diagnosis/n1-invoker-context-budget.md). Fix the writer, then "
+            "re-normalize the shard bytes (\\r\\n -> \\n; content is unchanged)."
+        )
+
 
 class TestLatestGeneratedFingerprint:
     def test_returns_none_when_no_generated_event(self) -> None:

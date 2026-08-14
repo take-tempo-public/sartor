@@ -120,7 +120,19 @@ therefore runs in two stages bracketing the main-loop gate:
    - reads the sprint brief, the epic design brief, and this runbook **in
      full, before asking anything** — a question answerable from those files
      or the repo is not an owner question, and asking it anyway is the
-     failure mode this step exists to close;
+     failure mode this step exists to close. **That list — plus
+     `AGENT_FAILURE_PATTERNS.md` §5f — IS the invoker role's mandatory
+     kickoff reading** (`fix/n1-invoker-context-budget`): the generic
+     branch-session "Documents to read" list (~12.3k lines, measured on run
+     5) binds ordinary branch sessions, not the pipeline invoker, whose
+     subagents read the deeper docs themselves; the ratified scope sentence
+     is read **verbatim from its single home** in the epic's authorization
+     record, never from a restatement. This trimming is curation, labeled
+     **unenforced** (C-11). One hard line: trim the list, never delegate the
+     reading — a subagent summarizing kickoff docs recreates the D5a
+     prompt-paraphrase corruption channel
+     (`docs/dev/diagnosis/n1-pipeline-hardening-review.md` D5a; C-12 treats a
+     subagent's summary as unverified input);
    - runs the pipeline's own structural gate cheaply
      (`python -m pytest tests/test_n1_pipeline.py tests/test_gitattributes_coverage.py -q`)
      so invocability failures surface at kickoff, not overnight;
@@ -225,7 +237,13 @@ therefore runs in two stages bracketing the main-loop gate:
    look, never merge on it reflexively).
 8. **Durable capture (C-8):** the run report and the Workflow `journal.jsonl`
    are the audit trail; write the report (or its path) into the branch's
-   durable record in the turn you receive it, not at close-out.
+   durable record in the turn you receive it, not at close-out. The report's
+   `agents` entries are **digests** (`fix/n1-invoker-context-budget` — the
+   invoker-context reducer): every agent's FULL structured return is in
+   `journal.jsonl` (the report's `journalRef` points there), escalation
+   `verbatim` text and `accounting.claimedFilesWritten` stay complete, and a
+   `filingDivergence` field, when present, means the closer recognized filing
+   obligations it did not file — reconcile it before invoking finalize.
 9. **The epic loop — an epic is SEVERAL runs, and managing the flow between
    them is the invoking session's job** (added 2026-08-12: run 3 ended the
    session after one sprint of a three-sprint epic, and the owner lost a day
@@ -260,10 +278,13 @@ therefore runs in two stages bracketing the main-loop gate:
      (`epicSprintIndex` advanced by one; on the epic's LAST sprint
      index == count derives the terminal full-handoff ceremony — no
      ceremony arg exists to get wrong). Step 0's preconditions are re-checked
-     each iteration; in particular the plan-approval marker retires when a
-     branch merges, so expect one marker re-approval per sprint boundary —
-     that is the reconciler working, not a blocker (never hand-create the
-     marker).
+     each iteration. The plan-approval marker **late-binds rather than
+     retiring per sprint** (observed live, run 5 — the stamp transferred
+     `fix/n1-scope-dedup` → `fix/b1-education-render` → `epic/b-render-ats`
+     with no re-approval, because merged-to-EPIC is not merged-to-MAIN, and
+     the marker retires on the main merge): expect one re-approval at the
+     epic close, not per sprint boundary. Benign both ways — but never
+     hand-create the marker.
 
    **The full close-out ceremony — `AGENT_HANDOFF_TEMPLATE.md` +
    `verify_doc_template.py`, the wiki pass + `.last_ingest_sha` advance, the

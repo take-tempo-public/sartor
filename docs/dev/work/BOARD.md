@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 4 / 10 ceiling** | Blocked 3 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 4 / 10 ceiling** | Blocked 4 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
@@ -13,6 +13,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **3** -- [HUMAN] GitHub toggles: repo rename, PyPI Trusted Publisher, GHCR visibility, enforce_admins (`user`) -- Repo rename to take-tempo-public/sartor gates PyPI Trusted Publisher + GHCR visibility; enforce_admins still false. [blocked on: owner-only GitHub settings actions, no repo file changes; enforce_admins is a standing open decision]
 - **5** -- Grounding-score persistence gap blocks calibrated L1/L2 metric layers (`agent`) -- First diagnosed 2026-07-09 on robert-bootstrap; independently re-found 2026-07-28 on the SAME fixture, still unfixed. [blocked on: the annotate-flow scorer never writes NLI/MiniCheck scores back into the fixture's annotations.json]
 - **8** -- Compose-time rewrite latitude - the 'generate but don't invent' dial (`user`) -- Design doc landed (COMPOSE_REWRITE_DIAL.md); nothing built yet - read it before touching refinement/grounding code. [depends on: 6] [blocked on: evidence-gated on the PX-39 real-corpus run producing a comparison; owner has now excluded the Microsoft JD from that run]
+- **93** -- Epic C planning must deliberately choose the invoker session shape: per-sprint fresh sessions vs continuous window with the step-9 tripwire (`user`) -- Run 5 reproduced the accumulation signature at the INVOKER level; the one deterministic fix is the session boundary. [blocked on: owner decision at Epic C planning — the choice lives in the epic's own authorization-record scope sentence]
 
 ## Deferred
 

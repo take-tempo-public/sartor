@@ -215,7 +215,11 @@ def record_compaction(payload: dict[str, Any]) -> bool:
     }
     try:
         shard.parent.mkdir(parents=True, exist_ok=True)
-        with shard.open("a", encoding="utf-8") as handle:
+        # newline="\n": text-mode append otherwise translates \n to the platform ending,
+        # putting CR bytes in the working tree that .gitattributes (checkout-time only)
+        # cannot prevent — the class tests/test_verify_doc_template.py::
+        # TestLedgerWorkingTreeBytes now fails closed on.
+        with shard.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(record) + "\n")
     except OSError:
         return False  # never wedge a compaction over a failed write
