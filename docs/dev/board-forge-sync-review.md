@@ -56,10 +56,44 @@ headless run → PR → human gate):
 5. **Failure surfacing**: a failed run marks the task so the next cycle skips it,
    and notifies the owner (the "human steps in only on issues" gate).
 
-## 3. Canonicality options (item 97 Q1 — the load-bearing decision)
+## 3. Canonicality (item 97 Q1) — RESOLVED by owner directive, 2026-08-14
 
-**Option A — repo board canonical; GitHub Issues are a one-way PROJECTION
-(recommended).**
+**The owner's directive, verbatim (mid-session, after reviewing the research —
+the single source for this section's intent; cite it, never restate it):**
+
+> leave off pushing to github issus for now. i'll reserve github issus for open
+> source community filings and digest them myself into our board. keeps me in
+> the lop and the system from picking up an issue i never approved. allows me
+> to shape how the issue sis resolved in a design session with claude
+
+**Consequences:**
+
+- **The repo board is BOTH the canonical record AND the dispatch queue.** The
+  factory's picker reads `docs/dev/work/items/*.md` directly in the repo
+  checkout (via the `work_items next` query below) — no projection layer, no
+  second writer, no sync code at all. The single-writer question dissolves
+  completely rather than being managed.
+- **GitHub Issues = community inbox only.** Open-source filings arrive there;
+  the OWNER digests accepted ones into board items by hand (typically in a
+  design session). The factory never reads Issues, so it structurally cannot
+  pick up a task the owner never approved — the same
+  removed-by-construction shape as item 97 itself.
+- **Factory triggers** are cron + `workflow_dispatch` only (no issue-label
+  triggers). The board file changing on `main` could later become a push
+  trigger; not needed for v1.
+- **New open question this creates (design sprint):** where failed-run state
+  lives without Issues. A merged task PR updates the item file, but a FAILED
+  run has no PR to ride. Candidates: a bot-committed status note on a factory
+  branch + notification; an Actions artifact/cache the picker consults;
+  or "notify owner + skip-list in the workflow run" (simplest). Must fail
+  closed (a failed task never silently re-picked next cycle).
+
+## 3b. The projection design (considered, DECLINED for now — kept for the record)
+
+The pre-directive analysis below survives as reference in case the owner ever
+revisits (e.g. wanting a public roadmap view). **None of it is planned work.**
+
+**Option A — repo board canonical; GitHub Issues are a one-way PROJECTION.**
 
 - A projector script maps ready items → issues (create/update, idempotent via an
   issue number stored in the item's `[x]` table — **note: `[x].forge` needs no
@@ -103,30 +137,37 @@ GH-compatible Actions, so the same shape ports; **GitLab CE** (MIT core) does it
 with the Issues API + CI schedules — its native blocked-by links may be
 Premium-gated (UNVERIFIED; label fallback if so).
 
-## 5. Needed changes (the concrete list)
+## 5. Needed changes (the concrete list — revised for the no-projection directive)
 
 1. **Schema:** add `priority` (proposal: int, lower = sooner, required when
-   `status = "open"` and `decision_owner = "agent"`); document the `[x].forge`
-   convention. **C-10 dossier first** — SCHEMA.md is gated, and consumers include
-   `scripts/work_items.py`, the board generator, the closure-bar checks, and
-   every doc that restates the field table.
+   `status = "open"` and `decision_owner = "agent"`). **C-10 dossier first** —
+   SCHEMA.md is gated, and consumers include `scripts/work_items.py`, the board
+   generator, the closure-bar checks, and every doc that restates the field
+   table. (The `[x].forge` convention is no longer needed — no projection.)
 2. **`scripts/work_items.py`:** a `next` subcommand — ready query (open,
-   deps-closed, agent-owned), priority-ordered, `--json` output. Deterministic,
-   stdlib-only, testable; it is the picker's data source whether the picker runs
-   locally or in Actions.
-3. **Projector:** `scripts/factory/project_issues.py` (name TBD) — one-way,
-   idempotent, driver-based. A few hundred lines; verified in the research pass
-   that no off-the-shelf tool does markdown/TOML-board → forge-issue sync.
-4. **Freshness check:** projected-issues vs board drift detector, dual-check
-   pattern, run in the factory workflow (report → notify, never auto-fix).
-5. **Workflow:** `.github/workflows/factory.yml` — cron + `workflow_dispatch`,
-   `concurrency` serial group, picker step, `claude-code-action` step
-   (`prompt` = brief + standing rules; `claude_args` restrictions; `max_turns`;
-   job timeout), failure-labeling step. Self-hosted runner on the agent station.
+   deps-closed, agent-owned = `decision_owner = "agent"`), priority-ordered,
+   `--json` output. Deterministic, stdlib-only, testable. **This IS the
+   factory's queue interface now** — the picker step calls it in the checkout.
+3. **Dispatch payload convention:** how an item names its executable brief
+   (a `refs` entry by convention? a dedicated frontmatter field? — design
+   sprint decides; C-10 rides with the schema change above).
+4. **Workflow:** `.github/workflows/factory.yml` — cron + `workflow_dispatch`
+   only, `concurrency` serial group, checkout → `work_items next --json` picker
+   step → `claude-code-action` step (`prompt` = brief + standing rules;
+   `claude_args` restrictions; `max_turns`; job timeout) → failure step
+   (notify owner + fail-closed skip marker; see §3's open question).
+   Self-hosted runner on the agent station.
+5. **Community-inbox hygiene (docs-only):** a note in CONTRIBUTING/README that
+   Issues are the community channel and the board is internal — so a
+   contributor understands why an issue closes with "digested to board item N".
 6. **Runner hygiene:** the runner's machine-local Claude settings must NOT carry
    `bypassPermissions` (hardening-review residue, still standing); smoke-test
    that repo hooks fire in a headless run and that the item-87 witness costs
    exactly one self-clearing retry per run.
+
+**Dropped from the list by the directive:** the projector script, the
+projected-issues freshness check, the issue-dependencies/Projects-v2 field
+mapping (§4 above is record-only), and any forge driver interface.
 
 ## 6. Open questions for the design sprint (deliberately unanswered here)
 

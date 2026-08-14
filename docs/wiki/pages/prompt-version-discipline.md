@@ -22,7 +22,7 @@ confuse it with RELEASE versioning** ([`docs/governance/charter.md:D-7`](../../.
 ## What `PROMPT_VERSION` is
 
 A single module-level string, [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py)
-(`"2026-08-09.1"` at this ingest — Epic A sprint A3, `DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT`).
+(`"2026-08-14.1"` at this ingest — Epic B sprint B2, EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance).
 Its own comment says to bump it when
 `SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`, **or any per-call prompt template**
 changes, because it "labels every JSONL telemetry record so quality regressions

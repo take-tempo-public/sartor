@@ -1961,3 +1961,35 @@ by name, then read the surrounding claim, not assumed from the classifier alone)
   change).
 
 Checked, not skipped.
+
+## 2026-08-14 — scoped close-out self-update (`feat/ats-conformance`, Epic B sprint B2)
+
+- **Mode:** diff, scoped to this branch's own window `b0aaed3 → HEAD` (B2
+  ATS-conformance landing). **Checkpoint `.last_ingest_sha` deliberately NOT
+  advanced:** it sits 64 commits behind this branch's base, so advancing it
+  from a branch-scoped pass would silently absolve the un-ingested middle
+  window; `scripts/wiki_freshness.py` keeps that backlog visible for the
+  epic-close catch-up pass.
+- **Sources read:** 17 wiki-relevant changed files (json_resume.py,
+  blueprints/generation.py, blueprints/corpus/{_shared,experiences,curation}.py,
+  web_infra/openapi.py, onboarding/{corpus_import,extract_experiences}.py,
+  generator.py, docx_to_persona_html.py, pdf_render.py, analyzer.py,
+  static/{app.js,style.css}, personas CSS ×2, plus the new
+  docs/dev/board-forge-sync-review.md — classified deliberately IRRELEVANT in
+  scripts/wiki_relevance.py this same branch).
+- **Pages changed (7, scribe-per-page, Haiku):** career-corpus,
+  importing-your-experience, document-rendering, openapi-api-reference,
+  route-surface, prompt-version-discipline, tailoring-a-resume. No pages
+  created; index.md entries unchanged (topics unchanged).
+- **Auditor catch-rate (per-page grounding audit, Haiku, author≠auditor):**
+  2 caught / 7 pages — both PRE-existing, neither scribe-introduced:
+  1. DRIFTED (openapi-api-reference): route count "117 total" vs 119 at HEAD —
+     re-anchored (117→119, 112→114).
+  2. UNSUPPORTED (route-surface.md:235-236, pre-existing): "`proposals.py` …
+     the only corpus submodule on the `anthropic` egress allowlist" — FALSE at
+     HEAD: tests/test_egress_allowlist.py also lists
+     blueprints/corpus/skills.py. **Left flagged, not silently rewritten**
+     (loop rule); owner decision pending — suggested fix: "one of two corpus
+     submodules on the allowlist (with skills.py)".
+- **Deterministic gate:** scripts/check_doc_links.py OK (483 files, no broken
+  links/cites); full quality gate runs at branch close.

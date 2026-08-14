@@ -93,6 +93,12 @@ IRRELEVANT_FILES = frozenset(
         # authorized run. Consumer enumeration:
         # docs/dev/blast-radius/n1-baseline-pipeline.md
         "docs/dev/n1-baseline-pipeline.md",
+        # design-sprint input for the item-97 external-orchestration move
+        # (board-as-is facts + owner's no-Issues-projection directive) —
+        # dev-process design record, same character as the study/errata
+        # entries above; describes agent tooling, not the product. Never
+        # cited by a wiki page.
+        "docs/dev/board-forge-sync-review.md",
     }
 )
 

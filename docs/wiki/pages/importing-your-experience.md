@@ -29,6 +29,10 @@ longer leaves your Skills section empty `[synthesis]` (grounded in
 `_insert_pending_skills`, wired through the same
 [`blueprints/corpus/curation.py`](../../../blueprints/corpus/curation.py) ingest route).
 
+If your résumé shows only a year (no month) for any role's start or end date, sartor will
+import it but flag it in the import summary: **the role will hard-block resume generation
+until you add a month** in the Career Corpus (`onboarding/extract_experiences.py:EXTRACT_EXPERIENCES_SYSTEM_PROMPT` guides extraction; `corpus_import.py:_insert_or_merge_experience` flags roles needing months via `json_resume.needs_month_precision`; the ingest route warns in `blueprints/corpus/curation.py` and `static/app.js` surfaces the alert at import time). Add the month to unblock generation — the extraction prompt prefers month-precision dates, but year-only is accepted to avoid data loss `[synthesis]`.
+
 After import, sartor scans for roles that look like duplicates — the same job listed
 twice with different dates or titles — and shows you a **Possible duplicate roles**
 section where you can merge them into one (the extra title becomes an alternate) or

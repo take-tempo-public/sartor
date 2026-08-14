@@ -146,6 +146,63 @@ The cover-letter `.docx` is a separate, terser writer
 paragraphs, persona font, dense line spacing, no name banner — incidental headings
 and bullets are stripped to plain text.
 
+## ATS conformance — approved fonts and date formatting
+
+**Date rendering.** [`json_resume.py:format_month_year`](../../../json_resume.py)
+renders stored ISO dates (`YYYY-MM` or `YYYY`) into the product's presentation
+format `MM/YYYY` — separator changed from `MM-YYYY` in B2/ATS-conformance
+([`json_resume.py:format_month_year`](../../../json_resume.py)). Storage stays ISO
+everywhere else (sorting depends on it); this is a presentation-boundary-only
+transform. [`json_resume.py:format_date_range`](../../../json_resume.py) is the single
+canonical helper called by `.docx` (generator.py), `.md` (json_resume_to_markdown),
+and PDF templates (registered to `pdf_render.py` as a global), so preview / download /
+PDF never disagree on date formatting `[synthesis]`.
+
+**Font conformance.** Three approved fonts are enforced end-to-end:
+[`json_resume.py:APPROVED_FONTS`](../../../json_resume.py) = `("Arial", "Calibri",
+"Georgia")`. Every output file (docx, pdf, companion HTML) carries only members of
+this list — a deterministic, total allow-list that catches any off-list font
+introduction (new template, emitter path, or capture logic) without requiring manual
+list extension. [`json_resume.py:map_to_approved_font`](../../../json_resume.py) is
+the single mapping helper: it takes any font name, checks a known-family map
+(`_FONT_MAP`), and routes serifs to Georgia, humanist sans to Calibri, and others to
+Arial. Absence maps to Calibri (the `.docx` writer's historical default for
+no-template cases), and a member passes through unchanged `[synthesis]`.
+
+Three application points enforce the list:
+
+- `.docx` Normal style: [`generator.py:_write_docx_from_json_resume`](../../../generator.py)
+  sets `doc.styles["Normal"].font.name` explicitly (previously unset in all four bundled
+  templates, inheriting Word docDefaults). On template capture, fonts pass through
+  faithfully to the proto; at output write, [`generator.py:_apply_run_proto`](../../../generator.py)
+  maps them via `map_to_approved_font`, so an off-list template font never reaches the
+  output ([`generator.py:_apply_run_proto`](../../../generator.py) line 617).
+
+- Cover-letter `.docx`: [`generator.py:_cover_letter_font_name`](../../../generator.py)
+  reads the persona's CSS font stack (via `pdf_render.persona_font_family`), extracts
+  the primary family, and maps it through `map_to_approved_font` before setting
+  `Normal.font.name`, so an uploaded companion or hand-edited CSS predating the
+  approved-list redesign still produces a compliant output `[synthesis]`.
+
+- `.pdf` HTML companion: [`docx_to_persona_html.py:_css_font_stack`](../../../docx_to_persona_html.py)
+  returns an approved-led font stack (primary always from `APPROVED_FONTS`, source
+  family retained as a fallback only) via `map_to_approved_font`. A second helper,
+  [`docx_to_persona_html.py:_font_substitution`](../../../docx_to_persona_html.py),
+  tracks whether a substitution occurred — returns `None` if no mapping was needed, else
+  `{"from": original, "to": approved}` — feeding both the CSS header comment and the
+  companion sidecar JSON so they never disagree `[synthesis]`.
+
+Bundled personas lead with approved families: [`personas/bundled/classic.css`](../../../personas/bundled/classic.css)
+leads Arial, [`personas/bundled/modern.css`](../../../personas/bundled/modern.css) leads
+Calibri ([`personas/bundled/classic.css`](../../../personas/bundled/classic.css) line 43,
+[`personas/bundled/modern.css`](../../../personas/bundled/modern.css) line 48).
+
+A test gate [`tests/test_ats_structure.py`](../../../tests/test_ats_structure.py)
+asserts generated `.docx` structure (single column, no tables/text boxes, no header-footer
+text, standard headings only) and exact font membership for every run — `.docx` generator,
+bundled preset font selection, and bundled CSS primaries all fail the gate if any
+off-list font escapes `[synthesis]`.
+
 ## `.pdf` — Playwright Chromium
 
 [`pdf_render.py:render_pdf`](../../../pdf_render.py) renders the JSON Resume dict

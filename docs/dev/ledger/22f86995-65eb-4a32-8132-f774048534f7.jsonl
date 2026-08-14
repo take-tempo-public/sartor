@@ -1,1 +1,2 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/feat-ats-conformance.md", "session": "22f86995-65eb-4a32-8132-f774048534f7", "branch": "epic/b-render-ats", "commit": "b0aaed3", "actor": "amodal1", "agent": "anthropic/claude-fable-5", "ts": "2026-08-14T19:51:54Z", "fingerprint": "37bd4188f8af"}
+{"event": "compacted", "session": "22f86995-65eb-4a32-8132-f774048534f7", "branch": "feat/ats-conformance", "trigger": "unknown", "ts": "2026-08-14T21:17:06Z"}
