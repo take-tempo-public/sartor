@@ -118,9 +118,9 @@ class TestHtmlRender:
         assert "Polaris Cognition" in html
         assert "Senior Designer" in html
         # Fix/output-identity-and-dates: the `date_range` Jinja global renders
-        # the ISO startDate as MM-YYYY (owner-decided presentation format),
+        # the ISO startDate as MM/YYYY (owner-decided presentation format),
         # never the raw ISO shape.
-        assert "09-2022" in html
+        assert "09/2022" in html
         assert "2022-09" not in html
         assert "present" in html
         assert "Shipped a thing." in html

@@ -361,7 +361,7 @@ def test_stale_skeleton_companion_is_regenerated(tmp_path) -> None:
 
 
 def test_stale_companion_render_restores_present_and_month_year(tmp_path) -> None:
-    """The user-visible acceptance bar: `04-2023 – Present` comes back."""
+    """The user-visible acceptance bar: `04/2023 – Present` comes back."""
     from pdf_render import render_html_string
 
     docx = _stage_pre_date_range_companion(tmp_path)
@@ -373,7 +373,7 @@ def test_stale_companion_render_restores_present_and_month_year(tmp_path) -> Non
     resolved = d.resolve_companion_html(docx)
     assert resolved is not None
     after = render_html_string(_CURRENT_ROLE_DOC, html_template_path=resolved)
-    assert "04-2023 – Present" in after
+    assert "04/2023 – Present" in after
 
 
 def test_generate_companion_regenerates_on_skeleton_stamp_mismatch(tmp_path) -> None:

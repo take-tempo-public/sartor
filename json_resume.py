@@ -75,7 +75,8 @@ _BRACKET_CLOSE = ")]"
 _ATS_UNSAFE_CHARS = '[]{}"`'
 _ATS_TAG_SHAPED_RE = re.compile(r"<[^<>]{1,30}>")
 
-# Presentation-boundary date formatting (owner-decided: numeric MM-YYYY).
+# Presentation-boundary date formatting (owner-decided: numeric MM/YYYY —
+# B2/ATS-conformance changed the separator from the 2026-05 MM-YYYY form).
 # Storage stays ISO (YYYY-MM or YYYY) everywhere else — sorting depends on it;
 # these patterns only recognize the ISO shape to reformat it for display.
 _ISO_YEAR_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})$")
@@ -586,9 +587,10 @@ def _parse_simple_list(body: list[str], name_key: str) -> list[dict[str, Any]]:
 
 
 def format_month_year(value: object) -> str:
-    """Render a stored ISO date as the product's presentation format `MM-YYYY`.
+    """Render a stored ISO date as the product's presentation format `MM/YYYY`.
 
-    Accepts `YYYY-MM` or `YYYY` (owner-decided, fix/output-identity-and-dates).
+    Accepts `YYYY-MM` or `YYYY` (owner-decided, fix/output-identity-and-dates;
+    separator changed `-` → `/` in B2/ATS-conformance per RELEASE_ARC §Epic B).
     Storage stays ISO everywhere else — this is a presentation-boundary-only
     transform, never persisted. Best-effort: a value that isn't ISO-shaped
     (hand-typed, legacy, or already-formatted text) passes through unchanged
@@ -600,14 +602,14 @@ def format_month_year(value: object) -> str:
     m = _ISO_YEAR_MONTH_RE.match(s)
     if m:
         year, month = m.group(1), m.group(2)
-        return f"{month}-{year}"
+        return f"{month}/{year}"
     return s
 
 
 def format_date_range(start: object, end: object) -> str:
     """Render a presentation date range, tolerating either side missing.
 
-    `MM-YYYY – MM-YYYY`, or `MM-YYYY – Present` when `start` is present and
+    `MM/YYYY – MM/YYYY`, or `MM/YYYY – Present` when `start` is present and
     `end` is falsy — the DB's NULL-end-date-means-current convention (see
     `db.models.Experience.end_date`) applies uniformly to work AND education
     entries here. The single canonical presentation-boundary helper: used by

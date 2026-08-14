@@ -668,7 +668,7 @@ def _contact_line_items(basics: dict[str, Any]) -> list[str]:
 
 
 def _date_range(start: str | None, end: str | None) -> str:
-    """Render a presentation date range (MM-YYYY, "– Present" when open-ended).
+    """Render a presentation date range (MM/YYYY, "– Present" when open-ended).
 
     Thin wrapper over `json_resume.format_date_range` — the single canonical
     presentation-boundary helper (fix/output-identity-and-dates) — so the

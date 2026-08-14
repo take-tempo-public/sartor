@@ -378,7 +378,7 @@ class TestEducationStudyTypeRoundTrip:
     def test_emitted_header_carries_both_fields(self):
         md = json_resume_to_markdown(self._doc(_EDU_FULL))
         assert (
-            "### State University, Bachelor of Science — Computer Science\t09-2010 – 05-2014"
+            "### State University, Bachelor of Science — Computer Science\t09/2010 – 05/2014"
         ) in md
 
     def test_study_type_survives_the_round_trip(self):
@@ -395,7 +395,7 @@ class TestEducationStudyTypeRoundTrip:
         """The common case must not gain a separator — no churn for existing docs."""
         without = {k: v for k, v in _EDU_FULL.items() if k != "studyType"}
         md = json_resume_to_markdown(self._doc(without))
-        assert "### State University, Bachelor of Science\t09-2010 – 05-2014" in md
+        assert "### State University, Bachelor of Science\t09/2010 – 05/2014" in md
         assert EDUCATION_FIELD_SEPARATOR not in md
         assert "studyType" not in md_to_json_resume(md)["education"][0]
 
@@ -584,7 +584,7 @@ class TestRealisticFull:
 
 class TestFormatMonthYear:
     def test_iso_year_month_becomes_mm_yyyy(self):
-        assert format_month_year("2022-09") == "09-2022"
+        assert format_month_year("2022-09") == "09/2022"
 
     def test_year_only_passes_through(self):
         assert format_month_year("2022") == "2022"
@@ -602,13 +602,13 @@ class TestFormatMonthYear:
 
 class TestFormatDateRange:
     def test_closed_range_both_mm_yyyy(self):
-        assert format_date_range("2022-09", "2023-05") == "09-2022 – 05-2023"
+        assert format_date_range("2022-09", "2023-05") == "09/2022 – 05/2023"
 
     def test_open_ended_renders_present(self):
         """The DB's NULL-end-date = current convention (db.models.Experience)
         renders as 'Present' — the mechanical bug this fix closes."""
-        assert format_date_range("2022-09", None) == "09-2022 – Present"
-        assert format_date_range("2022-09", "") == "09-2022 – Present"
+        assert format_date_range("2022-09", None) == "09/2022 – Present"
+        assert format_date_range("2022-09", "") == "09/2022 – Present"
 
     def test_no_iso_yyyy_mm_pattern_in_output(self):
         import re
@@ -617,7 +617,7 @@ class TestFormatDateRange:
         assert not re.search(r"\d{4}-\d{2}", result)
 
     def test_missing_start_falls_back_to_end(self):
-        assert format_date_range(None, "2023-05") == "05-2023"
+        assert format_date_range(None, "2023-05") == "05/2023"
 
     def test_both_missing_is_empty(self):
         assert format_date_range(None, None) == ""

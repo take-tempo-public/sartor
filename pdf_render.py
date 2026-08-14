@@ -77,7 +77,7 @@ def _register_date_range_global(env: Environment) -> None:
     manual-dash interpolation — the SAME canonical helper `generator.py`'s
     .docx writer and `json_resume_to_markdown`'s .md serializer call, so the
     live preview, the PDF, and the .docx/.md downloads can never disagree on
-    date formatting (MM-YYYY, "– Present" for an open end date). A
+    date formatting (MM/YYYY, "– Present" for an open end date). A
     user-uploaded persona's auto-generated HTML companion
     (`docx_to_persona_html.generate_companion`) is a verbatim copy of
     `classic.html`'s skeleton, so it inherits this automatically.

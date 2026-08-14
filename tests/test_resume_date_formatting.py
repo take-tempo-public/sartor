@@ -1,4 +1,4 @@
-"""Cross-renderer regression guard for the MM-YYYY date presentation fix
+"""Cross-renderer regression guard for the MM/YYYY date presentation fix
 (fix/output-identity-and-dates).
 
 Two mechanical bugs this pins down:
@@ -59,10 +59,10 @@ class TestDocxDateFormatting:
         text = "\n".join(p.text for p in docx.Document(path).paragraphs if p.text.strip())
         assert not _ISO_YEAR_MONTH_RE.search(text), text
         assert "Present" in text
-        # MM-YYYY formatting cases: 2023-06 -> 06-2023, 2022-09 -> 09-2022, etc.
-        assert "06-2023" in text
-        assert "09-2022 – 05-2023" in text
-        assert "09-2016 – 05-2020" in text
+        # MM/YYYY formatting cases: 2023-06 -> 06/2023, 2022-09 -> 09/2022, etc.
+        assert "06/2023" in text
+        assert "09/2022 – 05/2023" in text
+        assert "09/2016 – 05/2020" in text
 
 
 class TestMarkdownDateFormatting:
@@ -71,8 +71,8 @@ class TestMarkdownDateFormatting:
         text = Path(path).read_text(encoding="utf-8")
         assert not _ISO_YEAR_MONTH_RE.search(text), text
         assert "Present" in text
-        assert "06-2023" in text
-        assert "09-2022 – 05-2023" in text
+        assert "06/2023" in text
+        assert "09/2022 – 05/2023" in text
 
     def test_frozen_composition_markdown_serializer_matches(self):
         """json_resume_to_markdown (the frozen-composition .md path) uses the
@@ -89,8 +89,8 @@ class TestPreviewHtmlDateFormatting:
         html = render_html_string(doc, html_template_path=classic_template_path)
         assert not _ISO_YEAR_MONTH_RE.search(html), html
         assert "Present" in html
-        assert "06-2023" in html
-        assert "09-2022" in html and "05-2023" in html
+        assert "06/2023" in html
+        assert "09/2022" in html and "05/2023" in html
 
 
 class TestDownloadPreviewDateParity:
@@ -99,6 +99,6 @@ class TestDownloadPreviewDateParity:
         html = render_html_string(doc, html_template_path=classic_template_path)
         path = generate_resume(RESUME_MD, ".docx", "dates", base_dir=str(tmp_path))
         docx_text = "\n".join(p.text for p in docx.Document(path).paragraphs if p.text.strip())
-        for token in ("06-2023", "09-2022 – 05-2023", "Present"):
+        for token in ("06/2023", "09/2022 – 05/2023", "Present"):
             assert token in html, f"{token!r} missing from preview HTML"
             assert token in docx_text, f"{token!r} missing from .docx"
