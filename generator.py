@@ -21,7 +21,7 @@ from docx.shared import Inches, Pt
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
-from json_resume import education_position_text, format_date_range
+from json_resume import education_position_text, format_date_range, map_to_approved_font
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
@@ -336,7 +336,12 @@ def _cover_letter_font_name(template_path: str | None) -> str:
     css_path = Path(template_path).with_suffix(".css") if template_path else None
     stack = persona_font_family(css_path)
     primary = stack.split(",")[0].strip().strip('"').strip("'")
-    return primary or "Calibri"
+    # B2 ATS conformance (blast-radius row 46): the bundled stacks now lead
+    # with an approved family, but an uploaded companion predating that (or a
+    # hand-edited css) can still lead off-list — map here so the .docx font
+    # NAME is always a member of APPROVED_FONTS. An empty stack maps to
+    # Calibri, preserving the old last-resort guard.
+    return map_to_approved_font(primary)
 
 
 def _render_cover_letter_pdf(
@@ -605,7 +610,11 @@ def _apply_run_proto(run: Run, proto: dict[str, Any] | None) -> None:
     if proto.get("run_size_pt"):
         run.font.size = Pt(proto["run_size_pt"])
     if proto.get("run_font_name"):
-        run.font.name = proto["run_font_name"]
+        # B2 ATS conformance (blast-radius row 45): map at the APPLY boundary.
+        # Capture stays faithful to what the template says; the approved-fonts
+        # policy binds what we WRITE — B1b's font carry-through is exactly the
+        # path an off-list imported font would otherwise reach the output by.
+        run.font.name = map_to_approved_font(proto["run_font_name"])
 
 
 def _add_inline_runs_with_proto(
@@ -727,6 +736,15 @@ def _write_docx_from_json_resume(
         styles = _capture_template_styles(doc)
         orig_numPr = _extract_list_numPr(doc)
         _clear_body(doc)
+        # B2 ATS conformance (blast-radius row 43): all four bundled templates
+        # arrive with Normal.font.name unset (probe R2), so any run without a
+        # captured proto inherits Word's docDefaults — not ours to control.
+        # Set Normal explicitly: the captured body font when the template
+        # names one, mapped onto the approved list; else the writer's Calibri
+        # (map_to_approved_font's absence default).
+        normal = doc.styles["Normal"]
+        body_font = (styles.get("body") or {}).get("run_font_name") or normal.font.name
+        normal.font.name = map_to_approved_font(body_font)
     else:
         styles = {}
         orig_numPr = None

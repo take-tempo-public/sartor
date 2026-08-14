@@ -949,3 +949,81 @@ def scrub_ats_unsafe(doc: dict[str, Any]) -> dict[str, Any]:
         sartor_meta["ats_scrubbed"] = scrubbed
 
     return doc
+
+
+# ---------------------------------------------------------------------
+# ATS approved-font policy (B2/ATS-conformance — owner-decided)
+# ---------------------------------------------------------------------
+
+#: The ATS-approved output-font allow-list (RELEASE_ARC §Epic B, B2). Every
+#: font NAME the product writes into generated output — `.docx` run/Normal
+#: fonts, the cover-letter body, persona-companion CSS primaries — must be a
+#: member; `map_to_approved_font` is the single mapping policy. This module is
+#: the ATS *output-policy* home (beside `scrub_ats_unsafe`), which is why the
+#: list lives here and not in `generator.py`. Expanding the list is item 43
+#: (deferred, owner-gated).
+APPROVED_FONTS = ("Arial", "Calibri", "Georgia")
+
+# Best-effort family classification for off-list fonts: exact names first,
+# then a serif/sans heuristic, then Arial. Deterministic and total — every
+# input maps to a member of APPROVED_FONTS.
+_FONT_MAP = {
+    # humanist / modern-UI sans → Calibri
+    "calibri": "Calibri",
+    "candara": "Calibri",
+    "carlito": "Calibri",
+    "corbel": "Calibri",
+    "lato": "Calibri",
+    "open sans": "Calibri",
+    "optima": "Calibri",
+    "segoe ui": "Calibri",
+    "trebuchet ms": "Calibri",
+    # serif → Georgia
+    "baskerville": "Georgia",
+    "book antiqua": "Georgia",
+    "cambria": "Georgia",
+    "garamond": "Georgia",
+    "georgia": "Georgia",
+    "liberation serif": "Georgia",
+    "merriweather": "Georgia",
+    "palatino": "Georgia",
+    "palatino linotype": "Georgia",
+    "pt serif": "Georgia",
+    "times": "Georgia",
+    "times new roman": "Georgia",
+    # grotesque / neo-grotesque / other sans → Arial
+    "arial": "Arial",
+    "arial narrow": "Arial",
+    "franklin gothic": "Arial",
+    "futura": "Arial",
+    "gill sans": "Arial",
+    "helvetica": "Arial",
+    "helvetica neue": "Arial",
+    "inter": "Arial",
+    "liberation sans": "Arial",
+    "roboto": "Arial",
+    "tahoma": "Arial",
+    "verdana": "Arial",
+}
+
+
+def map_to_approved_font(name: object) -> str:
+    """Map any font name onto the ATS-approved allow-list (`APPROVED_FONTS`).
+
+    Deterministic and total: a member passes through (canonical casing); a
+    known off-list family maps to its nearest approved neighbor; an unknown
+    serif-looking name goes to Georgia; anything else goes to Arial. An
+    ABSENT name maps to Calibri — the `.docx` writer's historical no-template
+    default, kept so absence keeps meaning what it always meant there.
+    Callers own the decision of when absence should instead keep a surface's
+    own neutral (`docx_to_persona_html._css_font_stack` does).
+    """
+    s = str(name).strip() if name else ""
+    if not s:
+        return "Calibri"
+    key = s.lower()
+    if key in _FONT_MAP:
+        return _FONT_MAP[key]
+    if "serif" in key and "sans" not in key:
+        return "Georgia"
+    return "Arial"

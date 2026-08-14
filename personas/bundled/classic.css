@@ -39,7 +39,8 @@
 }
 
 html, body {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+  /* B2 ATS conformance: approved family leads; old stack retained behind it. */
+  font-family: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
   font-size: 10.5pt;
   line-height: 1.4;
   color: var(--fg-0);

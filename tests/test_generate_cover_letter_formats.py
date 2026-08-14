@@ -94,7 +94,9 @@ class TestCoverLetterDocx:
     @pytest.mark.skipif(not CLASSIC_DOCX.exists(), reason="bundled classic.docx missing")
     def test_docx_uses_persona_font(self, tmp_path):
         # With a persona template, the Normal font is the persona CSS's primary
-        # family — the same source the .pdf uses (classic.css → "Helvetica Neue").
+        # family, mapped onto the ATS approved list (B2): classic.css now leads
+        # Arial outright, and _cover_letter_font_name maps regardless so a
+        # pre-B2 uploaded companion can't smuggle an off-list name into Word.
         path = generate_cover_letter(
             SAMPLE_CL,
             "u",
@@ -103,7 +105,7 @@ class TestCoverLetterDocx:
             template_path=str(CLASSIC_DOCX),
         )
         doc = docx.Document(path)
-        assert doc.styles["Normal"].font.name == "Helvetica Neue"
+        assert doc.styles["Normal"].font.name == "Arial"
 
     def test_docx_no_template_uses_default_business_font(self, tmp_path):
         path = generate_cover_letter(
@@ -114,10 +116,10 @@ class TestCoverLetterDocx:
             template_path=None,
         )
         doc = docx.Document(path)
-        # No persona CSS → persona_font_family returns the neutral business stack
-        # whose primary family is "Helvetica Neue" (Calibri is only the last-resort
-        # guard if that stack were ever empty).
-        assert doc.styles["Normal"].font.name == "Helvetica Neue"
+        # No persona CSS → persona_font_family returns the neutral business
+        # stack; its "Helvetica Neue" primary maps to Arial on the ATS
+        # approved list (B2). Calibri remains the empty-stack last resort.
+        assert doc.styles["Normal"].font.name == "Arial"
 
     def test_docx_is_terser_no_centered_banner(self, tmp_path):
         # Business-letter intent: no centered name banner, no oversized heading runs.

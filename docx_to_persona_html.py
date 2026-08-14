@@ -58,6 +58,8 @@ from docx.shared import Length
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
+from json_resume import map_to_approved_font
+
 logger = logging.getLogger(__name__)
 
 # The canonical HTML skeleton + CSS reference model. This module lives at the
@@ -65,32 +67,49 @@ logger = logging.getLogger(__name__)
 _REPO_ROOT = Path(__file__).resolve().parent
 _SKELETON_HTML = _REPO_ROOT / "personas" / "bundled" / "classic.html"
 
-# Serif families we recognize; everything else maps to a sans stack. Used only to
-# pick a sensible CSS fallback chain + generic family for the extracted font.
-_SERIF_FAMILIES = {
-    "georgia",
-    "times new roman",
-    "times",
-    "cambria",
-    "garamond",
-    "book antiqua",
-    "palatino",
-    "liberation serif",
-}
-
 # Neutral defaults when the .docx leaves an attribute unset (inherited / default).
 _DEFAULT_FG = "#111"
 _DEFAULT_ACCENT = "#b87333"  # Classic's warm bronze rule; prints well in B&W.
 
 
 def _css_font_stack(family: str | None) -> str:
-    """Map a single docx font name to a CSS font stack with a generic fallback."""
+    """Map a single docx font name to an ATS-approved CSS font stack.
+
+    B2 ATS conformance (blast-radius row 41): the stack's PRIMARY is always a
+    member of `json_resume.APPROVED_FONTS` (`map_to_approved_font`); an
+    off-list source family is retained immediately BEHIND the approved lead as
+    a fallback only, never as the family the preview actually renders. An
+    absent family keeps this surface's own historical neutral (the sans stack,
+    now Arial-led) rather than the docx writer's Calibri absence-default —
+    each surface maps absence to the approved member of its own neutral.
+    """
     fam = (family or "").strip()
     if not fam:
-        return '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
-    if fam.lower() in _SERIF_FAMILIES:
-        return f'"{fam}", Georgia, "Times New Roman", Cambria, "Liberation Serif", serif'
-    return f'"{fam}", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
+        return 'Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif'
+    approved = map_to_approved_font(fam)
+    if approved == "Georgia":
+        tail = '"Times New Roman", Cambria, "Liberation Serif", serif'
+    else:
+        tail = '"Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif'
+    if fam.lower() == approved.lower():
+        return f"{approved}, {tail}"
+    return f'{approved}, "{fam}", {tail}'
+
+
+def _font_substitution(family: str | None) -> dict[str, str] | None:
+    """The approved-font substitution `_css_font_stack` will apply, or None.
+
+    One implementation feeding both notice channels (the generated CSS header
+    comment and the sidecar JSON) so they can never disagree about whether a
+    substitution happened.
+    """
+    fam = (family or "").strip()
+    if not fam:
+        return None
+    approved = map_to_approved_font(fam)
+    if approved.lower() == fam.lower():
+        return None
+    return {"from": fam, "to": approved}
 
 
 def _run_color_hex(run: Run) -> str | None:
@@ -342,13 +361,20 @@ def _build_css(knobs: dict[str, Any]) -> str:
         f"{_fmt_pt(knobs.get('margin_left_in', 1.0))}in"
     )
 
+    substitution = _font_substitution(knobs.get("font_family"))
+    substitution_line = (
+        f' * font_substitution: "{substitution["from"]}" -> {substitution["to"]} (ATS approved list)\n'
+        if substitution
+        else ""
+    )
+
     return f"""\
 /* Auto-generated preview companion for an uploaded persona .docx.
  * Deterministic output of docx_to_persona_html.generate_companion - do not
  * hand-edit; re-uploading the .docx regenerates it. Single-column + ATS-safe
  * (mirrors classic.css) re-typed with the uploaded template's typography.
  * layout_fidelity: {knobs.get("layout_fidelity", "full")}
- */
+{substitution_line} */
 
 @page {{ size: letter; margin: {m}; }}
 
@@ -525,18 +551,32 @@ def generate_companion(docx_path: str | Path, *, force: bool = False) -> tuple[P
             return html_path, css_path
 
         knobs = extract_persona_style(docx)
+        substitution = _font_substitution(knobs.get("font_family"))
         css_path.write_text(_build_css(knobs), encoding="utf-8")
         html_path.write_text(_build_html(css_path.name), encoding="utf-8")
         sidecar.write_text(
             json.dumps(
                 {
                     "layout_fidelity": knobs["layout_fidelity"],
+                    # B2 ATS conformance (blast-radius row 42): the approved-
+                    # font substitution notice — also stamped into the CSS
+                    # header comment by _build_css. Stated limit: like
+                    # layout_fidelity before it, no UI surface renders the
+                    # sidecar yet; the notice lives here + the CSS + this log.
+                    "font_substitution": substitution,
                     _SKELETON_VERSION_KEY: skeleton_version(),
                 },
                 indent=2,
             ),
             encoding="utf-8",
         )
+        if substitution:
+            logger.info(
+                "Persona companion for %s: off-list font %r substituted with approved %r",
+                docx.name,
+                substitution["from"],
+                substitution["to"],
+            )
         logger.info(
             "Generated persona companion for %s (layout_fidelity=%s)",
             docx.name,
