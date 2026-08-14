@@ -43,6 +43,36 @@ day. S3's committed test (`tests/test_n1_pipeline.py::TestWorkflowWorkingTreeByt
 lines 713–751) sweeps `.claude/workflows/*.mjs` only — no check covers
 `docs/dev/ledger/*.jsonl` working-tree bytes.
 
+**O1b — FIFTH instance, from a THIRD writer this branch's fix did not cover
+(2026-08-14, run-6 preflight, session `49c375cd`, appended on `feat/ats-conformance`).**
+O1's fix covered the two Python writers, and the sweep it shipped then caught what the
+fix missed. Sequence, all observed rather than inferred: this session's `consumed` append
+byte-checked **clean** (294 bytes, 0 CR — the fix working on a fresh session's first
+write); pruning the merged `fix/n1-invoker-context-budget` branch retired the
+plan-approval marker, whose `retire-approved-plan.sh` hook appended a `plan-archived`
+receipt; the very next `git commit` warned `CRLF will be replaced by LF`, and the shard
+measured **525 bytes, 1 CR**, `git ls-files --eol` reporting `i/lf w/mixed`. The sweep
+then failed exactly as designed:
+
+```
+$ python -m pytest tests/test_verify_doc_template.py::TestLedgerWorkingTreeBytes -q
+FAILED … CR bytes in working-tree ledger shard(s) ['49c375cd-….jsonl']
+```
+
+Writer: `hooks/lib/retire-approved-plan.sh:153` — an embedded-Python heredoc inside a
+shell hook, `.open("a", encoding="utf-8")`, **no `newline=`**. Grep-complete enumeration
+of ledger appenders at HEAD returns exactly three files; the two Python ones carried the
+flag, this one did not. **Cost avoided: gate #1 would have failed ~90 minutes into the
+B2 run**, after the sprint stage, on a bookkeeping byte.
+
+**Mechanism authored (C-11), on `feat/ats-conformance`:** `newline="\n"` at the third
+writer, plus the writer-side half the class was missing —
+`tests/test_verify_doc_template.py::TestLedgerWritersPinLf`, a curated-list + discovery-
+scan dual check (the egress-allowlist pattern) that fails closed on a **new** ledger
+writer shipping without the flag. O1's sweep catches a shard already dirtied; this
+catches the writer before it dirties one. Both carry non-vacuity self-tests, because a
+matcher that silently finds zero call sites passes while checking nothing.
+
 **O2 — invoker context accumulation (run 5).** Two `compacted` receipts in
 `docs/dev/ledger/b0769daa-4696-48ed-90e8-76f1659c3244.jsonl`, timestamped 22:51:12Z
 (during gate #1) and 23:08:27Z (during gate #2). Measured loads recorded in

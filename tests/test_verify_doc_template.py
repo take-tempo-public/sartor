@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from scripts.verify_doc_template import (
@@ -287,6 +288,87 @@ class TestLedgerWorkingTreeBytes:
             "emitting platform line endings again (see "
             "docs/dev/diagnosis/n1-invoker-context-budget.md). Fix the writer, then "
             "re-normalize the shard bytes (\\r\\n -> \\n; content is unchanged)."
+        )
+
+
+_LEDGER_APPEND_WRITERS = {
+    "scripts/enforcement/adapters/claude_context_hook.py",
+    "scripts/verify_doc_template.py",
+    "hooks/lib/retire-approved-plan.sh",
+}
+
+
+def _append_open_args(text: str) -> list[str]:
+    """Arg text of every append-mode open() call in `text`.
+
+    `[^)]*` spans newlines, so a call broken across lines is matched whole -- which
+    matters, because the writer this check was authored for is formatted that way.
+    """
+    return [
+        m.group(1)
+        for m in re.finditer(r"\bopen\(([^)]*)\)", text)
+        if re.search(r"""["']a["']""", m.group(1))
+    ]
+
+
+def _discover_ledger_appenders() -> set[str]:
+    found = set()
+    for sub, patterns in (("scripts", ("*.py",)), ("hooks", ("*.sh", "*.py"))):
+        for pattern in patterns:
+            for path in (_REPO_ROOT / sub).rglob(pattern):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                if "ledger" in text and _append_open_args(text):
+                    found.add(path.relative_to(_REPO_ROOT).as_posix())
+    return found
+
+
+class TestLedgerWritersPinLf:
+    """The WRITER-side half of the CRLF class -- fifth instance, run-6 preflight.
+
+    TestLedgerWorkingTreeBytes above catches a shard that already carries CR bytes.
+    It cannot stop a NEW writer from shipping without `newline="\\n"`, which is
+    exactly how the class recurred: the fix that covered the two Python writers
+    missed `hooks/lib/retire-approved-plan.sh`, whose `plan-archived` receipt put a
+    CR byte in a fresh session's shard and would have failed gate #1 mid-run.
+
+    Curated list + discovery scan, mirroring the egress-allowlist dual check: the
+    list alone rots silently, the scan alone cannot say which writers are known.
+    """
+
+    def test_matcher_finds_a_synthetic_append_open(self) -> None:
+        multiline = 'x.open(\n    "a", encoding="utf-8", newline="\\n"\n)'
+        assert _append_open_args(multiline), (
+            "the matcher must find a call broken across lines -- if this fails, the "
+            "per-writer assertion below passes vacuously"
+        )
+        assert _append_open_args('x.open("r", encoding="utf-8")') == [], (
+            "the matcher must ignore read-mode opens"
+        )
+
+    def test_every_known_ledger_writer_pins_lf(self) -> None:
+        for rel in sorted(_LEDGER_APPEND_WRITERS):
+            path = _REPO_ROOT / rel
+            assert path.exists(), f"{rel} is on the ledger-writer list but does not exist"
+            calls = _append_open_args(path.read_text(encoding="utf-8"))
+            assert calls, (
+                f"no append-mode open() found in {rel} -- either the writer moved or "
+                "the matcher broke; a silent zero here is a vacuous pass"
+            )
+            for args in calls:
+                assert 'newline="\\n"' in args, (
+                    f'{rel} appends in text mode without newline="\\n": on Windows '
+                    "that translates \\n to \\r\\n and puts CR bytes in the working "
+                    "tree, which TestLedgerWorkingTreeBytes then fails the gate on."
+                )
+
+    def test_no_unregistered_ledger_appender(self) -> None:
+        discovered = _discover_ledger_appenders()
+        unregistered = discovered - _LEDGER_APPEND_WRITERS
+        assert unregistered == set(), (
+            f"new ledger-appending writer(s) {sorted(unregistered)} are not on "
+            "_LEDGER_APPEND_WRITERS. Add them to the list AND confirm each passes "
+            'newline="\\n" -- an unlisted writer is how this class reached a fifth '
+            "instance."
         )
 
 
