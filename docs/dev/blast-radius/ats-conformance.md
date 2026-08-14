@@ -319,3 +319,19 @@ How a **missed consumer** surfaces — not how the change works:
    must still produce a created (not dropped) role — that is the assertion that catches a
    too-eager tightening of `_DATE_RE` (row 38), which is the one change in this area that
    would look correct and silently delete user data.
+
+## Implementation-time verification notes (2026-08-14, the landing session)
+
+- **`hardening.compute_date_grounding` checked and found format-agnostic** (a consumer
+  of the rendered date FORMAT, not the symbol, so the enumeration's `git grep` could not
+  see it): `_heading_year_range` extracts bare 4-digit years via `_RANGE_YEAR_RE` and its
+  docstring states "separator variants (– / - / to) are tolerated by ignoring them" —
+  `09/2010 – 05/2014` parses identically to `09-2010 – 05-2014`. No change; negative
+  result recorded per C-10 rather than left as an unexamined gap.
+- **Brief correction 4 (UNVERIFIED there) verified live**: `extract_experiences.py:243`
+  blanks a `start_date` that fails `_DATE_RE`, and a blank start_date is exactly
+  `_insert_or_merge_experience`'s drop signal — row 38's "no change (comment only)"
+  decision confirmed against the running code, not inherited.
+- **Row 47 refinement at implementation**: `modern.css` leads **Calibri** (its own
+  `.docx` preset's family, so preview and download agree), not Arial-as-generic; the
+  dossier's "approved family first" left the member unnamed.

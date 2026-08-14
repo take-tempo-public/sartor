@@ -17,3 +17,12 @@ come later, one at a time, once verified ATS-safe.
 ## Updates
 
 ### 2026-08-04 — filed during chore/v11-march-kickoff
+
+### 2026-08-14 — B2 landed the list (`feat/ats-conformance`)
+
+The dependency this item waits on is now satisfied: `json_resume.APPROVED_FONTS`
+(Arial/Calibri/Georgia) + `map_to_approved_font` shipped, enforced at every
+output write boundary and gated by `tests/test_ats_structure.py` (allow-list-
+exact assertions on generated `.docx`). Expansion remains deferred and
+owner-gated — adding a family is now: extend `APPROVED_FONTS` + `_FONT_MAP`,
+and the structural gate accepts it everywhere at once.

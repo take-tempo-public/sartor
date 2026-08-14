@@ -1034,7 +1034,9 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
             dates = needy.get("start_date", "")
             if needy.get("end_date"):
                 dates = f"{dates} – {needy['end_date']}"
-            lines.append(f"{prefix}  - {label} ({dates}; source: {needy.get('source_filename', '?')})")
+            lines.append(
+                f"{prefix}  - {label} ({dates}; source: {needy.get('source_filename', '?')})"
+            )
     if report.errors:
         lines.append(f"{prefix}Errors ({len(report.errors)}):")
         for err in report.errors[:10]:

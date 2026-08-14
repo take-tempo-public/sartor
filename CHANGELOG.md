@@ -13,6 +13,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: B2 — ATS conformance (`feat/ats-conformance`, Epic B sprint 3 of 3)
+
+The epic's terminal sprint, implemented conventionally (owner-directed) after
+run 6's pipeline stop — scope per `RELEASE_ARC.md` §Epic B (B2) as re-anchored
+by the committed 52-row consumer dossier (`docs/dev/blast-radius/ats-conformance.md`):
+
+- **Changed:** presentation dates render `MM/YYYY` (separator `-` → `/`) via the
+  single canonical helper `json_resume.format_month_year`; en-dash range +
+  `Present` sentinel unchanged, so `.docx`/`.md`/preview/PDF moved together.
+  19 literal test assertions moved in lockstep; `test_render_parity.py` needed
+  none (asserts structure, never a date literal — recorded against the ARC's
+  naming of it). `hardening.compute_date_grounding` verified format-agnostic.
+- **Added:** month **hard block** at BOTH generate entry points (`/api/generate`
+  and the SSE `/api/generate/stream` — the route neither brief named): an
+  included experience role with a year-only date returns a 422 naming the
+  roles, before any LLM spend. Education exempt (owner decision), enforced by
+  which keys `_month_imprecise_roles` reads. One predicate pair
+  (`json_resume.is_month_precise` / `needs_month_precision`) feeds the block,
+  the corpus list's new `needs_month` key (+ `ExperienceSummaryItem` mirror),
+  and the `MONTH NEEDED` corpus badge, so they agree by construction.
+- **Changed:** all FOUR experience date validators (create+edit × start+end)
+  are month-required (`YYYY-MM`); year-only roles still ENTER via import,
+  flagged not dropped — `ImportReport` gains `experiences_needing_month` /
+  `month_needed_experiences` (field + merge + CLI sentence + route payload +
+  ingest-UI note/toast), and `_DATE_RE` stays deliberately permissive
+  (verified: a failing start_date is the drop signal — tightening it deletes
+  the role instead of flagging it). Extraction-prompt wording changed from
+  "year-only is fine" to month-preferred → `PROMPT_VERSION = 2026-08-14.1`.
+- **Added:** `json_resume.APPROVED_FONTS` (Arial/Calibri/Georgia) +
+  `map_to_approved_font`, enforced at every write boundary: run protos map on
+  APPLY, the template branch sets the docx `Normal` font explicitly (all four
+  bundled templates previously shipped it unset), the cover-letter font maps
+  its CSS primary, and companion CSS leads with the approved family (source
+  family kept as fallback; substitution notice in the CSS header + sidecar +
+  log — stated limit: no UI renders the sidecar yet). `classic.css` leads
+  Arial, `modern.css` leads Calibri (its own preset's family).
+- **Added:** `tests/test_ats_structure.py` — the structural output gate:
+  generated `.docx` asserted single-column / no tables / no text boxes / no
+  header-footer text / standard headings only / fonts allow-list-exact, across
+  all bundled templates, the no-template writer, and a synthetic off-list
+  (Papyrus) template.
+
+No new dependencies.
+
 ### Fixed: LF pinned at the third ledger writer, plus the writer-side gate the class was missing (`feat/ats-conformance`, items 84/94–97)
 
 Caught at Epic B run 6's preflight, before the sprint was invoked — the fifth

@@ -784,9 +784,7 @@ def save_edits() -> ResponseReturnValue:
     )
 
 
-def _month_imprecise_roles(
-    context_set: ContextSet, frozen_doc: dict[str, Any] | None
-) -> list[str]:
+def _month_imprecise_roles(context_set: ContextSet, frozen_doc: dict[str, Any] | None) -> list[str]:
     """Labels of INCLUDED experience roles whose stored dates are ISO year-only.
 
     B2 ATS conformance: generation hard-blocks while any included role's start
