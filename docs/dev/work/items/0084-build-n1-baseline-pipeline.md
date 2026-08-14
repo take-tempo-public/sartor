@@ -31,6 +31,108 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-14 (Epic B run 6 — STOPPED at `escalated_to_owner`; first `hook_block` firing, and the witness/pipeline incompatibility is now mechanical, not anecdotal)
+
+Run `wf_44350cb5-6b2`, sprint stage. **Status `escalated_to_owner` after 14.5 min /
+163k subagent tokens / 65 tool uses, one agent (implementer).** No code or tests
+written; one artifact landed, `docs/dev/blast-radius/ats-conformance.md` (321 lines,
+52 decided consumer rows). *This entry is INVOKER-written — it is the answer to any
+accounting check that finds it unclaimed by an agent.*
+
+**The escalation was a `hook_block`, so it short-circuited to the owner with NO
+reviewer spawned** — by design (§11.5/Binding rule 3: no LLM may clear a hook block).
+This is the primitive's **second** live firing and its **first** of this kind (run 5
+was a `flag_stop` that routed through a reviewer to `targeted_fix`). Routing behaved
+exactly as specified. The pipeline did not fail; it stopped.
+
+**The trigger: the item-87 interrogative-witness pause landed on the implementer's
+first production edit** (an `Edit` to `json_resume.py` for the date separator). The
+implementer declined to clear it and stopped, citing the un-narrowed Binding rule 3
+plus the B2 brief's own risk register — the correct call under its instructions.
+
+**Mechanism — read from the code, not inferred (C-7).**
+`scripts/enforcement/guards/interrogative_witness.py`:
+
+- `record_prompt` (UserPromptSubmit) resets `witnessed: False` — it **re-arms on
+  every prompt event**.
+- `decide` / `claude_check` key the pause on **`session_id` only** (`:198-200`).
+- The module's own docstring states the limit at `:35-37`: *"PreToolUse also fires
+  for subagents' Edit/Write calls, so a subagent's first edit can consume the turn's
+  one pause on the main agent's behalf."*
+- Subagents demonstrably share the invoker's `session_id` — the implementer was
+  blocked, so it resolved **this** session's state file (a differing id would have
+  found no state and failed open).
+- Live state at the stop: `{"prompt_seq": 4, "interrogative": false, "witnessed":
+  false}` for session `49c375cd`. **`prompt_seq` (4) exceeds this session's genuine
+  user turns (3)**, so at least one non-user event incremented it — corroborating the
+  "task notifications re-arm it" class rather than resting on the subagent's word.
+- **Re-confirmed live minutes later:** the invoker's own next `Edit` (this entry) was
+  refused by the same pause, then succeeded on an identical re-run — the armed state
+  read from the file and the observed refusal agree.
+
+**Therefore this is a structural incompatibility, not bad luck.** Any prompt-like
+event during a run — *including the owner speaking to the invoker mid-run*, which is
+exactly what the authorization record invites the owner to do as the live interrupt —
+arms a one-shot pause that the running subagent eats, and under the un-narrowed
+Binding rule 3 that is a run-ending `hook_block`. Run 5 counted two re-arms and
+survived; run 6 died of one. The invoker's step-0a "consume the pause deliberately"
+discipline only covers arming that happens **before** the first Workflow call; nothing
+covers arming **during** a run.
+
+**Resume trap — decisive for the recovery choice (runbook stated limit 4).**
+`resumeFromRunId` **caches a blocked agent's block-description as success**. The
+implementer returned a structured object describing its block, so a naive
+`resumeFromRunId: 'wf_44350cb5-6b2'` would replay that object instantly and march on
+as though the sprint had been implemented. Recovery must be a **fresh invocation**,
+not a resume.
+
+**Verification of the implementer's four brief-corrections (C-12 — a subagent's
+report is unverified input).** Checked three at HEAD:
+
+1. **CONFIRMED (materially).** A second, unnamed generate entry point exists:
+   `run_generation_stream` at `blueprints/generation.py:1162` (implementer said
+   `:1161`, off by the decorator line), carrying its own duplicated preamble —
+   `_is_pre_corpus_context` at `:1206` and `_frozen_composition` at `:1226`, both
+   exact. Implementing the month block only at `/api/generate` would ship green with
+   the defect fully reachable over SSE. **This finding alone justifies the sprint's
+   cost so far.**
+2. **CONFIRMED.** `blueprints/corpus/experiences.py` has **four** date validators
+   (`:119`, `:122`, `:222`, `:227`) — start *and* end, at both create and edit — not
+   the pair both briefs cite. Fixing only the cited lines leaves year-only END dates
+   passing.
+3. **REFUTED.** The implementer claimed `tests/test_render_parity.py` "contains zero
+   date literals" and used that to call `RELEASE_ARC.md:1930` "a false claim in the
+   scope of record." The file **does** contain a date literal —
+   `tests/test_render_parity.py:178`, `"### Acme, Staff Engineer\t2022-01 – present\n"`,
+   the `UNSAFE_MD` fixture feeding `TestAtsScrubAndIdentityOverrideParity`. The
+   narrower point survives (the test asserts scrub/parity, never the date string), but
+   the categorical is false and the conclusion drawn from it — that the authoritative
+   scope document is wrong — does not stand on it. A B2 date-format change flows
+   through this fixture; whether the file needs updating is **open**, not settled.
+   The refuter would likely have caught this, but the run stopped before the refuter
+   ever spawned.
+
+**Report-shape note:** last branch's digest change had its first live exercise here —
+`agents.implementer` arrived as a bounded digest with the full return in
+`journal.jsonl` via `journalRef`, and the escalation `verbatim` came through complete,
+which is what made the un-paraphrased surfacing to the owner possible.
+
+**Model configuration correction (owner, on screen, mid-run):** *"yeah opus was for
+the invoker, keep going as is."* The preflight ambiguity resolved **against** the
+reading this session took: "running on opus" meant the **invoking** session. Run 6
+therefore executed with both model slots off their prescribed values in opposite
+directions — invoker **Fable** (owner wanted Opus; not restartable mid-session) and
+implementer **Opus** (epic table prescribes Sonnet; the B2 brief's own First-move
+block omits `implementerModel`, so the script default won). The owner accepted both
+rather than restart. **B2 is therefore not a clean read of the prescribed
+configuration** — relevant to any epic-level conclusion drawn from this run.
+
+**Root cause worth a mechanism before Epic C:** the B2 brief contradicts itself — its
+prose prescribes a Sonnet implementer while its own copy-paste First-move block passes
+no model args. Every brief authored from `EPIC_SPRINT_BRIEF_TEMPLATE.md` inherits that
+shape. Candidates: require an explicit `implementerModel` in the pipeline rather than
+defaulting, or have the template's First-move block carry the args its prose names.
+
 ### 2026-08-14 (Epic B run 6 — B2 invocation record, preflight)
 
 Session `49c375cd`, invoker **Fable 5**. Preflight per runbook step 0/0a, before
