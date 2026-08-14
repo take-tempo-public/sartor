@@ -31,6 +31,72 @@ trackable once authorized, not to authorize it.
 
 ## Updates
 
+### 2026-08-14 (Epic B run 6 — B2 invocation record, preflight)
+
+Session `49c375cd`, invoker **Fable 5**. Preflight per runbook step 0/0a, before
+the first Workflow call.
+
+**Owner opt-in granted on screen** (2026-08-14, this session's kickoff): run 6 =
+B2 + the epic close-out to PR-ready, stopping at halt point 1. Pruning the three
+merged `fix/*` branches was authorized in the same message.
+
+**Model directive — recorded because it deviates from the brief's prose.** The
+owner's words: "running on opus this round. run it as is and we'll test the
+consequences and amend before epic c run if necessary."
+`epic-b-b2-brief.md` §"Sprint identity" prescribes a **Sonnet** implementer for B2
+(from `epic-b-design-brief.md` row 3 / `RELEASE_ARC.md` §"Session models"), but the
+brief's own First-move block passes **no model args**, so "as is" resolves to the
+script defaults — `implementerModel: 'opus'`, `closerModel: 'sonnet'`,
+`reviewerModel: 'opus'` (`.claude/workflows/n1-baseline.mjs:309-311`, read at HEAD).
+B2 therefore runs an **Opus implementer**, deviating from the epic model table with
+the owner's explicit acceptance and an amendment slated before the Epic C run.
+**Stated ambiguity, not resolved by guess (C-12):** "running on opus" is also the
+literal form the authorization record uses for the *invoking* session's model, and
+this session is Fable 5 and cannot change its own model mid-session. Both readings
+were surfaced to the owner in the same turn the run started; the owner watches the
+console and is the live interrupt.
+
+**Preflight results.**
+
+- Handoff chain: pointer verified, `--event consumed` stamped clean (fingerprint
+  `a110ed7994e4`).
+- Structural gate: `tests/test_n1_pipeline.py` + `tests/test_gitattributes_coverage.py`
+  — **46 passed**, no reruns.
+- Preconditions: items 90–93 all present on the board; tree clean but for this
+  session's own ledger shard.
+- Scope reconciliation (authorization record vs. sprint brief): **no conflict.**
+  Both name B2 + the epic close-out to PR-ready as the remaining unit. Noted, not
+  asked: the ratified sentence's "one invoking session, continuously" was already
+  split across sessions by the owner's own post-run-5 redirect.
+- Branch: `feat/ats-conformance` cut off `epic/b-render-ats` @ `dc60ba9`.
+- Deviation declared at preflight: the **live dispatch probe was held until after
+  the opt-in** rather than run before the batched question as step 0a sequences it
+  — ~67k subagent tokens spent on a possibly-unauthorized run vs. six seconds
+  after. Run before the sprint stage, with the documented stop on any verdict other
+  than `ok_to_run`.
+
+**NEW observation — pruning a merged branch retires the plan-approval marker.**
+Runbook step 9 records the marker as late-binding and retiring on the *main* merge
+("expect one re-approval at the epic close, not per sprint boundary"). Observed
+here: the marker was stamped to `fix/n1-invoker-context-budget`, and **pruning that
+already-ff-merged branch retired it immediately** — the next edit was blocked with
+`PLAN RETIRED` (`hooks/check-plan-approved.sh`), on `feat/ats-conformance`, nowhere
+near a main merge. So the retirement trigger is the stamped branch ceasing to exist,
+not merge-to-main alone. Consequence for the invoker: **the marker is a runbook
+step-0 precondition** (without it every pipeline subagent's first `Edit` is blocked
+and `escalate()` short-circuits that to `escalated_to_owner` with no reviewer), so
+pruning before invoking costs a full re-approval ceremony. Cheap fix for the next
+run: prune *after* the sprint stage, or run the ceremony knowingly before invoking.
+Recovery here was the documented clean path (flush landed ON the branch → archive
+`20260814T015809Z` + `plan-archived` ledger receipt → `EnterPlanMode` → plan →
+`ExitPlanMode`); the marker was never hand-created.
+
+**First fresh-session exercise of the LF-ledger fix**
+(`fix/n1-invoker-context-budget`'s C-11 mechanism): this session's own `consumed`
+append is 294 bytes, **0 CR**. The fix holds on a path last session could not test
+— a new session's first write, not an append to a shard the fixed writer had
+already touched.
+
 ### 2026-08-13 (Epic B run 5, sprint B1b COMPLETE — first live escalation firing; boundary stop on doubled compaction signal)
 
 Session `b0769daa` (invoker Fable) ran B1b end-to-end through the pipeline:
