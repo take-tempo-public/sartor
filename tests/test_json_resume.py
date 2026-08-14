@@ -21,8 +21,10 @@ from json_resume import (
     education_position_text,
     format_date_range,
     format_month_year,
+    is_month_precise,
     json_resume_to_markdown,
     md_to_json_resume,
+    needs_month_precision,
     scrub_ats_unsafe,
     split_outside_brackets,
 )
@@ -624,6 +626,37 @@ class TestFormatDateRange:
 
     def test_year_only_range(self):
         assert format_date_range("2020", "2023") == "2020 – 2023"
+
+
+# ---------------------------------------------------------------------
+# Month precision (B2/ATS-conformance)
+# ---------------------------------------------------------------------
+
+
+class TestMonthPrecision:
+    def test_is_month_precise_iso_year_month_only(self):
+        assert is_month_precise("2022-09") is True
+        assert is_month_precise("2022") is False
+        assert is_month_precise("") is False
+        assert is_month_precise(None) is False
+        assert is_month_precise("present") is False
+        assert is_month_precise("2022-9") is False  # not the ISO two-digit shape
+
+    def test_needs_month_when_either_side_year_only(self):
+        assert needs_month_precision("2020", "2022-05") is True
+        assert needs_month_precision("2020-01", "2022") is True
+        assert needs_month_precision("2020", "2022") is True
+
+    def test_month_precise_and_open_ended_do_not_need_month(self):
+        assert needs_month_precision("2020-01", "2022-05") is False
+        # Falsy end = the DB's NULL-means-current convention — never blocks.
+        assert needs_month_precision("2020-01", None) is False
+        assert needs_month_precision("2020-01", "") is False
+
+    def test_malformed_values_are_the_validators_jurisdiction(self):
+        """Non-ISO junk neither blocks nor counts as precise — the rule targets
+        imprecise dates; malformed ones belong to the create/edit validators."""
+        assert needs_month_precision("March 2020", "present") is False
 
 
 # ---------------------------------------------------------------------

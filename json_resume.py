@@ -624,6 +624,37 @@ def format_date_range(start: object, end: object) -> str:
     return f"{s} – {e}"
 
 
+def is_month_precise(value: object) -> bool:
+    """True when a stored ISO date string carries a month (`YYYY-MM`).
+
+    The canonical month-precision predicate (B2/ATS-conformance). The corpus
+    list's `needs_month` badge and the generate-time month block both resolve
+    through this module so the two can never disagree. A value matching
+    neither ISO shape is the date validators' jurisdiction
+    (`blueprints/corpus/experiences.py`), not this predicate's.
+    """
+    s = str(value).strip() if value else ""
+    return bool(_ISO_YEAR_MONTH_RE.match(s))
+
+
+def needs_month_precision(start: object, end: object) -> bool:
+    """True when either stored date is ISO year-only (`YYYY`) — the ATS-block rule.
+
+    Year-only dates are the shape the B2 month hard block exists for
+    (RELEASE_ARC §Epic B, B2): an ATS parsing `2022 – 2023` cannot place the
+    role's duration, so generation refuses until a month is added. A falsy
+    `end` is the NULL-means-current convention (`db.models.Experience.end_date`)
+    and never blocks. Non-ISO text (legacy hand-typed values) is left to the
+    create/edit validators rather than blocked here — the rule targets
+    *imprecise* dates, not *malformed* ones.
+    """
+
+    def _year_only(v: object) -> bool:
+        return bool(_ISO_YEAR_ONLY_RE.match(str(v).strip() if v else ""))
+
+    return _year_only(start) or _year_only(end)
+
+
 #: Separator between an education entry's `area` and `studyType` on the single
 #: "position line" every renderer gives a degree. EM dash (U+2014), deliberately
 #: NOT the EN dash (U+2013) `format_date_range` puts between dates: the two must

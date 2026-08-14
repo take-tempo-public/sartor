@@ -9,6 +9,7 @@ contexts keep the generate() LLM path — so --suite synthetic stays byte-identi
 
 from __future__ import annotations
 
+import copy
 import json
 import types
 from pathlib import Path
@@ -194,7 +195,15 @@ def gen_app(tmp_path, monkeypatch, _migrated_template_db):
     return types.SimpleNamespace(client=app.test_client(), output_dir=output_dir, calls=calls)
 
 
-def _write_ctx(output_dir, *, corpus=True, approved=True):
+def _write_ctx(
+    output_dir,
+    *,
+    corpus=True,
+    approved=True,
+    corpus_start="2021-01",
+    corpus_end="present",
+    approved_doc=None,
+):
     ctx: dict = {
         "resume": {
             "text": "orig",
@@ -228,14 +237,14 @@ def _write_ctx(output_dir, *, corpus=True, approved=True):
             {
                 "id": 3,
                 "company": "Acme",
-                "start_date": "2021-01",
-                "end_date": "present",
+                "start_date": corpus_start,
+                "end_date": corpus_end,
                 "eligible_titles": [],
                 "bullets": [{"id": 41, "text": "Led the billing rewrite that cut churn."}],
             }
         ]
     if approved:
-        ctx["approved_composition"] = _APPROVED
+        ctx["approved_composition"] = approved_doc if approved_doc is not None else _APPROVED
     p = output_dir / "alice" / "context_iter0.json"
     p.write_text(json.dumps(ctx), encoding="utf-8")
     return str(p)
@@ -305,3 +314,70 @@ class TestDeterministicGenerateRoute:
         assert gen_app.calls["generate_streaming"] == 0  # deterministic — no streaming LLM
         # The assembled résumé rode the chunk + done events.
         assert "Led the billing rewrite" in text
+
+
+class TestMonthPrecisionBlock:
+    """B2 ATS conformance: the generate-time month hard block, on BOTH entry
+    points. `/api/generate/stream` is the entry point the design brief never
+    named (blast-radius row 20) — its test here is the proof the enumeration
+    found it; a suite driving only /api/generate would pass with the SSE path
+    unguarded."""
+
+    def _post(self, gen_app, ctx_path, route="/api/generate"):
+        return gen_app.client.post(
+            route,
+            json={"username": "alice", "context_path": ctx_path, "output_format": ".md"},
+        )
+
+    def test_year_only_corpus_role_blocks_generate(self, gen_app):
+        ctx_path = _write_ctx(gen_app.output_dir, approved=False, corpus_start="2019")
+        r = self._post(gen_app, ctx_path)
+        assert r.status_code == 422
+        body = r.get_json()
+        assert body["needs_month_precision"] is True
+        assert body["month_needed_roles"] == ["Acme"]
+        assert "Acme" in body["error"] and "month" in body["error"]
+        assert gen_app.calls["generate"] == 0  # blocked BEFORE any LLM spend
+
+    def test_year_only_corpus_role_blocks_stream(self, gen_app):
+        ctx_path = _write_ctx(gen_app.output_dir, approved=False, corpus_start="2019")
+        r = self._post(gen_app, ctx_path, route="/api/generate/stream")
+        assert r.status_code == 422  # plain JSON per the route's pre-LLM contract
+        assert r.get_json()["needs_month_precision"] is True
+        assert gen_app.calls["generate_streaming"] == 0
+
+    def test_year_only_end_date_also_blocks(self, gen_app):
+        ctx_path = _write_ctx(
+            gen_app.output_dir, approved=False, corpus_start="2019-02", corpus_end="2021"
+        )
+        r = self._post(gen_app, ctx_path)
+        assert r.status_code == 422
+        assert gen_app.calls["generate"] == 0
+
+    def test_year_only_frozen_work_blocks_both_routes(self, gen_app):
+        frozen = copy.deepcopy(_APPROVED)
+        frozen["work"][0]["startDate"] = "2021"
+        ctx_path = _write_ctx(gen_app.output_dir, approved_doc=frozen)
+        for route in ("/api/generate", "/api/generate/stream"):
+            r = self._post(gen_app, ctx_path, route=route)
+            assert r.status_code == 422, route
+            assert r.get_json()["month_needed_roles"] == ["Acme"], route
+
+    def test_frozen_education_year_only_is_exempt(self, gen_app):
+        """Education is exempt by owner decision — enforced by which keys
+        _month_imprecise_roles reads (work only), not by a filter."""
+        frozen = copy.deepcopy(_APPROVED)
+        frozen["education"] = [
+            {"institution": "State University", "startDate": "2010", "endDate": "2014"}
+        ]
+        ctx_path = _write_ctx(gen_app.output_dir, approved_doc=frozen)
+        r = self._post(gen_app, ctx_path)
+        assert r.status_code == 200, r.get_data(as_text=True)
+
+    def test_month_precise_closed_range_passes(self, gen_app):
+        ctx_path = _write_ctx(
+            gen_app.output_dir, approved=False, corpus_start="2019-02", corpus_end="2021-06"
+        )
+        r = self._post(gen_app, ctx_path)
+        assert r.status_code == 200, r.get_data(as_text=True)
+        assert gen_app.calls["generate"] == 1  # pre-freeze corpus → LLM path, unblocked
