@@ -82,7 +82,7 @@ OUTPUT SHAPE: JSON object with two keys:
 - "experiences" — array of objects, each with these fields:
   - "company" (string, required) — the employer/organization name
   - "location" (string, optional) — city/state if shown
-  - "start_date" (string, required) — "YYYY-MM", or just "YYYY" when only the year is shown (year-only is fine — many résumés list years only)
+  - "start_date" (string, required) — "YYYY-MM"; include the month whenever the résumé shows one. Use bare "YYYY" ONLY when the résumé truly shows no month (the role still imports, but the product asks the candidate for a month before generating)
   - "end_date" (string or null) — "YYYY-MM", "YYYY", or null for current/ongoing
   - "candidate_inferred_title" (string, required) — ONE title that best describes the role as the candidate wrote it. If multiple titles appear (promotions within the same company over time), pick the most recent / highest. Alternate framings will be added later by the user.
   - "summary" (string or null, optional) — the role's INTRO / SCOPE paragraph if one appears under the title (a prose sentence or two describing the role, team, or mandate — NOT an achievement). This is distinct from bullets. If the role has no intro paragraph, use null. Do NOT put this text in "bullets".
@@ -191,9 +191,13 @@ def extract_experiences_and_skills(
 # ---------------------------------------------------------------------------
 
 
-# Accept "YYYY-MM" or a bare "YYYY" — many résumés list years only, and a
-# year-only stamp is fine for a résumé + more ATS-tolerant (walkthrough F3).
-# Year-only is stored verbatim; downstream renders the date string as-is.
+# Accept "YYYY-MM" or a bare "YYYY". DELIBERATELY PERMISSIVE — do not tighten
+# to month-required (B2/ATS-conformance, blast-radius row 38): a year-only
+# date failing this regex would drop `start_date`, sending the WHOLE role down
+# the `experiences_dropped` path (`corpus_import._ingest_one_experience`) — the
+# role vanishes instead of arriving flagged, the opposite of the import-
+# surfacing intent. Year-only roles land, get counted in
+# `experiences_needing_month`, and generation blocks until a month is added.
 _DATE_RE = re.compile(r"^\d{4}(-\d{2})?$")
 
 

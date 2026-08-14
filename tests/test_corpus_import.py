@@ -306,6 +306,26 @@ class TestImportReportMerge:
         assert a.clarifications_skipped == 4
         assert a.errors == ["x"]
 
+    def test_merge_sums_month_needed_telemetry(self):
+        """B2 ATS conformance: a counter without its merge() line silently
+        reports only the last file's total — the failure the existing pairs
+        already avoid (blast-radius row 31)."""
+        a = ImportReport(
+            experiences_needing_month=1,
+            month_needed_experiences=[{"company": "Acme"}],
+        )
+        b = ImportReport(
+            experiences_needing_month=2,
+            month_needed_experiences=[{"company": "Globex"}, {"company": "Initech"}],
+        )
+        a.merge(b)
+        assert a.experiences_needing_month == 3
+        assert [m["company"] for m in a.month_needed_experiences] == [
+            "Acme",
+            "Globex",
+            "Initech",
+        ]
+
 
 # ---------------------------------------------------------------------------
 # Resume-file ordering and merge-as-alternate-title (the redesign-critical bits)
@@ -442,6 +462,14 @@ class TestInsertOrMergeExperience:
         db_session.flush()
         exp = db_session.query(Experience).filter_by(candidate_id=c.id).one()
         assert exp.start_date == "2020"  # F3: kept verbatim, not blanked
+        # B2 ATS conformance: the year-only role LANDED (created, not dropped —
+        # this is the assertion that catches a too-eager _DATE_RE tightening,
+        # blast-radius rows 38-39) AND was flagged for month precision.
+        assert report.experiences_created == 1
+        assert report.experiences_dropped == 0
+        assert report.experiences_needing_month == 1
+        assert report.month_needed_experiences[0]["company"] == "Acme"
+        assert report.month_needed_experiences[0]["start_date"] == "2020"
 
         variants = db_session.query(ExperienceSummaryItem).filter_by(experience_id=exp.id).all()
         assert [v.text for v in variants] == ["Owned the platform roadmap for a 3-team org."]

@@ -492,7 +492,7 @@ class RefinementScopeResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-08-09.1"  # Epic A sprint A3 (feat/role-summary-drafting): NEW DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT constant + draft_experience_summaries (batched per-role intro drafting at Compose, one call for all included roles). Genuine prompt-text addition -> bumped in the same changeset per AGENTS.md "LLM prompts". Supersedes 2026-07-08.4 (SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT).
+PROMPT_VERSION = "2026-08-14.1"  # Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —

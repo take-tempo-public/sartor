@@ -509,6 +509,19 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
                     for d in report.dropped_experiences
                 ],
             )
+        if report.experiences_needing_month:
+            # Month-precision telemetry (B2/ATS-conformance): these roles
+            # LANDED but will hard-block generation until a month is added —
+            # log loudly, mirroring the dropped-role block above.
+            logger.warning(
+                "Ingest %s: %d role(s) need month precision and will block generation: %s",
+                safe_name,
+                report.experiences_needing_month,
+                [
+                    n.get("candidate_inferred_title") or n.get("company") or "(untitled)"
+                    for n in report.month_needed_experiences
+                ],
+            )
         payload = {
             "filename": safe_name,
             "experiences_created": report.experiences_created,
@@ -518,6 +531,8 @@ def ingest_resume_to_corpus(username: str) -> ResponseReturnValue:
             "skills_created": report.skills_created,
             "experiences_dropped": report.experiences_dropped,
             "dropped_experiences": report.dropped_experiences,
+            "experiences_needing_month": report.experiences_needing_month,
+            "month_needed_experiences": report.month_needed_experiences,
             "errors": report.errors,
         }
         # Honesty: a parse/extract failure that yields nothing must NOT look
