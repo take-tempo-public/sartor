@@ -95,7 +95,23 @@ Recovery here was the documented clean path (flush landed ON the branch → arch
 (`fix/n1-invoker-context-budget`'s C-11 mechanism): this session's own `consumed`
 append is 294 bytes, **0 CR**. The fix holds on a path last session could not test
 — a new session's first write, not an append to a shard the fixed writer had
-already touched.
+already touched. **Then it broke again, from a third writer** — see the O1b entry
+in `docs/dev/diagnosis/n1-invoker-context-budget.md` and commit `e6e1402`: the
+`plan-archived` receipt written by `hooks/lib/retire-approved-plan.sh` (the hook the
+prune above invoked) carried 1 CR byte, which the run-5-authored sweep caught at
+preflight. Gate #1 would have failed ~90 minutes into this run. Fixed writer-side
+plus a new dual-check gate (`TestLedgerWritersPinLf`) before the sprint was invoked.
+
+**Live dispatch probe — `verdict: "ok_to_run"`** (run `wf_af760b39-ef0`): both
+`sartor:n1-refuter` and `sartor:n1-judge` resolved, `ack=ok`, 0 errors. **3.4s,
+67.1k subagent tokens, 2 tool uses** — within the documented envelope (6.2s / ~67k
+on `wf_d5ab3682-071`), so the probe's cost is now measured twice and stable.
+Fourth consecutive run in which the probe or its deterministic twin, rather than a
+sprint, absorbed the invocation-boundary risk.
+
+**Process hygiene checked before the gate:** no listener on port 5000, no
+`app.py` dev server running (a day-old orphan caused a real test failure once —
+carry-forward ledger item 20).
 
 ### 2026-08-13 (Epic B run 5, sprint B1b COMPLETE — first live escalation firing; boundary stop on doubled compaction signal)
 
