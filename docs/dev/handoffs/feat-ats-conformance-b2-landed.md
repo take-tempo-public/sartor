@@ -5,8 +5,9 @@
 > **Where this sits (2026-08-14):** the owner redirected after run 6 (see the
 > consumed predecessor handoff `feat-ats-conformance.md`), chose the external
 > GitHub-native factory direction (item 97: `anthropics/claude-code-action` in
-> automation mode on a self-hosted runner), directed **no board→Issues
-> projection** (Issues = community inbox, owner-digested), and had B2 landed
+> automation mode on a self-hosted runner) with **the repo board itself as the
+> dispatch queue** (forge-issue sync is simply out of scope — a posture, not a
+> recorded prohibition; see `board-forge-sync-review.md` §3), and had B2 landed
 > **conventionally** in the same session — all six scope items plus the four
 > brief corrections, on this branch. **Epic B is code-complete**; the epic PR
 > (halt point 1) is the owner's gate. The next working session is the
@@ -212,13 +213,16 @@ externalize. Deliverables, in order:
 
 1. **The item-97 formal decision record** — the direction (GitHub-native
    factory: `anthropics/claude-code-action` automation mode, self-hosted
-   runner, serial `concurrency` group; Kestra uncoupled, homelab-only) and
-   the no-Issues-projection directive, both **quoted from their recorded
-   homes** (`docs/dev/work/items/0097-external-orchestration-hypothesis.md`
-   owner-verbatim block; `docs/dev/board-forge-sync-review.md` §3), per the
-   scope-is-quoted rule. Update item 97; retire item 93 (moot), retire/amend
-   item 95's pre-authorization (owner's own words needed), transform item 96
-   into the factory task-schema rule, note item 94's structural dissolution.
+   runner, serial `concurrency` group; Kestra uncoupled, homelab-only),
+   **quoted from its recorded home**
+   (`docs/dev/work/items/0097-external-orchestration-hypothesis.md`
+   owner-verbatim block) per the scope-is-quoted rule, with the board-as-queue
+   scope stated per `docs/dev/board-forge-sync-review.md` §3 (forge-issue
+   sync is out of scope — record it as scope, NOT as a "never Issues" rule;
+   the owner explicitly declined a standing prohibition). Update item 97;
+   retire item 93 (moot), retire/amend item 95's pre-authorization (owner's
+   own words needed), transform item 96 into the factory task-schema rule,
+   note item 94's structural dissolution.
 2. **Owner work-package 1 — affected-resources sweep:** review ALL repo code
    + documentation for areas touched by the in-repo orchestration system
    (n1 pipeline + runbook + briefs, governance hooks it trips, board, handoff/
@@ -233,10 +237,18 @@ externalize. Deliverables, in order:
    priority scale, multi-project namespacing, budgets, what survives of the
    pipeline's taxonomy). These are INPUT for the design agent, who probes
    further as requirements are set.
-5. **The two smoke tests** (may land as evidence during design): repo hooks
+5. **Owner work-package 4 — the BOARD design pass** (owner-flagged
+   2026-08-14: the board as it stands is NOT ready to support factory
+   dispatch): readiness semantics designed and gate-enforced, the priority
+   model, the dispatch-payload convention, execution-state fields incl. the
+   fail-closed failed-run home, the item-82 header/population debt, epic
+   nesting vs. dispatch, and the 97-file triage — as ONE schema change-set
+   behind ONE C-10 dossier. Full brief:
+   `docs/dev/board-forge-sync-review.md` §7.
+6. **The two smoke tests** (may land as evidence during design): repo hooks
    firing in a headless `claude -p` run (expect exactly one self-clearing
    item-87 pause), and the runner-settings `bypassPermissions` check.
-6. The full research record for the design agent: the **Dark Factory
+7. The full research record for the design agent: the **Dark Factory
    Dispatch artifact** — https://claude.ai/code/artifact/479ee279-abc8-413e-83ec-3256dd0c9672
    — §03 comparison (Sortie/Beads as fallbacks), §05 item-97 answers, §09
    agenda; plus memory `reference-dark-factory-research`.
@@ -246,9 +258,9 @@ GATED surface — the `priority` schema change owes a C-10 consumer dossier
 BEFORE its first edit.
 
 Scope is bounded to item 97 (`docs/dev/work/items/0097-external-orchestration-hypothesis.md`)
-plus the owner's two in-session directives as recorded in
-`docs/dev/board-forge-sync-review.md` §3. Do not expand beyond what is listed
-there.
+plus the owner's in-session direction as recorded in
+`docs/dev/board-forge-sync-review.md` §3 and §7. Do not expand beyond what is
+listed there.
 
 ---
 

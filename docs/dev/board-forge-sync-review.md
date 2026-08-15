@@ -56,42 +56,35 @@ headless run → PR → human gate):
 5. **Failure surfacing**: a failed run marks the task so the next cycle skips it,
    and notifies the owner (the "human steps in only on issues" gate).
 
-## 3. Canonicality (item 97 Q1) — RESOLVED by owner directive, 2026-08-14
+## 3. Canonicality (item 97 Q1) — resolved 2026-08-14: the board is the queue
 
-**The owner's directive, verbatim (mid-session, after reviewing the research —
-the single source for this section's intent; cite it, never restate it):**
-
-> leave off pushing to github issus for now. i'll reserve github issus for open
-> source community filings and digest them myself into our board. keeps me in
-> the lop and the system from picking up an issue i never approved. allows me
-> to shape how the issue sis resolved in a design session with claude
-
-**Consequences:**
+Forge-issue integration is **not part of the factory design** — not as a
+prohibition to record, simply as scope: the owner reviewed the projection
+sketch (kept in §3b for reference) and chose to leave it out. Design as it
+stands:
 
 - **The repo board is BOTH the canonical record AND the dispatch queue.** The
   factory's picker reads `docs/dev/work/items/*.md` directly in the repo
   checkout (via the `work_items next` query below) — no projection layer, no
   second writer, no sync code at all. The single-writer question dissolves
   completely rather than being managed.
-- **GitHub Issues = community inbox only.** Open-source filings arrive there;
-  the OWNER digests accepted ones into board items by hand (typically in a
-  design session). The factory never reads Issues, so it structurally cannot
-  pick up a task the owner never approved — the same
-  removed-by-construction shape as item 97 itself.
-- **Factory triggers** are cron + `workflow_dispatch` only (no issue-label
-  triggers). The board file changing on `main` could later become a push
-  trigger; not needed for v1.
-- **New open question this creates (design sprint):** where failed-run state
-  lives without Issues. A merged task PR updates the item file, but a FAILED
-  run has no PR to ride. Candidates: a bot-committed status note on a factory
-  branch + notification; an Actions artifact/cache the picker consults;
-  or "notify owner + skip-list in the workflow run" (simplest). Must fail
-  closed (a failed task never silently re-picked next cycle).
+- Tasks enter the board the way they always have: the owner files them
+  (typically shaped in a design session). Because the picker reads only the
+  board, nothing outside it can feed the factory — dispatch of an unapproved
+  task is removed by construction, the same shape as item 97 itself.
+- **Factory triggers** are cron + `workflow_dispatch` only. The board file
+  changing on `main` could later become a push trigger; not needed for v1.
+- **Open question this scope creates (design sprint):** where failed-run state
+  lives. A merged task PR updates the item file, but a FAILED run has no PR
+  to ride. Candidates: a bot-committed status note on a factory branch +
+  notification; an Actions artifact/cache the picker consults; or "notify
+  owner + skip-list in the workflow run" (simplest). Must fail closed (a
+  failed task never silently re-picked next cycle).
 
-## 3b. The projection design (considered, DECLINED for now — kept for the record)
+## 3b. The projection design (considered, not pursued — kept for the record)
 
-The pre-directive analysis below survives as reference in case the owner ever
-revisits (e.g. wanting a public roadmap view). **None of it is planned work.**
+The earlier analysis below survives as reference in case a forge-issue view is
+ever wanted (e.g. a public roadmap). **None of it is planned work.**
 
 **Option A — repo board canonical; GitHub Issues are a one-way PROJECTION.**
 
@@ -137,13 +130,13 @@ GH-compatible Actions, so the same shape ports; **GitLab CE** (MIT core) does it
 with the Issues API + CI schedules — its native blocked-by links may be
 Premium-gated (UNVERIFIED; label fallback if so).
 
-## 5. Needed changes (the concrete list — revised for the no-projection directive)
+## 5. Needed changes (the concrete list)
 
 1. **Schema:** add `priority` (proposal: int, lower = sooner, required when
    `status = "open"` and `decision_owner = "agent"`). **C-10 dossier first** —
    SCHEMA.md is gated, and consumers include `scripts/work_items.py`, the board
    generator, the closure-bar checks, and every doc that restates the field
-   table. (The `[x].forge` convention is no longer needed — no projection.)
+   table. (The `[x].forge` convention is not needed — no projection in scope.)
 2. **`scripts/work_items.py`:** a `next` subcommand — ready query (open,
    deps-closed, agent-owned = `decision_owner = "agent"`), priority-ordered,
    `--json` output. Deterministic, stdlib-only, testable. **This IS the
@@ -157,26 +150,20 @@ Premium-gated (UNVERIFIED; label fallback if so).
    `claude_args` restrictions; `max_turns`; job timeout) → failure step
    (notify owner + fail-closed skip marker; see §3's open question).
    Self-hosted runner on the agent station.
-5. **Community-inbox hygiene (docs-only):** a note in CONTRIBUTING/README that
-   Issues are the community channel and the board is internal — so a
-   contributor understands why an issue closes with "digested to board item N".
-6. **Runner hygiene:** the runner's machine-local Claude settings must NOT carry
+5. **Runner hygiene:** the runner's machine-local Claude settings must NOT carry
    `bypassPermissions` (hardening-review residue, still standing); smoke-test
    that repo hooks fire in a headless run and that the item-87 witness costs
    exactly one self-clearing retry per run.
 
-**Dropped from the list by the directive:** the projector script, the
-projected-issues freshness check, the issue-dependencies/Projects-v2 field
-mapping (§4 above is record-only), and any forge driver interface.
+**Out of scope (per §3):** the projector script, the projected-issues
+freshness check, the issue-dependencies/Projects-v2 field mapping (§4 above
+is record-only), and any forge driver interface.
 
 ## 6. Open questions for the design sprint (deliberately unanswered here)
 
 - Priority scale + who sets it (owner-only at filing? re-prioritization flow?).
-- Do net-new tasks born as forge issues get imported to the board (an
-  `import-to-board` label the next factory run files an item for — keeps the
-  repo canonical), or is issue-first creation disallowed?
 - Multi-project namespacing: one workflow per repo vs an org-level dispatcher;
-  where the cross-project priority view lives (Projects v2 org board?).
+  where the cross-project priority view lives.
 - Per-task budget controls (`max_turns` tiers by item size? Console spend cap
   per workspace — decided: subscription first, API workspace when volume
   demands).
@@ -184,4 +171,27 @@ mapping (§4 above is record-only), and any forge driver interface.
   refuter/judge stages could become later factory workflow steps — or be
   deliberately dropped for v1's "implement → PR → human review" simplicity).
 - Which items are grandfathered: the current 6 open / 45 watching population was
-  filed without priority; the first projection pass needs a triage.
+  filed without priority; the first dispatch pass needs a triage.
+
+## 7. The board design pass (owner-flagged 2026-08-14 — a first-class work package)
+
+The owner's call, and §1's facts back it: **the board as it stands is not ready
+to carry factory dispatch**, and the design sprint owes it a dedicated pass —
+not just the two field additions in §5. What that pass covers, at minimum:
+
+- **Readiness semantics as a designed thing**, not a derived convenience:
+  what exactly makes an item dispatchable (`status`, `depends_on` closure,
+  `decision_owner`, priority present, brief attached — and what else?), stated
+  once and enforced by `work_items check`.
+- **Priority model** (scale, required-when, who sets, re-prioritization flow).
+- **Dispatch payload**: how an item carries its executable brief (field vs.
+  `refs` convention), and what the factory prompt assembles around it.
+- **Execution-state fields**: claimed / attempted-failed / done transitions the
+  factory writes through task PRs, plus the fail-closed home for failed-run
+  state (§3's open question) — decided as schema, not workflow improvisation.
+- **Structural debts that bite under automation**: the item-82 header
+  population mix; epic nesting vs. dispatch (are epic children dispatchable
+  individually?); the 97-file population triage (what gets priority, what
+  stays watching).
+- **The C-10 dossier** for `docs/dev/work/SCHEMA.md` covering all of the above
+  in ONE enumeration pass — one schema change-set, not field-by-field edits.
