@@ -150,7 +150,15 @@ if project_dir and session and basename:
             "plan": basename,
             "ts": ts,
         }
-        with (ledger_dir / f"{session}.jsonl").open("a", encoding="utf-8") as f:
+        # newline="\n": text-mode append otherwise translates \n to the platform
+        # ending, putting CR bytes in the working tree that .gitattributes
+        # (checkout-time only) cannot prevent — the class
+        # tests/test_verify_doc_template.py::TestLedgerWorkingTreeBytes fails
+        # closed on. This writer was missed by the fix that covered the two
+        # Python writers; observed live 2026-08-14 (run-6 preflight).
+        with (ledger_dir / f"{session}.jsonl").open(
+            "a", encoding="utf-8", newline="\n"
+        ) as f:
             f.write(json.dumps(record) + "\n")
     except OSError:
         pass  # never wedge the caller's gate over a bookkeeping write

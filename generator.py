@@ -21,7 +21,7 @@ from docx.shared import Inches, Pt
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
-from json_resume import format_date_range
+from json_resume import education_position_text, format_date_range, map_to_approved_font
 
 # Matches any common bullet prefix used by LLMs:
 # -, *, •, –, —, ·, ◆, ●, ▪, ›, ‣
@@ -248,20 +248,17 @@ def _render_pdf_from_json(
     persona doesn't ship an .html companion yet — keeps the output
     path working as more personas pick up HTML companions over time.
     """
-    from pdf_render import html_template_path_for, render_pdf
+    from pdf_render import render_pdf
 
     html_template: Path | None = None
     if docx_template_path:
-        html_template = html_template_path_for(docx_template_path)
-        if html_template is None:
-            # Lazily generate the companion so a PDF of an uploaded template
-            # honors its own typography instead of falling back to Classic
-            # (walkthrough B2 — mirrors the live-preview route). Deterministic.
-            from docx_to_persona_html import generate_companion
+        # Resolve the companion, generating it lazily when absent and refreshing
+        # it when it predates the current HTML skeleton, so a PDF of an uploaded
+        # template honors its own typography (walkthrough B2 — mirrors the
+        # live-preview route) AND its current date formatting. Deterministic.
+        from docx_to_persona_html import resolve_companion_html
 
-            companion = generate_companion(docx_template_path)
-            if companion is not None:
-                html_template = companion[0]
+        html_template = resolve_companion_html(docx_template_path)
 
     if html_template is None:
         # Fallback: bundled Classic. The path resolves relative to the
@@ -339,7 +336,12 @@ def _cover_letter_font_name(template_path: str | None) -> str:
     css_path = Path(template_path).with_suffix(".css") if template_path else None
     stack = persona_font_family(css_path)
     primary = stack.split(",")[0].strip().strip('"').strip("'")
-    return primary or "Calibri"
+    # B2 ATS conformance (blast-radius row 46): the bundled stacks now lead
+    # with an approved family, but an uploaded companion predating that (or a
+    # hand-edited css) can still lead off-list — map here so the .docx font
+    # NAME is always a member of APPROVED_FONTS. An empty stack maps to
+    # Calibri, preserving the old last-resort guard.
+    return map_to_approved_font(primary)
 
 
 def _render_cover_letter_pdf(
@@ -499,8 +501,18 @@ def _capture_proto(p: Paragraph) -> dict[str, Any]:
     """Capture a paragraph's formatting into a serializable prototype.
 
     Captures alignment, vertical spacing, tab stops, and the primary run's
-    bold/size. Run italic and color are intentionally not captured — they
-    are typically inline (`*text*`) rather than role-based.
+    bold/size/typeface. Run italic and color are intentionally not captured —
+    they are typically inline (`*text*`) rather than role-based.
+
+    `run_font_name` reads the run's DIRECT formatting, which is where most real
+    résumés put their typeface — a template that never uses Word's named styles
+    otherwise arrives here with its font invisible, and the download comes back in
+    the theme default. Mirrors `docx_to_persona_html.extract_persona_style`,
+    which has read `run0.font.name` for the HTML companion since it shipped; the
+    two capture routines walk the same `.docx` and disagreeing about whether a
+    typeface exists is exactly the divergence to avoid. `None` when the run
+    inherits from a style — never invent a name, or a document that correctly
+    inherits would get its font frozen at capture time.
     """
     run0 = p.runs[0] if p.runs else None
     pf = p.paragraph_format
@@ -511,6 +523,7 @@ def _capture_proto(p: Paragraph) -> dict[str, Any]:
         "tab_stops": [(t.position.pt, t.alignment) for t in (pf.tab_stops or [])],
         "run_bold": bool(run0.bold) if (run0 and run0.bold is not None) else None,
         "run_size_pt": run0.font.size.pt if (run0 and run0.font.size) else None,
+        "run_font_name": run0.font.name if (run0 and run0.font.name) else None,
     }
 
 
@@ -589,13 +602,19 @@ def _apply_para_proto(p: Paragraph, proto: dict[str, Any] | None) -> None:
 
 
 def _apply_run_proto(run: Run, proto: dict[str, Any] | None) -> None:
-    """Apply run-level formatting (bold, font size) from a proto."""
+    """Apply run-level formatting (bold, font size, typeface) from a proto."""
     if not proto:
         return
     if proto.get("run_bold") is not None:
         run.bold = proto["run_bold"]
     if proto.get("run_size_pt"):
         run.font.size = Pt(proto["run_size_pt"])
+    if proto.get("run_font_name"):
+        # B2 ATS conformance (blast-radius row 45): map at the APPLY boundary.
+        # Capture stays faithful to what the template says; the approved-fonts
+        # policy binds what we WRITE — B1b's font carry-through is exactly the
+        # path an off-list imported font would otherwise reach the output by.
+        run.font.name = map_to_approved_font(proto["run_font_name"])
 
 
 def _add_inline_runs_with_proto(
@@ -605,7 +624,16 @@ def _add_inline_runs_with_proto(
 
     The proto format acts as a baseline (inline ** / * still wins over base bold).
     Tab characters in `text` are preserved; the paragraph's tab stops handle them.
+
+    An emphasized segment takes the proto's size and TYPEFACE but not its bold —
+    the emphasis already decided that. Without the typeface here a captured font
+    would silently drop at every `**bold**` boundary, i.e. mid-line. Built once
+    up front rather than re-allocated per emphasized segment.
     """
+    inline_base = {
+        "run_size_pt": (proto or {}).get("run_size_pt"),
+        "run_font_name": (proto or {}).get("run_font_name"),
+    }
     segments = _INLINE_RE.split(text)
     for seg in segments:
         if not seg:
@@ -614,15 +642,15 @@ def _add_inline_runs_with_proto(
             run = paragraph.add_run(seg[3:-3])
             run.bold = True
             run.italic = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         elif seg.startswith("**") and seg.endswith("**"):
             run = paragraph.add_run(seg[2:-2])
             run.bold = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         elif seg.startswith("*") and seg.endswith("*"):
             run = paragraph.add_run(seg[1:-1])
             run.italic = True
-            _apply_run_proto(run, {"run_size_pt": (proto or {}).get("run_size_pt")})
+            _apply_run_proto(run, inline_base)
         else:
             run = paragraph.add_run(seg)
             _apply_run_proto(run, proto)
@@ -649,7 +677,7 @@ def _contact_line_items(basics: dict[str, Any]) -> list[str]:
 
 
 def _date_range(start: str | None, end: str | None) -> str:
-    """Render a presentation date range (MM-YYYY, "– Present" when open-ended).
+    """Render a presentation date range (MM/YYYY, "– Present" when open-ended).
 
     Thin wrapper over `json_resume.format_date_range` — the single canonical
     presentation-boundary helper (fix/output-identity-and-dates) — so the
@@ -708,6 +736,15 @@ def _write_docx_from_json_resume(
         styles = _capture_template_styles(doc)
         orig_numPr = _extract_list_numPr(doc)
         _clear_body(doc)
+        # B2 ATS conformance (blast-radius row 43): all four bundled templates
+        # arrive with Normal.font.name unset (probe R2), so any run without a
+        # captured proto inherits Word's docDefaults — not ours to control.
+        # Set Normal explicitly: the captured body font when the template
+        # names one, mapped onto the approved list; else the writer's Calibri
+        # (map_to_approved_font's absence default).
+        normal = doc.styles["Normal"]
+        body_font = (styles.get("body") or {}).get("run_font_name") or normal.font.name
+        normal.font.name = map_to_approved_font(body_font)
     else:
         styles = {}
         orig_numPr = None
@@ -887,7 +924,9 @@ def _write_docx_from_json_resume(
             emit_entry_header(
                 _entry_header_text(
                     str(ed.get("institution") or ""),
-                    str(ed.get("area") or ""),
+                    # `area — studyType` via the one canonical joiner, so the .docx
+                    # header line is the same string the preview and the .md render.
+                    education_position_text(ed),
                     ed.get("startDate"),
                     ed.get("endDate"),
                 )

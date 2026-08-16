@@ -105,8 +105,11 @@
     <header class="degree-header">
       <h3>
         {% if ed.institution %}<span class="institution">{{ ed.institution }}</span>{% endif %}
-        {% if ed.institution and ed.area %}<span class="sep">, </span>{% endif %}
+        {% if ed.institution and (ed.area or ed.studyType) %}<span class="sep">, </span>{% endif %}
         {% if ed.area %}<span class="area">{{ ed.area }}</span>{% endif %}
+        {# Render both — see classic.html's note. Never flips the mapping. #}
+        {% if ed.area and ed.studyType %}<span class="sep">—</span>{% endif %}
+        {% if ed.studyType %}<span class="area">{{ ed.studyType }}</span>{% endif %}
       </h3>
       {% if ed.startDate or ed.endDate %}
       <span class="dates">{{ date_range(ed.startDate, ed.endDate) }}</span>

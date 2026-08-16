@@ -11,9 +11,13 @@
 
 - **Sprint:** B1a (run 1 of 3 — see the epic design brief's mapping table)
 - **Branch to create:** `fix/b1-stale-template-companions`
-- **Stacked on:** `epic/b-render-ats` tip — at run 1 this equals the `main`
-  commit the epic branch was just cut from; the invoking session records the
-  actual sha here at branch-cut time: `<filled by the invoking session>`
+- **Stacked on:** `epic/b-render-ats` tip — recorded by the invoking session at
+  branch-cut time: **`247c810`**
+  (`247c810ac2b7222704c883d157064e22962d19ea`), 2026-08-12. *(This brief's
+  original text predicted the tip would equal the `main` commit the epic branch
+  was cut from. It does not: the epic branch carries 8 commits `main` does not
+  have — the two invocability fixes, the args-guard hardening, and the item-87
+  witnesses. `main` is unchanged at `5b8bafc`.)*
 - **Implementer model + effort:** Opus (epic model table — design brief +
   `RELEASE_ARC.md:1829`); refuter/judge per agent frontmatter
 
@@ -49,6 +53,17 @@ ships, not on the user's file timestamps. Deterministic module — no LLM calls
 font-name capture gap (both B1b, run 2); everything in B2 (run 3); any refactor
 of `docx_to_persona_html.py` beyond the guard + stamp. The chain has already
 lost a sprint to scope drift — file discoveries as work items instead.
+
+## Kickoff preflight — before the first Workflow call
+
+Runbook step **0a** (`docs/dev/n1-baseline-pipeline.md` §"The runbook") is
+binding for this run: read the standing context in full, run the structural
+tests, then put **every** owner decision in **one batch at kickoff** — at
+minimum the per-session run-start opt-in, plus anything your own reading
+surfaces. After kickoff, the owner hears from this session only via the
+escalation primitive or the completion report. Two invocation attempts have
+already died before any agent spawned; the third run is a test of the *chain's*
+ability to use an uninterrupted window, not just of the sprint's code.
 
 ## First move
 

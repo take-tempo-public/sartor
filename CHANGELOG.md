@@ -13,6 +13,170 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: B2 — ATS conformance (`feat/ats-conformance`, Epic B sprint 3 of 3)
+
+The epic's terminal sprint, implemented conventionally (owner-directed) after
+run 6's pipeline stop — scope per `RELEASE_ARC.md` §Epic B (B2) as re-anchored
+by the committed 52-row consumer dossier (`docs/dev/blast-radius/ats-conformance.md`):
+
+- **Changed:** presentation dates render `MM/YYYY` (separator `-` → `/`) via the
+  single canonical helper `json_resume.format_month_year`; en-dash range +
+  `Present` sentinel unchanged, so `.docx`/`.md`/preview/PDF moved together.
+  19 literal test assertions moved in lockstep; `test_render_parity.py` needed
+  none (asserts structure, never a date literal — recorded against the ARC's
+  naming of it). `hardening.compute_date_grounding` verified format-agnostic.
+- **Added:** month **hard block** at BOTH generate entry points (`/api/generate`
+  and the SSE `/api/generate/stream` — the route neither brief named): an
+  included experience role with a year-only date returns a 422 naming the
+  roles, before any LLM spend. Education exempt (owner decision), enforced by
+  which keys `_month_imprecise_roles` reads. One predicate pair
+  (`json_resume.is_month_precise` / `needs_month_precision`) feeds the block,
+  the corpus list's new `needs_month` key (+ `ExperienceSummaryItem` mirror),
+  and the `MONTH NEEDED` corpus badge, so they agree by construction.
+- **Changed:** all FOUR experience date validators (create+edit × start+end)
+  are month-required (`YYYY-MM`); year-only roles still ENTER via import,
+  flagged not dropped — `ImportReport` gains `experiences_needing_month` /
+  `month_needed_experiences` (field + merge + CLI sentence + route payload +
+  ingest-UI note/toast), and `_DATE_RE` stays deliberately permissive
+  (verified: a failing start_date is the drop signal — tightening it deletes
+  the role instead of flagging it). Extraction-prompt wording changed from
+  "year-only is fine" to month-preferred → `PROMPT_VERSION = 2026-08-14.1`.
+- **Added:** `json_resume.APPROVED_FONTS` (Arial/Calibri/Georgia) +
+  `map_to_approved_font`, enforced at every write boundary: run protos map on
+  APPLY, the template branch sets the docx `Normal` font explicitly (all four
+  bundled templates previously shipped it unset), the cover-letter font maps
+  its CSS primary, and companion CSS leads with the approved family (source
+  family kept as fallback; substitution notice in the CSS header + sidecar +
+  log — stated limit: no UI renders the sidecar yet). `classic.css` leads
+  Arial, `modern.css` leads Calibri (its own preset's family).
+- **Added:** `tests/test_ats_structure.py` — the structural output gate:
+  generated `.docx` asserted single-column / no tables / no text boxes / no
+  header-footer text / standard headings only / fonts allow-list-exact, across
+  all bundled templates, the no-template writer, and a synthetic off-list
+  (Papyrus) template.
+
+No new dependencies.
+
+### Fixed: LF pinned at the third ledger writer, plus the writer-side gate the class was missing (`feat/ats-conformance`, items 84/94–97)
+
+Caught at Epic B run 6's preflight, before the sprint was invoked — the fifth
+instance of the working-tree CR-byte class, from a writer the previous branch's
+fix did not cover:
+
+- **Fixed:** `hooks/lib/retire-approved-plan.sh` appends its `plan-archived`
+  ledger receipt from an embedded-Python heredoc that opened the shard in text
+  mode with **no `newline=`**, so Windows translated `\n` to `\r\n`. It now
+  matches the two Python writers. A grep-complete enumeration found exactly
+  three ledger appenders; this was the only one still unpinned.
+- **Added:** `tests/test_verify_doc_template.py::TestLedgerWritersPinLf` — the
+  **writer-side** half of the class. The existing sweep catches a shard that is
+  already dirty; this fails closed when a *new* ledger writer ships without the
+  flag, which is exactly how the class reached a fifth instance. Curated list
+  plus discovery scan (the egress-allowlist dual-check pattern), both arms
+  carrying non-vacuity self-tests so a matcher that finds zero call sites cannot
+  pass while checking nothing.
+- **Docs:** the N=1 runbook's epic-loop step now records that pruning an
+  already-merged branch **retires the plan-approval marker** (the trigger is the
+  stamped branch ceasing to exist, not merge-to-main), and directs the prune to
+  happen after the sprint stage — a live marker is a step-0 precondition.
+
+No product/runtime code changed; `PROMPT_VERSION` untouched.
+
+### Fixed + changed: LF-explicit ledger writes; N=1 pipeline run-report digests + closer filing reconciliation (`fix/n1-invoker-context-budget`, items 84/93)
+
+The run-5 method review's owner-approved mitigations (evidence dossier:
+`docs/dev/diagnosis/n1-invoker-context-budget.md`):
+
+- **Fixed:** both provenance-ledger shard writers
+  (`scripts/enforcement/adapters/claude_context_hook.py`,
+  `scripts/verify_doc_template.py`) now append with `newline="\n"` — text-mode
+  append was translating `\n` to CRLF on Windows, putting CR bytes in
+  working-tree shards that checkout-time `.gitattributes` pins cannot prevent
+  (4th+ recorded instance; reproduced live, red-first tests). 81 working-tree
+  shards renormalized with zero content delta (79 were stale pre-pin
+  materializations). A CR-byte working-tree sweep over `docs/dev/ledger/*.jsonl`
+  (`tests/test_verify_doc_template.py::TestLedgerWorkingTreeBytes`) now fails
+  closed on the class — the C-11 mechanism the run-5 handoff declared owed.
+- **Changed:** `n1-baseline.mjs` run reports now carry per-agent **digests** at
+  the return boundary (full returns stay in the harness `journal.jsonl`;
+  escalation `verbatim` text and the §11.9 accounting union stay complete) —
+  the invoker-context reducer for run 5's measured ~24k-char report. The closer
+  prompt enumerates all three filing-obligation sources, `CLOSER_SCHEMA`
+  requires `filingsOrdered`, and a deterministic `filingDivergence` report
+  field surfaces unfiled obligations (run 5's closer divergence, item 84;
+  machine-readable subset only — stated C-0 limit). Runbook: invoker-scoped
+  kickoff reading (labeled unenforced) and the plan-stamp late-bind prediction
+  corrected to observed behavior. Item 93 records the Epic-C invoker
+  session-shape decision for the owner.
+
+### Added: interrogative-prompt witness — a question gets an answer, not begun work (`feat/interrogative-prompt-witness`, item 87)
+
+Third recorded instance of the class (owner: recurring since before this
+project existed): a session with a hot execution frame treats an
+interrogative prompt as a work order — answers it, then unilaterally starts
+"fixing" something nobody asked about. Prose memories failed to hold at the
+decisive moment, which is charter C-11's own measurement about prose
+discipline generally, so this lands as a mechanism: two cooperating,
+fail-open witnesses (owner-directed 2026-08-12).
+
+On **UserPromptSubmit**, a cheap heuristic — trailing `?` or an
+interrogative lead word (`is/are/should/why/what/how/…`) — injects a
+non-blocking "the deliverable is the ANSWER" reminder into context
+(`hooks/interrogative-prompt-witness.sh` →
+`adapters/prompt_witness_hook.py`; always exit 0). On the first
+**Edit/Write after each user prompt**, a new `interrogative-witness` guard
+in the Edit|Write dispatcher refuses ONCE with the
+interrogative-vs-directive question and self-clears — re-running the same
+call proceeds; one pause per prompt, never two
+(`scripts/enforcement/guards/interrogative_witness.py`).
+
+Stated limits (C-0/C-11): intent classification is not deterministic — these
+are witnesses that force the consideration and strip momentum, not gates
+that prove intent; every failure path (no state, corrupt state, unwritable
+state dir) fails open, matching the owner's stated trust in momentum-free
+judgment. Mechanically the pause reaches exit 2, so
+`tests/test_governance_hooks_gate.py` counts it honestly as the tenth
+blocker rule and adds a fourth hook category (prompt witness) for the
+always-exit-0 UserPromptSubmit half. Reach: Claude Code only **by nature**
+(git hooks have no user prompt) — declared in
+`tests/test_enforcement_coverage.py` and `docs/governance/enforcement.md`
+rather than left for the governance extraction to rediscover. Live-verified
+in the building session itself: the harness hot-loaded the new wiring
+mid-session and the pause fired (and self-cleared) on the session's next
+edit — the item-87 close condition, observed rather than assumed.
+
+### Fixed: imported templates previewed with frozen dates forever (`fix/b1-stale-template-companions`, Epic B / B1a)
+
+A `.docx` persona imported before 2026-07-09 previewed a current role as the
+raw stored `2023-04` instead of `04-2023 – Present`, and nothing a user could
+do in the app fixed it. The preview companion is a **clone** of
+`personas/bundled/classic.html`, and the regeneration guard compared only the
+user's `.docx` mtime — a condition that can notice their file changing but
+never ours. So when `67b83cc` moved the skeleton onto the canonical
+`date_range()` helper, every companion cloned before it kept rendering the old
+raw interpolation, with no call to the global for `pdf_render` to register.
+
+Two things were wrong, not one. The guard was fixed by stamping the sidecar:
+`skeleton_version` — a cached SHA-256 of the shipped skeleton, deliberately a
+content hash rather than a hand-bumped constant so it cannot drift from what it
+describes — now rides in `<stem>.persona.json` beside `layout_fidelity`, and a
+mismatch forces regeneration. A pre-fix sidecar simply lacks the key, which is
+the staleness signal, so no migration is needed. But the guard alone would have
+changed nothing: the four preview/PDF resolution sites called
+`generate_companion` **only when the companion was absent**, so for a stale one
+the guard was never reached at all. They now route through a single
+`resolve_companion_html` entry point that generates when absent, refreshes when
+stale, and returns the companion otherwise — each caller's bundled-Classic
+fallback unchanged.
+
+The four hand-authored bundled companions are **not** classic-skeleton clones
+and carry no `.persona.json`; that absence is the ownership test the refresh
+keys on, so they can never be overwritten — previously they were protected only
+by the existence check this change removes. Covered by a dedicated regression
+test. Deterministic throughout (charter C-6). Diagnosis:
+`docs/dev/diagnosis/b1-stale-template-companions.md`; consumer enumeration:
+`docs/dev/blast-radius/b1-stale-template-companions.md`.
+
 ### Fixed: retired roles no longer reach the A3 intro-drafting prompt (`fix/retired-roles-a3-prompt`, item 75)
 
 `_build_experience_summary_targets` read the analyze-time frozen

@@ -816,6 +816,18 @@ async function uploadFile(file) {
           .join(', ') +
         '.'
       : '';
+    // B2 ATS conformance: year-only roles LAND but hard-block generation
+    // until a month is added — surface it at import, not at generate time.
+    const needMonth = data.experiences_needing_month || 0;
+    const needMonthList = data.month_needed_experiences || [];
+    const monthNote = needMonth
+      ? ` ${needMonth} role(s) need month precision and will block generation` +
+        ` — add start/end months in the Career Corpus: ` +
+        needMonthList
+          .map(d => d.candidate_inferred_title || d.company || '(untitled)')
+          .join(', ') +
+        '.'
+      : '';
 
     // Honesty: a 2xx with nothing extracted is NOT a success. Tell the user
     // plainly and don't fire the green toast — otherwise the status pill reads
@@ -841,10 +853,13 @@ async function uploadFile(file) {
         `Added ${made} experience(s), ${merged} merged into existing roles, ` +
         `${altTitles} alternate title(s), ${bullets} bullet(s), ` +
         `${skillsFound} skill(s) — now pending review below.` +
-        droppedNote;
+        droppedNote +
+        monthNote;
     }
     if (dropped) {
       _toast(`Resume ingested — ${dropped} role(s) need manual review`, true);
+    } else if (needMonth) {
+      _toast(`Resume ingested — ${needMonth} role(s) need month precision`, true);
     } else {
       _toast('Resume ingested into corpus');
     }
@@ -4955,6 +4970,11 @@ function _renderCorpusSummary(exp) {
   if (retired) {
     header.appendChild(_el('div', { className: 'corpus-row-flag retired', textContent: 'RETIRED' }));
   }
+  // B2 ATS conformance: needs_month is computed SERVER-side (one predicate,
+  // shared with the generate-time month block) — this only renders it.
+  if (exp.needs_month) {
+    header.appendChild(_el('div', { className: 'corpus-row-flag needs-month', textContent: 'MONTH NEEDED' }));
+  }
   header.appendChild(_el('div', { className: 'corpus-card-company', textContent: exp.company || '(no company)' }));
   header.appendChild(_el('div', { className: 'corpus-card-title', textContent: exp.official_title || '(no official title)' }));
   header.appendChild(_el('div', { className: 'corpus-card-dates', textContent: `${exp.start_date} — ${exp.end_date || 'current'}` }));
@@ -5055,9 +5075,9 @@ function _renderExperienceFieldGroup(expId, exp) {
     { key: 'company',    label: 'Company',         type: 'text',     value: exp.company || '' },
     { key: 'location',   label: 'Location',        type: 'text',     value: exp.location || '' },
     { key: 'start_date', label: 'Start (YYYY-MM)', type: 'text',     value: exp.start_date,
-      pattern: '\\d{4}-\\d{2}' },
+      pattern: '\\d{4}-\\d{2}', placeholder: 'YYYY-MM (month required)' },
     { key: 'end_date',   label: 'End (YYYY-MM)',   type: 'text',     value: exp.end_date || '',
-      pattern: '\\d{4}-\\d{2}', placeholder: '(blank = current)' },
+      pattern: '\\d{4}-\\d{2}', placeholder: '(blank = current; month required)' },
     { key: 'summary',    label: 'Summary',         type: 'textarea', value: exp.summary || '' },
   ];
   fields.forEach(f => {

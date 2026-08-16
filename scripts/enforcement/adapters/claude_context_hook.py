@@ -215,7 +215,11 @@ def record_compaction(payload: dict[str, Any]) -> bool:
     }
     try:
         shard.parent.mkdir(parents=True, exist_ok=True)
-        with shard.open("a", encoding="utf-8") as handle:
+        # newline="\n": text-mode append otherwise translates \n to the platform ending,
+        # putting CR bytes in the working tree that .gitattributes (checkout-time only)
+        # cannot prevent — the class tests/test_verify_doc_template.py::
+        # TestLedgerWorkingTreeBytes now fails closed on.
+        with shard.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(record) + "\n")
     except OSError:
         return False  # never wedge a compaction over a failed write
@@ -229,13 +233,93 @@ def compaction_notice(payload: dict[str, Any]) -> str:
     return "\n".join(line.format(n=compaction_count(payload)) for line in _COMPACTION_NOTICE)
 
 
+#: fix/n1-scope-dedup (S4, owner-approved 2026-08-13): the epic-state banner. Run 3 stopped a
+#: three-sprint epic after one sprint and the NEXT sessions had no way to know — the owner
+#: lost a day to a stopped epic that read as running (item 84, tenth failure). This makes the
+#: epic's remainder visible to every fresh context in this project, deterministically, so a
+#: silently stopped epic can never hide past the next session start. Context, NOT a gate:
+#: it blocks nothing and instructs nothing (a banner that read as tasking would recreate the
+#: item-87 question-treated-as-work-order class in reverse).
+_EPIC_BRANCH = "epic/b-render-ats"
+
+#: Completion is derived from which closer-written briefs exist as COMMITTED BLOBS at the
+#: epic tip — deliberately NOT from branch refs: runbook step 9 prunes each sprint branch
+#: after its ff-merge, so refs are gone for exactly the sprints that finished (adversarial
+#: review 2026-08-13, reproduced live on B1a). A brief's existence at the tip proves the
+#: PREVIOUS sprint's closer completed. Stable mid-run too: a closer's working-tree write
+#: does not change the committed tip until the invoker's ff-merge.
+_EPIC_B2_BRIEF = "docs/dev/handoffs/epic-b-b2-brief.md"
+
+
+def _git_ok(repo_root: Path, *argv: str) -> bool:
+    """True iff `git <argv>` exits 0. Fail-open: any error reads as False."""
+    import subprocess
+
+    try:
+        return (
+            subprocess.run(  # noqa: S603 - fixed binary, no shell, args are literals
+                ["git", "-C", str(repo_root), *argv],  # noqa: S607 - git from PATH (gitutil.py precedent)
+                capture_output=True,
+                timeout=5,
+                check=False,
+            ).returncode
+            == 0
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def epic_remainder(b2_brief_exists: bool, epic_on_main: bool) -> list[str]:
+    """The pure derivation: which Epic B units remain, given the two committed facts."""
+    if epic_on_main:
+        return []
+    remainder = [] if b2_brief_exists else ["B1b (sprint 2 of 3)"]
+    remainder.append("B2 (sprint 3 of 3)")
+    remainder.append("epic close + PR")
+    return remainder
+
+
+def epic_state_banner(payload: dict[str, Any]) -> str:
+    """SessionStart: Epic B's derived remainder, or "" once the epic has landed on main.
+
+    Every failure path is fail-open ("") — a broken banner must never cost a session.
+    """
+    try:
+        repo_root = _project_dir(payload)
+        if not _git_ok(repo_root, "rev-parse", "--verify", "--quiet", _EPIC_BRANCH):
+            return ""  # no epic branch here (other clone, or epic retired) — nothing to say
+        epic_on_main = _git_ok(repo_root, "merge-base", "--is-ancestor", _EPIC_BRANCH, "main")
+        b2_exists = _git_ok(repo_root, "cat-file", "-e", f"{_EPIC_BRANCH}:{_EPIC_B2_BRIEF}")
+        remainder = epic_remainder(b2_exists, epic_on_main)
+        if not remainder:
+            return ""
+        return (
+            "=== EPIC B STATE (derived from committed briefs at the "
+            f"{_EPIC_BRANCH} tip) ===\n"
+            f"REMAINDER: {', '.join(remainder)} — the epic is NOT complete, whatever any\n"
+            "prior session's close-out implied.\n"
+            "Scope source (single, owner-ratified): docs/dev/handoffs/epic-b-design-brief.md\n"
+            '§"Execution mode + authorization record". Context only, NOT a work order:\n'
+            "pipeline runs start only on the owner's explicit opt-in\n"
+            "(docs/dev/n1-baseline-pipeline.md).\n\n"
+        )
+    except Exception:  # context injection must never wedge a session start
+        return ""
+
+
 def restore_evidence(payload: dict[str, Any]) -> str:
     """SessionStart: the text to replay into the fresh context ("" = stay silent).
 
     Silent unless there is genuinely something to say — a hook that greets every session with
     boilerplate trains the reader to skip it, and then it is worthless on the day it matters.
+    (The epic-state banner is the one deliberate exception while an epic is mid-flight: state
+    that vanishes when the epic lands, not boilerplate that never does.)
     """
-    notice = compaction_notice(payload) + compaction_threshold_notice(payload)
+    notice = (
+        epic_state_banner(payload)
+        + compaction_notice(payload)
+        + compaction_threshold_notice(payload)
+    )
     branch, path, text = _dossier(payload)
     if not branch.startswith("fix/") or text is None:
         return notice  # C-12: the loss is announced even with no dossier to replay

@@ -1,0 +1,5 @@
+{"event": "generated", "doc": "docs/dev/handoffs/fix-n1-invoker-loop.md", "session": "7225a213-c3ac-4820-aa36-61fcb2332248", "branch": "fix/n1-scope-dedup", "commit": "43dd351", "actor": "amodal1", "agent": "anthropic/claude-fable-5", "ts": "2026-08-13T17:27:31Z", "fingerprint": "39f84e140005"}
+{"event": "compacted", "session": "7225a213-c3ac-4820-aa36-61fcb2332248", "branch": "fix/n1-scope-dedup", "trigger": "unknown", "ts": "2026-08-13T17:30:55Z"}
+{"event": "compacted", "session": "7225a213-c3ac-4820-aa36-61fcb2332248", "branch": "fix/n1-scope-dedup", "trigger": "unknown", "ts": "2026-08-13T17:44:01Z"}
+{"event": "compacted", "session": "7225a213-c3ac-4820-aa36-61fcb2332248", "branch": "fix/n1-scope-dedup", "trigger": "unknown", "ts": "2026-08-13T18:27:37Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/fix-n1-scope-dedup.md", "session": "7225a213-c3ac-4820-aa36-61fcb2332248", "branch": "fix/n1-scope-dedup", "commit": "43dd351", "actor": "amodal1", "agent": "anthropic/claude-fable-5", "ts": "2026-08-13T18:49:44Z", "fingerprint": "ce03e2c96ad9"}

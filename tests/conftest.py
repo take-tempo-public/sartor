@@ -33,6 +33,24 @@ def _default_llm_log_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(analyzer, "LOG_PATH", tmp_path / "llm_calls.jsonl")
 
 
+@pytest.fixture(autouse=True)
+def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the interrogative-witness state dir at a per-test tmp dir, for every
+    test in the suite (work item 87; same shape as `_default_llm_log_path` above).
+
+    Without this, the tests that run `hooks/edit-write-dispatcher.sh` as a real
+    subprocess (`test_enforcement_core.py`) would read whatever witness state a
+    live Claude session last left under the developer's OS temp dir — a
+    `witnessed: false` leftover there would make the dispatcher's pause fire
+    inside an unrelated test, exactly the cross-run temp-state leak item 33
+    closed for `llm_calls.jsonl`. Subprocess hooks inherit the env var; in-process
+    callers that want their own dir just pass an explicit `env=` (which wins).
+    """
+    from scripts.enforcement.guards import interrogative_witness
+
+    monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path / "witness-state"))
+
+
 @pytest.fixture(scope="session")
 def _migrated_template_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A file-backed SQLite migrated to alembic head, built exactly ONCE per session.

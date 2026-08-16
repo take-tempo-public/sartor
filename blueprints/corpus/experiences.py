@@ -116,11 +116,14 @@ def create_experience(username: str) -> ResponseReturnValue:
     start_date = (data.get("start_date") or "").strip()
     if not company:
         return jsonify({"error": "company is required"}), 400
-    if not re.fullmatch(r"\d{4}(-\d{2})?", start_date):
-        return jsonify({"error": "start_date must be YYYY-MM or YYYY"}), 400
+    # B2 ATS conformance: month is REQUIRED at create/edit (year-only rows can
+    # still ENTER via import — flagged, not dropped — but the UI's own writes
+    # hold the month-precision bar the generate-time block enforces).
+    if not re.fullmatch(r"\d{4}-\d{2}", start_date):
+        return jsonify({"error": "start_date must be YYYY-MM (month required)"}), 400
     end_date = (data.get("end_date") or "").strip() or None
-    if end_date and not re.fullmatch(r"\d{4}(-\d{2})?", end_date):
-        return jsonify({"error": "end_date must be YYYY-MM, YYYY, or empty"}), 400
+    if end_date and not re.fullmatch(r"\d{4}-\d{2}", end_date):
+        return jsonify({"error": "end_date must be YYYY-MM (month required) or empty"}), 400
 
     init_db()
     session = get_session()
@@ -218,14 +221,16 @@ def update_experience(experience_id: int) -> ResponseReturnValue:
         if "location" in data:
             exp.location = (data.get("location") or "").strip() or None
         if "start_date" in data:
+            # B2 ATS conformance: month required on edit too — this is the
+            # path a year-only imported role gets FIXED through.
             sd = (data.get("start_date") or "").strip()
-            if not re.fullmatch(r"\d{4}(-\d{2})?", sd):
-                return jsonify({"error": "start_date must be YYYY-MM or YYYY"}), 400
+            if not re.fullmatch(r"\d{4}-\d{2}", sd):
+                return jsonify({"error": "start_date must be YYYY-MM (month required)"}), 400
             exp.start_date = sd
         if "end_date" in data:
             ed = (data.get("end_date") or "").strip() or None
-            if ed and not re.fullmatch(r"\d{4}(-\d{2})?", ed):
-                return jsonify({"error": "end_date must be YYYY-MM, YYYY, or empty"}), 400
+            if ed and not re.fullmatch(r"\d{4}-\d{2}", ed):
+                return jsonify({"error": "end_date must be YYYY-MM (month required) or empty"}), 400
             exp.end_date = ed
         if "summary" in data:
             exp.summary = (data.get("summary") or "").strip() or None

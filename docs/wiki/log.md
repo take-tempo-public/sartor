@@ -1775,3 +1775,221 @@ adds two session-model clauses (Fable = design/planning scope; Sonnet-subagent d
 — grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: zero
 hits; no page restates the session-model table or its surrounding rules. Checked, not
 skipped.
+
+---
+
+## 2026-08-12 — scoped close-out relevance check (`fix/n1-args-guard-hardening`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+This entry also discharges the check owed by `epic/b-render-ats`'s `34ad528` (the
+`*.mjs` pin — carried forward as open item #5 in
+[`../dev/handoffs/epic-b-render-ats.md`](../dev/handoffs/epic-b-render-ats.md)): same
+file, same conclusion, checked together here.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 3** —
+[`../../.gitattributes`](../../.gitattributes), [`../../.gitignore`](../../.gitignore),
+and [`../../AGENTS.md`](../../AGENTS.md). Classifier run over the branch diff, not
+eyeballed. (The pipeline script under `.claude/workflows/`, `tests/` (including the new
+`tests/test_gitattributes_coverage.py`), `scripts/work_items.py` (docstring-only
+correction), and the `docs/dev/` runbook/brief/diagnosis/work-item edits all classify
+irrelevant.)
+
+**Pages edited (0). Pages verified no-edit:** `grep -rn` across `docs/wiki/pages/` for
+`gitattributes`, `CRLF`, and line-ending prose: zero hits — no page describes checkout
+normalization or ignore rules (the 2026-08-11 sweep recorded the same for
+`.gitignore`). For the `AGENTS.md` one-line citation correction ("charter D5" → the
+charter's extract-don't-restate rule): `cite-don't-restate`, `charter D5`, and `D-5`
+each grep to zero hits across `docs/wiki/pages/` — no page restates the corrected
+label. Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out self-update (`feat/interrogative-prompt-witness`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest;
+checkpoint NOT advanced — scoped passes never honestly can, see item 65).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 2** —
+[`../../CLAUDE.md`](../../CLAUDE.md) and
+[`../governance/enforcement.md`](../governance/enforcement.md). Classifier run over
+the branch diff, not eyeballed.
+
+**Pages edited (2), via the wiki-scribe subagent (one per page, author≠auditor):**
+[`governance-extraction`](pages/governance-extraction.md) and
+[`consistency-tracks-enforcement`](pages/consistency-tracks-enforcement.md) — both
+enumerate the Claude-Code-only guard roster from `enforcement.md` §"Enforcement
+reach", which grew by `interrogative_witness` (work item 87) on this branch; each
+roster extended plus the by-nature-not-by-gap distinction, `[synthesis]`-tagged.
+
+**Auditor verdicts (wiki-grounding-auditor, one per page):**
+`consistency-tracks-enforcement` — 10 SUPPORTED / 0 DRIFTED / 0 UNSUPPORTED.
+`governance-extraction` — 16 SUPPORTED / 1 DRIFTED / 0 UNSUPPORTED; the DRIFT was
+pre-existing prose ("derives the routing from the adapter" where source and test both
+name `git_hook.py`) — re-anchored to `git_hook.py` per the auditor's suggestion.
+Catch-rate this run: 1 caught / 2 pages audited.
+
+**Pages verified no-edit:** for the `CLAUDE.md` hook-list addition — its only wiki
+cites are the `@import` mention in `governance-extraction` (line 49-51, unaffected)
+and no page restates the hook roster (grep for `wiki-freshness-reminder` / "hook
+list" across `docs/wiki/pages/`: zero hits). Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out self-update (`fix/b1-stale-template-companions`, Epic B sprint B1a)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest;
+checkpoint NOT advanced — a scoped pass never honestly can, see item 65). Drift at
+check time: 14 of 75 (`python -m scripts.wiki_freshness`), well under both the
+75-file block threshold and the epic's own 40-file deferral margin
+(`../dev/handoffs/epic-b-design-brief.md` §"Close-out intervals") — the full pass +
+`.last_ingest_sha` advance stays correctly deferred to the epic close.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 3** —
+[`../../docx_to_persona_html.py`](../../docx_to_persona_html.py),
+[`../../blueprints/templates.py`](../../blueprints/templates.py), and
+[`../../generator.py`](../../generator.py). Classifier run over the branch diff, not
+eyeballed (`tests/test_docx_to_persona_html.py`, `CHANGELOG.md`, and the
+`docs/dev/{diagnosis,blast-radius,work}/` dossiers/board all classify irrelevant).
+
+**Pages edited (1), hand-authored by the closer (no scribe/auditor pair spun up for
+a one-paragraph factual correction):**
+[`document-rendering`](pages/document-rendering.md) §"`.pdf` — Playwright Chromium"
+— the page named `pdf_render.py:html_template_path_for` as *the* HTML-companion
+resolver for the PDF path. This branch's own diff (B1a, the stale-imported-template-
+companion fix) changes that: `generator.py:_render_pdf_from_json` (`:259-261`) now
+calls `docx_to_persona_html.py:resolve_companion_html`, which regenerates a
+companion whose sidecar-stamped `skeleton_version` predates the shipped skeleton;
+`html_template_path_for` is demoted to an internal existence check
+`resolve_companion_html` calls, not the entry point callers use directly. Corrected
+in place, with a pointer to the diagnosis dossier. `[synthesis]` unchanged elsewhere
+on the page.
+
+**Pages verified no-edit (checked every page citing the three changed files, or the
+specific new/changed symbols, by name — not assumed from the classifier alone):**
+
+- `docx_to_persona_html` symbols (`resolve_companion_html`, `generate_companion`,
+  `skeleton_version`, `companion_stamp_is_current`) — zero hits anywhere under
+  `docs/wiki/pages/` before this entry's own edit. The persona-companion resolution
+  subsystem is a coverage gap, not a drift case: nothing existed to go stale.
+- [`deterministic-llm-boundary`](pages/deterministic-llm-boundary.md) — cites
+  `docx_to_persona_html.py` as one of the 8 deterministic (no-LLM) modules and
+  describes it as "emits an HTML+CSS live-preview companion." Still true; this
+  branch adds a staleness-refresh path to the same deterministic module, no LLM
+  call anywhere in the diff (verified: `git grep -n anthropic` over the branch's
+  changed files returns nothing).
+- [`code-module-map`](pages/code-module-map.md) — cites `pdf_render.py:
+  html_template_path_for` in its module table as one notable function of
+  `pdf_render.py`. The function still exists with its original pure-resolver
+  contract (`tests/test_pdf_render.py:41-62` still asserts exactly that shape,
+  unchanged by this branch) — the table doesn't claim callers use it directly, so
+  it isn't made false by the routing change; left as is.
+- [`corpus-to-output-reach`](pages/corpus-to-output-reach.md) — describes
+  `blueprints/templates.py:preview_application_html`'s three-tier
+  `composition_overrides` priority (frozen / cached / fresh JSON Resume content).
+  Orthogonal to this branch: the diff changes *which HTML template file* backs a
+  render, never *which JSON Resume content* is rendered.
+- [`editing-and-refining`](pages/editing-and-refining.md) — cites
+  `blueprints/templates.py:preview_edited_html` once, in the frontmatter source
+  list only; no body claim describes its internal companion-resolution mechanism.
+- [`resume-templates`](pages/resume-templates.md) — cites `docx_to_persona_html.py`
+  for `extract_persona_style` (typography extraction), a different function this
+  branch does not touch.
+- `frontend-wizard.md:378`'s "companion editor" is the co-located preview-pane UI
+  concept (`#resumePreview`/`#coverPreviewFrame`), an unrelated sense of the word —
+  confirmed by reading, not assumed from the string match.
+
+Checked, not skipped.
+
+---
+
+## 2026-08-12 — scoped close-out relevance check (`fix/n1-invoker-loop`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 1** —
+[`../dev/RELEASE_ARC.md`](../dev/RELEASE_ARC.md). Classifier run over the full staged
+diff, not eyeballed. (The pipeline script under `.claude/workflows/`, the runbook
+`docs/dev/n1-baseline-pipeline.md`, the sprint-brief template and briefs under
+`docs/dev/handoffs/`, `docs/dev/diagnosis/`, `docs/dev/ledger/`, `docs/dev/work/`, and
+`tests/` all classify irrelevant — same classifications as the two prior n1 branches.)
+
+**Pages edited (0). Pages verified no-edit:** the `RELEASE_ARC.md` change is a dated
+amendment to §"Session models" (invoking-session model for N=1 pipeline runs = owner's
+choice of Fable or Opus, stated at invocation; sprint-internal casting unchanged).
+Grep over `docs/wiki/` for "Session models" / "Fable" / model-assignment prose: zero
+hits outside this log's own prior entries — no page restates the session-model table
+or its surrounding rules, exactly as the 2026-08-11 fold-in entry found. Checked, not
+skipped.
+
+## 2026-08-13 — scoped close-out relevance check (`fix/b1-education-render`, B1b)
+
+**Trigger:** intra-epic sprint close-out (Epic B, B1b — 2 of 3), scoped to this
+branch's own staged diff, not a full ingest. Per `epic-b-design-brief.md`
+§"Close-out intervals," the full wiki pass (ingest + `.last_ingest_sha` advance) is
+**deferred to the epic close** unless drift exceeds the 40-file margin —
+`python -m scripts.wiki_freshness` reports **17 of 75** at this branch's tip
+(pre-commit; unchanged from B1b's own predecessor sprint), well under the margin, so
+that deferral stands. This entry is the still-owed scoped relevance check, not the
+deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the
+full staged diff — 5 of 10 changed files):** `corpus_to_json_resume.py`,
+`generator.py`, `json_resume.py`, `personas/bundled/classic.html`,
+`personas/bundled/spacious.html`. (`docs/dev/blast-radius/`, `docs/dev/diagnosis/`,
+and `tests/` classify irrelevant, matching every prior branch's classification.)
+
+**Pages edited (0). Pages verified no-edit** (grepped for the new/changed symbols
+by name, then read the surrounding claim, not assumed from the classifier alone):
+
+- `education_position_text`, `split_education_position`,
+  `EDUCATION_FIELD_SEPARATOR`, `_collect_education`, `run_font_name` — zero hits
+  anywhere under `docs/wiki/pages/`. New symbols this sprint introduces; nothing
+  existed to go stale.
+- [`document-rendering`](pages/document-rendering.md) — the only page citing
+  `classic.html`/`spacious.html` by name (`:164`, the PDF-render fallback path) and
+  `generator.py:_write_docx_from_json_resume` (`:36`, `:120`, plus
+  `downloading-your-documents.md:11`). Both mentions describe *which file/function
+  renders*, not education-field completeness or font-capture completeness — neither
+  claim is made false by this branch (which adds a `studyType` span and a captured
+  `run_font_name`, changes no routing).
+- [`code-module-map`](pages/code-module-map.md) — cites
+  `generator.py:_write_docx_from_json_resume` in its module table as one notable
+  function; same reasoning, a name citation with no behavioral claim.
+- [`deterministic-llm-boundary`](pages/deterministic-llm-boundary.md) — cites the
+  companion generator's font capture (a different module,
+  `docx_to_persona_html.py`, unrelated to this branch's `generator.py` proto-dict
+  change).
+
+Checked, not skipped.
+
+## 2026-08-14 — scoped close-out self-update (`feat/ats-conformance`, Epic B sprint B2)
+
+- **Mode:** diff, scoped to this branch's own window `b0aaed3 → HEAD` (B2
+  ATS-conformance landing). **Checkpoint `.last_ingest_sha` deliberately NOT
+  advanced:** it sits 64 commits behind this branch's base, so advancing it
+  from a branch-scoped pass would silently absolve the un-ingested middle
+  window; `scripts/wiki_freshness.py` keeps that backlog visible for the
+  epic-close catch-up pass.
+- **Sources read:** 17 wiki-relevant changed files (json_resume.py,
+  blueprints/generation.py, blueprints/corpus/{_shared,experiences,curation}.py,
+  web_infra/openapi.py, onboarding/{corpus_import,extract_experiences}.py,
+  generator.py, docx_to_persona_html.py, pdf_render.py, analyzer.py,
+  static/{app.js,style.css}, personas CSS ×2, plus the new
+  docs/dev/board-forge-sync-review.md — classified deliberately IRRELEVANT in
+  scripts/wiki_relevance.py this same branch).
+- **Pages changed (7, scribe-per-page, Haiku):** career-corpus,
+  importing-your-experience, document-rendering, openapi-api-reference,
+  route-surface, prompt-version-discipline, tailoring-a-resume. No pages
+  created; index.md entries unchanged (topics unchanged).
+- **Auditor catch-rate (per-page grounding audit, Haiku, author≠auditor):**
+  2 caught / 7 pages — both PRE-existing, neither scribe-introduced:
+  1. DRIFTED (openapi-api-reference): route count "117 total" vs 119 at HEAD —
+     re-anchored (117→119, 112→114).
+  2. UNSUPPORTED (route-surface.md:235-236, pre-existing): "`proposals.py` …
+     the only corpus submodule on the `anthropic` egress allowlist" — FALSE at
+     HEAD: tests/test_egress_allowlist.py also lists
+     blueprints/corpus/skills.py. **Left flagged, not silently rewritten**
+     (loop rule); owner decision pending — suggested fix: "one of two corpus
+     submodules on the allowlist (with skills.py)".
+- **Deterministic gate:** scripts/check_doc_links.py OK (483 files, no broken
+  links/cites); full quality gate runs at branch close.

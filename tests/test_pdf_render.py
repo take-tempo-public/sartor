@@ -118,9 +118,9 @@ class TestHtmlRender:
         assert "Polaris Cognition" in html
         assert "Senior Designer" in html
         # Fix/output-identity-and-dates: the `date_range` Jinja global renders
-        # the ISO startDate as MM-YYYY (owner-decided presentation format),
+        # the ISO startDate as MM/YYYY (owner-decided presentation format),
         # never the raw ISO shape.
-        assert "09-2022" in html
+        assert "09/2022" in html
         assert "2022-09" not in html
         assert "present" in html
         assert "Shipped a thing." in html
@@ -178,6 +178,85 @@ class TestHtmlRender:
         assert "Polytechnic" in html
         assert "MS HCI" in html
         assert "Nielsen Norman UX Master" in html
+        # Control arm for the studyType tests below: an entry with no studyType
+        # renders exactly as it always did — no stray separator.
+        assert "—" not in html
+
+
+_EDU_DOC = {
+    "basics": {"name": "Jane Doe"},
+    "education": [
+        {
+            "institution": "State University",
+            "area": "Bachelor of Science",  # corpus: Education.degree
+            "studyType": "Computer Science",  # corpus: Education.field
+            "startDate": "2010-09",
+            "endDate": "2014-05",
+        }
+    ],
+}
+
+
+class TestEducationStudyTypeRender:
+    """Every bundled persona renders BOTH `area` and `studyType`.
+
+    Before `fix/b1-education-render`, Classic and Spacious dropped the field of
+    study entirely while Modern and Tech showed it
+    (`docs/dev/diagnosis/b1-education-render.md` O-1/O-2/O-3). This is the
+    exact-set check the enumeration promised: all four personas, asserted here,
+    so a fifth added later without `studyType` is visibly uncovered.
+    """
+
+    @staticmethod
+    def _persona(name):
+        from pathlib import Path
+
+        return Path(__file__).resolve().parents[1] / "personas" / "bundled" / f"{name}.html"
+
+    @pytest.mark.parametrize("persona", ["classic", "spacious", "modern", "tech"])
+    def test_renders_both_area_and_study_type(self, persona):
+        from pdf_render import render_html_string
+
+        html = render_html_string(_EDU_DOC, html_template_path=self._persona(persona))
+        assert "Bachelor of Science" in html
+        assert "Computer Science" in html
+
+    @pytest.mark.parametrize("persona", ["classic", "spacious", "modern", "tech"])
+    def test_never_flips_the_pair(self, persona):
+        """`area` must precede `studyType` in document order — render both, never flip."""
+        from pdf_render import render_html_string
+
+        html = render_html_string(_EDU_DOC, html_template_path=self._persona(persona))
+        assert html.index("Bachelor of Science") < html.index("Computer Science")
+
+    @pytest.mark.parametrize("persona", ["classic", "spacious"])
+    def test_area_alone_renders_unchanged(self, persona):
+        """No studyType ⇒ no separator: the existing common case is untouched."""
+        from pdf_render import render_html_string
+
+        entry = {k: v for k, v in _EDU_DOC["education"][0].items() if k != "studyType"}
+        html = render_html_string(
+            {"basics": {"name": "Jane Doe"}, "education": [entry]},
+            html_template_path=self._persona(persona),
+        )
+        assert "Bachelor of Science" in html
+        assert "—" not in html
+
+    @pytest.mark.parametrize("persona", ["classic", "spacious"])
+    def test_study_type_alone_renders_without_a_dangling_separator(self, persona):
+        """Institution + field, no degree — reachable (`Education.degree` is nullable)."""
+        from pdf_render import render_html_string
+
+        html = render_html_string(
+            {
+                "basics": {"name": "Jane Doe"},
+                "education": [{"institution": "State University", "studyType": "Computer Science"}],
+            },
+            html_template_path=self._persona(persona),
+        )
+        assert "State University" in html
+        assert "Computer Science" in html
+        assert "—" not in html
 
     def test_handles_missing_sections_gracefully(self, classic_template_path):
         from pdf_render import render_html_string

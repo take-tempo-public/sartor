@@ -242,7 +242,11 @@ def latest_generated_fingerprint(records: list[dict[str, str]], doc_rel_path: st
 def append_ledger_event(ledger_dir: Path, session: str, record: dict[str, str]) -> None:
     ledger_dir.mkdir(parents=True, exist_ok=True)
     shard = ledger_dir / f"{session}.jsonl"
-    with shard.open("a", encoding="utf-8") as f:
+    # newline="\n": text-mode append otherwise translates \n to the platform ending,
+    # putting CR bytes in the working tree that .gitattributes (checkout-time only)
+    # cannot prevent — the class tests/test_verify_doc_template.py::
+    # TestLedgerWorkingTreeBytes now fails closed on.
+    with shard.open("a", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(record) + "\n")
 
 

@@ -19,10 +19,15 @@ Two subcommands:
 
 Wired into `scripts/gate.py` as its 5th step, alongside ruff/mypy/pytest.
 
-Board comparison is newline-normalized text, never raw bytes: this repo's
-markdown is CRLF on a Windows checkout (`core.autocrlf=true`, no `*.md` rule
-in `.gitattributes`) and LF in CI -- the same class of bug
-`scripts/verify_doc_template.py`'s `fingerprint` already fixed once.
+Board comparison is newline-normalized text, never raw bytes. (Corrected
+2026-08-12: this note used to claim `.gitattributes` had no `*.md` rule; it has
+pinned `*.md text eol=lf` since the initial commit, so BOARD.md checks out LF
+everywhere.) Normalizing is still correct as defense-in-depth: an editor can
+save CRLF into any working-tree file regardless of checkout policy, and this
+comparison reads the working tree -- the same class of bug
+`scripts/verify_doc_template.py`'s `fingerprint` already fixed once. Coverage
+of `.gitattributes` itself is now gated by
+`tests/test_gitattributes_coverage.py` (charter C-11).
 
 Board-staleness deferral (`docs/dev/work/BOARD_DEFERRAL.md`)
 ---------------------------------------------------------------------------

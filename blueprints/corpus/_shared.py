@@ -39,6 +39,8 @@ def _experience_summary_dict(exp: Experience) -> dict[str, Any]:
     to branch on — without it the list JSON cannot distinguish a retired role from
     a live one (see docs/dev/diagnosis/experience-soft-retire.md).
     """
+    from json_resume import needs_month_precision
+
     official = next((t for t in exp.titles if t.is_official), None)
     active_titles = [t for t in exp.titles if t.is_active]
     active_bullets = [b for b in exp.bullets if b.is_active]
@@ -49,6 +51,11 @@ def _experience_summary_dict(exp: Experience) -> dict[str, Any]:
         "location": exp.location,
         "start_date": exp.start_date,
         "end_date": exp.end_date,
+        # B2 ATS conformance: computed server-side (one predicate, shared with
+        # the generate-time month block) so the corpus "MONTH NEEDED" badge and
+        # the block can never disagree — a JS re-derivation would be a second
+        # implementation of the rule.
+        "needs_month": needs_month_precision(exp.start_date, exp.end_date),
         "display_order": exp.display_order,
         "summary": exp.summary,
         "is_active": bool(exp.is_active),

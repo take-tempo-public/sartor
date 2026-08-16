@@ -139,7 +139,7 @@ Guards reach agents through three adapters with very different coverage:
 |---|---|---|
 | `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
 | `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
-| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, the C-8/C-12 context hooks |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, the C-8/C-12 context hooks |
 
 ### The gap, named
 
@@ -154,6 +154,16 @@ command-string, a shape that exists only in the Claude PreToolUse contract; a gi
 `pre-commit`/`pre-push` hook never sees a proposed shell command, so there is no equivalent
 input to route this guard from. Named here rather than left to be discovered during
 extraction, same as the other two.
+
+**`interrogative_witness` (work item 87) is Claude Code only by NATURE, not by gap.** The
+"was the triggering user prompt a question or a directive?" pause it enforces — one
+self-clearing refusal on the first Edit/Write after each user prompt, armed by the
+`UserPromptSubmit` classifier in `adapters/prompt_witness_hook.py` — is about a Claude
+*session's* prompt/turn structure. Git hooks have no user prompt at all, so unlike C-7/C-10
+there is no unenforced clause here waiting for a tool-agnostic path; the extraction can
+skip it without losing coverage. Stated limits (C-0/C-11): intent classification is not
+deterministic — both halves are witnesses that force the consideration, not gates that
+prove intent, and every failure path fails open by design.
 
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude

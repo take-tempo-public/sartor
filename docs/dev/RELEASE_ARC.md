@@ -1820,6 +1820,21 @@ checkpoints), with Opus also an option for that role. Within any session,
 session reads the full diff before committing — the per-sprint prescription is
 a floor for the session, not a ceiling on delegation.
 
+**Amendment, 2026-08-12 (owner-directed, on screen, after Epic B run 3):** for
+**N=1 pipeline runs**, the first clause is narrowed to the sprint-internal
+agents only — implementer/refuter/judge/closer/reviewers stay on their pinned
+Opus/Sonnet models per the epic's model table and role frontmatter — and the
+**invoking (monitor) session's model becomes the owner's choice of Fable or
+Opus, stated at invocation** and recorded per run in item 84's evidence trail.
+Rationale, stated not implied: three Opus-driven pipeline attempts each failed
+at a process/harness boundary rather than the sprint's subject matter (item
+84; run-3 retrospective in
+`docs/dev/handoffs/fix-b1-stale-template-companions.md`), and the owner elects
+to compare invoker models per run rather than pin one. The "Fable handles
+design and planning" clause is unchanged — this amendment ADDS the invoker
+role to what Fable may hold when the owner so chooses; it does not touch
+sprint-internal casting. The sprint-model table below is unaffected.
+
 | Sprint | Model | Why |
 |---|---|---|
 | A1 | Opus | schema migration + retired-role blast-radius audit |

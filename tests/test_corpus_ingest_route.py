@@ -166,6 +166,46 @@ class TestIngestResume:
         # The valid role still landed — a drop never blocks the rest of the import.
         assert body["experiences_created"] >= 1
 
+    def test_month_needed_role_surfaced_in_response(self, ingest_app):
+        """B2 ATS conformance: a year-only role LANDS (created, not dropped)
+        and rides the response as month-needed telemetry, mirroring the
+        dropped-role pair — the user hears it at import, not at generate."""
+        _seed_candidate()
+        client = ingest_app.test_client()
+        mixed = [
+            *_FAKE_EXTRACT,
+            {
+                "company": "Globex",
+                "start_date": "2019",
+                "end_date": "2021",
+                "candidate_inferred_title": "Ops Lead",
+                "bullets": [{"text": "Ran the ops org.", "suggested_tags": []}],
+            },
+        ]
+        with (
+            _patch_extract(mixed, _FAKE_SKILLS),
+            patch("blueprints.corpus.curation._get_client", return_value=object()),
+        ):
+            r = client.post(
+                "/api/users/alice/corpus/ingest-resume",
+                data={
+                    "file": (
+                        io.BytesIO(b"# Resume\n\n## Experience\n\n- Ran things at Globex"),
+                        "r.md",
+                    )
+                },
+                content_type="multipart/form-data",
+            )
+        assert r.status_code == 201, r.get_json()
+        body = r.get_json()
+        assert body["experiences_needing_month"] == 1
+        needy = body["month_needed_experiences"][0]
+        assert needy["company"] == "Globex"
+        assert needy["start_date"] == "2019"
+        assert needy["end_date"] == "2021"
+        # Month-needed is NOT dropped — the role landed in the corpus.
+        assert body["experiences_dropped"] == 0
+
     def test_skills_dedup_case_insensitively_against_existing(self, ingest_app):
         """A skill that already exists (any case, any review state) never gets a duplicate pending row."""
         from db.models import Skill

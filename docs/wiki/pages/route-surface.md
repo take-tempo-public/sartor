@@ -114,7 +114,16 @@ sequence). Each gates on `_safe_username` at entry:
   `POST /api/save-edits`, `POST /api/generate` +
   `POST /api/generate/stream`, `POST /api/validate-refinement`,
   `POST /api/generate-cover-letter`, `GET /api/download/<path:filepath>`
-  (`download_file`), `POST /api/download-edited`.
+  (`download_file`), `POST /api/download-edited`. Both `/api/generate` entry
+  points (the non-streaming `run_generation` and SSE `run_generation_stream`)
+  share a hard block at 422 via [`_month_block_response`](../../../blueprints/generation.py)
+  when an included experience role (work, not education) has year-only ISO dates;
+  the block names the roles, hints to add months, and sets
+  `needs_month_precision: true` + `month_needed_roles: []` in the response so the
+  UI surfaces them before any LLM spend `[synthesis]`. The month predicate
+  ([`_month_imprecise_roles`](../../../blueprints/generation.py)) reads the
+  frozen approved_composition's work entries when Compose froze one, else the
+  career_corpus snapshot.
 
 These call into `analyzer.py`; the blueprints themselves stay request glue,
 reading paths from `current_app.config` rather than a module global — the
@@ -149,13 +158,22 @@ The role-curation surface — experiences, bullets, titles, and per-role summary
 variants — lives in
 [`blueprints/corpus/experiences.py`](../../../blueprints/corpus/experiences.py).
 Soft-retired rows (`is_active=0`) stay in the DB to preserve audit chains;
-hard-delete is refused `[synthesis]`.
+hard-delete is refused `[synthesis]`. **B2 ATS conformance:** both
+[`create_experience`](../../../blueprints/corpus/experiences.py) (line 122) and
+[`update_experience`](../../../blueprints/corpus/experiences.py) (lines 227–233)
+validate that `start_date` and `end_date` are `YYYY-MM` (month required), returning
+400 if a bare year is submitted — this enforces the month-precision bar that the
+generate-time month block `[synthesis]` checks for.
 
 Three routes implement soft-retire semantics:
 
 - [`list_experiences`](../../../blueprints/corpus/experiences.py)
   (`GET /api/users/<username>/experiences`) hides soft-retired roles by default;
-  pass `?include_retired=1` to show them.
+  pass `?include_retired=1` to show them. Each role's payload includes
+  `needs_month` ([`_experience_summary_dict:58`](../../../blueprints/corpus/_shared.py)),
+  computed server-side via the same [`needs_month_precision`](../../../json_resume.py)
+  predicate the generate-time block uses, so the corpus "MONTH NEEDED" badge and
+  the block agree by construction `[synthesis]`.
 - [`update_experience`](../../../blueprints/corpus/experiences.py)
   (`PUT /api/experiences/<id>`) accepts `is_active`, which is where RESTORE
   lands. The loader `_load_experience_for_candidate` deliberately does NOT filter

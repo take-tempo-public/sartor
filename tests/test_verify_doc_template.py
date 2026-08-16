@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from scripts.verify_doc_template import (
@@ -232,6 +233,143 @@ class TestLedger:
 
     def test_missing_ledger_dir_returns_empty(self, tmp_path: Path) -> None:
         assert read_ledger(tmp_path / "does-not-exist") == []
+
+    def test_appended_shard_bytes_are_lf_only(self, tmp_path: Path) -> None:
+        """**The RED for the CRLF ledger class (fix/n1-invoker-context-budget).**
+
+        `append_ledger_event` opened the shard in text mode with no `newline=` argument,
+        so on Windows every appended row's `\\n` was translated to CRLF in the WORKING
+        TREE. Observed live: this very branch's session shard carried 1 CR byte written
+        by `--event consumed` (dossier: docs/dev/diagnosis/n1-invoker-context-budget.md).
+        """
+        ledger_dir = tmp_path / "ledger"
+        append_ledger_event(ledger_dir, "sess-lf", {"event": "generated", "doc": "x.md", "ts": "t"})
+        raw = (ledger_dir / "sess-lf.jsonl").read_bytes()
+        assert b"\r" not in raw, f"appended ledger row carries CR bytes: {raw!r}"
+
+
+def _cr_offenders(paths: list[Path]) -> list[str]:
+    """Return the ledger shards whose WORKING-TREE bytes contain a CR.
+
+    Deliberately a local mirror of tests/test_n1_pipeline.py::_cr_offenders rather than a
+    cross-test-module import — same two lines, no coupling between test modules.
+    """
+    return [p.name for p in paths if b"\r" in p.read_bytes()]
+
+
+class TestLedgerWorkingTreeBytes:
+    """fix/n1-invoker-context-budget: the CRLF class is a WORKING-TREE defect.
+
+    Mirrors tests/test_n1_pipeline.py::TestWorkflowWorkingTreeBytes (S3), widened to the
+    provenance-ledger shards: `.gitattributes` pins `*.jsonl` at CHECKOUT, but both
+    ledger writers append AFTER checkout, and until this branch they emitted platform
+    line endings — a shard carried CR bytes in the working tree on three separate
+    sessions (2026-08-13 ×2, 2026-08-14) while every committed blob was clean. This
+    sweep makes the class fail closed in the gate's pytest step instead of surfacing as
+    unexplained working-tree drift during a pipeline run's step-6 assertion.
+    """
+
+    def test_checker_flags_synthetic_cr(self, tmp_path: Path) -> None:
+        crlf = tmp_path / "crlf.jsonl"
+        crlf.write_bytes(b'{"event": "compacted"}\r\n')
+        clean = tmp_path / "clean.jsonl"
+        clean.write_bytes(b'{"event": "compacted"}\n')
+        assert _cr_offenders([crlf, clean]) == ["crlf.jsonl"], (
+            "the checker itself must flag a CR byte -- if this fails, the "
+            "real-tree assertion below proves nothing"
+        )
+
+    def test_ledger_shards_are_cr_free_in_the_working_tree(self) -> None:
+        shards = sorted((_REPO_ROOT / "docs" / "dev" / "ledger").glob("*.jsonl"))
+        assert shards, "no ledger shards found -- the glob itself is broken"
+        offenders = _cr_offenders(shards)
+        assert offenders == [], (
+            f"CR bytes in working-tree ledger shard(s) {offenders}: a ledger writer is "
+            "emitting platform line endings again (see "
+            "docs/dev/diagnosis/n1-invoker-context-budget.md). Fix the writer, then "
+            "re-normalize the shard bytes (\\r\\n -> \\n; content is unchanged)."
+        )
+
+
+_LEDGER_APPEND_WRITERS = {
+    "scripts/enforcement/adapters/claude_context_hook.py",
+    "scripts/verify_doc_template.py",
+    "hooks/lib/retire-approved-plan.sh",
+}
+
+
+def _append_open_args(text: str) -> list[str]:
+    """Arg text of every append-mode open() call in `text`.
+
+    `[^)]*` spans newlines, so a call broken across lines is matched whole -- which
+    matters, because the writer this check was authored for is formatted that way.
+    """
+    return [
+        m.group(1)
+        for m in re.finditer(r"\bopen\(([^)]*)\)", text)
+        if re.search(r"""["']a["']""", m.group(1))
+    ]
+
+
+def _discover_ledger_appenders() -> set[str]:
+    found = set()
+    for sub, patterns in (("scripts", ("*.py",)), ("hooks", ("*.sh", "*.py"))):
+        for pattern in patterns:
+            for path in (_REPO_ROOT / sub).rglob(pattern):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                if "ledger" in text and _append_open_args(text):
+                    found.add(path.relative_to(_REPO_ROOT).as_posix())
+    return found
+
+
+class TestLedgerWritersPinLf:
+    """The WRITER-side half of the CRLF class -- fifth instance, run-6 preflight.
+
+    TestLedgerWorkingTreeBytes above catches a shard that already carries CR bytes.
+    It cannot stop a NEW writer from shipping without `newline="\\n"`, which is
+    exactly how the class recurred: the fix that covered the two Python writers
+    missed `hooks/lib/retire-approved-plan.sh`, whose `plan-archived` receipt put a
+    CR byte in a fresh session's shard and would have failed gate #1 mid-run.
+
+    Curated list + discovery scan, mirroring the egress-allowlist dual check: the
+    list alone rots silently, the scan alone cannot say which writers are known.
+    """
+
+    def test_matcher_finds_a_synthetic_append_open(self) -> None:
+        multiline = 'x.open(\n    "a", encoding="utf-8", newline="\\n"\n)'
+        assert _append_open_args(multiline), (
+            "the matcher must find a call broken across lines -- if this fails, the "
+            "per-writer assertion below passes vacuously"
+        )
+        assert _append_open_args('x.open("r", encoding="utf-8")') == [], (
+            "the matcher must ignore read-mode opens"
+        )
+
+    def test_every_known_ledger_writer_pins_lf(self) -> None:
+        for rel in sorted(_LEDGER_APPEND_WRITERS):
+            path = _REPO_ROOT / rel
+            assert path.exists(), f"{rel} is on the ledger-writer list but does not exist"
+            calls = _append_open_args(path.read_text(encoding="utf-8"))
+            assert calls, (
+                f"no append-mode open() found in {rel} -- either the writer moved or "
+                "the matcher broke; a silent zero here is a vacuous pass"
+            )
+            for args in calls:
+                assert 'newline="\\n"' in args, (
+                    f'{rel} appends in text mode without newline="\\n": on Windows '
+                    "that translates \\n to \\r\\n and puts CR bytes in the working "
+                    "tree, which TestLedgerWorkingTreeBytes then fails the gate on."
+                )
+
+    def test_no_unregistered_ledger_appender(self) -> None:
+        discovered = _discover_ledger_appenders()
+        unregistered = discovered - _LEDGER_APPEND_WRITERS
+        assert unregistered == set(), (
+            f"new ledger-appending writer(s) {sorted(unregistered)} are not on "
+            "_LEDGER_APPEND_WRITERS. Add them to the list AND confirm each passes "
+            'newline="\\n" -- an unlisted writer is how this class reached a fifth '
+            "instance."
+        )
 
 
 class TestLatestGeneratedFingerprint:

@@ -15,11 +15,16 @@ from __future__ import annotations
 import re
 
 from json_resume import (
+    EDUCATION_FIELD_SEPARATOR,
     SCHEMA_URI,
     apply_identity_override,
+    education_position_text,
     format_date_range,
     format_month_year,
+    is_month_precise,
+    json_resume_to_markdown,
     md_to_json_resume,
+    needs_month_precision,
     scrub_ats_unsafe,
     split_outside_brackets,
 )
@@ -330,6 +335,131 @@ class TestEducation:
         assert ed["area"] == "MS Human-Computer Interaction"
         assert ed["startDate"] == "2014"
         assert ed["endDate"] == "2016"
+        # An entry with no separator is all `area` — the pre-2026-08-13 on-disk
+        # form and what a hand-written résumé produces. No phantom studyType.
+        assert "studyType" not in ed
+
+
+_EDU_FULL = {
+    "institution": "State University",
+    "area": "Bachelor of Science",  # corpus maps Education.degree here
+    "studyType": "Computer Science",  # corpus maps Education.field here
+    "startDate": "2010-09",
+    "endDate": "2014-05",
+}
+
+
+class TestEducationStudyTypeRoundTrip:
+    """`studyType` survives markdown serialization (`fix/b1-education-render`).
+
+    Before this branch the field of study was dropped by BOTH halves of the
+    round-trip — the emitter never wrote it and the parser had nowhere to put it
+    (`docs/dev/diagnosis/b1-education-render.md` O-5). Each test below fails on
+    the pre-fix tree.
+    """
+
+    @staticmethod
+    def _doc(*education):
+        return {"basics": {"name": "Jane Doe"}, "education": list(education)}
+
+    def test_position_helper_joins_both_fields_in_order(self):
+        assert education_position_text(_EDU_FULL) == (
+            f"Bachelor of Science{EDUCATION_FIELD_SEPARATOR}Computer Science"
+        )
+
+    def test_position_helper_never_flips_the_pair(self):
+        """Render-both, never-flip: `area` leads, `studyType` follows, always."""
+        joined = education_position_text(_EDU_FULL)
+        assert joined.index("Bachelor of Science") < joined.index("Computer Science")
+
+    def test_separator_is_an_em_dash_not_the_date_en_dash(self):
+        """The two separators must stay distinguishable — dates use EN (U+2013)."""
+        assert EDUCATION_FIELD_SEPARATOR == " — "
+        assert "–" not in EDUCATION_FIELD_SEPARATOR
+
+    def test_emitted_header_carries_both_fields(self):
+        md = json_resume_to_markdown(self._doc(_EDU_FULL))
+        assert (
+            "### State University, Bachelor of Science — Computer Science\t09/2010 – 05/2014"
+        ) in md
+
+    def test_study_type_survives_the_round_trip(self):
+        back = md_to_json_resume(json_resume_to_markdown(self._doc(_EDU_FULL)))["education"][0]
+        assert back["institution"] == "State University"
+        assert back["area"] == "Bachelor of Science"
+        assert back["studyType"] == "Computer Science"
+
+    def test_round_trip_is_idempotent(self):
+        md = json_resume_to_markdown(self._doc(_EDU_FULL))
+        assert json_resume_to_markdown(md_to_json_resume(md)) == md
+
+    def test_entry_without_study_type_serializes_exactly_as_before(self):
+        """The common case must not gain a separator — no churn for existing docs."""
+        without = {k: v for k, v in _EDU_FULL.items() if k != "studyType"}
+        md = json_resume_to_markdown(self._doc(without))
+        assert "### State University, Bachelor of Science\t09/2010 – 05/2014" in md
+        assert EDUCATION_FIELD_SEPARATOR not in md
+        assert "studyType" not in md_to_json_resume(md)["education"][0]
+
+    def test_study_type_without_area_re_keys_to_area_and_stays_stable(self):
+        """Documented asymmetry, pinned rather than left to surprise someone.
+
+        With no `area` there is no separator to encode, so the value round-trips
+        into `area`. It still RENDERS correctly (the field of study appears), and
+        the cycle is idempotent. The corpus UI blocks an empty `institution` at
+        both create and edit (`blueprints/corpus/career_assets.py:104-106,
+        168-172` — both return 400), so "field without degree, institution
+        present" is the asymmetric shape the product's own forms can produce.
+        (`Education.institution` being `nullable=False` at the DB layer does
+        NOT itself exclude an empty string — see the institution-LESS case
+        pinned by `test_institution_less_entry_re_keys_studytype_into_area_on_emit`
+        below, which the emitter can still be handed directly.)
+        """
+        only_study = {"institution": "State University", "studyType": "Computer Science"}
+        md = json_resume_to_markdown(self._doc(only_study))
+        assert "### State University, Computer Science" in md
+        back = md_to_json_resume(md)["education"][0]
+        assert back == {"institution": "State University", "area": "Computer Science"}
+        assert json_resume_to_markdown(self._doc(back)) == md
+
+    def test_institution_less_entry_re_keys_studytype_into_area_on_emit(self):
+        """The institution-less collision the branch's refuter flagged (F1) — NOT a
+        regression, pinned as a known limit rather than left to surprise someone.
+
+        `education_position_text` emits `f"{area} — {studyType}"` as the entry's sole
+        non-institution field. When `institution` is empty the emitted h3 is just that
+        joined string, and `_split_h3_header`'s `" — "` fallback (`json_resume.py:
+        455-456`) — which exists for `work`/`project` entries and predates this branch
+        — treats it as the WHOLE name/position left segment: the joined
+        `area — studyType` string re-parses into `institution=<area>, area=<studyType>`,
+        and the original `studyType` is gone. This is a strict improvement over the
+        pre-fix behavior, which dropped the value from the emitted markdown entirely
+        (see `docs/dev/diagnosis/b1-education-render.md`, "Known limits"). Stable from
+        the second cycle onward: the re-keyed shape is a fixed point of the round-trip.
+        """
+        only_area_and_study = {"area": "Bachelor of Science", "studyType": "Computer Science"}
+        md = json_resume_to_markdown(self._doc(only_area_and_study))
+        assert "### Bachelor of Science — Computer Science" in md
+        back = md_to_json_resume(md)["education"][0]
+        assert back == {"institution": "Bachelor of Science", "area": "Computer Science"}
+        # Second cycle: a fixed point, not a further drift.
+        back2 = md_to_json_resume(json_resume_to_markdown(self._doc(back)))["education"][0]
+        assert back2 == back
+
+    def test_normalizer_does_not_break_the_em_dash_header(self):
+        """`_normalize_markdown` re-injects newlines at `- <Capital>` boundaries.
+
+        The em dash is not in `_MD_BULLET_BOUNDARY_RE`'s class
+        (`generator.py:_MD_BULLET_BOUNDARY_RE`), so the header must pass through
+        whole rather than being split into a phantom bullet.
+        """
+        from generator import _normalize_markdown
+
+        md = json_resume_to_markdown(self._doc(_EDU_FULL))
+        assert _normalize_markdown(md) == md
+        assert md_to_json_resume(_normalize_markdown(md))["education"][0]["studyType"] == (
+            "Computer Science"
+        )
 
 
 # ---------------------------------------------------------------------
@@ -456,7 +586,7 @@ class TestRealisticFull:
 
 class TestFormatMonthYear:
     def test_iso_year_month_becomes_mm_yyyy(self):
-        assert format_month_year("2022-09") == "09-2022"
+        assert format_month_year("2022-09") == "09/2022"
 
     def test_year_only_passes_through(self):
         assert format_month_year("2022") == "2022"
@@ -474,13 +604,13 @@ class TestFormatMonthYear:
 
 class TestFormatDateRange:
     def test_closed_range_both_mm_yyyy(self):
-        assert format_date_range("2022-09", "2023-05") == "09-2022 – 05-2023"
+        assert format_date_range("2022-09", "2023-05") == "09/2022 – 05/2023"
 
     def test_open_ended_renders_present(self):
         """The DB's NULL-end-date = current convention (db.models.Experience)
         renders as 'Present' — the mechanical bug this fix closes."""
-        assert format_date_range("2022-09", None) == "09-2022 – Present"
-        assert format_date_range("2022-09", "") == "09-2022 – Present"
+        assert format_date_range("2022-09", None) == "09/2022 – Present"
+        assert format_date_range("2022-09", "") == "09/2022 – Present"
 
     def test_no_iso_yyyy_mm_pattern_in_output(self):
         import re
@@ -489,13 +619,44 @@ class TestFormatDateRange:
         assert not re.search(r"\d{4}-\d{2}", result)
 
     def test_missing_start_falls_back_to_end(self):
-        assert format_date_range(None, "2023-05") == "05-2023"
+        assert format_date_range(None, "2023-05") == "05/2023"
 
     def test_both_missing_is_empty(self):
         assert format_date_range(None, None) == ""
 
     def test_year_only_range(self):
         assert format_date_range("2020", "2023") == "2020 – 2023"
+
+
+# ---------------------------------------------------------------------
+# Month precision (B2/ATS-conformance)
+# ---------------------------------------------------------------------
+
+
+class TestMonthPrecision:
+    def test_is_month_precise_iso_year_month_only(self):
+        assert is_month_precise("2022-09") is True
+        assert is_month_precise("2022") is False
+        assert is_month_precise("") is False
+        assert is_month_precise(None) is False
+        assert is_month_precise("present") is False
+        assert is_month_precise("2022-9") is False  # not the ISO two-digit shape
+
+    def test_needs_month_when_either_side_year_only(self):
+        assert needs_month_precision("2020", "2022-05") is True
+        assert needs_month_precision("2020-01", "2022") is True
+        assert needs_month_precision("2020", "2022") is True
+
+    def test_month_precise_and_open_ended_do_not_need_month(self):
+        assert needs_month_precision("2020-01", "2022-05") is False
+        # Falsy end = the DB's NULL-means-current convention — never blocks.
+        assert needs_month_precision("2020-01", None) is False
+        assert needs_month_precision("2020-01", "") is False
+
+    def test_malformed_values_are_the_validators_jurisdiction(self):
+        """Non-ISO junk neither blocks nor counts as precise — the rule targets
+        imprecise dates; malformed ones belong to the create/edit validators."""
+        assert needs_month_precision("March 2020", "present") is False
 
 
 # ---------------------------------------------------------------------

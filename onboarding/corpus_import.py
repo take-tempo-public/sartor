@@ -99,6 +99,13 @@ class ImportReport:
     # than the résumé they uploaded.
     experiences_dropped: int = 0
     dropped_experiences: list[dict[str, Any]] = field(default_factory=list)
+    # Month-precision telemetry (B2/ATS-conformance), mirroring the dropped-role
+    # pair exactly: a role that arrives with a year-only start/end date DOES
+    # land in the corpus (dropping it would be data loss — the opposite of the
+    # point) but will hard-block generation until a month is added, so the
+    # import summary must say so instead of the user discovering it at generate.
+    experiences_needing_month: int = 0
+    month_needed_experiences: list[dict[str, Any]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     def merge(self, other: ImportReport) -> None:
@@ -119,6 +126,8 @@ class ImportReport:
         self.resume_files_processed += other.resume_files_processed
         self.experiences_dropped += other.experiences_dropped
         self.dropped_experiences.extend(other.dropped_experiences)
+        self.experiences_needing_month += other.experiences_needing_month
+        self.month_needed_experiences.extend(other.month_needed_experiences)
         self.errors.extend(other.errors)
 
 
@@ -632,6 +641,25 @@ def _insert_or_merge_experience(
         )
         return  # missing company and/or start date; nothing to insert
 
+    # Month-precision telemetry (B2/ATS-conformance): recorded BEFORE the
+    # create/merge branch so BOTH paths count — the dedup key is
+    # (company, start_date), so a year-only role merging into an existing
+    # year-only row still needs surfacing. The role is NOT dropped: it lands,
+    # flagged, and the summary tells the user it will block generation.
+    from json_resume import needs_month_precision
+
+    if needs_month_precision(start_date, exp.get("end_date")):
+        report.experiences_needing_month += 1
+        report.month_needed_experiences.append(
+            {
+                "company": company,
+                "candidate_inferred_title": title_text,
+                "start_date": start_date,
+                "end_date": exp.get("end_date") or "",
+                "source_filename": source_filename,
+            }
+        )
+
     if dry_run:
         # Same-shape counting for visibility; can't know existing matches
         # without LLM extraction, so report all as creates.
@@ -993,6 +1021,22 @@ def _format_report(report: ImportReport, *, dry_run: bool) -> str:
                 dropped.get("candidate_inferred_title") or dropped.get("company") or "(untitled)"
             )
             lines.append(f"{prefix}  - {label} (source: {dropped.get('source_filename', '?')})")
+    if report.experiences_needing_month:
+        # Month-precision telemetry (B2/ATS-conformance): these roles DID land,
+        # but generation hard-blocks until each gets a month — say so here
+        # rather than letting the user discover it at generate time.
+        lines.append(
+            f"{prefix}Month needed:   {report.experiences_needing_month} role(s) need month "
+            f"precision and will block generation — add months in the Career Corpus:"
+        )
+        for needy in report.month_needed_experiences:
+            label = needy.get("candidate_inferred_title") or needy.get("company") or "(untitled)"
+            dates = needy.get("start_date", "")
+            if needy.get("end_date"):
+                dates = f"{dates} – {needy['end_date']}"
+            lines.append(
+                f"{prefix}  - {label} ({dates}; source: {needy.get('source_filename', '?')})"
+            )
     if report.errors:
         lines.append(f"{prefix}Errors ({len(report.errors)}):")
         for err in report.errors[:10]:

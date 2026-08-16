@@ -229,6 +229,58 @@ def _split(src: str, span: tuple[int, int]) -> tuple[str, str]:
     return src[span[0] : span[1]], blank_non_code(src)[span[0] : span[1]]
 
 
+#: Plugin namespace every `agentType` literal must carry. Subagents load
+#: namespaced via the `sartor-tools` marketplace (`CLAUDE.md` sec. "Skill +
+#: subagent catalog"); bare-name dispatch does NOT resolve -- falsified live
+#: on run `wf_9bb80d14-c94`, 2026-08-12, which died with "agent type
+#: 'n1-refuter' not found" after listing `sartor:n1-refuter` as available.
+PLUGIN_NAMESPACE = "sartor"
+
+
+def agent_type_literals(src: str) -> list[str]:
+    """Every `agentType` literal in CODE context, in source order.
+
+    Located in the blanked source so a copy inside a comment or a template
+    literal cannot register (the R2-2 finding from the args-guard hardening:
+    a regex over raw source is satisfiable by a decoy). Blanking preserves
+    length, so the value is read back out of the RAW source at the same
+    offsets -- the contents of the literal are blanked, its delimiters are not.
+    """
+    blanked = blank_non_code(src)
+    found: list[str] = []
+    for m in re.finditer(r"agentType:\s*'", blanked):
+        close = src.find("'", m.end())
+        if close != -1:
+            found.append(src[m.end() : close])
+    return found
+
+
+def unregistered_agent_types(src: str) -> list[str]:
+    """`agentType` literals that would not resolve, in source order.
+
+    A literal fails if it carries no `sartor:` namespace, or if the name it
+    namespaces has no `agents/<name>.md` definition. This is the deterministic
+    half of the item-84 dispatch mechanism: it cannot prove the harness
+    resolves a name (only a live spawn does -- see
+    `.claude/workflows/n1-agent-probe.mjs`), but it fails closed on the two
+    shapes that have actually cost runs: a bare name, and a name with no
+    backing role file.
+    """
+    bad: list[str] = []
+    for literal in agent_type_literals(src):
+        namespace, sep, bare = literal.partition(":")
+        # `not bare` is ordered ahead of the path build on purpose: `or`
+        # short-circuits, so an empty name never constructs `agents/.md`.
+        if (
+            not sep
+            or namespace != PLUGIN_NAMESPACE
+            or not bare
+            or not (REPO_ROOT / "agents" / f"{bare}.md").is_file()
+        ):
+            bad.append(literal)
+    return bad
+
+
 # ---------------------------------------------------------------------------
 # Teeth: the scanner must reject bad input before it is trusted (the
 # test_doc_single_home_gate.py red-fixture precedent).
@@ -272,6 +324,37 @@ class TestScannerHasTeeth:
     def test_forbidden_token_in_comment_is_not_flagged(self) -> None:
         red = "// Date.now() is banned here\nconst t = 1\n"
         assert "Date.now(" not in blank_non_code(red)
+
+    # -- teeth for the agentType cross-check --------------------------------
+    # Each red arm is a shape that has cost, or could cost, a real run.
+
+    def test_cross_check_rejects_a_bare_name(self) -> None:
+        # The exact shape that killed run wf_9bb80d14-c94.
+        red = "await agent(`p`, { label: 'r', agentType: 'n1-refuter' })\n"
+        assert agent_type_literals(red) == ["n1-refuter"]
+        assert unregistered_agent_types(red) == ["n1-refuter"]
+
+    def test_cross_check_rejects_a_namespaced_name_with_no_role_file(self) -> None:
+        red = "await agent(`p`, { agentType: 'sartor:n1-nonexistent' })\n"
+        assert unregistered_agent_types(red) == ["sartor:n1-nonexistent"]
+
+    def test_cross_check_rejects_a_foreign_namespace(self) -> None:
+        red = "await agent(`p`, { agentType: 'other:n1-refuter' })\n"
+        assert unregistered_agent_types(red) == ["other:n1-refuter"]
+
+    def test_cross_check_accepts_a_registered_namespaced_name(self) -> None:
+        green = "await agent(`p`, { agentType: 'sartor:n1-refuter' })\n"
+        assert unregistered_agent_types(green) == []
+
+    def test_cross_check_ignores_a_commented_out_agent_type(self) -> None:
+        # A decoy in a comment must not register as a real dispatch site --
+        # nor satisfy the pin above (the R2-2 decoy finding, item 84).
+        red = "// agentType: 'n1-refuter'\nconst y = 1\n"
+        assert agent_type_literals(red) == []
+
+    def test_cross_check_ignores_an_agent_type_inside_template_text(self) -> None:
+        red = "const p = `write agentType: 'n1-refuter' in your report`\n"
+        assert agent_type_literals(red) == []
 
 
 # ---------------------------------------------------------------------------
@@ -319,10 +402,25 @@ class TestScriptStructure:
         assert with_model == 5
         assert with_agent_type == 3
 
-    def test_agent_type_dispatch_is_bare_names(self, script_src: str) -> None:
-        assert script_src.count("agentType: 'n1-refuter'") == 2  # refute + recheck
-        assert script_src.count("agentType: 'n1-judge'") == 1
-        assert "sartor:n1-" not in script_src  # plugin-namespace dispatch is unattested
+    def test_agent_type_dispatch_is_namespaced(self, script_src: str) -> None:
+        # INVERTED 2026-08-12. This test previously asserted bare names and
+        # `"sartor:n1-" not in script_src` on the stated ground that
+        # "plugin-namespace dispatch is unattested" -- so the gate was pinning
+        # the defect shut. Run `wf_9bb80d14-c94` attested it the other way:
+        # the harness rejected 'n1-refuter' and listed 'sartor:n1-refuter'
+        # among the available agents. Tightened to the new invariant rather
+        # than deleted (tests/test_enforcement_core.py's own precedent).
+        assert script_src.count("agentType: 'sartor:n1-refuter'") == 2  # refute + recheck
+        assert script_src.count("agentType: 'sartor:n1-judge'") == 1
+        assert "agentType: 'n1-" not in script_src  # no un-namespaced dispatch survives
+
+    def test_every_agent_type_literal_resolves_to_a_registered_agent(self, script_src: str) -> None:
+        assert agent_type_literals(script_src) == [
+            "sartor:n1-refuter",
+            "sartor:n1-judge",
+            "sartor:n1-refuter",
+        ]
+        assert unregistered_agent_types(script_src) == []
 
     def test_refuter_reads_staged_diff_and_is_told_to_refute(self, script_src: str) -> None:
         assert "git diff --staged" in script_src
@@ -392,6 +490,307 @@ class TestScriptStructure:
         )
         assert result.returncode == 0, result.stderr
 
+    def test_args_normalization_tolerates_a_json_string(self, script_src: str) -> None:
+        """`args` arriving as a JSON string must still resolve to real config.
+
+        Not a hypothetical. Observed 2026-08-12 on Epic B run 1: the Workflow
+        harness delivered `typeof args === 'string'` even though the caller
+        passed an object, contradicting the documented "verbatim" contract
+        (probe run wf_733613af-2c5). The old `{ ...defaults, ...(args || {}) }`
+        spread turned that string into index-keyed characters, every
+        required-arg guard fired, and the pipeline could not be invoked at all
+        -- twice, before a single agent spawned.
+
+        Rewritten 2026-08-12 after three adversarial refuters broke the first
+        version (appendix of docs/dev/handoffs/epic-b-render-ats.md): the span
+        is located in blank_non_code() output so a copy of the block hiding in
+        a comment or template literal can never satisfy it; the executed
+        snippet is the REAL region -- defaults, normalization, and both
+        required-arg guards, nothing hand-supplied; and every arm asserts the
+        discriminating error MESSAGE, so deleting the validation guard, the
+        Array.isArray check, or the JSON.parse try/catch each fails a specific
+        arm.
+
+        Known limit (C-0): whether `args` is even the binding name the harness
+        injects cannot be pinned by a unit test; the probes prove it is today.
+        """
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("node not on PATH")
+
+        # Anchor in the BLANKED source (offsets preserved 1:1), then slice the
+        # real source at the same span -- per TestScannerHasTeeth, a match in
+        # a comment or template literal cannot satisfy these anchors.
+        blanked = blank_non_code(script_src)
+        start = re.search(r"^const defaults = \{", blanked, re.MULTILINE)
+        end = re.search(r"^const report = \{", blanked, re.MULTILINE)
+        assert start is not None and end is not None and start.start() < end.start(), (
+            "the defaults .. required-arg-guard region is missing from "
+            "n1-baseline.mjs -- a JSON-string `args` will silently spread into "
+            "index-keyed characters and block invocation"
+        )
+        assert "rawArgs" in blanked[start.start() : end.start()], (
+            "the args-normalization block is gone from the code (not comments) "
+            "between `const defaults` and `const report` -- the harness delivers "
+            "args as a JSON string (wf_733613af-2c5) and nothing normalizes it"
+        )
+        region = script_src[start.start() : end.start()]
+
+        def run(args_literal: str) -> subprocess.CompletedProcess[str]:
+            return subprocess.run(  # noqa: S603 - fixed argv, no shell, source via stdin
+                [node, "--input-type=module"],
+                input=(
+                    f"const args = {args_literal}\n{region}\nconsole.log(JSON.stringify(cfg))\n"
+                ),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                check=False,
+            )
+
+        # The incident shape: a JSON object string must resolve to real config,
+        # with the REAL defaults applied and the ceremony DERIVED from the
+        # sprint's position (fix/n1-scope-dedup: closeoutKind is no longer a
+        # caller decision -- run 3's epic ended one sprint in on a caller
+        # default; item 84, tenth failure).
+        as_string = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md"}\''
+        )
+        assert as_string.returncode == 0, as_string.stderr
+        assert '"sprintBriefPath":"a.md"' in as_string.stdout
+        assert '"epicBriefPath":"b.md"' in as_string.stdout
+        assert '"stage":"sprint"' in as_string.stdout, "the real defaults must apply"
+        assert '"closeoutKind":"intra_epic"' in as_string.stdout, (
+            "index 2 of 3 has a successor sprint -- closeoutKind must DERIVE to "
+            "intra_epic, never be caller-chosen"
+        )
+
+        # A real object must keep working -- the fix cannot be string-only.
+        # index == count is the epic's LAST sprint: terminal, no next brief.
+        as_object = run(
+            "{ sprintBriefPath: 'a.md', epicBriefPath: 'b.md',"
+            " epicSprintIndex: 3, epicSprintCount: 3 }"
+        )
+        assert as_object.returncode == 0, as_object.stderr
+        assert '"sprintBriefPath":"a.md"' in as_object.stdout
+        assert '"closeoutKind":"terminal"' in as_object.stdout, (
+            "the epic's last sprint (index == count) must derive terminal"
+        )
+
+        # Empty/absent/null args must reach the REAL required-arg guard, which
+        # names what is actually missing (the first version's carve-out threw a
+        # misleading "got string" for an empty string instead).
+        for literal in ("''", "undefined", "'null'"):
+            absent = run(literal)
+            assert absent.returncode != 0, f"args={literal} must fail the required-arg guard"
+            assert "sprintBriefPath and args.epicBriefPath are required" in absent.stderr, (
+                f"args={literal}: expected the required-arg diagnostic, got: {absent.stderr[:200]}"
+            )
+
+        # A non-JSON string is a caller error that NAMES args. Deleting the
+        # try/catch fails here: the raw SyntaxError carries no such prefix.
+        not_json = run("'not json'")
+        assert not_json.returncode != 0
+        assert "args arrived as a string that is not valid JSON" in not_json.stderr, (
+            f"expected the authored wrapper naming args, got: {not_json.stderr[:200]}"
+        )
+
+        # An array is rejected BY NAME. Deleting Array.isArray or the whole
+        # validation guard fails here: an array that slips the guard spreads
+        # index-keyed and dies on the required-arg guard message instead.
+        as_array = run('\'["a.md","b.md"]\'')
+        assert as_array.returncode != 0
+        assert "got array" in as_array.stderr, (
+            f"expected the guard to reject an array by name, got: {as_array.stderr[:200]}"
+        )
+
+        # The committed form of the wf_af5e441a-faa discriminating signal:
+        # finalize without commitMessage must get PAST the args parse and fail
+        # on the commitMessage guard, not the args guard.
+        finalize = run('\'{"stage":"finalize","sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        assert finalize.returncode != 0
+        assert "commitMessage is required" in finalize.stderr, (
+            f"expected the finalize guard past the args parse, got: {finalize.stderr[:200]}"
+        )
+
+        # fix/n1-scope-dedup: closeoutKind is DERIVED, never accepted. A caller
+        # supplying it -- even a previously-valid value -- is rejected by name
+        # with the no-longer-accepted diagnostic. (Run 3's session-terminating
+        # ceremony mid-epic was a caller decision; the decision point is gone.)
+        caller_kind = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md",'
+            '"closeoutKind":"intra_epic"}\''
+        )
+        assert caller_kind.returncode != 0, "a caller-supplied closeoutKind must be rejected"
+        assert "no longer accepted" in caller_kind.stderr, (
+            f"expected the no-longer-accepted diagnostic naming closeoutKind, "
+            f"got: {caller_kind.stderr[:200]}"
+        )
+
+        # A sprint-stage call without the position args is a loud caller error
+        # naming epicSprintIndex/epicSprintCount -- the ceremony cannot default.
+        no_position = run('\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md"}\'')
+        assert no_position.returncode != 0, (
+            "stage 'sprint' without epicSprintIndex/epicSprintCount must fail loudly"
+        )
+        assert "epicSprintIndex" in no_position.stderr, (
+            f"expected the position-args guard by name, got: {no_position.stderr[:200]}"
+        )
+
+        # A successor sprint exists (index < count) but no nextSprintBriefPath:
+        # fails on the guard that names the missing arg (the closer writes the
+        # NEXT sprint's brief there -- the pipeline never invents its own paths).
+        intra_no_next = run(
+            '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+            '"epicSprintIndex":2,"epicSprintCount":3}\''
+        )
+        assert intra_no_next.returncode != 0, "index < count without nextSprintBriefPath must fail"
+        assert "nextSprintBriefPath" in intra_no_next.stderr, (
+            f"expected the missing-arg guard by name, got: {intra_no_next.stderr[:200]}"
+        )
+
+        # Nonsense positions are rejected by the same guard: index past count,
+        # zero, and non-integer each name the position args.
+        for bad in (
+            '"epicSprintIndex":4,"epicSprintCount":3',
+            '"epicSprintIndex":0,"epicSprintCount":3',
+            '"epicSprintIndex":1.5,"epicSprintCount":3',
+        ):
+            bad_pos = run(
+                f'\'{{"sprintBriefPath":"a.md","epicBriefPath":"b.md",{bad},"nextSprintBriefPath":"c.md"}}\''
+            )
+            assert bad_pos.returncode != 0, f"invalid position ({bad}) must fail"
+            assert "epicSprintIndex" in bad_pos.stderr, (
+                f"invalid position ({bad}): expected the guard by name, got: {bad_pos.stderr[:200]}"
+            )
+
+    def test_closer_ceremony_branches_on_closeout_kind(self, script_src: str) -> None:
+        """Item 89, fixed 2026-08-12: the closer prompt must branch on the
+        close-out kind instead of hardcoding the full session ceremony.
+
+        The epic's owner-approved cadence (epic-b-design-brief.md "Close-out
+        intervals") is light per sprint -- the next sprint's brief from
+        EPIC_SPRINT_BRIEF_TEMPLATE.md -- with the full AGENT_HANDOFF_TEMPLATE.md
+        ceremony ONCE at the epic close. Run 1's closer, following the
+        un-branched prompt, wrote the full ceremony instead and the declared
+        per-sprint artifact (epic-b-b1b-brief.md) was never produced; the
+        invoking session then treated the session-terminating ceremony as the
+        end of the epic (item 84, tenth failure).
+        """
+        blanked = blank_non_code(script_src)
+        assert "closeoutKind" in blanked, "closeoutKind must exist in CODE, not just prose"
+        assert "'intra_epic'" in script_src
+        assert "'terminal'" in script_src
+        assert "EPIC_SPRINT_BRIEF_TEMPLATE.md" in script_src, (
+            "the intra-epic branch must direct the closer to the sprint-brief template"
+        )
+        assert "AGENT_HANDOFF_TEMPLATE.md" in script_src, (
+            "the terminal branch must keep the full handoff ceremony"
+        )
+
+    def test_harness_throw_is_captured_as_escalation(self, script_src: str) -> None:
+        """Retro suggestion #1 (run 3), built 2026-08-12: a thrown agent() call
+        must become a structured escalation, not a dead workflow.
+
+        Three consecutive runs died at an invocation boundary OUTSIDE
+        routeFlags/escalate entirely -- `escalations: []` every time, the
+        invoking session learning of the failure only from a task notification
+        (run wf_9bb80d14-c94: 22 min + 169k tokens spent before the throw
+        surfaced). The stage bodies are wrapped so a harness throw returns a
+        report with a kind:'harness_throw' stop escalation carrying the error
+        text verbatim.
+        """
+        assert "kind: 'harness_throw'" in script_src
+        blanked = blank_non_code(script_src)
+        catches = re.findall(r"\bcatch\b", blanked)
+        # Exactly two: the args JSON.parse catch, and the stage-body wrapper.
+        # A third catch is a structure change -- make it deliberately, here.
+        assert len(catches) == 2, f"expected exactly 2 catch sites in code, found {len(catches)}"
+
+
+def _cr_offenders(paths: list[Path]) -> list[str]:
+    """Return the workflow files whose WORKING-TREE bytes contain a CR."""
+    return [p.name for p in paths if b"\r" in p.read_bytes()]
+
+
+class TestWorkflowWorkingTreeBytes:
+    """fix/n1-scope-dedup (S3): the CRLF class is a WORKING-TREE defect.
+
+    `.gitattributes` (`*.mjs text eol=lf`) and tests/test_gitattributes_coverage.py
+    govern CHECKOUT-time normalization; nothing governs bytes a tool writes
+    AFTER checkout. Observed live 2026-08-13: a session ledger shard carried 2
+    CR bytes in the working tree while `git check-attr` reported
+    `text: set, eol: lf`. A single CR in a workflow script is rejected by the
+    Workflow permission layer before any agent spawns ("script contains
+    control characters…") -- the class that blocked Epic B run 1 twice
+    (item 84; probe wf_e47f2d49-7f0). Both scripts are covered, probe
+    included -- run 1's gap was scoped to the one script it knew about.
+    """
+
+    def test_checker_flags_synthetic_cr(self, tmp_path: Path) -> None:
+        crlf = tmp_path / "crlf.mjs"
+        crlf.write_bytes(b"export const meta = {}\r\n")
+        clean = tmp_path / "clean.mjs"
+        clean.write_bytes(b"export const meta = {}\n")
+        assert _cr_offenders([crlf, clean]) == ["crlf.mjs"], (
+            "the checker itself must flag a CR byte -- if this fails, the "
+            "real-tree assertion below proves nothing"
+        )
+
+    def test_workflow_scripts_are_cr_free_in_the_working_tree(self) -> None:
+        workflows = sorted((REPO_ROOT / ".claude" / "workflows").glob("*.mjs"))
+        assert workflows, "no workflow scripts found -- the glob itself is broken"
+        offenders = _cr_offenders(workflows)
+        assert offenders == [], (
+            f"CR bytes in working-tree workflow script(s) {offenders}: the "
+            "Workflow permission layer rejects any script containing CR before "
+            "an agent spawns (item 84, run 1). Re-normalize the file (git "
+            "checkout -- <file> after confirming no un-staged content is lost)."
+        )
+
+
+class TestEpicStateBanner:
+    """fix/n1-scope-dedup (S4): the SessionStart epic-state banner.
+
+    Run 3 stopped a three-sprint epic after one sprint, and the next sessions
+    had no way to know (item 84, tenth failure -- the owner lost a day). The
+    banner derives Epic B's remainder from committed briefs at the epic tip
+    (NOT branch refs -- runbook step 9 prunes those for exactly the sprints
+    that finished) and injects it at every session start until the epic lands.
+    """
+
+    def test_remainder_derivation_is_exhaustive(self) -> None:
+        from scripts.enforcement.adapters.claude_context_hook import epic_remainder
+
+        # Mid-epic, before B1b's closer wrote the B2 brief: everything remains.
+        assert epic_remainder(b2_brief_exists=False, epic_on_main=False) == [
+            "B1b (sprint 2 of 3)",
+            "B2 (sprint 3 of 3)",
+            "epic close + PR",
+        ]
+        # B2's brief committed at the tip proves B1b's closer finished.
+        assert epic_remainder(b2_brief_exists=True, epic_on_main=False) == [
+            "B2 (sprint 3 of 3)",
+            "epic close + PR",
+        ]
+        # The epic landed on main: the banner retires itself entirely.
+        assert epic_remainder(b2_brief_exists=True, epic_on_main=True) == []
+        assert epic_remainder(b2_brief_exists=False, epic_on_main=True) == []
+
+    def test_banner_is_fail_open_and_non_directive(self) -> None:
+        """Live smoke on this repo: never raises, and while the epic is
+        mid-flight it names the remainder WITHOUT reading as tasking (a banner
+        that reads as a work order recreates the item-87 class in reverse)."""
+        from scripts.enforcement.adapters.claude_context_hook import epic_state_banner
+
+        banner = epic_state_banner({"cwd": str(REPO_ROOT)})
+        assert isinstance(banner, str)
+        if banner:
+            assert "NOT a work order" in banner
+            assert "owner's explicit opt-in" in banner
+
 
 def _frontmatter(path: Path) -> dict[str, object]:
     text = path.read_text(encoding="utf-8")
@@ -432,10 +831,43 @@ class TestRunbookDoc:
 
     def test_literal_gate_invocation(self, doc_src: str) -> None:
         assert "nohup python -m scripts.gate > gate1.log 2>&1 &" in doc_src
-        assert "`tasklist`" in doc_src
+        # The wait is on the gate log's own terminal line, NEVER process-name
+        # polling: `tasklist | grep python.exe` matches nothing on this machine
+        # (the interpreter is python3.13.exe), so a poll loop exits instantly
+        # and a mid-run log reads as finished (observed 2026-08-12, twice).
+        assert 'until grep -qE "^gate: (all steps passed|FAILED)" gate1.log' in doc_src
+        assert "**never** process-name polling" in doc_src
+
+    def test_preflight_decision_batch_step_present(self, doc_src: str) -> None:
+        """Runbook step 0a: one batched preflight question set at kickoff.
+
+        Epic B run 1's overnight window was lost to serial owner questions at
+        5-10 minute intervals; the run never started. The chain exists to use
+        long uninterrupted windows, so the kickoff discipline is part of the
+        contract this file pins.
+        """
+        assert "Preflight decision batch" in doc_src
+        assert "one batch, in one message" in doc_src
 
     def test_invocation_is_by_script_path(self, doc_src: str) -> None:
         assert "scriptPath: '.claude/workflows/n1-baseline.mjs'" in doc_src
 
-    def test_states_never_run_limit(self, doc_src: str) -> None:
-        assert "BUILT, NEVER RUN" in doc_src
+    def test_states_run_history_and_per_session_opt_in(self, doc_src: str) -> None:
+        """Replaced test_states_never_run_limit 2026-08-12: the header's
+        'BUILT, NEVER RUN' was falsified by run 3 (wf_9bb80d14-c94 spawned real
+        agents). The invariant that survives the falsification is pinned
+        instead: the doc records real run history and running remains a
+        per-session owner opt-in (tightened, not deleted -- the
+        test_enforcement_core.py precedent)."""
+        assert "BUILT, NEVER RUN" not in doc_src, "falsified 2026-08-12 -- do not restore"
+        assert "FIRST RUN 2026-08-12" in doc_src
+        assert "owner opt-in" in doc_src
+
+    def test_epic_loop_step_present(self, doc_src: str) -> None:
+        """Runbook step 9 (added 2026-08-12): the invoking session manages the
+        flow ACROSS an epic's runs -- consume the closer-written brief, merge,
+        report the boundary, continue or stop cleanly. Its absence is why run 3
+        ended a three-sprint epic after one sprint (item 84, tenth failure)."""
+        assert "The epic loop" in doc_src
+        assert "report the sprint boundary to the owner NOW" in doc_src
+        assert "verify the next-sprint brief exists" in doc_src

@@ -147,6 +147,14 @@ docs-site/openapi.json
 # cross directory boundaries), hence the separate entry.
 docs-site/content/docs/api-reference/
 
+# ---- gate*.log — captured `python -m scripts.gate` output from detached/
+#      background gate runs. Reproducible, ~500 KB each, and exactly the
+#      `git status --porcelain` noise that corrupts the N=1 pipeline's §11.9
+#      accounting check (docs/dev/handoffs/epic-b-render-ats.md, carried
+#      forward #4). Never a deliverable — the gate's own terminal line is the
+#      record that matters.
+gate*.log
+
 # ---- scratchpad/ — ad-hoc working files (investigation logs, throwaway
 #      scripts, captured command output). Previously untracked-but-not-ignored,
 #      so a `git add -A` would have swept them in. That is a real exposure

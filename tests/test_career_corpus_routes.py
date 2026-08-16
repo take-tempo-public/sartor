@@ -150,6 +150,33 @@ class TestListExperiences:
         assert body[0]["bullet_count_pending"] == 0
         assert body[1]["id"] == e2
 
+    def test_needs_month_flag_on_year_only_rows(self, corpus_app):
+        """B2 ATS conformance: `needs_month` is computed server-side by the SAME
+        predicate the generate-time month block uses (json_resume.
+        needs_month_precision), so the corpus badge and the block agree by
+        construction. Year-only rows (imported legacy data — the create route
+        no longer accepts them) flag; month-precise and open-ended rows don't."""
+        cid = _seed_candidate()
+        _seed_experience(cid, company="YearOnly", start_date="2020", end_date="2022")
+        _seed_experience(
+            cid, company="YearOnlyEnd", start_date="2021-03", end_date="2022", display_order=1
+        )
+        _seed_experience(
+            cid, company="Precise", start_date="2019-05", end_date="2020-06", display_order=2
+        )
+        _seed_experience(cid, company="Current", start_date="2018-01", display_order=3)
+
+        client = corpus_app.test_client()
+        r = client.get("/api/users/alice/experiences")
+        assert r.status_code == 200
+        flags = {row["company"]: row["needs_month"] for row in r.get_json()}
+        assert flags == {
+            "YearOnly": True,
+            "YearOnlyEnd": True,
+            "Precise": False,
+            "Current": False,
+        }
+
     def test_missing_candidate_returns_200_needs_onboarding(self, corpus_app):
         # Config exists, but no candidate row seeded. A read precondition is
         # NOT a conflict: 200 + needs_onboarding (empty list) so the Career
@@ -227,18 +254,25 @@ class TestCreateExperience:
         )
         assert r.status_code == 400
 
-    def test_accepts_year_only_dates(self, corpus_app):
-        """Walkthrough F3: bare YYYY start/end dates are valid and stored verbatim."""
+    def test_rejects_year_only_dates_month_required(self, corpus_app):
+        """B2 ATS conformance SUPERSEDES walkthrough F3's 'bare YYYY is valid':
+        create now requires month precision on BOTH dates. Year-only rows still
+        ENTER via import (flagged, not dropped — tests/test_corpus_import.py's
+        F3 fixture pins that); the UI's own writes hold the month bar."""
         _seed_candidate()
         client = corpus_app.test_client()
         r = client.post(
             "/api/users/alice/experiences",
-            json={"company": "X", "start_date": "2020", "end_date": "2023"},
+            json={"company": "X", "start_date": "2020", "end_date": "2023-05"},
         )
-        assert r.status_code == 201, r.get_json()
-        body = r.get_json()
-        assert body["start_date"] == "2020"
-        assert body["end_date"] == "2023"
+        assert r.status_code == 400
+        assert "month required" in r.get_json()["error"]
+        r = client.post(
+            "/api/users/alice/experiences",
+            json={"company": "X", "start_date": "2020-01", "end_date": "2023"},
+        )
+        assert r.status_code == 400
+        assert "month required" in r.get_json()["error"]
 
     def test_missing_candidate_is_auto_provisioned(self, corpus_app):
         # A config-only user (no Candidate row) is provisioned on the first
@@ -319,6 +353,20 @@ class TestUpdateExperience:
         client = corpus_app.test_client()
         r = client.put(f"/api/experiences/{eid}", json={"start_date": "not-a-date"})
         assert r.status_code == 400
+
+    def test_rejects_year_only_dates_on_edit(self, corpus_app):
+        """B2 ATS conformance: BOTH edit validators are month-required — the
+        end-date one is the validator both sprint briefs failed to cite
+        (blast-radius rows 23-24: four validators, not two)."""
+        cid = _seed_candidate()
+        eid = _seed_experience(cid)
+        client = corpus_app.test_client()
+        r = client.put(f"/api/experiences/{eid}", json={"start_date": "2020"})
+        assert r.status_code == 400
+        assert "month required" in r.get_json()["error"]
+        r = client.put(f"/api/experiences/{eid}", json={"end_date": "2023"})
+        assert r.status_code == 400
+        assert "month required" in r.get_json()["error"]
 
 
 class TestDeleteExperience:

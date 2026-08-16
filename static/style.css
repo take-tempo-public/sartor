@@ -1610,6 +1610,7 @@ textarea:focus-visible {
 .corpus-row.retired { opacity: 0.55; }
 .corpus-row.retired .corpus-row-input { text-decoration: line-through; }
 .corpus-row-flag.retired { background: #3a3a4a; color: var(--fg-1); }
+.corpus-row-flag.needs-month { background: var(--warning); color: var(--bg-0); }
 
 /* A whole retired ROLE, same treatment one level up: the entire card dims,
    RETIRED flag included. `opacity` composites the whole subtree as a group, so

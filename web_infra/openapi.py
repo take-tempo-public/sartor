@@ -133,6 +133,9 @@ class ExperienceSummaryItem(_PermissiveModel):
     location: str | None = None
     start_date: str
     end_date: str | None = None
+    # B2 ATS conformance: True when either stored date is ISO year-only —
+    # the corpus "MONTH NEEDED" badge + generate-time month block key off it.
+    needs_month: bool = False
     display_order: int
     summary: str | None = None
     # Soft-retire flag for the whole role. Retired rows are omitted from the

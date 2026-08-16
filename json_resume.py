@@ -75,7 +75,8 @@ _BRACKET_CLOSE = ")]"
 _ATS_UNSAFE_CHARS = '[]{}"`'
 _ATS_TAG_SHAPED_RE = re.compile(r"<[^<>]{1,30}>")
 
-# Presentation-boundary date formatting (owner-decided: numeric MM-YYYY).
+# Presentation-boundary date formatting (owner-decided: numeric MM/YYYY —
+# B2/ATS-conformance changed the separator from the 2026-05 MM-YYYY form).
 # Storage stays ISO (YYYY-MM or YYYY) everywhere else — sorting depends on it;
 # these patterns only recognize the ISO shape to reformat it for display.
 _ISO_YEAR_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})$")
@@ -387,11 +388,17 @@ def _entry_from_chunk(chunk: list[str], kind: str) -> dict[str, Any]:
         if position:
             entry["position"] = position
     elif kind == "education":
-        # name → institution; position used as 'studyType / area' fallback
+        # name → institution; position carries `area — studyType` (either half may
+        # be absent). Splitting here rather than in `_split_h3_header` keeps the
+        # education-only rule out of a helper that work/ and project/ entries share.
         if name:
             entry["institution"] = name
         if position:
-            entry["area"] = position
+            area, study_type = split_education_position(position)
+            if area:
+                entry["area"] = area
+            if study_type:
+                entry["studyType"] = study_type
     else:  # project
         if name:
             entry["name"] = name
@@ -580,9 +587,10 @@ def _parse_simple_list(body: list[str], name_key: str) -> list[dict[str, Any]]:
 
 
 def format_month_year(value: object) -> str:
-    """Render a stored ISO date as the product's presentation format `MM-YYYY`.
+    """Render a stored ISO date as the product's presentation format `MM/YYYY`.
 
-    Accepts `YYYY-MM` or `YYYY` (owner-decided, fix/output-identity-and-dates).
+    Accepts `YYYY-MM` or `YYYY` (owner-decided, fix/output-identity-and-dates;
+    separator changed `-` → `/` in B2/ATS-conformance per RELEASE_ARC §Epic B).
     Storage stays ISO everywhere else — this is a presentation-boundary-only
     transform, never persisted. Best-effort: a value that isn't ISO-shaped
     (hand-typed, legacy, or already-formatted text) passes through unchanged
@@ -594,14 +602,14 @@ def format_month_year(value: object) -> str:
     m = _ISO_YEAR_MONTH_RE.match(s)
     if m:
         year, month = m.group(1), m.group(2)
-        return f"{month}-{year}"
+        return f"{month}/{year}"
     return s
 
 
 def format_date_range(start: object, end: object) -> str:
     """Render a presentation date range, tolerating either side missing.
 
-    `MM-YYYY – MM-YYYY`, or `MM-YYYY – Present` when `start` is present and
+    `MM/YYYY – MM/YYYY`, or `MM/YYYY – Present` when `start` is present and
     `end` is falsy — the DB's NULL-end-date-means-current convention (see
     `db.models.Experience.end_date`) applies uniformly to work AND education
     entries here. The single canonical presentation-boundary helper: used by
@@ -614,6 +622,87 @@ def format_date_range(start: object, end: object) -> str:
         return format_month_year(end)
     e = format_month_year(end) if end else "Present"
     return f"{s} – {e}"
+
+
+def is_month_precise(value: object) -> bool:
+    """True when a stored ISO date string carries a month (`YYYY-MM`).
+
+    The canonical month-precision predicate (B2/ATS-conformance). The corpus
+    list's `needs_month` badge and the generate-time month block both resolve
+    through this module so the two can never disagree. A value matching
+    neither ISO shape is the date validators' jurisdiction
+    (`blueprints/corpus/experiences.py`), not this predicate's.
+    """
+    s = str(value).strip() if value else ""
+    return bool(_ISO_YEAR_MONTH_RE.match(s))
+
+
+def needs_month_precision(start: object, end: object) -> bool:
+    """True when either stored date is ISO year-only (`YYYY`) — the ATS-block rule.
+
+    Year-only dates are the shape the B2 month hard block exists for
+    (RELEASE_ARC §Epic B, B2): an ATS parsing `2022 – 2023` cannot place the
+    role's duration, so generation refuses until a month is added. A falsy
+    `end` is the NULL-means-current convention (`db.models.Experience.end_date`)
+    and never blocks. Non-ISO text (legacy hand-typed values) is left to the
+    create/edit validators rather than blocked here — the rule targets
+    *imprecise* dates, not *malformed* ones.
+    """
+
+    def _year_only(v: object) -> bool:
+        return bool(_ISO_YEAR_ONLY_RE.match(str(v).strip() if v else ""))
+
+    return _year_only(start) or _year_only(end)
+
+
+#: Separator between an education entry's `area` and `studyType` on the single
+#: "position line" every renderer gives a degree. EM dash (U+2014), deliberately
+#: NOT the EN dash (U+2013) `format_date_range` puts between dates: the two must
+#: stay distinguishable. `_split_h3_header` prefers `", "` on the left (pre-TAB)
+#: segment (`:453`), so WHEN AN INSTITUTION IS PRESENT this em dash is never
+#: consumed as the name/position boundary. When the institution is ABSENT the
+#: left segment is ambiguous and `_split_h3_header`'s `" — "` fallback (`:455-456`)
+#: DOES collide with it: the whole `"Area — StudyType"` string re-parses into
+#: `institution`, and `studyType` is lost on that cycle. This is pre-existing
+#: behavior the emitter's `f"{a}, {b}" if (a and b) else (a or b)` idiom shares
+#: with institution-less `work`/`project` entries, unchanged by this branch — see
+#: `docs/dev/diagnosis/b1-education-render.md` F1.
+EDUCATION_FIELD_SEPARATOR = " — "
+
+
+def education_position_text(entry: Mapping[str, Any]) -> str:
+    """Join an education entry's `area` and `studyType` into one position line.
+
+    **Render both; never flip.** `corpus_to_json_resume._collect_education` maps
+    `Education.degree -> area` and `Education.field -> studyType` — the reverse of
+    the JSON Resume convention, where `studyType` is the degree. Which column really
+    holds which is a question about stored data, not about renderers, so every
+    surface shows both fields and none of them reorders the pair. Changing the
+    mapping needs a data audit (owner constraint; see
+    `docs/dev/diagnosis/b1-education-render.md` F-2).
+
+    The single canonical helper for this join — used by `generator.py` (.docx) and
+    `json_resume_to_markdown` (.md), and mirrored inline by the persona Jinja
+    templates, which cannot import. That is the same "one presentation-boundary
+    helper" arrangement `format_date_range` has, and for the same reason: Classic,
+    Spacious, the `.docx` writer and the markdown round-trip had each silently
+    dropped `studyType` before this helper existed — Modern and Tech had not.
+    """
+    parts = [str(entry.get(key) or "").strip() for key in ("area", "studyType")]
+    return EDUCATION_FIELD_SEPARATOR.join(p for p in parts if p)
+
+
+def split_education_position(position: str) -> tuple[str, str]:
+    """Inverse of `education_position_text`: `"Area — StudyType"` → `(area, studyType)`.
+
+    A position carrying no separator is all `area` — which is both the pre-2026-08-13
+    on-disk form and what a hand-written résumé produces, so the common case parses
+    exactly as it always did.
+    """
+    if EDUCATION_FIELD_SEPARATOR in position:
+        area, study_type = position.split(EDUCATION_FIELD_SEPARATOR, 1)
+        return area.strip(), study_type.strip()
+    return position.strip(), ""
 
 
 def json_resume_to_markdown(doc: dict[str, Any]) -> str:
@@ -689,7 +778,10 @@ def json_resume_to_markdown(doc: dict[str, Any]) -> str:
                 continue
             lines.append("")
             inst = str(e.get("institution") or "").strip()
-            area = str(e.get("area") or "").strip()
+            # `area — studyType`, so the field of study survives the round-trip
+            # (`_entry_from_chunk` splits it back apart). An entry with no
+            # `studyType` serializes byte-identically to the pre-2026-08-13 form.
+            area = education_position_text(e)
             header = f"{inst}, {area}" if (inst and area) else (inst or area)
             dates = format_date_range(e.get("startDate"), e.get("endDate"))
             if dates:
@@ -857,3 +949,81 @@ def scrub_ats_unsafe(doc: dict[str, Any]) -> dict[str, Any]:
         sartor_meta["ats_scrubbed"] = scrubbed
 
     return doc
+
+
+# ---------------------------------------------------------------------
+# ATS approved-font policy (B2/ATS-conformance — owner-decided)
+# ---------------------------------------------------------------------
+
+#: The ATS-approved output-font allow-list (RELEASE_ARC §Epic B, B2). Every
+#: font NAME the product writes into generated output — `.docx` run/Normal
+#: fonts, the cover-letter body, persona-companion CSS primaries — must be a
+#: member; `map_to_approved_font` is the single mapping policy. This module is
+#: the ATS *output-policy* home (beside `scrub_ats_unsafe`), which is why the
+#: list lives here and not in `generator.py`. Expanding the list is item 43
+#: (deferred, owner-gated).
+APPROVED_FONTS = ("Arial", "Calibri", "Georgia")
+
+# Best-effort family classification for off-list fonts: exact names first,
+# then a serif/sans heuristic, then Arial. Deterministic and total — every
+# input maps to a member of APPROVED_FONTS.
+_FONT_MAP = {
+    # humanist / modern-UI sans → Calibri
+    "calibri": "Calibri",
+    "candara": "Calibri",
+    "carlito": "Calibri",
+    "corbel": "Calibri",
+    "lato": "Calibri",
+    "open sans": "Calibri",
+    "optima": "Calibri",
+    "segoe ui": "Calibri",
+    "trebuchet ms": "Calibri",
+    # serif → Georgia
+    "baskerville": "Georgia",
+    "book antiqua": "Georgia",
+    "cambria": "Georgia",
+    "garamond": "Georgia",
+    "georgia": "Georgia",
+    "liberation serif": "Georgia",
+    "merriweather": "Georgia",
+    "palatino": "Georgia",
+    "palatino linotype": "Georgia",
+    "pt serif": "Georgia",
+    "times": "Georgia",
+    "times new roman": "Georgia",
+    # grotesque / neo-grotesque / other sans → Arial
+    "arial": "Arial",
+    "arial narrow": "Arial",
+    "franklin gothic": "Arial",
+    "futura": "Arial",
+    "gill sans": "Arial",
+    "helvetica": "Arial",
+    "helvetica neue": "Arial",
+    "inter": "Arial",
+    "liberation sans": "Arial",
+    "roboto": "Arial",
+    "tahoma": "Arial",
+    "verdana": "Arial",
+}
+
+
+def map_to_approved_font(name: object) -> str:
+    """Map any font name onto the ATS-approved allow-list (`APPROVED_FONTS`).
+
+    Deterministic and total: a member passes through (canonical casing); a
+    known off-list family maps to its nearest approved neighbor; an unknown
+    serif-looking name goes to Georgia; anything else goes to Arial. An
+    ABSENT name maps to Calibri — the `.docx` writer's historical no-template
+    default, kept so absence keeps meaning what it always meant there.
+    Callers own the decision of when absence should instead keep a surface's
+    own neutral (`docx_to_persona_html._css_font_stack` does).
+    """
+    s = str(name).strip() if name else ""
+    if not s:
+        return "Calibri"
+    key = s.lower()
+    if key in _FONT_MAP:
+        return _FONT_MAP[key]
+    if "serif" in key and "sans" not in key:
+        return "Georgia"
+    return "Arial"

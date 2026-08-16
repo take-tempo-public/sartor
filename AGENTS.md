@@ -263,7 +263,8 @@ in [`static/app.js`](static/app.js), which `PUT`s the full config to
 `/api/users/<user>/config`. Add new per-config fields there (spread from
 `currentConfig` so they survive panel saves), and reuse that one path rather than
 adding per-handler helpers — match the live code, don't restate volatile function
-names (charter D5, cite-don't-restate).
+names (the charter's extract-don't-restate rule, `docs/governance/charter.md`
+§"What this is": each rule lives in one canonical home; everything else cites it).
 
 ---
 

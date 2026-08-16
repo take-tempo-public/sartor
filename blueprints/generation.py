@@ -784,6 +784,56 @@ def save_edits() -> ResponseReturnValue:
     )
 
 
+def _month_imprecise_roles(context_set: ContextSet, frozen_doc: dict[str, Any] | None) -> list[str]:
+    """Labels of INCLUDED experience roles whose stored dates are ISO year-only.
+
+    B2 ATS conformance: generation hard-blocks while any included role's start
+    or end date lacks month precision. Education is exempt (owner decision) —
+    enforced by which keys this function reads (`work` / `career_corpus`,
+    never `education`), not by a filter that could be edited away. Reads
+    whichever source the run would consume: the frozen ``approved_composition``'s
+    `work` entries when Compose froze one, else the `career_corpus` snapshot
+    the LLM path is handed. One rule — `json_resume.needs_month_precision` —
+    shared with the corpus list's `needs_month` badge, so the badge and the
+    block agree by construction.
+    """
+    from json_resume import needs_month_precision
+
+    labels: list[str] = []
+    if frozen_doc is not None:
+        for w in frozen_doc.get("work") or []:
+            if isinstance(w, dict) and needs_month_precision(w.get("startDate"), w.get("endDate")):
+                labels.append(str(w.get("name") or w.get("position") or "(unnamed role)"))
+    else:
+        for exp in context_set.get("career_corpus") or []:
+            if isinstance(exp, dict) and needs_month_precision(
+                exp.get("start_date"), exp.get("end_date")
+            ):
+                labels.append(str(exp.get("company") or "(unnamed role)"))
+    return labels
+
+
+def _month_block_response(month_needed: list[str]) -> ResponseReturnValue:
+    """The shared 422 both generate entry points return for the month hard block.
+
+    One builder for `/api/generate` AND `/api/generate/stream` — the SSE route
+    is the entry point the design brief originally missed (blast-radius row 20);
+    sharing the response constructor keeps the two from drifting apart the way
+    their duplicated preambles already did once.
+    """
+    return jsonify(
+        {
+            "error": (
+                f"{len(month_needed)} role(s) need month precision before generating: "
+                + ", ".join(month_needed)
+                + ". Add start/end months in the Career Corpus."
+            ),
+            "needs_month_precision": True,
+            "month_needed_roles": month_needed,
+        }
+    ), 422
+
+
 def _frozen_composition(context_set: ContextSet) -> dict[str, Any] | None:
     """Return the frozen ``approved_composition`` doc for a corpus context, else None.
 
@@ -917,6 +967,19 @@ def run_generation() -> ResponseReturnValue:
             }
         ), 409
 
+    # Phase 4 gate, resolved EARLY (moved above the LLM path) so the B2 month
+    # block below inspects the same source generation would actually consume:
+    # the frozen approved_composition when Compose froze one, else the corpus.
+    frozen_doc = _frozen_composition(context_set)
+
+    # B2 ATS conformance: month hard block. An included role with a year-only
+    # date renders a range no ATS can place — refuse BEFORE any LLM spend,
+    # naming the roles so the fix is one corpus edit away. Education is exempt
+    # (owner decision — _month_imprecise_roles never reads it).
+    month_needed = _month_imprecise_roles(context_set, frozen_doc)
+    if month_needed:
+        return _month_block_response(month_needed)
+
     logger.info(
         "Starting generation for %s (iteration=%s)", username, context_set.get("iteration", 0)
     )
@@ -932,10 +995,10 @@ def run_generation() -> ResponseReturnValue:
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]
 
     # Phase 4 — corpus-mode DETERMINISTIC assemble: when Compose has frozen an
-    # approved_composition, render THAT (zero résumé-body LLM calls) instead of
-    # calling generate(). The cover letter stays an LLM call. Legacy + pre-freeze
-    # corpus contexts fall through to the UNCHANGED generate() path (byte-identical).
-    frozen_doc = _frozen_composition(context_set)
+    # approved_composition (resolved above, before the month block), render THAT
+    # (zero résumé-body LLM calls) instead of calling generate(). The cover
+    # letter stays an LLM call. Legacy + pre-freeze corpus contexts fall through
+    # to the UNCHANGED generate() path (byte-identical).
     try:
         if frozen_doc is not None:
             result = _assemble_from_frozen_composition(
@@ -1211,6 +1274,21 @@ def run_generation_stream() -> ResponseReturnValue:
             }
         ), 409
 
+    # Phase 4 — corpus-mode deterministic assemble when Compose froze an
+    # approved_composition. Computed here (request context, and BEFORE the B2
+    # month block so the block inspects the source this run would consume) so
+    # it is captured in the stream() closure below.
+    frozen_doc = _frozen_composition(context_set)
+
+    # B2 ATS conformance: same month hard block as /api/generate — this SSE
+    # route duplicates that preamble, and blocking only the non-streaming
+    # entry point would ship green with the defect fully reachable here
+    # (blast-radius row 20). Pre-LLM validation returns plain JSON per this
+    # route's contract.
+    month_needed = _month_imprecise_roles(context_set, frozen_doc)
+    if month_needed:
+        return _month_block_response(month_needed)
+
     logger.info(
         "Starting streaming generation for %s (iteration=%s)",
         username,
@@ -1220,10 +1298,6 @@ def run_generation_stream() -> ResponseReturnValue:
     # write keys outside the ContextSet schema). It is a dict at runtime; cast
     # so the in-place mutations land on the same object.
     cs = cast(dict[str, Any], context_set)
-    # Phase 4 — corpus-mode deterministic assemble when Compose froze an
-    # approved_composition. Computed here (request context) so it is captured in
-    # the stream() closure below.
-    frozen_doc = _frozen_composition(context_set)
     if frozen_doc is None:
         # Apply the chosen summary / per-role intros / skill curation before the
         # LLM sees the corpus (no-op in legacy). Skipped in the frozen path — the

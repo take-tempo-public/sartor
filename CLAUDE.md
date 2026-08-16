@@ -130,14 +130,26 @@ hooks for any agent writing code here:
 - `wiki-freshness-reminder` — non-blocking nudge after
   `git commit` when `docs/wiki/` may be stale (silent until the
   first `/wiki-ingest` sets a baseline; never auto-ingests).
+- `interrogative-prompt-witness` + the `interrogative-witness` pause
+  (item 87) — two fail-open witnesses against the
+  question-treated-as-work-order failure class. On UserPromptSubmit, a
+  heuristic (trailing `?` or an interrogative lead word) injects a
+  non-blocking "the deliverable is the ANSWER" reminder. On the first
+  `Edit`/`Write` after each user prompt, the Edit|Write dispatcher
+  refuses ONCE with the interrogative-vs-directive question and
+  self-clears — re-run the same call to proceed. Witness, not gate
+  (C-0: intent classification is not deterministic); every failure
+  path fails open.
 
 **Wiring note (`feat/verify-dont-assume-guard`):** the four Bash-matcher
 guards (`block-secrets`, `block-merge-to-main`, `ruff-changed`,
 `verify-binary-on-path`) run through one dispatcher
 (`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
-and the six Edit|Write guards through another
+and the seven Edit|Write guards through another
 (`hooks/edit-write-dispatcher.sh`, PX-37) — one settings.json entry and one
 process per matcher, no-short-circuit aggregation, guard logic unchanged.
+The UserPromptSubmit witness is its own settings.json entry (a different
+event; nothing else rides it).
 
 ### Skill + subagent catalog
 

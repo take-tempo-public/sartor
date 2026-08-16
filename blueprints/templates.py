@@ -1039,17 +1039,14 @@ def preview_application_html(application_id: int) -> ResponseReturnValue:
         # Fall back to the bundled Classic if the chosen persona doesn't
         # ship an .html companion yet — keeps the preview working as more
         # personas pick up HTML companions over time.
-        from pdf_render import html_template_path_for
+        from docx_to_persona_html import resolve_companion_html
 
-        html_path = html_template_path_for(docx_template_path)
-        if html_path is None:
-            # Lazily generate the HTML+CSS companion for a persona uploaded before
-            # companion generation shipped, so its preview reflects the uploaded
-            # template's typography instead of falling back to Classic (B2/B3).
-            from docx_to_persona_html import generate_companion
-
-            companion = generate_companion(docx_template_path)
-            html_path = companion[0] if companion else None
+        # Lazily generate the HTML+CSS companion for a persona uploaded before
+        # companion generation shipped, so its preview reflects the uploaded
+        # template's typography instead of falling back to Classic (B2/B3) — and
+        # refresh one cloned from an older skeleton, which otherwise renders raw
+        # ISO dates with no `– Present` forever (B1a).
+        html_path = resolve_companion_html(docx_template_path)
         if html_path is None:
             html_path = current_app.config["BUNDLED_PERSONAS_DIR"] / "classic.html"
             if not html_path.exists():
@@ -1268,11 +1265,10 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
     Returns {html}.
     """
     from db.session import get_session, init_db
-    from docx_to_persona_html import generate_companion
+    from docx_to_persona_html import resolve_companion_html
     from generator import _normalize_markdown
     from json_resume import md_to_json_resume
     from pdf_render import (
-        html_template_path_for,
         persona_font_family,
         render_cover_letter_html,
         render_html_string,
@@ -1327,11 +1323,8 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Template not found"}), 404
 
         if doc_type == "resume":
-            html_path = html_template_path_for(docx_template_path)
-            if html_path is None:
-                # Same lazy-companion-generation fallback as preview_application_html.
-                companion = generate_companion(docx_template_path)
-                html_path = companion[0] if companion else None
+            # Same lazy-generate + stale-skeleton refresh as preview_application_html.
+            html_path = resolve_companion_html(docx_template_path)
             if html_path is None:
                 html_path = bundled_personas_dir / "classic.html"
                 if not html_path.exists():
@@ -1371,7 +1364,7 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
     from corpus_to_json_resume import build_json_resume_from_corpus
     from db.models import Candidate
     from db.session import get_session, init_db
-    from pdf_render import html_template_path_for, render_html_string
+    from pdf_render import render_html_string
 
     safe_user = _safe_username(username, configs_dir=current_app.config["CONFIGS_DIR"])
     if not safe_user:
@@ -1408,16 +1401,14 @@ def preview_candidate_html(username: str) -> ResponseReturnValue:
         if docx_template_path is None:
             return jsonify({"error": "No template available"}), 500
 
-        html_path = html_template_path_for(docx_template_path)
-        if html_path is None:
-            # Lazily generate the HTML+CSS companion for a persona uploaded before
-            # companion generation shipped, so its preview reflects the uploaded
-            # template's typography instead of falling back to Classic (B2/B3).
-            # Same fallback as preview_application_html / preview_edited_html.
-            from docx_to_persona_html import generate_companion
+        # Lazily generate the HTML+CSS companion for a persona uploaded before
+        # companion generation shipped, so its preview reflects the uploaded
+        # template's typography instead of falling back to Classic (B2/B3), and
+        # refresh one cloned from an older skeleton (B1a). Same resolution as
+        # preview_application_html / preview_edited_html.
+        from docx_to_persona_html import resolve_companion_html
 
-            companion = generate_companion(docx_template_path)
-            html_path = companion[0] if companion else None
+        html_path = resolve_companion_html(docx_template_path)
         if html_path is None:
             html_path = current_app.config["BUNDLED_PERSONAS_DIR"] / "classic.html"
             if not html_path.exists():

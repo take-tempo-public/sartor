@@ -27,6 +27,14 @@ Each experience holds one or more **titles** (one
 official, optional alternates) plus its **bullets**, and you can **tag** things to
 organize them.
 
+When you enter a role's start and end dates, they must include a month (`YYYY-MM`
+format) — year-only dates aren't accepted. Imported résumés sometimes have
+year-only dates; those roles show a **`MONTH NEEDED`** badge so you know which
+ones to fix by editing the dates `[synthesis]` (grounded in
+[`blueprints/corpus/experiences.py:create_experience`](../../../blueprints/corpus/experiences.py)
+and [`blueprints/corpus/experiences.py:update_experience`](../../../blueprints/corpus/experiences.py)
+month validators, and [`static/app.js`](../../../static/app.js) badge rendering).
+
 ## Reviewing it
 Everything new starts as **pending review**. Accept items one at a time, by role,
 or all at once. Reviewing and accepting is worth the few minutes: it's how sartor

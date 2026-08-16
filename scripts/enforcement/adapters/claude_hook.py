@@ -12,10 +12,11 @@ Invoked by a thin wrapper in root `hooks/` naming its own guard (so
 
     exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_hook.py" <guard-name>
 
-Since PX-37 (`chore/hook-dispatcher`), the six Edit|Write guards
+Since PX-37 (`chore/hook-dispatcher`), the seven Edit|Write guards
 (`require-feature-branch`, `require-evidence-before-fix`,
 `require-consumer-enumeration`, `block-secrets`, `validate-context`,
-`route-security-lint`) run via `dispatch()`, called from
+`route-security-lint`, and — since work item 87 — `interrogative-witness`)
+run via `dispatch()`, called from
 `claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry. Since
 `feat/verify-dont-assume-guard`, the four Bash guards (`block-secrets`,
 `block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`) run the same
@@ -49,6 +50,7 @@ if str(_REPO_ROOT) not in sys.path:
 from scripts.enforcement.guards import (  # noqa: E402
     block_merge_to_main,
     block_secrets,
+    interrogative_witness,
     require_consumer_enumeration,
     require_evidence_before_fix,
     require_feature_branch,
@@ -69,6 +71,7 @@ _GUARD_NAMES = (
     "ruff-changed",
     "validate-context",
     "verify-binary-on-path",
+    "interrogative-witness",
 )
 
 
@@ -101,6 +104,8 @@ def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
         return validate_context.claude_check(payload, repo_root)
     if name == "verify-binary-on-path":
         return verify_binary_on_path.claude_check(payload)
+    if name == "interrogative-witness":
+        return interrogative_witness.claude_check(payload)
     raise SystemExit(f"claude_hook.py: unknown guard '{name}' (expected one of {_GUARD_NAMES})")
 
 

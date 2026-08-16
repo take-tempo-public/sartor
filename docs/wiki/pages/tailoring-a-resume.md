@@ -59,6 +59,14 @@ through Compose first, sartor still writes the résumé for you at this step, th
 way earlier versions worked — the wizard tells you plainly which of the two is
 about to happen.) `[synthesis]`
 
+Before generating, sartor checks that every included work role has both a start month
+and an end month — a requirement for ATS compatibility (blueprints/generation.py:`_month_imprecise_roles`,
+`_month_block_response`). If any role shows only a year without the month, you'll see a
+message naming it and asking you to add start/end months in the Career Corpus. Roles that
+need month precision carry a **MONTH NEEDED** badge in the corpus view, making the fix
+one click away; add the months and click Generate again. Education entries are exempt
+from this check.
+
 ## Step 6 — Download
 Your finished résumé appears in an editable preview that updates **as you type** —
 what you see is what Download produces. Fix wording in place (see

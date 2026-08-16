@@ -42,7 +42,10 @@
 }
 
 body {
-  font-family: Roboto, "Helvetica Neue", Helvetica, Arial,
+  /* B2 ATS conformance: approved family leads (Calibri — the same family this
+     persona's .docx preset uses, so preview and download agree); the old
+     stack is retained behind it. */
+  font-family: Calibri, Roboto, "Helvetica Neue", Helvetica, Arial,
                "Liberation Sans", sans-serif;
   color: var(--ink);
   font-size: 10.5pt;
