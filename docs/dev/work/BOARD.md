@@ -2,13 +2,14 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 6 / 10 ceiling** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 7 / 10 ceiling** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **94** -- The item-87 interrogative-witness pause kills N=1 pipeline runs: subagents share the invoker's session_id and eat its one-shot pause (`user`) -- Run 6 died to a benign self-clearing witness; the fix needs a discriminator whose existence is unverified.
 - **96** -- Sprint briefs prescribe an implementer model in prose while their copy-paste First-move block omits the arg, so the script default silently wins (`agent`) -- Following a brief's First-move block exactly produces a model the same brief's prose forbids.
+- **98** -- Wiki freshness measures checkpoint-staleness, not page-staleness: scoped close-outs never credit the checkpoint, and agents report commit counts instead of the gate's figure (`agent`) -- Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
 
 ## Blocked
 
