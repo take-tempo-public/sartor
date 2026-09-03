@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 16 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 17 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
@@ -19,6 +19,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **105** -- Corpus import produced bullets and skills but no education entries (`agent`) -- Corpus import produced bullets and skills but no education rows; parse-vs-persist not yet distinguished.
 - **106** -- Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`) -- Bullet-text edit in Compose never re-freezes; preview/generate/download keep serving the pre-edit snapshot.
 - **107** -- First run offers no account-naming step; the account is named after the email address (`agent`) -- No first-run step to name the account; it defaults to the email address while settings shows the real name.
+- **108** -- scripts/gate.py should refuse to start below a free-memory floor instead of dying mid-run as a mystery kill (`agent`) -- Gate dies mid-run as an OOM'd xdist worker; add a fail-closed free-memory preflight that refuses to start. [depends on: 1]
 
 ## Blocked
 
