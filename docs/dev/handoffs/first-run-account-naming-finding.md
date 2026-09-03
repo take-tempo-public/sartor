@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=9f7ad6ac-dee6-431c-8d5a-5326eccab176 branch=docs/first-run-account-naming-finding commit=6979ec8 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-09-02 -->
+<!-- provenance: schema=1 session=9f7ad6ac-dee6-431c-8d5a-5326eccab176 branch=docs/first-run-account-naming-finding commit=2f82219 actor=amodal1 agent=anthropic/claude-opus-5 generated_at=2026-09-03 -->
 
 # Agent handoff: `docs/first-run-account-naming-finding`
 
@@ -66,11 +66,29 @@ same clone. It carries two sessions' work: this session's `4c27edf` (items
 99–105, install-DX findings from a live macOS walkthrough) and that session's
 own item 106 plus its close-out. Docs only — no code, no routes, no schema.
 
-This branch adds `6979ec8`: item 107 and the regenerated `BOARD.md`. Also docs
-only.
+This branch adds `6979ec8` (item 107 + regenerated `BOARD.md`) and `2f82219`
+(item 108). Docs only.
 
-Gate: `ruff check .` + `ruff format --check .` + `mypy .` + `pytest` +
-`work_items check` (107 files) — run on this branch before the handoff commit.
+**Gate status — read this before assuming green.** Four steps verified, two
+not:
+
+| step | result |
+|---|---|
+| `ruff check .` | ✅ passed, consistently across 4 attempts |
+| `ruff format --check .` | ✅ passed |
+| `mypy .` | ✅ passed — 371 source files |
+| `pytest -m "not ux" -n auto` | ❌ **never completed** — worker OOM-killed at 73% |
+| `pytest -m ux` | ❌ never reached |
+| `work_items check` | ✅ passed — OK (108 files) |
+
+**No test failed.** Four attempts produced zero completed pytest runs, killed
+by memory exhaustion while a sibling project's gate ran concurrently in the
+same OS (`C:\Dev\spolia`); free RAM fell 1.8 → 0.7 GB on a 15.7 GB box. The
+decisive artifact was `[gw0] node down: Not properly terminated`. This is
+filed as item 108 and is a recurrence of item 1. **The next agent should
+re-run `python -m scripts.gate` on an unloaded machine before trusting this
+branch's test posture** — the change is docs-only, but that is an argument
+about risk, not evidence of a pass.
 
 **Context for the findings.** A non-maintainer attempted a first install on a
 macOS 12.7.4 (Monterey) machine. **Neither documented install path worked.** The
@@ -89,7 +107,7 @@ framing is now stale — the rename is done.
 
 The one authoritative home is `docs/dev/work/BOARD.md` (charter W-1.4; the
 work-item schema replaced `RELEASE_CHECKLIST.md`'s live Carry-forward ledger per
-`docs/dev/work/SCHEMA.md` §7). Full still-open subset — 16 open against a ceiling
+`docs/dev/work/SCHEMA.md` §7). Full still-open subset — 17 open against a ceiling
 of 10, **over, and the board says so**:
 
 - **19** — (epic) UX-suite flakiness solution sprint — mode-C residual + newly observed instances
@@ -107,12 +125,13 @@ of 10, **over, and the board says so**:
 - **105** — Corpus import produced bullets and skills but no education entries (`agent`)
 - **106** — Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`)
 - **107** — First run offers no account-naming step; the account is named after the email address (`agent`)
+- **108** — `scripts/gate.py` should refuse to start below a free-memory floor instead of dying mid-run (`agent`) [depends on 1]
 
 (One open item is an epic child and renders under `## Epics` rather than
 `## Open`; `BOARD.md` is the authoritative render, not this list.)
 
-**At 16/10 this is well past the ~8–10 reduction-sprint threshold.** Nine of the
-sixteen were filed today. Flagged to the user; not acted on.
+**At 17/10 this is well past the ~8–10 reduction-sprint threshold.** Ten of the
+seventeen were filed in this one session. Flagged to the user; not acted on.
 
 **Not carried into the ledger, because they are not repo work:**
 
@@ -168,7 +187,28 @@ else other than supporting this single install."*
   requires when no mechanism is possible. The existing witness remains the only
   control, and it is a witness, not a gate.
 
-**3. Asserting from stale memory instead of verifying.** Twice I stated things a
+**3. The gate dying mid-run and being read as a mystery kill.** Recognized as a
+recurrence on the fourth attempt, and in two senses: item 1 ("gate unrunnable by
+agent") already exists, and `scripts/gate.py`'s own docstring says outright that
+"every prior session read as a mysterious kill" what was really a resource
+problem. I read the first three kills exactly that way before the fourth run
+emitted `[gw0] node down: Not properly terminated` — an OOM'd xdist worker, not a
+flake.
+
+- **Mechanism designed and owner-approved:** a fail-closed free-memory preflight
+  in `scripts/gate.py` that refuses to start below a floor and names the
+  competing processes, converting a 30-minute mid-run mystery into an immediate
+  refusal. Owner reviewed it in session and said "the mechanism is sound."
+- **It is NOT built.** It is filed as **item 108**, with the design notes and the
+  open questions (where the floor number comes from, refusal vs. fallback, the
+  stdlib/portability problem). **Filing is not a mechanism — C-11 is explicit
+  about that, and item 108 says so in its own text.** The reason it was filed
+  rather than built is that it is a code change on a docs-only branch and cannot
+  be gate-verified while the gate itself cannot run. That reason is a constraint,
+  not an excuse: the guardrail is owed, and the next session that touches
+  tooling should build it.
+
+**4. Asserting from stale memory instead of verifying.** Twice I stated things a
 16-day-old memory said that the repo contradicted: that the repo rename was still
 blocking publication (it is done), and that `SARTOR_HOME` was planned rather than
 shipped (it is implemented — `config._default_base_dir()`). Both were corrected
@@ -181,13 +221,18 @@ authored;** the existing rule is prose and stayed prose. Declared, not implied.
 
 ## What this branch should build
 
-Nothing further. This branch closes with item 107 filed and the board
+Nothing further. This branch closes with items 107 and 108 filed and the board
 regenerated.
 
-The one thing this session recommends the next agent raise with the user
-**before** picking up any individual item:
+Two things this session recommends the next agent raise with the user **before**
+picking up any individual item:
 
-1. **A backlog reduction pass.** 16 open against a ceiling of 10, nine of them
+1. **Item 108, the gate preflight — first, and on its own branch.** It is an
+   owed C-11 guardrail for a recurrence that cost this session four failed gate
+   attempts, it is small, and it is tooling rather than product. Building it
+   first also means every later branch gets a legible refusal instead of the
+   mystery kill. Run it on an unloaded machine.
+2. **A backlog reduction pass.** 16 open against a ceiling of 10, nine of them
    filed in a single day. Items 99–104 are one coherent cluster — the
    install/onboarding documentation and preflight story — and would be better
    worked as a single branch than as six. Items 105, 106 and 107 are product
