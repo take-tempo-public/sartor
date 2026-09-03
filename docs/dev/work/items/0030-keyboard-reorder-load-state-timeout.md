@@ -183,3 +183,50 @@ stable rate). **Not root-caused by this branch** — this branch measures, it do
 diagnose; the mechanism question this item already asks remains exactly as open as it
 was. Raw data: `docs/dev/flake-rates/` (`report --tier ux` reproduces the count from
 the committed store).
+
+### 2026-09-03 — fourth occurrence, PR #131 (`docs/container-persistence-guidance`)
+
+`python -m scripts.ci_wait 131` reported **exit 3 (GREEN WITH RERUNS)** — same alarm,
+same test, same rerun-then-pass shape. Captured before the log ages out (CI run
+`33708934519`, job `100504072486`).
+
+```
+tests/ux/regression/test_20260604_bullet_drag_reorder.py:254: in test_keyboard_reorder_persists_and_reset_reverts
+    assert compose.has_custom_order()
+...
+ui_pages/wizard_compose.py:232: in _bullet_list
+    self._wait_settled()
+E   playwright._impl._errors.TimeoutError: Timeout 30000ms exceeded.
+
+[settle-instrument] {'reach': 9, 'panel_visible_s': 0.005,
+  'exception': "TimeoutError('Timeout 30000ms exceeded.')", 'elapsed_total_s': 30.036,
+  'cascade_state': {'composeReady': True, 'bgPending': None,
+                     'draftSummaryFiredForApp': 1, 'gapFillFiredForApp': 1,
+                     'composeApplicationId': 1, 'previewFrameReadyState': 'complete'},
+  'still_pending_requests': []}
+02:49:16 [ux] RERUN — this attempt FAILED
+02:49:20 ... PASSED   (the retry, ~4s later)
+```
+
+**Same signature as the 2026-08-05 occurrence, not a new one:** every quiescence signal
+reads ready (`composeReady: True`, zero pending requests, iframe `complete`);
+`bgPending: None` again, not `0`; reach differs (9 here vs. 8 then) — both past reach 7,
+neither is the fix's own mechanism (the iframe is `complete`, so `networkidle` is not
+the blocker). Retry passed a few seconds later with no intervening change, same as
+every prior sample.
+
+**Not root-caused by this branch, stated plainly, not inferred from category match
+alone:** this branch's full diff is `docs/dev/work/BOARD.md`,
+`docs/dev/work/items/0106-*.md`, `docs/dev/handoffs/container-persistence-guidance.md`,
+and two `docs/dev/ledger/*.jsonl` files — zero application, frontend, or test code.
+Confirmed by reading this occurrence's own traceback (above) before writing this entry,
+not assumed from the test name matching: the failure is inside
+`ui_pages/wizard_compose.py`'s pre-existing `_wait_settled`/`networkidle` wait, a code
+path this branch never touches. Per C-7, that reading is what justifies not treating
+this as a new instrument-and-fix obligation for this branch — the recurrence itself is
+still exactly as open as the 2026-08-06 entry left it.
+
+**No new mechanism authored here (C-11).** A fourth occurrence, still unfixed, on a
+branch that cannot plausibly have caused it — filed as evidence, not fixed, because
+fixing it needs its own `fix/*` branch with a diagnosis dossier per C-7, not a
+docs-only branch's close-out. Flagging explicitly rather than merging past it silently.
