@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 14 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 15 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
@@ -17,6 +17,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **103** -- PDF output is offered in the UI even when the Chromium binary is absent (`agent`) -- Missing Chromium is a setup warning but a runtime exception; the UI still offers PDF it cannot render.
 - **104** -- Every documented API-key entry method writes the key into shell history (`agent`) -- Every documented key-entry method puts the key in shell history; --setup should prompt and write .api_key.
 - **105** -- Corpus import produced bullets and skills but no education entries (`agent`) -- Corpus import produced bullets and skills but no education rows; parse-vs-persist not yet distinguished.
+- **106** -- Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`) -- Bullet-text edit in Compose never re-freezes; preview/generate/download keep serving the pre-edit snapshot.
 
 ## Blocked
 
