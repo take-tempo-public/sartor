@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 7 / 10 ceiling** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
+**Open 15 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 25
 
 ## Open
 
@@ -10,6 +10,14 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **94** -- The item-87 interrogative-witness pause kills N=1 pipeline runs: subagents share the invoker's session_id and eat its one-shot pause (`user`) -- Run 6 died to a benign self-clearing witness; the fix needs a discriminator whose existence is unverified.
 - **96** -- Sprint briefs prescribe an implementer model in prose while their copy-paste First-move block omits the arg, so the script default silently wins (`agent`) -- Following a brief's First-move block exactly produces a model the same brief's prose forbids.
 - **98** -- Wiki freshness measures checkpoint-staleness, not page-staleness: scoped close-outs never credit the checkpoint, and agents report commit counts instead of the gate's figure (`agent`) -- Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
+- **99** -- install.md documents two distribution paths that have never been published (`agent`) -- install.md documents a GHCR image and a PyPI wheel that have never been published; every documented path fails. [depends on: 3]
+- **100** -- Install docs state no OS or runtime version floors and offer no preflight check (`agent`) -- No OS/Python version floors or a preflight check; a macOS 12 user fails five times before the cause surfaces.
+- **101** -- Container quickstart defaults to a throwaway container and hides a bind-mount trap (`agent`) -- Documented `podman run` makes a throwaway container; bind-mounting /app/db would break startup.
+- **102** -- sartor --setup's failure summary names both features whenever either step fails (`agent`) -- _run_setup names both PDF and recall as degraded whenever either step fails, hiding which one broke.
+- **103** -- PDF output is offered in the UI even when the Chromium binary is absent (`agent`) -- Missing Chromium is a setup warning but a runtime exception; the UI still offers PDF it cannot render.
+- **104** -- Every documented API-key entry method writes the key into shell history (`agent`) -- Every documented key-entry method puts the key in shell history; --setup should prompt and write .api_key.
+- **105** -- Corpus import produced bullets and skills but no education entries (`agent`) -- Corpus import produced bullets and skills but no education rows; parse-vs-persist not yet distinguished.
+- **106** -- Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`) -- Bullet-text edit in Compose never re-freezes; preview/generate/download keep serving the pre-edit snapshot.
 
 ## Blocked
 

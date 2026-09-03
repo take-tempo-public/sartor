@@ -25,3 +25,17 @@ resolved by this item.
 ## Updates
 
 ### 2026-07-28 — filed during chore/work-item-tracking (migrated, merged two duplicate entries)
+
+### 2026-09-02 — partially stale; publication state verified
+
+Found while a non-maintainer attempted a live install (item 99).
+
+- **(a) is done.** The remote is already `https://github.com/take-tempo-public/sartor` —
+  this item's "blocked on the repo rename" framing no longer holds.
+- **Nothing has been published regardless.** Verified with `gh` authenticated:
+  `git ls-remote --tags origin` returns nothing (all ten local tags `v0.2.0`–`v1.0.9` are
+  local-only), `gh run list` is empty for both `release.yml` and `docker.yml`, and
+  `gh release list` is empty. Both workflows trigger on `push: tags: ["v*"]`, so neither has
+  ever fired.
+- So (b) PyPI Trusted Publisher and (c) GHCR visibility remain untested rather than merely
+  unset — the first tag push is what will exercise them.
