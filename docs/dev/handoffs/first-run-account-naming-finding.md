@@ -85,10 +85,16 @@ not:
 by memory exhaustion while a sibling project's gate ran concurrently in the
 same OS (`C:\Dev\spolia`); free RAM fell 1.8 → 0.7 GB on a 15.7 GB box. The
 decisive artifact was `[gw0] node down: Not properly terminated`. This is
-filed as item 108 and is a recurrence of item 1. **The next agent should
-re-run `python -m scripts.gate` on an unloaded machine before trusting this
-branch's test posture** — the change is docs-only, but that is an argument
-about risk, not evidence of a pass.
+filed as item 108 and is a recurrence of item 1.
+
+**Resolved by CI, not by a local re-run.** PR #133's required checks came back
+`ci_wait` **exit 0 — GREEN**, with no absorbed reruns: `Lint, type-check, test`
+on py3.11 / py3.12 / py3.13 and the full `UX / a11y / PDF (Playwright, py3.12)`
+job all passed on unloaded runners. CI's `quality` job runs the same step list
+`scripts/gate.py` defines, so **this branch's test posture is verified** — the
+local failure was a resource problem on one machine, never a code problem. Item
+108 remains owed regardless: the defect it fixes is that the failure was
+illegible for three attempts, not that it happened.
 
 **Context for the findings.** A non-maintainer attempted a first install on a
 macOS 12.7.4 (Monterey) machine. **Neither documented install path worked.** The
