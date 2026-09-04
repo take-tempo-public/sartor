@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: gate.py memory preflight (`feat/gate-memory-preflight`, item 108)
+
+`scripts/gate.py` now refuses to start below a measured free-memory floor
+(`_MEMORY_FLOOR_GB = 1.0`) instead of letting `pytest -n auto` die mid-run as
+an OOM'd xdist worker — the exact failure four consecutive local attempts hit
+on 2026-09-02 (`docs/dev/work/items/0108-gate-preflight-resource-check.md`).
+Platform-branched, stdlib/subprocess-only (no new dependency): `ctypes` +
+`GlobalMemoryStatusEx` on Windows, `/proc/meminfo` on Linux, `vm_stat` on
+macOS. Below the floor it hard-refuses with a legible message naming the
+shortfall plus a best-effort top-memory-consumers listing; on a platform
+where free memory can't be read, it fails OPEN (proceeds) rather than
+blocking a run it has no evidence against. The floor is a real measurement
+(sampled live during a background `pytest -m "not ux" -n auto` run under
+genuine desktop load), not an inherited guess — full method and numbers are
+in `scripts/gate.py`'s own comment on the constant and in item 108's closing
+update. Regression suite: `tests/test_gate_memory_preflight.py`.
+
 ### Added: B2 — ATS conformance (`feat/ats-conformance`, Epic B sprint 3 of 3)
 
 The epic's terminal sprint, implemented conventionally (owner-directed) after

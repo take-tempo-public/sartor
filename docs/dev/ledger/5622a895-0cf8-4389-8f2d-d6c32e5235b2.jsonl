@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/first-run-account-naming-finding.md", "session": "5622a895-0cf8-4389-8f2d-d6c32e5235b2", "branch": "main", "commit": "3400045", "actor": "amodal1", "agent": "claude-code", "ts": "2026-09-03T17:15:13Z", "fingerprint": "0bc586c95e4e"}
+{"event": "compacted", "session": "5622a895-0cf8-4389-8f2d-d6c32e5235b2", "branch": "feat/gate-memory-preflight", "trigger": "unknown", "ts": "2026-09-03T18:24:18Z"}
+{"event": "compacted", "session": "5622a895-0cf8-4389-8f2d-d6c32e5235b2", "branch": "feat/gate-memory-preflight", "trigger": "unknown", "ts": "2026-09-03T19:27:48Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/feat-gate-memory-preflight.md", "session": "5622a895-0cf8-4389-8f2d-d6c32e5235b2", "branch": "feat/gate-memory-preflight", "commit": "3400045", "actor": "amodal1", "agent": "claude-code", "ts": "2026-09-03T20:59:56Z", "fingerprint": "2ee1516ec88e"}
