@@ -402,6 +402,20 @@ def vector_index_capability(base_dir: Path | None = None) -> Capability:
     )
 
 
+def api_key_path(base_dir: Path | None = None) -> Path:
+    """The `.api_key` file's location — the ONE resolution both readers and writers use.
+
+    `web_infra.clients._get_client` falls back to `_REPO_ROOT / ".api_key"`, where
+    `_REPO_ROOT` is `web_infra/`'s parent — the same directory this module lives in.
+    `--setup`'s key prompt (item 104) writes here and `api_key_capability` reports on
+    here, so a preflight cannot tell a user their key is missing while the app happily
+    reads it (or the reverse). `tests/test_setup_api_key.py` asserts the agreement
+    directly rather than trusting this comment to stay true.
+    """
+    root = base_dir if base_dir is not None else Path(__file__).resolve().parent
+    return root / ".api_key"
+
+
 def api_key_capability(base_dir: Path | None = None) -> Capability:
     """Is an Anthropic key resolvable? Presence only — the value is never read or shown.
 
@@ -415,8 +429,7 @@ def api_key_capability(base_dir: Path | None = None) -> Capability:
             ok=True,
             detail="found in ANTHROPIC_API_KEY",
         )
-    root = base_dir if base_dir is not None else Path(__file__).resolve().parent
-    key_file = root / ".api_key"
+    key_file = api_key_path(base_dir)
     try:
         present = key_file.is_file() and bool(key_file.read_text(encoding="utf-8").strip())
     except OSError:
