@@ -56,6 +56,7 @@ from spectree import Response as OpenApiResponse
 from werkzeug.utils import secure_filename
 
 from hardening import validate_config
+from preflight import pdf_available
 from web_infra import (
     _get_or_provision_candidate,
     _load_config,
@@ -83,8 +84,15 @@ def index() -> ResponseReturnValue:
     avoids the "I shipped a UI change but the user still sees the old
     button set" footgun. Static CSS/JS continue to use Flask's
     default caching; we cache-bust those by file path when needed.
+
+    `pdf_available` (item 103) tells the shell whether to offer PDF at all.
+    Chromium's absence used to be a *warning* at setup time and an *exception*
+    at use time, with nothing in between: the PDF option stayed selectable on a
+    machine that could not render one. The probe is `lru_cache`d in `preflight`,
+    so this costs one dictionary lookup per page load, not a filesystem walk —
+    and it is read here, in the shell route, rather than per download request.
     """
-    resp = make_response(render_template("index.html"))
+    resp = make_response(render_template("index.html", pdf_available=pdf_available()))
     resp.headers["Cache-Control"] = "no-cache, must-revalidate"
     return resp
 
