@@ -1993,3 +1993,61 @@ Checked, not skipped.
      submodules on the allowlist (with skills.py)".
 - **Deterministic gate:** scripts/check_doc_links.py OK (483 files, no broken
   links/cites); full quality gate runs at branch close.
+
+## 2026-09-04 — `feat/install-onboarding-preflight` (diff, branch-scoped)
+
+- **Mode:** diff, but deliberately **branch-scoped** (`main`…`HEAD`), NOT the
+  checkpoint window. `.last_ingest_sha` sits at `f42b2ea` with **213 files**
+  changed since — far past a steady-state increment. That backlog is item 98 /
+  item 65 (the checkpoint-ratchet defect), not this branch's to absorb.
+- **`.last_ingest_sha` deliberately NOT advanced.** Advancing it to HEAD would
+  stamp coverage over 213 changed files when this pass read 7. That false
+  advance *is* the ratchet defect, so the checkpoint stays at `f42b2ea` and the
+  drift stays visible. Recorded here rather than left implied (C-0).
+- **Sources read (7, this branch's own diff):** `preflight.py` (new), `app.py`,
+  `pdf_render.py`, `blueprints/users.py`, `templates/index.html`,
+  `docs/install.md`, `README.md`. Tests and the diagnosis dossier classify
+  IRRELEVANT and were not ingested as sources (the dossier was read as
+  *evidence* by the scribes, which is the intended use).
+- **Pages created (1, scribe-authored, Haiku):** `machine-capability-preflight`
+  — the tri-state capability probes behind `--doctor`, `--setup`, and the PDF
+  gate. Scaffolded by the orchestrator (the scribe holds `Edit`, not `Write`,
+  so it cannot create a file); body authored by the scribe, so author≠auditor
+  still holds.
+- **Pages changed (5, scribe-per-page, Haiku):** `document-rendering`,
+  `troubleshooting`, `downloading-your-documents`, `non-dependency-downloads`,
+  `code-module-map`. One `index.md` entry added for the new page.
+- **Auditor catch-rate (author≠auditor, Haiku, 2 audit contexts / 6 pages):**
+  **5 caught** — 3 DRIFTED, 2 UNSUPPORTED.
+  1. DRIFTED ×3 (`machine-capability-preflight`): bare line-range cites
+     (`preflight.py:16–38`, `:419–450`, `:352–367`). All three ranges were
+     *correct*, but SCHEMA prefers a symbol over a line number because line
+     numbers drift — re-anchored to `preflight.py:api_key_capability`,
+     `preflight.py:pdf_available`, and the module docstring.
+  2. UNSUPPORTED (`troubleshooting`): the page said Sartor **hides** the PDF
+     option. The code *disables* it (`disabled aria-disabled="true"` plus a
+     visible reason) and leaves it in the DOM — materially different UX states.
+     Corrected to "greys the button out, with a note saying why".
+  3. UNSUPPORTED (`code-module-map`): the new `preflight.py` row was placed in
+     a table headed "The deterministic floor (P1 hardening — no LLM calls)",
+     which implies membership in the **C-6 boundary list**. `AGENTS.md`
+     enumerates eight modules there and `preflight.py` is not among them. The
+     module *is* deterministic and stdlib-only; the row now says so explicitly
+     and disclaims the governed-set membership. Same disclaimer added to the
+     new page's "Determinism and stated limits" section.
+- **Caught by the orchestrator, not the auditors (recorded so the catch-rate
+  is not overstated):** 5 further defects in the scribe's new page — a dangling
+  `[[pdf-available-design]]` backlink to a page that does not exist, a
+  `drivers/package/` path typo (real path is `driver/`), `pdf_render()` for
+  `render_pdf()`, an "items 100/108" attribution (108 is the gate memory
+  preflight, unrelated), and a misread of the O-5 cost table that rendered the
+  control/absence arms as "heads/headless".
+- **Corrected in SOURCE, not just the wiki:** the audit surfaced that
+  `preflight.api_key_capability`'s own docstring claimed "the value is never
+  read or shown". It *is* read — testing for a non-blank key requires it. The
+  docstring and the page now state the narrower, true guarantee: the value
+  never reaches `detail`, `remedy`, a log, or a return value. (The first
+  auditor passed this claim as SUPPORTED; it was caught on independent re-read.)
+- **Deterministic gate:** dangling-backlink sweep over all 39 pages — none;
+  `index.md` ↔ pages reconciled; `ruff` clean on the touched module. Full
+  quality gate runs at branch close.

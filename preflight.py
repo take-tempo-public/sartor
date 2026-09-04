@@ -417,7 +417,13 @@ def api_key_path(base_dir: Path | None = None) -> Path:
 
 
 def api_key_capability(base_dir: Path | None = None) -> Capability:
-    """Is an Anthropic key resolvable? Presence only — the value is never read or shown.
+    """Is an Anthropic key resolvable? The value is read to test it, and never reported.
+
+    Precise on purpose: the value *is* read — testing "is there a non-blank key here"
+    cannot be done without looking at it. What is guaranteed is narrower and is the part
+    that matters: the value never reaches `detail`, `remedy`, a log, or a return value,
+    so nothing a caller can print carries it. `tests/test_preflight.py::
+    TestApiKeyCapability::test_the_key_value_is_never_reported` asserts exactly that.
 
     Mirrors `web_infra.clients._get_client`'s resolution order (env var, then the
     `.api_key` file) so `--doctor` cannot disagree with what the app will actually do.

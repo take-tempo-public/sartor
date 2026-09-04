@@ -3,14 +3,21 @@ schema = 1
 id = 100
 kind = "item"
 title = "Install docs state no OS or runtime version floors and offer no preflight check"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = [
+  "feat/install-onboarding-preflight","docs/container-persistence-guidance"]
 refs = [
   "docs/install.md:18-44",
   "pyproject.toml",
 ]
 summary = "No OS/Python version floors or a preflight check; a macOS 12 user fails five times before the cause surfaces."
+resolution = "Both halves built on feat/install-onboarding-preflight (2026-09-03). (1) The preflight command the item asked for: `sartor --doctor` reports the whole capability set -- Python vs floor, OS vs measured floor, API key presence, Chromium availability, recall index, container engine -- before anything is downloaded, in ~8ms, and exits nonzero only when Python itself is below the floor (an absent optional feature is not a failed install). (2) docs/install.md gains a version-floor table and a 'check your machine first' section. Deliberately narrow per C-0: ONLY floors this project has hit and traced are asserted -- the macOS 13 container floor (podman applehv) and the macOS 13 PDF floor (no Playwright Chromium build for macOS 12) -- and every other cell reads 'none measured' rather than implying support that was never tested. The observed `pip install --user` PATH trap on macOS is recorded too. preflight.os_capability() reports an unmeasured platform as unmeasured rather than inventing a plausible floor; a test asserts that."
+verified_by = [
+  "tests/test_preflight.py (57 tests, incl. TestOsCapability::test_no_floor_is_asserted_where_none_was_measured)",
+  "tests/test_setup_api_key.py::TestDoctorFlag",
+  "python app.py --doctor (live run, 2026-09-03, exit 0)",
+]
 ```
 
 **Observed on a real machine** (macOS 12.7.4 Monterey, build 21H1123, 2026-09-02). A user

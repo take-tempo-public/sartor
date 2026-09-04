@@ -72,6 +72,7 @@ tiers are in [[pipeline-stages]] and [[generation-and-grounding]].
 
 | Module | Job | Anchor |
 |---|---|---|
+| [`preflight.py`](../../../preflight.py) | Machine capability probes — Python, OS, API key, Chromium/PDF, semantic-recall index, container engine. Deterministic and stdlib-only, but **not** one of the eight modules on `AGENTS.md`'s enumerated C-6 boundary list — it sits here as a fellow no-LLM module, not as a member of that governed set `[synthesis]`. | [`preflight.py:probe_all`](../../../preflight.py), [`preflight.py:chromium_capability`](../../../preflight.py), [`preflight.py:pdf_available`](../../../preflight.py), [`preflight.py:run_doctor`](../../../preflight.py) |
 | [`hardening.py`](../../../hardening.py) | Keyword/ATS checks, the `context_set` lifecycle, post-generation metrics. | [`hardening.py:build_context_set`](../../../hardening.py), [`hardening.py:save_iteration_context`](../../../hardening.py), [`hardening.py:ContextSet`](../../../hardening.py), [`hardening.py:compute_iteration_signals`](../../../hardening.py) |
 | [`generator.py`](../../../generator.py) | Document output `.md` / `.docx` / `.pdf`. | [`generator.py:generate_resume`](../../../generator.py), [`generator.py:_write_docx_from_json_resume`](../../../generator.py), [`generator.py:BULLET_RE`](../../../generator.py) |
 | [`parser.py`](../../../parser.py) | Résumé file → structured dict. | [`parser.py:parse_resume`](../../../parser.py) |
@@ -170,5 +171,6 @@ The gate and release scripts are invoked by CI; `project_docs_to_mdx.py` is a ma
 - [[openapi-api-reference]] — `web_infra/openapi.py`'s `spec` instance in depth.
 - [[frontend-wizard]] — `static/app.js` + `templates/index.html`.
 - [[document-rendering]] — `generator.py` / `pdf_render.py` / the JSON Resume intermediate.
+- [[machine-capability-preflight]] — `preflight.py`.
 - [[eval-harness]] — `evals/runner.py`.
 - [[diagnostics-console]] — the `/_dashboard` blueprint + `blueprints/diagnostics.py`.
