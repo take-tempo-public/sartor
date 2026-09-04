@@ -188,13 +188,19 @@ def _setup_with(monkeypatch, tmp_path, *, failing: set[str]):
     """Run `_run_setup` with the named steps failing. `failing` holds argv substrings."""
     monkeypatch.setattr(app_module, "_prompt_for_api_key", lambda *a, **k: None)
 
+    # Patch the real `subprocess` module, not `app_module.subprocess`: `app.py` does a
+    # plain `import subprocess` and calls `subprocess.run(...)`, so patching the module
+    # object reaches it. Qualifying it as `app_module.subprocess` also works at runtime
+    # but fails `mypy .` with "Module 'app' does not explicitly export attribute
+    # 'subprocess'" (no-implicit-reexport) -- which the gate runs and a per-module mypy
+    # does not, so it only surfaces in CI.
     def _fake_run(cmd, *a, **k):
         joined = " ".join(cmd)
         if any(token in joined for token in failing):
             raise subprocess.CalledProcessError(1, cmd)
         return subprocess.CompletedProcess(cmd, 0)
 
-    monkeypatch.setattr(app_module.subprocess, "run", _fake_run)
+    monkeypatch.setattr(subprocess, "run", _fake_run)
     return app_module._run_setup(tmp_path)
 
 
@@ -236,7 +242,7 @@ class TestSetupFailureSummary:
                 raise OSError("No such file or directory")
             return subprocess.CompletedProcess(cmd, 0)
 
-        monkeypatch.setattr(app_module.subprocess, "run", _fake_run)
+        monkeypatch.setattr(subprocess, "run", _fake_run)
         assert app_module._run_setup(tmp_path) == 1
         assert "Degraded: PDF export." in capsys.readouterr().err
 
@@ -251,7 +257,7 @@ class TestSetupFailureSummary:
             order.append("download")
             return subprocess.CompletedProcess(cmd, 0)
 
-        monkeypatch.setattr(app_module.subprocess, "run", _fake_run)
+        monkeypatch.setattr(subprocess, "run", _fake_run)
         app_module._run_setup(tmp_path)
         assert order[0] == "prompt", order
 

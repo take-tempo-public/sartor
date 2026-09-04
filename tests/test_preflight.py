@@ -17,9 +17,13 @@ would reach for:
     This session hit exactly that, in this module, and fixed it -- the test is the
     mechanism so the next one cannot (C-11).
 
-Nothing here launches a browser or starts the Playwright driver: the whole point of
-the module is that the answer costs ~8 ms, and a suite that pays ~3 s to check it
-would quietly license the ~3 s implementation.
+**Nothing in the default (`-m "not ux"`) tier launches a browser or starts the
+Playwright driver**: the whole point of the module is that the answer costs ~8 ms,
+and a suite that pays ~3 s to check it would quietly license the ~3 s
+implementation. The single exception is `test_probe_agrees_with_a_real_chromium_launch`,
+which is `ux`-marked and deselected here — it uses a real `launch()` as the oracle
+because the presence arm cannot be checked against reality any other way, and it
+guards itself inside the test body so collection never pays for it.
 
 **No fixture in this file is key-shaped.** The `block-secrets` guard pattern-matches
 tool input, and it correctly refused an earlier draft that used realistic-looking
@@ -455,20 +459,37 @@ class TestCapabilityMark:
 
 
 @pytest.mark.ux
-def test_probe_agrees_with_the_ux_tier_which_needs_a_real_browser():
+def test_probe_agrees_with_a_real_chromium_launch():
     """The one test that checks the probe against reality rather than a fake layout.
 
-    `pytest -m ux` drives a headless Chromium, so if this tier is running at all,
-    Chromium is genuinely installed -- which makes this a free agreement check
-    between the ~8 ms probe and a real browser, with no extra launch. It is the
-    control arm the diagnosis' acceptance bar asks for, expressed as a test:
-    every other chromium test here builds a synthetic layout, and a suite made
-    only of those could agree perfectly with itself while being wrong about this
-    machine.
+    Every other chromium test here builds a synthetic browsers root, so the suite
+    could agree perfectly with itself while being wrong about this machine. This one
+    uses a **real `launch()` as the oracle** and asserts the ~8 ms probe agrees --
+    the presence arm of the diagnosis' acceptance bar. (The absence arm is covered
+    deterministically by the synthetic-layout tests above; reproducing it here would
+    mean uninstalling Chromium.)
+
+    **The skip guard is inside the test on purpose.** A module-level `skipif` calling
+    a real `launch()` -- the pattern `tests/test_pdf_render.py:_chromium_available`
+    uses -- is evaluated at COLLECTION, so it would launch a browser during the
+    `pytest -m "not ux"` run too, where this module is still collected. That would
+    put a multi-second browser launch in the default tier for a test that never runs
+    there. An earlier draft of this test had no guard at all and would have FAILED
+    (not skipped) in CI's `quality` job, which runs the full gate -- `pytest -m ux`
+    included -- on a runner with no Chromium installed.
     """
+    from playwright.sync_api import sync_playwright
+
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            browser.close()
+    except Exception as exc:
+        pytest.skip(f"Chromium not installed here ({type(exc).__name__}); no oracle to agree with")
+
     preflight.pdf_available.cache_clear()
     cap = preflight.chromium_capability()
     assert cap.ok is True, (
-        "the UX tier is running a real Chromium, so the probe must see it; "
+        "a real chromium.launch() just succeeded, so the probe must see it; "
         f"probe said: {cap.detail}"
     )

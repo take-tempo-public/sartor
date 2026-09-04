@@ -208,6 +208,13 @@ Written against O-1 through O-6, not against the docstring:
   test asserts the raised type matches, so the claim cannot silently rot again.
 - Probe cost stays in the single-digit-milliseconds range; a regression to the
   ~3 s driver-start path is a failure of this work, not a detail.
-- No test launches a real browser to check availability.
+- **No test in the DEFAULT (`-m "not ux"`) tier launches a real browser.**
+  *(Corrected 2026-09-04. This bar originally read "No test launches a real
+  browser to check availability", which contradicted the first bar above: the
+  presence arm cannot be checked against reality without a real launch. The
+  agreement test lives in the ux tier, guards itself with a launch-and-skip
+  INSIDE the test body rather than a collection-time `skipif`, and so costs the
+  default tier nothing. Recording the contradiction rather than quietly
+  rewriting the bar to match what was built.)*
 - Green without retries. A `PASSED` that needed a rerun is not evidence here
   (charter C-7 rule 3).
