@@ -57,6 +57,7 @@ Usage:
 
 from __future__ import annotations
 
+import platform
 import re
 import subprocess
 import sys
@@ -178,16 +179,26 @@ def _available_memory_gb() -> float | None:
 
     None means "could not measure" -- see the module docstring: the
     preflight fails OPEN on that, since it cannot gate a number it cannot
-    read.
+    read. Dispatches on `platform.system()` rather than `sys.platform` on
+    purpose: mypy narrows `sys.platform` to the --platform value (the host
+    OS mypy itself runs on, absent an explicit override), so a sequence of
+    early-return `if sys.platform == ...` checks makes every branch after
+    the one matching that assumed platform provably unreachable once the
+    matching branch is seen to always return -- exactly what broke CI here
+    (Linux) while this same file stayed clean on Windows dev boxes.
+    `platform.system()` returns a plain `str` mypy does not specially
+    narrow, so all three branches stay reachable regardless of which OS
+    mypy itself is running on -- the same reason `_windows_avail_phys_gb`
+    uses `os.name` instead of `sys.platform` for its own guard.
     """
-    if sys.platform.startswith("linux"):
+    if platform.system() == "Linux":
         try:
             with open("/proc/meminfo", encoding="ascii") as handle:
                 text = handle.read()
         except OSError:
             return None
         return _parse_proc_meminfo(text)
-    if sys.platform == "darwin":
+    if platform.system() == "Darwin":
         try:
             result = subprocess.run(
                 ["vm_stat"],  # noqa: S607 - fixed argv, resolved via PATH by design

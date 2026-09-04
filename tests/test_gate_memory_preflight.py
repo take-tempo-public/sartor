@@ -31,6 +31,7 @@ where that is the path of least friction, matching the rest of tests/.
 from __future__ import annotations
 
 import os
+import platform
 import subprocess
 import sys
 
@@ -219,9 +220,12 @@ class TestWindowsAvailPhysGb:
 
 class TestAvailableMemoryGb:
     def test_falls_open_on_unrecognized_platform(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # Not "linux*", not "darwin" -> falls through to the Windows reader,
-        # which itself declines (os.name != "nt") -> None all the way out.
-        monkeypatch.setattr(sys, "platform", "freebsd14")
+        # gate._available_memory_gb dispatches on platform.system() (not
+        # sys.platform -- see its own docstring for why), so that is what
+        # this test patches. Not "Linux", not "Darwin" -> falls through to
+        # the Windows reader, which itself declines (os.name != "nt") ->
+        # None all the way out.
+        monkeypatch.setattr(platform, "system", lambda: "FreeBSD")
         monkeypatch.setattr(os, "name", "posix")
         assert gate._available_memory_gb() is None
 
