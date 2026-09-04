@@ -11,15 +11,18 @@ moved to the blueprints + the leaf `web_infra` package across Sprints 8.3a–h).
 """
 
 import argparse
+import getpass
 import logging
 import os
 import subprocess
 import sys
 import threading
 import webbrowser
+from pathlib import Path
 
 from flask import Flask
 
+import preflight
 from blueprints import (
     analysis_bp,
     applications_bp,
@@ -157,7 +160,72 @@ def _is_ci_or_container() -> bool:
     return os.path.exists("/.dockerenv")
 
 
-def _run_setup() -> int:
+def _write_api_key(key: str, base_dir: Path | None = None) -> Path:
+    """Write `key` to the `.api_key` file with owner-only permissions. Returns the path.
+
+    Created via `os.open` with mode 0o600 rather than `Path.write_text` so the file is
+    never, even briefly, world-readable: `write_text` creates at 0o666-minus-umask and a
+    follow-up `chmod` leaves a window in between. On Windows the POSIX mode is largely
+    inert — stated, not papered over (C-0); the ACL is the real control there, and this
+    does not attempt to set one.
+    """
+    path = preflight.api_key_path(base_dir)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(key.strip() + "\n")
+    return path
+
+
+def _prompt_for_api_key(base_dir: Path | None = None) -> None:
+    """Offer a non-echoing key prompt during `--setup` when no key is resolvable (item 104).
+
+    Every documented way to supply the key put it in plaintext shell history —
+    `docker run -e ANTHROPIC_API_KEY=…`, `export ANTHROPIC_API_KEY=…`, and
+    `echo … > .api_key` alike. A live install (2026-09-02) ended with a test key in
+    `~/.zsh_history` on hardware the key's owner did not control, and the user had to be
+    walked through scrubbing it — including the non-obvious ordering trap that closing
+    the terminal re-flushes in-memory history over the scrubbed file. `getpass` removes
+    the exposure and a manual step at once.
+
+    Three deliberate refusals:
+      * **Never prompts when a key already resolves** — `--setup` is documented as
+        idempotent, and silently re-writing a working key is not that.
+      * **Never prompts on a non-interactive stdin.** A container build, a CI step, or a
+        piped `--setup` would block forever on a tty read that can never be answered.
+      * **Never echoes, logs, or prints the key**, and an empty answer is a valid one:
+        the user may be heading for demo mode or setting the key later.
+    """
+    if preflight.api_key_capability(base_dir).ok:
+        return
+    if not sys.stdin.isatty():
+        print(
+            "  No API key found. Set ANTHROPIC_API_KEY, or run `sartor --setup` from a "
+            "terminal to be prompted for one without it reaching your shell history.",
+            file=sys.stderr,
+        )
+        return
+    print(
+        "\n  No Anthropic API key found. Paste one to save it to .api_key "
+        "(owner-only, never echoed,\n  and never in your shell history). "
+        "Press Enter to skip — `SARTOR_DEMO=1` runs with no key at all."
+    )
+    try:
+        key = getpass.getpass("  API key: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print("\n  Skipped.", file=sys.stderr)
+        return
+    if not key:
+        print("  Skipped. Set ANTHROPIC_API_KEY or create .api_key later.")
+        return
+    try:
+        path = _write_api_key(key, base_dir)
+    except OSError as exc:
+        print(f"  ! could not write the key file: {exc}", file=sys.stderr)
+        return
+    print(f"  Key saved to {path} (owner-only).")
+
+
+def _run_setup(base_dir: Path | None = None) -> int:
     """One-time post-install bootstrap: Chromium (PDF) + the vector index (recall).
 
     `pip install sartor` fetches neither — they are large runtime downloads (the
@@ -166,38 +234,53 @@ def _run_setup() -> int:
     time it renders a PDF or the assistant does semantic recall. `sartor --setup`
     does both up front. Idempotent; safe to re-run. Returns a process exit code.
     Both steps run as subprocesses of THIS interpreter so the right venv is used.
+
+    The key prompt (item 104) runs FIRST, before either download: a user with no key
+    should learn that in the first second, not after waiting out ~180 MB of transfers.
+    It is a no-op when a key already resolves or stdin is not a tty.
     """
-    steps: list[tuple[str, list[str]]] = [
+    _prompt_for_api_key(base_dir)
+    # (install label, the FEATURE the step delivers, argv). The feature name is
+    # carried separately because the closing summary names the features that
+    # actually failed — see the `degraded` list below (item 102).
+    steps: list[tuple[str, str, list[str]]] = [
         (
             "Chromium for PDF output (~150 MB, one-time)",
+            "PDF export",
             [sys.executable, "-m", "playwright", "install"]
             + (["--with-deps"] if sys.platform.startswith("linux") else [])
             + ["chromium"],
         ),
         (
             "the semantic-recall vector index (~30 MB model, one-time)",
+            "semantic recall",
             [sys.executable, "-m", "scripts.build_vector_index"],
         ),
     ]
-    ok = True
-    for i, (label, cmd) in enumerate(steps, start=1):
+    # Item 102: this used to be a single `ok` boolean, so the summary named BOTH
+    # features whenever EITHER step failed — observed 2026-09-02 on macOS 12.7.4,
+    # where Chromium failed, the index succeeded, and the user still had to be told
+    # to `ls db/vector_index/` to find out whether their search was broken. The loop
+    # already had the information; it was being discarded into a boolean.
+    degraded: list[str] = []
+    for i, (label, feature, cmd) in enumerate(steps, start=1):
         print(f"  [{i}/{len(steps)}] Installing {label}…")
         try:
             subprocess.run(cmd, check=True)  # noqa: S603 — fixed, trusted argv (sys.executable + literals)
         except (subprocess.CalledProcessError, OSError) as exc:
-            ok = False
+            degraded.append(feature)
             print(
                 f"      ! failed: {exc}\n        retry manually: {' '.join(cmd)}",
                 file=sys.stderr,
             )
-    if ok:
+    if not degraded:
         print("\n  Setup complete. Run `sartor` to start.\n")
         return 0
-    print(
-        "\n  Setup finished with warnings (above). `sartor` still runs; PDF export /"
-        " semantic recall may be degraded until resolved.\n",
-        file=sys.stderr,
-    )
+    working = [feature for _, feature, _ in steps if feature not in degraded]
+    summary = f"\n  Setup finished with warnings (above). `sartor` still runs.\n  Degraded: {' and '.join(degraded)}."
+    if working:
+        summary += f" Working: {' and '.join(working)}."
+    print(summary + "\n", file=sys.stderr)
     return 1
 
 
@@ -207,6 +290,7 @@ def main(argv: list[str] | None = None) -> None:
     Default (no flags) is unchanged for a local desktop run: serve the app on
     http://localhost:5000, auto-open a browser, and run with Flask's debug
     reloader on. Flags:
+      `--doctor`      report this machine's capabilities, then exit (item 100)
       `--setup`       one-time bootstrap (Chromium + vector index), then exit
       `--host`/`--port`  bind override (the container passes `--host 0.0.0.0`)
       `--no-browser`  skip the auto-open (alias for `SARTOR_NO_BROWSER=1`)
@@ -233,6 +317,11 @@ def main(argv: list[str] | None = None) -> None:
         help="one-time bootstrap: install Chromium (PDF) + build the recall index, then exit",
     )
     parser.add_argument(
+        "--doctor",
+        action="store_true",
+        help="report what this machine can do (Python, OS, key, Chromium, recall), then exit",
+    )
+    parser.add_argument(
         "--host",
         default=app.config.get("HOST", "127.0.0.1"),
         help="bind host (default 127.0.0.1, loopback only; a container passes 0.0.0.0 and "
@@ -245,6 +334,11 @@ def main(argv: list[str] | None = None) -> None:
         help="do not auto-open a browser (same as SARTOR_NO_BROWSER=1)",
     )
     args = parser.parse_args(argv)
+
+    # --doctor before --setup: it is the read-only one, and the whole point of item 100
+    # is that a user can find out what will work BEFORE downloading several GB.
+    if args.doctor:
+        raise SystemExit(preflight.run_doctor())
 
     if args.setup:
         raise SystemExit(_run_setup())

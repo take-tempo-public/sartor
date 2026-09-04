@@ -13,6 +13,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: install/onboarding preflight (`feat/install-onboarding-preflight`, items 99–104)
+
+Six findings from a live non-maintainer install on macOS 12.7.4 (2026-09-02),
+worked as one branch because four of them were symptoms of a single absence:
+nothing in the codebase could answer *"what can this machine actually do?"*, so
+each capability gap surfaced as a runtime failure after the user had already
+committed to a path.
+
+- **Added — `preflight.py`**, a capability-probe module. Answers Python version,
+  OS vs measured floors, API-key presence (never the value), Chromium
+  availability, recall-index state, and container-engine presence. Deterministic,
+  stdlib-only, no new dependency, no browser launch, no network. Probes are
+  **tri-state** — `True` / `False` / `None` for "could not determine" — and the
+  unknown branch is resolved at the call site, not hidden in the probe.
+- **Added — `sartor --doctor`**, which prints that whole set before anything is
+  downloaded and exits non-zero only when Python itself is below the floor. An
+  absent optional feature is not a failed install.
+- **Added — a non-echoing API-key prompt in `sartor --setup`.** Every documented
+  way to supply the key wrote it into plaintext shell history; the prompt reads it
+  via `getpass` and writes `.api_key` through `os.open(..., 0o600)`, so the file is
+  never even briefly world-readable. It never prompts when a key already resolves,
+  never on a non-interactive stdin, and never echoes. It runs before the ~180 MB of
+  downloads.
+- **Fixed — the PDF option is no longer offered where it cannot render.** Chromium's
+  absence used to be a *warning* at setup time and an *exception* at use time, with
+  nothing in between. Both PDF buttons now render disabled, with a visible reason, when
+  `preflight.pdf_available()` is false. Unknown leans *available*, so a future Playwright
+  layout change restores the old behaviour instead of blanking PDF out for everyone.
+- **Fixed — `sartor --setup`'s failure summary** named both PDF export and semantic
+  recall whenever either step failed. It now reports only what actually broke, and
+  what still works.
+- **Fixed — two false docstrings in `pdf_render.py`.** Both claimed `RuntimeError`
+  on a failed Chromium launch. Running the path showed `playwright.sync_api.Error`,
+  whose MRO is `(Error, Exception, BaseException, object)` — **not** a `RuntimeError`,
+  so `except RuntimeError` would not have caught it. Nothing in-tree relied on the
+  false claim, but the item that prompted this work had inherited it from that very
+  docstring.
+- **Changed — `docs/install.md` and `README.md`.** Version floors are now stated
+  per OS per install path, and **only floors this project has hit and traced are
+  asserted** — every other cell reads "none measured" rather than implying untested
+  support. The container image and PyPI wheel are marked pre-release, because neither
+  has ever been published (no remote tags, empty release list, neither publish
+  workflow ever run — verified 2026-09-02); the source clone is promoted to the
+  documented install method. The container quickstart no longer defaults to data
+  loss: the named, volume-bearing command is primary, and the
+  named-volume-vs-bind-mount rule is stated with its reason (`/app/db` is a Python
+  package in the image, so a bind mount over it stops the app booting).
+
+**Two container claims are marked unverified rather than asserted or dropped**
+(C-0/C-12): rootless-Podman bind-mount writability for uid 10001, and whether a
+fresh `/app/db` mount shadows the baked recall index. The latter was previously
+stated as fact; it was never verified in either direction, so it is now flagged
+rather than restated. Neither can be settled without a container run on supported
+hardware, and no image has ever been published.
+
+Evidence: `docs/dev/diagnosis/install-onboarding-preflight.md` (a two-arm
+instrument that refuted two designs this branch had already written down —
+`chromium.executable_path` is the wrong artifact to stat, and the Playwright API
+costs ~2.9 s where two `stat` calls cost 8.4 ms). Regression suites:
+`tests/test_preflight.py`, `tests/test_setup_api_key.py`,
+`tests/test_pdf_capability_ui.py`, `tests/test_pdf_render_missing_chromium.py`.
+
+Item 99 stays **open** by owner decision: honest documentation is not the same as
+working distribution, and it closes when a tag ships and both publish workflows
+are green (gated on item 3, owner-only).
+
 ### Added: gate.py memory preflight (`feat/gate-memory-preflight`, item 108)
 
 `scripts/gate.py` now refuses to start below a measured free-memory floor

@@ -443,6 +443,7 @@ module = [
     "config",
     "demo_fixtures",
     "app",
+    "preflight",
     "web_infra.*",
     "recall.*",
     "onboarding.*",

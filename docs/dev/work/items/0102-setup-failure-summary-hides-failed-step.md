@@ -3,11 +3,16 @@ schema = 1
 id = 102
 kind = "item"
 title = "sartor --setup's failure summary names both features whenever either step fails"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = [
+  "feat/install-onboarding-preflight","docs/container-persistence-guidance"]
 refs = ["app.py:160-200"]
 summary = "_run_setup names both PDF and recall as degraded whenever either step fails, hiding which one broke."
+resolution = "Fixed on feat/install-onboarding-preflight (2026-09-03). _run_setup's steps now carry a feature name alongside the install label, and the closing summary reports 'Degraded: <only what failed>' plus 'Working: <the rest>' instead of one fixed string naming both features whenever either failed. Exactly as the item diagnosed: the loop already had the information and was discarding it into a boolean."
+verified_by = [
+  "tests/test_setup_api_key.py::TestSetupFailureSummary (5 tests: chromium-only, recall-only, both, OSError-as-failure, and the all-green path)",
+]
 ```
 
 **Observed** (2026-09-02, macOS 12.7.4). `sartor --setup`'s Chromium step failed; the vector

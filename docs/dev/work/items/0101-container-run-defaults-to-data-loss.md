@@ -3,9 +3,10 @@ schema = 1
 id = 101
 kind = "item"
 title = "Container quickstart defaults to a throwaway container and hides a bind-mount trap"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = [
+  "feat/install-onboarding-preflight","docs/container-persistence-guidance"]
 refs = [
   "docs/install.md:46-71",
   "Dockerfile:37-56",
@@ -13,6 +14,11 @@ refs = [
   "blueprints/generation.py:1699-1721",
 ]
 summary = "Documented `podman run` makes a throwaway container; bind-mounting /app/db would break startup."
+resolution = "Rewritten on feat/install-onboarding-preflight (2026-09-03). The named, volume-bearing `podman run` is now the primary command; the bare form is explicitly a throwaway and carries --rm so the discard is visible rather than leaving an unnamed orphan holding a corpus. The named-volume-vs-bind-mount rule is stated WITH ITS REASON (db/ is a Python package baked into the image plus the recall index, so a bind mount over /app/db shadows it and the app fails to import db at startup; only output/, configs/ and resumes/ are excluded from the image and safe to bind-mount). Adds host-access guidance -- the app's own browser download needs no mount at all, which is the right answer for one-off retrieval -- and the `podman ps -a` / `podman start` recovery line. README carried the same bare-run command and is corrected alongside. TWO CLAIMS ARE MARKED UNVERIFIED RATHER THAN ASSERTED OR SILENTLY DROPPED (C-0/C-12): rootless-Podman bind-mount writability for uid 10001, and whether a fresh /app/db mount shadows the baked recall index. The latter WAS previously stated as fact at install.md:69; named-volume copy-up semantics suggest it is wrong for the named form now recommended, and it was never verified either way, so the claim is removed rather than restated. Neither can be settled without a container run on supported hardware, and item 99 established the image has never been published -- so the guidance is written, the two gaps are declared, and the verification is owed when an image first ships."
+verified_by = [
+  "tests/test_doc_links.py (the new install.md anchors resolve, incl. the one README now links to)",
+  "docs/install.md 'Named volumes, not bind mounts' section + README container block (both carry the rule and the reason; a reviewer can diff them against Dockerfile:37-56 and .dockerignore:33-39)",
+]
 ```
 
 **Found while answering a user's question about container persistence** (2026-09-02).

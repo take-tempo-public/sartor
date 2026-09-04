@@ -24,8 +24,48 @@
   [Cost guidance](../README.md#install) for the per-application
   breakdown; budget guards are documented in
   [`SECURITY.md`](../SECURITY.md).
+  You do **not** need one to try Sartor — see
+  [demo mode](#try-it-without-an-api-key-demo-mode).
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
   Sartor runs as a local Flask app you access in your browser.
+
+### Check your machine first: `sartor --doctor`
+
+Once the code is installed (any path below), one command tells you what will
+actually work here — Python version, OS, whether a key is found, whether PDF
+output can render, whether the assistant's semantic tier is built:
+
+```bash
+sartor --doctor
+```
+
+It downloads nothing, changes nothing, and takes about a hundredth of a second.
+Run it before `sartor --setup` if you want to know what you are in for. It exits
+non-zero only when Python itself is below the floor; everything else it reports
+is an optional feature, and Sartor runs without any of them.
+
+### Version floors
+
+Only floors this project has actually **hit and traced** are listed. Where a
+row says *none measured*, that means exactly that — not "any version works".
+`sartor --doctor` is the reliable answer for your specific machine.
+
+| | Source install | Container |
+|---|---|---|
+| **Python** | 3.11+ | not needed (baked into the image) |
+| **macOS** | none measured | **13+** — Podman's `applehv` VM backend requires it |
+| **Windows** | none measured | none measured |
+| **Linux** | none measured | none measured |
+| **PDF output** | **macOS 13+**; no measured floor elsewhere | included in the image |
+
+**The macOS 13 floor is not cosmetic, and it fails obscurely.** On macOS 12,
+`podman machine start` reports `vfkit exited unexpectedly with exit code 1`;
+the real cause (`unsupported macOS version`) appears only under
+`--log-level=debug`. On the same machine, `python -m playwright install
+chromium` also fails — current Playwright releases ship no Chromium build for
+macOS 12 — so **PDF output is unavailable on macOS 12 regardless of install
+method**. Sartor still runs: DOCX, Markdown, and the live in-browser preview
+need no Chromium, and the app hides the PDF option when it cannot render one.
 
 **Optional — only if you want PDF output:** **~150 MB of free disk space** for
 the Chromium binary Playwright downloads (`python -m playwright install
@@ -35,40 +75,137 @@ lives in your OS user cache (`%LOCALAPPDATA%\ms-playwright` on Windows,
 `~/.cache/ms-playwright` on Linux, `~/Library/Caches/ms-playwright` on macOS) —
 **outside** the repo, not committed.
 
+**A note on `pip install --user` (macOS).** Console scripts installed that way
+land in a directory that is not on the default macOS `PATH`, so `sartor` will
+not be found even though the install succeeded. Either use a virtualenv, or
+invoke it as `python3 -m app` / `python3 app.py` from the repo.
+
 ---
 
-## Run in a container (Docker or Podman)
+## Install from source (the path that works today)
 
-The container is the lowest-friction path — Chromium (PDF) and the semantic-recall
-index are **baked into the image**, so you need nothing but an API key. The same
-image runs under Docker or Podman:
+> **Read this first.** The container image and the PyPI wheel described below
+> are **not published yet** — no version tag has been pushed, so neither
+> `ghcr.io/take-tempo-public/sartor` nor `pip install sartor` resolves to
+> anything. Verified 2026-09-02: `git ls-remote --tags origin` returns nothing,
+> `gh release list` is empty, and neither publish workflow has ever run. Both
+> sections are kept because they describe the intended shape and the commands
+> are correct once a release exists — but **today, the source clone is the
+> install method**, not a developer footnote. Publication is tracked in
+> [`docs/dev/work/items/0099-install-docs-document-unpublished-paths.md`](dev/work/items/0099-install-docs-document-unpublished-paths.md)
+> and gated on the one-time maintainer setup below.
+
+Jump to your platform: [Windows](#windows) · [macOS](#macos) · [Linux](#linux).
+Then run `sartor --doctor` to confirm what your machine supports.
+
+---
+
+## Run in a container (Docker or Podman) — *not yet published*
+
+> **This image does not exist yet.** `docker pull` / `podman pull` on the tag
+> below fails with a manifest error. The commands are documented so they are
+> ready and reviewed when the first tag ships; until then use the
+> [source install](#install-from-source-the-path-that-works-today).
+
+Once published, the container is the lowest-friction path — Chromium (PDF) and
+the semantic-recall index are **baked into the image**, so you need nothing but
+an API key. The same image runs under Docker or Podman.
+
+### The command to use
+
+Name the container and mount volumes from the start:
 
 ```bash
-# Docker
-docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
-  ghcr.io/take-tempo-public/sartor
-# Podman (identical)
-podman run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
-  ghcr.io/take-tempo-public/sartor
-```
-
-`-p 127.0.0.1:5000:5000` keeps Sartor loopback-only on your machine (the app binds
-`0.0.0.0` **inside** the container only). Open `http://localhost:5000`.
-
-**Persisting your data.** Your corpus DB and generated files live under `/app`
-inside the container; mount volumes to keep them across runs:
-
-```bash
-docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+podman run --name sartor -p 127.0.0.1:5000:5000 \
+  -e ANTHROPIC_API_KEY=your-key-here \
   -v sartor-db:/app/db -v sartor-configs:/app/configs \
   -v sartor-resumes:/app/resumes -v sartor-output:/app/output \
   -v sartor-personas:/app/personas \
   ghcr.io/take-tempo-public/sartor
 ```
 
-(Mounting a fresh `/app/db` shadows the baked recall index; the assistant falls
-back to its lexical tier, and `docker exec … sartor --setup` rebuilds it into the
-volume if you want the semantic tier back.)
+(`docker run` is identical — substitute the command name.)
+
+`-p 127.0.0.1:5000:5000` keeps Sartor loopback-only on your machine (the app
+binds `0.0.0.0` **inside** the container only). Open `http://localhost:5000`.
+
+**Restart the same container later — do not `run` again:**
+
+```bash
+podman start -a sartor      # resume the named container
+podman ps -a                # list containers, including stopped ones
+```
+
+### Why the short form is not the default
+
+A bare `podman run … ghcr.io/take-tempo-public/sartor` with no `-v` and no
+`--name` **discards your work.** The `Dockerfile` declares no `VOLUME`, so
+everything written under `/app` lands in that container's writable layer. It
+survives `stop` → `start` of the *same* container, but a second `run` creates a
+*new* container with an empty layer — and with no `--name`, the first one is an
+unnamed row in `podman ps -a` you have no reason to connect to your corpus.
+
+Use the bare form only for a genuinely throwaway look:
+
+```bash
+podman run --rm -p 127.0.0.1:5000:5000 \
+  -e ANTHROPIC_API_KEY=your-key-here ghcr.io/take-tempo-public/sartor
+```
+
+`--rm` is deliberate there: it makes the discard explicit instead of leaving an
+orphan holding data you might later assume was saved.
+
+### Named volumes, not bind mounts, for `/app/db` and `/app/personas`
+
+**This distinction is load-bearing, and getting it wrong stops the app booting.**
+
+- `db/` is **not** a data directory. It is a Python package inside the image —
+  `__init__.py`, `models.py`, `session.py`, `migrations/` — plus the recall
+  index built at image-build time. A host **bind mount** over `/app/db` shadows
+  that package, and the app fails at startup on `import db`.
+- `personas/bundled/` ships in the image too (`.dockerignore` keeps it with
+  `!personas/bundled/`), so the same applies to `/app/personas`.
+- **Named volumes are safe for both** — an empty named volume is populated from
+  the image's existing contents on first use, which is why the command above
+  works.
+- **Only `output/`, `configs/` and `resumes/` are safe to bind-mount.** Those
+  three are excluded from the image, so there is nothing to shadow.
+
+If you reach for the `-v /some/host/path:/app/db` form because it is the one you
+know, that is the trap this section exists to name.
+
+### Getting files onto the host
+
+For a document or two, **you do not need a mount at all** — download from the
+app in your browser exactly as you would from any web page. That is the right
+answer for one-off retrieval and skips the volume question entirely.
+
+For bulk access to everything generated, bind-mount the one directory that is
+safe to bind-mount:
+
+```bash
+podman run --name sartor -p 127.0.0.1:5000:5000 \
+  -e ANTHROPIC_API_KEY=your-key-here \
+  -v sartor-db:/app/db -v "$PWD/output:/app/output" \
+  ghcr.io/take-tempo-public/sartor
+```
+
+**Two things here are unverified, and are stated rather than asserted.** Neither
+can be settled without a container run on supported hardware, and the image has
+never been published, so nothing has been run:
+
+1. Under **rootless Podman**, a host bind mount may not be writable by the
+   container's uid (10001, per the `Dockerfile`) without
+   `--userns=keep-id:uid=10001,gid=10001`. This is reasoned from the image
+   definition, not observed.
+2. An earlier version of this page stated that mounting a fresh `/app/db`
+   shadows the baked recall index, degrading the assistant to its lexical tier
+   until `sartor --setup` is re-run. Named-volume copy-up semantics suggest that
+   is **wrong for a named volume** — which is the form recommended above. The
+   claim has been removed rather than restated, because it was never verified in
+   either direction. If you do see the assistant fall back to lexical search
+   after a fresh mount, `podman exec sartor sartor --setup` rebuilds the index
+   into the volume.
 
 ## First-run setup for a source install (`sartor --setup`)
 
@@ -76,11 +213,44 @@ If you installed from source, run the one-time bootstrap instead of the manual
 Chromium step:
 
 ```bash
-sartor --setup   # installs Chromium for PDF + builds the semantic-recall index
+sartor --setup   # prompts for your API key, installs Chromium, builds the recall index
 ```
 
-It is idempotent (safe to re-run) and prints what it's doing. `sartor --host` /
-`--port` override the bind address; `sartor --no-browser` skips the auto-open.
+It does three things, in this order:
+
+1. **Asks for your API key without echoing it**, if no key is already found, and
+   writes `.api_key` itself with owner-only permissions. This is the recommended
+   way to supply the key — see [API key](#api-key-keep-it-out-of-your-shell-history)
+   below for why. It runs first so that a keyless install finds out immediately
+   rather than after ~180 MB of downloads. Press Enter to skip.
+2. Installs the Chromium binary for PDF output (~150 MB, one-time).
+3. Builds the assistant's semantic-recall index (~30 MB model, one-time).
+
+It is idempotent (safe to re-run) and prints what it's doing. If a step fails it
+says **which feature** is degraded and which still works, and Sartor runs either
+way. It never re-prompts for a key you already have, and it never prompts at all
+when stdin is not a terminal (a container build or CI step), so it cannot hang.
+
+`sartor --doctor` reports the same capabilities without changing anything.
+`sartor --host` / `--port` override the bind address; `sartor --no-browser`
+skips the auto-open.
+
+### API key: keep it out of your shell history
+
+Every obvious way to supply the key writes it into your shell history in
+plaintext — `export ANTHROPIC_API_KEY=…`, `docker run -e ANTHROPIC_API_KEY=…`,
+and `echo … > .api_key` alike. History files persist, sync, and get backed up.
+
+**Prefer `sartor --setup`**: it reads the key without echoing and writes
+`.api_key` with owner-only permissions, so the key never appears in a command
+line at all.
+
+If you have already typed a key into a shell and want it gone, note the ordering
+trap: closing the terminal re-flushes the in-memory history over the file you
+just cleaned, so **`unset HISTFILE` first**, then edit the history file, then
+close the terminal. If the key reached a machine you do not control, rotate it
+in the [Anthropic Console](https://console.anthropic.com/) — scrubbing history
+is damage control, not a fix.
 
 ### Local development: headless / container / CI runs (F-18)
 
@@ -133,6 +303,13 @@ What to expect:
 Unset the variable and restart to switch back to real AI calls.
 
 ## Maintainer: publishing (one-time `[HUMAN]` setup)
+
+> **Status, verified 2026-09-02: nothing has been published.**
+> `git ls-remote --tags origin` returns no tags (all local tags `v0.2.0`–`v1.0.9`
+> exist only in the maintainer's clone), `gh release list` is empty, and neither
+> workflow below has ever run. Until step 5 happens, the container and PyPI
+> sections above describe an intended future state, and the source clone is the
+> only working install.
 
 Two workflows do the release automatically on a version tag (`vX.Y.Z`):
 [`docker.yml`](../.github/workflows/docker.yml) builds + pushes the multi-arch
@@ -230,9 +407,16 @@ extras, sizes, and licensing) live in
    Without it: PDF export needs Chromium first, and the assistant falls back
    to its lexical/wiki search tiers until the index is built.
 
-6. **Set your API key** (choose one):
+6. **Set your API key.**
 
-   - **Environment variable (recommended):**
+   - **Recommended — let `--setup` prompt you** (step 5 above already did this
+     if you ran it). It reads the key without echoing and writes `.api_key`
+     itself, so the key never lands in your command history:
+     ```cmd
+     sartor --setup
+     ```
+   - **Environment variable** — convenient, but this line goes into your shell
+     history in plaintext:
      ```cmd
      set ANTHROPIC_API_KEY=your-key-here
      ```
@@ -286,16 +470,20 @@ extras, sizes, and licensing) live in
    Without it: PDF export needs Chromium first, and the assistant falls back
    to its lexical/wiki search tiers until the index is built.
 
-6. **Set your API key:**
-   ```bash
-   export ANTHROPIC_API_KEY=your-key-here
-   ```
-   Permanent: add that line to `~/.zshrc` (or `~/.bash_profile`)
-   and `source ~/.zshrc`.
+6. **Set your API key.**
 
-   Or create a `.api_key` file in the repo root:
+   **Recommended** — `sartor --setup` (step 5) prompts for it without echoing
+   and writes `.api_key` with owner-only permissions. Nothing reaches your
+   history. If you skipped step 5, run it now:
    ```bash
-   echo "your-key-here" > .api_key
+   sartor --setup
+   ```
+
+   The alternatives below both put the key in `~/.zsh_history` in plaintext —
+   see [API key](#api-key-keep-it-out-of-your-shell-history):
+   ```bash
+   export ANTHROPIC_API_KEY=your-key-here     # also add to ~/.zshrc to persist
+   echo "your-key-here" > .api_key            # same exposure, via the echo line
    ```
 
 7. **Run the app:**
@@ -356,7 +544,11 @@ extras, sizes, and licensing) live in
                     libcairo2 libasound2
    ```
 
-5. **Set your API key:**
+5. **Set your API key.**
+
+   **Recommended** — `sartor --setup` (step 4) prompts without echoing and
+   writes `.api_key` itself. The environment-variable form below is written to
+   your shell history in plaintext:
    ```bash
    export ANTHROPIC_API_KEY=your-key-here
    ```
@@ -437,13 +629,22 @@ Anthropic billing cap being exceeded (raise it in the
 The `logs/llm_calls.jsonl` file records every attempt with the
 status code, so you can see exactly which call failed.
 
-**"Chromium not found" when trying to generate PDF.**
-Run `python -m playwright install chromium` again. The Chromium
-binary lives in your OS user cache, not the repo, so a fresh
-clone needs the install step.
+**"Chromium not found" when trying to generate PDF, or the PDF button is greyed out.**
+Run `sartor --doctor` first — it says whether Chromium is actually installed and
+stops the guessing. The binary lives in your OS user cache, not the repo, so a
+fresh clone needs the install step: `sartor --setup`, or
+`python -m playwright install chromium`.
+
+**On macOS 12 that command cannot succeed** — current Playwright releases ship no
+Chromium build for it — so PDF output is unavailable there no matter how many
+times you re-run the install. Sartor disables the PDF option rather than offering
+one it cannot produce; use DOCX or Markdown, or the live in-browser preview,
+which need no Chromium and match the PDF layout.
 
 **"API key not picked up."**
-Confirm one of:
+`sartor --doctor` reports whether a key is found and from where (it never prints
+the key itself). If it says the key is missing, `sartor --setup` will prompt for
+one without echoing it. To check by hand, confirm one of:
 - `echo $ANTHROPIC_API_KEY` (or `echo %ANTHROPIC_API_KEY%` on
   Windows) shows your key in the same shell where you launched
   `python app.py`.
