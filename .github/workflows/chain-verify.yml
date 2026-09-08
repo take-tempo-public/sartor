@@ -1,0 +1,34 @@
+# The governed-path gate for sartor, tenant of isidium-store (added 2026-09-08). What it checks is written at the
+# top of isidium.store.client.verify: every governed document under docs/work/ parses and every chain recomputes;
+# on a pull request, no governed path changed off main. It does not verify signatures and cannot reach the store's
+# journal — those are the store's own `check`.
+#
+# STORE_COMMIT is the one value to move: the isidium-factory commit isidium-store is installed from. A fresh clone
+# has no .isidium/, so the verifier reads the registry of the package this installs — that package must ship the
+# config version sartor adopted (config@3), or sartor's own config.toml is refused hook.toolkit-behind on every
+# push. Move it when the toolkit bumps the adopted version, alongside `isidium install` in the checkout.
+name: chain-verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions: {}
+env:
+  STORE_COMMIT: "19a3d5a2342eec51307c705807439ec0dceda18f"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # a pull request's diff base, and HEAD^ on main, are not in a shallow clone; the verb refuses one
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.10"
+          python-version: "3.12" # the floor the package declares
+      - name: verify every governed document
+        if: github.event_name == 'push'
+        run: uvx --from "isidium-store @ git+https://github.com/take-tempo-public/isidium-factory@${{ env.STORE_COMMIT }}#subdirectory=packages/isidium-store" isidium verify --repo .
+      - name: verify, and refuse any governed change off main
+        if: github.event_name == 'pull_request'
+        run: uvx --from "isidium-store @ git+https://github.com/take-tempo-public/isidium-factory@${{ env.STORE_COMMIT }}#subdirectory=packages/isidium-store" isidium verify --repo . --diff-base "origin/${{ github.base_ref }}"
