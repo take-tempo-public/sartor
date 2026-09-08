@@ -1,0 +1,52 @@
+schema = 3
+chain_opened_under = 3
+tenant = "sartor"
+root = "docs/work/"
+
+[toolkit]
+client = "0.1.0"
+registry = "0.1.0"
+unidata = "15.0.0"
+object_id = "sha1"
+
+[ratification]
+software_key_ack = "software-grade signatures are acceptable for this tenant for now"
+pin = "ed25519:2a222919213ec2c3b5c90058f799e30e8e970e53181d6634ff1cca5fadcb82e4"
+
+[signer]
+backends = ["software_key_ack"]
+
+[[governed]]
+path = "cards/*.md"
+schema = "card@1"
+write = ["owner", "contributor"]
+
+[[governed]]
+path = "suggestions.jsonl"
+schema = "inbox@1"
+write = ["owner", "contributor", "lander"]
+
+[[governed]]
+path = "state.json"
+schema = "sidecar@1"
+write = ["lander"]
+
+[[governed]]
+path = "state/history.jsonl"
+schema = "sidecar-events@1"
+write = ["lander"]
+
+[[governed]]
+path = "BOARD.md"
+schema = "board@1"
+write = ["lander"]
+
+[[governed]]
+path = "config.toml"
+schema = "config@3"
+write = ["owner"]
+
+[history]
+entries = [
+  { seq = 1, at = "2026-09-08T21:41:33Z", by = "amodal1@example", act = "created", fields = ["chain_opened_under", "governed", "ratification", "root", "schema", "signer", "tenant", "toolkit"], build = "sha256:0886ebc0ff7d068b1005d41cd368cab0f3bb330e9c50411bea237a5ea13c19dc", h = "sha256:8fab558a6d7e34705ad49a84426a63731024154bd21763a1b860242aeae775f0", sig = "ed25519:2a222919213ec2c3b5c90058f799e30e8e970e53181d6634ff1cca5fadcb82e4:qPpBlYbM+NhAGSODDWA7Cz+maGILQdXK2D1YdQ4s4uw7qF6vaFnQ+2UqSOLkTK1wtw3LG+CquV2N0ABcFYahDg==" },
+]
