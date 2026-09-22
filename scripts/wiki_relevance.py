@@ -48,6 +48,7 @@ IRRELEVANT_PREFIXES = frozenset(
         "docs/dev/reviews/",  # review archive — provenance model, never ingested
         "docs/dev/prov/",  # provenance spec — process meta, not wiki-cited
         "docs/dev/work/items/",  # per-item filings — BOARD.md is generated FROM these
+        "docs/work/",  # isidium-store governed tracking root (cards + config.toml) — an indexed tier, not curated wiki content (round 7l.5); the store is its only writer
         "docs/dev/flake-rates/",  # CI flake-rate measurement store — process/telemetry
         # record (per-run JSONL shards), never a wiki source; see
         # docs/dev/blast-radius/flake-rate-measurement.md
