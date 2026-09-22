@@ -165,6 +165,10 @@ py-modules = [
     "json_resume",
     "parser",
     "pdf_render",
+    # Imported at RUNTIME by installed code: `app.py` imports it for `--doctor` and
+    # `--setup`, and `blueprints/users.py` imports `pdf_available` for the PDF
+    # capability gate. Omitting it would ship a wheel whose `app.py` fails at import.
+    "preflight",
     "scraper",
 ]
 
