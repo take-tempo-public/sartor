@@ -218,11 +218,13 @@ def _prompt_for_api_key(base_dir: Path | None = None) -> None:
         print("  Skipped. Set ANTHROPIC_API_KEY or create .api_key later.")
         return
     try:
-        path = _write_api_key(key, base_dir)
+        _write_api_key(key, base_dir)
     except OSError as exc:
         print(f"  ! could not write the key file: {exc}", file=sys.stderr)
         return
-    print(f"  Key saved to {path} (owner-only).")
+    # Printed from the resolver, not from _write_api_key's return value: CodeQL taints
+    # anything returned by a function that received the key (alert #418), even a path.
+    print(f"  Key saved to {preflight.api_key_path(base_dir)} (owner-only).")
 
 
 def _run_setup(base_dir: Path | None = None) -> int:
