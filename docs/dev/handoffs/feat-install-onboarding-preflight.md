@@ -39,9 +39,14 @@ session's recommendation.
 
 ## Where we are in the arc
 
-**Stream:** v1.1.0 final march. Epic A and Epic B are both merged; C/D/E are
-factory cards rather than branch sessions
-(`docs/dev/work/items/0097-external-orchestration-hypothesis.md`).
+**Stream:** v1.1.0 final march. Epic A and Epic B are both merged.
+**Owner direction, 2026-09-22 (chat):** isidium-factory is still being built and
+its cards are still changing, so **Epics C/D/E finish as long runs under the
+original epic design** (`RELEASE_ARC.md` §"v1.1.0 Final March" cadence + the
+chain/N=1 epic construction), **not** as factory cards. This supersedes the
+factory-card framing in
+`docs/dev/work/items/0097-external-orchestration-hypothesis.md`, which has not
+been edited to say so — reconciling item 97 is owed.
 **Sequencing rule:** strictly sequential — one branch at a time.
 
 This branch is **not** part of the arc sequence. It is a backlog-reduction
@@ -117,12 +122,26 @@ asked for that explicitly and it paid for itself twice
 3. **Cost, measured:** the Playwright API path costs 2912 ms (it spawns a Node
    driver); `browsers.json` + two stats costs 8.4 ms and checks strictly more.
 
-**Gate status: NOT YET RUN AT TIME OF WRITING.** The full
-`python -m scripts.gate` runs as the last step before the PR. Targeted runs are
-green: 59 preflight tests, 26 setup/key tests, 9 PDF-UI tests, 4 pdf_render
-exception tests, plus the doc-link and work-item gates. **If you are reading
-this, check the PR's CI result rather than trusting this paragraph** — it was
-written before the gate finished.
+**Gate status.** PR #135's first CI run on `783c29c` (run `33904964073`) was
+**red** on py3.11/3.12/3.13 at
+`tests/test_packaging.py::TestPyModulesRosterMatchesRepo::test_py_modules_covers_every_root_level_module`
+(`preflight` missing from `pyproject.toml` `py-modules`) **and** at
+`tests/test_wiki_relevance_classification.py::test_every_top_level_entry_is_classified`
+(`preflight.py` unclassified; fixed in `762bc68`, C-10 dossier
+`docs/dev/blast-radius/install-onboarding-preflight.md` — the first diagnosis pass
+grepped only the first failure and missed this one; the local gate caught it), and CodeQL raised
+alert #418 (`py/clear-text-logging-sensitive-data`, `app.py:225` — the "Key
+saved to" line printed `_write_api_key`'s return value, which CodeQL taints).
+Both fixed 2026-09-22: `ffaa29a` (py-modules) and `56e61f0` (print the path from
+`preflight.api_key_path()`); `tests/test_packaging.py` 16/16 and
+`tests/test_setup_api_key.py` 25 passed + 1 skipped locally. **Full local gate: NOT green on the final tip — stated, not implied.** Run 1
+(on `1f9bd1c`): preflight, ruff, format and mypy passed, then `pytest -m "not ux"`
+went 2773 passed / 1 failed (the classification test, fixed in `762bc68`); the UX
+tier never ran. Run 2 (on `762bc68`) was killed by the harness for low system
+memory during the non-UX pytest step, after ruff/format/mypy passed. The owner
+chose (2026-09-22) to push and let PR CI (`ci_wait`) be the gate instead of a
+third local run. **Check the PR's final `ci_wait` result
+rather than trusting this paragraph.**
 
 ---
 
@@ -218,6 +237,14 @@ item 99's documentation half landed.
 
 Recommendations for the next session, in priority order:
 
+0. **Epic C prerequisites (owner direction 2026-09-22: C/D/E run as long runs).**
+   The long-run epic machinery has four open defects/decisions that now gate
+   Epic C directly: **93** (owner: per-sprint fresh sessions vs a continuous
+   window with the step-9 tripwire), **95** (owner: restate the
+   `resumeFromRunId` pre-authorization, which replays a blocked agent's
+   block-description as success), **94** (the item-87 witness pause kills
+   pipeline runs because subagents share the invoker's session_id), and **96**
+   (below). Reconcile item 97's factory-card framing at the same time.
 1. **The backlog is still over ceiling: 11 open vs 10.** One more reduction
    closes it. The cheapest honest candidate is **item 96** (sprint briefs
    prescribe a model in prose while the copy-paste block omits the arg) — small,
