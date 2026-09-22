@@ -148,7 +148,8 @@ rather than trusting this paragraph.**
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 The one authoritative home is `docs/dev/work/BOARD.md` (charter W-1.4). Full
-still-open subset — **11 open against a ceiling of 10, still over**:
+still-open subset — **12 open against a ceiling of 10, still over** (item 109
+filed 2026-09-22 — see below; the board header's count is the authority):
 
 - **50** — C-7 and C-10 are enforced by Claude Code hooks only; the clauses do not travel to other agents (`user`)
 - **94** — The item-87 interrogative-witness pause kills N=1 pipeline runs (`user`)
@@ -158,6 +159,7 @@ still-open subset — **11 open against a ceiling of 10, still over**:
 - **105** — Corpus import produced bullets and skills but no education entries (`agent`)
 - **106** — Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`)
 - **107** — First run offers no account-naming step; the account is named after the email address (`agent`)
+- **109** — `scripts/ci_wait.py` returned GREEN (exit 0) while 4 of 6 branch-protection-required checks were still pending (`agent`) — **observed on this PR, 2026-09-22**; a false exit 0 from the sanctioned merge gate. Until it is fixed, check `ci_wait`'s required list against branch protection before merging, and re-run it once every required context is registered.
 
 Plus three open **epics** (19, 36, and the third the board renders) — `BOARD.md`
 is the authoritative render, not this list.
@@ -217,6 +219,15 @@ actual PDF**, taking 38 s before failing on `DID NOT RAISE`.
   a test that should be pure is evidence the fake is not being used.
 - Honest limit: this is a memory + an in-file comment, **not a CI gate.** No
   deterministic check can tell a correct patch target from an incorrect one.
+
+**2026-09-22 addendum: `ci_wait` false GREEN (item 109).** This is the second
+`ci_wait` fault family after item 79, but the first *verdict* fault, so it is
+treated as a first instance of a new class rather than a recurrence of 79.
+**No fail-closed mechanism was built on this branch, and that is stated rather
+than implied (C-11).** The fix changes the sanctioned merge gate itself, which
+needs its own branch and review, not a fold-in on a PR-finishing session. The
+in-session guard was manual: reading the verdict against the branch-protection
+contexts. That was surfaced to the owner in-session.
 
 **3. A doc claim contradicted the code it described.** `pdf_render.py`'s
 docstrings said `RuntimeError`; the code raises `playwright.sync_api.Error`.

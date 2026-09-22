@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 11 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 31
+**Open 12 / 10 ceiling -- OVER** | Blocked 6 | Deferred 7 | Watching 45 | Epics 6 | Closed 31
 
 ## Open
 
@@ -14,6 +14,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **105** -- Corpus import produced bullets and skills but no education entries (`agent`) -- Corpus import produced bullets and skills but no education rows; parse-vs-persist not yet distinguished.
 - **106** -- Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download (`agent`) -- Bullet-text edit in Compose never re-freezes; preview/generate/download keep serving the pre-edit snapshot.
 - **107** -- First run offers no account-naming step; the account is named after the email address (`agent`) -- No first-run step to name the account; it defaults to the email address while settings shows the real name.
+- **109** -- scripts/ci_wait.py returned GREEN (exit 0) while 4 of 6 branch-protection-required checks were still pending -- it derives 'required' from the checks registered when the watch starts (`agent`) -- ci_wait said GREEN with lint/test + UX pending: required = checks registered at watch start, not protection.
 
 ## Blocked
 
