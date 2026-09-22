@@ -2051,3 +2051,23 @@ Checked, not skipped.
 - **Deterministic gate:** dangling-backlink sweep over all 39 pages — none;
   `index.md` ↔ pages reconciled; `ruff` clean on the touched module. Full
   quality gate runs at branch close.
+
+## 2026-09-22 — scoped close-out relevance check (`feat/install-onboarding-preflight`, CI fixes)
+
+**Trigger:** two follow-up fixes on the same branch after PR #135's CI went red
+(`ffaa29a`, `56e61f0`); scoped to those two commits' diff, not a full ingest.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`):** `app.py`,
+`pyproject.toml` — both classify relevant.
+
+**Pages edited (0). Pages verified no-edit** (grepped for the changed symbols, then read
+the surrounding claim):
+
+- `_write_api_key` / "Key saved" — one hit, `machine-capability-preflight.md` (the
+  0o600-inert-on-Windows limit). Unchanged: the function's signature, mode and
+  behavior are untouched; only the caller's success message now resolves the path via
+  `preflight.api_key_path()` (same path, printed from the resolver to clear CodeQL
+  alert #418).
+- `py-modules` — one hit, `non-dependency-downloads.md` (the wheel-completeness
+  widening, stated generically). Adding `preflight` to the roster is an instance of
+  that same claim, not a change to it.
