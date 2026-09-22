@@ -115,9 +115,15 @@ def render_pdf(
 
     Raises:
         FileNotFoundError if the HTML template is missing.
-        RuntimeError if Playwright fails to launch (Chromium not
-        installed → user must run `python -m playwright install
-        chromium`).
+        playwright.sync_api.Error if Playwright fails to launch (Chromium
+        not installed → user must run `python -m playwright install
+        chromium`). **NOT a RuntimeError** — this docstring said RuntimeError
+        until 2026-09-03, when the missing-Chromium path was actually run:
+        `playwright.sync_api.Error`'s MRO is (Error, Exception,
+        BaseException, object), so `except RuntimeError` would not have
+        caught it. See `docs/dev/diagnosis/install-onboarding-preflight.md`
+        O-1; `tests/test_pdf_render_missing_chromium.py` pins it.
+        `preflight.pdf_available()` is the cheap way to avoid reaching here.
     """
     from jinja2 import Environment, FileSystemLoader, select_autoescape
     from playwright.sync_api import sync_playwright
@@ -306,8 +312,9 @@ def render_cover_letter_pdf(
 
     Raises:
         FileNotFoundError if the cover-letter HTML shell is missing.
-        RuntimeError if Playwright fails to launch (Chromium not installed →
-        `python -m playwright install chromium`).
+        playwright.sync_api.Error if Playwright fails to launch (Chromium not
+        installed → `python -m playwright install chromium`). **NOT a
+        RuntimeError** — same correction as `render_pdf`, same evidence.
     """
     from playwright.sync_api import sync_playwright
 

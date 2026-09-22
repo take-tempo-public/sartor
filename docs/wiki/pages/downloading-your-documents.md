@@ -27,8 +27,18 @@ applications; Markdown is plain text you can paste anywhere.
 PDF output is rendered through a bundled headless browser (Chromium), which is an
 **optional, one-time download** (`python -m playwright install chromium`). Word,
 Markdown, and the on-screen preview don't need it — if you only ever download Word or
-Markdown, you can skip it entirely. (See [[troubleshooting]] if a PDF download reports
-that Chromium is missing.)
+Markdown, you can skip it entirely.
+
+**Before offering the download, sartor. checks if PDF will work** (see
+[[machine-capability-preflight]]). When Chromium isn't installed, the PDF button in Step 5
+(and Step 6's cover letter button) appears greyed out with an explanation — either run
+`sartor --setup` to install Chromium, or use DOCX or Markdown instead `[synthesis]`. The
+live preview stays available and already shows exactly what PDF would produce. Run
+`sartor --doctor` anytime to check what's ready on your machine before you generate.
+
+**On macOS 12 and earlier,** PDF output is unavailable — current Chromium releases don't
+support those versions. DOCX, Markdown, and the live preview all work; use those instead
+`[synthesis]`.
 
 ## What you download matches what you saw
 Whatever format you choose, the download is built from the **same structured
@@ -45,3 +55,9 @@ what you see on screen — your edits are never left behind.
 
 How the document *looks* is a separate choice — see [[resume-templates]]. For the whole
 path from job posting to download, see [[tailoring-a-resume]].
+
+## Related
+
+- [[machine-capability-preflight]] — how Sartor checks whether PDF rendering is available on your machine.
+- [[document-rendering]] — the technical side of how documents are built and rendered.
+- [[troubleshooting]] — what to do if PDF output is unavailable or other errors occur.

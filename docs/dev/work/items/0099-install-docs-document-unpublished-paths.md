@@ -5,7 +5,8 @@ kind = "item"
 title = "install.md documents two distribution paths that have never been published"
 status = "open"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = [
+  "feat/install-onboarding-preflight","docs/container-persistence-guidance"]
 depends_on = [3]
 refs = [
   "docs/install.md:40-71",
@@ -52,3 +53,21 @@ developer footnote.
 Found only because a user got far enough to attempt an install. The macOS version floor
 (item 100) blocked the container path first and masked this one; had that user been on a
 supported macOS, the image pull would have failed instead.
+
+### 2026-09-03 — documentation half landed; item deliberately kept open
+
+`feat/install-onboarding-preflight` fixed the documentation defect this item
+describes. `docs/install.md`'s container and PyPI sections now carry an
+unmissable pre-release marker citing the four verification checks; the source
+clone is promoted from developer footnote to "the path that works today"; and
+the maintainer section states the publication status outright. `README.md`
+asserted the same availability — it is the front door, so it was corrected in
+the same commit rather than left misleading.
+
+**The item stays `open` by owner decision (2026-09-03).** The stricter reading
+was chosen over closing on the docs alone: install.md being *honest* is not the
+same as the documented paths *working*, and this item closes only when a version
+tag is pushed and both publish workflows are green. That work is gated on item 3
+(owner-only GitHub console settings), which this item already depends on.
+
+Nothing further is owed from an agent here until an artifact is published.

@@ -140,3 +140,46 @@ rather than only the mocked unit tests.
 **Stated limit, unchanged from the filing:** this closes the illegibility gap. It does not
 make the gate runnable on a loaded machine — the operator still has to free memory or wait —
 and it cannot detect memory pressure that arrives after the preflight check passes.
+
+## Updates
+
+### 2026-09-04 — first FIELD confirmation of the stated limit (`feat/install-onboarding-preflight`)
+
+The closing note above says the preflight "cannot detect memory pressure that arrives
+after the check passes." That limit was stated from reasoning. It has now been observed.
+
+**What happened.** A full `python -m scripts.gate` run on this machine passed the
+preflight at **1.21 GB free** (floor 1.00 GB), cleared `ruff check` and
+`ruff format --check`, and was **killed during `mypy`**. Free memory measured
+immediately afterwards: **0.60 GB** — inside the 0.4–0.8 GB thrashing band this item's
+own floor measurement identified. A one-line `_available_memory_gb()` probe run right
+after the kill **timed out at 120 s**, which is itself a measurement of how degraded the
+machine was.
+
+**Three things this confirms, none of which are defects:**
+
+1. **The start-of-run snapshot is exactly as weak as advertised.** Passing the floor is
+   not a guarantee the run completes; memory can be consumed by other processes after
+   the check. The docstring and the closing note were right, and neither overclaimed.
+2. **`_top_memory_consumers()` returned `[]`** on that post-kill probe — the documented
+   graceful-degrade path firing for real, under exactly the load it degrades for. This
+   is the second live instance of the behaviour that made the previous session weaken
+   `test_real_windows_listing_is_nonempty`, and it retroactively vindicates that call:
+   a stronger assertion there would have been flaky by design on the machine states
+   this feature exists to serve.
+3. **No orphaned `mypy`/`pytest` processes survived the kill** (checked with `tasklist`).
+   The failure mode is clean termination, not a leaked process tree.
+
+**What this does NOT justify.** It is not an argument for raising `_MEMORY_FLOOR_GB` —
+the floor did its job on the previous run and this run started legitimately above it.
+Nor is it an argument for a mid-run re-check: a gate that aborts itself halfway through
+`mypy` on a transient dip would trade a legible refusal for an illegible one, which is
+the exact inversion of what this item bought. **Filed as evidence, with no mechanism
+authored, deliberately** (C-11: an unauthored mechanism must be declared, not implied).
+If a *recurrence pattern* emerges — several sessions losing long gate runs after a
+passing preflight — the candidate response is a documented operator step (close heavy
+applications before a gate run), not more automation inside the gate.
+
+**Consequence for that session:** the branch could not complete its own local gate.
+Surfaced to the owner as a blocker rather than worked around; CI on the PR is the
+independent verification either way.

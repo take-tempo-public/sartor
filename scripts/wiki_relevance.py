@@ -139,6 +139,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "json_resume.py",
         "parser.py",
         "pdf_render.py",
+        "preflight.py",
         "scraper.py",
         "db",
         "dashboard",

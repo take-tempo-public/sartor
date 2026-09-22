@@ -3,11 +3,19 @@ schema = 1
 id = 103
 kind = "item"
 title = "PDF output is offered in the UI even when the Chromium binary is absent"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = [
+  "feat/install-onboarding-preflight","docs/container-persistence-guidance"]
 refs = ["app.py:160-200", "docs/install.md:30-36", "pyproject.toml"]
 summary = "Missing Chromium is a setup warning but a runtime exception; the UI still offers PDF it cannot render."
+resolution = "Instrumented first, then fixed, on feat/install-onboarding-preflight (2026-09-03) -- this item asked for that explicitly and it paid off twice. docs/dev/diagnosis/install-onboarding-preflight.md records seven observations from a two-arm probe (real browsers path vs an empty PLAYWRIGHT_BROWSERS_PATH). TWO REFUTATIONS: (O-1) render_pdf does NOT raise RuntimeError -- playwright.sync_api.Error's MRO is (Error, Exception, BaseException, object) and isinstance(exc, RuntimeError) is False, so BOTH pdf_render docstrings were false and this item had inherited the claim from one of them; corrected and pinned by a test. (O-2) chromium.executable_path names chromium-<rev>/chrome-*/chrome, but launch(headless=True) -- render_pdf's effective default -- needs chromium_headless_shell-<rev>, a different artifact; the exists(executable_path) probe this branch had already planned would have called a partial install 'available' and shipped the bug back. The fix: preflight.chromium_capability() checks BOTH artifacts via Playwright's own INSTALLATION_COMPLETE sentinel, reading revisions from driver/package/browsers.json without starting the Playwright driver (8.4ms vs 2912ms measured, O-5); the shell route passes pdf_available() to the template; both PDF buttons render disabled + aria-disabled with a visible reason. Unknown leans AVAILABLE so a future Playwright layout change degrades to today's behavior rather than blanking PDF out for everyone. On macOS below the Chromium floor the remedy text branches, because there `playwright install chromium` cannot succeed -- telling this item's own user to re-run the command that already failed is the misdirection the preflight exists to remove."
+verified_by = [
+  "tests/test_pdf_capability_ui.py (9 tests: both buttons, both states, aria, the visible reason, and that the probe is not re-run per request)",
+  "tests/test_pdf_render_missing_chromium.py (4 tests pinning the corrected exception class)",
+  "tests/test_preflight.py::TestChromiumCapability::test_probe_checks_headless_shell_not_just_executable_path",
+  "docs/dev/diagnosis/install-onboarding-preflight.md (the two-arm instrument, O-1..O-7)",
+]
 ```
 
 **Observed** (2026-09-02, macOS 12.7.4). `python -m playwright install chromium` failed —

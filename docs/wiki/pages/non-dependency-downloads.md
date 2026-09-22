@@ -31,7 +31,7 @@
    normal use.** It renders every PDF and the live in-browser preview, so output matches
    the preview byte-for-byte. Lives in the OS user cache, not the repo. *(The pip package
    `playwright` is a declared dependency; the browser binary it pulls is not — hence the
-   separate step.)*
+   separate step.)* **Internally, a Chromium install downloads five artifacts:** `chromium-<rev>`, `chromium_headless_shell-<rev>`, `ffmpeg-<rev>` (twice), and `winldd-<rev>` (`preflight.py:_parse_browsers_json`). PDF rendering specifically needs the **headless shell**, not the headed binary (`pdf_render.py:render_pdf`); each artifact carries an `INSTALLATION_COMPLETE` sentinel to distinguish complete from interrupted installs (`preflight.py:_INSTALL_MARKER`). **On macOS 12 and earlier, PDF output is unavailable** — current Playwright releases ship no Chromium build for that OS (`preflight.py:MACOS_CHROMIUM_FLOOR`). `[synthesis]` **`sartor --doctor` reports whether both PDF-critical artifacts are installed, without downloading anything** (`preflight.py:chromium_capability`).
 4. **An Anthropic API key** — a *credential*, not a download, but required: all AI writing
    goes to Claude. `ANTHROPIC_API_KEY` env var or a `.api_key` file at the repo root.
 5. **A modern browser** — the app is a local site at `http://localhost:5000`.
@@ -83,7 +83,7 @@ invented anything):
 |---|---|---|---|---|---|
 | 1 | Python 3.11+ | (a) | — | no (OS installer) | PSF |
 | 2 | `git` + repo clone | (a) | small | no | repo is MIT |
-| 3 | Chromium binary | (a) | ~150 MB | no — `playwright` triggers it | Chromium (BSD-style) |
+| 3 | Chromium binary (five artifacts) | (a) | ~150 MB | no — `playwright` triggers it | Chromium (BSD-style) |
 | 4 | Anthropic API key | (a) | credential | no | n/a |
 | 5 | Modern browser | (a) | usually present | no | n/a |
 | 6 | Chromium sys libs (Linux) | (a) | small | no (`apt`/`dnf`) | distro |
@@ -112,4 +112,5 @@ no new heavy weight/binary fetch beyond items 3 and 7–10 above `[synthesis]`.
 ## Related
 
 - [[excellence-walk]] — the walk this provenance belongs to.
+- [[machine-capability-preflight]] — how sartor verifies the presence of Chromium (item 3) and other downloads before use.
 - [[eval-harness]] — the eval system the grounding-scorer downloads (items 7–10) feed.

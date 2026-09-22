@@ -130,22 +130,33 @@ Full prerequisites + OS-specific notes: [`docs/install.md`](docs/install.md).
 git clone https://github.com/take-tempo-public/sartor
 cd sartor
 pip install -e .
-sartor --setup                             # one-time: Chromium (PDF) + the recall index
-export ANTHROPIC_API_KEY=your-key-here     # or put it in a .api_key file at the repo root
+sartor --setup                             # one-time: prompts for your key, then Chromium + recall index
 sartor                                      # (or: python app.py)
 ```
 
-**Container (Docker or Podman) — batteries included** (Chromium + recall index baked in):
+`sartor --setup` asks for your API key without echoing it and writes `.api_key`
+itself, so the key never enters your shell history. `sartor --doctor` reports
+what your machine supports (Python, OS, key, PDF, recall) and downloads nothing.
+
+**Container (Docker or Podman) — not published yet.** The image below is the
+intended distribution path; no version tag has been pushed, so the pull fails
+today. Use the source install above.
 
 ```bash
-docker run -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+docker run --name sartor -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
+  -v sartor-db:/app/db -v sartor-output:/app/output \
   ghcr.io/take-tempo-public/sartor            # podman run … works identically
 ```
 
 Then open `http://localhost:5000`. `sartor --setup` replaces the manual
 `python -m playwright install chromium` step (it also builds the semantic-recall
 index). A **`pip install sartor` / `uvx sartor`** path is planned once the wheel
-ships its data files (tracked follow-up). Full setup (Windows/macOS/Linux),
+ships its data files (tracked follow-up).
+
+When the image does ship, name the container and mount volumes as shown above —
+the bare `docker run` form discards your corpus on the next run, and `/app/db`
+must be a **named volume**, never a bind mount (it is a Python package inside the
+image, not a data directory). Full setup (Windows/macOS/Linux),
 container data-persistence, cost guidance, and troubleshooting:
 [`docs/install.md`](docs/install.md). Cap spend via
 [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor

@@ -465,9 +465,27 @@
         <div class="form-row" style="align-items:center;gap:12px;margin-bottom:8px;">
           <span class="edit-hint" style="margin:0">Output format:</span>
           <button class="cb-btn format-btn active" id="fmtDocx" onclick="setOutputFormat('.docx', this)">DOCX</button>
+          {#- Item 103: Chromium's absence was a setup-time warning and a runtime
+              exception, with nothing in between - the PDF button stayed selectable on a
+              machine that could not render one. preflight.pdf_available() decides;
+              unknown leans available, so a Playwright layout change restores the old
+              behaviour rather than blanking PDF out for everyone. -#}
+          {% if pdf_available %}
           <button class="cb-btn format-btn" id="fmtPdf" onclick="setOutputFormat('.pdf', this)">PDF</button>
+          {% else %}
+          <button class="cb-btn format-btn" id="fmtPdf" disabled aria-disabled="true"
+                  title="PDF needs Chromium, which is not installed. Run `sartor --setup`, or use DOCX/Markdown.">PDF</button>
+          {% endif %}
           <button class="cb-btn format-btn" id="fmtMd" onclick="setOutputFormat('.md', this)">Markdown</button>
         </div>
+        {% if not pdf_available %}
+        {#- A tooltip alone is not discoverable; say why in the page. -#}
+        <div class="edit-hint" id="pdfUnavailableHint">
+          PDF output is unavailable &mdash; the Chromium binary it renders with isn't
+          installed. Run <code>sartor --setup</code> to add it, or use DOCX/Markdown.
+          The live preview above needs no Chromium and already matches the PDF layout.
+        </div>
+        {% endif %}
         <div class="form-row">
           <button class="cb-btn cb-bg-blue" onclick="wizardGoTo(4)">← Back</button>
           <button class="cb-btn cb-bg-amber" onclick="runGeneration()" id="btnGenerate">Generate documents</button>
@@ -576,9 +594,20 @@
             <div class="form-row" style="align-items:center;gap:12px;margin:4px 0 8px;">
               <span class="edit-hint" style="margin:0">Cover letter format:</span>
               <button class="cb-btn cover-format-btn active" id="coverFmtDocx" onclick="setCoverFormat('.docx', this)">DOCX</button>
+              {% if pdf_available %}
               <button class="cb-btn cover-format-btn" id="coverFmtPdf" onclick="setCoverFormat('.pdf', this)">PDF</button>
+              {% else %}
+              <button class="cb-btn cover-format-btn" id="coverFmtPdf" disabled aria-disabled="true"
+                      title="PDF needs Chromium, which is not installed. Run `sartor --setup`, or use DOCX/Markdown.">PDF</button>
+              {% endif %}
               <button class="cb-btn cover-format-btn" id="coverFmtMd" onclick="setCoverFormat('.md', this)">Markdown</button>
             </div>
+            {% if not pdf_available %}
+            <div class="edit-hint" id="coverPdfUnavailableHint">
+              PDF output is unavailable &mdash; run <code>sartor --setup</code> to install
+              Chromium, or use DOCX/Markdown.
+            </div>
+            {% endif %}
             <iframe id="coverPreviewFrame"
                     title="Cover letter live preview"
                     class="live-preview-frame"

@@ -67,6 +67,9 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
   the corpus panel's section order.
 - [`pages/document-rendering.md`](pages/document-rendering.md) — the deterministic
   markdown → JSON-Resume → docx/pdf/md render path.
+- [`pages/machine-capability-preflight.md`](pages/machine-capability-preflight.md) —
+  what this machine can actually do: the tri-state probes behind `sartor --doctor`,
+  `--setup`, and the PDF availability gate.
 - [`pages/eval-harness.md`](pages/eval-harness.md) — the offline eval system: suites,
   rubric judges, baseline/anchors, bootstrap, prompt-override A/B, the F-14 `jd_label`,
   and annotation-pin integrity.
