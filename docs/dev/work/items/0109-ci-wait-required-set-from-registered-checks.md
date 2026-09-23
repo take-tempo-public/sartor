@@ -3,12 +3,19 @@ schema = 1
 id = 109
 kind = "item"
 title = "scripts/ci_wait.py returned GREEN (exit 0) while 4 of 6 branch-protection-required checks were still pending -- it derives 'required' from the checks registered when the watch starts"
-status = "open"
+status = "closed"
 decision_owner = "agent"
+branches = ["fix/ci-wait-required-from-protection"]
 refs = [
   "scripts/ci_wait.py",
+  "docs/dev/diagnosis/ci-wait-required-from-protection.md",
 ]
 summary = "ci_wait said GREEN with lint/test + UX pending: required = checks registered at watch start, not protection."
+resolution = "Fixed on fix/ci-wait-required-from-protection (2026-09-22). The required set is now the PR base branch's branch-protection contexts (gh api .../protection/required_status_checks), read once per run. reconcile_required keeps every registered row under a protected name (duplicates included) plus any gh --required extra, and adds a synthetic pending row per protected context with no check run, so a partial set can never classify green. _run re-enters gh --watch while a required context is unsettled, bounded by the one deadline with a 30 s pause floor. An unreadable protection rule exits 2 (unknown), never green. Exit codes unchanged. C-7 order: the reproduction (PR #135's payload shape through the real _run, GREEN on HEAD) was committed as strict xfail in df61126 before the fix in 4838afc. Known limit, stated in the module docstring: the protection endpoint is documented as admin-only; that was verified only with the maintainer's token."
+verified_by = [
+  "tests/test_ci_wait.py::TestRunVerdictAgainstProtection (reproduction xfail-strict on df61126, passing on 4838afc)",
+  "python -m scripts.ci_wait 135 --no-rerun-scan (live, 2026-09-22): '6 required context(s) from branch protection', GREEN (exit 0)",
+]
 ```
 
 **Observed (2026-09-22, PR #135, head `865f714`).** `python -m scripts.ci_wait 135`

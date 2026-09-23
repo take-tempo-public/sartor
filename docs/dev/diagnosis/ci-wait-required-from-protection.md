@@ -93,6 +93,16 @@ the deadline expires. If the protection rule can't be read, the result is `EXIT_
 prose descriptions in AGENTS.md step 4, `docs/dev/AGENT_HANDOFF_TEMPLATE.md` and
 `docs/governance/charter.md`.
 
+### Deferred (with reason)
+
+- **AGENTS.md step 4 and the TEMPLATE's verbatim close-out block were left unedited.**
+  The plan proposed adding "required = branch protection's contexts" to both. On reading
+  them, neither sentence ("exits 0 only when every required check passed") is false after
+  the fix. The definition of "required" now lives in `scripts/ci_wait.py`'s module
+  docstring, which the charter's extract-don't-restate rule makes its one canonical
+  home. Editing the TEMPLATE's verbatim block would also force every future handoff's copy
+  to change, a C-10-gated contract edit this fix doesn't need.
+
 ---
 
 ## Acceptance bar

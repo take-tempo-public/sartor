@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: `scripts/ci_wait.py` reported GREEN with required checks still pending (`fix/ci-wait-required-from-protection`, item 109)
+
+- **Fixed — "required" now means the base branch's protection contexts.** On PR #135,
+  `ci_wait` exited 0 while 4 of 6 protected checks were pending. `gh pr checks --required`
+  only sees check runs that have already registered, and the CI workflow's jobs
+  registered minutes after `gh pr update-branch`. The wrapper now reads
+  `…/protection/required_status_checks` once per run and treats a protected context with
+  no registered check as pending. It re-enters `gh --watch` until every context settles
+  or the deadline expires. An unreadable protection rule exits 2, never green. Exit codes
+  are unchanged. No new dependency.
+- **Known limit:** the protection endpoint is documented as requiring repository
+  administration access. It was verified only with the maintainer's token.
+
 ### Added: install/onboarding preflight (`feat/install-onboarding-preflight`, items 99–104)
 
 Six findings from a live non-maintainer install on macOS 12.7.4 (2026-09-02),
