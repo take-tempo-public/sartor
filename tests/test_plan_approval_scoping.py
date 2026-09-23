@@ -1054,9 +1054,7 @@ class TestStaleStampAndKilledRetire:
         )
         assert plan.exists()
 
-    def test_epic_sprint_boundary_retires_if_sprint_branch_is_pruned(
-        self, tmp_path: Path
-    ) -> None:
+    def test_epic_sprint_boundary_retires_if_sprint_branch_is_pruned(self, tmp_path: Path) -> None:
         """The hazard the Epic C runbook must avoid: pruning the ff-merged
         sprint branch before the next sprint's first edit retires the approval
         (branch gone -> archive), so sprint B's implementer hits PLAN RETIRED."""
