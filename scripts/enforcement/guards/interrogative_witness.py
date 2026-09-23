@@ -197,4 +197,15 @@ def decide(session_id: str, env: Mapping[str, str] | None = None) -> GuardResult
 
 def claude_check(payload: dict[str, Any], env: Mapping[str, str] | None = None) -> GuardResult:
     """Claude PreToolUse adapter: the pause keys off `session_id` only."""
+    # INSTRUMENT (fix/witness-subagent-scope, item 94): key-only payload trace —
+    # records which top-level keys arrive, never values. Removed in the fix commit.
+    try:
+        trace = _state_dir(env if env is not None else os.environ) / "payload-keys.jsonl"
+        trace.parent.mkdir(parents=True, exist_ok=True)
+        with trace.open("a", encoding="utf-8") as fh:
+            fh.write(
+                json.dumps({"tool": payload.get("tool_name"), "keys": sorted(payload)}) + "\n"
+            )
+    except OSError:
+        pass
     return decide(str(payload.get("session_id") or ""), env)
