@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import subprocess
 import sys
 
@@ -303,3 +304,22 @@ class TestCheckMemoryPreflight:
 
         monkeypatch.setattr(gate, "_run_step", _fail_if_called)
         assert gate.main([]) != 0
+
+    def test_refusal_ends_with_the_standard_terminal_line(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """The N=1 runbook (step 3) waits on the gate's OWN terminal line,
+        `^gate: (all steps passed|FAILED)`, and states the gate prints exactly one
+        of the two. A preflight refusal used to print neither, so a waiter spun
+        forever (observed 2026-09-23 on docs/epic-c-kickoff: 30 silent minutes).
+        """
+        monkeypatch.setattr(gate, "_available_memory_gb", lambda: 0.5)
+        monkeypatch.setattr(gate, "_top_memory_consumers", lambda: [])
+        assert gate.main([]) != 0
+        captured = capsys.readouterr()
+        terminal = [
+            line
+            for line in (captured.out + captured.err).splitlines()
+            if re.match(r"^gate: (all steps passed|FAILED)", line)
+        ]
+        assert terminal == ["gate: FAILED at `memory preflight` (exit 1)"], terminal

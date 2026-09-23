@@ -76,6 +76,22 @@ already lost a sprint to scope drift.>`
 `<The concrete first action. If the branch is a fix/*, the first artifact is the diagnosis
 dossier's `## Observed`, never the fix.>`
 
+For the **invoking session**, the copy-paste invocation MUST carry every arg the prose
+prescribes, including `implementerModel` from **Sprint identity** above. The script
+rejects a sprint stage without it by name; it is never defaulted (item 96):
+
+```
+Workflow({scriptPath: '.claude/workflows/n1-baseline.mjs', args: {
+  stage: 'sprint',
+  sprintBriefPath: '<this brief>',
+  epicBriefPath: '<the epic design brief>',
+  epicSprintIndex: <n>,
+  epicSprintCount: <total>,
+  nextSprintBriefPath: '<only when n < total>',
+  implementerModel: '<the model named in Sprint identity>',
+}})
+```
+
 ## Decisions taken alone last sprint that this one inherits
 
 `<Anything the previous sprint decided under its own authority that constrains this one.

@@ -86,7 +86,7 @@ today (§16.5.1).
 
 | Role | Dispatch | Model | Tree access | Spec |
 |---|---|---|---|---|
-| Implementer | default agent | `args.implementerModel` (default `opus`) | full — writes code/tests/dossiers, stages; **commits nothing** | §11.9.1 |
+| Implementer | default agent | `args.implementerModel` (**required** for stage `sprint`, no default — item 96) | full — writes code/tests/dossiers, stages; **commits nothing** | §11.9.1 |
 | Refuter | `agentType: 'sartor:n1-refuter'` | frontmatter: `claude-sonnet-5` (owner's call) | read-only grant | §11.9.2, [`agents/n1-refuter.md`](../../agents/n1-refuter.md) |
 | Judge | `agentType: 'sartor:n1-judge'` | frontmatter: `claude-opus-5` | read-only grant | §11.9.3 / §16.4.1, [`agents/n1-judge.md`](../../agents/n1-judge.md) |
 | Closer | default agent | `args.closerModel` (default `sonnet`) | full — applies confirmed fixes, files items, board, handoff, stages; **no commit, no gate** | §11.9.4 |
@@ -255,10 +255,21 @@ therefore runs in two stages bracketing the main-loop gate:
    believing the epic was running — item 84, tenth failure). After gate #2 is
    green for a sprint that is NOT the epic's last:
    - **ff-merge the sprint branch into the epic branch**
-     (`git checkout <epic-branch> && git merge --ff-only <sprint-branch>`),
-     then prune the sprint branch. This is intra-epic housekeeping, not the
-     owner-gated PR ceremony — that fires once, at the epic close (step 7
-     stays owner-only, unchanged).
+     (`git checkout <epic-branch> && git merge --ff-only <sprint-branch>`).
+     This is intra-epic housekeeping, not the owner-gated PR ceremony, which
+     fires once at the epic close (step 7 stays owner-only, unchanged).
+     **Do NOT prune the sprint branch here** (corrected 2026-09-22,
+     `docs/epic-c-kickoff`). This bullet used to say "then prune the sprint
+     branch", which contradicted the run-6 correction below ("PRUNE AFTER THE
+     SPRINT STAGE, NEVER BEFORE IT"). **For an unattended continuous run, use the
+     simplest safe rule: keep every sprint branch until the epic PR has merged to
+     `main`, then prune them all.** A deleted stamped branch retires the approval,
+     and the next sprint's first subagent edit hits `PLAN RETIRED` →
+     `hook_block` → escalation. A kept branch merged only to the epic branch
+     late-binds. Both behaviors are now pinned by
+     `tests/test_plan_approval_scoping.py::TestStaleStampAndKilledRetire::test_epic_sprint_boundary_*`.
+     Since item 110's fix (PR #144) the retirement also completes reliably
+     instead of sometimes timing out and letting the edit through.
    - **verify the next-sprint brief exists** — the intra-epic closer wrote it
      (`closeoutKind: 'intra_epic'` + `nextSprintBriefPath`). If it is
      missing, that is a pipeline defect: stop and surface it; do not
@@ -321,6 +332,16 @@ Any agent returns `flags[]`; every flag carries the agent's **own words in
   clear a halt point or a hook block.** §11.5 is "unconditional, no judgment
   involved," and the dated 2026-08-09 narrowing of Binding rule 3 in §11.6 is
   scoped "Epic A chain only" and does **not** carry into this pipeline.
+  **Standing owner pre-authorization, amended 2026-09-22 (item 95; owner selection "adopt
+  as proposed").** If, and only if, the escalation's `verbatim` is exactly the
+  item-87 interrogative-witness PAUSE, the invoker may recover without the owner:
+  **(1)** consume the armed pause with its own deliberate `Edit`/`Write`, then
+  **(2) re-invoke the sprint stage fresh** with the same args. **Never
+  `resumeFromRunId` for a `hook_block`:** per stated limit 4, it replays the blocked
+  agent's structured block-description as a completed result and marches the run over
+  a sprint whose code was never written. Any other hook name still stops for the
+  owner. (Since item 94, the pause skips subagent payloads, so this path should not
+  arise. The amendment covers it if it does.)
 - **`flag_stop` (§11.6) and `coherence_drift` (§16.4.1.3):** one independent
   Opus reviewer with a wider view (epic brief, sprint brief, findings so far,
   the diff, the verbatim flag) rules `clear` / `targeted_fix` / `escalate`;
@@ -351,7 +372,7 @@ three route into the escalation primitive as `kind: 'coherence_drift'`.
 | `sprintBriefPath` | **yes** | — | the sprint's brief (the pipeline never invents one) |
 | `epicBriefPath` | **yes** | — | the epic design brief (the escalation reviewers' wider view) |
 | `commitMessage` | finalize only | — | composed by the invoking session from the run report |
-| `implementerModel` | no | `'opus'` | per-sprint, from the RELEASE_ARC session-models table |
+| `implementerModel` | **sprint stage** | — (rejected by name when missing or empty; item 96) | per-sprint, from the epic brief's sprint table (RELEASE_ARC session models) |
 | `closerModel` | no | `'sonnet'` | |
 | `reviewerModel` | no | `'opus'` | |
 | `driftCheckpoints` | no | `[]` | pre-scheduled drift-review sprint indices |

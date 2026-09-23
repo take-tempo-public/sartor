@@ -894,3 +894,13 @@ candidate.
 Filed as the concrete next-step pointer for the design pass's own
 recommendation, `status = "blocked"` from the moment of filing since the
 owner's decision has not yet been made.
+
+### 2026-09-22 — the mid-run witness pre-authorization is amended (item 95, `docs/epic-c-kickoff`)
+
+The 2026-08-12 pre-authorization above ("resuming via `resumeFromRunId`") is
+**superseded**. The owner selected "adopt as proposed" for item 95 on 2026-09-22. The
+recovery is now: consume the pause with a deliberate invoker edit, then re-invoke the
+sprint stage fresh, never `resumeFromRunId` for a `hook_block` (it replays the block
+description as success, per runbook stated limit 4). The single home of the amended text
+is `docs/dev/n1-baseline-pipeline.md` §"Escalation — the unified primitive". Item 94 has
+since removed the triggering case (the pause skips subagent payloads, PR #143).

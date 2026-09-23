@@ -163,3 +163,12 @@ gate*.log
 #      standing rule (AGENTS.md "What NOT to do"). Ignored outright — nothing
 #      here is ever a deliverable; anything worth keeping belongs in docs/.
 scratchpad/
+
+# ---- isidium tenant client state (owner decision 2026-09-22, docs/epic-c-kickoff).
+#      `.isidium/` holds the tenant's client config, installed schemas and an owner
+#      key pair; `.agents/` holds the isidium-planner skill install. Machine-local
+#      tooling, never deliverables, and untracked they trip the N=1 pipeline's
+#      clean-tree assertion (docs/dev/n1-baseline-pipeline.md step 4) while a
+#      pre-gate `git add -A` would sweep `.isidium/client.toml` into a sprint commit.
+.isidium/
+.agents/

@@ -349,6 +349,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     del argv  # no flags today — the wrapper takes no arguments, by design (single definition)
     preflight_code = _check_memory_preflight()
     if preflight_code != 0:
+        # The terminal-line contract: every run ends with exactly one of
+        # `gate: all steps passed.` / `gate: FAILED at ...`, which the N=1 runbook's
+        # wait loop matches (docs/dev/n1-baseline-pipeline.md step 3). A refusal
+        # used to print neither, and the waiter spun forever (2026-09-23).
+        print(
+            f"\ngate: FAILED at `memory preflight` (exit {preflight_code})",
+            file=sys.stderr,
+            flush=True,
+        )
         return preflight_code
     for name, cmd in _STEPS:
         code = _run_step(name, cmd)

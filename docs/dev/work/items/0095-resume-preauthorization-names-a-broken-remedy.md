@@ -3,16 +3,17 @@ schema = 1
 id = 95
 kind = "item"
 title = "The owner's mid-run-pause pre-authorization names resumeFromRunId, which replays a blocked agent's block-description as success"
-status = "blocked"
-blocked_on = "owner amendment — the pre-authorization is the owner's own recorded standing decision, so only the owner can restate it"
+status = "closed"
 decision_owner = "user"
-branches = ["feat/ats-conformance"]
+branches = ["feat/ats-conformance", "docs/epic-c-kickoff"]
 refs = [
   "docs/dev/work/items/0084-build-n1-baseline-pipeline.md",
   "docs/dev/n1-baseline-pipeline.md",
   "docs/dev/work/items/0094-interrogative-witness-kills-pipeline-runs.md",
 ]
 summary = "The pre-authorized recovery would silently skip the sprint's implementation instead of resuming it."
+resolution = "Amended by the owner 2026-09-22 (AskUserQuestion selection 'adopt as proposed', session 0ea1b8bf). The standing pre-authorization now reads: consume the pause with a deliberate invoker edit, then re-invoke the sprint stage fresh; never resumeFromRunId for a hook_block. Single home: docs/dev/n1-baseline-pipeline.md section 'Escalation - the unified primitive'; item 84 carries a dated supersession note."
+closure_exception = "Owner amendment of the owner's own standing authorization: the amended text is the artifact (owner amodal1, 2026-09-22)"
 ```
 
 **The conflict.** Item 84 records a standing owner pre-authorization for exactly the

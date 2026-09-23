@@ -1946,6 +1946,12 @@ small + in-scope → folded into sprints; everything else → filed).
 
 Opens with an end-user-UX-expert audit of the console.
 
+**Execution mode (2026-09-22):** one continuous N=1 pipeline run of all four sprints (C1a,
+C1b, C2, C3). The authorization record, including the owner-ratified scope sentence, is
+[`handoffs/epic-c-design-brief.md`](handoffs/epic-c-design-brief.md); the audit is
+[`reviews/epic-c-console-ux-audit.md`](reviews/epic-c-console-ux-audit.md). Scope below is
+unchanged.
+
 - **C1 — fixes** (`fix/dashboard-run-lock-gaps` + `feat/dashboard-polish`).
   Lock-gate the real Collate button (`annCollate`, absent from `LOCK_BTN_IDS`,
   `dashboard/templates/dashboard.html:1388`); sticky `.dash-tabs`; correct the
