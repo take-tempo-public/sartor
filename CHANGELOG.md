@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: a fresh plan approval could be retired mid-branch (`fix/plan-approval-retired-mid-branch`, item 110)
+
+- **Fixed: the retire path is kill-safe.** `check-plan-approved.sh`'s retire path measured
+  5.66–14.72 s on Windows/MSYS against its 5 s hook timeout. A timed-out hook doesn't
+  block, and this one was killed after moving the plan but before removing the approval
+  marker, so the approval stayed live over a plan that had been moved away. The approval
+  pointers are now removed first, so any kill leaves "no approval". The timeout goes from
+  5 to 20 s.
+- **Fixed: a new approval clears the previous branch's stamp.** A stamp left by an
+  already-merged branch used to retire the *next* session's fresh approval on its first
+  edit.
+- **Not fixed (item 111):** the hook's speed. It costs ~2 s per edit and 8–21 s per
+  retire, from the number of processes it starts. Evidence:
+  `docs/dev/diagnosis/plan-approval-retired-mid-branch.md`.
+
 ### Fixed: the interrogative-witness pause no longer lands on subagents (`fix/witness-subagent-scope`, item 94)
 
 - **Fixed — pipeline subagents can't eat the main agent's pause.** Subagents share the

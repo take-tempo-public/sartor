@@ -17,9 +17,10 @@
 # tests/test_plan_approval_scoping.py asserts the settings.json/_hook_stems
 # exemption explicitly rather than leaving it to be discovered.
 #
-# Never wedges a caller: every failure mode here degrades to "leave the
-# pointer files in place" rather than raising — retiring a plan is a nicety
-# on top of the caller's own gate decision, not itself a gate.
+# Never wedges a caller: the pointer files are removed first (kill-safe,
+# item 110), and every later failure (archive mv, manifest, receipt) is
+# swallowed rather than raised. Retiring a plan is bookkeeping on top of the
+# caller's own gate decision, not itself a gate.
 
 # Convert a bash-native path to a form the NATIVE (non-MSYS) python3.exe can
 # correctly interpret, before handing it over as an argv string. On
@@ -49,6 +50,18 @@ retire_approved_plan() {
   local current="$plans_dir/.current-$project_key"
   local stamp="$plans_dir/.approved-branch-$project_key"
 
+  # Kill-safe ordering (item 110). Capture the pointers with builtins (no fork)
+  # and remove them FIRST, before any slow step. On Windows/MSYS this path
+  # measured 5.66-14.72 s against the caller's 5 s hook timeout, and a
+  # timed-out hook is killed wherever it is. Removing the approval first means
+  # a kill at any later point leaves "no approval" (fail closed), never a live
+  # marker pointing at a moved plan. Evidence:
+  # docs/dev/diagnosis/plan-approval-retired-mid-branch.md.
+  local approved_plan="" current_plan="" archived_basename=""
+  [ -f "$marker" ] && IFS= read -r approved_plan < "$marker" 2>/dev/null
+  [ -f "$current" ] && IFS= read -r current_plan < "$current" 2>/dev/null
+  rm -f "$marker" "$current" "$stamp" 2>/dev/null
+
   # The archive directory name uses a SHORT hash of project_key, not
   # project_key itself. project_key is the ENTIRE project directory path
   # with every non-alphanumeric byte turned into `-` (see check-plan-approved.sh's
@@ -74,22 +87,20 @@ retire_approved_plan() {
   archive_id="${ts}-${key_hash}"
   archive_dir="$plans_dir/archive/$archive_id"
 
-  local approved_plan="" current_plan="" archived_basename=""
-  [ -f "$marker" ] && approved_plan=$(cat "$marker" 2>/dev/null)
-  [ -f "$current" ] && current_plan=$(cat "$current" 2>/dev/null)
-
   # mv (never cp/rm) — vacates the live path while preserving the content,
   # which is what keeps a plan file "archived" rather than "deleted".
   if [ -n "$approved_plan" ] && [ -f "$approved_plan" ]; then
     mkdir -p "$archive_dir" 2>/dev/null && mv -f "$approved_plan" "$archive_dir/" 2>/dev/null
-    archived_basename=$(basename "$approved_plan")
+    archived_basename="${approved_plan##*/}"
   fi
   if [ -n "$current_plan" ] && [ "$current_plan" != "$approved_plan" ] && [ -f "$current_plan" ]; then
     mkdir -p "$archive_dir" 2>/dev/null && mv -f "$current_plan" "$archive_dir/" 2>/dev/null
   fi
 
-  local branch=""
-  if [ -n "$project_dir" ] && command -v git >/dev/null 2>&1; then
+  # Optional 4th arg: the caller's already-known branch, which saves a `git`
+  # fork (~1 s measured on Windows/MSYS, item 110).
+  local branch="${4:-}"
+  if [ -z "$branch" ] && [ -n "$project_dir" ] && command -v git >/dev/null 2>&1; then
     branch=$(git -C "$project_dir" rev-parse --abbrev-ref HEAD 2>/dev/null) || branch=""
   fi
 
@@ -164,8 +175,8 @@ if project_dir and session and basename:
         pass  # never wedge the caller's gate over a bookkeeping write
 PY
 
-  # The pointer files' own content is preserved above (manifest + receipt) —
-  # what they point AT is what was archived, not deleted.
-  rm -f "$marker" "$current" "$stamp" 2>/dev/null
+  # The pointer files were removed at the top (kill-safe ordering); their
+  # content is preserved above (manifest + receipt), and what they point AT
+  # was archived, not deleted.
   return 0
 }
