@@ -31,7 +31,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **41** -- Domain-vocabulary library for Compose drafting (`user`) -- Local lexicons (design, SWE, business, startup) so Compose drafting uses the JD domain's language and conventions. [blocked on: post-1.1.0 - owner scheduled this for 1.1.x investigation, not the Final March]
 - **42** -- Template-format investigation - dotx/mht import, locked exact-preview ATS set (`user`) -- Investigate dotx/mht as import formats and lock a small set of bullet-proof ATS templates with exact-preview fidelity. [blocked on: post-1.1.0 - owner scheduled a template epic for a 1.1.x sprint]
 - **43** -- Approved-fonts list expansion beyond Arial/Calibri/Georgia (`user`) -- v1.1.0 ships an approved-fonts list of Arial, Calibri, Georgia (sprint B2); verified additions considered later. [blocked on: post-1.1.0 - additions only after per-font ATS verification, owner-gated]
-- **113** -- Triage the 19 out-of-scope findings from the pre-Epic-C console UX audit (UX-23..UX-41) (`user`) -- 19 console UX findings outside Epic C's scope (7 major, 12 minor) await owner triage; UX-22 filed separately (item 112). [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
+- **113** -- Triage the 18 out-of-scope findings from the pre-Epic-C console UX audit (UX-23, UX-25..UX-41) (`user`) -- 18 console UX findings outside Epic C (6 major, 12 minor) await triage; UX-22 is item 112; UX-24 joined C1b. [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
 
 ## Watching
 
