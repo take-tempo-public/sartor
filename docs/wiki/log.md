@@ -2109,3 +2109,32 @@ unchanged).
 execution mode or the ignored directories. `diagnostics-console.md` covers the console
 itself, and this branch changes no console code. `.last_ingest_sha` was not advanced
 (item 98).
+
+## 2026-09-23 — scoped close-out relevance check (`fix/dashboard-run-lock-gaps`, C1a)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1a — 1 of 4), scoped to this branch's
+own staged diff, not a full ingest. Per `epic-c-design-brief.md` §"Close-out intervals,"
+the full wiki pass is **deferred to the epic close** unless drift reaches the 60 backstop
+— `python -m scripts.wiki_freshness` reports **39 of 75** at this branch's tip, unchanged
+from the epic-kickoff reading, well under the backstop, so the deferral stands. This entry
+is the still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `dashboard/templates/dashboard.html` only. (`docs/dev/diagnosis/`,
+`tests/ux/regression/` classify irrelevant.)
+
+**Pages edited (0). Pages verified no-edit.** Grepped `docs/wiki/pages/diagnostics-console.md`
+for `annCollate`, `LOCK_BTN_IDS`, `acquireRunLock`, `isLocked` — one hit, the "Paid-run
+single-flight lock" section (`:256-264`), which already describes `window.sartorRunLock`
+as covering "the five paid-run buttons in `LOCK_BTN_IDS` (eval / tune / bootstrap /
+grounding-score / collate-fixture)". That is a category count (5 entry points), not an
+array-length claim, and it still holds: this branch's fix (`LOCK_BTN_IDS` gains
+`annCollate`, `annCollateRunBtn` now renders disabled-at-creation from `isLocked()`, and
+`run()` now honors `acquireRunLock()`'s return value) makes the collate-fixture entry
+point actually behave the way the page already describes — it did not before this branch
+(see `docs/dev/diagnosis/dashboard-run-lock-gaps.md`). Noting this rather than silently
+passing over it: the page was describing the *intended* design before the code matched it,
+so this scoped check confirms no edit is needed, not that nothing changed. `isLocked()`
+and the `run()` return-value check are new implementation detail the page never described
+and is not now contradicting, so leaving them undocumented is not drift. `.last_ingest_sha`
+was not advanced (item 98).

@@ -1385,20 +1385,29 @@
   // nothing until then. Included so the single-flight lock also disables it
   // while ANOTHER paid run is in flight (#1's own click already goes through
   // window.sartorEval.run(), which independently acquires/releases the lock).
-  var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore', 'annCollateRunBtn'];
+  // annCollate: the STATIC "Collate → fixture + brief" button. Fixed
+  // 2026-09-23 (Epic C C1a, UX-1) — it was missing here, so it stayed
+  // clickable during a live run and could rebuild an annCollateRunBtn (see
+  // above) AFTER this forEach had already run once, leaving that fresh
+  // button enabled. See docs/dev/diagnosis/dashboard-run-lock-gaps.md.
+  var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore', 'annCollateRunBtn', 'annCollate'];
   var locked = false;
   function warnBeforeUnload(e) {
     e.preventDefault();
     e.returnValue = 'A diagnostics run is still in progress.';
     return e.returnValue;
   }
+  // Returns true when this call actually acquired the lock, false when a run was
+  // already live — callers must check this (not just call acquire() and continue)
+  // or a second run can start silently. See docs/dev/diagnosis/dashboard-run-lock-gaps.md.
   function acquireRunLock() {
-    if (locked) return;
+    if (locked) return false;
     locked = true;
     LOCK_BTN_IDS.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = true; });
     var banner = document.getElementById('runLockBanner');
     if (banner) banner.hidden = false;
     window.addEventListener('beforeunload', warnBeforeUnload);
+    return true;
   }
   function releaseRunLock() {
     if (!locked) return;
@@ -1408,7 +1417,11 @@
     if (banner) banner.hidden = true;
     window.removeEventListener('beforeunload', warnBeforeUnload);
   }
-  window.sartorRunLock = { acquire: acquireRunLock, release: releaseRunLock };
+  // Read-only check for code that needs to know the lock state without trying to
+  // acquire it — e.g. a dynamically-created button deciding its own initial
+  // .disabled at creation time (renderCollateResult()).
+  function isRunLocked() { return locked; }
+  window.sartorRunLock = { acquire: acquireRunLock, release: releaseRunLock, isLocked: isRunLocked };
 })();
 </script>
 
@@ -1509,7 +1522,13 @@
   // cancelBtnEl (optional) gets Cancel wiring for the duration of the run.
   function run(params, progEl, btnEl, onDone, barEl, cancelBtnEl) {
     if (btnEl) btnEl.disabled = true;
-    if (window.sartorRunLock) window.sartorRunLock.acquire();
+    // Defense in depth (docs/dev/diagnosis/dashboard-run-lock-gaps.md): acquire()
+    // returning false means a run is ALREADY live — do not start a second one, even
+    // if btnEl itself was somehow still enabled (e.g. a stray un-disabled button).
+    if (window.sartorRunLock && !window.sartorRunLock.acquire()) {
+      if (progEl) progEl.textContent = 'A diagnostics run is already in progress.';
+      return { abort: function () {} };
+    }
     if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
     if (barEl) { barEl.hidden = false; barEl.value = 0; }
     var onCancelClick;
@@ -1940,6 +1959,11 @@
     var actions = el('div', 'annotate-actions');
     var runBtn = el('button', 'ann-btn primary'); runBtn.type = 'button'; runBtn.id = 'annCollateRunBtn';
     runBtn.textContent = 'Run this fixture (real --seed)';
+    // Built fresh on every Collate, so LOCK_BTN_IDS' forEach (which already ran once
+    // at whatever point the lock was acquired) never touches THIS element -- render it
+    // disabled directly whenever a run is already live. See docs/dev/diagnosis/
+    // dashboard-run-lock-gaps.md.
+    if (window.sartorRunLock && window.sartorRunLock.isLocked()) runBtn.disabled = true;
     var bar = el('progress', 'run-progress'); bar.max = 1; bar.value = 0; bar.hidden = true;
     var prog = el('div', 'annotate-progress'); prog.setAttribute('role', 'status'); prog.setAttribute('aria-live', 'polite');
     runBtn.addEventListener('click', function () {
