@@ -1,1 +1,2 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/fix-ci-wait-required-from-protection.md", "session": "0ea1b8bf-913f-48d6-a7f1-5e54cf8769b3", "branch": "main", "commit": "9cafbde", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-23T02:52:10Z", "fingerprint": "589b128596a1"}
+{"event": "compacted", "session": "0ea1b8bf-913f-48d6-a7f1-5e54cf8769b3", "branch": "fix/witness-subagent-scope", "trigger": "unknown", "ts": "2026-09-23T02:58:41Z"}

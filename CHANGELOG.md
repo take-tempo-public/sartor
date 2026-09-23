@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the interrogative-witness pause no longer lands on subagents (`fix/witness-subagent-scope`, item 94)
+
+- **Fixed — pipeline subagents can't eat the main agent's pause.** Subagents share the
+  invoker's `session_id`, so the first subagent `Edit` after any turn event consumed the
+  one-shot pause and returned `hook_block`. That is how Epic B run 6 died with no code
+  written. `claude_check` now skips payloads that carry `agent_id`, which a live
+  key-only trace showed only subagent payloads have. A blank or absent `agent_id` still
+  pauses.
+- **Observed and documented, not changed:** subagent hand-backs and task notifications
+  re-arm the pause, so the main agent can pause once on an edit no user prompt preceded.
+  Runbook step 0a is updated to say so.
+- Evidence: `docs/dev/diagnosis/witness-subagent-scope.md`. Also filed: item 110 (plan
+  approval retired mid-branch, observed this session).
+
 ### Fixed: `scripts/ci_wait.py` reported GREEN with required checks still pending (`fix/ci-wait-required-from-protection`, item 109)
 
 - **Fixed — "required" now means the base branch's protection contexts.** On PR #135,

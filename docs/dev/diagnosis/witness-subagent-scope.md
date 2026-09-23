@@ -1,6 +1,6 @@
 # Diagnosis — the item-87 witness pause is consumed by pipeline subagents (item 94)
 
-> **Status:** discriminator OBSERVED (2026-09-22 instrument, below). A subagent's PreToolUse
+> **Status:** root cause PROVEN and fixed. The discriminator was observed (2026-09-22 instrument, below): a subagent's PreToolUse
 > payload carries `agent_id`/`agent_type`; the main agent's does not.
 > **Branch:** `fix/witness-subagent-scope`
 
@@ -89,10 +89,25 @@ It never records values. Then:
 
 ## The fix
 
-_Pending the experiment._
+`claude_check` returns allow when the payload's `agent_id` is truthy, before `decide` runs.
+The main agent's payload never carries it (Observed), so the main-agent pause is unchanged.
+A blank or absent `agent_id` still pauses, which keeps fail-open discipline intact. The
+instrument trace is removed.
+
+Repro first: `TestSubagentScoping::test_subagent_edit_does_not_consume_the_main_agents_pause`
+failed on `9e457a1` (`assert not True`, blocked=True on the subagent payload) and passes
+after the fix.
 
 ---
 
 ## Acceptance bar
 
-_Pending the experiment._
+- `tests/test_interrogative_witness.py::TestSubagentScoping` green, with payload key sets
+  copied from the live trace. Met.
+- **Live re-probe, 2026-09-22, met.** The witness state was armed via `record_prompt`
+  (`{"prompt_seq": 6, "interrogative": false, "witnessed": false}`). One Haiku subagent then
+  ran `Edit` on the scratch file and it **succeeded** (`sub: after` → `sub: reprobe`). The
+  hand-back and task notification re-armed the state to `prompt_seq: 8` afterwards (two more
+  non-user re-arm events, consistent with the Observed re-arm finding). The main agent's
+  next `Edit`, the one that wrote this section, drew the PAUSE, so the main-agent path still
+  fires.

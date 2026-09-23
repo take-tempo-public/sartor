@@ -32,9 +32,12 @@ before the UserPromptSubmit hook existed, or the hook not firing), corrupt
 state, an unwritable state dir — is fail-open by design, matching the
 owner's stated trust in momentum-free judgment. A heuristic false negative
 (a directive phrased as a question) is acceptable: the owner is explicit
-when action is wanted. Known limit: PreToolUse also fires for subagents'
-Edit/Write calls, so a subagent's first edit can consume the turn's one
-pause on the main agent's behalf.
+when action is wanted. Subagent Edit/Write calls (payload carries
+`agent_id`) are skipped by `claude_check`, so they can no longer consume the
+main agent's pause (item 94). Known limit: non-user events such as a
+subagent's hand-back re-arm the pause (observed,
+`docs/dev/diagnosis/witness-subagent-scope.md`), so the main agent may pause
+on an edit no user prompt preceded. That costs one re-run.
 """
 
 from __future__ import annotations
@@ -196,16 +199,16 @@ def decide(session_id: str, env: Mapping[str, str] | None = None) -> GuardResult
 
 
 def claude_check(payload: dict[str, Any], env: Mapping[str, str] | None = None) -> GuardResult:
-    """Claude PreToolUse adapter: the pause keys off `session_id` only."""
-    # INSTRUMENT (fix/witness-subagent-scope, item 94): key-only payload trace —
-    # records which top-level keys arrive, never values. Removed in the fix commit.
-    try:
-        trace = _state_dir(env if env is not None else os.environ) / "payload-keys.jsonl"
-        trace.parent.mkdir(parents=True, exist_ok=True)
-        with trace.open("a", encoding="utf-8") as fh:
-            fh.write(
-                json.dumps({"tool": payload.get("tool_name"), "keys": sorted(payload)}) + "\n"
-            )
-    except OSError:
-        pass
+    """Claude PreToolUse adapter: the pause keys off `session_id`, main agent only.
+
+    A subagent's payload carries `agent_id`; the main agent's does not
+    (observed 2026-09-22, `docs/dev/diagnosis/witness-subagent-scope.md`).
+    Subagents share the invoker's `session_id`, so without this skip a
+    subagent's first edit consumed the main agent's pause and died as a
+    `hook_block` (item 94, Epic B run 6). A subagent never receives the
+    owner's prompt, so the pause protects nothing there. Only a PRESENT
+    (truthy) `agent_id` skips; absent or blank falls back to pausing.
+    """
+    if payload.get("agent_id"):
+        return GuardResult.allow()
     return decide(str(payload.get("session_id") or ""), env)
