@@ -3,9 +3,9 @@ schema = 1
 id = 94
 kind = "item"
 title = "The item-87 interrogative-witness pause kills N=1 pipeline runs: subagents share the invoker's session_id and eat its one-shot pause"
-status = "open"
+status = "closed"
 decision_owner = "user"
-branches = ["feat/ats-conformance"]
+branches = ["feat/ats-conformance", "fix/witness-subagent-scope"]
 refs = [
   "scripts/enforcement/guards/interrogative_witness.py",
   "scripts/enforcement/adapters/claude_context_hook.py:195-202",
@@ -14,6 +14,11 @@ refs = [
   "docs/dev/n1-baseline-pipeline.md",
 ]
 summary = "Run 6 died to a benign self-clearing witness; the fix needs a discriminator whose existence is unverified."
+resolution = "Fixed on fix/witness-subagent-scope (2026-09-22). The discriminator was observed live: a subagent's PreToolUse payload carries agent_id + agent_type, and the main agent's does not (key-only trace committed as the C-7 instrument in 9e457a1). claude_check now skips the pause when agent_id is truthy; blank or absent still pauses. Also observed: subagent hand-backs and task notifications re-arm the pause, which now lands only on the invoker's own next edit (one re-run). Evidence: docs/dev/diagnosis/witness-subagent-scope.md."
+verified_by = [
+  "tests/test_interrogative_witness.py::TestSubagentScoping (repro failed on 9e457a1, passes after the fix)",
+  "live re-probe 2026-09-22, session 0ea1b8bf: armed state, subagent Edit allowed, main agent's next Edit paused (dossier Acceptance bar)",
+]
 ```
 
 **What happened.** Epic B run 6 (`wf_44350cb5-6b2`, 2026-08-14) stopped at

@@ -163,7 +163,10 @@ self-clearing refusal on the first Edit/Write after each user prompt, armed by t
 there is no unenforced clause here waiting for a tool-agnostic path; the extraction can
 skip it without losing coverage. Stated limits (C-0/C-11): intent classification is not
 deterministic — both halves are witnesses that force the consideration, not gates that
-prove intent, and every failure path fails open by design.
+prove intent, and every failure path fails open by design. The pause is scoped to the main
+agent: a PreToolUse payload carrying `agent_id` (a subagent's) is skipped (item 94,
+`docs/dev/diagnosis/witness-subagent-scope.md`). A subagent's hand-back still re-arms the
+pause for the main agent's next edit, which costs one re-run.
 
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude

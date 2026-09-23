@@ -137,7 +137,9 @@ hooks for any agent writing code here:
   non-blocking "the deliverable is the ANSWER" reminder. On the first
   `Edit`/`Write` after each user prompt, the Edit|Write dispatcher
   refuses ONCE with the interrogative-vs-directive question and
-  self-clears — re-run the same call to proceed. Witness, not gate
+  self-clears — re-run the same call to proceed. Subagent edits
+  (payload carries `agent_id`) are skipped, so a subagent can't eat
+  the main agent's pause (item 94). Witness, not gate
   (C-0: intent classification is not deterministic); every failure
   path fails open.
 

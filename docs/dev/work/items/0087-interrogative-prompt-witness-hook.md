@@ -139,3 +139,10 @@ unprotected just because it predates the wiring; (2) task notifications
 count as prompt-receipt events for the witness, so long autonomous runs get
 one pause per notification turn — observed friction cost: one clean retry,
 as designed.
+
+### 2026-09-22 — pause scoped to the main agent (`fix/witness-subagent-scope`, item 94)
+
+`claude_check` now skips PreToolUse payloads that carry `agent_id` (subagents), so a
+subagent can no longer consume the main agent's pause. This is a precision change, not a
+reopen: the main-agent behavior this item specifies is unchanged. Evidence:
+`docs/dev/diagnosis/witness-subagent-scope.md`.

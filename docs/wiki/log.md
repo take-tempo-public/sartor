@@ -2083,3 +2083,15 @@ scoped self-update was required. But one page stated a claim this branch made fa
   re-watch, and exit 2 on unreadable protection. The row's cites (`classify`,
   `scan_reruns`) still resolve and are unchanged. `.last_ingest_sha` not advanced
   (item 98).
+
+## 2026-09-22 — scoped check, verified no-edit (`fix/witness-subagent-scope`, item 94)
+
+Wiki-relevant files touched: `CLAUDE.md` (hook bullet) and `docs/governance/enforcement.md`
+(stated-limits paragraph). Both add one fact: the interrogative-witness pause now skips
+subagent payloads (`agent_id` present).
+
+**Pages edited (0). Pages verified no-edit.** I grepped `docs/wiki/pages/` for
+`interrogative`: two hits, `consistency-tracks-enforcement.md:138-139` and
+`governance-extraction.md:135-138`. Both state only that the witness is Claude Code only by
+nature. That claim is unchanged, and neither page described the old subagent limit.
+`.last_ingest_sha` was not advanced (item 98).

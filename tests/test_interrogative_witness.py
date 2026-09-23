@@ -151,6 +151,62 @@ class TestPauseLifecycle:
 
 
 # --------------------------------------------------------------------------- #
+# Subagent scoping (item 94) — payload shapes copied key-for-key from the live
+# trace in docs/dev/diagnosis/witness-subagent-scope.md §Observed.
+# --------------------------------------------------------------------------- #
+
+
+def _main_payload(session_id: str) -> dict[str, object]:
+    return {
+        "cwd": "C:\\Dev\\sartor",
+        "effort": "high",
+        "hook_event_name": "PreToolUse",
+        "permission_mode": "default",
+        "prompt_id": "p-1",
+        "scratchpad_dir": "C:\\tmp",
+        "session_id": session_id,
+        "tool_input": {"file_path": "x"},
+        "tool_name": "Edit",
+        "tool_use_id": "toolu_1",
+        "transcript_path": "C:\\t.jsonl",
+    }
+
+
+def _subagent_payload(session_id: str) -> dict[str, object]:
+    payload = _main_payload(session_id)
+    del payload["effort"]
+    payload["agent_id"] = "a8910364b73771fb1"
+    payload["agent_type"] = "general-purpose"
+    return payload
+
+
+class TestSubagentScoping:
+    def test_subagent_edit_does_not_consume_the_main_agents_pause(self, tmp_path: Path) -> None:
+        """Run 6's failure: the subagent ate the pause and died as hook_block."""
+        env = _env(tmp_path)
+        iw.record_prompt("sess-1", "run the sprint", env)
+        assert not iw.claude_check(_subagent_payload("sess-1"), env).blocked
+        assert iw.claude_check(_main_payload("sess-1"), env).blocked, (
+            "the pause must still be armed for the main agent after a subagent edit"
+        )
+
+    def test_main_agent_payload_still_pauses_once(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        iw.record_prompt("sess-1", "is it done?", env)
+        assert iw.claude_check(_main_payload("sess-1"), env).blocked
+        assert not iw.claude_check(_main_payload("sess-1"), env).blocked
+
+    @pytest.mark.parametrize("value", ["", None, 0])
+    def test_falsy_agent_id_falls_back_to_pausing(self, tmp_path: Path, value: object) -> None:
+        """Fail-open discipline: only a PRESENT agent_id skips; a blank one pauses."""
+        env = _env(tmp_path)
+        iw.record_prompt("sess-1", "go", env)
+        payload = _main_payload("sess-1")
+        payload["agent_id"] = value
+        assert iw.claude_check(payload, env).blocked
+
+
+# --------------------------------------------------------------------------- #
 # Registry integration — the guard is reachable by its dispatched name.
 # --------------------------------------------------------------------------- #
 

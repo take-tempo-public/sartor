@@ -173,10 +173,15 @@ therefore runs in two stages bracketing the main-loop gate:
      `kind: "hook_block"`, and `escalate()` short-circuits that straight to
      `escalated_to_owner` with no reviewer — so a benign, self-clearing witness
      stops the whole run. Recording the branch's base sha or a work-item note
-     is a natural edit to spend it on. Residual risk is a mid-run task
-     notification re-arming it (observed arming on most, but not all,
-     notifications — counts in work item 84); that case is the owner's call,
-     not a thing to route around;
+     is a natural edit to spend it on. **Since item 94 (2026-09-22) the pause
+     skips subagent edits** (payload carries `agent_id`), so a mid-run re-arm
+     (task notifications and subagent hand-backs both re-arm it — work item 84,
+     `docs/dev/diagnosis/witness-subagent-scope.md`) lands on the invoker's
+     own next edit, never a pipeline agent's. The deliberate consumption stays
+     as cheap belt-and-braces. If a `hook_block` naming this witness appears
+     anyway, consume the pause with an invoker edit and re-invoke the sprint
+     stage fresh (item 95). Never `resumeFromRunId`, which replays the
+     block as success (limit 4);
    - states, in the same message, the expected uninterrupted window and the
      contract for it: after kickoff the owner hears from this session only
      via the pipeline's escalation primitive (that is the pipeline working)
