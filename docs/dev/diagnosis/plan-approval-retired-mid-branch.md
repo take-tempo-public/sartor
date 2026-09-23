@@ -1,7 +1,6 @@
 # Diagnosis — a fresh plan approval is retired mid-branch (item 110)
 
 > **Status:** root cause PROVEN: the 5 s hook timeout kills the retire path partway (measured 5.66-14.72 s), plus a stale stamp that retires fresh approvals (test fails on HEAD).
-> unproven: two rival hypotheses, (A) and (B) below.
 > **Branch:** `fix/plan-approval-retired-mid-branch`
 
 ---
@@ -53,22 +52,6 @@ its branch was unmerged. A later Edit was refused with `NO EDIT APPROVAL`. First
   rc=2 elapsed=14.72s
   ```
 
-  Run to completion, the retire path takes **14.72 s** against the hook's `"timeout": 5`.
-- **Instance 3 (21:45), no sibling block.** The retried `Write` of this dossier had no
-  witness pause (already consumed) and **went through**. Afterwards all three pointers were
-  still present, there was no new archive dir, no receipt, and no `PLAN RETIRED:`. So the
-  hook died partway through its retire path with no sibling refusal on the call.
-- **Timing measurement, 21:46, the decisive one.** `check-plan-approved.sh` was run
-  directly on a **copy** of the live pointer state. The command was a temp `HOME` holding
-  the three pointer files, the stamp's mtime restored to `2026-09-22 20:59:06`,
-  `CLAUDE_PROJECT_DIR='C:\Dev\sartor'`, and a stdin Edit payload. Output:
-
-  ```
-  PLAN RETIRED: branch 'fix/witness-subagent-scope' has already merged (or no longer exists) — its approval was archived, not deleted.
-  Write a plan and call ExitPlanMode to start the next task.
-  rc=2 elapsed=14.72s
-  ```
-
   Three more runs of the same setup: `9.82s`, `7.94s`, `5.66s` (`rc=2` each). **4/4 runs
   exceed the 5 s timeout** (range 5.66–14.72 s). A `bash -x` profile with
   `PS4='+ $EPOCHREALTIME '` shows no single hot step. The cost is roughly 20 forked
@@ -94,6 +77,9 @@ its branch was unmerged. A later Edit was refused with `NO EDIT APPROVAL`. First
 ---
 
 ## Inferred
+
+_(Superseded by the Results below: (A) and the stale stamp are proven, and (B) is
+falsified as the sole cause. Kept as the pre-experiment record.)_
 
 Something terminates `check-plan-approved.sh` between the `mv` and the `rm`. Two rivals,
 both unproven:
@@ -124,14 +110,57 @@ trigger: session start, the previous session's merged branch, then a fresh appro
    remaining explanation is (B). It is then stated as a harness limit, and the fix must
    hold regardless of when the hook is killed.
 
+**Results (2026-09-22, on HEAD `f755920`):**
+
+- (1) `TestStaleStampAndKilledRetire::test_fresh_approval_survives_a_stale_stamp` **fails
+  on HEAD**: `assert 2 == 0`. The fresh approval is retired. Candidate confirmed.
+- (2) confirmed by the timing measurement above (4/4 runs > 5 s).
+- (3) falsified as the sole explanation (instance 3).
+- A kill-safety reproduction, `test_killed_retire_never_leaves_a_live_marker`, **fails on
+  HEAD**. A `python3` shim stalls the retire heredoc, the hook is killed there, and the
+  marker is still live (`AssertionError: a hook killed mid-retire must never leave a live
+  marker behind`). Both were committed as `xfail(strict=True)` in `a180ad2`, before any
+  fix.
+
+C-10: `scripts/enforcement/blast_radius.py` has no entry for `hooks/` or
+`.claude/settings.json` (grep: no match). No gated surface is touched.
+
 ---
 
 ## The fix
 
-_Pending the experiments._
+1. **`hooks/mark-plan-approved.sh`**: a fresh approval removes `.approved-branch-$KEY`.
+   A new approval supersedes any stamp, and `check-plan-approved.sh` late-binds a new one
+   on the next production edit (the existing design).
+2. **`hooks/lib/retire-approved-plan.sh`**: kill-safe ordering. The pointers are read with
+   builtins (`IFS= read -r`, no `cat` fork) and removed **first**. Only then come the
+   archive `mv`, manifest and receipt. A kill at any later point leaves "no approval"
+   (fail closed), never a live marker over a moved plan. It also drops two forks: a builtin
+   `${path##*/}` for `basename`, and an optional 4th `branch` arg that
+   `check-plan-approved.sh` now passes (`$CUR_BRANCH`) in place of a `git rev-parse`.
+   `cleanup-plan-on-merge.sh` keeps the 3-arg form and its fallback.
+3. **`.claude/settings.json`**: the `check-plan-approved.sh` timeout goes from 5 to 20. It
+   is a ceiling; the fast path is unaffected.
+
+**Stated limit (C-0).** This fixes *correctness*, not *speed*. Post-fix timing on a copy of
+the live state (retire path through to `PLAN RETIRED`, manifest written, pointers gone):
+**21.45, 8.53, 14.87 s**, on a machine carrying VS Code, WSL and other sessions. That is
+still ~15 forks at a variable 0.3–1 s. One run exceeded even the new 20 s ceiling. When
+that happens the killed hook's own edit proceeds (a timed-out hook is non-blocking), but
+the approval is already gone, so the *next* edit is refused. At most one edit slips
+through; the approval never survives. Cutting the fork count (one python call doing
+mkdir/mv/manifest/receipt with in-process path conversion) and the ~2 s per-edit fast
+path is filed separately as item 111. (An earlier post-fix timing, `5.44 / 2.46 / 3.31 s`,
+was a **setup error**: the plan file was written after the marker, so the hook returned
+`PLAN NOT APPROVED` without reaching the retire path. Discarded.)
 
 ---
 
 ## Acceptance bar
 
-_Pending._
+- `TestStaleStampAndKilledRetire` (2 tests): xfail-strict on `a180ad2`, passing after the
+  fix. The whole of `tests/test_plan_approval_scoping.py` passes (28).
+- Live: after this branch merges, the first edit on the next branch gets a clean
+  `PLAN RETIRED` with a `plan-archived` receipt written, and the next fresh approval
+  survives its first edit. To be observed by the kickoff branch and recorded in its
+  handoff.

@@ -206,7 +206,7 @@ if [ -n "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
           if [ -f "$LIB" ]; then
             # shellcheck source=hooks/lib/retire-approved-plan.sh
             . "$LIB"
-            retire_approved_plan "$PLANS_DIR" "$PROJECT_KEY" "$PROJECT_DIR"
+            retire_approved_plan "$PLANS_DIR" "$PROJECT_KEY" "$PROJECT_DIR" "$CUR_BRANCH"
           fi
           echo "PLAN RETIRED: branch '$STAMPED_BRANCH' has already merged (or no longer exists) — its approval was archived, not deleted." >&2
           echo "Write a plan and call ExitPlanMode to start the next task." >&2

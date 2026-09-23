@@ -906,7 +906,6 @@ class TestLibHelperExemption:
 
 
 class TestStaleStampAndKilledRetire:
-    @pytest.mark.xfail(strict=True, reason="item 110 repro; removed by the fix")
     def test_fresh_approval_survives_a_stale_stamp(self, tmp_path: Path) -> None:
         """Session N merges branch A; session N+1 gets a NEW approval, then
         edits on branch B. The stamp still names A (merged), and before the
@@ -940,7 +939,6 @@ class TestStaleStampAndKilledRetire:
         )
         assert plan_b.exists(), "the fresh plan must stay in place"
 
-    @pytest.mark.xfail(strict=True, reason="item 110 repro; removed by the fix")
     def test_killed_retire_never_leaves_a_live_marker(self, tmp_path: Path) -> None:
         """The retire path measured 5.66-14.72 s against a 5 s hook timeout;
         a killed hook is non-blocking, and before the fix it left the plan

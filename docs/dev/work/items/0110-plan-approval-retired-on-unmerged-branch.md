@@ -3,15 +3,20 @@ schema = 1
 id = 110
 kind = "item"
 title = "The plan-approval reconciler retired a live approval mid-branch: plan archived and marker removed while the approved branch was unmerged"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/witness-subagent-scope"]
+branches = ["fix/witness-subagent-scope", "fix/plan-approval-retired-mid-branch"]
 refs = [
   "hooks/check-plan-approved.sh",
   "docs/dev/diagnosis/plan-approval-branch-switch-gap.md",
   "docs/dev/work/items/0056-plan-retirement-half-completes-on-main.md",
 ]
 summary = "An approved plan was archived and its marker removed while its branch was unmerged; the next Edit hit NO EDIT APPROVAL."
+resolution = "Fixed on fix/plan-approval-retired-mid-branch (2026-09-22). Two proven causes. (1) The retire path in check-plan-approved.sh measured 5.66-14.72 s against a 5 s hook timeout; a timed-out hook is non-blocking and was killed after the plan mv but before the pointer rm, leaving a live marker over a moved plan. Fixed by kill-safe ordering in hooks/lib/retire-approved-plan.sh (pointers removed first, via builtins) and timeout 5 -> 20. (2) mark-plan-approved.sh never cleared the branch stamp, so a stamp from an already-merged branch retired a fresh approval on its first edit. Fixed by removing the stamp on approval. Stated limit: speed is not fixed (post-fix 8.5-21.5 s under load), so at most one edit can slip through on a killed hook; the approval itself never survives. Speed is item 111. Evidence: docs/dev/diagnosis/plan-approval-retired-mid-branch.md."
+verified_by = [
+  "tests/test_plan_approval_scoping.py::TestStaleStampAndKilledRetire (both xfail-strict on a180ad2, passing after the fix)",
+  "direct timing of hooks/check-plan-approved.sh on a copied pointer state: 4/4 pre-fix runs > 5 s (dossier Observed)",
+]
 ```
 
 **Observed (session `0ea1b8bf`, 2026-09-22).**
