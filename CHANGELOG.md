@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Epic C kickoff: design brief, UX audit, and pipeline fixes (`docs/epic-c-kickoff`, items 93, 95, 96)
+
+- **Fixed: the pipeline's implementer model is required (item 96).**
+  `.claude/workflows/n1-baseline.mjs` no longer defaults `implementerModel` to Opus. A
+  sprint stage without it is rejected by name. Epic B run 6 had silently run Opus against a
+  brief that prescribed Sonnet. The sprint-brief template's First move now carries a
+  copy-paste invocation that includes the model.
+- **Fixed: runbook step 9 no longer prunes sprint branches mid-epic.** Pruning a stamped
+  sprint branch retires the plan approval, and the next sprint's first edit is blocked.
+  The step contradicted the run-6 correction further down. Sprint branches are now kept
+  until the epic PR merges. Both behaviors are pinned by new tests.
+- **Recorded:** the owner's Epic C decisions (continuous window, item 93; the amended
+  mid-run witness recovery, item 95, which never uses `resumeFromRunId` for a hook block),
+  the ratified scope sentence (`docs/dev/handoffs/epic-c-design-brief.md`), the pre-epic
+  console UX audit (`docs/dev/reviews/epic-c-console-ux-audit.md`), and the C1a sprint
+  brief. Out-of-scope audit findings are filed as items 112 (the Since filter crashes the
+  console, reproduced) and 113 (owner triage).
+- `.isidium/` and `.agents/` are gitignored (machine-local isidium tooling).
+
 ### Fixed: a fresh plan approval could be retired mid-branch (`fix/plan-approval-retired-mid-branch`, item 110)
 
 - **Fixed: the retire path is kill-safe.** `check-plan-approved.sh`'s retire path measured

@@ -306,7 +306,10 @@ const N = 1
 
 const defaults = {
   stage: 'sprint',
-  implementerModel: 'opus',
+  // Item 96: NO default. Required for stage 'sprint' (guard below). A default
+  // silently won over run 6's brief, which prescribed Sonnet in prose while its
+  // First-move block omitted the arg, so Opus ran with nothing reporting it.
+  implementerModel: '',
   closerModel: 'sonnet',
   reviewerModel: 'opus',
   // Item 89 + fix/n1-scope-dedup: which close-out ceremony the closer runs is
@@ -374,6 +377,9 @@ if (cfg.stage === 'sprint') {
   cfg.closeoutKind = idx < count ? 'intra_epic' : 'terminal'
   if (cfg.closeoutKind === 'intra_epic' && !cfg.nextSprintBriefPath) {
     throw new Error("args.nextSprintBriefPath is required when a successor sprint exists (epicSprintIndex < epicSprintCount) — the closer writes the NEXT sprint's brief there, and the pipeline never invents its own paths")
+  }
+  if (typeof cfg.implementerModel !== 'string' || !cfg.implementerModel.trim()) {
+    throw new Error(`args.implementerModel is required for stage "sprint" — pass the model the epic brief's sprint table prescribes; it is never defaulted (item 96: run 6 ran Opus against a Sonnet brief). got ${JSON.stringify(cfg.implementerModel)}`)
   }
 } else {
   // finalize commits only; no ceremony is run, and the closer prompt that

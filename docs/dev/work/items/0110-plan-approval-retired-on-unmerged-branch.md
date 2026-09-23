@@ -97,3 +97,16 @@ removal, i.e. a reproduction in a throwaway worktree.
 **Why it matters now.** Epic C runs overnight as an unattended pipeline. A retired
 approval stops every subagent `Edit` with `NO EDIT APPROVAL`, and the run escalates or
 dies. Related: item 56 (retirement half-completes on main).
+
+## Updates
+
+### 2026-09-22 22:48 local — live check after merge (PR #144, `a078ca1`)
+
+The first Edit on `docs/epic-c-kickoff`, whose stamp named the merged and deleted
+`fix/plan-approval-retired-mid-branch`, drew a clean
+`PLAN RETIRED: branch 'fix/plan-approval-retired-mid-branch' has already merged …` on the
+first attempt. Afterwards: archive `20260923T054821Z-142537ca4cdd` holds the plan
+**and** `manifest.json`; the ledger row
+`{"event": "plan-archived", …, "branch": "docs/epic-c-kickoff", "archive_id": "20260923T054821Z-142537ca4cdd", …}`
+was written; no pointers were left. This is the first complete, receipted retirement of the
+session. The fresh approval granted afterwards survived its first edits.

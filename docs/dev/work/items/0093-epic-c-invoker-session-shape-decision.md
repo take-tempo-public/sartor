@@ -3,16 +3,17 @@ schema = 1
 id = 93
 kind = "item"
 title = "Epic C planning must deliberately choose the invoker session shape: per-sprint fresh sessions vs continuous window with the step-9 tripwire"
-status = "blocked"
-blocked_on = "owner decision at Epic C planning — the choice lives in the epic's own authorization-record scope sentence"
+status = "closed"
 decision_owner = "user"
-branches = ["fix/n1-invoker-context-budget"]
+branches = ["fix/n1-invoker-context-budget", "docs/epic-c-kickoff"]
 refs = [
   "docs/dev/diagnosis/n1-invoker-context-budget.md",
   "docs/dev/n1-baseline-pipeline.md",
   "docs/dev/epic-a-chain-design-corrections.md",
 ]
 summary = "Run 5 reproduced the accumulation signature at the INVOKER level; the one deterministic fix is the session boundary."
+resolution = "Decided by the owner 2026-09-22 (AskUserQuestion selection, session 0ea1b8bf): (b) continuous window with runbook step 9's external-signal tripwire. Recorded in Epic C's authorization record, docs/dev/handoffs/epic-c-design-brief.md, together with the owner-ratified scope sentence (its single home)."
+closure_exception = "Owner decision, not a defect fix: the decision itself is the artifact (owner amodal1, 2026-09-22, recorded in docs/dev/handoffs/epic-c-design-brief.md)"
 ```
 
 **Origin.** Run 5 (session `b0769daa`, 2026-08-13) stopped at the B1b sprint boundary

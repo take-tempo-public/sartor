@@ -3,9 +3,9 @@ schema = 1
 id = 96
 kind = "item"
 title = "Sprint briefs prescribe an implementer model in prose while their copy-paste First-move block omits the arg, so the script default silently wins"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/ats-conformance"]
+branches = ["feat/ats-conformance", "docs/epic-c-kickoff"]
 refs = [
   "docs/dev/handoffs/epic-b-b2-brief.md",
   "docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md",
@@ -13,6 +13,10 @@ refs = [
   "docs/dev/RELEASE_ARC.md",
 ]
 summary = "Following a brief's First-move block exactly produces a model the same brief's prose forbids."
+resolution = "Fixed on docs/epic-c-kickoff (2026-09-22), option 1. n1-baseline.mjs has no implementerModel default; a sprint stage without it (or with an empty one) is rejected by name. The guard sits after the position/next-brief guards so their diagnostics are unchanged. EPIC_SPRINT_BRIEF_TEMPLATE.md's First move now carries a copy-paste invocation that includes implementerModel; runbook Roles row and Args reference updated."
+verified_by = [
+  "tests/test_n1_pipeline.py (args-normalization test, new no-implementerModel arm: fails on a078ca1, passes after)",
+]
 ```
 
 **The defect.** `epic-b-b2-brief.md` §"Sprint identity" prescribes a **Sonnet**

@@ -2095,3 +2095,17 @@ subagent payloads (`agent_id` present).
 `governance-extraction.md:135-138`. Both state only that the witness is Claude Code only by
 nature. That claim is unchanged, and neither page described the old subagent limit.
 `.last_ingest_sha` was not advanced (item 98).
+
+## 2026-09-23 — scoped check, verified no-edit (`docs/epic-c-kickoff`)
+
+Wiki-relevant files touched: `.gitignore` (adds `.isidium/` and `.agents/`) and
+`docs/dev/RELEASE_ARC.md` (one execution-mode paragraph under §"Epic C"; sprint scope
+unchanged).
+
+**Pages edited (0). Pages verified no-edit.** I grepped `docs/wiki/pages/` for
+`RELEASE_ARC`, `gitignore`, `epic/c-diagnostics` and `isidium`.
+`engineering-workstreams.md:70-79` names Epic C only as an entry in RELEASE_ARC's epic list
+(unchanged) and defers to RELEASE_ARC as authoritative. No page describes Epic C's
+execution mode or the ignored directories. `diagnostics-console.md` covers the console
+itself, and this branch changes no console code. `.last_ingest_sha` was not advanced
+(item 98).

@@ -555,9 +555,11 @@ class TestScriptStructure:
         # default; item 84, tenth failure).
         as_string = run(
             '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
-            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md"}\''
+            '"epicSprintIndex":2,"epicSprintCount":3,"nextSprintBriefPath":"c.md",'
+            '"implementerModel":"sonnet"}\''
         )
         assert as_string.returncode == 0, as_string.stderr
+        assert '"implementerModel":"sonnet"' in as_string.stdout
         assert '"sprintBriefPath":"a.md"' in as_string.stdout
         assert '"epicBriefPath":"b.md"' in as_string.stdout
         assert '"stage":"sprint"' in as_string.stdout, "the real defaults must apply"
@@ -570,7 +572,7 @@ class TestScriptStructure:
         # index == count is the epic's LAST sprint: terminal, no next brief.
         as_object = run(
             "{ sprintBriefPath: 'a.md', epicBriefPath: 'b.md',"
-            " epicSprintIndex: 3, epicSprintCount: 3 }"
+            " epicSprintIndex: 3, epicSprintCount: 3, implementerModel: 'opus' }"
         )
         assert as_object.returncode == 0, as_object.stderr
         assert '"sprintBriefPath":"a.md"' in as_object.stdout
@@ -650,6 +652,21 @@ class TestScriptStructure:
         assert "nextSprintBriefPath" in intra_no_next.stderr, (
             f"expected the missing-arg guard by name, got: {intra_no_next.stderr[:200]}"
         )
+
+        # Item 96: the implementer model is REQUIRED for stage 'sprint', never
+        # defaulted. Run 6 ran an Opus implementer against a brief prescribing
+        # Sonnet because the First-move block omitted the arg and a default won.
+        for model_literal in ("", ',"implementerModel":""'):
+            no_model = run(
+                '\'{"sprintBriefPath":"a.md","epicBriefPath":"b.md",'
+                f'"epicSprintIndex":3,"epicSprintCount":3{model_literal}}}\''
+            )
+            assert no_model.returncode != 0, (
+                f"stage 'sprint' without implementerModel ({model_literal!r}) must fail loudly"
+            )
+            assert "implementerModel is required" in no_model.stderr, (
+                f"expected the model guard by name, got: {no_model.stderr[:200]}"
+            )
 
         # Nonsense positions are rejected by the same guard: index past count,
         # zero, and non-integer each name the position args.

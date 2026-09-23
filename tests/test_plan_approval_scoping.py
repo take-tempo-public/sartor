@@ -1021,3 +1021,66 @@ class TestStaleStampAndKilledRetire:
             "a hook killed mid-retire must never leave a live marker behind"
         )
         assert not (plans / f".approved-branch-{key}").exists()
+
+    def test_epic_sprint_boundary_late_binds_when_sprint_branch_is_kept(
+        self, tmp_path: Path
+    ) -> None:
+        """Runbook step 9 (Epic C, continuous window): sprint A ff-merges into
+        the EPIC branch, and sprint B is cut off the epic tip. While A's branch
+        still exists (not pruned) and is not on main, the approval must carry
+        over to B with no re-approval -- merged-to-epic is not merged-to-main."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+        _git(["checkout", "-q", "-b", "epic/c-test"], cwd=repo)
+        _git(["checkout", "-q", "-b", "fix/sprint-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "sprint A"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "epic/c-test"], cwd=repo)
+        _git(["merge", "-q", "--ff-only", "fix/sprint-a"], cwd=repo)
+        _git(["checkout", "-q", "-b", "feat/sprint-b"], cwd=repo)
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited))
+        assert r.returncode == 0, (
+            f"an epic sprint boundary must not retire the approval "
+            f"(stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+        assert plan.exists()
+
+    def test_epic_sprint_boundary_retires_if_sprint_branch_is_pruned(
+        self, tmp_path: Path
+    ) -> None:
+        """The hazard the Epic C runbook must avoid: pruning the ff-merged
+        sprint branch before the next sprint's first edit retires the approval
+        (branch gone -> archive), so sprint B's implementer hits PLAN RETIRED."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+        _git(["checkout", "-q", "-b", "epic/c-test"], cwd=repo)
+        _git(["checkout", "-q", "-b", "fix/sprint-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "sprint A"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "epic/c-test"], cwd=repo)
+        _git(["merge", "-q", "--ff-only", "fix/sprint-a"], cwd=repo)
+        _git(["branch", "-d", "fix/sprint-a"], cwd=repo)
+        _git(["checkout", "-q", "-b", "feat/sprint-b"], cwd=repo)
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited))
+        assert r.returncode == 2 and "PLAN RETIRED" in r.stderr, (
+            f"pruning the sprint branch is expected to retire the approval "
+            f"(stdout={r.stdout!r} stderr={r.stderr!r})"
+        )

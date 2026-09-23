@@ -105,3 +105,15 @@ given after the run-6 `hook_block` stop and after the blast-radius analysis of f
 item 94 in-project was presented. **Epic B is NOT complete** — B2 remains unimplemented
 — so this item does not supersede the epic; it reframes how the *remaining* work might
 be driven.
+
+### 2026-09-22 — owner direction: C/D/E finish as long runs, not factory cards (`docs/epic-c-kickoff`)
+
+The owner directed on 2026-09-22 (recorded in the `feat-install-onboarding-preflight` and
+`fix-ci-wait-required-from-protection` handoffs; restated here as the reconciliation the
+latter owed) that **Epics C, D and E finish as long runs under the original epic design**
+(RELEASE_ARC §"v1.1.0 Final March" cadence and the N=1 pipeline epic construction), **not**
+as isidium factory cards. That supersedes the round-7 "C/D/E migrate into the card system"
+decision for the rest of v1.1.0. isidium-factory is still being built and its cards are
+still changing. This item stays **blocked**: whether orchestration moves out of sartor
+*after* v1.1.0 is still the owner's open design question. Epic C's own execution mode is
+recorded in `docs/dev/handoffs/epic-c-design-brief.md`.
