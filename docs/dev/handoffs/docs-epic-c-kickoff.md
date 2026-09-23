@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=0ea1b8bf-913f-48d6-a7f1-5e54cf8769b3 branch=docs/epic-c-kickoff commit=1e2500c actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-09-22 -->
+<!-- provenance: schema=1 session=0ea1b8bf-913f-48d6-a7f1-5e54cf8769b3 branch=docs/epic-c-kickoff commit=9776284 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-09-22 -->
 
 # Agent handoff: `docs/epic-c-kickoff`
 
@@ -75,6 +75,16 @@ for the whole branch.
   **Sprint branches are now kept until the epic PR merges.** Both behaviors are pinned by
   `test_epic_sprint_boundary_late_binds_when_sprint_branch_is_kept` and
   `…_retires_if_sprint_branch_is_pruned`.
+- **Gate terminal line on refusal (found this session).** `scripts/gate.py`'s item-108
+  memory preflight refused (0.96 GB free, below the 1.00 GB floor) **without** printing
+  either terminal line. Runbook step 3's wait loop (`^gate: (all steps passed|FAILED)`)
+  therefore spun silently, 30 minutes observed. An overnight invoker would have hung
+  forever. **Fixed:** a refusal ends with `gate: FAILED at \`memory preflight\` (exit 1)`,
+  pinned by `test_refusal_ends_with_the_standard_terminal_line`, which failed on HEAD.
+  **Memory headroom on this machine is marginal** (0.94–0.96 GB free with VS Code, WSL and
+  several Claude sessions open). Before the overnight run, free memory (for example
+  `wsl --shutdown` and closing idle sessions). Otherwise every sprint gate will refuse,
+  now loudly rather than silently.
 - **`docs/dev/handoffs/epic-c-design-brief.md`**: the authorization record.
   - Owner decisions 2026-09-22: continuous window (item 93, closed); the amended witness
     recovery (item 95, closed; its text lives in the runbook §Escalation).
