@@ -28,6 +28,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -896,3 +897,129 @@ class TestLibHelperExemption:
         hook_stems = {p.stem for p in HOOKS_DIR.glob("*.sh")}
         assert "retire-approved-plan" not in hook_stems
         assert LIB_HELPER.is_file()
+
+
+# --------------------------------------------------------------------------- #
+# Item 110 -- a fresh approval retired mid-branch. Evidence:
+# docs/dev/diagnosis/plan-approval-retired-mid-branch.md.
+# --------------------------------------------------------------------------- #
+
+
+class TestStaleStampAndKilledRetire:
+    @pytest.mark.xfail(strict=True, reason="item 110 repro; removed by the fix")
+    def test_fresh_approval_survives_a_stale_stamp(self, tmp_path: Path) -> None:
+        """Session N merges branch A; session N+1 gets a NEW approval, then
+        edits on branch B. The stamp still names A (merged), and before the
+        fix it retired the approval it never belonged to (item 110, 19:53)."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+
+        _git(["checkout", "-q", "-b", "fix/task-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "task A work"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "main"], cwd=repo)
+        _git(["merge", "-q", "--no-ff", "-m", "Merge pull request #1", "fix/task-a"], cwd=repo)
+
+        # The next session: a fresh plan, a fresh ExitPlanMode -- then a new branch.
+        plan_b = home / ".claude" / "plans" / "plan-b.md"
+        _approve_plan(home, str(repo), plan_b)
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited))
+        assert r.returncode == 0, (
+            f"a fresh approval must not be retired by a stale stamp "
+            f"(stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+        assert plan_b.exists(), "the fresh plan must stay in place"
+
+    @pytest.mark.xfail(strict=True, reason="item 110 repro; removed by the fix")
+    def test_killed_retire_never_leaves_a_live_marker(self, tmp_path: Path) -> None:
+        """The retire path measured 5.66-14.72 s against a 5 s hook timeout;
+        a killed hook is non-blocking, and before the fix it left the plan
+        moved but the marker live. Here a `python3` shim stalls the heredoc
+        step (`python3 -`) until released, and the hook is killed there."""
+        real_python = shutil.which("python3") or shutil.which("python")
+        assert real_python, "python3 must be resolvable for this test"
+        shim_dir = tmp_path / "shim"
+        shim_dir.mkdir()
+        reached = tmp_path / "reached-heredoc"
+        release = tmp_path / "release"
+        shim = shim_dir / "python3"
+        shim.write_text(
+            "#!/usr/bin/env bash\n"
+            'if [ "$1" = "-" ]; then\n'
+            f'  : > "{reached.as_posix()}"\n'
+            "  for _ in $(seq 1 300); do\n"
+            f'    [ -e "{release.as_posix()}" ] && exit 0\n'
+            "    sleep 0.1\n"
+            "  done\n"
+            "  exit 0\n"
+            "fi\n"
+            f'exec "{Path(real_python).as_posix()}" "$@"\n',
+            encoding="utf-8",
+            newline="\n",
+        )
+        shim.chmod(0o755)
+
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+        _git(["checkout", "-q", "-b", "fix/task-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "work"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "main"], cwd=repo)
+        _git(["merge", "-q", "--no-ff", "-m", "merge", "fix/task-a"], cwd=repo)
+        _git(["checkout", "-q", "fix/task-a"], cwd=repo)
+
+        env = dict(os.environ)
+        env["HOME"] = str(home)
+        env["CLAUDE_PROJECT_DIR"] = str(repo)
+        env["CLAUDE_CODE_SESSION_ID"] = "sess-item-110"
+        env["PATH"] = str(shim_dir) + os.pathsep + env.get("PATH", "")
+        proc = subprocess.Popen(  # noqa: S603 - fixed argv, test-authored input
+            ["bash", str(CHECK)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        try:
+            assert proc.stdin is not None
+            proc.stdin.write(_payload_edit(edited).encode("utf-8"))
+            proc.stdin.close()
+            for _ in range(600):
+                if reached.exists() or proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+            assert reached.exists(), "the retire path never reached its python3 step"
+            proc.kill()  # the harness's timeout, at the slowest step
+            proc.wait(timeout=30)
+        finally:
+            release.touch()
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=30)
+
+        key = _project_key(str(repo))
+        plans = home / ".claude" / "plans"
+        assert not plan.exists(), "the retire path had reached its archive step"
+        assert not (plans / f".approved-{key}").exists(), (
+            "a hook killed mid-retire must never leave a live marker behind"
+        )
+        assert not (plans / f".approved-branch-{key}").exists()
