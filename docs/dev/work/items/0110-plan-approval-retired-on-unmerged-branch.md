@@ -46,7 +46,39 @@ summary = "An approved plan was archived and its marker removed while its branch
   `PLAN RETIRED:` message was seen, although `check-plan-approved.sh`'s retire path prints
   one and exits 2.
 
-**Inferred (UNPROVEN).** The strongest lead is a PreCompact/SessionStart path (a
+- **Counter-observation: a later compaction did NOT remove the marker.** The same session
+  compacted again at `2026-09-23T04:06:07Z` (21:06 local; ledger row on this branch). At
+  21:1x, `.approved-C--Dev-sartor` (20:47:54), `.current-…` (20:47:37) and
+  `.approved-branch-C--Dev-sartor` (20:59:06) were all still present and the plan file was
+  still in place. So compaction alone does not remove the marker. If the 19:58 coincidence
+  is causal, it needs another condition, such as the stale-stamp state present only before
+  the first stamp of this session.
+
+- **The archive dir has no `manifest.json`.** `ls` of
+  `archive/20260923T025313Z-142537ca4cdd/` shows only the plan file.
+  `retire_approved_plan` (`hooks/lib/retire-approved-plan.sh`) writes the manifest and the
+  ledger receipt in one `python3` heredoc, *after* the `mv` and *before* `rm -f` of the
+  pointers. `check-plan-approved.sh` is wired with `"timeout": 5`
+  (`.claude/settings.json:33-34`).
+
+**Inferred, leading hypothesis (UNPROVEN, 2026-09-22):**
+
+- The hook was killed by its 5 s timeout partway through `retire_approved_plan`: after the
+  `mv`, before the python step and the `rm`.
+- A timed-out hook is non-blocking, so the Write proceeded. That explains the successful
+  dossier Write, the missing manifest, the missing receipt, and the missing
+  `PLAN RETIRED:` message.
+- A later invocation found the plan already moved. It skipped the archive (no dir, no
+  basename, so no receipt), reached `rm -f`, and left no trace. That fits item 56's
+  "dies mid-function" shape exactly.
+- The trigger would be the previous session's **stale stamp**, which named the merged and
+  pruned `fix/ci-wait-required-from-protection` (branch gone → `_should_archive` true). It
+  was reconciled on this session's first production edit, *after* the new approval.
+- That is a second defect: a stale stamp retires an approval it never belonged to.
+- The instrument that settles it: time the hook end to end in a throwaway worktree with a
+  stale stamp. Is the retire path >5 s under load? Does a fresh approval get archived?
+
+Earlier lead, for the 19:58 removal: is a PreCompact/SessionStart path (a
 compaction-triggered session restart running plan retirement) that removes the marker. That
 is suggested by the 19:58 coincidence and has not been read in code.
 Separately, for the 19:53 archive: A stamp left by the previous session's branch
