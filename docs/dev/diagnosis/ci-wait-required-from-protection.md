@@ -44,6 +44,17 @@ exit 0 is a false merge authorization.
   ~10–16 s setup is the suite's first-test session setup, which existing tests like
   `TestClassify::test_all_pass_is_green` pay too (9.28 s).
 
+- **After the fix, live and read-only** (2026-09-22,
+  `python -m scripts.ci_wait 135 --no-rerun-scan --timeout-minutes 2`, merged PR #135):
+  the first line was `ci-wait: 6 required context(s) from branch protection on PR #135`,
+  followed by the six names. `required (final)` held all eight rows (6 contexts, the two
+  `Analyze` names twice each), all `pass`. The verdict was `ci-wait: GREEN (exit 0)`. So
+  the protection read works against the real API with the maintainer's token.
+- **A side finding from the same run:** piped through `Select-Object`, the wrapper's own
+  announce lines printed *after* `gh --watch`'s output. Python block-buffers a piped
+  stdout, while the un-captured `gh` child writes directly. Fixed by `flush=True` on the
+  pre-watch line. This is a readability issue, not a verdict issue.
+
 ---
 
 ## Falsified

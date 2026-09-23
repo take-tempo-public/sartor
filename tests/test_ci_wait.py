@@ -348,23 +348,136 @@ def _install(monkeypatch: pytest.MonkeyPatch, fake: _FakeGh) -> list[list[str]]:
         return subprocess.CompletedProcess(argv, 0)
 
     monkeypatch.setattr(ci_wait, "_gh", fake)
-    monkeypatch.setattr(ci_wait.subprocess, "run", _watch)
+    # The same module object `scripts.ci_wait` calls `subprocess.run` through.
+    monkeypatch.setattr(subprocess, "run", _watch)
     return watches
+
+
+def _pr135_before_registration() -> _FakeGh:
+    analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK) * 2
+    return _FakeGh(
+        registered=analyze + _rows(_LATE, "pending", _CI_LINK),
+        required=analyze,
+        protection=_protection_payload(),
+    )
 
 
 class TestRunVerdictAgainstProtection:
     """Item 109: "required" is branch protection's context list, not whatever registered."""
 
-    @pytest.mark.xfail(strict=True, reason="item 109 reproduction; fixed in the next commit")
     def test_pr135_shape_is_not_green(self, monkeypatch: pytest.MonkeyPatch, clock: _Clock) -> None:
-        analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK) * 2
-        fake = _FakeGh(
-            registered=analyze + _rows(_LATE, "pending", _CI_LINK),
-            required=analyze,
-            protection=_protection_payload(),
-        )
-        _install(monkeypatch, fake)
+        """The reproduction (xfail on the pre-fix commit): never GREEN, pending at deadline."""
+        watches = _install(monkeypatch, _pr135_before_registration())
         code = ci_wait._run(ci_wait._parse_args(["135", "--timeout-minutes", "5"]))
         assert code != EXIT_GREEN, (
             "ci_wait reported GREEN while 4 protected contexts were pending (item 109)"
         )
+        assert code == EXIT_PENDING
+        # Bounded re-watch: a floor-length pause between watches, never past the deadline.
+        assert clock.sleeps and all(s >= ci_wait._REWATCH_FLOOR_S for s in clock.sleeps)
+        assert len(watches) == len(clock.sleeps) + 1
+        assert clock.now < 5 * 60
+
+    def test_rewatches_until_late_checks_register_then_green(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        fake = _pr135_before_registration()
+        watches = _install(monkeypatch, fake)
+        all_pass = _rows(_ANALYZE, "pass", _CODEQL_LINK) + _rows(_LATE, "pass", _CI_LINK)
+
+        def _register(_: float) -> None:
+            fake.registered = fake.required = all_pass
+
+        monkeypatch.setattr(ci_wait, "_sleep", _register)
+        code = ci_wait._run(ci_wait._parse_args(["135"]))
+        assert code == EXIT_GREEN
+        assert len(watches) == 2
+
+    def test_nothing_registered_yet_is_pending_not_error(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        """`gh`'s "no checks reported" (empty stdout) is a state, and it is not green."""
+        fake = _FakeGh(registered=[], required=[], protection=_protection_payload())
+
+        def _no_checks(args: list[str], *, timeout: float | None = None) -> object:
+            if args[:2] == ["pr", "checks"]:
+                return subprocess.CompletedProcess(
+                    args, 1, "", "no checks reported on the 'fix/x' branch"
+                )
+            return fake(args, timeout=timeout)
+
+        _install(monkeypatch, fake)
+        monkeypatch.setattr(ci_wait, "_gh", _no_checks)
+        assert ci_wait._run(ci_wait._parse_args(["135", "--timeout-minutes", "2"])) == (
+            EXIT_PENDING
+        )
+
+    def test_protected_failure_not_flagged_required_by_gh_is_failed(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK)
+        fake = _FakeGh(
+            registered=analyze
+            + _rows(_LATE[:1], "fail", _CI_LINK)
+            + _rows(_LATE[1:], "pass", _CI_LINK),
+            required=analyze,
+            protection=_protection_payload(),
+        )
+        _install(monkeypatch, fake)
+        assert ci_wait._run(ci_wait._parse_args(["135"])) == EXIT_FAILED
+
+    def test_unreadable_protection_is_an_error_before_any_watch(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        """Unknown required set: exit 2, never a verdict, and no watch is started."""
+        fake = _FakeGh(registered=[], required=[], protection=None)
+        watches = _install(monkeypatch, fake)
+        assert ci_wait.main(["135"]) == EXIT_ERROR
+        assert watches == []
+
+
+class TestParseProtectedContexts:
+    def test_real_payload_yields_the_six_contexts(self) -> None:
+        assert ci_wait.parse_protected_contexts(_protection_payload()) == frozenset(_PROTECTED)
+
+    def test_contexts_and_checks_are_unioned(self) -> None:
+        payload = json.dumps({"contexts": ["a"], "checks": [{"context": "b", "app_id": 1}]})
+        assert ci_wait.parse_protected_contexts(payload) == frozenset({"a", "b"})
+
+    def test_no_contexts_raises(self) -> None:
+        """ "Nothing required" must never become "green"."""
+        with pytest.raises(ValueError, match="no required status checks"):
+            ci_wait.parse_protected_contexts('{"strict": true, "contexts": [], "checks": []}')
+
+    def test_non_object_raises(self) -> None:
+        with pytest.raises(ValueError, match="expected a JSON object"):
+            ci_wait.parse_protected_contexts("[]")
+
+
+class TestReconcileRequired:
+    PROTECTED = frozenset({"a", "b"})
+
+    def test_all_present(self) -> None:
+        rows = [_check("a", "pass"), _check("b", "pending"), _check("x", "fail")]
+        required = ci_wait.reconcile_required(self.PROTECTED, [], rows)
+        assert [c.name for c in required] == ["a", "b"]
+
+    def test_missing_context_becomes_a_pending_row(self) -> None:
+        required = ci_wait.reconcile_required(self.PROTECTED, [], [_check("a", "pass")])
+        assert required[-1] == Check(
+            name="b", state=ci_wait.NOT_REGISTERED, bucket="pending", link=""
+        )
+        assert classify(required)[0] == EXIT_PENDING
+
+    def test_gh_required_outside_protection_is_kept(self) -> None:
+        """A ruleset-required check protection does not list still gates: widen, never narrow."""
+        extra = _check("ruleset-check", "fail")
+        rows = [_check("a", "pass"), _check("b", "pass"), extra]
+        required = ci_wait.reconcile_required(self.PROTECTED, [extra], rows)
+        assert extra in required
+        assert classify(required)[0] == EXIT_FAILED
+
+    def test_duplicate_names_all_count(self) -> None:
+        rows = [_check("a", "pass"), _check("a", "fail"), _check("b", "pass")]
+        required = ci_wait.reconcile_required(self.PROTECTED, [], rows)
+        assert classify(required)[0] == EXIT_FAILED

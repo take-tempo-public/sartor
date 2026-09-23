@@ -5,7 +5,8 @@ three places with nothing keeping them in sync. This module is the same move for
 half of the close-out: **waiting for a PR's checks**. Before it, every session hand-rolled
 its own watcher, and two of them failed in the same expensive way.
 
-Two observed failures motivate it (both real, both on this repo):
+Two observed failures motivated it (both real, both on this repo); a third, below the
+design commitments, motivated the branch-protection read:
 
 1. **Silent watchers.** Two 30-minute `Monitor` watches on PR #99 emitted *zero* events
    while a required check was already red — ~1 hour lost, and the silence read as "still
@@ -28,8 +29,17 @@ Two observed failures motivate it (both real, both on this repo):
 
 Design commitments, each traceable to one of the above:
 
-* **No poll loop is written here.** ``gh pr checks --watch --required --fail-fast``
-  already does this correctly; a hand-rolled loop is the thing being replaced.
+* **The waiting is ``gh``'s, not ours.** ``gh pr checks --watch --required --fail-fast``
+  does the polling. The one loop here re-enters that watch, and it exists for a gap
+  ``gh`` cannot see (below). It is bounded by the single ``--timeout-minutes`` deadline and
+  pauses at least ``_REWATCH_FLOOR_S`` between watches, so it cannot spin.
+* **"Required" means branch protection, not "whatever has registered".** (Item 109, PR #135:
+  ``--required`` only knows about check runs *already registered* on the PR. The CI
+  workflow's jobs registered minutes after ``gh pr update-branch``, ``--watch`` returned once
+  the four ``Analyze`` jobs passed, and the wrapper said GREEN with 4 of 6 protected
+  contexts still pending.) The required set is the base branch's protection contexts,
+  read once per run. A protected context with no registered check counts as *pending*.
+  If the rule can't be read, the result is "unknown" (exit 2), never green.
 * **Silence is structurally impossible.** `main` prints exactly one terminal
   ``ci-wait: <VERDICT> (exit N)`` line from a ``finally`` block — including on an
   unexpected exception.
@@ -41,12 +51,18 @@ Design commitments, each traceable to one of the above:
 * **An unverifiable rerun scan never reads as clean.** A log fetch that fails exits 2
   rather than reporting green.
 
+A third observed failure (item 109, above) motivates the protection read:
+
+3. **A verdict from a partial required set.** Green was computed over the checks that had
+   registered by the time the watch started, not over the checks the merge actually needs.
+
 Exit codes:
 
 ===  ============================================================================
   0  all required checks green, and zero reruns were absorbed
   1  a required check failed, was cancelled, or reported `skipping`
-  2  wrapper error — `gh` missing, PR unresolvable, or the rerun scan could not run
+  2  wrapper error — `gh` missing, PR unresolvable, branch protection unreadable, or
+     the rerun scan could not run
   3  all required checks green, **but** reruns were absorbed — stop and look
   8  still pending when the deadline expired
 ===  ============================================================================
@@ -60,6 +76,12 @@ Usage::
     python -m scripts.ci_wait            # the current branch's PR
     python -m scripts.ci_wait 101
     python -m scripts.ci_wait 101 --timeout-minutes 45
+
+Known limit: ``…/protection/required_status_checks`` is a branch-protection endpoint, and
+those are documented as needing repository administration access. That was verified only
+for the maintainer's own token, never for a non-admin one. If a caller cannot read it,
+every run exits 2 ("required set unknown"). That is the fail-closed direction, but it
+would mean this wrapper certifies green only for a maintainer.
 """
 
 from __future__ import annotations
@@ -69,8 +91,10 @@ import json
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from urllib.parse import quote
 
 EXIT_GREEN = 0
 EXIT_FAILED = 1
@@ -103,6 +127,19 @@ _RERUN_DETAIL_RE = re.compile(r"(\S+::\S+) - (\d+) attempt\(s\) failed")
 
 _PASSING_BUCKETS = frozenset({"pass"})
 _PENDING_BUCKETS = frozenset({"pending"})
+
+# `state` of the synthetic row standing in for a protected context with no check run.
+NOT_REGISTERED = "NOT REGISTERED"
+
+# Minimum pause between re-entered watches. While a protected context is unregistered,
+# `gh --watch` returns at once (everything it *can* see is settled), so without a floor the
+# re-watch would cost three `gh` round-trips per `--interval` for however long CI takes to
+# register. 30 s keeps that to ~6 calls/minute while adding at most 30 s of latency.
+_REWATCH_FLOOR_S = 30.0
+
+# Clock seams, module-level so tests substitute a fake clock instead of waiting.
+_monotonic = time.monotonic
+_sleep = time.sleep
 
 
 @dataclass(frozen=True)
@@ -195,6 +232,50 @@ def scan_reruns(log_text: str) -> tuple[list[int], list[tuple[str, int]]]:
     return declared, sorted(tests.items())
 
 
+def parse_protected_contexts(payload: str) -> frozenset[str]:
+    """Parse `GET .../branches/<base>/protection/required_status_checks` into context names.
+
+    Takes the union of the legacy ``contexts`` list and ``checks[].context``: GitHub returns
+    both and either can be the populated one. An empty result raises. A base branch with
+    no required checks has nothing for this wrapper to certify, and "nothing required"
+    must not turn into "green".
+    """
+    data = json.loads(payload)
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"expected a JSON object from the protection endpoint, got {type(data).__name__}"
+        )
+    names = {str(c) for c in data.get("contexts") or []}
+    names |= {str(c.get("context", "")) for c in data.get("checks") or [] if isinstance(c, dict)}
+    names.discard("")
+    if not names:
+        raise ValueError("branch protection lists no required status checks")
+    return frozenset(names)
+
+
+def reconcile_required(
+    protected: frozenset[str], gh_required: Sequence[Check], everything: Sequence[Check]
+) -> list[Check]:
+    """The required-check set a merge actually needs (item 109).
+
+    * every registered row whose name is a protected context, **including duplicates**
+      (CodeQL registers each `Analyze` job once per triggering event, and all of them
+      must pass, exactly as `gh --required` already treats them);
+    * any row `gh --required` marks required that protection does not list (e.g. a
+      repository ruleset), so the set only ever widens;
+    * one synthetic `pending` row per protected context with no registered check, so
+      `classify` can never call a partial set green.
+    """
+    required = [c for c in everything if c.name in protected]
+    required += [c for c in gh_required if c.name not in protected]
+    registered = {c.name for c in everything} | {c.name for c in gh_required}
+    required += [
+        Check(name=name, state=NOT_REGISTERED, bucket="pending", link="")
+        for name in sorted(protected - registered)
+    ]
+    return required
+
+
 def classify(required: Sequence[Check]) -> tuple[int, list[Check]]:
     """Map the required-check set to a verdict exit code plus the offending rows.
 
@@ -233,18 +314,56 @@ def _gh_checks(pr_args: list[str], *, required: bool) -> list[Check]:
     "checks pending" and exits nonzero on failure — both are states this wrapper must
     report, not states it may discard. So stdout is parsed whenever it is non-empty, and
     only an unparseable/empty payload raises.
+
+    One empty payload is a real state, not a failure: `gh`'s "no checks reported" (a PR
+    whose checks have not registered yet). That becomes `[]`. It is safe *only because*
+    `reconcile_required` turns every unregistered protected context into a pending row,
+    so an empty list can no longer reach `classify` as a vacuous green.
     """
     args = ["pr", "checks", *pr_args, "--json", "name,state,bucket,link"]
     if required:
         args.append("--required")
     result = _gh(args)
     stdout = result.stdout.strip()
+    if not stdout and "no checks reported" in result.stderr:
+        return []
     if not stdout:
         raise RuntimeError(
             f"`gh {' '.join(args)}` produced no JSON (exit {result.returncode}): "
             f"{result.stderr.strip() or '<no stderr>'}"
         )
     return parse_checks(stdout)
+
+
+def _protected_contexts(pr_args: list[str]) -> frozenset[str]:
+    """Read the PR base branch's required status-check contexts. Fetched once per run.
+
+    Any failure raises (exit 2). An unreadable rule means the required set is *unknown*,
+    and unknown must never be reported as green (item 109's fail-closed direction).
+    `{owner}/{repo}` is `gh api`'s own placeholder for the current repository.
+    """
+    view = _gh(["pr", "view", *pr_args, "--json", "baseRefName"])
+    base = ""
+    if view.returncode == 0 and view.stdout.strip():
+        data = json.loads(view.stdout)
+        if isinstance(data, dict):
+            base = str(data.get("baseRefName", ""))
+    if not base:
+        raise RuntimeError(
+            f"could not resolve the PR's base branch: {view.stderr.strip() or '<no stderr>'}"
+        )
+    endpoint = (
+        f"repos/{{owner}}/{{repo}}/branches/{quote(base, safe='')}"
+        "/protection/required_status_checks"
+    )
+    result = _gh(["api", endpoint])
+    if result.returncode != 0 or not result.stdout.strip():
+        detail = result.stderr.strip() or f"exit {result.returncode}"
+        raise RuntimeError(
+            f"could not read branch protection for `{base}` ({detail}) - the required "
+            "set is UNKNOWN, so no verdict can be green"
+        )
+    return parse_protected_contexts(result.stdout)
 
 
 def _scan_run(run_id: str) -> RunScan:
@@ -297,32 +416,34 @@ def _report_failures(blocking: Sequence[Check], tail_lines: int) -> None:
             print(f"    {line}")
 
 
-def _announce(pr_args: list[str], target: str) -> None:
-    """Print the required-check preview. Best-effort — never fatal.
+def _announce(pr_args: list[str], target: str, protected: frozenset[str]) -> None:
+    """Print the protected contexts and which have registered. Best-effort — never fatal.
 
     This runs in the wrapper's **primary** use: immediately after `gh pr create`, when a
-    PR can legitimately have no check runs registered yet and `gh pr checks` reports
-    nothing. Its only job is to show the caller what is about to be watched, so a failure
-    here must not abort before `--watch` (which waits for checks to appear) has even
-    started. The authoritative read is the post-watch query in `_run`, which *is* fatal.
+    PR can legitimately have no check runs registered yet. Its only job is to show the
+    caller what is about to be watched, so a failure here must not abort before the
+    watch has even started. The authoritative read is the post-watch query in `_run`.
     """
+    print(f"ci-wait: {len(protected)} required context(s) from branch protection on {target}")
     try:
-        required = _gh_checks(pr_args, required=True)
+        registered = {c.name for c in _gh_checks(pr_args, required=False)}
     except (RuntimeError, ValueError) as exc:
-        print(f"ci-wait: no required checks registered yet on {target} - watching anyway")
-        print(f"    ({exc})")
-        return
-    print(f"ci-wait: watching {len(required)} required check(s) on {target}")
-    _print_checks("required", required)
+        print(f"    (could not list registered checks yet: {exc})")
+        registered = set()
+    for name in sorted(protected):
+        mark = "" if name in registered else "  <- not registered yet"
+        print(f"    {name}{mark}")
 
 
 def _run(args: argparse.Namespace) -> int:
     pr_args: list[str] = [str(args.pr)] if args.pr else []
     target = f"PR #{args.pr}" if args.pr else "the current branch's PR"
 
-    _announce(pr_args, target)
+    protected = _protected_contexts(pr_args)
+    _announce(pr_args, target, protected)
 
-    timeout_s = args.timeout_minutes * 60.0
+    deadline = _monotonic() + args.timeout_minutes * 60.0
+    pause = max(float(args.interval), _REWATCH_FLOOR_S)
     watch_cmd = [
         "pr",
         "checks",
@@ -333,43 +454,59 @@ def _run(args: argparse.Namespace) -> int:
         "--interval",
         str(args.interval),
     ]
-    print(f"ci-wait: gh {' '.join(watch_cmd)}  (deadline {args.timeout_minutes:g} min)")
-    try:
-        # Output is deliberately NOT captured — `--watch` renders live progress, and
-        # passing it through untouched matches `scripts/gate.py`'s convention.
-        subprocess.run(  # noqa: S603 - fixed argv, no shell, no untrusted input
-            ["gh", *watch_cmd],  # noqa: S607 - `gh` intentionally resolved from PATH
-            check=False,
-            timeout=timeout_s,
-        )
-    except subprocess.TimeoutExpired:
-        print(
-            f"\nci-wait: deadline of {args.timeout_minutes:g} min expired while checks were running"
-        )
-        return EXIT_PENDING
+    # Flushed: the un-captured `gh --watch` child writes straight to the terminal, so a
+    # piped (block-buffered) stdout would otherwise print this preview *after* it.
+    print(f"ci-wait: gh {' '.join(watch_cmd)}  (deadline {args.timeout_minutes:g} min)", flush=True)
+    while True:
+        try:
+            # Output is deliberately NOT captured — `--watch` renders live progress, and
+            # passing it through untouched matches `scripts/gate.py`'s convention.
+            subprocess.run(  # noqa: S603 - fixed argv, no shell, no untrusted input
+                ["gh", *watch_cmd],  # noqa: S607 - `gh` intentionally resolved from PATH
+                check=False,
+                timeout=max(deadline - _monotonic(), 1.0),
+            )
+        except subprocess.TimeoutExpired:
+            print(
+                f"\nci-wait: deadline of {args.timeout_minutes:g} min expired "
+                "while checks were running"
+            )
+            return EXIT_PENDING
 
-    # `gh`'s own exit code is deliberately ignored: re-query and decide from the
-    # authoritative JSON, so the verdict never depends on interpreting a watch exit.
-    required = _gh_checks(pr_args, required=True)
-    everything = _gh_checks(pr_args, required=False)
+        # `gh`'s own exit code is deliberately ignored: re-query and decide from the
+        # authoritative JSON, so the verdict never depends on interpreting a watch exit.
+        everything = _gh_checks(pr_args, required=False)
+        required = reconcile_required(protected, _gh_checks(pr_args, required=True), everything)
+        verdict, offenders = classify(required)
+        if verdict != EXIT_PENDING:
+            break
+        # The watch returned with a required context still unsettled: it could not see
+        # that context (not registered yet, or not flagged required). Watch again.
+        if _monotonic() + pause >= deadline:
+            break
+        print(f"\nci-wait: {len(offenders)} required context(s) not settled - re-watching:")
+        for check in offenders:
+            print(f"    [{check.state}] {check.name}")
+        _sleep(pause)
+
     required_names = {c.name for c in required}
     advisory = [c for c in everything if c.name not in required_names]
-
-    verdict, offenders = classify(required)
     print()
     _print_checks("required (final)", required)
     _print_checks("advisory (reported, never gating)", advisory)
 
     if verdict == EXIT_ERROR:
+        # Unreachable while `protected` is non-empty (every protected context yields at
+        # least a synthetic row); kept so an empty set can never fall through to green.
         print("ci-wait: no required checks found - is branch protection configured?")
         return EXIT_ERROR
     if verdict == EXIT_FAILED:
         _report_failures(offenders, args.tail)
         return EXIT_FAILED
     if verdict == EXIT_PENDING:
-        print("ci-wait: still pending after the watch returned:")
+        print(f"ci-wait: deadline of {args.timeout_minutes:g} min reached; still pending:")
         for check in offenders:
-            print(f"    {check.name}")
+            print(f"    [{check.state}] {check.name}")
         return EXIT_PENDING
 
     if args.no_rerun_scan:
