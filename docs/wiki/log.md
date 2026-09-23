@@ -2071,3 +2071,15 @@ the surrounding claim):
 - `py-modules` — one hit, `non-dependency-downloads.md` (the wheel-completeness
   widening, stated generically). Adding `preflight` to the roster is an instance of
   that same claim, not a change to it.
+
+## 2026-09-22 — direct correction (`fix/ci-wait-required-from-protection`, item 109)
+
+`scripts/ci_wait.py` is not classified wiki-relevant (`is_wiki_relevant()` → False), so no
+scoped self-update was required. But one page stated a claim this branch made false:
+
+- `code-module-map.md`, the `ci_wait.py` row: "(no poll loop of its own)" and the
+  implied "required = gh's `--required` set" were both replaced. The row now describes
+  required-from-branch-protection, pending for unregistered contexts, the bounded
+  re-watch, and exit 2 on unreadable protection. The row's cites (`classify`,
+  `scan_reruns`) still resolve and are unchanged. `.last_ingest_sha` not advanced
+  (item 98).

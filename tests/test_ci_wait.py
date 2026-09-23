@@ -1,8 +1,9 @@
 """Tests for `scripts/ci_wait.py`'s pure decision logic.
 
-Every function under test is pure — parsing, classification, log scanning — so this suite
-needs no network, no `gh`, and no live PR. The single network seam (`scripts.ci_wait._gh`)
-is deliberately not exercised here.
+Most functions under test are pure — parsing, classification, log scanning — so this suite
+needs no network, no `gh`, and no live PR. The one exception is
+`TestRunVerdictAgainstProtection` (item 109), which drives `_run` end to end with the
+network seam (`scripts.ci_wait._gh`) and the `--watch` subprocess replaced by scripted fakes.
 
 Two of these tests are load-bearing rather than incidental:
 
@@ -17,11 +18,14 @@ Two of these tests are load-bearing rather than incidental:
 
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from scripts import ci_wait
 from scripts.ci_wait import (
     EXIT_ERROR,
     EXIT_FAILED,
@@ -236,3 +240,244 @@ class TestEmitterScannerContract:
         declared, tests = scan_reruns(rendered)
         assert declared == [1]
         assert tests == [(_NODEID, 2)]
+
+
+# --- item 109: the verdict against branch protection ------------------------------------
+#
+# PR #135 (head 865f714, 2026-09-22): `gh pr checks --required` listed only the four
+# `Analyze` jobs because the CI workflow's jobs had not registered on the PR yet; `--watch`
+# returned once those passed and `_run` reported GREEN with 4 of the 6 protected contexts
+# still pending. The payloads below replay that shape. These tests drive the real `_run`
+# with the two seams faked: `_gh` (every captured `gh` call) and `subprocess.run` (the
+# un-captured `--watch`). Both are module attributes of `scripts.ci_wait`, so patching them
+# there is effective — no function-local import rebinds them.
+
+_ANALYZE = ("Analyze (javascript-typescript)", "Analyze (python)")
+_LATE = (
+    "Lint, type-check, test (py3.11)",
+    "Lint, type-check, test (py3.12)",
+    "Lint, type-check, test (py3.13)",
+    "UX / a11y / PDF (Playwright, py3.12)",
+)
+# Verbatim context list from
+# `gh api repos/take-tempo-public/sartor/branches/main/protection/required_status_checks`
+# (read 2026-09-22): strict=true, these six.
+_PROTECTED = _LATE + _ANALYZE
+_CODEQL_LINK = "https://github.com/take-tempo-public/sartor/actions/runs/111/job/222"
+_CI_LINK = "https://github.com/take-tempo-public/sartor/actions/runs/333/job/444"
+
+
+def _rows(names: tuple[str, ...], bucket: str, link: str) -> list[dict[str, str]]:
+    # PR #135's CodeQL run registered each Analyze job twice (push + pull_request).
+    return [{"name": n, "state": bucket.upper(), "bucket": bucket, "link": link} for n in names]
+
+
+class _FakeGh:
+    """Scripted stand-in for `scripts.ci_wait._gh`, keyed on the subcommand."""
+
+    def __init__(
+        self,
+        *,
+        registered: list[dict[str, str]],
+        required: list[dict[str, str]],
+        protection: str | None,
+    ) -> None:
+        self.registered = registered
+        self.required = required
+        self.protection = protection
+        self.calls: list[list[str]] = []
+
+    def __call__(
+        self, args: list[str], *, timeout: float | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        self.calls.append(args)
+        if args[:2] == ["pr", "checks"]:
+            rows = self.required if "--required" in args else self.registered
+            return subprocess.CompletedProcess(args, 0, json.dumps(rows), "")
+        if args[:2] == ["pr", "view"]:
+            return subprocess.CompletedProcess(args, 0, '{"baseRefName": "main"}', "")
+        if args[:1] == ["api"]:
+            if self.protection is None:
+                return subprocess.CompletedProcess(args, 1, "", "HTTP 404: Branch not protected")
+            return subprocess.CompletedProcess(args, 0, self.protection, "")
+        if args[:2] == ["run", "view"]:
+            return subprocess.CompletedProcess(args, 0, _CLEAN_LOG, "")
+        raise AssertionError(f"unexpected gh call: {args}")
+
+
+def _protection_payload(contexts: tuple[str, ...] = _PROTECTED) -> str:
+    return json.dumps(
+        {
+            "strict": True,
+            "contexts": list(contexts),
+            "checks": [{"context": c, "app_id": 15368} for c in contexts],
+        }
+    )
+
+
+class _Clock:
+    """Fake monotonic clock; `sleep` advances it instead of waiting."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.sleeps: list[float] = []
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+@pytest.fixture
+def clock(monkeypatch: pytest.MonkeyPatch) -> _Clock:
+    fake = _Clock()
+    # `raising=False`: on the pre-fix module these seams do not exist yet, and the
+    # reproduction must still run against it.
+    monkeypatch.setattr(ci_wait, "_monotonic", fake.monotonic, raising=False)
+    monkeypatch.setattr(ci_wait, "_sleep", fake.sleep, raising=False)
+    return fake
+
+
+def _install(monkeypatch: pytest.MonkeyPatch, fake: _FakeGh) -> list[list[str]]:
+    watches: list[list[str]] = []
+
+    def _watch(argv: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        watches.append(argv)
+        return subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(ci_wait, "_gh", fake)
+    # The same module object `scripts.ci_wait` calls `subprocess.run` through.
+    monkeypatch.setattr(subprocess, "run", _watch)
+    return watches
+
+
+def _pr135_before_registration() -> _FakeGh:
+    analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK) * 2
+    return _FakeGh(
+        registered=analyze + _rows(_LATE, "pending", _CI_LINK),
+        required=analyze,
+        protection=_protection_payload(),
+    )
+
+
+class TestRunVerdictAgainstProtection:
+    """Item 109: "required" is branch protection's context list, not whatever registered."""
+
+    def test_pr135_shape_is_not_green(self, monkeypatch: pytest.MonkeyPatch, clock: _Clock) -> None:
+        """The reproduction (xfail on the pre-fix commit): never GREEN, pending at deadline."""
+        watches = _install(monkeypatch, _pr135_before_registration())
+        code = ci_wait._run(ci_wait._parse_args(["135", "--timeout-minutes", "5"]))
+        assert code != EXIT_GREEN, (
+            "ci_wait reported GREEN while 4 protected contexts were pending (item 109)"
+        )
+        assert code == EXIT_PENDING
+        # Bounded re-watch: a floor-length pause between watches, never past the deadline.
+        assert clock.sleeps and all(s >= ci_wait._REWATCH_FLOOR_S for s in clock.sleeps)
+        assert len(watches) == len(clock.sleeps) + 1
+        assert clock.now < 5 * 60
+
+    def test_rewatches_until_late_checks_register_then_green(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        fake = _pr135_before_registration()
+        watches = _install(monkeypatch, fake)
+        all_pass = _rows(_ANALYZE, "pass", _CODEQL_LINK) + _rows(_LATE, "pass", _CI_LINK)
+
+        def _register(_: float) -> None:
+            fake.registered = fake.required = all_pass
+
+        monkeypatch.setattr(ci_wait, "_sleep", _register)
+        code = ci_wait._run(ci_wait._parse_args(["135"]))
+        assert code == EXIT_GREEN
+        assert len(watches) == 2
+
+    def test_nothing_registered_yet_is_pending_not_error(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        """`gh`'s "no checks reported" (empty stdout) is a state, and it is not green."""
+        fake = _FakeGh(registered=[], required=[], protection=_protection_payload())
+
+        def _no_checks(args: list[str], *, timeout: float | None = None) -> object:
+            if args[:2] == ["pr", "checks"]:
+                return subprocess.CompletedProcess(
+                    args, 1, "", "no checks reported on the 'fix/x' branch"
+                )
+            return fake(args, timeout=timeout)
+
+        _install(monkeypatch, fake)
+        monkeypatch.setattr(ci_wait, "_gh", _no_checks)
+        assert ci_wait._run(ci_wait._parse_args(["135", "--timeout-minutes", "2"])) == (
+            EXIT_PENDING
+        )
+
+    def test_protected_failure_not_flagged_required_by_gh_is_failed(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK)
+        fake = _FakeGh(
+            registered=analyze
+            + _rows(_LATE[:1], "fail", _CI_LINK)
+            + _rows(_LATE[1:], "pass", _CI_LINK),
+            required=analyze,
+            protection=_protection_payload(),
+        )
+        _install(monkeypatch, fake)
+        assert ci_wait._run(ci_wait._parse_args(["135"])) == EXIT_FAILED
+
+    def test_unreadable_protection_is_an_error_before_any_watch(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _Clock
+    ) -> None:
+        """Unknown required set: exit 2, never a verdict, and no watch is started."""
+        fake = _FakeGh(registered=[], required=[], protection=None)
+        watches = _install(monkeypatch, fake)
+        assert ci_wait.main(["135"]) == EXIT_ERROR
+        assert watches == []
+
+
+class TestParseProtectedContexts:
+    def test_real_payload_yields_the_six_contexts(self) -> None:
+        assert ci_wait.parse_protected_contexts(_protection_payload()) == frozenset(_PROTECTED)
+
+    def test_contexts_and_checks_are_unioned(self) -> None:
+        payload = json.dumps({"contexts": ["a"], "checks": [{"context": "b", "app_id": 1}]})
+        assert ci_wait.parse_protected_contexts(payload) == frozenset({"a", "b"})
+
+    def test_no_contexts_raises(self) -> None:
+        """ "Nothing required" must never become "green"."""
+        with pytest.raises(ValueError, match="no required status checks"):
+            ci_wait.parse_protected_contexts('{"strict": true, "contexts": [], "checks": []}')
+
+    def test_non_object_raises(self) -> None:
+        with pytest.raises(ValueError, match="expected a JSON object"):
+            ci_wait.parse_protected_contexts("[]")
+
+
+class TestReconcileRequired:
+    PROTECTED = frozenset({"a", "b"})
+
+    def test_all_present(self) -> None:
+        rows = [_check("a", "pass"), _check("b", "pending"), _check("x", "fail")]
+        required = ci_wait.reconcile_required(self.PROTECTED, [], rows)
+        assert [c.name for c in required] == ["a", "b"]
+
+    def test_missing_context_becomes_a_pending_row(self) -> None:
+        required = ci_wait.reconcile_required(self.PROTECTED, [], [_check("a", "pass")])
+        assert required[-1] == Check(
+            name="b", state=ci_wait.NOT_REGISTERED, bucket="pending", link=""
+        )
+        assert classify(required)[0] == EXIT_PENDING
+
+    def test_gh_required_outside_protection_is_kept(self) -> None:
+        """A ruleset-required check protection does not list still gates: widen, never narrow."""
+        extra = _check("ruleset-check", "fail")
+        rows = [_check("a", "pass"), _check("b", "pass"), extra]
+        required = ci_wait.reconcile_required(self.PROTECTED, [extra], rows)
+        assert extra in required
+        assert classify(required)[0] == EXIT_FAILED
+
+    def test_duplicate_names_all_count(self) -> None:
+        rows = [_check("a", "pass"), _check("a", "fail"), _check("b", "pass")]
+        required = ci_wait.reconcile_required(self.PROTECTED, [], rows)
+        assert classify(required)[0] == EXIT_FAILED
