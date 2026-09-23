@@ -32,7 +32,24 @@ summary = "An approved plan was archived and its marker removed while its branch
   `.current-C--Dev-sartor` (20:47:37). No `.approved-branch-C--Dev-sartor` stamp existed
   at that moment.
 
-**Inferred (UNPROVEN).** A stamp left by the previous session's branch
+- **The session compacted at the same minute.** `docs/dev/ledger/0ea1b8bf-913f-48d6-a7f1-5e54cf8769b3.jsonl`
+  row: `{"event": "compacted", ..., "branch": "fix/witness-subagent-scope", "ts": "2026-09-23T02:58:41Z"}`
+  (19:58:41 local). The plans dir's mtime at inspection was `19:58:24`. The plan archive
+  (19:53) comes *before* the compaction. The marker removal falls within seconds of it.
+
+- **No provenance receipt for the archive.** `grep -rh 20260923T025313Z docs/dev/ledger/`
+  returns nothing. `hooks/lib/retire-approved-plan.sh` states that every retirement writes a
+  `plan-archived` ledger receipt, and receipts exist for earlier archives (e.g.
+  `20260812T144954Z`). The archive dir timestamp is 19:53:14.47 local. The reflog shows
+  `checkout: moving from main to fix/witness-subagent-scope` at 19:52:28, 46 s earlier. The
+  first Edit/Write after that checkout (the dossier Write) **succeeded**. No
+  `PLAN RETIRED:` message was seen, although `check-plan-approved.sh`'s retire path prints
+  one and exits 2.
+
+**Inferred (UNPROVEN).** The strongest lead is a PreCompact/SessionStart path (a
+compaction-triggered session restart running plan retirement) that removes the marker. That
+is suggested by the 19:58 coincidence and has not been read in code.
+Separately, for the 19:53 archive: A stamp left by the previous session's branch
 (`fix/ci-wait-required-from-protection`, merged as PR #142) survived into this session.
 On the first production edit after the new approval, the reconciler read that stale stamp,
 found its branch merged, and archived the *new* approval. That the marker vanished later
