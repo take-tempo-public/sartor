@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   brief. Out-of-scope audit findings are filed as items 112 (the Since filter crashes the
   console, reproduced) and 113 (owner triage).
 - `.isidium/` and `.agents/` are gitignored (machine-local isidium tooling).
+- **Fixed: a gate refused for low memory now prints its terminal line.** Every run of
+  `python -m scripts.gate` is supposed to end with `gate: all steps passed.` or
+  `gate: FAILED …`, and the pipeline runbook's wait loop matches exactly those two lines.
+  The item-108 memory preflight used to refuse without either, so a waiter spun forever
+  (observed: 30 silent minutes on this branch). The refusal now ends with
+  `gate: FAILED at \`memory preflight\` (exit 1)`. A new test pins it.
 
 ### Fixed: a fresh plan approval could be retired mid-branch (`fix/plan-approval-retired-mid-branch`, item 110)
 
