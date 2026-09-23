@@ -1,8 +1,9 @@
 """Tests for `scripts/ci_wait.py`'s pure decision logic.
 
-Every function under test is pure — parsing, classification, log scanning — so this suite
-needs no network, no `gh`, and no live PR. The single network seam (`scripts.ci_wait._gh`)
-is deliberately not exercised here.
+Most functions under test are pure — parsing, classification, log scanning — so this suite
+needs no network, no `gh`, and no live PR. The one exception is
+`TestRunVerdictAgainstProtection` (item 109), which drives `_run` end to end with the
+network seam (`scripts.ci_wait._gh`) and the `--watch` subprocess replaced by scripted fakes.
 
 Two of these tests are load-bearing rather than incidental:
 
@@ -17,11 +18,14 @@ Two of these tests are load-bearing rather than incidental:
 
 from __future__ import annotations
 
+import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from scripts import ci_wait
 from scripts.ci_wait import (
     EXIT_ERROR,
     EXIT_FAILED,
@@ -236,3 +240,131 @@ class TestEmitterScannerContract:
         declared, tests = scan_reruns(rendered)
         assert declared == [1]
         assert tests == [(_NODEID, 2)]
+
+
+# --- item 109: the verdict against branch protection ------------------------------------
+#
+# PR #135 (head 865f714, 2026-09-22): `gh pr checks --required` listed only the four
+# `Analyze` jobs because the CI workflow's jobs had not registered on the PR yet; `--watch`
+# returned once those passed and `_run` reported GREEN with 4 of the 6 protected contexts
+# still pending. The payloads below replay that shape. These tests drive the real `_run`
+# with the two seams faked: `_gh` (every captured `gh` call) and `subprocess.run` (the
+# un-captured `--watch`). Both are module attributes of `scripts.ci_wait`, so patching them
+# there is effective — no function-local import rebinds them.
+
+_ANALYZE = ("Analyze (javascript-typescript)", "Analyze (python)")
+_LATE = (
+    "Lint, type-check, test (py3.11)",
+    "Lint, type-check, test (py3.12)",
+    "Lint, type-check, test (py3.13)",
+    "UX / a11y / PDF (Playwright, py3.12)",
+)
+# Verbatim context list from
+# `gh api repos/take-tempo-public/sartor/branches/main/protection/required_status_checks`
+# (read 2026-09-22): strict=true, these six.
+_PROTECTED = _LATE + _ANALYZE
+_CODEQL_LINK = "https://github.com/take-tempo-public/sartor/actions/runs/111/job/222"
+_CI_LINK = "https://github.com/take-tempo-public/sartor/actions/runs/333/job/444"
+
+
+def _rows(names: tuple[str, ...], bucket: str, link: str) -> list[dict[str, str]]:
+    # PR #135's CodeQL run registered each Analyze job twice (push + pull_request).
+    return [{"name": n, "state": bucket.upper(), "bucket": bucket, "link": link} for n in names]
+
+
+class _FakeGh:
+    """Scripted stand-in for `scripts.ci_wait._gh`, keyed on the subcommand."""
+
+    def __init__(
+        self,
+        *,
+        registered: list[dict[str, str]],
+        required: list[dict[str, str]],
+        protection: str | None,
+    ) -> None:
+        self.registered = registered
+        self.required = required
+        self.protection = protection
+        self.calls: list[list[str]] = []
+
+    def __call__(
+        self, args: list[str], *, timeout: float | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        self.calls.append(args)
+        if args[:2] == ["pr", "checks"]:
+            rows = self.required if "--required" in args else self.registered
+            return subprocess.CompletedProcess(args, 0, json.dumps(rows), "")
+        if args[:2] == ["pr", "view"]:
+            return subprocess.CompletedProcess(args, 0, '{"baseRefName": "main"}', "")
+        if args[:1] == ["api"]:
+            if self.protection is None:
+                return subprocess.CompletedProcess(args, 1, "", "HTTP 404: Branch not protected")
+            return subprocess.CompletedProcess(args, 0, self.protection, "")
+        if args[:2] == ["run", "view"]:
+            return subprocess.CompletedProcess(args, 0, _CLEAN_LOG, "")
+        raise AssertionError(f"unexpected gh call: {args}")
+
+
+def _protection_payload(contexts: tuple[str, ...] = _PROTECTED) -> str:
+    return json.dumps(
+        {
+            "strict": True,
+            "contexts": list(contexts),
+            "checks": [{"context": c, "app_id": 15368} for c in contexts],
+        }
+    )
+
+
+class _Clock:
+    """Fake monotonic clock; `sleep` advances it instead of waiting."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.sleeps: list[float] = []
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+@pytest.fixture
+def clock(monkeypatch: pytest.MonkeyPatch) -> _Clock:
+    fake = _Clock()
+    # `raising=False`: on the pre-fix module these seams do not exist yet, and the
+    # reproduction must still run against it.
+    monkeypatch.setattr(ci_wait, "_monotonic", fake.monotonic, raising=False)
+    monkeypatch.setattr(ci_wait, "_sleep", fake.sleep, raising=False)
+    return fake
+
+
+def _install(monkeypatch: pytest.MonkeyPatch, fake: _FakeGh) -> list[list[str]]:
+    watches: list[list[str]] = []
+
+    def _watch(argv: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        watches.append(argv)
+        return subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(ci_wait, "_gh", fake)
+    monkeypatch.setattr(ci_wait.subprocess, "run", _watch)
+    return watches
+
+
+class TestRunVerdictAgainstProtection:
+    """Item 109: "required" is branch protection's context list, not whatever registered."""
+
+    @pytest.mark.xfail(strict=True, reason="item 109 reproduction; fixed in the next commit")
+    def test_pr135_shape_is_not_green(self, monkeypatch: pytest.MonkeyPatch, clock: _Clock) -> None:
+        analyze = _rows(_ANALYZE, "pass", _CODEQL_LINK) * 2
+        fake = _FakeGh(
+            registered=analyze + _rows(_LATE, "pending", _CI_LINK),
+            required=analyze,
+            protection=_protection_payload(),
+        )
+        _install(monkeypatch, fake)
+        code = ci_wait._run(ci_wait._parse_args(["135", "--timeout-minutes", "5"]))
+        assert code != EXIT_GREEN, (
+            "ci_wait reported GREEN while 4 protected contexts were pending (item 109)"
+        )
