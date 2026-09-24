@@ -225,3 +225,19 @@ was an in-envelope §11.8 decision, not a stop.
 - **Deferred to epic close:** the wiki pass (unless drift reaches 60), full grounding
   audits, the full `AGENT_HANDOFF_TEMPLATE.md` ceremony, and the epic-level adversarial
   review.
+
+## Invoker run record (C2)
+
+- 2026-09-24, invoker session `93ed5108` (Opus 5.5). Probe `wf_7f6d3065-0c7` returned `ok_to_run`.
+- Sprint stage `wf_697596d4-c2f` returned **`escalated_to_owner`** (a `flag_stop` §11.6 raised
+  by the implementer, then `escalate` from both Opus reviewers). UX-8 says "with their
+  messages", but `analyzer.py`'s `_emit_call_log` never records exception text. The
+  implementer built a version that shows only metadata (call kind, timestamp, model,
+  stop_reason, latency) and labels it "no message logged". Owner choice: (a) scope exception
+  capture separately, with a C-10 dossier, or (b) accept metadata-only and amend UX-8. The
+  closer did not run. The implementer's 7 files are staged and **not gated**. Journal:
+  `~/.claude/projects/C--Dev-sartor/93ed5108-6347-4192-a19a-2ec4c9f7a4b8/subagents/workflows/wf_697596d4-c2f/journal.jsonl`.
+- **Owner decision, 2026-09-24 (typed "a"):** option (a). Exception-text capture into
+  `llm_calls.jsonl` is a **separately scoped change** with its own C-10 consumer dossier and a
+  redaction/size policy. It is **not** folded into C2. The sequencing against C2 was still being
+  confirmed when this was written.
