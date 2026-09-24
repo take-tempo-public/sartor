@@ -18,6 +18,10 @@
   (`fix/dashboard-run-lock-gaps`) is already committed as `150bfb9` and ff-merged into
   `epic/c-diagnostics` (tip `3e29527` + the docs commit `dd803e3` recording that sha into
   this branch's own C1b brief) — C1b's own tip, once committed, stacks on `dd803e3`.
+  **Recorded by the C2 invoker (session preflight, 2026-09-24):** C1b committed as
+  `27a1fdc`, plus the hook-written ledger commit `e7005b2`. Both are ff-merged, so
+  `epic/c-diagnostics` == `feat/dashboard-polish` == `e7005b2`. C1b's gate #1 and gate #2 logs
+  both end `gate: all steps passed.` with 0 `RERUN`. `feat/run-detail-modal` is cut from `e7005b2`.
 - **Implementer model + effort:** `sonnet`, per `epic-c-design-brief.md` §"Sprint →
   pipeline-run mapping" (RELEASE_ARC §"Session models": C2 = Sonnet).
 
