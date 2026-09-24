@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 11 / 10 ceiling -- OVER** | Blocked 4 | Deferred 8 | Watching 45 | Epics 6 | Closed 37
+**Open 11 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -32,6 +32,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **42** -- Template-format investigation - dotx/mht import, locked exact-preview ATS set (`user`) -- Investigate dotx/mht as import formats and lock a small set of bullet-proof ATS templates with exact-preview fidelity. [blocked on: post-1.1.0 - owner scheduled a template epic for a 1.1.x sprint]
 - **43** -- Approved-fonts list expansion beyond Arial/Calibri/Georgia (`user`) -- v1.1.0 ships an approved-fonts list of Arial, Calibri, Georgia (sprint B2); verified additions considered later. [blocked on: post-1.1.0 - additions only after per-font ATS verification, owner-gated]
 - **113** -- Triage the 18 out-of-scope findings from the pre-Epic-C console UX audit (UX-23, UX-25..UX-41) (`user`) -- 18 console UX findings outside Epic C (6 major, 12 minor) await triage; UX-22 is item 112; UX-24 joined C1b. [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
+- **114** -- commands/bench.md doesn't explicitly call out the new error_message/error_type fields (`agent`) -- bench.md already summarizes error rows generically; naming error_message/error_type explicitly is a nice-to-have. [blocked on: low value until logs/llm_calls.jsonl accumulates real status="error" rows with the new fields; revisit once there is real data to summarize]
 
 ## Watching
 

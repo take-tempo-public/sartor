@@ -38,6 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (observed: 30 silent minutes on this branch). The refusal now ends with
   `gate: FAILED at \`memory preflight\` (exit 1)`. A new test pins it.
 
+### Epic C, C1c: LLM call error capture (`feat/llm-call-error-capture`)
+
+- **Added:** `logs/llm_calls.jsonl` rows with `status == "error"` now carry `error_type`
+  (the exception's class name) and a redacted, size-capped `error_message`, so a failed
+  LLM call is no longer silent in telemetry. `status == "ok"` rows are unchanged.
+- **Added:** the `block-subagent-git-stash` PreToolUse guard (Bash dispatcher). A subagent
+  may not run a state-changing `git stash`; `list`/`show` and the main agent are unaffected.
+  This is the C-11 guard for a pipeline refuter that stashed the shared tree mid-review.
+
 ### Fixed: a fresh plan approval could be retired mid-branch (`fix/plan-approval-retired-mid-branch`, item 110)
 
 - **Fixed: the retire path is kill-safe.** `check-plan-approved.sh`'s retire path measured

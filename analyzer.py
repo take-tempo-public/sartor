@@ -577,6 +577,50 @@ def _emit_call_log(record: dict[str, Any]) -> None:
         logger.warning("LLM telemetry write failed: %s", exc)
 
 
+# --- C1c: error-capture redaction/size policy (docs/dev/handoffs/epic-c-c1c-brief.md) ---
+#
+# `_redact_error_message` is the ONLY place `error_message` text reaches
+# logs/llm_calls.jsonl. Order matters: whitespace collapses first so the two
+# masking patterns below don't have to account for an embedded newline/tab
+# splitting a token; secrets are masked before truncation so a key straddling
+# the 500-char cut can't survive as a partial leak.
+#
+# Verified against the installed SDK (anthropic==0.88.0), not assumed (C-0):
+# `anthropic/_base_client.py::_make_status_error_from_response` builds
+# `err_msg = f"Error code: {response.status_code} - {body}"` from the HTTP
+# RESPONSE body only — `APIError.__init__` never sees the request. `str(exc)`
+# on any `anthropic.APIError` therefore carries the server's error text, not
+# `messages`/`system`/user content. Rule 4 ("never serialize request content")
+# holds by construction on this SDK version; nothing here re-serializes a
+# request either way, so a future SDK version that changed this would still
+# not make this helper start leaking request content — it would just mean the
+# *source* text this helper redacts could, in principle, contain more.
+_API_KEY_PATTERN = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
+_HEADER_VALUE_PATTERN = re.compile(r"(?i)\b(x-api-key|authorization)\s*[:=]\s*(?:bearer\s+)?\S+")
+_ERROR_MESSAGE_MAX_CHARS = 500
+_ERROR_MESSAGE_TRUNCATION_MARKER = "…[truncated]"
+
+
+def _redact_error_message(message: str) -> str:
+    """Pure redaction/size policy for the `error_message` telemetry field (C1c).
+
+    1. Collapse whitespace runs to single spaces.
+    2. Mask API-key-shaped substrings (`sk-ant-...`) and any
+       `x-api-key`/`Authorization` header value echoed into the text.
+    3. Truncate to 500 chars, with a trailing "…[truncated]" marker when cut.
+
+    Deterministic, no I/O, no LLM call — safe to unit test directly and safe
+    to run on every error row.
+    """
+    collapsed = re.sub(r"\s+", " ", message).strip()
+    masked = _API_KEY_PATTERN.sub("sk-ant-***", collapsed)
+    masked = _HEADER_VALUE_PATTERN.sub(lambda m: f"{m.group(1)}: ***", masked)
+    if len(masked) > _ERROR_MESSAGE_MAX_CHARS:
+        keep = _ERROR_MESSAGE_MAX_CHARS - len(_ERROR_MESSAGE_TRUNCATION_MARKER)
+        masked = masked[:keep] + _ERROR_MESSAGE_TRUNCATION_MARKER
+    return masked
+
+
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
 You specialize in resume optimization, ATS compatibility, and candidate positioning.
@@ -1316,6 +1360,8 @@ def _call_llm_streaming(
     status = "ok"
     final = None
     chunks: list[str] = []
+    error_type: str | None = None
+    error_message: str | None = None
     try:
         # Claude Sonnet 5 enables adaptive thinking by default when `thinking`
         # is omitted (Sonnet 4.6 ran thinking-off). Preserve the pipeline's
@@ -1357,34 +1403,49 @@ def _call_llm_streaming(
         # message match means no ordinary TypeError (a real programming error)
         # can be swallowed; anything else re-raises untouched.
         if _SDK_NO_AUTH_MARKER in str(exc):
-            raise LLMConfigurationError(
+            config_error = LLMConfigurationError(
                 f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}"
-            ) from exc
+            )
+            # Record the type actually raised (LLMConfigurationError), not the
+            # TypeError this branch caught and re-labeled — the telemetry row
+            # should name the error the caller actually sees.
+            error_type = type(config_error).__name__
+            error_message = _redact_error_message(str(config_error))
+            raise config_error from exc
+        error_type = type(exc).__name__
+        error_message = _redact_error_message(str(exc))
         raise
-    except Exception:
+    except Exception as exc:
         status = "error"
+        error_type = type(exc).__name__
+        error_message = _redact_error_message(str(exc))
         raise
     finally:
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         usage = getattr(final, "usage", None) if final is not None else None
         stop_reason = getattr(final, "stop_reason", None) if final is not None else None
-        _emit_call_log(
-            {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "username": username,
-                "run_id": run_id,
-                "call": call_kind,
-                "model": effective_model,
-                "prompt_version": effective_prompt_version(),
-                "input_tokens": getattr(usage, "input_tokens", 0),
-                "output_tokens": getattr(usage, "output_tokens", 0),
-                "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
-                "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
-                "latency_ms": elapsed_ms,
-                "stop_reason": stop_reason,
-                "status": status,
-            }
-        )
+        _call_log_record: dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "username": username,
+            "run_id": run_id,
+            "call": call_kind,
+            "model": effective_model,
+            "prompt_version": effective_prompt_version(),
+            "input_tokens": getattr(usage, "input_tokens", 0),
+            "output_tokens": getattr(usage, "output_tokens", 0),
+            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0),
+            "latency_ms": elapsed_ms,
+            "stop_reason": stop_reason,
+            "status": status,
+        }
+        # C1c: error_type/error_message ride ONLY on status="error" rows — ok
+        # rows stay byte-identical to every pre-existing row (readers already
+        # tolerate absence, since every row up to this branch lacks them).
+        if status == "error":
+            _call_log_record["error_type"] = error_type
+            _call_log_record["error_message"] = error_message
+        _emit_call_log(_call_log_record)
 
     if stop_reason == "max_tokens":
         logger.warning(

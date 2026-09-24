@@ -2166,3 +2166,38 @@ read/write copy at all, only the server-side route split). UX-2/UX-4/UX-5's stic
 opaque-banner and `.btn-pending` changes are CSS/animation polish the page also does not
 describe at that level of detail. No page contradicts the shipped diff. `.last_ingest_sha`
 was not advanced (item 98).
+
+## 2026-09-24 — scoped close-out relevance check (`feat/llm-call-error-capture`, C1c)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1c — inserted ahead of C2, run 3 of 5),
+scoped to this branch's own staged diff, not a full ingest. Per
+`epic-c-design-brief.md` §"Close-out intervals" (restated in this sprint's own brief,
+`docs/dev/handoffs/epic-c-c1c-brief.md` §"Close-out obligations"), the full wiki pass is
+**deferred to the epic close** unless drift reaches the 60 backstop —
+`python -m scripts.wiki_freshness` reports **40 of 75**, the identical reading recorded at
+this sprint's own brief (2026-09-24, before this branch's `analyzer.py` change was
+committed — the diff isn't in the committed-since-checkpoint count yet), still well under
+the backstop, so the deferral stands. This entry is the still-owed scoped relevance check,
+not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `analyzer.py` only (`CHANGELOG.md`,
+`docs/dev/blast-radius/llm-call-error-capture.md`, and
+`tests/test_llm_call_error_capture.py` all classify irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped every page referencing
+`_call_llm_streaming` or `llm_calls.jsonl` (`code-module-map.md`,
+`deterministic-llm-boundary.md`, `llm-call-catalog.md`, `pipeline-stages.md`,
+`diagnostics-console.md`) for `error_type`, `error_message`, `status`, and
+`llm_calls.jsonl`/`_emit_call_log`/`_redact_error_message`. The one page describing the
+telemetry record's shape, `deterministic-llm-boundary.md:64-68`, says the funnel "writes
+one JSONL telemetry record per funnelled call (stamped with the call kind under the JSON
+key `call`, plus `model` and `prompt_version`)" — a partial, non-exhaustive field list
+("plus X, Y"), not a closed/exact-keyset claim. This sprint's two new additive fields
+(`error_type`/`error_message`, present only on `status == "error"` rows) don't contradict
+that sentence any more than the pre-existing `latency_ms`/`stop_reason`/cache-token fields
+already left undescribed there do. No page claims the telemetry record's field set is
+exhaustive, and no page describes error-row content at all, so there is nothing to
+correct. `docs/wiki/pages/diagnostics-console.md:123` mentions `status == "judge_error"`
+filtering — a different status value, on a different route (`_evaluate` results, not
+`llm_calls.jsonl`) — and is unaffected. `.last_ingest_sha` was not advanced (item 98).
