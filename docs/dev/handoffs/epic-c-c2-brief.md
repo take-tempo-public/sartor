@@ -1,5 +1,10 @@
 # Epic C sprint brief — C2: `feat/run-detail-modal` (run 3 of 4)
 
+> **Position superseded 2026-09-24:** C1c was inserted ahead of this sprint (see the
+> run record at the bottom). C2 is now **run 4 of 5**. Its re-run invocation comes from
+> `docs/dev/handoffs/epic-c-c2-rerun-brief.md` (written by C1c's closer). This file stays
+> C2's scope of record.
+
 > Written by C1b's closer (`feat/dashboard-polish`), 2026-09-23, from
 > `docs/dev/handoffs/EPIC_SPRINT_BRIEF_TEMPLATE.md`, per the epic's declared intra-epic
 > sprint-transition cadence (item 89; `epic-b-design-brief.md` §"Close-out intervals",
