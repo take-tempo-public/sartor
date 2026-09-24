@@ -9,7 +9,10 @@
 
 - **Sprint:** C1b, run 2 of 4 (`epicSprintIndex: 2`, `epicSprintCount: 4`)
 - **Branch to create:** `feat/dashboard-polish`
-- **Stacked on:** `fix/dashboard-run-lock-gaps` — **not yet committed as of this brief.**
+- **Stacked on:** `fix/dashboard-run-lock-gaps` — **committed as `150bfb9`** (verified by
+  C1b's invoking session, 2026-09-23; ff-merged into `epic/c-diagnostics`, whose tip
+  `3e29527` adds only a ledger receipt). The closer's original note, kept for the record:
+  not yet committed as of this brief.
   This closer staged the fix (`git add -A`) but does not commit; per the corrected close
   ordering (`docs/dev/epic-a-chain-design-corrections.md` §11.9.4 / §2), the commit and the
   gate belong to the invoking session, which runs after this brief is written. The invoking
