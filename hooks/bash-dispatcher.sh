@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Bash: runs the four Bash guards in one process
-# (block-secrets, block-merge-to-main, ruff-changed, verify-binary-on-path)
-# instead of four separate hook entries, aggregating every blocked guard's
+# PreToolUse hook on Bash: runs the Bash guards in one process
+# (block-secrets, block-merge-to-main, ruff-changed, verify-binary-on-path,
+# block-subagent-git-stash) instead of separate hook entries, aggregating every blocked guard's
 # messages before exiting — the settings.json PreToolUse/Bash consolidation
 # (feat/verify-dont-assume-guard), mirroring hooks/edit-write-dispatcher.sh's
 # established pattern for Edit|Write.

@@ -127,6 +127,12 @@ hooks for any agent writing code here:
   fail-open on anything it cannot parse with certainty (substitutions,
   heredocs, MSYS `/c/` paths, `||`-guarded segments) — the block
   message limits its claim to the PATH lookup (C-0).
+- `block-subagent-git-stash` — blocks a state-changing `git stash`
+  (anything but `list`/`show`) in a Bash command issued by a **subagent**
+  (the payload carries `agent_id`); the main agent is not gated. The C-11
+  guard for a pipeline refuter stashing the shared tree mid-review
+  (Epic C C1c). Reads the command string only, so an indirect stash
+  is not caught (C-0).
 - `wiki-freshness-reminder` — non-blocking nudge after
   `git commit` when `docs/wiki/` may be stale (silent until the
   first `/wiki-ingest` sets a baseline; never auto-ingests).
@@ -143,9 +149,9 @@ hooks for any agent writing code here:
   (C-0: intent classification is not deterministic); every failure
   path fails open.
 
-**Wiring note (`feat/verify-dont-assume-guard`):** the four Bash-matcher
+**Wiring note (`feat/verify-dont-assume-guard`):** the five Bash-matcher
 guards (`block-secrets`, `block-merge-to-main`, `ruff-changed`,
-`verify-binary-on-path`) run through one dispatcher
+`verify-binary-on-path`, `block-subagent-git-stash`) run through one dispatcher
 (`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
 and the seven Edit|Write guards through another
 (`hooks/edit-write-dispatcher.sh`, PX-37) — one settings.json entry and one
