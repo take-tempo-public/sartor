@@ -2138,3 +2138,31 @@ so this scoped check confirms no edit is needed, not that nothing changed. `isLo
 and the `run()` return-value check are new implementation detail the page never described
 and is not now contradicting, so leaving them undocumented is not drift. `.last_ingest_sha`
 was not advanced (item 98).
+
+## 2026-09-23 — scoped close-out relevance check (`feat/dashboard-polish`, C1b)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1b — 2 of 4), scoped to this branch's
+own staged diff, not a full ingest. Per `epic-c-design-brief.md` §"Close-out intervals,"
+the full wiki pass is **deferred to the epic close** unless drift reaches the 60 backstop
+— `python -m scripts.wiki_freshness` reports **40 of 75** at this branch's tip (up one
+from C1a's 39), still well under the backstop, so the deferral stands. This entry is the
+still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `dashboard/templates/dashboard.html` only (`tests/ux/regression/`
+classifies irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped `docs/wiki/pages/diagnostics-console.md`
+for `read-only`, `read-write`, `Quality`, `Tuning`, `sticky`, `runLockBanner`,
+`btn-pending` and `prefers-reduced-motion`. The page's "read-only" language (`:4`, `:63`,
+`:143`, `:181`) is about the **Flask blueprint architecture** — `dashboard_bp` (the one
+GET route in `dashboard/routes.py`) never writes, and the SSE write/spend surface lives
+entirely in `blueprints/diagnostics.py`; that separation is unchanged by this branch and
+still accurate. This sprint's fix (UX-3/UX-24) corrected **client-facing page copy** —
+the header paragraph and Annotate intro text that told the *user* which tabs read vs.
+write/spend, which had wrongly grouped the Quality tab with the pure-read tabs — a
+different claim the wiki page never made (it does not describe per-tab user-facing
+read/write copy at all, only the server-side route split). UX-2/UX-4/UX-5's sticky-tabs,
+opaque-banner and `.btn-pending` changes are CSS/animation polish the page also does not
+describe at that level of detail. No page contradicts the shipped diff. `.last_ingest_sha`
+was not advanced (item 98).

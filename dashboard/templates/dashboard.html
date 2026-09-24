@@ -35,7 +35,18 @@
     .cb-dash code.short { color: var(--info); font-size: 0.85em; }
 
     /* Tabs */
-    .dash-tabs { display: flex; gap: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 1.4rem; flex-wrap: wrap; }
+    /* UX-2: sticky so the tab bar stays reachable on the long Annotate/Tuning
+       panes without scrolling back to the top. Stacks with #runLockBanner
+       (also `position: sticky; top: 0`, :146) via the `:has()` rule below —
+       when the banner is showing, the tabs stick just under it instead of
+       overlapping it. An opaque `background` is load-bearing once stuck:
+       without it, page content scrolling underneath would show through the
+       gaps between tab buttons. */
+    .dash-tabs {
+      display: flex; gap: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 1.4rem; flex-wrap: wrap;
+      position: sticky; top: 0; z-index: 39; background: var(--bg-0);
+    }
+    body:has(#runLockBanner:not([hidden])) .dash-tabs { top: 3.6rem; }
     .dash-tab {
       background: transparent; border: 0; color: var(--fg-1); cursor: pointer;
       padding: 0.6rem 1rem; border-radius: var(--radius-md) var(--radius-md) 0 0;
@@ -143,11 +154,22 @@
     .scaffold-banner.write { background: var(--warning-soft); }
 
     /* Global paid-run single-flight lock banner (#1: eval/tune/bootstrap/grounding-score) */
+    /* UX-4: was `var(--warning-soft)` (14%-alpha), so scrolled content showed
+       through it; now a fully opaque solid fill (computed background alpha
+       1), reusing the same solid-amber-bg/dark-text pairing already used at
+       `.corpus-row-flag.needs-month` elsewhere in this file. It also carries
+       the existing `cb-status-pulse-strong` keyframe (defined in
+       `static/style.css`, already used for the topbar status dot) so a
+       multi-minute run visibly stays alive — `static/style.css`'s global
+       `prefers-reduced-motion` override
+       (`*,*::before,*::after{animation:none!important}`) already silences
+       this, so no separate override is needed here. */
     #runLockBanner {
       position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 0.5rem;
-      background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning);
+      background: var(--warning); color: var(--bg-0); border: 1px solid var(--warning);
       border-radius: var(--radius-md); padding: 0.65rem 0.95rem; margin: 0 0 1rem; font-size: 0.88rem; font-weight: 600;
       box-shadow: var(--shadow-1);
+      animation: cb-status-pulse-strong 1.4s var(--ease) infinite;
     }
     #runLockBanner[hidden] { display: none; }
 
@@ -165,7 +187,8 @@
     #annCollateResult { margin-top: 0.7rem; }
     #annCollateResult code.short { display: block; white-space: pre-wrap; margin: 0.3rem 0 0.6rem; padding: 0.4rem 0.55rem; background: var(--bg-2); border-radius: var(--radius-sm); }
 
-    /* Annotate tab — the console's only read-write surface */
+    /* Annotate tab — a read-write surface (UX-24: Quality and Tuning also
+       write eval-result files, so this is not the console's ONLY one) */
     .annotate-section { margin-bottom: 1.4rem; }
     details.annotate-section > summary { cursor: pointer; color: var(--brand); font-weight: 600; padding: 0.5rem 0; }
     .annotate-section > label.sub { display: block; color: var(--fg-1); font-size: 0.82rem; margin-bottom: 0.4rem; }
@@ -227,9 +250,12 @@
     </svg>
   </button>
 </h1>
-<p class="meta">Read-only observability for the LLM pipeline. Telemetry from
-  <code class="short">logs/llm_calls.jsonl</code> + <code class="short">evals/results/*.jsonl</code>.
-  Click any tile to expand its detail.</p>
+<p class="meta">Live observability for the LLM pipeline — Pipeline and Groundedness read
+  from <code class="short">logs/llm_calls.jsonl</code> + <code class="short">evals/results/*.jsonl</code>.
+  Quality, Tuning and Annotate are read-write (localhost only): they can spend paid
+  Sonnet/Haiku calls and write files — Quality also reads existing eval scores from
+  <code class="short">evals/results/*.jsonl</code>. Click any tile to expand its detail, or
+  use the Quality/Tuning/Annotate controls below.</p>
 
 <nav class="dash-tabs" role="tablist" aria-label="Diagnostics sections">
   <button class="dash-tab" data-tab="pipeline"     role="tab">Pipeline</button>
@@ -523,7 +549,7 @@
 <!-- ============================ ANNOTATE ============================ -->
 <section class="dash-pane" data-pane="annotate" role="tabpanel">
   <p class="dash-pane-intro">
-    <span>Produce and label the <code class="short">annotations.json</code> ground-truth the grounding calibration needs — the console’s only write surface.</span>
+    <span>Produce and label the <code class="short">annotations.json</code> ground-truth the grounding calibration needs — a read-write surface (localhost only); Quality and Tuning runs also write eval-result files.</span>
     <button class="help-info" id="help-icon-dashAnnotate" data-help="dashAnnotate" type="button"
             title="About the Annotate tab" aria-label="Help: Annotate — the label-the-truth surface"
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
@@ -1052,7 +1078,8 @@
     },
     dashAnnotate: {
       title: 'Annotate — the label-the-truth surface',
-      body: 'This is the console’s only write surface. It produces and labels '
+      body: 'This is a read-write surface (localhost only) — Quality and Tuning '
+        + 'runs also write eval-result files. It produces and labels '
         + 'the annotations.json ground-truth that the deferred grounding '
         + 'calibration needs. The flow is three steps: ① produce a bootstrap (a '
         + 'paid live pipeline run over job descriptions you paste) or export a '
@@ -1506,6 +1533,22 @@
     cancelBtnEl.hidden = true;
     if (onClick) cancelBtnEl.removeEventListener('click', onClick);
   }
+  // UX-5: the shared "control, in flight" idiom, ported from static/app.js's
+  // _setBtnPending()/_clearBtnPending() (this console never loads app.js —
+  // see the file-level comment near the top of <head>). Disables the control
+  // and gives it the existing global `.btn-pending` pulse (static/style.css);
+  // no new CSS needed, and that file's `prefers-reduced-motion` override
+  // already silences the pulse. Works on a <select> as well as a <button>.
+  function setBtnPending(el) {
+    if (!el) return;
+    el.disabled = true;
+    el.classList.add('btn-pending');
+  }
+  function clearBtnPending(el) {
+    if (!el) return;
+    el.disabled = false;
+    el.classList.remove('btn-pending');
+  }
   // #10 (diagnostics round-2): update a real <progress> bar from any SSE
   // payload that carries index/total (fixture_start/analyzing/clarifying/
   // generating already do — evals/runner.py's _emit calls). Shared by every
@@ -1521,7 +1564,7 @@
   // 'done'. barEl (optional) is a <progress> element updated from index/total events.
   // cancelBtnEl (optional) gets Cancel wiring for the duration of the run.
   function run(params, progEl, btnEl, onDone, barEl, cancelBtnEl) {
-    if (btnEl) btnEl.disabled = true;
+    if (btnEl) setBtnPending(btnEl);
     // Defense in depth (docs/dev/diagnosis/dashboard-run-lock-gaps.md): acquire()
     // returning false means a run is ALREADY live — do not start a second one, even
     // if btnEl itself was somehow still enabled (e.g. a stray un-disabled button).
@@ -1534,8 +1577,8 @@
     var onCancelClick;
     var handle = stream('/api/eval/run', params, function (ev, p) {
       _updateBar(barEl, p);
-      if (ev === '_closed') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
-      if (ev === '_aborted') { if (btnEl) btnEl.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; return; }
+      if (ev === '_closed') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
+      if (ev === '_aborted') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; if (progEl) progEl.textContent = 'Cancelled — no further paid calls were started.'; return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
@@ -1544,7 +1587,7 @@
         if (onDone) onDone(p);
       } else if (ev === 'error') {
         if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
-        if (btnEl) btnEl.disabled = false;
+        if (btnEl) clearBtnPending(btnEl);
         if (window.sartorRunLock) window.sartorRunLock.release();
         if (barEl) barEl.hidden = true;
         hideCancel(cancelBtnEl, onCancelClick);
@@ -1554,7 +1597,10 @@
     });
     onCancelClick = wireCancel(cancelBtnEl, handle, progEl);
   }
-  window.sartorEval = { run: run, stream: stream, parseSse: parseSse, wireCancel: wireCancel, hideCancel: hideCancel };
+  window.sartorEval = {
+    run: run, stream: stream, parseSse: parseSse, wireCancel: wireCancel, hideCancel: hideCancel,
+    setBtnPending: setBtnPending, clearBtnPending: clearBtnPending,
+  };
 
   // ---- Quality-tab "Run eval" control ----
   var btn = document.getElementById('evalRunBtn');
@@ -1657,7 +1703,7 @@
     var est = subsetSel.value === 'smoke' ? '~$0.20' : '~$0.60';
     var scope = slug ? 'real / seed:' + slug : params.suite + ' / ' + params.subset;
     if (!window.confirm('Run a candidate-vs-baseline A/B on ' + scope + ' now?\n\nThis runs TWO eval suites (baseline + candidate) — paid Sonnet + Haiku (' + est + ') and takes several minutes.')) return;
-    btn.disabled = true;
+    window.sartorEval.setBtnPending(btn);
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
@@ -1667,8 +1713,8 @@
       if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
         bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
       }
-      if (ev === '_closed') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
-      if (ev === '_aborted') { btn.disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; return; }
+      if (ev === '_closed') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+      if (ev === '_aborted') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; prog.textContent = 'Cancelled — no further paid calls were started.'; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -1682,7 +1728,7 @@
         window.sartorEval.hideCancel(cancelBtn, onCancelClick);
       } else if (ev === 'error') {
         prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
-        btn.disabled = false;
+        window.sartorEval.clearBtnPending(btn);
         if (window.sartorRunLock) window.sartorRunLock.release();
         if (bar) bar.hidden = true;
         window.sartorEval.hideCancel(cancelBtn, onCancelClick);
@@ -1803,7 +1849,9 @@
 
   function loadFixture(slug, candidate) {
     showError(null); setStatus('Loading…');
+    window.sartorEval.setBtnPending($('fixtureSelect'));
     fetch(API + '/fixture/' + encodeURIComponent(candidate) + '/' + encodeURIComponent(slug)).then(jsonRes).then(function (res) {
+      window.sartorEval.clearBtnPending($('fixtureSelect'));
       if (!res.ok) { setStatus((res.d && res.d.error) || 'Load failed', true); $('annEditor').hidden = true; return; }
       state.slug = slug; state.candidate = candidate; state.doc = res.d.annotations; state.vocab = res.d.vocab || state.vocab;
       // #9: restore an unsaved draft if one exists for this (candidate, slug) —
@@ -1822,7 +1870,7 @@
         renderEditor();
         setStatus(res.d.has_annotations ? 'Loaded existing annotations.' : 'New template — fill every verdict, then Save.');
       }
-    }).catch(function () { setStatus('Load failed', true); });
+    }).catch(function () { window.sartorEval.clearBtnPending($('fixtureSelect')); setStatus('Load failed', true); });
   }
 
   // ---- rendering ----
@@ -1914,33 +1962,43 @@
   }
 
   // ---- save / collate ----
-  function save(cb) {
+  // UX-5: `cb` fires only on a successful save (existing contract, used by
+  // collate() below to chain into its own POST); `onFail` (new, optional) is
+  // the terminal-cleanup hook for a CALLER's own pending state — collate()
+  // needs it because save()'s own failure short-circuits before collate()
+  // ever gets to clear #annCollate's pending state itself.
+  function save(cb, onFail) {
     if (!state.doc) return; showError(null); setStatus('Saving…');
+    window.sartorEval.setBtnPending($('annSave'));
     fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug),
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state.doc) }).then(jsonRes).then(function (res) {
+        window.sartorEval.clearBtnPending($('annSave'));
         if (!res.ok) {
           setStatus((res.d && res.d.error) || 'Save failed', true);
           showError(res.d && res.d.detail);
           _jumpToFlaggedItem(res.d && res.d.detail);  // #9: scroll to the item the 400 named
+          if (onFail) onFail();
           return;
         }
         setStatus('Saved annotations.json (' + res.d.bullets + 'b / ' + res.d.skills + 's).');
         _clearDraft();  // #9: a successful Save retires the in-progress draft
         loadFixtures(); if (cb) cb();
-      }).catch(function () { setStatus('Save failed', true); });
+      }).catch(function () { window.sartorEval.clearBtnPending($('annSave')); setStatus('Save failed', true); if (onFail) onFail(); });
   }
 
   function collate() {
     if (!state.doc) return;
+    window.sartorEval.setBtnPending($('annCollate'));
     save(function () {
       setStatus('Collating…');
       fetch(API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/collate', { method: 'POST' }).then(jsonRes).then(function (res) {
+        window.sartorEval.clearBtnPending($('annCollate'));
         if (!res.ok) { setStatus((res.d && res.d.error) || 'Collate failed', true); showError(res.d && res.d.detail); return; }
         setStatus('Collated → ' + res.d.must_keywords + ' must_keywords, ' + res.d.forbidden_inventions + ' forbidden_inventions. ' + (res.d.jd_written ? 'jd.txt written.' : 'jd.txt not written (no anchor JD saved).'));
         renderCollateResult(res.d);
         loadFixtures();
-      }).catch(function () { setStatus('Collate failed', true); });
-    });
+      }).catch(function () { window.sartorEval.clearBtnPending($('annCollate')); setStatus('Collate failed', true); });
+    }, function () { window.sartorEval.clearBtnPending($('annCollate')); });
   }
 
   // After collate: keep the CLI command visible AND offer an in-browser run of the
@@ -2005,7 +2063,7 @@
     var bar = $('bsProgressBar'); var cancelBtn = $('bsCancelBtn');
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
-    $('bsRun').disabled = true;
+    window.sartorEval.setBtnPending($('bsRun'));
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
     if (bar) { bar.hidden = false; bar.value = 0; }
@@ -2019,7 +2077,14 @@
         if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
           bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
         }
-        if (ev === '_closed' || ev === '_aborted') { $('bsRun').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+        if (ev === '_closed' || ev === '_aborted') {
+          window.sartorEval.clearBtnPending($('bsRun'));
+          if (window.sartorRunLock) window.sartorRunLock.release();
+          if (bar) bar.hidden = true;
+          if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick);
+          else prog.textContent = 'Cancelled — no further paid calls were started.';
+          return;
+        }
         if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';
         else if (ev === 'jd_start') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ' (' + p.jd_file + '): starting…';
         else if (ev === 'analyzing') prog.textContent = 'JD ' + (p.index + 1) + '/' + p.total + ': analyzing…';
@@ -2037,7 +2102,7 @@
           // idempotent, so a later '_closed' after a mid-stream error is safe).
           prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
           if (bar) bar.hidden = true;
-          $('bsRun').disabled = false;
+          window.sartorEval.clearBtnPending($('bsRun'));
           if (window.sartorRunLock) window.sartorRunLock.release();
           window.sartorEval.hideCancel(cancelBtn, onCancelClick);
         }
@@ -2050,7 +2115,7 @@
   function exportSeed() {
     var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var prog = $('bsProgress');
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
-    $('bsExportSeed').disabled = true;
+    window.sartorEval.setBtnPending($('bsExportSeed'));
     prog.textContent = 'Exporting corpus seed… (deterministic, no paid LLM calls)';
     fetch(API + '/seed/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, slug: slug || undefined }) }).then(function (resp) {
       return jsonRes(resp).then(function (res) {
@@ -2059,7 +2124,7 @@
         prog.textContent = 'Seed written: ' + d.path + ' (' + d.experiences + ' experiences, ' + d.bullets + ' bullets, ' + d.summary_items + ' summary items, ' + d.skills + ' skills).';
         loadFixtures().then(function () { if (d.slug) { $('fixtureSelect').value = d.slug; loadFixture(d.slug, user); } });
       });
-    }).catch(function () { prog.textContent = 'Seed export request failed.'; }).then(function () { $('bsExportSeed').disabled = false; });
+    }).catch(function () { prog.textContent = 'Seed export request failed.'; }).then(function () { window.sartorEval.clearBtnPending($('bsExportSeed')); });
   }
 
   // ---- grounding backfill (score an existing fixture; CPU, no paid calls) ----
@@ -2071,7 +2136,7 @@
     // bootstrap runs), so the bar stays INDETERMINATE (no [value]) — just a
     // more-visible "busy" signal than the text line alone, nothing granular.
     var bar = $('annScoreProgressBar'); var cancelBtn = $('annScoreCancelBtn');
-    $('annScore').disabled = true;
+    window.sartorEval.setBtnPending($('annScore'));
     if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
     if (bar) { bar.hidden = false; bar.removeAttribute('value'); }
@@ -2080,7 +2145,14 @@
       API + '/fixture/' + encodeURIComponent(state.candidate) + '/' + encodeURIComponent(state.slug) + '/score',
       {},
       function (ev, p) {
-        if (ev === '_closed' || ev === '_aborted') { $('annScore').disabled = false; if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+        if (ev === '_closed' || ev === '_aborted') {
+          window.sartorEval.clearBtnPending($('annScore'));
+          if (window.sartorRunLock) window.sartorRunLock.release();
+          if (bar) bar.hidden = true;
+          if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick);
+          else prog.textContent = 'Cancelled — scoring stopped.';
+          return;
+        }
         if (ev === 'start') prog.textContent = 'Scoring ' + p.bullet_clusters + ' bullet clusters…';
         else if (ev === 'scoring') prog.textContent = p.message || 'Scoring…';
         else if (ev === 'done') {
@@ -2097,7 +2169,7 @@
           // never reaches '_closed', so this branch does its own cleanup too.
           prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : '');
           if (bar) bar.hidden = true;
-          $('annScore').disabled = false;
+          window.sartorEval.clearBtnPending($('annScore'));
           if (window.sartorRunLock) window.sartorRunLock.release();
           window.sartorEval.hideCancel(cancelBtn, onCancelClick);
         }

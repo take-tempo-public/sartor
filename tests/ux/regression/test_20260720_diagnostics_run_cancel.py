@@ -4,11 +4,18 @@ Guards `dashboard/templates/dashboard.html`'s Cancel-button wiring
 (`window.sartorEval.wireCancel`/`hideCancel`, threaded through `stream()`'s
 `AbortController`): while a paid/CPU-bound diagnostics run is in flight, its
 Cancel button is visible; clicking it aborts the underlying `fetch`, shows the
-already-accepted-limitation "Cancelling…" text (no server confirmation can
-reach the client once the connection drops — see
+"Cancelling…" text synchronously (no server confirmation can reach the client
+once the connection drops — see
 `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`'s RUN-LIFECYCLE
 note), hides the Cancel button, re-enables the Run button, and releases the
 shared `sartorRunLock` banner.
+
+UX-6 (Epic C C1b): the progress line used to stay on "Cancelling…" forever —
+the `_aborted` branch never set a terminal message. It now reaches a real
+terminal state ("Cancelled — no further paid calls were started.") once the
+abort actually lands (asserted below after "Cancelling…"'s transient text),
+and stops pulsing (the Run button's `.btn-pending` class is cleared with the
+rest of its pending state).
 
 Two call sites are covered, not all four, since all four now ride the SAME
 `window.sartorEval.stream()` `AbortController` wiring (post-dedup, see
@@ -25,6 +32,7 @@ browser-side button wiring.
 
 from __future__ import annotations
 
+import re
 from types import ModuleType
 
 import pytest
@@ -56,14 +64,20 @@ def test_eval_cancel_button_aborts_run_and_resets_ui(
 
     cancel_btn = page.locator("#evalCancelBtn")
     expect(cancel_btn).to_be_visible()
-    expect(page.locator("#evalRunBtn")).to_be_disabled()
+    run_btn = page.locator("#evalRunBtn")
+    expect(run_btn).to_be_disabled()
+    expect(run_btn).to_have_class(re.compile(r"\bbtn-pending\b"))
     expect(page.locator("#runLockBanner")).to_be_visible()
 
     cancel_btn.click()
 
     expect(cancel_btn).to_be_hidden()
-    expect(page.locator("#evalProgress")).to_have_text("Cancelling…")
-    expect(page.locator("#evalRunBtn")).to_be_enabled()
+    # UX-6: reaches a terminal state, not stuck on "Cancelling…" forever.
+    expect(page.locator("#evalProgress")).to_have_text(
+        "Cancelled — no further paid calls were started."
+    )
+    expect(run_btn).to_be_enabled()
+    expect(run_btn).not_to_have_class(re.compile(r"\bbtn-pending\b"))
     expect(page.locator("#runLockBanner")).to_be_hidden()
 
 
@@ -100,12 +114,16 @@ def test_bootstrap_cancel_button_aborts_run_and_resets_ui(
 
     cancel_btn = page.locator("#bsCancelBtn")
     expect(cancel_btn).to_be_visible()
-    expect(page.locator(Dashboard.ANN_BS_RUN)).to_be_disabled()
+    bs_run = page.locator(Dashboard.ANN_BS_RUN)
+    expect(bs_run).to_be_disabled()
     expect(page.locator("#runLockBanner")).to_be_visible()
 
     cancel_btn.click()
 
     expect(cancel_btn).to_be_hidden()
-    expect(page.locator("#bsProgress")).to_have_text("Cancelling…")
-    expect(page.locator(Dashboard.ANN_BS_RUN)).to_be_enabled()
+    # UX-6: reaches a terminal state, not stuck on "Cancelling…" forever.
+    expect(page.locator("#bsProgress")).to_have_text(
+        "Cancelled — no further paid calls were started."
+    )
+    expect(bs_run).to_be_enabled()
     expect(page.locator("#runLockBanner")).to_be_hidden()
