@@ -183,3 +183,37 @@ The owner resolved C2's escalation by directing this sprint. Nothing else is wai
   - the wiki pass (unless drift reaches 60);
   - the full `AGENT_HANDOFF_TEMPLATE.md` ceremony;
   - the epic-level adversarial review.
+
+## Invoker run record (C1c)
+
+- Run `wf_9f0c8afe-bf9` (2026-09-24) returned **`escalated_to_owner`**. The **refuter** raised
+  a `flag_stop` against itself. It had run `git stash -u` and then `git stash pop` during
+  review, which violated this brief's "No pipeline agent may run `git stash` commands". Both
+  Opus reviewers returned `escalate` on the C-11 reading: this is a recurrence of the
+  agent-stash class (memory `reference-background-bash-kill-ceiling`), and no guard fails
+  closed on it.
+- The invoker verified the state read-only: `analyzer.py` and `CHANGELOG.md` are now unstaged
+  (87+/20−, content intact). The dossier and test are still staged (319+). `stash@{0}` (C2)
+  is intact at 7 files, 728+/6−. The closer did not run.
+- The refuter's F2 finding: the C-10 dossier's grep counts don't reproduce. It says 19 files
+  but lists 21, it omits `tests/test_hardening.py:747`, and it lists
+  `tests/test_analyzer_model_selection.py`, which has no match. F3: the code change itself is
+  correct.
+- Awaiting the owner: (1) the fail-closed guard for agent `git stash`; (2) how C2's parked
+  work is protected.
+- **Owner directive, 2026-09-24:** "Build the stash guard, move C2 to a wip branch, then resume
+  C1c and continue the epic." Done by the invoker:
+  - C2 is committed on the local branch `wip/c2-run-detail-modal` @ `12acfc5`, a tree-identical
+    copy of `stash@{0}`, which is kept.
+  - The guard is `88add1f`: `block-subagent-git-stash`, live in the Bash dispatcher. A
+    subagent's state-changing `git stash` now exits 2.
+  - `88add1f` is committed, so it is **not** part of C1c's staged diff for review.
+  - C1c's CHANGELOG entry also carries the guard's line. That is the one invoker write inside
+    the staged diff.
+- **Re-run instructions (fresh sprint stage, not `resumeFromRunId`):** C1c's implementation
+  is already staged. The implementer verifies it, completes it, and **fixes F2**: re-derive
+  the dossier's grep commands and counts without any `git stash`, add
+  `tests/test_hardening.py:747`, and drop `tests/test_analyzer_model_selection.py` if it has
+  no match. It does not rebuild from scratch.
+- **Compaction receipt** in this session's ledger shard at 19:46Z. That is runbook step 9's
+  external signal. The invoker finishes C1c, then stops cleanly at the C1c boundary.
