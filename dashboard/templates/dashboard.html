@@ -34,6 +34,30 @@
     .cb-dash .meta { color: var(--fg-2); font-size: 0.85rem; margin: 0.3rem 0 1.2rem; }
     .cb-dash code.short { color: var(--info); font-size: 0.85em; }
 
+    /* Run-id / error-count buttons (Epic C C2, UX-7/UX-8) -- styled to read
+       like the existing code.short badges above, but clickable: opens the
+       run-detail modal. */
+    .cb-dash button.run-link, .cb-dash button.err-link {
+      color: var(--info); font-size: 0.85em; font-family: inherit; background: var(--bg-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem;
+      cursor: pointer; font-variant-numeric: tabular-nums;
+    }
+    .cb-dash button.run-link:hover, .cb-dash button.err-link:hover { border-color: var(--brand-edge); color: var(--brand); }
+    .cb-dash button.run-link:focus-visible, .cb-dash button.err-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    /* F3 (UX-8 closer fix): .fail (below) sets color:danger on the <td>, but
+       the explicit `color: var(--info)` on .cb-dash button.err-link above
+       (specificity 0,3,1) outranks that inherited red for a failing call
+       kind's button, silently dropping the "this is failing" cue. Restore it
+       with a rule scoped to td.fail (0,3,2) so run-link is unaffected, and
+       re-declare :hover (0,3,3) so the existing hover affordance survives
+       rather than being shadowed by this higher-specificity rule. */
+    .cb-dash td.fail button.err-link { color: var(--danger); }
+    .cb-dash td.fail button.err-link:hover { border-color: var(--brand-edge); color: var(--brand); }
+    /* Roomier than the shared 540px .cb-modal-content default -- holds a
+       waterfall + two tables. Scoped to the id per style.css's own
+       #assistantModal precedent; never re-declare .cb-modal-content globally. */
+    #runDetailModal .cb-modal-content { max-width: 640px; }
+
     /* Tabs */
     /* UX-2: sticky so the tab bar stays reachable on the long Annotate/Tuning
        panes without scrolling back to the top. Stacks with #runLockBanner
@@ -748,6 +772,30 @@
   </div>
 </div>
 
+<!-- Run-detail modal (Epic C C2, UX-7/UX-8). Two entry points, one modal:
+     - a `.run-link` button (run id shown in the trace panel, the calls
+       table, the "Recent runs" fold, or the recent-evals table) opens it via
+       GET /_dashboard/api/run/<run_id> and shows that run's spans, cost, and
+       errors;
+     - an `.err-link` button (a nonzero error count in the reliability table)
+       opens it filtered to that call kind's error records from the calls
+       already rendered on this page (DATA.calls below) -- no second fetch,
+       since the reliability counts and the calls table are already computed
+       from the same filtered call list.
+     Same .cb-modal/.cb-modal-* skeleton as #helpModal/#assistantModal above.
+     Closes on the data-rundetail-dismiss backdrop, Esc, or "Close". -->
+<div id="runDetailModal" class="cb-modal hidden" role="dialog" aria-modal="true"
+     aria-labelledby="runDetailModalTitle" aria-describedby="runDetailModalBody">
+  <div class="cb-modal-backdrop" data-rundetail-dismiss></div>
+  <div class="cb-modal-content" role="document">
+    <h2 id="runDetailModalTitle" class="cb-modal-title">Run detail</h2>
+    <div id="runDetailModalBody" class="cb-modal-body"></div>
+    <div class="modal-actions">
+      <button class="cb-btn cb-bg-blue" id="btnCloseRunDetail" data-rundetail-dismiss>Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- #17: currentUser shim for static/assistant.js. The console never loads
      static/app.js (whose `let currentUser` assistant.js normally reads), so
      this is the minimal stand-in — the assistant's answer is project-global
@@ -788,7 +836,7 @@
       {% for r in calls %}
         <tr>
           <td>{{ r.timestamp }}</td><td>{{ r.username }}</td><td>{{ r.call }}</td><td>{{ r.model }}</td>
-          <td>{{ r.prompt_version }}</td><td><code class="short">{{ r.run_id or "—" }}</code></td>
+          <td>{{ r.prompt_version }}</td><td>{% if r.run_id %}<button type="button" class="run-link" data-run-id="{{ r.run_id }}">{{ r.run_id }}</button>{% else %}<code class="short">—</code>{% endif %}</td>
           <td class="num">{{ r.input_tokens }}</td><td class="num">{{ r.output_tokens }}</td><td class="num">{{ r.latency_ms }}ms</td>
           <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
         </tr>
@@ -807,7 +855,7 @@
       <tbody>
       {% for k in reliability.by_call_kind %}
         <tr><td><code class="short">{{ k.call_kind }}</code></td><td class="num">{{ k.total }}</td>
-          <td class="num {% if k.error_count %}fail{% endif %}">{{ k.error_count }}</td><td class="num">{{ "%.1f"|format(k.error_rate * 100) }}%</td>
+          <td class="num {% if k.error_count %}fail{% endif %}">{% if k.error_count %}<button type="button" class="err-link" data-call-kind="{{ k.call_kind }}" aria-label="Show recent {{ k.call_kind }} errors">{{ k.error_count }}</button>{% else %}{{ k.error_count }}{% endif %}</td><td class="num">{{ "%.1f"|format(k.error_rate * 100) }}%</td>
           <td class="num {% if k.truncation_count %}fail{% endif %}">{{ k.truncation_count }}</td><td class="num">{{ "%.1f"|format(k.truncation_rate * 100) }}%</td></tr>
       {% endfor %}
       </tbody>
@@ -817,7 +865,7 @@
 
   <div class="detail" data-detail="trace">
     {% if run_trace.has_data %}
-    <p class="sub">Latest run <code class="short">{{ run_trace.latest.run_id }}</code> — {{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total. Each bar is a span's share of wall-clock.</p>
+    <p class="sub">Latest run <button type="button" class="run-link" data-run-id="{{ run_trace.latest.run_id }}">{{ run_trace.latest.run_id }}</button> — {{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total. Each bar is a span's share of wall-clock.</p>
     <div class="waterfall">
       {% for s in run_trace.latest.spans %}
       <div class="wf-row">
@@ -832,7 +880,7 @@
         <thead><tr><th>run</th><th class="num">spans</th><th class="num">total</th><th>timestamp</th></tr></thead>
         <tbody>
         {% for run in run_trace.runs %}
-          <tr><td><code class="short">{{ run.run_id }}</code></td><td class="num">{{ run.span_count }}</td><td class="num">{{ "%.1f"|format(run.total_latency_ms / 1000) }}s</td><td>{{ run.timestamp }}</td></tr>
+          <tr><td><button type="button" class="run-link" data-run-id="{{ run.run_id }}">{{ run.run_id }}</button></td><td class="num">{{ run.span_count }}</td><td class="num">{{ "%.1f"|format(run.total_latency_ms / 1000) }}s</td><td>{{ run.timestamp }}</td></tr>
         {% endfor %}
         </tbody>
       </table>
@@ -937,7 +985,7 @@
         <tr>
           <td>{{ r.timestamp }}</td><td>{{ r.fixture }}</td><td>{{ r.jd_label_display }}</td><td>{{ r.rubric }}</td>
           <td class="num {% if r.score is none %}{% elif r.score >= 4.0 %}pass{% else %}fail{% endif %}">{{ "%.1f"|format(r.score) if r.score is not none else "—" }}</td>
-          <td>{{ r.prompt_version }}</td><td><code class="short">{{ r.run_id or "—" }}</code></td>
+          <td>{{ r.prompt_version }}</td><td>{% if r.run_id %}<button type="button" class="run-link" data-run-id="{{ r.run_id }}">{{ r.run_id }}</button>{% else %}<code class="short">—</code>{% endif %}</td>
           <td class="{% if r.status == 'ok' %}ok{% else %}err{% endif %}">{{ r.status }}</td>
           <td>{{ (r.failed_rules or [])|join(", ") }}</td>
         </tr>
@@ -1398,6 +1446,171 @@
       if (fn) { fn(cv); cv.dataset.charted = '1'; }
     });
   }
+})();
+</script>
+
+<!-- ===== Run-detail modal wiring (Epic C C2, UX-7/UX-8) -- a separate IIFE
+     (not folded into the charts IIFE above) so it works even in the
+     `typeof Chart === 'undefined'` early-return edge case that IIFE already
+     has; this modal has no Chart.js dependency at all. ===== -->
+<script>
+(function () {
+  var modal = document.getElementById('runDetailModal');
+  if (!modal) return;
+  var modalBody = document.getElementById('runDetailModalBody');
+  var modalTitle = document.getElementById('runDetailModalTitle');
+  var modalCloseBtn = document.getElementById('btnCloseRunDetail');
+  var lastTrigger = null;
+
+  // The most-recent-200 filtered call list the throughput table already
+  // renders server-side, reused here so the error-rate-row path (UX-8) needs
+  // no second fetch or JSONL pass -- it's the same bounded read the page
+  // already paid for.
+  var CALLS = {{ calls | tojson }};
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s === null || s === undefined ? '' : String(s);
+    // textContent->innerHTML escapes &, <, > (and U+00A0) but NOT the quote
+    // characters -- fine for text nodes, but this helper is also used to
+    // build attribute values (the waterfall row's title="...") where an
+    // unescaped quote would break out of the attribute (F1, UX-8 closer fix).
+    return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function closeRunDetail() {
+    modal.classList.add('hidden');
+    if (lastTrigger) { lastTrigger.focus(); lastTrigger = null; }
+  }
+  modal.querySelectorAll('[data-rundetail-dismiss]').forEach(function (el) {
+    el.addEventListener('click', closeRunDetail);
+  });
+  // Capture phase, not bubble: the tile/detail-panel IIFE above also closes
+  // on Escape unconditionally (document, bubble phase). Without this, both
+  // handlers fire on the same keypress -- the detail panel closes FIRST
+  // (registered earlier => runs first in bubble phase) and reparents this
+  // modal's trigger button back into the hidden #detailStore, which silently
+  // defeats the focus-restore below (a display:none subtree can't hold
+  // focus). Capture runs before bubble regardless of registration order, so
+  // stopping propagation here -- only while this modal is actually open --
+  // makes the topmost overlay own Escape, and leaves the detail panel's own
+  // Escape handling untouched the rest of the time.
+  document.addEventListener(
+    'keydown',
+    function (e) {
+      if (e.key !== 'Escape' || modal.classList.contains('hidden')) return;
+      e.stopPropagation();
+      closeRunDetail();
+    },
+    true
+  );
+
+  function openRunModal(triggerEl) {
+    lastTrigger = triggerEl || null;
+    modal.classList.remove('hidden');
+    modalCloseBtn.focus();
+  }
+
+  // Since Epic C C1c, a failed call's row carries error_type/error_message
+  // (already redacted + size-capped by analyzer._redact_error_message) --
+  // rendered when present. Rows logged before C1c (and any row from before
+  // this endpoint existed) lack both keys; that renders as "no message
+  // logged", never an empty string or a missing-field error.
+  function renderErrorsTable(rows, emptyNote) {
+    if (!rows || !rows.length) return '<p class="empty">' + esc(emptyNote) + '</p>';
+    var html = '<table><thead><tr><th>call kind</th><th>timestamp</th><th>model</th>'
+      + '<th>stop reason</th><th class="num">latency</th><th>error</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var errCell = r.error_type
+        ? '<code class="short">' + esc(r.error_type) + '</code>'
+          + (r.error_message ? ': ' + esc(r.error_message) : '')
+        : '<span class="empty">no message logged</span>';
+      html += '<tr><td><code class="short">' + esc(r.call_kind) + '</code></td><td>'
+        + esc(r.timestamp) + '</td><td>' + esc(r.model) + '</td><td>'
+        + esc(r.stop_reason || '—') + '</td><td class="num">'
+        + esc(r.latency_ms) + 'ms</td><td>' + errCell + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderRunDetail(d) {
+    var maxLat = 0;
+    d.spans.forEach(function (s) { if (s.latency_ms > maxLat) maxLat = s.latency_ms; });
+    var html = '<p class="sub">' + d.spans.length + ' span(s) · '
+      + (d.total_latency_ms / 1000).toFixed(1) + 's total · '
+      + d.reliability.error_count + ' error(s)</p>';
+    html += '<div class="waterfall">';
+    d.spans.forEach(function (s) {
+      var barPct = maxLat ? Math.round(1000 * s.latency_ms / maxLat) / 10 : 0;
+      html += '<div class="wf-row"><span class="lbl" title="' + esc(s.call_kind) + ' ('
+        + esc(s.model) + ')">' + esc(s.call_kind) + '</span>'
+        + '<span class="wf-track"><span class="wf-bar" style="width:' + barPct + '%"></span></span>'
+        + '<span class="ms">' + esc(s.latency_ms) + 'ms</span></div>';
+    });
+    html += '</div>';
+    if (d.cost_by_call_kind && d.cost_by_call_kind.length) {
+      html += '<h3 class="ann-h3">Cost by call kind</h3><table><thead><tr><th>call kind</th>'
+        + '<th class="num">count</th><th class="num">total $</th></tr></thead><tbody>';
+      d.cost_by_call_kind.forEach(function (c) {
+        html += '<tr><td><code class="short">' + esc(c.call_kind) + '</code></td><td class="num">'
+          + c.count + '</td><td class="num">$' + c.total_cost_usd.toFixed(5) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<h3 class="ann-h3">Errors</h3>'
+      + renderErrorsTable(d.errors, 'No errors on this run.');
+    return html;
+  }
+
+  function openRunDetail(runId, triggerEl) {
+    openRunModal(triggerEl);
+    modalTitle.textContent = 'Run ' + runId;
+    modalBody.innerHTML = '<p class="sub">Loading…</p>';
+    fetch('/_dashboard/api/run/' + encodeURIComponent(runId))
+      .then(function (resp) {
+        return resp.json().then(function (d) { return { ok: resp.ok, d: d }; });
+      })
+      .then(function (res) {
+        if (!res.ok || !res.d.found) {
+          modalBody.innerHTML = '<p class="empty">No log record for run <code class="short">'
+            + esc(runId) + '</code>.</p>';
+          return;
+        }
+        modalBody.innerHTML = renderRunDetail(res.d);
+      })
+      .catch(function () {
+        modalBody.innerHTML = '<p class="empty">Could not load run detail (request failed).</p>';
+      });
+  }
+
+  function openErrorsForKind(kind, triggerEl) {
+    openRunModal(triggerEl);
+    modalTitle.textContent = 'Recent errors — ' + kind;
+    var rows = CALLS.filter(function (r) {
+      return (r.call || 'unknown') === kind && r.status !== 'ok';
+    }).map(function (r) {
+      return {
+        call_kind: r.call,
+        timestamp: r.timestamp,
+        model: r.model,
+        stop_reason: r.stop_reason,
+        latency_ms: r.latency_ms,
+        error_type: r.error_type,
+        error_message: r.error_message,
+      };
+    });
+    modalBody.innerHTML = '<p class="sub">' + rows.length
+      + ' of the 200 most recent calls.</p>'
+      + renderErrorsTable(rows, 'No errors for this call kind in the most recent 200 calls.');
+  }
+
+  document.querySelectorAll('.run-link').forEach(function (btn) {
+    btn.addEventListener('click', function () { openRunDetail(btn.dataset.runId, btn); });
+  });
+  document.querySelectorAll('.err-link').forEach(function (btn) {
+    btn.addEventListener('click', function () { openErrorsForKind(btn.dataset.callKind, btn); });
+  });
 })();
 </script>
 

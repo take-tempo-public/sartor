@@ -2201,3 +2201,34 @@ exhaustive, and no page describes error-row content at all, so there is nothing 
 correct. `docs/wiki/pages/diagnostics-console.md:123` mentions `status == "judge_error"`
 filtering — a different status value, on a different route (`_evaluate` results, not
 `llm_calls.jsonl`) — and is unaffected. `.last_ingest_sha` was not advanced (item 98).
+
+## 2026-09-24 — scoped close-out relevance check (`feat/run-detail-modal`, C2 rerun closer)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C2 rerun — run 4 of 5), scoped to this
+branch's own currently-staged diff (this sprint's implementation was restored from a parked
+`wip` branch and is staged but not yet committed — see
+`docs/dev/handoffs/epic-c-c2-rerun-brief.md` "Sprint identity"), not a full ingest. Per
+`epic-c-design-brief.md` §"Close-out intervals", the full wiki pass is **deferred to the
+epic close** unless drift reaches the 60 backstop — `python -m scripts.wiki_freshness`
+reports **40 of 75** (unchanged from C1c's reading; `analyzer.py`'s C1c change is the only
+committed diff since the checkpoint, and this sprint's own files are still staged, not
+committed, so they don't move the counter yet), still well under the backstop, so the
+deferral stands. This entry is the still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the current
+working-tree/staged file set):** `dashboard/routes.py` and
+`dashboard/templates/dashboard.html` (`docs/dev/blast-radius/run-detail-modal.md`,
+`docs/dev/work/BOARD.md`, `tests/test_dashboard_routes.py`,
+`tests/ux/regression/test_20260924_run_detail_modal.py`, `ui_pages/dashboard_console.py`,
+`ui_pages/selectors.py`, and the new work item file all classify irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped
+`docs/wiki/pages/diagnostics-console.md` for `run_link`/`run-link`/`err-link`/`RUN_MODAL`/
+"run detail"/`error_type`/`error_message`/`/_dashboard/api/run`/`esc(`/`escap`/`XSS`/
+`innerHTML`/`cascade`/`specificity`/`.fail` — zero hits on every term. The page does not
+document the run-detail modal (UX-7/UX-8) at all — it predates C2 landing, and this
+sprint's own work (the new `GET /_dashboard/api/run/<run_id>` route, the run-id/error-rate
+buttons, and the three closer-applied fixes: `esc()`'s attribute-context escaping, the
+`.err-link` failing-state CSS-specificity correction, and the C-10 dossier's member-name
+correction) has nothing to contradict or update. `.last_ingest_sha` was not advanced
+(item 98).

@@ -1051,3 +1051,112 @@ class TestBaselineHealth:
         ]
         out = _baseline_health(records, self._BASELINE)
         assert out["rows"][0]["status"] == "ok"
+
+
+class TestRunDetailRoute:
+    """GET /api/run/<run_id> — Epic C C2, UX-7/UX-8's composite endpoint."""
+
+    def test_non_localhost_request_gets_403(self, dash_client):
+        client, _results_dir = dash_client
+        resp = client.get("/dashboard/api/run/r1", headers={"Host": "example.com"})
+        assert resp.status_code == 403
+
+    def test_unknown_run_id_is_404_not_found(self, dash_client):
+        client, _results_dir = dash_client
+        resp = client.get("/dashboard/api/run/nope", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 404
+        body = resp.get_json()
+        assert body["found"] is False
+        assert body["run_id"] == "nope"
+
+    def test_scopes_spans_cost_and_errors_to_the_one_run(self, dash_client, monkeypatch, tmp_path):
+        from dashboard import routes as dashboard_routes
+
+        client, _results_dir = dash_client
+        log_path = tmp_path / "calls.jsonl"
+        records = [
+            {
+                "run_id": "r1",
+                "call": "analyze",
+                "model": "m",
+                "status": "ok",
+                "latency_ms": 1000,
+                "timestamp": "2026-09-24T00:00:01Z",
+            },
+            {
+                "run_id": "r1",
+                "call": "generate",
+                "model": "m",
+                "status": "error",
+                "stop_reason": "max_tokens",
+                "latency_ms": 500,
+                "timestamp": "2026-09-24T00:00:02Z",
+                "error_type": "LLMConfigurationError",
+                "error_message": "call=generate could not be sent — no credential configured",
+            },
+            # A second run's calls must NOT leak into r1's detail.
+            {
+                "run_id": "r2",
+                "call": "analyze",
+                "model": "m",
+                "status": "ok",
+                "latency_ms": 9999,
+                "timestamp": "2026-09-24T00:00:03Z",
+            },
+        ]
+        log_path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", log_path)
+
+        resp = client.get("/dashboard/api/run/r1", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["found"] is True
+        assert body["run_id"] == "r1"
+        assert len(body["spans"]) == 2
+        assert body["total_latency_ms"] == 1500
+        assert body["reliability"]["error_count"] == 1
+        assert body["reliability"]["total"] == 2  # r2's call excluded
+
+        # The errors list carries the C1c error_type/error_message fields
+        # verbatim -- this route never re-derives or re-redacts them.
+        assert len(body["errors"]) == 1
+        err = body["errors"][0]
+        assert err["call_kind"] == "generate"
+        assert err["stop_reason"] == "max_tokens"
+        assert err["error_type"] == "LLMConfigurationError"
+        assert err["error_message"] == "call=generate could not be sent — no credential configured"
+
+        cost_kinds = {c["call_kind"] for c in body["cost_by_call_kind"]}
+        assert cost_kinds == {"analyze", "generate"}
+
+    def test_pre_c1c_error_row_has_no_error_type_or_message(
+        self, dash_client, monkeypatch, tmp_path
+    ):
+        """A row logged before C1c (or any row missing the keys) surfaces
+        error_type/error_message as None -- never a fabricated string, never
+        a KeyError."""
+        from dashboard import routes as dashboard_routes
+
+        client, _results_dir = dash_client
+        log_path = tmp_path / "calls.jsonl"
+        records = [
+            {
+                "run_id": "r1",
+                "call": "generate",
+                "model": "m",
+                "status": "error",
+                "stop_reason": "max_tokens",
+                "latency_ms": 500,
+                "timestamp": "2026-09-24T00:00:02Z",
+                # No error_type/error_message -- a legacy pre-C1c row.
+            },
+        ]
+        log_path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", log_path)
+
+        resp = client.get("/dashboard/api/run/r1", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        body = resp.get_json()
+        err = body["errors"][0]
+        assert err["error_type"] is None
+        assert err["error_message"] is None

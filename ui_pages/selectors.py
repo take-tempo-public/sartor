@@ -487,6 +487,27 @@ class Dashboard:
     TUNE_USER = "#tuneUser"
     TUNE_SLUG = "#tuneSlug"
 
+    # --- Run-detail modal (Epic C C2, UX-7/UX-8) --- additive-only; no name
+    # above this point was renamed, removed, or repurposed (see this branch's
+    # docs/dev/blast-radius/run-detail-modal.md).
+    RUN_MODAL = "#runDetailModal"
+    RUN_MODAL_OPEN = "#runDetailModal:not(.hidden)"
+    RUN_MODAL_TITLE = "#runDetailModalTitle"
+    RUN_MODAL_BODY = "#runDetailModalBody"
+    RUN_MODAL_CLOSE = "#btnCloseRunDetail"
+    RUN_LINK = "button.run-link"
+    ERR_LINK = "button.err-link"
+
+    @staticmethod
+    def run_link(run_id: str) -> str:
+        """Return the selector for a specific run id's clickable button."""
+        return f"button.run-link[data-run-id='{run_id}']"
+
+    @staticmethod
+    def err_link(call_kind: str) -> str:
+        """Return the selector for a call kind's clickable error-count button."""
+        return f"button.err-link[data-call-kind='{call_kind}']"
+
 
 class Compose:
     """Selectors for the Step-3 compose surface (bullets, titles, role intros)."""

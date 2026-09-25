@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 11 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
+**Open 12 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -14,6 +14,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **107** -- First run offers no account-naming step; the account is named after the email address (`agent`) -- No first-run step to name the account; it defaults to the email address while settings shows the real name.
 - **111** -- check-plan-approved.sh costs ~2 s on every Edit/Write and 8-21 s on its retire path on Windows/MSYS: about 15-20 forks at 0.3-1 s each (`agent`) -- Plan-approval hook: ~2 s per edit, 8-21 s per retire, from MSYS fork count. Item 110 fixed correctness, not speed.
 - **112** -- The diagnostics console's Since filter raises TypeError on any date: naive date floor compared against offset-aware telemetry timestamps (`agent`) -- Any Since date crashes the console: _filter_calls compares a naive floor to offset-aware (+00:00) timestamps.
+- **115** -- UX-8 test asserts .err-link failing-state color via getComputedStyle, not just CSS rules read (`agent`) -- Add a getComputedStyle assertion for .err-link's danger color; F3's fix was verified by reading rules, not measuring.
 
 ## Blocked
 
