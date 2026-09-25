@@ -32,6 +32,15 @@ changed on C2's tip that C3 inherits.
   **The invoking session must record the actual `feat/run-detail-modal` commit sha here
   (or verify it directly) before starting C3 — do not start C3 against an uncommitted
   tip.**
+  **Recorded by the C3 invoker (session `e713dc79`, Opus 5.5, 2026-09-25):** C2 =
+  `8bf95a6`; epic tip `fe7d64c` (= `feat/run-detail-modal`; `fe7d64c` is one hook-written
+  `compacted` ledger row on top of C2). C2's gate #2 result was not recoverable from any
+  durable record (C-12), so the gate was re-run on `fe7d64c`: `gate: all steps passed.`,
+  0 `RERUN` (`gate-c2tip.log`). `wiki_freshness`: 41 of 75. Structural gate
+  (`test_n1_pipeline.py` + `test_gitattributes_coverage.py`): 46 passed. Dispatch probe
+  `wf_234f70b9-add`: `ok_to_run`. `feat/dashboard-copy-discovery` cut from `fe7d64c`.
+  Owner preflight batch: run opt-in "Yes, start now"; RAM "I'll free it myself" (the
+  invoker re-checks the 1.0 GB floor before each gate and stops if it's below).
 - **Implementer model + effort:** `opus`, per `epic-c-design-brief.md` §"Sprint →
   pipeline-run mapping" (RELEASE_ARC §"Session models": C3 = Opus).
 
