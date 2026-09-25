@@ -29,6 +29,15 @@ context, or first-move instructions — those live in `epic-c-c2-brief.md`.
   this brief, item 114, and the wiki log entry) sits on top of it, uncommitted. **The
   invoking session must record the actual C1c commit sha here (or verify it directly)
   before starting C2 — do not start C2 against an uncommitted tip.**
+  **Recorded by the C2-rerun invoker (session `d9b0e005`, Opus 5.5, preflight 2026-09-24):**
+  C1c committed as `0d480c2`, plus the hook-written ledger commits `90e91b0` and `71d0d17`.
+  Gate re-run by this invoker on `epic/c-diagnostics @ 71d0d17`: `gate: all steps passed.`,
+  0 `RERUN`. `feat/run-detail-modal` was fast-forwarded `a66edb7` → `71d0d17`, and the parked
+  work was restored with `git cherry-pick --no-commit 12acfc5`. The staged result is
+  7 files, 728+/6−, and `git diff --cached 12acfc5 --` over those 7 paths is empty.
+  **Authoritative copy: `wip/c2-run-detail-modal @ 12acfc5`.** Its tree (`08ce457c`) is
+  identical to both the index and working-tree sides of `stash@{0}` (verified directly,
+  which closes the open risk below). The stash stays as an undropped backup.
 - **Implementer model + effort:** `sonnet`, per `epic-c-design-brief.md` §"Sprint →
   pipeline-run mapping" (RELEASE_ARC §"Session models": C2 = Sonnet). Unchanged from the
   original C2 brief and from C1c's own brief.
