@@ -2232,3 +2232,39 @@ buttons, and the three closer-applied fixes: `esc()`'s attribute-context escapin
 `.err-link` failing-state CSS-specificity correction, and the C-10 dossier's member-name
 correction) has nothing to contradict or update. `.last_ingest_sha` was not advanced
 (item 98).
+
+## 2026-09-25 — scoped close-out relevance check (`feat/dashboard-copy-discovery`, C3 closer, Epic C terminal sprint)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C3 — the epic's terminal sprint, run 5 of
+5). Per `epic-c-design-brief.md` §"Close-out intervals", the full wiki pass is **deferred
+to the epic close** unless drift reaches the 60-file backstop — `python -m
+scripts.wiki_freshness` reports **41 of 75** at this generation, still under the backstop,
+so the deferral stands. This entry is the scoped relevance check the invoking session's
+closer prompt asks for; the full `/wiki-self-update` pass against all of Epic C's landed
+diff is explicitly **pending at epic close**, run by the invoking session, not this closer.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the current
+working-tree/staged file set):** `dashboard/templates/dashboard.html` classifies
+**relevant**. `docs/dev/blast-radius/dashboard-copy-discovery.md`,
+`docs/dev/work/BOARD.md`, `docs/dev/work/items/0116-*.md`,
+`docs/dev/handoffs/dashboard-copy-discovery.md`, `tests/test_annotation_routes.py`,
+`tests/test_dashboard_copy.py`, `tests/ux/regression/test_20260925_dashboard_copy_discovery.py`,
+and `ui_pages/selectors.py` all classify irrelevant.
+
+**Not verified-no-edit — drift disclosed, not silently deferred.** Unlike the C2 rerun
+entry above, this is **not** a clean no-edit finding. `docs/wiki/pages/diagnostics-console.md`
+§"In-app help: a ported primitive, not a shared import" (`:152-174`) documents the
+`_DASH_HELP` registry as keyed only `dashPipeline` / `dashQuality` / `dashGroundedness` /
+`dashTuning` / `dashAnnotate` (the 5 tab-level entries) and says nothing about the
+per-tile/per-module entries this sprint's UX-9 work added (`dashTileCalls`,
+`dashTileErrors`, `dashTileTrace`, `dashTileRecent`, and siblings across the Quality/
+Groundedness/Tuning tabs), nor the `.tile-cell`/`TILE_LAY`/`TILE_HELP` structural pattern
+(Observation 2a in `docs/dev/blast-radius/dashboard-copy-discovery.md`) that makes a
+help circle a sibling rather than a nested-interactive child. The page's description is
+therefore **stale, not wrong** — the tab-level mechanism it documents is still accurate,
+it is merely incomplete against C3's tile-level extension of the same registry. Per the
+invoking session's explicit instruction for this step ("record the classification result
+... note the full pass is pending at epic close"), this closer records the gap rather than
+editing the page now — editing here would pre-empt the epic-close pass's own view of the
+*whole* epic's diff (C1a/C1b/C1c/C2/C3 together), and this sprint's tile-level additions are
+only one piece of it. `.last_ingest_sha` was not advanced (item 98).

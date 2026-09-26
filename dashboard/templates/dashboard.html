@@ -105,6 +105,23 @@
     .tile .v.brand { color: var(--brand); }
     .tile .sub { color: var(--fg-2); font-size: 0.78rem; }
     .tile .sub .num { font-variant-numeric: tabular-nums; }
+    /* Epic C C3 (UX-9): every tile carries an on-screen lay line (.lay) plus
+       an (i) that opens its _DASH_HELP entry. The tile is a <button>, so the
+       (i) cannot live inside it (nested interactive content — axe
+       `nested-interactive`); the .tile-cell wrapper holds both as siblings and
+       is the grid item instead (so .span-2 sits on the wrapper). The (i) is
+       pinned bottom-right, clear of the tile's centre (where clicks land) and
+       of the ▸ affordance top-right; .lay reserves that corner. */
+    .tile-cell { position: relative; display: flex; min-width: 0; }
+    .tile-cell > .tile { flex: 1 1 auto; min-width: 0; }
+    .tile-cell > .help-info { position: absolute; right: 0.7rem; bottom: 0.7rem; }
+    .tile .lay { color: var(--fg-1); font-size: 0.78rem; line-height: 1.4; padding-right: 1.8rem; margin-top: auto; }
+    /* Module-level lay lines + guides (filters, Annotate steps). */
+    .filter-scope { display: flex; align-items: center; gap: 0.5rem; color: var(--fg-1); font-size: 0.8rem; margin: -0.4rem 0 1rem; }
+    .filter-scope .help-info { flex: none; }
+    .ann-warn { border-left: 3px solid var(--warning); padding-left: 0.6rem; }
+    .ann-guide { color: var(--fg-1); font-size: 0.8rem; line-height: 1.5; margin: 0.4rem 0 0.6rem; }
+    .ann-guide code.short { white-space: nowrap; }
 
     /* Health / status badges */
     .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: var(--radius-pill); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; width: fit-content; }
@@ -292,7 +309,7 @@
 <!-- ============================ PIPELINE ============================ -->
 <section class="dash-pane" data-pane="pipeline" role="tabpanel">
   <p class="dash-pane-intro">
-    <span>Live cost, latency, cache, error rate, and a per-run trace for every LLM call — reads <code class="short">logs/llm_calls.jsonl</code>.</span>
+    <span>What every AI call the app made cost, how long it took, and whether it failed — plus a step-by-step trace of each run. Reads the call log, <code class="short">logs/llm_calls.jsonl</code>.</span>
     <button class="help-info" id="help-icon-dashPipeline" data-help="dashPipeline" type="button"
             title="About the Pipeline tab" aria-label="Help: Pipeline — live call telemetry"
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
@@ -300,18 +317,27 @@
   <form class="filters" method="get" action="">
     <label>Since<input type="date" name="since" value="{{ filters.since }}"></label>
     <label>User
-      <select name="user"><option value=""></option>
+      <select name="user"><option value="">All users</option>
       {% for u in users %}<option value="{{ u }}" {% if u == filters.user %}selected{% endif %}>{{ u }}</option>{% endfor %}
       </select>
     </label>
     <label>Model
-      <select name="model"><option value=""></option>
+      <select name="model"><option value="">All models</option>
       {% for m in models %}<option value="{{ m }}" {% if m == filters.model %}selected{% endif %}>{{ m }}</option>{% endfor %}
       </select>
     </label>
     <button type="submit">Apply</button>
     <a class="clear" href="{{ url_for('dashboard.index') }}">clear</a>
   </form>
+  <!-- UX-13: the filters look global but scope only this tab's call log
+       (dashboard/routes.py index(): Quality/Groundedness aggregate ALL eval
+       results, unfiltered). Say so where the filters are. -->
+  <p class="filter-scope" id="filterScope">
+    <span>These filters narrow <strong>this Pipeline tab only</strong> (the AI-call log). Quality, Groundedness and Tuning always show every eval result, whatever you pick here.</span>
+    <button class="help-info" id="help-icon-dashFilters" data-help="dashFilters" type="button"
+            title="About the filters" aria-label="Help: Filters — what Since, User and Model narrow"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+  </p>
 
   {% if summary.count == 0 %}
   <p class="empty">Nothing to chart yet. This tab summarizes every LLM call the app logs to
@@ -320,31 +346,61 @@
     filters — try clearing them above{% endif %}.</p>
   {% else %}
   <div class="bento">
-    <button class="tile" data-detail="cost" data-title="Cost — by call kind">
-      <span class="k">total cost</span>
-      <span class="v brand">${{ "%.4f"|format(summary.total_cost_usd) }}</span>
-      <span class="sub">p50 <span class="num">${{ "%.5f"|format(summary.p50_cost_usd) }}</span> · p95 <span class="num">${{ "%.5f"|format(summary.p95_cost_usd) }}</span></span>
-    </button>
-    <button class="tile" data-detail="throughput" data-title="Throughput — recent calls">
-      <span class="k">calls</span>
-      <span class="v">{{ summary.count }}</span>
-      <span class="sub">cache hit <span class="num">{{ "%.0f"|format(summary.cache_hit_ratio * 100) }}%</span> · {{ summary.total_input_tokens }} in / {{ summary.total_output_tokens }} out</span>
-    </button>
-    <button class="tile" data-detail="reliability" data-title="Error rate — errors & truncation">
-      <span class="k">error rate</span>
-      <span class="v {% if reliability.error_count or reliability.truncation_count %}err{% else %}ok{% endif %}">{{ "%.0f"|format(reliability.error_rate * 100) }}%</span>
-      <span class="sub">{{ reliability.error_count }} error · {{ reliability.truncation_count }} truncated (max_tokens)</span>
-    </button>
-    <button class="tile" data-detail="trace" data-title="Trace — latest run waterfall">
-      <span class="k">latest trace</span>
-      <span class="v">{% if run_trace.has_data %}{{ run_trace.latest.spans|length }} spans{% else %}—{% endif %}</span>
-      <span class="sub">{% if run_trace.has_data %}{{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total · <code class="short">{{ run_trace.latest.run_id }}</code>{% else %}no run_id in calls{% endif %}</span>
-    </button>
-    <button class="tile" data-detail="latency" data-title="Latency">
-      <span class="k">p50 / p95 latency</span>
-      <span class="v">{{ summary.p50_latency_ms }}<span style="font-size:0.7em"> / {{ summary.p95_latency_ms }}ms</span></span>
-      <span class="sub">mean <span class="num">{{ summary.mean_latency_ms }}ms</span></span>
-    </button>
+    <div class="tile-cell">
+      <button class="tile" data-detail="cost" data-title="Cost — by call kind">
+        <span class="k">total cost</span>
+        <span class="v brand">${{ "%.4f"|format(summary.total_cost_usd) }}</span>
+        <span class="sub">p50 <span class="num">${{ "%.5f"|format(summary.p50_cost_usd) }}</span> · p95 <span class="num">${{ "%.5f"|format(summary.p95_cost_usd) }}</span></span>
+        <span class="lay">Estimated spend on the AI calls in this view. p50 is a typical call’s cost, p95 an expensive one’s.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileCost" data-help="dashTileCost" type="button"
+              title="About total cost" aria-label="Help: Total cost — what the AI calls cost"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="throughput" data-title="Throughput — recent calls">
+        <span class="k">calls</span>
+        <span class="v">{{ summary.count }}</span>
+        <span class="sub">cache hit <span class="num">{{ "%.0f"|format(summary.cache_hit_ratio * 100) }}%</span> · {{ summary.total_input_tokens }} in / {{ summary.total_output_tokens }} out</span>
+        <span class="lay">How many AI calls were made, how often cached prompt text was reused, and how much text (tokens) went in and out.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileCalls" data-help="dashTileCalls" type="button"
+              title="About calls" aria-label="Help: Calls — how much work the pipeline did"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="reliability" data-title="Error rate — errors & truncation">
+        <span class="k">error rate</span>
+        <span class="v {% if reliability.error_count or reliability.truncation_count %}err{% else %}ok{% endif %}">{{ "%.0f"|format(reliability.error_rate * 100) }}%</span>
+        <span class="sub">{{ reliability.error_count }} error · {{ reliability.truncation_count }} truncated (max_tokens)</span>
+        <span class="lay">Calls that failed, or were cut off at the length limit before finishing. Open it to see each failure.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileErrors" data-help="dashTileErrors" type="button"
+              title="About the error rate" aria-label="Help: Error rate — failed or cut-off calls"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="trace" data-title="Trace — latest run waterfall">
+        <span class="k">latest trace</span>
+        <span class="v">{% if run_trace.has_data %}{{ run_trace.latest.spans|length }} spans{% else %}—{% endif %}</span>
+        <span class="sub">{% if run_trace.has_data %}{{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total · <code class="short">{{ run_trace.latest.run_id }}</code>{% else %}no run id on any call yet{% endif %}</span>
+        <span class="lay">The steps of the most recent run, one bar per AI call — a longer bar is a slower call.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileTrace" data-help="dashTileTrace" type="button"
+              title="About the latest trace" aria-label="Help: Latest trace — one run, step by step"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="latency" data-title="Latency">
+        <span class="k">p50 / p95 latency</span>
+        <span class="v">{{ summary.p50_latency_ms }}<span style="font-size:0.7em"> / {{ summary.p95_latency_ms }}ms</span></span>
+        <span class="sub">mean <span class="num">{{ summary.mean_latency_ms }}ms</span></span>
+        <span class="lay">How long one AI call takes: p50 is a typical call, p95 a slow one, mean the plain average.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileLatency" data-help="dashTileLatency" type="button"
+              title="About latency" aria-label="Help: Latency — how long AI calls take"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
   </div>
   {% endif %}
 </section>
@@ -352,14 +408,17 @@
 <!-- ============================ QUALITY ============================ -->
 <section class="dash-pane" data-pane="quality" role="tabpanel">
   <p class="dash-pane-intro">
-    <span>Eval scores (0–5) for generated résumés, by rubric. Run a suite here or from the CLI.</span>
+    <span>How good the generated résumés are: an AI grader scores each one from 0 to 5 against a set of rubrics (grading checklists). Run a suite here or from the command line.</span>
     <button class="help-info" id="help-icon-dashQuality" data-help="dashQuality" type="button"
             title="About the Quality tab" aria-label="Help: Quality — eval scores by rubric"
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
   </p>
   <div class="eval-run" id="evalRun">
     <strong>Run eval</strong>
-    <span class="sub">In-browser <code class="short">run_suite</code> — the same core <code class="short">python evals/runner.py</code> drives. Paid Sonnet + Haiku.</span>
+    <span class="sub">Generates a résumé for each sample test case and has the AI grader score it — the same run as <code class="short">python evals/runner.py</code>. Makes paid Sonnet + Haiku calls.</span>
+    <button class="help-info" id="help-icon-dashEvalRun" data-help="dashEvalRun" type="button"
+            title="About Run eval" aria-label="Help: Run eval — grade the pipeline now"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
     <div class="filters">
       <label>Suite
         <select id="evalSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
@@ -395,41 +454,83 @@
     <code class="short">python evals/runner.py --suite anchor --subset smoke</code> from the CLI.</p>
   {% else %}
   <div class="bento">
-    <button class="tile span-2" data-detail="health" data-title="Health vs baseline">
-      <span class="k">health vs baseline</span>
-      <span class="v"><span class="badge {{ baseline_health.overall }}">{{ baseline_health.overall }}</span></span>
-      <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.counts.ok }} ok · {{ baseline_health.counts.watch }} watch · {{ baseline_health.counts.regressed }} regressed vs <code class="short">{{ baseline_health.baseline_id }}</code>{% else %}no baseline_v1.json{% endif %}</span>
-    </button>
-    <button class="tile" data-detail="passrate" data-title="Per-rubric pass rate">
-      <span class="k">rubrics tracked</span>
-      <span class="v">{{ rubric_pass_rate|length }}</span>
-      <span class="sub">pass = score ≥ 4.0</span>
-    </button>
-    <button class="tile" data-detail="scoretrend" data-title="Score over time by rubric">
-      <span class="k">score trend</span>
-      <span class="v">{{ score_trend.datasets|length }}</span>
-      <span class="sub">lines, by prompt_version{% if score_trend.filtered_records %} · {{ score_trend.filtered_records }} hidden{% endif %}</span>
-    </button>
-    <button class="tile" data-detail="heatmap" data-title="Rubric × fixture heatmap">
-      <span class="k">heatmap</span>
-      <span class="v">{{ heatmap.rubrics|length }}×{{ heatmap.fixtures|length }}</span>
-      <span class="sub">rubric × fixture, latest run</span>
-    </button>
-    <button class="tile" data-detail="failuremodes" data-title="Top failure modes">
-      <span class="k">top failure mode</span>
-      <span class="v" style="font-size:1rem">{% if failure_modes %}<code class="short">{{ failure_modes[0].slug }}</code>{% else %}none{% endif %}</span>
-      <span class="sub">{% if failure_modes %}{{ failure_modes[0].count }} record(s){% else %}no failed_rules{% endif %}</span>
-    </button>
-    <button class="tile" data-detail="pareto" data-title="Pareto — quality vs latency">
-      <span class="k">pareto verdict</span>
-      <span class="v" style="font-size:1rem">{% if pareto.summary %}<span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span>{% else %}—{% endif %}</span>
-      <span class="sub">{% if pareto.summary %}{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}{% else %}needs ≥2 versions{% endif %}</span>
-    </button>
-    <button class="tile" data-detail="recent" data-title="Recent eval records">
-      <span class="k">recent evals</span>
-      <span class="v">{{ eval_results|length }}</span>
-      <span class="sub">fixture · rubric · score, newest first</span>
-    </button>
+    <div class="tile-cell span-2">
+      <button class="tile" data-detail="health" data-title="Health vs baseline">
+        <span class="k">health vs baseline</span>
+        <span class="v"><span class="badge {{ baseline_health.overall }}">{{ baseline_health.overall }}</span></span>
+        <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.counts.ok }} ok · {{ baseline_health.counts.watch }} watch · {{ baseline_health.counts.regressed }} regressed vs <code class="short">{{ baseline_health.baseline_id }}</code>{% else %}no saved baseline to compare against yet{% endif %}</span>
+        <span class="lay">Are the latest scores holding up against the saved reference scores? The badge is the worst result across every test case and rubric.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileHealth" data-help="dashTileHealth" type="button"
+              title="About health vs baseline" aria-label="Help: Health vs baseline — are scores holding up?"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="passrate" data-title="Per-rubric pass rate">
+        <span class="k">rubrics tracked</span>
+        <span class="v">{{ rubric_pass_rate|length }}</span>
+        <span class="sub">a pass is a score of 4.0 or more (out of 5)</span>
+        <span class="lay">How many grading rubrics have results. Open it for each rubric’s pass rate.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTilePassRate" data-help="dashTilePassRate" type="button"
+              title="About rubrics tracked" aria-label="Help: Rubrics tracked — pass rate per rubric"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="scoretrend" data-title="Score over time by rubric">
+        <span class="k">score trend</span>
+        <span class="v">{{ score_trend.datasets|length }}</span>
+        <span class="sub">rubric lines charted{% if score_trend.filtered_records %} · {{ score_trend.filtered_records }} older record(s) left out{% endif %}</span>
+        <span class="lay">Each rubric’s scores over time, so you can see which prompt change moved them.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileScoreTrend" data-help="dashTileScoreTrend" type="button"
+              title="About the score trend" aria-label="Help: Score trend — scores over time"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="heatmap" data-title="Rubric × fixture heatmap">
+        <span class="k">heatmap</span>
+        <span class="v">{{ heatmap.rubrics|length }}×{{ heatmap.fixtures|length }}</span>
+        <span class="sub">rubrics × test cases, latest score each</span>
+        <span class="lay">A colour grid of every rubric’s latest score on every test case — red is low, green is high.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileHeatmap" data-help="dashTileHeatmap" type="button"
+              title="About the heatmap" aria-label="Help: Heatmap — every test case at a glance"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="failuremodes" data-title="Top failure modes">
+        <span class="k">top failure mode</span>
+        <span class="v" style="font-size:1rem">{% if failure_modes %}<code class="short">{{ failure_modes[0].slug }}</code>{% else %}none{% endif %}</span>
+        <span class="sub">{% if failure_modes %}named in {{ failure_modes[0].count }} graded result(s){% else %}no broken rules recorded{% endif %}</span>
+        <span class="lay">The rule the grader most often said was broken — for example an invented number.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileFailureModes" data-help="dashTileFailureModes" type="button"
+              title="About the top failure mode" aria-label="Help: Top failure mode — what breaks most"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="pareto" data-title="Pareto — quality vs latency">
+        <span class="k">pareto verdict</span>
+        <span class="v" style="font-size:1rem">{% if pareto.summary %}<span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span>{% else %}—{% endif %}</span>
+        <span class="sub">{% if pareto.summary %}{{ pareto.summary.v_prev }} → {{ pareto.summary.v_new }}{% else %}needs results from two prompt versions{% endif %}</span>
+        <span class="lay">Did the newest prompt version get better — and what did it cost in speed and money?</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTilePareto" data-help="dashTilePareto" type="button"
+              title="About the Pareto verdict" aria-label="Help: Pareto verdict — better, worse, or a trade-off?"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="recent" data-title="Recent eval records">
+        <span class="k">recent evals</span>
+        <span class="v">{{ eval_results|length }}</span>
+        <span class="sub">test case · rubric · score, newest first</span>
+        <span class="lay">The individual graded results every other tile on this tab is built from.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileRecent" data-help="dashTileRecent" type="button"
+              title="About recent evals" aria-label="Help: Recent evals — the raw results"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
   </div>
   {% endif %}
 </section>
@@ -443,22 +544,35 @@
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
   </p>
   {% if not groundedness_detail.has_data %}
-  <p class="empty">No groundedness scores yet. The L0 fabricated-specifics metric rides along on every
-    eval run (<code class="short">deterministic_metrics.groundedness</code>), so it fills in the first
-    time you run a suite — use the <strong>Run eval</strong> control on the Quality tab, or
+  <p class="empty">No groundedness scores yet. Every eval run also checks the specifics in each
+    generated résumé — numbers, dates, named tools and companies — against the candidate’s own
+    material, so this fills in the first time you run a suite — use the <strong>Run eval</strong>
+    control on the Quality tab, or
     <code class="short">python evals/runner.py --suite anchor --subset smoke</code>.</p>
   {% else %}
   <div class="bento">
-    <button class="tile span-2" data-detail="groundedness" data-title="Groundedness (L0) — trend & evidence">
-      <span class="k">groundedness (L0)</span>
-      <span class="v brand">{{ "%.2f"|format(groundedness_detail.score) }}<span style="font-size:0.6em"> / 5</span></span>
-      <span class="sub">fabricated rate <span class="num">{{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}%</span> · {{ groundedness_detail.flagged_count }} flagged · {{ groundedness_detail.layers|join("+") }} · <code class="short">{{ groundedness_detail.prompt_version }}</code></span>
-    </button>
-    <button class="tile" data-detail="groundedness" data-title="Groundedness (L0) — trend & evidence">
-      <span class="k">flagged specifics</span>
-      <span class="v {% if groundedness_detail.flagged_count %}err{% else %}ok{% endif %}">{{ groundedness_detail.flagged_count }}</span>
-      <span class="sub">of {{ groundedness_detail.total_specifics }} specifics in {{ groundedness_detail.total_bullets }} bullets</span>
-    </button>
+    <div class="tile-cell span-2">
+      <button class="tile" data-detail="groundedness" data-title="Groundedness — trend & evidence">
+        <span class="k">groundedness score</span>
+        <span class="v brand">{{ "%.2f"|format(groundedness_detail.score) }}<span style="font-size:0.6em"> / 5</span></span>
+        <span class="sub"><span class="num">{{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}%</span> of specifics unsupported · {{ groundedness_detail.flagged_count }} flagged · prompt version <code class="short">{{ groundedness_detail.prompt_version }}</code></span>
+        <span class="lay">Out of 5 (higher is better): how well the latest eval run’s specifics trace back to the candidate’s own material.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileGroundedScore" data-help="dashTileGroundedScore" type="button"
+              title="About the groundedness score" aria-label="Help: Groundedness score — did it invent anything?"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="groundedness" data-title="Groundedness — trend & evidence">
+        <span class="k">flagged specifics</span>
+        <span class="v {% if groundedness_detail.flagged_count %}err{% else %}ok{% endif %}">{{ groundedness_detail.flagged_count }}</span>
+        <span class="sub">of {{ groundedness_detail.total_specifics }} specifics in {{ groundedness_detail.total_bullets }} bullets</span>
+        <span class="lay">Specifics in the latest run with no match in the candidate’s material — each one is worth a look.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileFlagged" data-help="dashTileFlagged" type="button"
+              title="About flagged specifics" aria-label="Help: Flagged specifics — worth a look"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
   </div>
   {% endif %}
 </section>
@@ -466,7 +580,7 @@
 <!-- ============================= TUNING ============================= -->
 <section class="dash-pane" data-pane="tuning" role="tabpanel">
   <p class="dash-pane-intro">
-    <span>A/B a candidate prompt against the baseline without touching the persona constants. Runs two paid suites.</span>
+    <span>Try an edited AI instruction (prompt) side by side with the current one, without changing the app. Runs two paid eval suites.</span>
     <button class="help-info" id="help-icon-dashTuning" data-help="dashTuning" type="button"
             title="About the Tuning tab" aria-label="Help: Tuning — candidate-vs-baseline A/B"
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
@@ -482,9 +596,11 @@
 
   <div class="eval-run" id="tuneRun">
     <strong>A/B a candidate prompt</strong>
-    <span class="sub">Pick a persona constant, edit its text, run candidate-vs-baseline via
-      <code class="short">analyzer.prompt_overrides()</code> + <code class="short">run_suite</code> —
-      the same primitive <code class="short">--prompt-overrides</code> drives.</span>
+    <span class="sub">Pick one of the app’s built-in prompts, edit its text, and grade your version against
+      the current one on the same test cases. The app’s own code is never changed.</span>
+    <button class="help-info" id="help-icon-dashTuneRun" data-help="dashTuneRun" type="button"
+            title="About the A/B run" aria-label="Help: A/B a candidate prompt — how it works"
+            aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
     <div class="filters">
       <label>Constant
         <select id="tuneConstant" title="Which analyzer.py persona/system-prompt constant to A/B — the candidate text below REPLACES this constant for the run, via analyzer.prompt_overrides() (analyzer.py is never edited)."></select>
@@ -557,16 +673,28 @@
   </div>
 
   <div class="bento">
-    <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
-      <span class="k">tuning loop</span>
-      <span class="v" style="font-size:1rem">prompt-override</span>
-      <span class="sub">candidate-vs-baseline A/B (interactive)</span>
-    </button>
-    <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
-      <span class="k">baseline</span>
-      <span class="v" style="font-size:1rem">{% if baseline_health.has_baseline %}<code class="short">{{ baseline_health.baseline_prompt_version }}</code>{% else %}—{% endif %}</span>
-      <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.baseline_id }}{% else %}no baseline_v1.json{% endif %}</span>
-    </button>
+    <div class="tile-cell">
+      <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
+        <span class="k">tuning loop</span>
+        <span class="v" style="font-size:1rem">prompt-override</span>
+        <span class="sub">candidate-vs-baseline A/B (interactive)</span>
+        <span class="lay">How a prompt change gets tested and then promoted into the app. Open it for the steps and tools.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileTuningLoop" data-help="dashTileTuningLoop" type="button"
+              title="About the tuning loop" aria-label="Help: Tuning loop — how prompt changes get tested"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
+    <div class="tile-cell">
+      <button class="tile" data-detail="tuning" data-title="Prompt-tuning loop">
+        <span class="k">baseline</span>
+        <span class="v" style="font-size:1rem">{% if baseline_health.has_baseline %}<code class="short">{{ baseline_health.baseline_prompt_version }}</code>{% else %}—{% endif %}</span>
+        <span class="sub">{% if baseline_health.has_baseline %}{{ baseline_health.baseline_id }}{% else %}no saved baseline yet{% endif %}</span>
+        <span class="lay">The prompt version the saved reference scores were recorded with.</span>
+      </button>
+      <button class="help-info" id="help-icon-dashTileBaseline" data-help="dashTileBaseline" type="button"
+              title="About the baseline" aria-label="Help: Baseline — the saved reference scores"
+              aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
+    </div>
   </div>
 </section>
 
@@ -596,6 +724,23 @@
         JDs into one <code class="short">bootstrap.json</code> to annotate.
         <strong>Makes paid Sonnet/Haiku calls (~70s per JD)</strong> and reuses the same streaming
         engine as the wizard's Analyze.</p>
+      <!-- UX-14 (RELEASE_ARC C3 "no-cost-confirm warning"): runBootstrap() has
+           no window.confirm, unlike the other paid runs — say so on screen. -->
+      <p class="sub ann-warn" id="bsNoConfirm"><strong>No confirmation step.</strong> Clicking
+        <strong>Run bootstrap</strong> starts spending straight away — there is no “are you sure?”
+        dialog. The number of JD rows you fill in is the only spend control: each row with both a
+        name and text is one paid pipeline run.</p>
+      <!-- UX-20: multi-JD guidance + annotation volume. Figures are sourced:
+           15–25 bullets per résumé (CONTRIBUTING.md "CPU inference time"),
+           3–5 clarifying questions (analyzer.py clarify prompt); skills per JD
+           has no source, so no number is given (dossier Observation 9). -->
+      <p class="ann-guide" id="bsJdGuide"><strong>How many JDs?</strong> Use at least two. The
+        point of a bootstrap is comparing the same experience across postings: a bullet that stays
+        the same across JDs is the candidate’s real core, while one that changes to echo each
+        posting may be stretching to fit it. Each JD usually yields a résumé of about 15–25 bullets
+        plus its skills list, and 3–5 clarifying questions to rate. Near-identical bullets and
+        skills from different JDs are merged into one item, so each extra JD adds fewer new items
+        to label than the one before.</p>
       <div class="filters">
         <!-- data-user-source: auto-populated from GET /api/users on load
              (populateUserSelects). Required marker: a username is needed to
@@ -606,16 +751,31 @@
           </select>
         </label>
         <label>Fixture slug (optional)<input type="text" id="bsSlug" placeholder="&lt;candidate&gt;-bootstrap"
-          title="Directory name under evals/fixtures/real/ — defaults to <candidate>-bootstrap. Reuse an existing slug to add more JDs to that same fixture."></label>
+          title="Folder name under evals/fixtures/real/ — defaults to <candidate>-bootstrap. Reusing a slug starts a new, separate run in that folder; it does not add JDs to an earlier run."></label>
+        <button class="help-info" id="help-icon-dashFixtureSlug" data-help="dashFixtureSlug" type="button" style="align-self:end;margin-bottom:0.4rem"
+                title="About the fixture slug" aria-label="Help: Fixture slug — where the bootstrap is saved" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
         <button class="help-info" id="help-icon-dashBootstrapRun" data-help="dashBootstrapRun" type="button" style="align-self:end;margin-bottom:0.4rem"
                 title="About producing a bootstrap" aria-label="Help: Bootstrap — produce something to annotate" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       </div>
+      <!-- UX-15: slug-reuse semantics on screen. The hover title this replaces
+           ("add more JDs to that same fixture") was false: each run writes its
+           own bootstrap-<timestamp>.json with only that run's JDs, and a labeled
+           fixture stays pinned to the run it was labeled from
+           (blueprints/diagnostics.py _new_bootstrap_path / _resolve_bootstrap_pin). -->
+      <p class="ann-guide" id="bsSlugGuide"><strong>Fixture slug:</strong> the folder the bootstrap is
+        saved in. Reusing a slug starts a <em>new, separate</em> run in that folder — it does not add
+        JDs to an earlier run, and a fixture you have already labeled keeps showing the run you labeled.
+        To label several JDs together, put them all in one run.</p>
       <div id="bsJds"></div>
+      <!-- UX-14: live spend estimate — counts paid runs + time only. No
+           dollar-per-JD figure for the bootstrap exists anywhere to cite
+           (dossier Observation 10), so none is invented here. -->
+      <p class="eval-cost" id="bsSpend" role="status" aria-live="polite"></p>
       <label class="bs-grounding"><input type="checkbox" id="bsGrounding"
         title="Also score each deduped bullet with the offline DeBERTa NLI + MiniCheck grounding models. Needs the [eval-grounding] extras; CPU-bound, no extra paid LLM calls."> Run grounding scorers
-        (DeBERTa NLI + MiniCheck) over the deduped bullets — needs the
-        <code class="short">[eval-grounding]</code> extras; CPU-bound (~2-4s/bullet). Missing
-        extras just save an un-scored bootstrap.</label>
+        (DeBERTa NLI + MiniCheck — two fact-checking models that run on your own computer, free) over
+        the deduped bullets — needs the <code class="short">[eval-grounding]</code> extras; CPU-bound
+        (~2-4s/bullet). Missing extras just save an un-scored bootstrap.</label>
       <button class="help-info" id="help-icon-dashGroundingSignals-annotate" data-help="dashGroundingSignals" type="button"
               title="About grounding signals" aria-label="Help: Grounding signals — the offline scorers" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <div class="annotate-actions">
@@ -633,9 +793,14 @@
   <!-- ② Fixture picker -->
   <div class="annotate-section">
     <label class="sub" for="fixtureSelect">② Pick a bootstrap to annotate</label>
+    <p class="ann-guide" id="fixturePickerGuide">Choose which bootstrap to label. Each entry shows its
+      bullet (b) and skill (s) counts after near-duplicates are merged, and “annotated” once labels
+      have been saved.</p>
     <div class="filters">
       <select id="fixtureSelect"><option value="">—</option></select>
       <button class="ann-btn" id="fixtureReload" type="button">Reload</button>
+      <button class="help-info" id="help-icon-dashFixturePicker" data-help="dashFixturePicker" type="button" style="align-self:center"
+              title="About picking a bootstrap" aria-label="Help: Pick a bootstrap — what you are about to label" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
     </div>
     <p class="empty" id="fixtureEmpty">No bootstraps to annotate yet. Produce one with step ① above
       (it auto-expands while this list is empty), or run
@@ -651,9 +816,29 @@
       <code class="short">fix</code> — true but needs rewording (fill in an <code class="short">honest_rewrite</code>) ·
       <code class="short">omit</code> — leave it off the résumé ·
       <code class="short">fabricated</code> — not supported by the candidate's source (add a
-      <code class="short">forbidden_pattern</code> regex so the scorer catches it next time).
+      <code class="short">forbidden_pattern</code> regex so the grounding grader flags it next time).
       <button class="help-info" id="help-icon-dashVerdicts" data-help="dashVerdicts" type="button"
               title="About verdicts" aria-label="Help: Verdicts — keep / fix / omit / fabricated" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
+    <!-- UX-17: lay copy for the three schema-keyed fields + worked regex
+         examples (taken from committed forbidden_inventions in
+         evals/fixtures/synthetic/*/expected.json). Validation rules quoted from
+         evals/annotation.py _validate_item / _validate_failed_rules. -->
+    <p class="legend" id="annFieldGuide"><strong>The other fields:</strong>
+      <strong>failed rules</strong> — optional tags naming which grading rule an item breaks
+      (pick from the suggestions, e.g. <code class="short">invented_metric</code> for a number that
+      isn’t in the source); they label the item in the improvement brief, and Save refuses a tag
+      that isn’t in the graders’ own list.
+      <strong>honest rewrite</strong> — required for <code class="short">fix</code>: the truthful
+      wording you would accept; it becomes a “not OK → OK” example in the improvement brief.
+      <strong>forbidden pattern</strong> — required for <code class="short">fabricated</code>: a
+      regular expression describing the invention, so the grounding grader flags it if it shows up
+      again in this fixture’s eval runs. Keep it narrow — it should match the invented claim, not the
+      candidate’s real work. Examples: <code class="short">managed [0-9]+ engineers</code>
+      (an invented team size), <code class="short">saved \$[0-9]+M</code> (an invented dollar
+      figure — <code class="short">\$</code> means a literal $), <code class="short">MIT|Stanford</code>
+      (either invented school), <code class="short">Epic\b</code> (the word “Epic” on its own).
+      <button class="help-info" id="help-icon-dashAnnFields" data-help="dashAnnFields" type="button"
+              title="About the annotation fields" aria-label="Help: Failed rules, honest rewrite, forbidden pattern" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
     <h3 class="ann-h3">Bullets</h3>
     <div id="annBullets"></div>
     <h3 class="ann-h3">Skills</h3>
@@ -662,7 +847,10 @@
     <div id="annClar"></div>
     <div class="annotate-actions">
       <button class="ann-btn primary" id="annSave" type="button">Save annotations.json</button>
-      <button class="ann-btn" id="annCollate" type="button">Collate → fixture + brief</button>
+      <button class="ann-btn" id="annCollate" type="button"
+              title="Save, then turn your labels into a runnable test case (expected.json + improvement_brief.md + jd.txt). No AI calls, no cost.">Collate → fixture + brief</button>
+      <button class="help-info" id="help-icon-dashCollate" data-help="dashCollate" type="button"
+              title="About Collate" aria-label="Help: Collate — turn your labels into a test case" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <button class="ann-btn" id="annScore" type="button"
               title="Run the offline grounding scorers over this fixture's bullets (CPU, no paid LLM calls). Requires a seed.json + the [eval-grounding] extras.">Score grounding</button>
       <button class="help-info" id="help-icon-dashAnnScore" data-help="dashAnnScore" type="button"
@@ -670,6 +858,10 @@
       <button class="ann-btn" id="annScoreCancelBtn" type="button" hidden>Cancel</button>
       <span id="annStatus" class="sub" role="status" aria-live="polite"></span>
     </div>
+    <p class="ann-guide" id="annActionsGuide"><strong>Save</strong> writes your labels.
+      <strong>Collate</strong> saves them, then builds a runnable test case from them — free, no AI
+      calls. <strong>Score grounding</strong> runs the two local fact-checking models over these
+      bullets — free, runs on your CPU.</p>
     <progress id="annScoreProgressBar" class="run-progress" hidden></progress>
     <div id="annScoreProgress" class="annotate-progress" role="status" aria-live="polite"></div>
     <div id="annCollateResult" hidden></div>
@@ -828,7 +1020,7 @@
   </div>
 
   <div class="detail" data-detail="throughput">
-    <p class="legend">Most recent 200 calls. Filter by user <code class="short">eval:&lt;fixture&gt;</code> to isolate eval traffic.</p>
+    <p class="legend">The most recent 200 calls. Click a run id to open that run’s detail. Eval runs log under the user <code class="short">eval:&lt;fixture&gt;</code> — filter by it to see only eval traffic.</p>
     {% if calls %}
     <table>
       <thead><tr><th>timestamp</th><th>user</th><th>call</th><th>model</th><th>prompt v</th><th>run</th><th class="num">in</th><th class="num">out</th><th class="num">latency</th><th>status</th></tr></thead>
@@ -849,6 +1041,7 @@
   <div class="detail" data-detail="reliability">
     <p class="sub">overall: <strong>{{ "%.1f"|format(reliability.error_rate * 100) }}%</strong> error ·
       <strong>{{ "%.1f"|format(reliability.truncation_rate * 100) }}%</strong> truncated · {{ reliability.total }} calls</p>
+    <p class="legend">Each row is one step of the pipeline (a call kind). “Truncated” means the answer hit the length limit before it finished. Click a red error count to see those calls with their error messages — messages are shortened and have API keys masked before they are logged, and calls logged before error capture existed show “no message logged”.</p>
     {% if reliability.by_call_kind %}
     <table>
       <thead><tr><th>call kind</th><th class="num">calls</th><th class="num">errors</th><th class="num">err %</th><th class="num">truncated</th><th class="num">trunc %</th></tr></thead>
@@ -866,6 +1059,7 @@
   <div class="detail" data-detail="trace">
     {% if run_trace.has_data %}
     <p class="sub">Latest run <button type="button" class="run-link" data-run-id="{{ run_trace.latest.run_id }}">{{ run_trace.latest.run_id }}</button> — {{ "%.1f"|format(run_trace.latest.total_latency_ms / 1000) }}s total. Each bar is a span's share of wall-clock.</p>
+    <p class="legend">A span is one AI call. Click any run id — here or in “Recent runs” below — to open that run’s full detail: each step’s time, cost and any errors.</p>
     <div class="waterfall">
       {% for s in run_trace.latest.spans %}
       <div class="wf-row">
@@ -890,13 +1084,18 @@
 
   <div class="detail" data-detail="latency">
     <p class="sub">p50 <strong>{{ summary.p50_latency_ms }}ms</strong> · p95 <strong>{{ summary.p95_latency_ms }}ms</strong> · mean {{ summary.mean_latency_ms }}ms across {{ summary.count }} calls.
-      A single slow analyze() hides inside a healthy mean — watch p95.</p>
+      One very slow call barely moves the mean, so watch p95 to catch the slow ones.</p>
+    <p class="legend">p50 (the median): half of the calls were faster than this. p95: 95 in every 100 calls were faster — only the slowest 1 in 20 took longer. Mean: the plain average. 1000 ms = 1 second.
+      <button class="help-info" id="help-icon-dashPercentiles-latency" data-help="dashPercentiles" type="button"
+              title="About p50, p95, median and mean" aria-label="Help: p50, p95, median and mean" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
   </div>
 
   <div class="detail" data-detail="health">
     {% if baseline_health.has_baseline %}
-    <p class="sub">Latest score per (fixture × rubric) vs <code class="short">{{ baseline_health.baseline_id }}</code> floor.
-      Bands: regressed Δ&lt;−0.5 (merge-block gate) · watch Δ&lt;−0.3 · ok otherwise.</p>
+    <p class="sub">Each row compares the latest score for one test case (fixture) and rubric with its saved
+      reference score in <code class="short">{{ baseline_health.baseline_id }}</code>. Δ is the change:
+      <strong>regressed</strong> means it dropped by more than 0.5 (a drop that large blocks a merge),
+      <strong>watch</strong> means it dropped by more than 0.3, and <strong>ok</strong> means it held or improved.</p>
     <table>
       <thead><tr><th>fixture</th><th>rubric</th><th class="num">score</th><th class="num">baseline</th><th class="num">Δ</th><th>status</th></tr></thead>
       <tbody>
@@ -908,7 +1107,7 @@
       {% endfor %}
       </tbody>
     </table>
-    {% else %}<p class="empty">No <code class="short">evals/results/baseline_v1.json</code> to compare against.</p>{% endif %}
+    {% else %}<p class="empty">No saved baseline to compare against yet (the reference-score file, <code class="short">evals/results/baseline_v1.json</code>, doesn’t exist).</p>{% endif %}
   </div>
 
   <div class="detail" data-detail="passrate">
@@ -925,7 +1124,7 @@
 
   <div class="detail" data-detail="scoretrend">
     <div class="chart-box"><canvas id="chart-score-over-time" data-chart="score-over-time"></canvas></div>
-    <p class="legend">Each point labels its prompt_version on hover.{% if score_trend.filtered_records %} {{ score_trend.filtered_records }} record(s) hidden — pre-migration, no prompt_version.{% endif %}</p>
+    <p class="legend">One line per rubric. Hover a point to see which prompt version produced it.{% if score_trend.filtered_records %} {{ score_trend.filtered_records }} older record(s) left out — they predate prompt-version tagging, so they can’t be attributed.{% endif %}</p>
   </div>
 
   <div class="detail" data-detail="heatmap">
@@ -943,21 +1142,22 @@
       {% endfor %}
       </tbody>
     </table>
-    <p class="legend">Color: red (0.0) → green (5.0). Hover a cell for prompt_version + timestamp.</p>
+    <p class="legend">Rows are rubrics; columns are test cases (fixtures — a sample job posting and résumé). Colour runs red (0.0) → green (5.0); an empty cell means that rubric has no usable score for that test case. Hover a cell for the prompt version and time it was graded.</p>
     {% else %}<p class="empty">No fixture × rubric pairs yet.</p>{% endif %}
   </div>
 
   <div class="detail" data-detail="failuremodes">
     {% if failure_modes %}
     <table>
-      <thead><tr><th>failed_rules slug</th><th class="num">records</th></tr></thead>
+      <thead><tr><th>rule broken</th><th class="num">graded results</th></tr></thead>
       <tbody>
       {% for f in failure_modes %}
         <tr><td><code class="short">{{ f.slug }}</code></td><td class="num">{{ f.count }}</td></tr>
       {% endfor %}
       </tbody>
     </table>
-    {% else %}<p class="empty">No failed_rules recorded — every grading passed or had no rule slugs.</p>{% endif %}
+    <p class="legend">When the grader fails a result it names the rule that was broken — e.g. <code class="short">invented_metric</code> (a number not in the source) or <code class="short">missing_must_keyword</code> (a required keyword left out). Each rule counts once per graded result; the top 20 are shown.</p>
+    {% else %}<p class="empty">No broken rules recorded — every graded result passed, or the grader named no specific rule.</p>{% endif %}
   </div>
 
   <div class="detail" data-detail="pareto">
@@ -969,14 +1169,17 @@
       Δp50 cost <strong>${{ "%+.4f"|format(pareto.summary.delta_cost) }}</strong>{% endif %} —
       <span class="badge {% if pareto.summary.classification == 'Pareto-improving' %}ok{% elif pareto.summary.classification == 'Dominated' %}regressed{% else %}unknown{% endif %}">{{ pareto.summary.classification }}</span></p>
     {% endif %}
+    <p class="legend">Compares the two newest prompt versions on overall score (the composite — a weighted average of the rubric scores), typical (p50) latency and typical (p50) cost. <strong>Pareto-improving</strong>: the score went up and it got faster or cheaper, without getting both slower and pricier. <strong>Dominated</strong>: the score went down and it got slower or pricier. <strong>On frontier</strong>: anything else — usually a trade-off.
+      <button class="help-info" id="help-icon-dashPercentiles-pareto" data-help="dashPercentiles" type="button"
+              title="About p50, p95, median and mean" aria-label="Help: p50, p95, median and mean" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
     <div class="chart-box"><canvas id="chart-pareto-scatter" data-chart="pareto-scatter"></canvas></div>
     <div class="chart-box"><canvas id="chart-latency-trend" data-chart="latency-trend"></canvas></div>
     <div class="chart-box"><canvas id="chart-cost-trend" data-chart="cost-trend"></canvas></div>
-    {% else %}<p class="empty">No <code class="short">eval_composite</code> records yet. Run <code class="short">python evals/runner.py --suite anchor</code>.</p>{% endif %}
+    {% else %}<p class="empty">No overall-score (<code class="short">eval_composite</code>) records yet — run an eval with the <strong>Run eval</strong> control above, or <code class="short">python evals/runner.py --suite anchor</code>.</p>{% endif %}
   </div>
 
   <div class="detail" data-detail="recent">
-    <p class="legend">Most recent 200 eval records, newest first.</p>
+    <p class="legend">The most recent 200 graded results, newest first — one row per test case × rubric. A pass (green) is 4.0 or more. Click a run id to open that run’s detail.</p>
     {% if eval_results %}
     <table>
       <thead><tr><th>timestamp</th><th>fixture</th><th>jd label</th><th>rubric</th><th class="num">score</th><th>prompt v</th><th>run</th><th>status</th><th>failed rules</th></tr></thead>
@@ -999,16 +1202,16 @@
     {% if groundedness_detail.has_data %}
     {% if groundedness_trend.has_data %}
     <div class="chart-box"><canvas id="chart-groundedness-trend" data-chart="groundedness-trend"></canvas></div>
-    <p class="legend">L0 fabricated-specifics groundedness score (0–5, higher = better), one point per run, by prompt_version. {{ groundedness_trend.points }} run(s).</p>
+    <p class="legend">Groundedness score (0–5, higher is better), one point per eval run; hover a point for its prompt version. {{ groundedness_trend.points }} run(s).</p>
     {% endif %}
     <p class="sub">Latest: <strong>{{ "%.2f"|format(groundedness_detail.score) }}/5</strong> ·
       fabricated rate {{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}% ·
       {{ groundedness_detail.flagged_count }} flagged of {{ groundedness_detail.total_specifics }} specifics ·
-      layers {{ groundedness_detail.layers|join("+") }} · <code class="short">{{ groundedness_detail.prompt_version }}</code></p>
+      prompt version <code class="short">{{ groundedness_detail.prompt_version }}</code></p>
     {% if groundedness_detail.flagged_samples %}
     <h3 style="color:var(--fg-1);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;margin:0.8rem 0 0.3rem;">Flagged samples (the actionable evidence)</h3>
     <table>
-      <thead><tr><th>specific absent from source union</th></tr></thead>
+      <thead><tr><th>specific not found in any of the candidate’s material</th></tr></thead>
       <tbody>{% for s in groundedness_detail.flagged_samples %}<tr><td><code class="short">{{ s }}</code></td></tr>{% endfor %}</tbody>
     </table>
     {% endif %}
@@ -1024,7 +1227,7 @@
       </table>
     </details>
     {% endif %}
-    <p class="legend">L0 is a flag-for-review signal (high precision on novel specifics; will false-positive on paraphrase). Uncalibrated until labels exist — see <code class="short">docs/dev/GROUNDING_METRIC.md</code>.</p>
+    <p class="legend">This is a flag to review, not a verdict: it is good at catching genuinely new specifics, but it will also flag a real fact that was only reworded. It is not yet calibrated against human labels — the Annotate tab is where those are made.</p>
     {% else %}<p class="empty">No groundedness records yet.</p>{% endif %}
   </div>
 
@@ -1101,15 +1304,18 @@
     },
     dashGroundedness: {
       title: 'Groundedness — the no-invention check',
-      body: 'Groundedness is sartor’s core promise made measurable: the L0 '
-        + 'metric flags specifics (numbers, named tools, dates) that appear in a '
-        + 'generated résumé but not in the candidate’s source material. The '
-        + 'grounding box — the 0–5 score, the fabricated-specifics rate, and the '
-        + 'flagged-samples evidence — is the actionable signal. It is high-'
-        + 'precision on genuinely novel specifics but will false-positive on '
-        + 'paraphrase, and it stays uncalibrated until labelled annotations '
-        + 'exist. It populates when an eval run carries the grounding metric — '
-        + 'run any Quality eval to fill it.',
+      // UX-21: lay rewrite — no "L0", no "grounding box" (nothing on screen
+      // is called that), no "source union".
+      body: 'Groundedness is Sartor’s core promise made measurable: did the '
+        + 'résumé invent anything? After every eval run, a rule-based check '
+        + '(no AI involved) pulls out the specifics in each generated résumé — '
+        + 'numbers, dates, named tools and companies — and looks for each one '
+        + 'in the candidate’s own material. The score (0–5, higher is better), '
+        + 'the share of specifics it could not find, and the flagged examples '
+        + 'are the signal to act on. It is good at catching genuinely new '
+        + 'specifics but will also flag a real fact that was only reworded, and '
+        + 'it is not yet calibrated against human labels (the Annotate tab '
+        + 'makes those). It fills in when you run any Quality eval.',
     },
     dashTuning: {
       title: 'Tuning — candidate-vs-baseline A/B',
@@ -1162,13 +1368,27 @@
     },
     dashGroundingSignals: {
       title: 'Grounding signals — the offline scorers',
-      body: 'Turning this on adds the offline DeBERTa NLI + MiniCheck models to '
-        + 'the run, scoring groundedness alongside the LLM-judged rubrics. It '
-        + 'is CPU-bound and makes no extra paid calls, but it does need the '
-        + 'optional [eval-grounding] extras (~3.2 GB of model weights) '
-        + 'installed first — see CONTRIBUTING.md, section "Grounding signal '
-        + 'scorers". Leave it unchecked if those extras aren’t installed; the '
-        + 'run still goes through fine without it.',
+      // UX-16: what the scorers are, the Hugging Face download, why optional,
+      // why free, and how to read a score. Sources: CONTRIBUTING.md "Grounding
+      // signal scorers" (models, ~3.2 GB, HF cache, MiniCheck licence, 2–4 s
+      // per bullet) + evals/grounding_signals.py (0–1 scores, contradiction
+      // > 0.4, MiniCheck low < 0.5).
+      body: 'Two fact-checking models that run on your own computer check each '
+        + 'generated bullet against the candidate’s source material: DeBERTa '
+        + 'NLI asks “does the source imply this?” and MiniCheck asks “does the '
+        + 'source support this claim?”. They add a second groundedness opinion '
+        + 'alongside the AI-graded rubrics. Why free: they run locally on your '
+        + 'CPU, so there are no paid API calls — they just take time (about 2–4 '
+        + 's per bullet). Why optional: the first use downloads about 3.2 GB of '
+        + 'model weights from Hugging Face into your user cache (never into the '
+        + 'repo), they need the optional [eval-grounding] extras installed '
+        + '(see CONTRIBUTING.md, section "Grounding signal scorers"), they are '
+        + 'developer tools the running app never uses, and MiniCheck is '
+        + 'licensed for academic/research use. Reading a score on a card: both '
+        + 'run 0–1, higher means better supported; a MiniCheck score under 0.5 '
+        + 'counts as low, and “NLI-contradiction” means the source seems to '
+        + 'say the opposite. Leave the box unchecked if the extras aren’t '
+        + 'installed; the run still completes, just without these scores.',
     },
     dashTuneConstant: {
       title: 'Constant — which prompt you’re A/B-ing',
@@ -1201,10 +1421,13 @@
       body: 'A bootstrap runs the real analyze → clarify → generate pipeline '
         + 'over the job descriptions you paste, for one candidate, then merges '
         + 'the results into one bootstrap.json you can label. It makes paid '
-        + 'Sonnet/Haiku calls (~70s per JD you add), so add only the JDs you '
-        + 'actually plan to annotate. Not ready to spend yet? "Export seed" '
-        + 'snapshots the candidate’s existing corpus instead — deterministic, '
-        + 'no LLM calls, no JDs needed.',
+        + 'Sonnet/Haiku calls (~70s per JD you add), and unlike the other paid '
+        + 'runs it has no confirmation step: clicking Run bootstrap starts '
+        + 'spending at once, and the number of filled JD rows is the only '
+        + 'spend control — so add only the JDs you actually plan to annotate '
+        + '(at least two, so there is something to compare across). Not ready '
+        + 'to spend yet? "Export seed" snapshots the candidate’s existing '
+        + 'corpus instead — deterministic, no LLM calls, no JDs needed.',
     },
     dashVerdicts: {
       title: 'Verdicts — keep / fix / omit / fabricated',
@@ -1213,23 +1436,294 @@
         + 'but needs rewording; fill in an honest_rewrite. Omit — leave it off '
         + 'the résumé, no judgment implied. Fabricated — not supported by the '
         + 'candidate’s source; add a forbidden_pattern regex so the grounding '
-        + 'scorer catches it next time it appears.',
+        + 'grader flags it if it appears again in this fixture’s eval runs.',
     },
+    // UX-18: this entry used to say a missing seed or missing extras "just
+    // means nothing scores, not an error", and pointed at Export seed. The
+    // server disagrees on both (blueprints/diagnostics.py
+    // annotation_score_grounding): no seed.json -> 409 "re-run the bootstrap
+    // to capture the corpus snapshot, then score"; no extras -> an `error`
+    // event "Grounding extras not installed." The copy now matches, with the
+    // server's own remedy (pinned by tests/test_annotation_routes.py).
     dashAnnScore: {
       title: 'Score grounding — run the offline scorers here',
-      body: 'Runs the same offline DeBERTa NLI + MiniCheck scorers as the '
-        + 'eval’s grounding-signals checkbox, but just over this fixture’s '
-        + 'bullets — CPU-bound, no paid calls. It needs a seed.json for this '
-        + 'fixture (produce one with Export seed) and the optional '
-        + '[eval-grounding] extras installed; missing either just means '
-        + 'nothing scores, not an error.',
+      body: 'Runs the same local DeBERTa NLI + MiniCheck fact-checking models '
+        + 'as the eval’s grounding-signals checkbox, but only over this '
+        + 'fixture’s bullets — on your CPU, no paid calls — and writes the '
+        + 'scores onto each bullet card (and into any saved annotations). It '
+        + 'needs two things, and a missing one stops it with an error rather '
+        + 'than scoring nothing: (1) the fixture’s seed.json, the snapshot of '
+        + 'the corpus the bootstrap was built from — if it is missing, re-run '
+        + 'the bootstrap to capture the corpus snapshot, then score; and (2) '
+        + 'the optional [eval-grounding] extras — if they are missing, install '
+        + 'them with pip install -e \'.[eval-grounding]\' (see CONTRIBUTING.md).',
+    },
+    // ---- Epic C C3 (UX-9..UX-21, UX-42): one entry per module/tile. ----
+    // Every tile's .tile-cell carries an (i) naming one of these; every
+    // number quoted below is sourced in docs/dev/blast-radius/
+    // dashboard-copy-discovery.md, Observation 8. No new $ figure is minted.
+    dashFilters: {
+      title: 'Filters — what Since, User and Model narrow',
+      body: 'Since, User and Model narrow the AI-call log this Pipeline tab '
+        + 'summarizes — its cost, call counts, error rate, traces and latency. '
+        + 'They do not change the Quality, Groundedness or Tuning tabs: those '
+        + 'always use every eval result on disk, because their trends need the '
+        + 'full history. Leave a box on “All” to include everything; “clear” '
+        + 'resets all three. Eval runs log their calls under users named '
+        + 'eval:<fixture>, so pick one of those to see only eval traffic.',
+    },
+    dashPercentiles: {
+      title: 'p50, p95, median and mean',
+      body: 'Four ways to sum up many measurements (how long each call took, '
+        + 'or what it cost). The median — also called p50 — is the middle '
+        + 'value: half of the calls were faster (or cheaper) than it and half '
+        + 'were slower. p95 is the value 95 in every 100 calls stayed under, '
+        + 'so only the slowest 1 in 20 went past it — it shows how bad the '
+        + 'slow cases get. p90, on the Pareto latency chart, is the same idea '
+        + 'for 9 in 10. The mean is the plain average: add everything up and '
+        + 'divide by the count. One very slow call can drag the mean up while '
+        + 'the median hardly moves, which is why the median is the “typical” '
+        + 'figure and p95 the “bad day” figure. With only a few calls, a '
+        + 'percentile is estimated between the two nearest values.',
+    },
+    dashTileCost: {
+      title: 'Total cost — what the AI calls cost',
+      body: 'The estimated spend, in US dollars, of every AI call in the '
+        + 'current filter — worked out from each call’s token counts and the '
+        + 'model price table. Under it, p50 is what a typical single call cost '
+        + 'and p95 what an expensive one cost (see “p50, p95, median and mean” '
+        + 'on the Latency detail). Open the tile for a chart and table of cost '
+        + 'by call kind — which step of the pipeline (analyze, clarify, '
+        + 'generate…) the money went to.',
+    },
+    dashTileCalls: {
+      title: 'Calls — how much work the pipeline did',
+      body: 'How many AI calls are in the current filter. “Cache hit” is how '
+        + 'often the cached part of a prompt was read back instead of being '
+        + 'written fresh — higher is cheaper and faster. “in / out” are tokens '
+        + '(roughly, pieces of words) sent to and received from the model. '
+        + 'Open the tile for the most recent 200 calls; click any run id there '
+        + 'to open that run’s detail.',
+    },
+    dashTileErrors: {
+      title: 'Error rate — failed or cut-off calls',
+      body: 'The share of calls in the current filter that failed (an error '
+        + 'from the AI service or the app) or were truncated — stopped at the '
+        + 'length limit (max_tokens) before finishing. Open the tile for a '
+        + 'breakdown per pipeline step; click a red error count there to list '
+        + 'those calls with their error messages. Messages are shortened to '
+        + '500 characters and have API keys masked before they are logged; '
+        + 'calls logged before error capture existed show “no message logged”.',
+    },
+    dashTileTrace: {
+      title: 'Latest trace — one run, step by step',
+      body: 'A run is one trip through the pipeline — for example one analyze '
+        + 'followed by a generate — and each AI call in it is a span. This '
+        + 'tile shows the most recent run: how many spans it had and their '
+        + 'times added together. Open it for one bar per span (a longer bar is '
+        + 'a slower call) and a list of recent runs; click any run id to open '
+        + 'that run’s full detail — each step’s time, cost and any errors.',
+    },
+    dashTileLatency: {
+      title: 'Latency — how long AI calls take',
+      body: 'How long a single AI call took, in milliseconds (1000 ms = 1 '
+        + 'second), across the calls in the current filter. p50 is the typical '
+        + 'call — half were faster. p95 is a slow call — 95 in 100 were '
+        + 'faster. The mean is the plain average. A healthy mean can hide a '
+        + 'few very slow calls, so p95 is the number to watch. The detail '
+        + 'panel has a fuller explainer.',
+    },
+    dashEvalRun: {
+      title: 'Run eval — grade the pipeline now',
+      body: 'Runs the real résumé pipeline on each test case in the chosen '
+        + 'suite, then has the AI grader score the results against the rubrics '
+        + '(grading checklists) from 0 to 5. It is the same run as python '
+        + 'evals/runner.py, makes paid Sonnet + Haiku calls, and asks you to '
+        + 'confirm before it spends anything. Results are saved to '
+        + 'evals/results/ and the page reloads to show them. Cancel stops it '
+        + 'before the next paid call.',
+    },
+    dashTileHealth: {
+      title: 'Health vs baseline — are scores holding up?',
+      body: 'The baseline is a saved set of reference scores '
+        + '(evals/results/baseline_v1.json), one per test case and rubric. '
+        + 'This tile compares the latest score for each pair with its '
+        + 'reference: “ok” means it held steady, improved, or dropped by 0.3 '
+        + 'or less; “watch” means it dropped by more than 0.3; “regressed” '
+        + 'means it dropped by more than 0.5 — the project treats a drop that '
+        + 'large as blocking a merge. The badge shows the worst result across '
+        + 'all pairs; open the tile for every row.',
+    },
+    dashTilePassRate: {
+      title: 'Rubrics tracked — pass rate per rubric',
+      body: 'A rubric is one grading checklist the AI grader applies — for '
+        + 'example grounding (did it invent anything?), keyword coverage, ATS '
+        + 'format or tone. The number is how many rubrics have results. Open '
+        + 'the tile for each rubric’s pass rate: a pass is a score of 4.0 or '
+        + 'more out of 5, and a run that errored counts as a fail so problems '
+        + 'stay visible.',
+    },
+    dashTileScoreTrend: {
+      title: 'Score trend — scores over time',
+      body: 'One line per rubric, plotting its scores over time. Each point '
+        + 'records which prompt version produced it (hover to see it), so when '
+        + 'a line drops you can tell which prompt change caused it. The number '
+        + 'on the tile is how many rubric lines are charted. Older results '
+        + 'recorded before prompt versions were tagged are left out, because '
+        + 'they cannot be attributed; grader crashes are left out too.',
+    },
+    dashTileHeatmap: {
+      title: 'Heatmap — every test case at a glance',
+      body: 'A test case (fixture) is a sample job posting plus a résumé to '
+        + 'tailor for it. The heatmap puts rubrics down the side and test '
+        + 'cases across the top; each cell is that pair’s most recent score, '
+        + 'coloured from red (0) to green (5). An empty cell means that rubric '
+        + 'has no usable score for that test case yet. Hover a cell for the '
+        + 'prompt version and the time it was graded.',
+    },
+    dashTileFailureModes: {
+      title: 'Top failure mode — what breaks most',
+      body: 'When the AI grader fails a result, it names the rule that was '
+        + 'broken with a short tag — for example invented_metric (a number '
+        + 'that isn’t in the source) or missing_must_keyword (a required '
+        + 'keyword left out). This tile shows the most frequent tag and how '
+        + 'many graded results named it; open it for the top 20. A tag counts '
+        + 'once per graded result, so one bad result can’t dominate the list.',
+    },
+    dashTilePareto: {
+      title: 'Pareto verdict — better, worse, or a trade-off?',
+      body: 'Compares the two most recent prompt versions on three things at '
+        + 'once: overall score (the composite — a weighted average of the '
+        + 'rubric scores), typical (p50) latency, and typical (p50) cost. '
+        + '“Pareto-improving”: the score went up and it got faster or cheaper, '
+        + 'without getting both slower and pricier. “Dominated”: the score '
+        + 'went down and it got slower or pricier. “On frontier”: anything '
+        + 'else — usually a trade-off, such as better but slower. It needs '
+        + 'results from at least two prompt versions.',
+    },
+    dashTileRecent: {
+      title: 'Recent evals — the raw results',
+      body: 'Every other tile on this tab is built from these records: one row '
+        + 'per graded result (test case × rubric), newest first, up to 200. A '
+        + 'score of 4.0 or more is a pass. The “failed rules” column lists the '
+        + 'rules the grader said were broken. Click a run id to open that '
+        + 'run’s detail.',
+    },
+    dashTileGroundedScore: {
+      title: 'Groundedness score — did it invent anything?',
+      body: 'Out of 5, higher is better, for the most recent eval run. A '
+        + 'rule-based check (no AI involved) pulls the specifics out of the '
+        + 'generated résumé — numbers, dates, named tools and companies — and '
+        + 'looks for each one in the candidate’s own material. The percentage '
+        + 'is the share it could not find. Open the tile for the trend over '
+        + 'time, the flagged examples, and a per-bullet breakdown.',
+    },
+    dashTileFlagged: {
+      title: 'Flagged specifics — worth a look',
+      body: 'How many specifics in the latest run had no match in the '
+        + 'candidate’s material, out of all the specifics found. A flag is a '
+        + 'prompt to check, not proof of invention: a real fact that the '
+        + 'résumé merely reworded can be flagged too. Open the tile to see the '
+        + 'flagged specifics themselves.',
+    },
+    dashTuneRun: {
+      title: 'A/B a candidate prompt — how it works',
+      body: 'Runs the eval twice on the same test cases — once with the app’s '
+        + 'current prompt, once with your edited version — and shows the score '
+        + 'change for every test case and rubric. Your text replaces the '
+        + 'chosen prompt for this run only (through analyzer.prompt_overrides(), '
+        + 'the same mechanism as the command line’s --prompt-overrides), so '
+        + 'analyzer.py is never edited and there is nothing to undo. The '
+        + 'candidate’s results are tagged candidate:<hash>, so they never mix '
+        + 'into the score-over-time chart. Both runs are paid; the '
+        + 'confirmation dialog shows the estimate before anything is spent.',
+    },
+    dashTileTuningLoop: {
+      title: 'Tuning loop — how prompt changes get tested',
+      body: 'The prompt-tuning loop is how a prompt change earns its way into '
+        + 'the app: try a candidate (here, or with the /prompt-tune and '
+        + '/tune-from-annotations skills), compare its scores with the '
+        + 'current prompt, and only then promote it — by hand, by copying the '
+        + 'winning text into analyzer.py, bumping PROMPT_VERSION and noting it '
+        + 'in TUNING_LOG.md. Open the tile for the tools and files involved.',
+    },
+    dashTileBaseline: {
+      title: 'Baseline — the saved reference scores',
+      body: 'The prompt version the saved reference scores '
+        + '(evals/results/baseline_v1.json) were recorded with, and that '
+        + 'baseline’s name. The Quality tab’s Health tile compares new scores '
+        + 'against it. An A/B run on this tab compares your candidate against '
+        + 'the app’s current prompt instead, run fresh on the same test cases.',
+    },
+    dashFixtureSlug: {
+      title: 'Fixture slug — where the bootstrap is saved',
+      body: 'The folder name under evals/fixtures/real/ that this bootstrap is '
+        + 'saved in; it defaults to <candidate>-bootstrap. Reusing a slug does '
+        + 'not add JDs to an earlier run: every run is saved as its own, '
+        + 'separate bootstrap file holding only that run’s JDs (and it '
+        + 'refreshes the folder’s corpus snapshot, seed.json). A fixture you '
+        + 'have already labeled keeps showing the run you labeled; only an '
+        + 'unlabeled fixture switches to the newest run. To label several JDs '
+        + 'together, put them all in one run.',
+    },
+    dashFixturePicker: {
+      title: 'Pick a bootstrap — what you are about to label',
+      body: 'Lists every bootstrap saved under evals/fixtures/real/. Each entry '
+        + 'shows its bullet (b) and skill (s) counts after near-duplicates are '
+        + 'merged, “annotated” once labels have been saved, and the job(s) it '
+        + 'covers. Picking one loads its saved labels, or a blank set to fill '
+        + 'in — and restores an unsaved draft from this browser if you left '
+        + 'one. Reload refreshes the list.',
+    },
+    dashAnnFields: {
+      title: 'Failed rules, honest rewrite, forbidden pattern',
+      body: 'Failed rules: optional tags naming which grading rule an item '
+        + 'breaks (for example invented_metric or scope_inflation). Pick them '
+        + 'from the suggestions — Save refuses a tag that is not in the '
+        + 'graders’ own list — and they label the item in the improvement '
+        + 'brief. Honest rewrite: required when the verdict is fix — the '
+        + 'truthful wording you would accept; it becomes a “not OK → OK” '
+        + 'example in the improvement brief. Forbidden pattern: required when '
+        + 'the verdict is fabricated — a regular expression (a text-matching '
+        + 'pattern) describing the invention, which becomes a must-not-appear '
+        + 'rule the grounding grader checks in this fixture’s eval runs; Save '
+        + 'refuses one that is not a valid regex. Keep it narrow enough to '
+        + 'match only the invented claim. Examples: managed [0-9]+ engineers '
+        + '(any invented team size); saved \\$[0-9]+M (an invented dollar '
+        + 'figure — the backslash makes $ literal); MIT|Stanford (either '
+        + 'school); Epic\\b (Epic as a whole word, not the start of “Epicentre”).',
+    },
+    dashCollate: {
+      title: 'Collate — turn your labels into a test case',
+      body: 'Collate saves your labels first, then turns them into a runnable '
+        + 'test case in the fixture’s folder — deterministic, no AI calls, no '
+        + 'cost. It writes expected.json (the skills you marked keep become '
+        + 'must-have keywords, and each fabricated item’s forbidden pattern '
+        + 'becomes a must-not-appear rule), improvement_brief.md (your '
+        + 'fabrications, rewrites and omissions written up as notes for the '
+        + 'next prompt-tuning pass) and jd.txt (a copy of the anchor JD — the '
+        + 'one posting the test case is graded against). Afterwards it offers '
+        + '“Run this fixture (real --seed)” to grade the new test case.',
+    },
+    dashCollateRun: {
+      title: 'Run this fixture — grade the test case you just built',
+      body: 'Runs the paid eval on the test case Collate just wrote. The '
+        + '“real --seed” part means it builds the candidate’s context from '
+        + 'this fixture’s seed.json (the corpus snapshot) instead of a sample '
+        + 'résumé, generates a résumé against jd.txt, and grades it on every '
+        + 'rubric against expected.json. It makes paid Sonnet + Haiku calls, '
+        + 'asks you to confirm first, and takes a few minutes; the results '
+        + 'are saved to evals/results/ and appear on the Quality tab after a '
+        + 'reload.',
     },
   };
   // v1.1.0 close-out step 10 (content cluster #2/#4/#5/#6/#16): the field-level
   // entries above complete the authoring pass the finding called for — the
-  // console now carries 5 tab-level + 9 field-level explainers (the main
+  // console then carried 5 tab-level + 9 field-level explainers (the main
   // app's _HELP_REGISTRY has 16 field-level entries; the two registries cover
   // different surfaces, so parity is "same granularity", not an equal count).
+  // Epic C C3 added one entry per tile/module (the block above); the exact
+  // set is asserted by tests/test_dashboard_copy.py, not restated here.
   // The prior in-markup `title=` tooltips on tuneConstant/tuneSlug/bsSlug/JD
   // name+text stay as the native fallback (hover, no click); the new
   // .help-info icons below give those same fields a full explainer.
@@ -1273,6 +1767,10 @@
     var id = icon.dataset.help;
     if (id) icon.addEventListener('click', function () { openDashHelp(id, icon); });
   });
+  // Epic C C3: the load-time forEach above never sees an (i) created later —
+  // renderCollateResult()'s "Run this fixture" row is built after a Collate —
+  // so expose the opener for those call sites. Same registry, same opener.
+  window.sartorDashHelp = { open: openDashHelp };
 
   tabs.forEach(function (t) {
     t.addEventListener('click', function () {
@@ -2105,18 +2603,29 @@
   function renderItem(item) {
     var card = el('div', 'ann-item');
     card.appendChild(el('div', 'rep', item.representative || '(empty)'));
+    // UX-16: the card metadata says what each number means, on screen (the
+    // scale) and on hover (the fuller gloss). Sources: evals/bootstrap.py
+    // (size / jd_files = the cross-JD dedup cluster) and
+    // evals/grounding_signals.py (0–1 scores; contradiction flag).
     var bits = [];
-    if (item.jd_files && item.jd_files.length) bits.push('span ' + item.jd_files.length + ' JD(s)');
-    if (item.size != null) bits.push('size ' + item.size);
-    if (item.minicheck_grounding_score != null) bits.push('MiniCheck ' + item.minicheck_grounding_score);
-    if (item.nli_entailment_score != null) bits.push('NLI ' + item.nli_entailment_score);
-    if (item.nli_contradiction_flag) bits.push('NLI-contradiction');
-    card.appendChild(el('div', 'meta', bits.join(' · ')));
+    if (item.jd_files && item.jd_files.length) bits.push('in ' + item.jd_files.length + ' JD(s)');
+    if (item.size != null) bits.push(item.size === 1 ? 'no near-duplicates' : item.size + ' near-identical versions merged');
+    if (item.minicheck_grounding_score != null) bits.push('MiniCheck ' + item.minicheck_grounding_score + ' (support, 0–1)');
+    if (item.nli_entailment_score != null) bits.push('NLI ' + item.nli_entailment_score + ' (implied by source, 0–1)');
+    if (item.nli_contradiction_flag) bits.push('NLI-contradiction (source seems to say the opposite)');
+    var metaEl = el('div', 'meta', bits.join(' · '));
+    metaEl.title = 'in N JD(s): how many of the pasted job descriptions produced this item — '
+      + 'wide = the candidate\'s real core, 1 = specific to one posting. '
+      + 'MiniCheck / NLI: local fact-check scores from 0 to 1, higher = better supported by '
+      + 'the candidate\'s source; a MiniCheck score under 0.5 counts as low.';
+    card.appendChild(metaEl);
 
     var controls = el('div', 'controls');
     var vlab = el('label'); vlab.appendChild(el('span', null, 'verdict'));
     var vsel = verdictSelect(item); vlab.appendChild(vsel); controls.appendChild(vlab);
-    var fr = textControl('failed_rules (comma-sep)', (item.failed_rules || []).join(', '), true);
+    // UX-17: lay labels (the schema key stays in the saved JSON; the guide
+    // above the cards explains each field with worked examples).
+    var fr = textControl('failed rules (optional tags, comma-separated)', (item.failed_rules || []).join(', '), true);
     fr.inp.setAttribute('list', 'annFailedRulesList'); controls.appendChild(fr.lab);
     var nt = textControl('note', item.note, true); controls.appendChild(nt.lab);
     // #7 (diagnostics round-2, owner dec 11): distinct from `verdict` — verdict
@@ -2130,8 +2639,10 @@
       + 'section in addition to whatever verdict you picked. Collation (expected.json) reads verdict '
       + 'only, so this has no effect there.';
     olab.appendChild(ocheck); controls.appendChild(olab);
-    var rw = textControl('honest_rewrite (fix)', item.honest_rewrite, true); controls.appendChild(rw.lab);
-    var fp = textControl('forbidden_pattern (fabricated)', item.forbidden_pattern, true); controls.appendChild(fp.lab);
+    var rw = textControl('honest rewrite (required for fix)', item.honest_rewrite, true); controls.appendChild(rw.lab);
+    rw.inp.placeholder = 'the truthful wording you would accept';
+    var fp = textControl('forbidden pattern — a regex (required for fabricated)', item.forbidden_pattern, true); controls.appendChild(fp.lab);
+    fp.inp.placeholder = 'e.g. managed [0-9]+ engineers';
 
     function syncCond() { rw.lab.style.display = (vsel.value === 'fix') ? '' : 'none'; fp.lab.style.display = (vsel.value === 'fabricated') ? '' : 'none'; }
     syncCond();
@@ -2153,7 +2664,7 @@
     var slab = el('label'); slab.appendChild(el('span', null, 'rating 0–5'));
     var sinp = el('input'); sinp.type = 'number'; sinp.min = '0'; sinp.max = '5'; sinp.step = '0.1';
     sinp.value = (r.rating == null ? '' : r.rating); slab.appendChild(sinp); controls.appendChild(slab);
-    var fr = textControl('failed_rules (comma-sep)', (r.failed_rules || []).join(', '), true);
+    var fr = textControl('failed rules (optional tags, comma-separated)', (r.failed_rules || []).join(', '), true);
     fr.inp.setAttribute('list', 'annFailedRulesList'); controls.appendChild(fr.lab);
     var nt = textControl('note', r.note, true); controls.appendChild(nt.lab);
     sinp.addEventListener('input', function () { r.rating = sinp.value === '' ? null : parseFloat(sinp.value); });
@@ -2237,6 +2748,20 @@
     if (window.sartorRunLock && window.sartorRunLock.isLocked()) runBtn.disabled = true;
     var bar = el('progress', 'run-progress'); bar.max = 1; bar.value = 0; bar.hidden = true;
     var prog = el('div', 'annotate-progress'); prog.setAttribute('role', 'status'); prog.setAttribute('aria-live', 'polite');
+    // UX-19: lay copy + a bubble for the dynamically-built run button. The
+    // load-time .help-info wiring never sees this (i), so it opens through
+    // window.sartorDashHelp (exposed by the tabs IIFE).
+    runBtn.title = 'Paid: grade this new test case on every rubric (asks to confirm first).';
+    var runHelp = el('button', 'help-info', 'i'); runHelp.type = 'button';
+    runHelp.id = 'help-icon-dashCollateRun'; runHelp.dataset.help = 'dashCollateRun';
+    runHelp.title = 'About Run this fixture';
+    runHelp.setAttribute('aria-label', 'Help: Run this fixture — grade the test case you just built');
+    runHelp.setAttribute('aria-haspopup', 'dialog'); runHelp.setAttribute('aria-controls', 'helpModal');
+    runHelp.setAttribute('aria-expanded', 'false');
+    runHelp.addEventListener('click', function () {
+      if (window.sartorDashHelp) window.sartorDashHelp.open('dashCollateRun', runHelp);
+    });
+    var runLay = el('div', 'sub', 'Your labels are now a test case. “Run this fixture” grades it for real — paid Sonnet + Haiku calls, a few minutes; it asks to confirm first.');
     runBtn.addEventListener('click', function () {
       if (!window.sartorEval) { prog.textContent = 'Eval runner unavailable.'; return; }
       if (!window.confirm('Run the eval for fixture "' + state.slug + '" now?\n\nThis makes paid Sonnet + Haiku API calls (~$0.30) against this fixture\'s corpus and takes a few minutes.')) return;
@@ -2247,7 +2772,8 @@
         bar,
       );
     });
-    actions.appendChild(runBtn); box.appendChild(actions); box.appendChild(bar); box.appendChild(prog);
+    actions.appendChild(runBtn); actions.appendChild(runHelp);
+    box.appendChild(runLay); box.appendChild(actions); box.appendChild(bar); box.appendChild(prog);
   }
 
   // ---- bootstrap wrapper (POST + SSE via fetch streaming) ----
@@ -2260,8 +2786,10 @@
     t.title = 'The full job description text — the pipeline analyzes/clarifies/generates against it, same as the wizard.';
     t.setAttribute('aria-label', 'JD text');
     var rm = el('button', 'ann-btn'); rm.type = 'button'; rm.textContent = '✕'; rm.setAttribute('aria-label', 'Remove JD');
-    rm.addEventListener('click', function () { row.remove(); });
+    rm.addEventListener('click', function () { row.remove(); updateBsSpend(); });
+    n.addEventListener('input', updateBsSpend); t.addEventListener('input', updateBsSpend);
     row.appendChild(n); row.appendChild(t); row.appendChild(rm); $('bsJds').appendChild(row);
+    updateBsSpend();
   }
   function collectJds() {
     var out = [];
@@ -2270,6 +2798,20 @@
       if (name && text) out.push({ name: name, text: text });
     });
     return out;
+  }
+  // UX-14: the live spend estimate. Counts exactly what runBootstrap() will
+  // send (collectJds: rows with BOTH a name and text) — each is one paid
+  // pipeline run at the existing ~70s-per-JD figure. No $ figure: none is
+  // sourced for the bootstrap (dossier Observation 10).
+  function updateBsSpend() {
+    var out = $('bsSpend'); if (!out) return;
+    var n = collectJds().length;
+    if (!n) { out.textContent = 'No JD rows filled yet — nothing will be spent. Fill in a name and text to add one.'; return; }
+    var secs = n * 70;
+    var dur = secs < 120 ? ('~' + secs + 's') : ('~' + Math.round(secs / 60) + ' min');
+    out.textContent = n + ' JD row' + (n === 1 ? '' : 's') + ' filled → ' + n + ' paid pipeline run'
+      + (n === 1 ? '' : 's') + ' (analyze + clarify + generate each), ' + dur + ' in total. '
+      + 'Starts the moment you click Run bootstrap — no confirmation.';
   }
   function runBootstrap() {
     var user = $('bsUser').value.trim(); var slug = $('bsSlug').value.trim(); var jds = collectJds(); var prog = $('bsProgress');
