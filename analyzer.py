@@ -621,6 +621,19 @@ def _redact_error_message(message: str) -> str:
     return masked
 
 
+def _safe_exc_str(exc: BaseException) -> str:
+    """`str(exc)` that can never raise (epic-close fix, R1-2).
+
+    The C1c capture runs inside an `except` block; if an exception's own
+    `__str__` raised there, THAT error would replace the one the caller should
+    see. Fall back to the exception's type name instead.
+    """
+    try:
+        return str(exc)
+    except Exception:
+        return f"<{type(exc).__name__}: str() failed>"
+
+
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
 You specialize in resume optimization, ATS compatibility, and candidate positioning.
@@ -1402,7 +1415,7 @@ def _call_llm_streaming(
         # one, re-label it here rather than 500. Narrow BY CONSTRUCTION — the
         # message match means no ordinary TypeError (a real programming error)
         # can be swallowed; anything else re-raises untouched.
-        if _SDK_NO_AUTH_MARKER in str(exc):
+        if _SDK_NO_AUTH_MARKER in _safe_exc_str(exc):
             config_error = LLMConfigurationError(
                 f"call={call_kind} could not be sent — {_NO_CREDENTIAL_DETAIL}"
             )
@@ -1413,12 +1426,12 @@ def _call_llm_streaming(
             error_message = _redact_error_message(str(config_error))
             raise config_error from exc
         error_type = type(exc).__name__
-        error_message = _redact_error_message(str(exc))
+        error_message = _redact_error_message(_safe_exc_str(exc))
         raise
     except Exception as exc:
         status = "error"
         error_type = type(exc).__name__
-        error_message = _redact_error_message(str(exc))
+        error_message = _redact_error_message(_safe_exc_str(exc))
         raise
     finally:
         elapsed_ms = int((time.perf_counter() - t0) * 1000)

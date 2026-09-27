@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 13 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
+**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -16,6 +16,14 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **112** -- The diagnostics console's Since filter raises TypeError on any date: naive date floor compared against offset-aware telemetry timestamps (`agent`) -- Any Since date crashes the console: _filter_calls compares a naive floor to offset-aware (+00:00) timestamps.
 - **115** -- UX-8 test asserts .err-link failing-state color via getComputedStyle, not just CSS rules read (`agent`) -- Add a getComputedStyle assertion for .err-link's danger color; F3's fix was verified by reading rules, not measuring.
 - **116** -- Dynamically-created 'Run this fixture' help bubble (renderCollateResult) never verified to open in a browser (`agent`) -- Post-Collate help circle is wired at runtime; C3's UX test never reaches it, only render-with-no-error is verified.
+- **117** -- Paid diagnostics runs have no server-side single-flight lock; the run lock is per browser tab (`agent`) -- Two tabs (or curl) can start two paid runs at once: LOCK_BTN_IDS/acquire() are client-only, no server lock.
+- **118** -- error_message redaction misses quoted-key header forms and Basic auth credentials (`agent`) -- _HEADER_VALUE_PATTERN skips {'x-api-key': ...} / {"authorization": ...} and masks only the word 'Basic'.
+- **119** -- Run lock has no owner; tune, bootstrap and annScore ignore acquire()'s return value (`agent`) -- Any release() frees the lock, and three inline acquire() sites start a run even when acquire() returned false.
+- **120** -- run() leaves its button pulsing (btn-pending) when it declines to start a second run (`agent`) -- run() calls setBtnPending before the acquire() check; the early return never clears it.
+- **121** -- run_detail reads all of llm_calls.jsonl per modal open; a non-object JSON line raises 500 (`agent`) -- GET /api/run/<id> materializes the whole log to find one run; _read_jsonl keeps non-dict lines -> AttributeError.
+- **122** -- Weak C3 test assertions: raw-name denylist, unbounded registry-title regex, bare 'error' in body (`agent`) -- Three C3 assertions survive plausible mutants; tighten each to fail on the regression it names.
+- **123** -- verify-binary-on-path blocks shell brace groups: "'{', '}' not found on PATH" (`agent`) -- A `{ cmd; cmd; } | head` brace group is parsed as binaries named { and }; blocked an epic refuter.
+- **124** -- Recurrence: agents invoke bare `ruff` (not on PATH here) and get hook-blocked mid-run (`agent`) -- Pipeline run wf_fd312963-54d's implementer stopped on a bare-ruff block; the guard should steer to python -m.
 
 ## Blocked
 

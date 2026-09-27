@@ -185,6 +185,28 @@ expansion beyond UX-1's named mechanism (the brief scopes "the other C1 items" t
 lists no bullet for these three). Left as-is; flagged nowhere since this is a within-brief
 implementation decision, not a scope conflict.
 
+**Correction (2026-09-26, Epic C epic-close fixer): the "no reachable path" premise above
+was falsified.** The epic-level review (refuters R1-5 / R2-2) found a path this section
+did not consider: `collate()`'s completion handlers called `clearBtnPending($('annCollate'))`,
+and `clearBtnPending()` set `disabled = false` unconditionally, so a Collate finishing
+during a live run re-enabled `#annCollate`, a lock-governed button, while the lock was
+still held. The general lesson is that any code path that touches a governed button's
+`.disabled` can undo the lock, not only a re-render. Fixed at epic close:
+`clearBtnPending()` now leaves a governed button disabled while
+`sartorRunLock.isLocked()` (new `sartorRunLock.governs(el)`), and
+`tests/ux/regression/test_20260923_annotate_collate_run_lock.py` asserts `#annCollate`
+is still disabled after a collate completes mid-run. The three inline `acquire()` sites
+still ignore its return value, and the lock has no owner; both are filed as work item
+119.
+
+**Qualification of the C1a acceptance criterion (2026-09-26, epic-close fixer; refuter
+R1-1).** The Epic C design brief's criterion that no second eval can start while one is
+live holds **per browser tab only**. `window.sartorRunLock` is page state; no paid route
+in `blueprints/diagnostics.py` refuses a concurrent run, so a second tab, a reload that
+dismisses the `beforeunload` warning, or a direct POST can start a second paid run. The
+ratified brief's criterion text is left unedited; this is the record of what C1a
+actually guarantees. The server-side single-flight lock is work item 117.
+
 ---
 
 ## Acceptance bar

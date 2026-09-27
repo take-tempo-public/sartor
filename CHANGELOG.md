@@ -38,6 +38,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (observed: 30 silent minutes on this branch). The refusal now ends with
   `gate: FAILED at \`memory preflight\` (exit 1)`. A new test pins it.
 
+### Epic C, C1a: the run lock covers Collate (`fix/dashboard-run-lock-gaps`, UX-1)
+
+- **Fixed: Collate could start work during a live paid run.** The diagnostics console's
+  "Collate → fixture + brief" button was missing from the run lock, so it stayed
+  clickable while an eval, A/B or bootstrap was running. A Collate that ran mid-run also
+  built its "Run this fixture" button enabled. Both are now disabled while a run holds
+  the lock. The lock's `acquire()` now reports whether it took the lock, and the shared
+  run streamer refuses to start a second run when it did not. The lock is per browser
+  tab; there is no server-side lock yet (filed as a work item at epic close).
+  Diagnosis: `docs/dev/diagnosis/dashboard-run-lock-gaps.md`.
+
+### Epic C, C1b: console polish (`feat/dashboard-polish`, UX-2..UX-6, UX-24)
+
+- **Changed:** the console's tab bar stays visible while scrolling and sits below the
+  run banner instead of under it. The run banner is fully opaque and pulses (silenced
+  under reduced motion).
+- **Fixed: the console no longer calls itself read-only.** The header and three
+  "only write surface" claims were false: Quality's Run eval, Tuning's A/B and Annotate
+  all spend money or write eval files. The header now says which tabs do.
+- **Added:** every async control shows a pending state while it works, and a cancelled
+  run ends on a final "Cancelled" message instead of "Cancelling…" forever.
+
 ### Epic C, C1c: LLM call error capture (`feat/llm-call-error-capture`)
 
 - **Added:** `logs/llm_calls.jsonl` rows with `status == "error"` now carry `error_type`
@@ -46,6 +68,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Added:** the `block-subagent-git-stash` PreToolUse guard (Bash dispatcher). A subagent
   may not run a state-changing `git stash`; `list`/`show` and the main agent are unaffected.
   This is the C-11 guard for a pipeline refuter that stashed the shared tree mid-review.
+
+### Epic C, C2: run detail and error messages in the console (commit `8bf95a6`, UX-7, UX-8)
+
+- **Added:** clicking any run id in the console opens one run's detail: each step's
+  time, cost and errors. It is served by a new localhost-only
+  `GET /_dashboard/api/run/<run_id>` route.
+- **Added:** the error-rate breakdown's error counts are clickable and list that call
+  kind's recent failed calls with the `error_type` and redacted `error_message` that C1c
+  captures. Calls logged before C1c show "no message logged".
+
+### Epic C, C3: lay copy and help for every console module (`feat/dashboard-copy-discovery`, UX-9..UX-21, UX-42)
+
+- **Added:** every tile on every console tab has a one-line plain-language summary on
+  screen and its own help bubble. The filters say what they scope, and their blank
+  option reads "All users" / "All models".
+- **Added:** the Annotate tab explains each step: that the bootstrap has no confirmation
+  step and each JD row is a paid run (with a live estimate), how many annotations a JD
+  produces, what the annotation fields mean (with worked regex examples), and what
+  Collate and Score grounding write or spend.
+- **Fixed:** the Score grounding help now matches the server (a missing seed is an error,
+  and both give the same remedy), and the fixture-slug hover text no longer claims that
+  reusing a slug adds JDs.
+- **Fixed at epic close** (from the epic-level review): a finished Collate no longer
+  re-enables its button while another run holds the lock; an exception whose own text
+  cannot be printed no longer replaces the error the caller sees in LLM telemetry
+  capture; and the console copy no longer overclaims (Suite vs Subset, the Cancel
+  guarantee, the Groundedness headline, the error list's 200-call window, the
+  known-broken Since filter, and what "rubrics tracked" counts). `SECURITY.md` and
+  `dashboard/README.md` now describe the telemetry log and the console's write
+  surfaces accurately.
 
 ### Fixed: a fresh plan approval could be retired mid-branch (`fix/plan-approval-retired-mid-branch`, item 110)
 

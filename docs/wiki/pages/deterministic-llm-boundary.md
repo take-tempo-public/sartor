@@ -64,8 +64,13 @@ is no call site that does not `[synthesis]`. The single
 `_emit_call_log` block in the `finally` of
 [`analyzer.py:_call_llm_streaming`](../../../analyzer.py) writes one JSONL
 telemetry record per funnelled call (stamped with the call kind under the JSON key
-`call`, plus `model` and `prompt_version`), so observability is a property of the
-funnel, not of each caller.
+`call`, plus `model` and `prompt_version`); on `status="error"` rows, two additional
+fields carry `error_type` (the exception class name, set in
+[`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) and `error_message`, a
+redacted exception text via
+[`analyzer.py:_redact_error_message`](../../../analyzer.py) (whitespace collapsed,
+API-key shapes and header values masked, 500-character cap), so observability is a
+property of the funnel, not of each caller.
 
 ## Two models, one funnel
 

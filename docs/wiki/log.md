@@ -2268,3 +2268,35 @@ invoking session's explicit instruction for this step ("record the classificatio
 editing the page now — editing here would pre-empt the epic-close pass's own view of the
 *whole* epic's diff (C1a/C1b/C1c/C2/C3 together), and this sprint's tile-level additions are
 only one piece of it. `.last_ingest_sha` was not advanced (item 98).
+
+## 2026-09-26 — `/wiki-self-update`, Epic C close-out (scoped; checkpoint NOT advanced)
+
+**Branch:** `feat/dashboard-copy-discovery` (Epic C terminal sprint + epic-close fixes).
+**Mode:** diff, **scoped by owner decision** to Epic C's own wiki-relevant changes
+(`git diff main...HEAD` + the staged epic-close fixes), not the full
+`f42b2ea → HEAD` window (41 relevant files → ~35 pages, over the cap of 8; most of it
+pre-epic). Owner chose "Scoped, 4 pages" at the spend boundary. **`.last_ingest_sha`
+deliberately NOT advanced**: advancing it past a scoped pass would silently mark the
+pre-epic drift current (the ratchet defect, item 98).
+
+**Sources read (working tree, staged fixes included):** `dashboard/routes.py`,
+`dashboard/templates/dashboard.html`, `dashboard/README.md`, `analyzer.py`
+(error capture), `SECURITY.md`, `blueprints/diagnostics.py`.
+
+**Pages changed (4):** `diagnostics-console` (two GET routes incl. `run_detail`; Tuning
+and annotation are write surfaces, not "read-only"/"only"; per-tile help; new sections
+on error capture + run-detail modal and on run-lock gating — corrects adversarial-review
+finding R3-2 and this log's earlier "nothing to contradict" / "stale, not wrong"
+entries, both of which were false); `code-module-map` (dashboard row: two GET routes,
+writes in `blueprints/diagnostics.py`); `deterministic-llm-boundary` and
+`llm-call-catalog` (C1c `error_type` / `error_message` on error rows). `index.md`:
+diagnostics-console entry revised.
+
+**Auditor catch-rate:** 4 pages audited (author ≠ auditor); **4 DRIFTED + 1 UNSUPPORTED
+caught** — DRIFTED re-anchored (`analyzer.py:error_type` local-variable cite;
+redaction-order wording; redaction "inside the finally block" → exception handlers;
+`SECURITY.md §Logging` → §User data residency). UNSUPPORTED ("five paid-run buttons";
+source has six, and grounding-score is CPU-only) — pre-existing text stale since C1a;
+surfaced to the owner, who chose "Correct it"; corrected, with the per-tab-only lock
+qualification (item 117). Structural lint on the 4 pages: links, backlinks, index —
+clean.

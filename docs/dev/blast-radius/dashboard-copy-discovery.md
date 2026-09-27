@@ -74,6 +74,45 @@ The second search finds 0 hits. `.tile` and `.bento` are styled only inside
 | 7 | `tests/test_dashboard_routes.py:591-595` | no change | The empty-state strings (`Nothing to chart yet`, `No eval scores yet`, `No groundedness scores yet`, `No call records`) are kept. `:662` / `:668` (`jd-label` count == 2): the change adds no `jd-label` spans. |
 | 8 | the remaining `Dashboard.`-using tests (`test_annotation_tab`, `_required_field_and_dropdown`, `_run_lock`, `_run_cancel`, `_run_detail_modal`) | no change | These tests address ids (`#annCollate`, `#bsRun`, `#fixtureSelect`, `.run-link`, …). No id is renamed. |
 
+**Correction (2026-09-26, epic-close fixer; refuter R3-9).** The enumeration above
+searched for `Dashboard.<attr>` and `selectors import Dashboard`, which finds importers
+of the selector class but not tests that reach the console only through the
+`DashboardConsolePage` page object. Those tests feel the `.tile-cell` markup change
+through `open_tile()` / `tile()` just as much. Re-derived:
+
+```
+$ grep -rln "DashboardConsolePage" --include=*.py tests ui_pages | sort
+```
+This returns 15 files: `ui_pages/__init__.py`, `ui_pages/dashboard_console.py`, and 13
+test files. Ten of the test files are already covered by rows 3-8 above or are this
+sprint's own new test. The three below were missing:
+
+| # | Site (`path:line`) | Decision | Rationale |
+|---|---|---|---|
+| 9 | `tests/ux/regression/test_20260611_diagnostics_chart_corrections.py:111`, `:114`, `:126`, `:153` (`dash.open_tile("throughput" / "trace" / "cost")`) | no change | `open_tile()` still clicks `.tile[data-detail=…]`, the button that keeps `data-detail` (row 2). The help circle is a sibling, not over the button's centre. |
+| 10 | `tests/ux/regression/test_20260923_annotate_collate_run_lock.py:28`, `:74` | no change | Drives tabs and the Annotate buttons by id (`activate_tab`, `select_fixture`, `save`, `collate`); no tile access. (Epic close adds an `#annCollate` lock assertion there; ids unchanged.) |
+| 11 | `tests/ux/regression/test_20260711_dashboard_assistant.py:21`, `:59`, `:92` | no change | Uses `activate_tab("quality")` / `active_pane` only; no tile access. |
+
+**Epic-close change (2026-09-26, epic-close fixer; refuters R1-5 / R2-2): `clearBtnPending()`
+and `window.sartorRunLock`.** `clearBtnPending(el)` in `dashboard.html` now leaves a
+lock-governed button disabled while the run lock is held, and `window.sartorRunLock`
+gains a read-only `governs(el)` (additive; `acquire`/`release`/`isLocked` unchanged).
+Enumerated before the edit:
+
+```
+$ grep -rn "clearBtnPending\|sartorRunLock" (whole repo, excluding node_modules)
+```
+Code consumers are all inside `dashboard/templates/dashboard.html` (the console never
+loads `static/app.js`, whose `_clearBtnPending` is a separate function with the same
+idiom and is untouched). Tests mention both names only in comments/docstrings.
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 12 | `clearBtnPending` callers for non-governed controls (`#fixtureSelect`, `#annSave`, `#bsExportSeed`) | no change | `governs()` is false for them, so they re-enable exactly as before. |
+| 13 | `clearBtnPending` callers for the run buttons (`run()`'s `btnEl`, tune, bootstrap, annScore) | no change | Every one calls `clearBtnPending` and then `sartorRunLock.release()`; `release()` re-enables every governed id, so the net end state is unchanged. |
+| 14 | `collate()`'s three `clearBtnPending($('annCollate'))` calls | **behaviour change (the fix)** | During a live run `#annCollate` now stays disabled until the lock releases, instead of re-enabling mid-run. Pinned in `tests/ux/regression/test_20260923_annotate_collate_run_lock.py`. |
+| 15 | `renderCollateResult()` (`isLocked()`), `run()` (`acquire()`), `tests/ux/regression/test_20260709_diagnostics_run_lock.py` | no change | They use the unchanged `acquire`/`release`/`isLocked` members. |
+
 ---
 
 ## Deferred
@@ -82,6 +121,10 @@ The second search finds 0 hits. `.tile` and `.bento` are styled only inside
 - The out-of-scope audit findings that border this copy (UX-12, UX-22, UX-27, UX-30,
   UX-33, UX-35; item 112 / item 113) are **not** touched. The new copy is written so that
   it does not *repeat* their false claims. See Observations 5 and 6.
+  **Correction (2026-09-26, epic-close fixer; refuter R3-1):** UX-12 was in Epic C's
+  scope (UX-1..UX-21) and belonged to no item; it was fixed at epic close in
+  `dashboard.html` (Suite = which fixtures, Subset = which rubrics, "smoke" = the subset
+  only).
 
 ---
 

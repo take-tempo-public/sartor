@@ -421,7 +421,7 @@
             aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
     <div class="filters">
       <label>Suite
-        <select id="evalSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
+        <select id="evalSuite" title="synthetic = the committed sample fixtures · anchor = a frozen, versioned copy of those fixtures, for scores comparable over time">
           <option value="synthetic">synthetic</option>
           <option value="anchor">anchor</option>
         </select>
@@ -429,7 +429,7 @@
       <button class="help-info" id="help-icon-dashSuiteField-quality" data-help="dashSuiteField" type="button" style="align-self:end;margin-bottom:0.4rem"
               title="About Suite" aria-label="Help: Suite — which fixtures to grade" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Subset
-        <select id="evalSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
+        <select id="evalSubset" title="smoke = the grounding rubric only · full = every rubric">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
@@ -470,7 +470,7 @@
         <span class="k">rubrics tracked</span>
         <span class="v">{{ rubric_pass_rate|length }}</span>
         <span class="sub">a pass is a score of 4.0 or more (out of 5)</span>
-        <span class="lay">How many grading rubrics have results. Open it for each rubric’s pass rate.</span>
+        <span class="lay">How many grading rubrics have results, counting the overall score as one. Open it for each rubric’s pass rate.</span>
       </button>
       <button class="help-info" id="help-icon-dashTilePassRate" data-help="dashTilePassRate" type="button"
               title="About rubrics tracked" aria-label="Help: Rubrics tracked — pass rate per rubric"
@@ -556,7 +556,7 @@
         <span class="k">groundedness score</span>
         <span class="v brand">{{ "%.2f"|format(groundedness_detail.score) }}<span style="font-size:0.6em"> / 5</span></span>
         <span class="sub"><span class="num">{{ "%.1f"|format(groundedness_detail.fabricated_specifics_rate * 100) }}%</span> of specifics unsupported · {{ groundedness_detail.flagged_count }} flagged · prompt version <code class="short">{{ groundedness_detail.prompt_version }}</code></span>
-        <span class="lay">Out of 5 (higher is better): how well the latest eval run’s specifics trace back to the candidate’s own material.</span>
+        <span class="lay">Out of 5 (higher is better): how well one fixture’s specifics, from the latest eval run, trace back to the candidate’s own material.</span>
       </button>
       <button class="help-info" id="help-icon-dashTileGroundedScore" data-help="dashTileGroundedScore" type="button"
               title="About the groundedness score" aria-label="Help: Groundedness score — did it invent anything?"
@@ -608,7 +608,7 @@
       <button class="help-info" id="help-icon-dashTuneConstant" data-help="dashTuneConstant" type="button" style="align-self:end;margin-bottom:0.4rem"
               title="About Constant" aria-label="Help: Constant — which prompt you’re A/B-ing" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Suite
-        <select id="tuneSuite" title="synthetic = committed sample fixtures · anchor = the small always-on smoke set">
+        <select id="tuneSuite" title="synthetic = the committed sample fixtures · anchor = a frozen, versioned copy of those fixtures, for scores comparable over time">
           <option value="synthetic">synthetic</option>
           <option value="anchor">anchor</option>
         </select>
@@ -616,7 +616,7 @@
       <button class="help-info" id="help-icon-dashSuiteField-tuning" data-help="dashSuiteField" type="button" style="align-self:end;margin-bottom:0.4rem"
               title="About Suite" aria-label="Help: Suite — which fixtures to grade" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button>
       <label>Subset
-        <select id="tuneSubset" title="smoke = a fast grounding-only subset (cheaper) · full = all four rubrics">
+        <select id="tuneSubset" title="smoke = the grounding rubric only · full = every rubric">
           <option value="smoke">smoke</option>
           <option value="full">full</option>
         </select>
@@ -836,7 +836,7 @@
       candidate’s real work. Examples: <code class="short">managed [0-9]+ engineers</code>
       (an invented team size), <code class="short">saved \$[0-9]+M</code> (an invented dollar
       figure — <code class="short">\$</code> means a literal $), <code class="short">MIT|Stanford</code>
-      (either invented school), <code class="short">Epic\b</code> (the word “Epic” on its own).
+      (either invented school), <code class="short">\bEpic\b</code> (the word “Epic” on its own).
       <button class="help-info" id="help-icon-dashAnnFields" data-help="dashAnnFields" type="button"
               title="About the annotation fields" aria-label="Help: Failed rules, honest rewrite, forbidden pattern" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false">i</button></p>
     <h3 class="ann-h3">Bullets</h3>
@@ -1290,9 +1290,10 @@
     dashQuality: {
       title: 'Quality — eval scores by rubric',
       body: 'This tab grades generated résumés against the eval rubrics on a 0–5 '
-        + 'scale. "Synthetic" grades against committed sample fixtures; "anchor" '
-        + 'is the small always-on smoke set. "Smoke" runs a fast grounding-only '
-        + 'subset (≈$0.35–0.40 under Sonnet 5); "full" runs all four rubrics (≈$0.30). The "grounding '
+        + 'scale. The Suite picks which fixtures: "synthetic" grades the committed '
+        + 'sample fixtures; "anchor" grades a frozen, versioned copy of them. The '
+        + 'Subset picks which rubrics: "smoke" runs the grounding rubric only '
+        + '(≈$0.35–0.40 under Sonnet 5); "full" runs every rubric (≈$0.30). The "grounding '
         + 'signals" checkbox additionally runs the heavier DeBERTa/MiniCheck '
         + 'scorers. Every run makes paid Sonnet + Haiku calls. The panel is empty '
         + 'until you run an eval here or from the CLI; results land in '
@@ -1352,19 +1353,20 @@
     // so one shared entry each rather than a near-duplicate per tab.
     dashSuiteField: {
       title: 'Suite — which fixtures to grade',
-      body: '"Synthetic" grades against the committed sample fixtures under '
-        + 'evals/fixtures/synthetic/ — the full, four-rubric set. "Anchor" '
-        + 'grades against a small, always-on smoke set that stays cheap enough '
-        + 'to run on every change. Reach for anchor for a quick sanity check, '
-        + 'synthetic when you want the fuller picture.',
+      body: 'The Suite picks which fixtures get graded; the Subset (next to it) '
+        + 'picks which rubrics. "Synthetic" grades the committed sample fixtures '
+        + 'under evals/fixtures/synthetic/, which change as the product does. '
+        + '"Anchor" grades a frozen, versioned copy of those fixtures '
+        + '(evals/anchors/), so its scores stay comparable across prompt changes.',
     },
     dashSubsetField: {
       title: 'Subset — how much of the suite to run',
-      body: '"Smoke" runs a fast, grounding-only subset — the cheapest way to '
-        + 'check nothing broke (roughly $0.35–0.40 under Sonnet 5). "Full" runs '
-        + 'all four rubrics, so it costs more and takes longer but is the whole '
-        + 'picture. Reach for full before landing a prompt change; smoke is '
-        + 'enough for a quick spot-check.',
+      body: 'The Subset picks which rubrics grade each fixture; the Suite (next '
+        + 'to it) picks the fixtures. "Smoke" runs the grounding rubric only — '
+        + 'a quick check that nothing is being invented. "Full" runs every '
+        + 'rubric in evals/rubrics/, which takes longer but is the whole picture. '
+        + 'Reach for full before landing a prompt change. The estimate next to '
+        + 'the Run button shows what the chosen combination costs.',
     },
     dashGroundingSignals: {
       title: 'Grounding signals — the offline scorers',
@@ -1470,7 +1472,9 @@
         + 'always use every eval result on disk, because their trends need the '
         + 'full history. Leave a box on “All” to include everything; “clear” '
         + 'resets all three. Eval runs log their calls under users named '
-        + 'eval:<fixture>, so pick one of those to see only eval traffic.',
+        + 'eval:<fixture>, so pick one of those to see only eval traffic. Known '
+        + 'issue: the Since filter is currently broken — applying a date errors '
+        + 'instead of filtering (tracked as work item 112); User and Model work.',
     },
     dashPercentiles: {
       title: 'p50, p95, median and mean',
@@ -1511,7 +1515,9 @@
         + 'from the AI service or the app) or were truncated — stopped at the '
         + 'length limit (max_tokens) before finishing. Open the tile for a '
         + 'breakdown per pipeline step; click a red error count there to list '
-        + 'those calls with their error messages. Messages are shortened to '
+        + 'those calls with their error messages — drawn from the 200 most '
+        + 'recent calls in the current filter, so older failures are counted in '
+        + 'the rate but not listed. Messages are shortened to '
         + '500 characters and have API keys masked before they are logged; '
         + 'calls logged before error capture existed show “no message logged”.',
     },
@@ -1541,7 +1547,8 @@
         + 'evals/runner.py, makes paid Sonnet + Haiku calls, and asks you to '
         + 'confirm before it spends anything. Results are saved to '
         + 'evals/results/ and the page reloads to show them. Cancel stops it '
-        + 'before the next paid call.',
+        + 'at the next checkpoint between pipeline steps, usually within a few '
+        + 'seconds; a paid call already in flight still finishes and is billed.',
     },
     dashTileHealth: {
       title: 'Health vs baseline — are scores holding up?',
@@ -1558,7 +1565,9 @@
       title: 'Rubrics tracked — pass rate per rubric',
       body: 'A rubric is one grading checklist the AI grader applies — for '
         + 'example grounding (did it invent anything?), keyword coverage, ATS '
-        + 'format or tone. The number is how many rubrics have results. Open '
+        + 'format or tone. The number is how many rubrics have results, and it '
+        + 'includes the overall (composite) score each eval run records per '
+        + 'fixture as its own row. Open '
         + 'the tile for each rubric’s pass rate: a pass is a score of 4.0 or '
         + 'more out of 5, and a run that errored counts as a fail so problems '
         + 'stay visible.',
@@ -1611,7 +1620,8 @@
     },
     dashTileGroundedScore: {
       title: 'Groundedness score — did it invent anything?',
-      body: 'Out of 5, higher is better, for the most recent eval run. A '
+      body: 'Out of 5, higher is better, for one fixture (test case) from the '
+        + 'most recent eval run — it is not an average across the suite. A '
         + 'rule-based check (no AI involved) pulls the specifics out of the '
         + 'generated résumé — numbers, dates, named tools and companies — and '
         + 'looks for each one in the candidate’s own material. The percentage '
@@ -1691,7 +1701,8 @@
         + 'match only the invented claim. Examples: managed [0-9]+ engineers '
         + '(any invented team size); saved \\$[0-9]+M (an invented dollar '
         + 'figure — the backslash makes $ literal); MIT|Stanford (either '
-        + 'school); Epic\\b (Epic as a whole word, not the start of “Epicentre”).',
+        + 'school); \\bEpic\\b (Epic as a whole word — not the start of “Epicentre” '
+        + 'or the end of “NonEpic”).',
     },
     dashCollate: {
       title: 'Collate — turn your labels into a test case',
@@ -2159,7 +2170,13 @@
   // acquire it — e.g. a dynamically-created button deciding its own initial
   // .disabled at creation time (renderCollateResult()).
   function isRunLocked() { return locked; }
-  window.sartorRunLock = { acquire: acquireRunLock, release: releaseRunLock, isLocked: isRunLocked };
+  // True when `el` is one of the buttons this lock governs. clearBtnPending()
+  // asks this so an unrelated completion path (e.g. collate()'s fetch
+  // settling) can never re-enable a lock-governed button mid-run — the lock,
+  // not the caller, decides when those buttons come back (epic-close fix for
+  // R1-5/R2-2: collate() re-enabled #annCollate while a run was live).
+  function governsRunLock(el) { return !!el && LOCK_BTN_IDS.indexOf(el.id) !== -1; }
+  window.sartorRunLock = { acquire: acquireRunLock, release: releaseRunLock, isLocked: isRunLocked, governs: governsRunLock };
 })();
 </script>
 
@@ -2257,7 +2274,10 @@
   }
   function clearBtnPending(el) {
     if (!el) return;
-    el.disabled = false;
+    // A lock-governed button stays disabled while a run is live; the lock's
+    // release() re-enables it (see governsRunLock above).
+    var rl = window.sartorRunLock;
+    el.disabled = !!(rl && rl.governs && rl.governs(el) && rl.isLocked());
     el.classList.remove('btn-pending');
   }
   // #10 (diagnostics round-2): update a real <progress> bar from any SSE
@@ -2289,7 +2309,7 @@
     var handle = stream('/api/eval/run', params, function (ev, p) {
       _updateBar(barEl, p);
       if (ev === '_closed') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
-      if (ev === '_aborted') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; if (progEl) progEl.textContent = 'Cancelled — no further paid calls were started.'; return; }
+      if (ev === '_aborted') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; if (progEl) progEl.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
@@ -2425,7 +2445,7 @@
         bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
       }
       if (ev === '_closed') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
-      if (ev === '_aborted') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; prog.textContent = 'Cancelled — no further paid calls were started.'; return; }
+      if (ev === '_aborted') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; prog.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -2837,7 +2857,7 @@
           if (window.sartorRunLock) window.sartorRunLock.release();
           if (bar) bar.hidden = true;
           if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick);
-          else prog.textContent = 'Cancelled — no further paid calls were started.';
+          else prog.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.';
           return;
         }
         if (ev === 'start') prog.textContent = 'Running ' + p.total + ' JD(s)…';

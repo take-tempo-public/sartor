@@ -12,7 +12,7 @@ shared `sartorRunLock` banner.
 
 UX-6 (Epic C C1b): the progress line used to stay on "Cancelling…" forever —
 the `_aborted` branch never set a terminal message. It now reaches a real
-terminal state ("Cancelled — no further paid calls were started.") once the
+terminal state ("Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.") once the
 abort actually lands (asserted below after "Cancelling…"'s transient text),
 and stops pulsing (the Run button's `.btn-pending` class is cleared with the
 rest of its pending state).
@@ -74,7 +74,7 @@ def test_eval_cancel_button_aborts_run_and_resets_ui(
     expect(cancel_btn).to_be_hidden()
     # UX-6: reaches a terminal state, not stuck on "Cancelling…" forever.
     expect(page.locator("#evalProgress")).to_have_text(
-        "Cancelled — no further paid calls were started."
+        "Cancelled — the server stops at its next checkpoint; a call already in flight still finishes."
     )
     expect(run_btn).to_be_enabled()
     expect(run_btn).not_to_have_class(re.compile(r"\bbtn-pending\b"))
@@ -123,7 +123,7 @@ def test_bootstrap_cancel_button_aborts_run_and_resets_ui(
     expect(cancel_btn).to_be_hidden()
     # UX-6: reaches a terminal state, not stuck on "Cancelling…" forever.
     expect(page.locator("#bsProgress")).to_have_text(
-        "Cancelled — no further paid calls were started."
+        "Cancelled — the server stops at its next checkpoint; a call already in flight still finishes."
     )
     expect(bs_run).to_be_enabled()
     expect(page.locator("#runLockBanner")).to_be_hidden()

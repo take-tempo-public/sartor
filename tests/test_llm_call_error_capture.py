@@ -28,6 +28,7 @@ import httpx
 import pytest
 
 from analyzer import (
+    _ERROR_MESSAGE_MAX_CHARS,
     LLMConfigurationError,
     _call_llm_streaming,
     _redact_error_message,
@@ -167,6 +168,56 @@ class TestErrorRowCarriesFields:
         assert rows[0]["error_type"] == "APIStatusError"
         assert "Overloaded" in rows[0]["error_message"]
 
+    def test_a_secret_shaped_overlong_message_is_redacted_and_capped_at_the_funnel(
+        self, tmp_path
+    ) -> None:
+        """Epic-close fix (R2-1): the redaction tests below exercise the helper in
+        isolation; nothing proved the CALL SITES route through it. Replacing
+        `_redact_error_message(...)` with a raw `str(exc)` in `_call_llm_streaming`'s
+        `except` blocks must fail this test. (The fake key is deliberately short of
+        the repo's block-secrets guard threshold, like the helper tests below.)"""
+        fake_key = "sk-ant-api03-SeCrEt_9x"
+        header_value = "hdr-secret-9f8e7d"
+        message = (
+            f"upstream said: key {fake_key} rejected;\n\tx-api-key: {header_value} " + "z" * 2000
+        )
+        with pytest.raises(RuntimeError):
+            _drain(
+                _call_llm_streaming(_boom_client(RuntimeError(message)), "hi", call_kind="analyze")
+            )
+
+        rows = _read_rows(tmp_path / "llm_calls.jsonl")
+        assert len(rows) == 1, rows
+        logged = rows[0]["error_message"]
+        assert rows[0]["error_type"] == "RuntimeError"
+        assert "SeCrEt" not in logged
+        assert header_value not in logged
+        assert "sk-ant-***" in logged
+        assert "x-api-key: ***" in logged
+        assert "\n" not in logged and "\t" not in logged
+        assert len(logged) <= _ERROR_MESSAGE_MAX_CHARS
+        assert logged.endswith("…[truncated]")
+
+    def test_an_exception_whose_str_raises_does_not_replace_the_callers_error(
+        self, tmp_path
+    ) -> None:
+        """Epic-close fix (R1-2): a failing `__str__` inside the capture must not
+        swap the exception the caller sees for the one `__str__` raised."""
+
+        class _UnprintableError(RuntimeError):
+            def __str__(self) -> str:
+                raise ValueError("__str__ blew up")
+
+        with pytest.raises(_UnprintableError):
+            _drain(
+                _call_llm_streaming(_boom_client(_UnprintableError()), "hi", call_kind="analyze")
+            )
+
+        rows = _read_rows(tmp_path / "llm_calls.jsonl")
+        assert len(rows) == 1, rows
+        assert rows[0]["error_type"] == "_UnprintableError"
+        assert "_UnprintableError" in rows[0]["error_message"]
+
 
 class TestRedactErrorMessage:
     def test_collapses_whitespace_runs(self) -> None:
@@ -198,3 +249,19 @@ class TestRedactErrorMessage:
 
     def test_empty_message_stays_empty(self) -> None:
         assert _redact_error_message("") == ""
+
+    def test_cap_is_500_chars(self) -> None:
+        """Pins the cap itself (R2-5) — the funnel test above reads it from the module."""
+        assert _ERROR_MESSAGE_MAX_CHARS == 500
+
+    def test_masks_before_truncating(self) -> None:
+        """Pins mask-before-truncate order (R2-5). Masking a long key shrinks the text
+        under the cap, so a mask-first helper never truncates; a truncate-first helper
+        would cut (and mark) the raw text before the mask ran."""
+        out = _redact_error_message("sk-ant-" + "A" * 600)
+        assert out == "sk-ant-***"
+
+    def test_a_key_straddling_the_cut_is_masked_whole(self) -> None:
+        out = _redact_error_message("x" * 485 + "sk-ant-" + "B" * 100)
+        assert out == "x" * 485 + "sk-ant-***"
+        assert "B" not in out

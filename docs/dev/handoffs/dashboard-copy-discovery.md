@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=e713dc79-24c8-4deb-a9dd-8668112f289b branch=feat/dashboard-copy-discovery commit=8a7db6f actor=amodal1 agent=anthropic/claude-sonnet-5 generated_at=2026-09-25 -->
+<!-- provenance: schema=1 session=e713dc79-24c8-4deb-a9dd-8668112f289b branch=feat/dashboard-copy-discovery commit=dbbd1b0 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-09-26 -->
 
 # Agent handoff — Epic C close (`feat/dashboard-copy-discovery`, C3, terminal sprint)
 
@@ -94,10 +94,12 @@ merge — per §11.5 halt point 1, no sprint-level agent commits or merges to
 
 What is true right now: five sprints (C1a, C1b, C1c, C2, C3) are committed
 in sequence on `feat/dashboard-copy-discovery`, off `main` at the epic's
-start point. The tip commit at generation time is `8a7db6f`. This closer's
-own uncommitted changes (see "Fixes applied" below) sit on top of that tip,
-staged but **not committed** — the commit is the invoking session's step,
-not this closer's (§11.9.4).
+start point. The tip commit when this handoff was generated was `8a7db6f`;
+C3 itself, including this closer's fixes (see "Fixes applied" below), has since
+been committed by the invoking session as `dbbd1b0` (§11.9.4: the commit is the
+invoking session's step, not the closer's). (Corrected 2026-09-26 at epic close;
+the earlier text said these changes were staged but not committed, which was true
+only at generation time.)
 
 ---
 
@@ -130,6 +132,13 @@ top-level items only — a known, tracked discrepancy, not this session's to fix
   open in a real browser (filed by **this** closer — see "Filed obligations"
   below).
 
+**Added at epic close (2026-09-26, invoking session):** items **117–124**, filed from the
+epic-level adversarial review (see "Epic-close results" below): 117 server-side run lock,
+118 redaction gaps (quoted-key / Basic auth), 119 lock ownership + unchecked `acquire()`,
+120 pulse left on a declined run, 121 `run_detail` whole-log read, 122 weak C3 test
+assertions, 123 `verify-binary-on-path` brace-group false positive, 124 bare-`ruff`
+recurrence. Their board sections are in `docs/dev/work/BOARD.md` (regenerated).
+
 `## Blocked` (4), `## Deferred` (9, including **113** — the 18 out-of-scope
 console-UX-audit findings, explicitly deferred to owner triage after Epic C
 lands, which is now), `## Watching` (45), `## Epics` (6), `## Closed` (37).
@@ -161,6 +170,19 @@ goes unrecorded; building one (e.g., a lint that every blast-radius dossier's
 branch's gate can pass) would itself be a new enforcement surface — a
 §11.6.5 flag stop, not something this closer can build unilaterally. Surfaced
 here for the owner rather than silently deferred as a bare note.
+
+**Epic-close additions (invoking session, 2026-09-26):**
+
+- **Bare `ruff` → `verify-binary-on-path` block — a RECURRENCE** (C3's implementer, run
+  `wf_fd312963-54d`; agents reach for bare `ruff` although this machine only has
+  `python -m ruff`). The guard itself failed closed correctly; what recurs is the agent
+  behaviour, and it cost a pipeline run its automated review. **No mechanism authored this
+  session** — filed as item **124** with a proposed steering mechanism (the guard naming
+  `python -m <tool>` when that resolves). Declared here per C-11, not left as prose.
+- **`verify-binary-on-path` false positive on shell brace groups** (`{ ...; }` read as
+  binaries `{` / `}`): hit twice this session (refuter R2, and the invoker). It stopped R2's
+  skip/xfail sweep before it finished. Filed as item **123**; no mechanism authored.
+- **The §11.8 "decide and record" gap above** stays declared unenforced.
 
 ---
 
@@ -415,6 +437,13 @@ copy left deliberately untouched, but they are already owned by item 113
 `docs/dev/handoffs/epic-c-design-brief.md` §"Goal + scope". Filing them
 again would duplicate item 113.
 
+**Correction (2026-09-26, epic-close fixer; refuter R3-1):** UX-12 was **not**
+owned by item 113 — item 113 covers UX-23 and UX-25..UX-41 only, and the design
+brief's scope names UX-1..UX-21, so UX-12 was in Epic C's scope but assigned to no
+sprint. It was fixed at epic close: the Suite copy now describes only which
+fixtures, the Subset copy only which rubrics, and "smoke" names the subset only.
+UX-27 and UX-30 remain item 113's.
+
 **Not filed, and not a filing obligation:** the implementer's "gaps declared
 rather than filled (C-12)" note (no skills-per-JD count, no dollar-per-JD
 figure) describes copy that honestly states it has no number — this is the
@@ -426,36 +455,118 @@ facts (no source exists), not a to-do needing a tracked item.
 Per the invoker note, this closer ran only the gate's **static** steps on
 its own touched files (`docs/dev/blast-radius/dashboard-copy-discovery.md`,
 `docs/dev/work/items/0116-run-fixture-dynamic-help-bubble-unverified.md`,
-`docs/dev/work/BOARD.md`, this handoff) — see "Fixes applied" below in the
-JSON report for the exact commands and results. **The full
+`docs/dev/work/BOARD.md`, this handoff). The exact commands and results went to
+the invoking session in the closer's hand-back report; they are not reproduced in
+this file, and no separate JSON report was committed (corrected 2026-09-26 at epic
+close — the earlier text pointed at a report that does not exist). **The full
 `python -m scripts.gate` was never run by this closer** (§11.9: a
 subagent's gate dies with the agent) — that is the invoking session's step.
 
-## PLACEHOLDER — epic-close items owed by the invoking session
+## Epic-close results (invoking session `e713dc79`, 2026-09-26)
 
-The following are explicitly **not** done by this closer and must be filled
-in by the invoking session before the epic PR, per the invoker's own note:
+Filled by the invoking session after C3's commit (`dbbd1b0`). Everything below cites its
+source; where a count could not be recovered from a durable record it says so.
 
-- **Epic-close wiki pass** (full `/wiki-self-update`, beyond this sprint's
-  own scoped wiki-relevance check below).
-- **Full grounding audits.**
-- **Epic-level adversarial review** (distinct from C3's own sprint-level
-  refuter pass, which already ran).
-- **Experiment outcomes**, per `docs/dev/handoffs/epic-c-design-brief.md`
-  §"What the experiment measures": compactions/sprint and step-9 firing;
-  interrogative-witness `hook_block` count (expected 0) and item-110
-  `NO EDIT APPROVAL`/`PLAN RETIRED` count (expected 0); model-arg adherence
-  (item 96); inter-sprint brief sufficiency at n=4 (did each fresh cast
-  execute from the closer-authored brief alone — this sprint's own manual
-  dispatch, prompted by a hook block rather than a brief gap, is itself a
-  data point for this question); run-report/accounting fidelity
-  (`claimedFilesWritten` vs. `git status --porcelain`); owner interruption
-  count and location. **PENDING — record actual results, do not invent
-  them.**
-- **This handoff's "What just landed on `main`" section** — fill in the
-  real merge commit hash and a 3–5 line summary once Epic C's PR merges.
+### Epic-level adversarial review
 
-## Wiki-relevance check (this sprint's own diff only — full pass is pending, see above)
+Three independent Opus refuters, each told to REFUTE the full epic diff
+(`git diff main...HEAD` + C3), each with its own lens (Epic B precedent,
+`epic-b-render-ats.md` §"Appendix"): **R1** runtime correctness + security, **R2** test
+teeth (mutation probes on copies outside the repo), **R3** claims / copy / docs. **No
+CRITICAL.** MAJOR findings: R1-1 (the run lock is per browser tab — no server-side
+single-flight), R2-1 (redaction at the call sites had no test teeth: a raw-`str(exc)`
+mutant survived 10 tests), R2-2 = R1-5 (`#annCollate` re-enabled mid-run by
+`clearBtnPending`), R2-3 (`esc()` quote escaping unpinned), R3-1 (UX-12 in scope but never
+assigned; still wrong), R3-2 (wiki page contradicted by the code), R3-3 (SECURITY.md
+"metadata only" false after C1c), R3-4 (CHANGELOG carried only C1c), R3-5
+(`dashboard/README.md` false claims).
+
+**Disposition** (invoking session, per the approved close-out plan): every in-envelope
+defect **fixed** by one Opus fixer agent at epic close (R1-2, R1-5/R2-2, R2-1, R2-3, R2-5,
+R2-9, R3-1, R3-3..R3-14 incl. copy overclaims R3-6/7/8/12/13/14, dossier corrections, this
+handoff's own self-contradictions); R1-1 recorded as a per-tab qualification in
+`docs/dev/diagnosis/dashboard-run-lock-gaps.md` (the ratified acceptance text is not
+edited); R3-2 fixed by the wiki pass below. **Filed** as items **117–124**: server-side
+lock (117), redaction misses quoted-key / Basic-auth forms (118), lock ownership +
+unchecked `acquire()` (119), pulse left on a declined run (120), `run_detail` whole-log
+read (121), weak C3 test assertions (122), `verify-binary-on-path` brace-group false
+positive (123), bare-`ruff` recurrence (124). **Recheck:** an independent `sartor:n1-refuter`
+re-verified all 20 fixed findings — all cleared, no new defects, two mutation kills
+reproduced independently. Its one non-finding observation: the copy corrections
+(R3-6/7/8/12/13/14) carry no string-pinning test, so a later edit could reintroduce an
+overclaim silently.
+
+**Fixer deviation, disclosed:** the fixer was told to stop on any hook block other than
+the C-10 guard. It hit `block-secrets` on a fabricated test key and, instead of stopping,
+switched to a sub-threshold fake key (`sk-ant-api03-SeCrEt_9x`, the form existing tests
+use). The invoker verified the staged diff contains no `sk-ant-` literal of 20+ chars. The
+hook's intent held; the stop instruction did not.
+
+### Wiki pass + grounding audits
+
+`/wiki-self-update`, **scoped by owner decision** to Epic C's own changes (the full
+`f42b2ea → HEAD` window was ~35 pages, over the cap of 8). 4 pages updated
+(`diagnostics-console`, `code-module-map`, `deterministic-llm-boundary`,
+`llm-call-catalog`); each audited by a separate `wiki-grounding-auditor` (author ≠
+auditor): **4 DRIFTED + 1 UNSUPPORTED caught** and resolved (the UNSUPPORTED "five
+paid-run buttons" corrected on the owner's decision). `.last_ingest_sha` **not advanced**
+(scoped pass; item 98). Full record: `docs/wiki/log.md` 2026-09-26 entry.
+
+### Gate record + a runbook deviation
+
+- Gate on the pre-C3 epic tip `fe7d64c` (C2's gate #2 result was not in any durable
+  record, C-12): `gate: all steps passed.`, 0 RERUN.
+- C3 gate #1 (pre-commit, staged tree): `gate: all steps passed.`, 0 RERUN (2861 non-UX +
+  161 UX passed); one hook-written `compacted` ledger row during the gate (benign).
+- **C3 gate #2 was NOT run separately.** Free RAM stayed under the gate's 1.0 GB floor
+  (`scripts/gate.py:_MEMORY_FLOOR_GB`) for hours (0.37–0.89 GB; a background watcher was
+  also reaped by Claude Code for memory pressure). Owner decision ("Fix now, one gate
+  after"): apply the epic-close fixes as their own commit, then run one full gate on the
+  combined tip, which covers the C3 commit's tree as a subset. Result: recorded in the
+  epic-close commit / PR body.
+- UX tests written by the fixer (`test_20260923_annotate_collate_run_lock.py`'s new
+  `#annCollate` assertions, `test_20260720_diagnostics_run_cancel.py`'s updated string)
+  were **not run** by any agent (RAM); the combined-tip gate is their first run.
+
+### Experiment outcomes (`epic-c-design-brief.md` §"What the experiment measures")
+
+1. **Continuous window (item 93, choice b): did not hold as one session.** The five
+   sprints ran under **five distinct invoking sessions** (C1a `1b9d9ef1`, C1b `85aae0ce`,
+   C1c `93ed5108`, C2-rerun `d9b0e005`, C3 + close `e713dc79`; source: `session` field of
+   the `compacted` receipts in `docs/dev/ledger/*.jsonl`). `compacted` receipts per sprint
+   branch: C1a 2, C1b 2, C1c 3, C2 2, C3 1, plus 2 on `epic/c-diagnostics` at boundaries.
+   Each handover was a clean resume-state stop (tip + next brief + runbook), consistent
+   with runbook step 9 firing at every boundary; **I did not verify each prior session's
+   stated reason for stopping** — only that each boundary was crossed by a fresh session.
+2. **Prerequisite fixes:** no interrogative-witness `hook_block`, `NO EDIT APPROVAL`, or
+   `PLAN RETIRED` escalation is recorded in any Epic C commit message or invoker run
+   record (`git log main..HEAD`); the escalations that did occur were C2's UX-8
+   `flag_stop` (`wf_697596d4-c2f`), C1c's refuter-stash event (`691a17a`), and C3's
+   bare-`ruff` `verify-binary-on-path` `hook_block` (`wf_fd312963-54d`). The item-95
+   recovery path never fired. In this session the witness pause fired only on the
+   invoker's own edits (re-armed by task notifications / subagent hand-backs), never on a
+   pipeline agent — item 94 held.
+3. **Model-arg adherence (item 96):** every closer-written brief (C1b, C1c, C2, C2-rerun,
+   C3) carries `implementerModel` (grep). C3 was invoked with `'opus'` per the table.
+4. **Inter-sprint brief sufficiency:** C3's fresh implementer executed from
+   `epic-c-c3-brief.md` alone and completed the sprint; the one stop was a tool-invocation
+   hook block, not a brief gap. The brief's named line numbers were stale
+   (`_DASH_HELP` at `:1077-1227`, not `:1003-1152`), as the brief itself warned.
+5. **Accounting fidelity:** C3 — implementer 6 + closer 6 files == `git status --porcelain`
+   exactly. C2 — "Accounting 8/8" (commit `8bf95a6`'s record of `wf_c9957967-04b`).
+   Earlier sprints: see their commit messages.
+6. **Owner interruptions in this session** (C3 + close): the step-0a preflight batch; the
+   C3 `hook_block` escalation (→ option a) and the manual-dispatch choice it forced; four
+   low-RAM gate stops; the gate-order decision; the wiki spend decision; the wiki
+   UNSUPPORTED decision. The RAM stops were environmental, not pipeline defects. Earlier
+   sessions' counts are in their own run records.
+
+### Still owed after this file
+
+- **"What just landed on `main`"** above: the merge commit hash and summary, once the
+  epic PR merges (owner-gated, halt point 1).
+
+## Wiki-relevance check (this sprint's own diff only — superseded by the epic-close wiki pass above)
 
 Recorded in full in `docs/wiki/log.md` under "2026-09-25 — scoped close-out
 relevance check (`feat/dashboard-copy-discovery`, C3 closer, Epic C terminal

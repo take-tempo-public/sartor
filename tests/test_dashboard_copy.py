@@ -405,3 +405,18 @@ class TestCopyContent:
         assert len(examples) >= 3, examples
         for ex in examples:
             re.compile(ex)
+
+
+class TestEscHelper:
+    def test_esc_escapes_both_quote_characters(self, populated_page: str) -> None:
+        """Epic-close fix (R2-3): `esc()` feeds attribute values (the waterfall row's
+        `title="..."`), where textContent->innerHTML alone leaves quotes raw and a
+        quote-bearing call_kind/error_message would break out of the attribute. No
+        JS engine runs here, so this pins the escaping in the helper's own source:
+        deleting either `.replace(...)` fails it."""
+        match = re.search(r"function esc\(s\) \{(.*?)\n  \}", populated_page, re.S)
+        assert match, "esc() helper not found in the rendered console"
+        body = match.group(1)
+        assert ".replace(/\"/g, '&quot;')" in body
+        assert ".replace(/'/g, '&#39;')" in body
+        assert "d.textContent =" in body and "d.innerHTML" in body

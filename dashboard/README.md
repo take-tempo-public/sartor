@@ -1,6 +1,6 @@
 # sartor. — Dashboard
 
-Read-only Flask blueprint that surfaces telemetry from the LLM pipeline and eval harness. Localhost-only by guard.
+Flask blueprint that surfaces telemetry from the LLM pipeline and eval harness. Localhost-only by guard. The blueprint's own routes only read; the console's paid runs and annotation writes go through `blueprints/diagnostics.py` (see "Write surfaces" under What it shows).
 
 > The dashboard exists so prompt-tuning is **observable** — you can see which prompt revision caused a score swing, which rubric class is most likely to fail, and what each failure cost in dollars and seconds.
 
@@ -23,11 +23,18 @@ clicking it opens one shared **right-hand drawer** with the full chart/table +
 detail. Charts lazy-init when their drawer first opens. The console is built on
 the cb-* design system (links `static/style.css`); layout is scoped under
 `.cb-dash`. Everything is server-rendered — with JS off, panes stack and details
-render inline (graceful degradation). The **blueprint itself is read-only** — its
-only route is the index, and it never writes. The one write surface is the
-**Annotate** tab, whose read/write routes live in `app.py` (not this blueprint)
-and are localhost-gated + slug-contained under `evals/fixtures/real/` — see the
-Annotate section below.
+render inline (graceful degradation).
+
+**Write surfaces.** The **blueprint itself never writes** — it has two GET
+routes: the index, and `GET /api/run/<run_id>` (Epic C C2), which returns one
+run's detail for the run-detail modal. The console's write and paid-run routes
+live in `blueprints/diagnostics.py`, not this blueprint, and each checks for a
+localhost request: **Quality**'s Run eval (`POST /api/eval/run`, writes
+`evals/results/`), **Tuning**'s A/B run (`POST /api/tune/run`), and the
+**Annotate** tab's bootstrap / save / collate / score / seed-export routes
+(`/api/annotation/...`, slug-contained under `evals/fixtures/real/`) — see the
+Annotate section below. Every one of those runs spends money except Save,
+Collate and Export seed.
 
 ### Pipeline
 
@@ -72,14 +79,15 @@ specifics; false-positives on paraphrase), uncalibrated until labels exist — s
 
 ### Tuning
 
-A **read-only scaffold**. Documents the `analyzer.prompt_overrides()`
-candidate-vs-baseline A/B primitive and links to `/prompt-tune`,
-`/tune-from-annotations`, and `evals/TUNING_LOG.md`. No write affordances — those
-land in a later, sign-off-gated branch.
+Runs the `analyzer.prompt_overrides()` candidate-vs-baseline A/B from the
+browser (`POST /api/tune/run` — paid, confirm-gated, and it writes eval results
+like a Quality run), and links to `/prompt-tune`, `/tune-from-annotations`, and
+`evals/TUNING_LOG.md`. The candidate text is sent as an override only; the
+persona constants in `analyzer.py` are never edited from here.
 
-### Annotate (the read-write surface)
+### Annotate
 
-The console's **only write surface** (`feat/annotation-tab`, v1.0.5) — it runs the
+One of the console's write surfaces (`feat/annotation-tab`, v1.0.5) — it runs the
 v1.0.4 eval tuning loop in-browser instead of via raw JSON + CLI. Three steps:
 
 1. **Produce a bootstrap** — the browser bootstrap wrapper drives
@@ -97,8 +105,8 @@ v1.0.4 eval tuning loop in-browser instead of via raw JSON + CLI. Three steps:
    `expected.json` + `improvement_brief.md` + an anchor `jd.txt`, runnable by
    `runner.py --suite real`.
 
-The routes live in **`app.py`** (`/api/annotation/...`), not this blueprint, so
-the blueprint stays read-only. They reuse `evals.annotation` / `evals.bootstrap`
+The routes live in **`blueprints/diagnostics.py`** (`/api/annotation/...`), not
+this blueprint, so the blueprint itself never writes. They reuse `evals.annotation` / `evals.bootstrap`
 verbatim (the `annotations.json` schema is **not forked**), are **localhost-only**,
 and write ONLY under `ANNOTATION_ROOT` = `evals/fixtures/real/` (gitignored) via
 `_safe_username()` + `secure_filename(slug)` + `_within(...)`. The labels it
@@ -132,9 +140,10 @@ dashboard/
 └── README.md          ← this file
 ```
 
-`app.py` registers the blueprint at `/_dashboard`. The blueprint has no routes
-other than the index — all data is server-rendered into the single template; tabs
-and the drawer are vanilla JS over that server-rendered content.
+`app.py` registers the blueprint at `/_dashboard`. Besides the index, the
+blueprint has one JSON route, `GET /api/run/<run_id>`, which the run-detail modal
+fetches. Everything else is server-rendered into the single template; tabs and
+the drawer are vanilla JS over that server-rendered content.
 
 ### Aggregation helpers
 

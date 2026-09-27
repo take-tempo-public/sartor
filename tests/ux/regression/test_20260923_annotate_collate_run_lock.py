@@ -107,9 +107,16 @@ def test_collate_run_btn_created_during_live_run_renders_disabled(
     expect(dash.status()).to_contain_text("Collated")
 
     expect(page.locator("#annCollateRunBtn")).to_be_disabled()
+    # Epic-close fix (R1-5/R2-2): collate()'s completion path calls clearBtnPending()
+    # on #annCollate, which used to set disabled=false unconditionally -- re-enabling
+    # a lock-governed button while the run above is still live. It must stay disabled
+    # until the lock itself releases.
+    expect(page.locator("#runLockBanner")).to_be_visible()
+    expect(page.locator("#annCollate")).to_be_disabled()
 
     # Release the held eval run; the new run button should re-enable like the rest of
     # the lock-governed set.
     held[0].fulfill(status=200, content_type="text/event-stream", body="")
     expect(page.locator("#runLockBanner")).to_be_hidden()
     expect(page.locator("#annCollateRunBtn")).to_be_enabled()
+    expect(page.locator("#annCollate")).to_be_enabled()
