@@ -3,9 +3,8 @@ schema = 1
 id = 39
 kind = "epic"
 title = "Final March epic D - documentation + information architecture"
-status = "blocked"
+status = "open"
 decision_owner = "agent"
-blocked_on = "sequenced after epic C (final-march order A->B->C->D->E); runs after UI stabilizes so assets are produced once"
 depends_on = [38]
 branches = ["epic/d-docs-ia"]
 refs = ["docs/dev/RELEASE_ARC.md"]
@@ -20,3 +19,9 @@ item 2's exclusions.
 ## Updates
 
 ### 2026-08-04 — filed during chore/v11-march-kickoff
+
+### 2026-09-27 — unblocked; D1 started (`feat/docs-ia-design` off `epic/d-docs-ia`)
+
+Epic C (item 38) merged to `main` as PR #148 (`f3dd472`). Owner chose the epic
+integration-branch shape (`epic/d-docs-ia`, one PR per epic) and D1 before the
+overdue reduction sprint (session `84995956`).

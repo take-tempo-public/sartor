@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
+**Open 22 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -124,7 +124,7 @@ Run-lock gaps, sticky tabs, wait-state idioms; per-run drill-down modal; lay cop
 
 No children filed yet.
 
-### 39 -- Final March epic D - documentation + information architecture (blocked)
+### 39 -- Final March epic D - documentation + information architecture (open)
 
 IA research + design; full user/dev docs split; user + dev content; screenshots, links, doc-governance lints.
 
