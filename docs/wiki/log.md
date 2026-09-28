@@ -2300,3 +2300,12 @@ source has six, and grounding-score is CPU-only) — pre-existing text stale sin
 surfaced to the owner, who chose "Correct it"; corrected, with the per-tab-only lock
 qualification (item 117). Structural lint on the 4 pages: links, backlinks, index —
 clean.
+
+## 2026-09-27 — wiki-relevance check, `fix/sqlalchemy-2-1-mypy-drift` (verified no-edit)
+
+`db/migrations/_sqlite_check_constraint.py` classifies wiki-relevant; the other touched
+files do not. The change adds a type annotation (`schema_version: int`) and changes no
+behaviour. `grep` for `_sqlite_check_constraint` across `docs/wiki/pages/` finds nothing;
+the two `schema_version` hits (`diagnostics-console.md:75`, `eval-harness.md:18`) are the
+eval-result record schema, not this migration helper. **Verified no-edit.**
+`.last_ingest_sha` not advanced.
