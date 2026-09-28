@@ -59,6 +59,14 @@ scope: cite it, never restate it:**
 > owner, runbook step 9's external signal has fired, or the owner has said stop; partial
 > completion is not success.
 
+**Amendment record (owner, 2026-09-24, invoker session `93ed5108`).** The ratified sentence
+above is kept verbatim, and this amends its sprint list. C2's run `wf_697596d4-c2f`
+escalated a `flag_stop`: UX-8's "with messages" cannot be met because `llm_calls.jsonl`
+records no exception text. The owner chose option (a) and then typed the directive
+**"Insert an error-capture sprint before C2, then continue the epic."** The epic is now
+**five runs**: C1a, C1b, **C1c** (`feat/llm-call-error-capture`, error capture in the call
+telemetry), C2, then C3, then the close-out to PR-ready. The stopping conditions are unchanged.
+
 **The invoking session's job between runs is to manage the flow:**
 1. consume the closer-written next-sprint brief;
 2. run the sprint with the args from the table below;
@@ -83,11 +91,15 @@ console"): done.** It is at `docs/dev/reviews/epic-c-console-ux-audit.md`, verif
 - **Findings UX-1..UX-21 and UX-42 are classified in scope.** They are the sprints' concrete
   checklist, cited per sprint below. The kickoff session spot-checked 25 of their cites at
   HEAD, and all matched.
-- **UX-22..UX-41 are out of scope** and are **not** part of this epic:
+- **UX-22, UX-23 and UX-25..UX-41 are out of scope** and are **not** part of this epic:
   - UX-22 (the Since filter raises TypeError, independently reproduced) is item 112;
-  - the other 19 are item 113 (owner triage).
-- If the invoker thinks one belongs in a sprint (the audit suggests UX-24 for C1b), that
-  is an owner question for the preflight batch, never a silent fold-in.
+  - the other 18 are item 113 (owner triage).
+- **UX-24 is folded into C1b.** Owner decision, 2026-09-23: the invoker's step-0a
+  preflight batch (session `1b9d9ef1`, AskUserQuestion selection "UX-24 into C1b"). It is
+  the same false write-surface claim as UX-3, at `dashboard.html:526`, `:1055` and `:168`.
+  Item 113 no longer carries it.
+- If the invoker thinks another finding belongs in a sprint, that is an owner question for
+  the preflight batch, never a silent fold-in.
 
 ## Sprint → pipeline-run mapping
 
@@ -99,13 +111,16 @@ are from RELEASE_ARC §"Session models" (C1/C2 Sonnet, C3 Opus). **Every invocat
 | Run | Sprint | Branch | `implementerModel` | Position | Scope (cite RELEASE_ARC §Epic C) + audit checklist |
 |---|---|---|---|---|---|
 | 1 | C1a | `fix/dashboard-run-lock-gaps` | `sonnet` | 1 of 4 | Lock-gate the real Collate button (`annCollate`, button at `dashboard/templates/dashboard.html:615`, absent from `LOCK_BTN_IDS` at `:1388`). **UX-1 (blocker):** Collate stays clickable mid-run and builds a new, *enabled* `annCollateRunBtn`, whose `acquire()` returns early (`:1396`), so a second paid eval can start. There is no server-side lock. Evidence-first `fix/*` branch: the first artifact is the diagnosis dossier's `## Observed`, which reproduces the double-run in a UX test, never the fix. |
-| 2 | C1b | `feat/dashboard-polish` | `sonnet` | 2 of 4 | Sticky `.dash-tabs` (UX-2; stacks with the sticky run banner). Correct the false "Read-only observability" header at `:230` (UX-3). Opaque + pulsing run-in-progress banner (UX-4, `:146-152`, `:213-216`). Port `.btn-pending` / `cb-status-pulse-strong` (`static/style.css:3226`, `:3154`) to every wait state (UX-5, including disabling in-flight Save/Collate). The terminal Cancel state (UX-6). Honor `prefers-reduced-motion`. |
-| 3 | C2 | `feat/run-detail-modal` | `sonnet` | 3 of 4 | `GET /_dashboard/api/run/<run_id>` on the same blueprint (inherits `_localhost_guard`, `dashboard/routes.py:982-990`): one bounded JSONL pass reusing `_run_trace` (`:822`), `_reliability` (`:776`), `_cost_by_call_kind` (`:745`). Clickable run ids in all four places → composite modal (UX-7). Clickable error-rate rows → recent error records with messages (UX-8). |
-| 4 | C3 | `feat/dashboard-copy-discovery` | `opus` | 4 of 4 (terminal) | A lay one-line summary + `_DASH_HELP` bubble for every module on every tab (UX-9, registry `:1003-1152`). Quality-tab lay rewrite (UX-11). p50/p95/median/mean explainers (UX-10). Filter-scoping explainer (UX-13). The full Annotate instruction set per RELEASE_ARC (UX-14..UX-20). Fix the wrong Score-grounding help (UX-18). Groundedness + Tuning module copy (UX-21, UX-42). Doc-page links wait for D4. |
+| 2 | C1b | `feat/dashboard-polish` | `sonnet` | 2 of 4 | Sticky `.dash-tabs` (UX-2; stacks with the sticky run banner). Correct the false "Read-only observability" header at `:230` (UX-3), plus the false "only write surface" claims at `:526`, `:1055`, `:168` (UX-24; owner fold-in 2026-09-23). Opaque + pulsing run-in-progress banner (UX-4, `:146-152`, `:213-216`). Port `.btn-pending` / `cb-status-pulse-strong` (`static/style.css:3226`, `:3154`) to every wait state (UX-5, including disabling in-flight Save/Collate). The terminal Cancel state (UX-6). Honor `prefers-reduced-motion`. |
+| 3 | C1c (inserted 2026-09-24) | `feat/llm-call-error-capture` | `sonnet` (invoker §11.8 choice; C1/C2 neighbours) | 3 of 5 | Capture `error_type` + redacted/truncated `error_message` on `status == "error"` rows of `logs/llm_calls.jsonl` (`analyzer.py` `_call_llm_streaming`), with a C-10 consumer dossier and a redaction/size policy. No UI. Brief: `epic-c-c1c-brief.md`. |
+| 4 (was 3 of 4) | C2 | `feat/run-detail-modal` | `sonnet` | 4 of 5 | `GET /_dashboard/api/run/<run_id>` on the same blueprint (inherits `_localhost_guard`, `dashboard/routes.py:982-990`): one bounded JSONL pass reusing `_run_trace` (`:822`), `_reliability` (`:776`), `_cost_by_call_kind` (`:745`). Clickable run ids in all four places → composite modal (UX-7). Clickable error-rate rows → recent error records with messages (UX-8). |
+| 5 (was 4) | C3 | `feat/dashboard-copy-discovery` | `opus` | 5 of 5 (terminal) | A lay one-line summary + `_DASH_HELP` bubble for every module on every tab (UX-9, registry `:1003-1152`). Quality-tab lay rewrite (UX-11). p50/p95/median/mean explainers (UX-10). Filter-scoping explainer (UX-13). The full Annotate instruction set per RELEASE_ARC (UX-14..UX-20). Fix the wrong Score-grounding help (UX-18). Groundedness + Tuning module copy (UX-21, UX-42). Doc-page links wait for D4. |
 
 Next-brief paths the invoker passes as `nextSprintBriefPath`:
 `docs/dev/handoffs/epic-c-c1b-brief.md` (run 1), `epic-c-c2-brief.md` (run 2),
-`epic-c-c3-brief.md` (run 3). Run 4 is terminal and passes none. Run 1's brief is
+`epic-c-c3-brief.md` (run 3). Run 4 is terminal and passes none. **Superseded
+2026-09-24 by the C1c insertion:** C1c (run 3 of 5) passes `epic-c-c2-rerun-brief.md`; the
+C2 re-run (4 of 5) passes `epic-c-c3-brief.md`; C3 (5 of 5) is terminal and passes none. Run 1's brief is
 `docs/dev/handoffs/epic-c-c1a-brief.md`, written at kickoff. The later three are written
 by each run's closer.
 

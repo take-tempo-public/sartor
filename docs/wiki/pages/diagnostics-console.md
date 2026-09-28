@@ -60,13 +60,18 @@ gate's threat model except where it *writes* — see "Annotate" below; the
 security gate itself is canonical in [`AGENTS.md`](../../../AGENTS.md), cited
 not restated (D5).
 
-## Read-only blueprint: one route, pure helpers
+## Read-only blueprint: two GET routes, pure helpers
 
-[`dashboard/routes.py:index`](../../../dashboard/routes.py) is the blueprint's
-**only** route. It reads two JSONL sources — `logs/llm_calls.jsonl` (the
+[`dashboard/routes.py`](../../../dashboard/routes.py) exports two routes:
+[`index`](../../../dashboard/routes.py) (the main console, `GET /`) and
+[`run_detail`](../../../dashboard/routes.py) (`GET /api/run/<run_id>`, Epic C C2).
+The index reads two JSONL sources — `logs/llm_calls.jsonl` (the
 analyzer's per-call telemetry) via
 [`_read_jsonl`](../../../dashboard/routes.py) and `evals/results/*.jsonl` via
 [`_read_eval_results`](../../../dashboard/routes.py) — then renders one template.
+The run_detail route returns one run's composite detail (spans, cost, reliability,
+and error records) for the run-detail modal, reading one bounded JSONL pass and
+reusing the aggregation helpers ([`dashboard/routes.py:run_detail`](../../../dashboard/routes.py)).
 The blueprint never writes ([`dashboard/routes.py`](../../../dashboard/routes.py)
 docstring: "Localhost-only by guard. Reads JSONL log files; never writes.") `[synthesis]`.
 
@@ -140,27 +145,34 @@ runtime CDN; lazy-init on open):
   [`_dedup_by_run`](../../../dashboard/routes.py)) plus the latest run's
   `fabricated_specifics` drill-down
   ([`_latest_groundedness_detail`](../../../dashboard/routes.py)).
-- **Tuning** — a read-only scaffold; the constant picker is fed by
-  [`_tune_prompt_choices`](../../../dashboard/routes.py), a read-only lazy import
-  of `analyzer._BASE_SYSTEM_PROMPTS`.
+- **Tuning** — runs an A/B pair (baseline vs. candidate override) and writes eval results via the SSE
+  [`tune_run_stream`](../../../blueprints/diagnostics.py) route in `blueprints/diagnostics.py`;
+  the console UI is a read-only scaffold fed by [`_tune_prompt_choices`](../../../dashboard/routes.py),
+  a lazy import of `analyzer._BASE_SYSTEM_PROMPTS`.
 
 `prompt_version` is the trend axis throughout — score / groundedness charts drop
 records lacking one, so a regression is attributable to a specific prompt
 revision. The `PROMPT_VERSION`-bump discipline that keeps this honest is
 canonical in [`AGENTS.md`](../../../AGENTS.md) (D5).
 
-## In-app help: a ported primitive, not a shared import
+## In-app help: per-tab + per-tile, a ported primitive
 
-Each diagnostics pane opens with a one-line summary + an `(i)`-circle (the static
-[`.dash-pane-intro`](../../../dashboard/templates/dashboard.html) rows) that opens a
-per-tab explainer modal; the Pipeline explainer auto-opens once-ever on first visit. The
-mechanism is a deliberate **port** of the wizard's help primitive (see
+Help appears at two levels: per-tab summaries and per-tile guidance. Each diagnostics pane opens
+with a one-line summary + an `(i)`-circle (the static [`.dash-pane-intro`](../../../dashboard/templates/dashboard.html)
+rows) that opens a per-tab explainer modal; the Pipeline explainer auto-opens once-ever on first visit.
+Every **tile** also carries a lay-line describing what it shows
+([`.tile .lay`](../../../dashboard/templates/dashboard.html), Epic C C3 / UX-9) plus an `(i)`-circle
+pinned bottom-right (a [`.help-info`](../../../dashboard/templates/dashboard.html) sibling, outside the
+tile button to avoid nested-interactive nesting) that opens its own [_DASH_HELP](../../../dashboard/templates/dashboard.html)
+entry `[synthesis]`.
+
+The mechanism is a deliberate **port** of the wizard's help primitive (see
 [[frontend-wizard]]) — the console is self-contained and never loads
 [`static/app.js`](../../../static/app.js), so a tabs-IIFE-local opener
 [`dashboard.html:openDashHelp`](../../../dashboard/templates/dashboard.html) + registry
 [`dashboard.html:_DASH_HELP`](../../../dashboard/templates/dashboard.html) (keyed
-`dashPipeline` / `dashQuality` / `dashGroundedness` / `dashTuning` / `dashAnnotate`)
-re-implement it inline `[synthesis]`.
+`dashPipeline` / `dashQuality` / `dashGroundedness` / `dashTuning` / `dashAnnotate` at the
+tab level, plus per-tile entries) re-implement it inline `[synthesis]`.
 
 It is intentionally **not** coupled: the port reuses the wizard's `#helpModal` element
 ids/classes ([`dashboard.html`](../../../dashboard/templates/dashboard.html)) and the same
@@ -200,7 +212,7 @@ after the view returns and the app context is gone) `[synthesis]`:
   candidate self-stamps `prompt_version=candidate:<hash>` via
   `analyzer.prompt_overrides`, so it never pollutes score-over-time; promote
   stays manual (the route never edits `analyzer.py`).
-- `POST /api/annotation/*` — the **only** write surface, running the v1.0.4
+- `POST /api/annotation/*` — the annotation-step write surface, running the v1.0.4
   tuning loop in-browser, all in
   [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py):
   [`annotation_bootstrap_stream`](../../../blueprints/diagnostics.py)
@@ -255,10 +267,11 @@ there is no single "the" identity until an anchor is resolved at collate time
 
 **Paid-run single-flight lock:** A global client-side `window.sartorRunLock`
 ([`dashboard.html`](../../../dashboard/templates/dashboard.html)) prevents
-concurrent execution of the five paid-run buttons in `LOCK_BTN_IDS` (eval / tune /
-bootstrap / grounding-score / collate-fixture) — while any one is in flight, the others
-are disabled and a prominent `#runLockBanner` warns the user not to close the tab
-`[synthesis]`. The
+concurrent execution of the six long-running-run buttons in `LOCK_BTN_IDS` (eval /
+tune / bootstrap / grounding-score / collate-run / the static Collate button; all paid
+except grounding-score, which scores locally on CPU) within one browser tab — there is
+no server-side lock (work item 117). While any one is in flight, the others are disabled
+and a prominent `#runLockBanner` warns the user not to close the tab `[synthesis]`. The
 lock is not enforced server-side; `seed_export` (the deterministic corpus snapshot
 feature in the Annotate tab) deliberately does not acquire it and may run in
 parallel with paid runs `[synthesis]`.
@@ -307,6 +320,45 @@ a localhost-only seam (D5). This module imports no `anthropic` itself — the pa
 work is delegated to `evals.runner` / `evals.bootstrap` / the `web_infra`
 client factory, so `blueprints/diagnostics.py` is **not** on the PX-08 egress
 allowlist `[synthesis]`.
+
+## Error capture and run-detail modal (Epic C C1c, C2)
+
+Errors on LLM calls are now captured with redaction and size limits. Every error row
+(`status="error"`) in `logs/llm_calls.jsonl` carries two new fields (since C1c):
+`error_type` (the exception class name) and `error_message` (the exception text, redacted
+and capped). The redaction is deterministic, run by
+[`analyzer._redact_error_message`](../../../analyzer.py) in the exception handlers of
+[`analyzer._call_llm_streaming`](../../../analyzer.py) (the `finally` block then writes
+the row), and masks API keys, header values, and caps the message at 500 characters
+with a `…[truncated]` marker `[synthesis]`. See
+[`SECURITY.md` §User data residency](../../../SECURITY.md) for the telemetry contract.
+
+The run-detail modal (Epic C C2, UX-7/UX-8) lets users drill into a run's error records by
+clicking a `run_id` link in the Pipeline waterfall or an error-count badge in any tile.
+The [`run_detail`](../../../dashboard/routes.py) route (`GET /api/run/<run_id>`) returns one
+bounded JSONL pass over the call log, filtered to that run_id, then computes the same
+trace / reliability / cost aggregations reused by the index, plus an `errors` list
+carrying `call_kind`, `timestamp`, `model`, `stop_reason`, `latency_ms`, `error_type`,
+and `error_message` `[synthesis]`. Rows written before C1c carry `None` for the message
+fields, never empty strings or fabricated defaults.
+
+## Run-lock gating and UI feedback (Epic C C1b, C3)
+
+Paid-run buttons (eval / tune / bootstrap / grounding-score / collate-fixture) are gated
+by a global client-side `window.sartorRunLock` preventing concurrent execution
+([`dashboard.html`](../../../dashboard/templates/dashboard.html)) `[synthesis]`. While
+any one run is in flight, the others are disabled and a prominent opaque `#runLockBanner`
+(sticky, positioned under the sticky tabs) warns the user not to close the tab
+`[synthesis]`. The lock is client-side only; deterministic runs like seed-export do not
+acquire it and may run in parallel. The banner stacks under the sticky tab bar via CSS
+`:has()` selector ([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
+line 73) `[synthesis]`.
+
+Tabs are themselves sticky ([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
+`.dash-tabs`) so users don't lose their place on long scrolling panes (Annotate, Tuning).
+An opaque background on the tabs is required to prevent page content scrolling underneath
+and showing through — on smaller screens where tabs wrap, the gap between rows would
+otherwise be transparent, breaking the sticky affordance `[synthesis]`.
 
 ## Related
 

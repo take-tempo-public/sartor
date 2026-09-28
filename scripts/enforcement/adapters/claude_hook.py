@@ -18,8 +18,9 @@ Since PX-37 (`chore/hook-dispatcher`), the seven Edit|Write guards
 `route-security-lint`, and — since work item 87 — `interrogative-witness`)
 run via `dispatch()`, called from
 `claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry. Since
-`feat/verify-dont-assume-guard`, the four Bash guards (`block-secrets`,
-`block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`) run the same
+`feat/verify-dont-assume-guard`, the Bash guards (`block-secrets`,
+`block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`, and — since
+Epic C C1c — `block-subagent-git-stash`) run the same
 way via `bash_dispatcher.py`'s single `hooks/bash-dispatcher.sh` entry —
 neither of those three previously-standalone Bash wrappers
 (`hooks/block-merge-to-main.sh`, `hooks/block-secrets.sh`,
@@ -50,6 +51,7 @@ if str(_REPO_ROOT) not in sys.path:
 from scripts.enforcement.guards import (  # noqa: E402
     block_merge_to_main,
     block_secrets,
+    block_subagent_git_stash,
     interrogative_witness,
     require_consumer_enumeration,
     require_evidence_before_fix,
@@ -72,6 +74,7 @@ _GUARD_NAMES = (
     "validate-context",
     "verify-binary-on-path",
     "interrogative-witness",
+    "block-subagent-git-stash",
 )
 
 
@@ -106,6 +109,8 @@ def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
         return verify_binary_on_path.claude_check(payload)
     if name == "interrogative-witness":
         return interrogative_witness.claude_check(payload)
+    if name == "block-subagent-git-stash":
+        return block_subagent_git_stash.claude_check(payload)
     raise SystemExit(f"claude_hook.py: unknown guard '{name}' (expected one of {_GUARD_NAMES})")
 
 

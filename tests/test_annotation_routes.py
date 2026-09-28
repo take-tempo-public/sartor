@@ -864,6 +864,39 @@ class TestScoreGrounding:
         assert resp.status_code == 409
         assert "seed.json" in resp.get_json()["error"]
 
+    def test_score_grounding_help_matches_server_behaviour(self, ann_app, monkeypatch, tmp_path):
+        """UX-18 (Epic C C3): the console's Score-grounding help used to say a
+        missing seed "just means nothing scores, not an error" and pointed at
+        Export seed. The server 409s instead, with its own remedy. Pin the help
+        against the LIVE server response, not a copy of its text, so the two
+        cannot drift apart again."""
+        import re
+
+        from dashboard import routes as dashboard_routes
+
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", tmp_path / "no.jsonl")
+        monkeypatch.setattr(dashboard_routes, "EVAL_RESULTS_DIR", tmp_path / "no_results")
+
+        _seed_bootstrap(ann_app.ANNOTATION_ROOT)  # no seed.json written
+        client = ann_app.app.test_client()
+        resp = client.post("/api/annotation/fixture/alice/alice-bootstrap/score")
+        assert resp.status_code == 409
+        server_error = resp.get_json()["error"]
+        remedy = "re-run the bootstrap to capture the corpus snapshot, then score"
+        assert remedy in server_error  # the server's own remedy, observed
+
+        page = client.get("/_dashboard/").get_data(as_text=True)
+        start = page.index("    dashAnnScore: {")
+        entry = page[start : page.index("\n    },", start)]
+        body = "".join(re.findall(r"'((?:[^'\\]|\\.)*)'", entry))
+        assert "not an error" not in body
+        assert "error" in body  # says a missing prerequisite IS an error
+        assert remedy in body  # ...and gives the server's remedy verbatim
+        # The extras branch too: the server streams "Grounding extras not
+        # installed." with a pip remedy (see test_missing_extras_streams_install_message).
+        assert "[eval-grounding]" in body
+        assert "pip install" in body
+
     def test_missing_extras_streams_install_message(self, ann_app, monkeypatch):
         fixture_dir, _ = _seed_bootstrap(ann_app.ANNOTATION_ROOT)
         _write_seed(fixture_dir)

@@ -150,16 +150,25 @@ All user data stays on your machine in:
   JSON chains
 - `db/resume.sqlite` — the structured corpus + applications +
   iteration history
-- `logs/llm_calls.jsonl` — LLM call telemetry (per-call metadata only:
-  model, token counts, latency, username, `prompt_version`, status — no
-  request or response text; see `analyzer.py`'s `_emit_call_log` for the
-  exact 13-field schema)
+- `logs/llm_calls.jsonl` — LLM call telemetry: per-call metadata (model,
+  token counts, latency, username, `prompt_version`, status — 13 fields on
+  every row), plus, on failed calls only (`status: "error"`), two more:
+  `error_type` and a free-text `error_message`. That message is the
+  exception's own text — for an Anthropic API error, the server's error
+  response — with whitespace collapsed, `sk-ant-…` key shapes and
+  `x-api-key`/`Authorization` header values masked, and a 500-character cap
+  (`analyzer.py`'s `_redact_error_message`). No request or response content
+  (prompts, résumé text, model output) is written. The record is built in
+  `analyzer.py`'s `_call_llm_streaming` and written by `_emit_call_log`.
 
 All of these directories are gitignored. **Do not commit them.**
 The `output/context_*.json` chain contains your full résumé text, every
 job description you've analyzed, and the LLM's responses including your
 candidate identity — treat it as sensitive on disk. `logs/llm_calls.jsonl`
-is lower-sensitivity (metadata only) but still gitignored by default.
+is lower-sensitivity (metadata, plus redacted error text on failed calls) but
+still gitignored by default. The masking is pattern-based, not a guarantee:
+a credential in a shape the patterns do not know could survive in an
+`error_message`.
 
 ## Reporting a vulnerability
 

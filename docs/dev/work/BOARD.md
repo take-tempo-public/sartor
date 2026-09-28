@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 11 / 10 ceiling -- OVER** | Blocked 4 | Deferred 8 | Watching 45 | Epics 6 | Closed 37
+**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -14,6 +14,16 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **107** -- First run offers no account-naming step; the account is named after the email address (`agent`) -- No first-run step to name the account; it defaults to the email address while settings shows the real name.
 - **111** -- check-plan-approved.sh costs ~2 s on every Edit/Write and 8-21 s on its retire path on Windows/MSYS: about 15-20 forks at 0.3-1 s each (`agent`) -- Plan-approval hook: ~2 s per edit, 8-21 s per retire, from MSYS fork count. Item 110 fixed correctness, not speed.
 - **112** -- The diagnostics console's Since filter raises TypeError on any date: naive date floor compared against offset-aware telemetry timestamps (`agent`) -- Any Since date crashes the console: _filter_calls compares a naive floor to offset-aware (+00:00) timestamps.
+- **115** -- UX-8 test asserts .err-link failing-state color via getComputedStyle, not just CSS rules read (`agent`) -- Add a getComputedStyle assertion for .err-link's danger color; F3's fix was verified by reading rules, not measuring.
+- **116** -- Dynamically-created 'Run this fixture' help bubble (renderCollateResult) never verified to open in a browser (`agent`) -- Post-Collate help circle is wired at runtime; C3's UX test never reaches it, only render-with-no-error is verified.
+- **117** -- Paid diagnostics runs have no server-side single-flight lock; the run lock is per browser tab (`agent`) -- Two tabs (or curl) can start two paid runs at once: LOCK_BTN_IDS/acquire() are client-only, no server lock.
+- **118** -- error_message redaction misses quoted-key header forms and Basic auth credentials (`agent`) -- _HEADER_VALUE_PATTERN skips {'x-api-key': ...} / {"authorization": ...} and masks only the word 'Basic'.
+- **119** -- Run lock has no owner; tune, bootstrap and annScore ignore acquire()'s return value (`agent`) -- Any release() frees the lock, and three inline acquire() sites start a run even when acquire() returned false.
+- **120** -- run() leaves its button pulsing (btn-pending) when it declines to start a second run (`agent`) -- run() calls setBtnPending before the acquire() check; the early return never clears it.
+- **121** -- run_detail reads all of llm_calls.jsonl per modal open; a non-object JSON line raises 500 (`agent`) -- GET /api/run/<id> materializes the whole log to find one run; _read_jsonl keeps non-dict lines -> AttributeError.
+- **122** -- Weak C3 test assertions: raw-name denylist, unbounded registry-title regex, bare 'error' in body (`agent`) -- Three C3 assertions survive plausible mutants; tighten each to fail on the regression it names.
+- **123** -- verify-binary-on-path blocks shell brace groups: "'{', '}' not found on PATH" (`agent`) -- A `{ cmd; cmd; } | head` brace group is parsed as binaries named { and }; blocked an epic refuter.
+- **124** -- Recurrence: agents invoke bare `ruff` (not on PATH here) and get hook-blocked mid-run (`agent`) -- Pipeline run wf_fd312963-54d's implementer stopped on a bare-ruff block; the guard should steer to python -m.
 
 ## Blocked
 
@@ -31,7 +41,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **41** -- Domain-vocabulary library for Compose drafting (`user`) -- Local lexicons (design, SWE, business, startup) so Compose drafting uses the JD domain's language and conventions. [blocked on: post-1.1.0 - owner scheduled this for 1.1.x investigation, not the Final March]
 - **42** -- Template-format investigation - dotx/mht import, locked exact-preview ATS set (`user`) -- Investigate dotx/mht as import formats and lock a small set of bullet-proof ATS templates with exact-preview fidelity. [blocked on: post-1.1.0 - owner scheduled a template epic for a 1.1.x sprint]
 - **43** -- Approved-fonts list expansion beyond Arial/Calibri/Georgia (`user`) -- v1.1.0 ships an approved-fonts list of Arial, Calibri, Georgia (sprint B2); verified additions considered later. [blocked on: post-1.1.0 - additions only after per-font ATS verification, owner-gated]
-- **113** -- Triage the 19 out-of-scope findings from the pre-Epic-C console UX audit (UX-23..UX-41) (`user`) -- 19 console UX findings outside Epic C's scope (7 major, 12 minor) await owner triage; UX-22 filed separately (item 112). [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
+- **113** -- Triage the 18 out-of-scope findings from the pre-Epic-C console UX audit (UX-23, UX-25..UX-41) (`user`) -- 18 console UX findings outside Epic C (6 major, 12 minor) await triage; UX-22 is item 112; UX-24 joined C1b. [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
+- **114** -- commands/bench.md doesn't explicitly call out the new error_message/error_type fields (`agent`) -- bench.md already summarizes error rows generically; naming error_message/error_type explicitly is a nice-to-have. [blocked on: low value until logs/llm_calls.jsonl accumulates real status="error" rows with the new fields; revisit once there is real data to summarize]
 
 ## Watching
 

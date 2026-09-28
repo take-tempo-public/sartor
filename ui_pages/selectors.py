@@ -487,6 +487,39 @@ class Dashboard:
     TUNE_USER = "#tuneUser"
     TUNE_SLUG = "#tuneSlug"
 
+    # --- Run-detail modal (Epic C C2, UX-7/UX-8) --- additive-only; no name
+    # above this point was renamed, removed, or repurposed (see this branch's
+    # docs/dev/blast-radius/run-detail-modal.md).
+    RUN_MODAL = "#runDetailModal"
+    RUN_MODAL_OPEN = "#runDetailModal:not(.hidden)"
+    RUN_MODAL_TITLE = "#runDetailModalTitle"
+    RUN_MODAL_BODY = "#runDetailModalBody"
+    RUN_MODAL_CLOSE = "#btnCloseRunDetail"
+    RUN_LINK = "button.run-link"
+    ERR_LINK = "button.err-link"
+
+    @staticmethod
+    def run_link(run_id: str) -> str:
+        """Return the selector for a specific run id's clickable button."""
+        return f"button.run-link[data-run-id='{run_id}']"
+
+    @staticmethod
+    def err_link(call_kind: str) -> str:
+        """Return the selector for a call kind's clickable error-count button."""
+        return f"button.err-link[data-call-kind='{call_kind}']"
+
+    # --- Lay copy + progressive discovery (Epic C C3, UX-9..UX-21/UX-42) ---
+    # additive-only (docs/dev/blast-radius/dashboard-copy-discovery.md). Each
+    # `.tile` button now sits in a `.tile-cell` wrapper whose sibling (i) opens
+    # the tile's `_DASH_HELP` entry — a sibling, never a child, because a
+    # button nested in a button is axe `nested-interactive`.
+    TILE = ".tile"
+    TILE_CELL = ".tile-cell"
+    TILE_LAY = ".tile .lay"
+    TILE_HELP = ".tile-cell > .help-info[data-help]"
+    FILTER_SCOPE = "#filterScope"
+    ANN_BS_SPEND = "#bsSpend"
+
 
 class Compose:
     """Selectors for the Step-3 compose surface (bullets, titles, role intros)."""

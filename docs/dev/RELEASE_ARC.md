@@ -1959,6 +1959,11 @@ unchanged.
   Annotate are read-write); opaque + pulsing run-in-progress banner; port the main
   app's `.btn-pending` / `cb-status-pulse-strong` wait-state idioms into the
   dashboard (currently zero animation) for every wait state.
+- **C1c — LLM-call error capture** (`feat/llm-call-error-capture`; inserted
+  2026-09-24 by owner directive, recorded in the epic brief's amendment record).
+  `status == "error"` rows of `logs/llm_calls.jsonl` gain `error_type` + a
+  redacted, 500-char-bounded `error_message` (`analyzer.py` `_call_llm_streaming`),
+  with a C-10 consumer dossier for the record shape. No UI — C2's UX-8 consumes it.
 - **C2 — per-run observability** (`feat/run-detail-modal`). New
   `GET /_dashboard/api/run/<run_id>` on the same blueprint (inherits the localhost
   guard via `dashboard_bp.before_request`): one bounded JSONL pass returning that

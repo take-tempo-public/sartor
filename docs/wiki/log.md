@@ -2110,6 +2110,197 @@ execution mode or the ignored directories. `diagnostics-console.md` covers the c
 itself, and this branch changes no console code. `.last_ingest_sha` was not advanced
 (item 98).
 
+## 2026-09-23 — scoped close-out relevance check (`fix/dashboard-run-lock-gaps`, C1a)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1a — 1 of 4), scoped to this branch's
+own staged diff, not a full ingest. Per `epic-c-design-brief.md` §"Close-out intervals,"
+the full wiki pass is **deferred to the epic close** unless drift reaches the 60 backstop
+— `python -m scripts.wiki_freshness` reports **39 of 75** at this branch's tip, unchanged
+from the epic-kickoff reading, well under the backstop, so the deferral stands. This entry
+is the still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `dashboard/templates/dashboard.html` only. (`docs/dev/diagnosis/`,
+`tests/ux/regression/` classify irrelevant.)
+
+**Pages edited (0). Pages verified no-edit.** Grepped `docs/wiki/pages/diagnostics-console.md`
+for `annCollate`, `LOCK_BTN_IDS`, `acquireRunLock`, `isLocked` — one hit, the "Paid-run
+single-flight lock" section (`:256-264`), which already describes `window.sartorRunLock`
+as covering "the five paid-run buttons in `LOCK_BTN_IDS` (eval / tune / bootstrap /
+grounding-score / collate-fixture)". That is a category count (5 entry points), not an
+array-length claim, and it still holds: this branch's fix (`LOCK_BTN_IDS` gains
+`annCollate`, `annCollateRunBtn` now renders disabled-at-creation from `isLocked()`, and
+`run()` now honors `acquireRunLock()`'s return value) makes the collate-fixture entry
+point actually behave the way the page already describes — it did not before this branch
+(see `docs/dev/diagnosis/dashboard-run-lock-gaps.md`). Noting this rather than silently
+passing over it: the page was describing the *intended* design before the code matched it,
+so this scoped check confirms no edit is needed, not that nothing changed. `isLocked()`
+and the `run()` return-value check are new implementation detail the page never described
+and is not now contradicting, so leaving them undocumented is not drift. `.last_ingest_sha`
+was not advanced (item 98).
+
+## 2026-09-23 — scoped close-out relevance check (`feat/dashboard-polish`, C1b)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1b — 2 of 4), scoped to this branch's
+own staged diff, not a full ingest. Per `epic-c-design-brief.md` §"Close-out intervals,"
+the full wiki pass is **deferred to the epic close** unless drift reaches the 60 backstop
+— `python -m scripts.wiki_freshness` reports **40 of 75** at this branch's tip (up one
+from C1a's 39), still well under the backstop, so the deferral stands. This entry is the
+still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `dashboard/templates/dashboard.html` only (`tests/ux/regression/`
+classifies irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped `docs/wiki/pages/diagnostics-console.md`
+for `read-only`, `read-write`, `Quality`, `Tuning`, `sticky`, `runLockBanner`,
+`btn-pending` and `prefers-reduced-motion`. The page's "read-only" language (`:4`, `:63`,
+`:143`, `:181`) is about the **Flask blueprint architecture** — `dashboard_bp` (the one
+GET route in `dashboard/routes.py`) never writes, and the SSE write/spend surface lives
+entirely in `blueprints/diagnostics.py`; that separation is unchanged by this branch and
+still accurate. This sprint's fix (UX-3/UX-24) corrected **client-facing page copy** —
+the header paragraph and Annotate intro text that told the *user* which tabs read vs.
+write/spend, which had wrongly grouped the Quality tab with the pure-read tabs — a
+different claim the wiki page never made (it does not describe per-tab user-facing
+read/write copy at all, only the server-side route split). UX-2/UX-4/UX-5's sticky-tabs,
+opaque-banner and `.btn-pending` changes are CSS/animation polish the page also does not
+describe at that level of detail. No page contradicts the shipped diff. `.last_ingest_sha`
+was not advanced (item 98).
+
+## 2026-09-24 — scoped close-out relevance check (`feat/llm-call-error-capture`, C1c)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C1c — inserted ahead of C2, run 3 of 5),
+scoped to this branch's own staged diff, not a full ingest. Per
+`epic-c-design-brief.md` §"Close-out intervals" (restated in this sprint's own brief,
+`docs/dev/handoffs/epic-c-c1c-brief.md` §"Close-out obligations"), the full wiki pass is
+**deferred to the epic close** unless drift reaches the 60 backstop —
+`python -m scripts.wiki_freshness` reports **40 of 75**, the identical reading recorded at
+this sprint's own brief (2026-09-24, before this branch's `analyzer.py` change was
+committed — the diff isn't in the committed-since-checkpoint count yet), still well under
+the backstop, so the deferral stands. This entry is the still-owed scoped relevance check,
+not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the full
+staged diff):** `analyzer.py` only (`CHANGELOG.md`,
+`docs/dev/blast-radius/llm-call-error-capture.md`, and
+`tests/test_llm_call_error_capture.py` all classify irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped every page referencing
+`_call_llm_streaming` or `llm_calls.jsonl` (`code-module-map.md`,
+`deterministic-llm-boundary.md`, `llm-call-catalog.md`, `pipeline-stages.md`,
+`diagnostics-console.md`) for `error_type`, `error_message`, `status`, and
+`llm_calls.jsonl`/`_emit_call_log`/`_redact_error_message`. The one page describing the
+telemetry record's shape, `deterministic-llm-boundary.md:64-68`, says the funnel "writes
+one JSONL telemetry record per funnelled call (stamped with the call kind under the JSON
+key `call`, plus `model` and `prompt_version`)" — a partial, non-exhaustive field list
+("plus X, Y"), not a closed/exact-keyset claim. This sprint's two new additive fields
+(`error_type`/`error_message`, present only on `status == "error"` rows) don't contradict
+that sentence any more than the pre-existing `latency_ms`/`stop_reason`/cache-token fields
+already left undescribed there do. No page claims the telemetry record's field set is
+exhaustive, and no page describes error-row content at all, so there is nothing to
+correct. `docs/wiki/pages/diagnostics-console.md:123` mentions `status == "judge_error"`
+filtering — a different status value, on a different route (`_evaluate` results, not
+`llm_calls.jsonl`) — and is unaffected. `.last_ingest_sha` was not advanced (item 98).
+
+## 2026-09-24 — scoped close-out relevance check (`feat/run-detail-modal`, C2 rerun closer)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C2 rerun — run 4 of 5), scoped to this
+branch's own currently-staged diff (this sprint's implementation was restored from a parked
+`wip` branch and is staged but not yet committed — see
+`docs/dev/handoffs/epic-c-c2-rerun-brief.md` "Sprint identity"), not a full ingest. Per
+`epic-c-design-brief.md` §"Close-out intervals", the full wiki pass is **deferred to the
+epic close** unless drift reaches the 60 backstop — `python -m scripts.wiki_freshness`
+reports **40 of 75** (unchanged from C1c's reading; `analyzer.py`'s C1c change is the only
+committed diff since the checkpoint, and this sprint's own files are still staged, not
+committed, so they don't move the counter yet), still well under the backstop, so the
+deferral stands. This entry is the still-owed scoped relevance check, not the deferred pass.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the current
+working-tree/staged file set):** `dashboard/routes.py` and
+`dashboard/templates/dashboard.html` (`docs/dev/blast-radius/run-detail-modal.md`,
+`docs/dev/work/BOARD.md`, `tests/test_dashboard_routes.py`,
+`tests/ux/regression/test_20260924_run_detail_modal.py`, `ui_pages/dashboard_console.py`,
+`ui_pages/selectors.py`, and the new work item file all classify irrelevant).
+
+**Pages edited (0). Pages verified no-edit.** Grepped
+`docs/wiki/pages/diagnostics-console.md` for `run_link`/`run-link`/`err-link`/`RUN_MODAL`/
+"run detail"/`error_type`/`error_message`/`/_dashboard/api/run`/`esc(`/`escap`/`XSS`/
+`innerHTML`/`cascade`/`specificity`/`.fail` — zero hits on every term. The page does not
+document the run-detail modal (UX-7/UX-8) at all — it predates C2 landing, and this
+sprint's own work (the new `GET /_dashboard/api/run/<run_id>` route, the run-id/error-rate
+buttons, and the three closer-applied fixes: `esc()`'s attribute-context escaping, the
+`.err-link` failing-state CSS-specificity correction, and the C-10 dossier's member-name
+correction) has nothing to contradict or update. `.last_ingest_sha` was not advanced
+(item 98).
+
+## 2026-09-25 — scoped close-out relevance check (`feat/dashboard-copy-discovery`, C3 closer, Epic C terminal sprint)
+
+**Trigger:** intra-epic sprint close-out (Epic C, C3 — the epic's terminal sprint, run 5 of
+5). Per `epic-c-design-brief.md` §"Close-out intervals", the full wiki pass is **deferred
+to the epic close** unless drift reaches the 60-file backstop — `python -m
+scripts.wiki_freshness` reports **41 of 75** at this generation, still under the backstop,
+so the deferral stands. This entry is the scoped relevance check the invoking session's
+closer prompt asks for; the full `/wiki-self-update` pass against all of Epic C's landed
+diff is explicitly **pending at epic close**, run by the invoking session, not this closer.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, run over the current
+working-tree/staged file set):** `dashboard/templates/dashboard.html` classifies
+**relevant**. `docs/dev/blast-radius/dashboard-copy-discovery.md`,
+`docs/dev/work/BOARD.md`, `docs/dev/work/items/0116-*.md`,
+`docs/dev/handoffs/dashboard-copy-discovery.md`, `tests/test_annotation_routes.py`,
+`tests/test_dashboard_copy.py`, `tests/ux/regression/test_20260925_dashboard_copy_discovery.py`,
+and `ui_pages/selectors.py` all classify irrelevant.
+
+**Not verified-no-edit — drift disclosed, not silently deferred.** Unlike the C2 rerun
+entry above, this is **not** a clean no-edit finding. `docs/wiki/pages/diagnostics-console.md`
+§"In-app help: a ported primitive, not a shared import" (`:152-174`) documents the
+`_DASH_HELP` registry as keyed only `dashPipeline` / `dashQuality` / `dashGroundedness` /
+`dashTuning` / `dashAnnotate` (the 5 tab-level entries) and says nothing about the
+per-tile/per-module entries this sprint's UX-9 work added (`dashTileCalls`,
+`dashTileErrors`, `dashTileTrace`, `dashTileRecent`, and siblings across the Quality/
+Groundedness/Tuning tabs), nor the `.tile-cell`/`TILE_LAY`/`TILE_HELP` structural pattern
+(Observation 2a in `docs/dev/blast-radius/dashboard-copy-discovery.md`) that makes a
+help circle a sibling rather than a nested-interactive child. The page's description is
+therefore **stale, not wrong** — the tab-level mechanism it documents is still accurate,
+it is merely incomplete against C3's tile-level extension of the same registry. Per the
+invoking session's explicit instruction for this step ("record the classification result
+... note the full pass is pending at epic close"), this closer records the gap rather than
+editing the page now — editing here would pre-empt the epic-close pass's own view of the
+*whole* epic's diff (C1a/C1b/C1c/C2/C3 together), and this sprint's tile-level additions are
+only one piece of it. `.last_ingest_sha` was not advanced (item 98).
+
+## 2026-09-26 — `/wiki-self-update`, Epic C close-out (scoped; checkpoint NOT advanced)
+
+**Branch:** `feat/dashboard-copy-discovery` (Epic C terminal sprint + epic-close fixes).
+**Mode:** diff, **scoped by owner decision** to Epic C's own wiki-relevant changes
+(`git diff main...HEAD` + the staged epic-close fixes), not the full
+`f42b2ea → HEAD` window (41 relevant files → ~35 pages, over the cap of 8; most of it
+pre-epic). Owner chose "Scoped, 4 pages" at the spend boundary. **`.last_ingest_sha`
+deliberately NOT advanced**: advancing it past a scoped pass would silently mark the
+pre-epic drift current (the ratchet defect, item 98).
+
+**Sources read (working tree, staged fixes included):** `dashboard/routes.py`,
+`dashboard/templates/dashboard.html`, `dashboard/README.md`, `analyzer.py`
+(error capture), `SECURITY.md`, `blueprints/diagnostics.py`.
+
+**Pages changed (4):** `diagnostics-console` (two GET routes incl. `run_detail`; Tuning
+and annotation are write surfaces, not "read-only"/"only"; per-tile help; new sections
+on error capture + run-detail modal and on run-lock gating — corrects adversarial-review
+finding R3-2 and this log's earlier "nothing to contradict" / "stale, not wrong"
+entries, both of which were false); `code-module-map` (dashboard row: two GET routes,
+writes in `blueprints/diagnostics.py`); `deterministic-llm-boundary` and
+`llm-call-catalog` (C1c `error_type` / `error_message` on error rows). `index.md`:
+diagnostics-console entry revised.
+
+**Auditor catch-rate:** 4 pages audited (author ≠ auditor); **4 DRIFTED + 1 UNSUPPORTED
+caught** — DRIFTED re-anchored (`analyzer.py:error_type` local-variable cite;
+redaction-order wording; redaction "inside the finally block" → exception handlers;
+`SECURITY.md §Logging` → §User data residency). UNSUPPORTED ("five paid-run buttons";
+source has six, and grounding-score is CPU-only) — pre-existing text stale since C1a;
+surfaced to the owner, who chose "Correct it"; corrected, with the per-tab-only lock
+qualification (item 117). Structural lint on the 4 pages: links, backlinks, index —
+clean.
+
 ## 2026-09-27 — wiki-relevance check, `fix/sqlalchemy-2-1-mypy-drift` (verified no-edit)
 
 `db/migrations/_sqlite_check_constraint.py` classifies wiki-relevant; the other touched

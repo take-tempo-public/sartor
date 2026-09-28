@@ -41,6 +41,7 @@ from scripts.enforcement.adapters import bash_dispatcher, claude_dispatcher
 from scripts.enforcement.guards import (
     block_merge_to_main,
     block_secrets,
+    block_subagent_git_stash,
     require_feature_branch,
     route_security_lint,
     ruff_changed,
@@ -1046,6 +1047,64 @@ class TestEditWriteDispatcher:
 # --------------------------------------------------------------------------- #
 
 
+class TestBlockSubagentGitStashUnit:
+    """Epic C C1c (owner-directed 2026-09-24; C-11 recurrence): a subagent may not
+    run a state-changing `git stash`. `list`/`show` stay allowed, and the main agent
+    is never gated."""
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "git stash",
+            "git stash -u",
+            "git stash push -m park",
+            "git stash pop",
+            "git stash apply stash@{0}",
+            "git stash drop",
+            "git stash clear",
+            "git stash branch rescue",
+            "git -C /c/Dev/sartor stash push",
+            'git -C "a dir" stash pop',
+            "git --no-pager stash apply",
+            "git status; git stash drop",
+            "git stash -u && pytest -q && git stash pop",
+            "echo $(git stash)",
+        ],
+    )
+    def test_subagent_mutation_blocks(self, command: str) -> None:
+        result = block_subagent_git_stash.decide(command, is_subagent=True)
+        assert result.blocked, command
+        assert any("block-subagent-git-stash" in line for line in result.messages)
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "git stash list",
+            "git stash show -p stash@{0}",
+            "git stash show --stat",
+            'git commit -m "park the stash"',
+            "git log --oneline | grep stash",
+            "cat docs/stash.md",
+            "git diff --cached --stat",
+            "mygit stash",
+            "",
+        ],
+    )
+    def test_subagent_read_only_or_unrelated_allows(self, command: str) -> None:
+        assert not block_subagent_git_stash.decide(command, is_subagent=True).blocked, command
+
+    def test_main_agent_is_never_gated(self) -> None:
+        assert not block_subagent_git_stash.decide("git stash -u", is_subagent=False).blocked
+
+    def test_claude_check_keys_on_agent_id(self) -> None:
+        sub_payload = {"agent_id": "x", "tool_input": {"command": "git stash pop"}}
+        main_payload = {"tool_input": {"command": "git stash pop"}}
+        blank_payload = {"agent_id": "", "tool_input": {"command": "git stash pop"}}
+        assert block_subagent_git_stash.claude_check(sub_payload).blocked
+        assert not block_subagent_git_stash.claude_check(main_payload).blocked
+        assert not block_subagent_git_stash.claude_check(blank_payload).blocked
+
+
 class TestBashDispatcher:
     """feat/verify-dont-assume-guard: block-secrets, block-merge-to-main,
     ruff-changed, and verify-binary-on-path all run in one process, and every
@@ -1057,7 +1116,29 @@ class TestBashDispatcher:
             "block-merge-to-main",
             "ruff-changed",
             "verify-binary-on-path",
+            "block-subagent-git-stash",
         }
+
+    def test_subagent_git_stash_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:
+        """Epic C C1c: the exact command run wf_9f0c8afe-bf9's refuter ran, from a
+        subagent payload (`agent_id` present), exits 2 through bash-dispatcher.sh."""
+        payload = {
+            "tool_name": "Bash",
+            "agent_id": "a1b2c3",
+            "tool_input": {"command": "git stash -u && git diff --stat && git stash pop"},
+        }
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 2
+        assert "block-subagent-git-stash" in err
+
+    def test_main_agent_git_stash_is_not_gated(self, tmp_path: Path) -> None:
+        """The same command with no `agent_id` (the main agent) is allowed."""
+        payload = {"tool_name": "Bash", "tool_input": {"command": "git stash list"}}
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert code == 0, err
+        payload = {"tool_name": "Bash", "tool_input": {"command": "git stash -u"}}
+        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        assert "block-subagent-git-stash" not in err
 
     def test_allow_when_all_four_allow(self, tmp_path: Path) -> None:
         payload = {"tool_name": "Bash", "tool_input": {"command": "python --version"}}

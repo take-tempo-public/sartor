@@ -77,6 +77,30 @@ unparseable response still returns `{"valid": true}`) is unchanged; the differen
 is that outage now ALSO produces a `status="error"` telemetry row instead of
 vanishing silently — see [[deterministic-llm-boundary]] `[synthesis]`.
 
+## Error capture — status="error" telemetry rows (Epic C C1c)
+
+All LLM calls emit one JSONL record per call to `logs/llm_calls.jsonl` via
+[`analyzer.py:_emit_call_log`](../../../analyzer.py). When a call fails, the
+`status` field is set to `"error"` and two additional fields are appended
+([`analyzer.py:_call_llm_streaming`](../../../analyzer.py) lines 1458–1460) `[synthesis]`:
+
+- **`error_type`** — the exception class name (`"APIError"`, `"TypeError"`,
+  `"LLMConfigurationError"`, etc.), captured via
+  [`analyzer.py:type(exc).__name__`](../../../analyzer.py).
+- **`error_message`** — a redacted, 500-character-truncated string representation
+  of the exception, produced by
+  [`analyzer.py:_redact_error_message(_safe_exc_str(exc))`](../../../analyzer.py).
+  Redaction collapses whitespace, masks API-key-shaped substrings and any
+  `x-api-key`/`Authorization` header values, then truncates with a trailing
+  `"…[truncated]"` marker if needed ([`analyzer.py:_redact_error_message`](../../../analyzer.py),
+  deterministic and safe to run on every error row). The captured `str(exc)`
+  can never replace the caller's exception — the exception is re-raised unchanged
+  after telemetry is recorded `[synthesis]`.
+
+These two fields ride ONLY on `status="error"` rows; all `status="ok"` rows are
+byte-identical to pre-epic-C rows, so readers that tolerate their absence stay
+compatible `[synthesis]`.
+
 ## The two-pass analyze (the cache-defining detail)
 
 `analyze()` is **not one Sonnet call** — it is Haiku extraction → Sonnet synthesis

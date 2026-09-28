@@ -25,7 +25,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
 from config import _default_base_dir
@@ -1076,4 +1076,61 @@ def index() -> ResponseReturnValue:
         run_trace=run_trace,
         baseline_health=baseline_health,
         tune_prompts=_tune_prompt_choices(),
+    )
+
+
+@dashboard_bp.route("/api/run/<run_id>", methods=["GET"])
+def run_detail(run_id: str) -> ResponseReturnValue:
+    """Composite per-run detail for the run-detail modal (Epic C C2, UX-7).
+
+    One bounded JSONL pass over ``logs/llm_calls.jsonl``, filtered down to
+    this ``run_id``, then reuses ``_run_trace`` / ``_reliability`` /
+    ``_cost_by_call_kind`` over just that slice -- no new instrumentation,
+    no second file read. Inherits ``_localhost_guard`` (before_request on
+    this blueprint); a non-localhost request never reaches here.
+
+    {"found": False} (404) when no call in the log carries this run_id --
+    either it never existed or `logs/llm_calls.jsonl` predates it.
+
+    The "errors" list carries call kind, timestamp, model, stop_reason,
+    latency, and now (Epic C C1c) ``error_type``/``error_message`` when the
+    row has them -- ``analyzer._emit_call_log`` (called from the single
+    ``finally`` block in ``analyzer._call_llm_streaming``) writes both on
+    every ``status="error"`` row since C1c, already redacted and size-capped
+    by ``analyzer._redact_error_message``. Rows written before C1c (and any
+    ``status="ok"`` row, which never carries these keys) surface as
+    ``None`` here -- never fabricated, never an empty string standing in for
+    "no message logged".
+    """
+    calls = _read_jsonl(LLM_LOG)
+    run_calls = [r for r in calls if (r.get("run_id") or "") == run_id]
+    if not run_calls:
+        return jsonify({"found": False, "run_id": run_id}), 404
+
+    trace = _run_trace(run_calls)
+    reliability = _reliability(run_calls)
+    cost = _cost_by_call_kind(run_calls)
+    errors = [
+        {
+            "call_kind": r.get("call") or "unknown",
+            "timestamp": r.get("timestamp", ""),
+            "model": r.get("model", ""),
+            "stop_reason": r.get("stop_reason"),
+            "latency_ms": r.get("latency_ms", 0) or 0,
+            "error_type": r.get("error_type"),
+            "error_message": r.get("error_message"),
+        }
+        for r in run_calls
+        if r.get("status") == "error"
+    ]
+    return jsonify(
+        {
+            "found": True,
+            "run_id": run_id,
+            "spans": trace["latest"]["spans"] if trace["has_data"] else [],
+            "total_latency_ms": trace["latest"]["total_latency_ms"] if trace["has_data"] else 0,
+            "reliability": reliability,
+            "cost_by_call_kind": cost,
+            "errors": errors,
+        }
     )

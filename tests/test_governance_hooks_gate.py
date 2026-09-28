@@ -102,6 +102,14 @@ both deliberate:
   a PreToolUse gate nor a PostToolUse nudge — always exits 0, and injects a
   non-blocking reminder via plain stdout (the UserPromptSubmit context channel, same
   as SessionStart's). Asserted below rather than assumed, the context-hook way.
+
+**Amended 2026-09-24** (Epic C C1c, ``feat/llm-call-error-capture``; owner-directed):
+**``block-subagent-git-stash`` is an ELEVENTH enforced blocker RULE.** A Bash command
+issued by a subagent (the payload carries ``agent_id``) that runs a state-changing
+``git stash`` is refused. It is the C-11 guard for a recurrence: pipeline run
+``wf_9f0c8afe-bf9``'s refuter stashed and popped the shared tree mid-review. It runs
+inside ``bash-dispatcher.sh``, so ``BASH_DISPATCHED_GUARD_NAMES`` grows with it, and
+``BLOCKER_HOOKS`` is unchanged (there is no new on-disk file). The count goes 10 → 11.
 """
 
 from __future__ import annotations
@@ -140,6 +148,7 @@ BLOCKER_RULE_NAMES = frozenset(
         "ruff-changed",
         "validate-context",
         "verify-binary-on-path",
+        "block-subagent-git-stash",
     }
 )
 
@@ -188,6 +197,7 @@ BASH_DISPATCHED_GUARD_NAMES = frozenset(
         "block-merge-to-main",
         "ruff-changed",
         "verify-binary-on-path",
+        "block-subagent-git-stash",
     }
 )
 
@@ -298,12 +308,13 @@ def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
     code the dispatcher's own ``exec`` propagates. Per-guard block/allow
     coverage through the real wrappers: ``tests/test_enforcement_core.py``.
     """
-    assert len(BLOCKER_RULE_NAMES) == 10, (
-        "Ten enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
-        "(charter C-7), verify-binary-on-path (feat/verify-dont-assume-guard), and "
+    assert len(BLOCKER_RULE_NAMES) == 11, (
+        "Eleven enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
+        "(charter C-7), verify-binary-on-path (feat/verify-dont-assume-guard), "
         "interrogative-witness (work item 87 — a one-shot, self-clearing pause, but it "
-        "reaches exit 2 and this count is mechanical). Changing this count is a "
-        "governance change — make it deliberately."
+        "reaches exit 2 and this count is mechanical), and block-subagent-git-stash "
+        "(Epic C C1c, C-11). Changing this count is a governance change — make it "
+        "deliberately."
     )
 
     # Standalone blockers: the script text itself must reach exit 2. Both

@@ -158,3 +158,36 @@ class DashboardConsolePage(BasePage):
     def status(self) -> Locator:
         """Return the annotate-tab status line locator."""
         return self.page.locator(Dashboard.ANN_STATUS)
+
+    # --- run-detail modal (Epic C C2, UX-7/UX-8) ----------------------------
+    def run_link(self, run_id: str) -> Locator:
+        """First button showing the given run id, anywhere on the page."""
+        return self.page.locator(Dashboard.run_link(run_id)).first
+
+    def open_run_detail(self, run_id: str) -> None:
+        """Click a run-id button to open the run-detail modal."""
+        self.run_link(run_id).click()
+
+    def err_link(self, call_kind: str) -> Locator:
+        """The clickable error-count button for a call kind in the reliability table."""
+        return self.page.locator(Dashboard.err_link(call_kind))
+
+    def open_errors_for_kind(self, call_kind: str) -> None:
+        """Click a call kind's error count to open the run-detail modal's error list."""
+        self.err_link(call_kind).click()
+
+    def run_modal(self) -> Locator:
+        """Return the run-detail modal locator (open or closed)."""
+        return self.page.locator(Dashboard.RUN_MODAL)
+
+    def run_modal_open(self) -> Locator:
+        """Matches only while the run-detail modal is open (not `.hidden`)."""
+        return self.page.locator(Dashboard.RUN_MODAL_OPEN)
+
+    def run_modal_body(self) -> Locator:
+        """Return the run-detail modal body locator."""
+        return self.page.locator(Dashboard.RUN_MODAL_BODY)
+
+    def close_run_modal(self) -> None:
+        """Close the run-detail modal."""
+        self.page.locator(Dashboard.RUN_MODAL_CLOSE).click()

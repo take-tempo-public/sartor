@@ -139,7 +139,7 @@ Guards reach agents through three adapters with very different coverage:
 |---|---|---|
 | `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
 | `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
-| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, the C-8/C-12 context hooks |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, `block_subagent_git_stash`, the C-8/C-12 context hooks |
 
 ### The gap, named
 
@@ -167,6 +167,15 @@ prove intent, and every failure path fails open by design. The pause is scoped t
 agent: a PreToolUse payload carrying `agent_id` (a subagent's) is skipped (item 94,
 `docs/dev/diagnosis/witness-subagent-scope.md`). A subagent's hand-back still re-arms the
 pause for the main agent's next edit, which costs one re-run.
+
+**`block_subagent_git_stash` (Epic C C1c, 2026-09-24) is Claude Code only by NATURE.** It
+refuses a state-changing `git stash` (anything but `list`/`show`) in a Bash command whose
+PreToolUse payload carries `agent_id`, meaning a subagent issued it. That discriminator exists
+only in the Claude hook contract, because a git hook cannot tell which agent ran `git stash`.
+It exists because pipeline run `wf_9f0c8afe-bf9`'s refuter stashed and popped the shared tree
+mid-review, a C-11 recurrence of agent stash incidents. Stated limit (C-0): it reads the
+command *string*, so `git stash` reached indirectly (a script file, a `subprocess` call) is
+not caught.
 
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude

@@ -38,7 +38,7 @@ from playwright.sync_api import Page, Route, expect
 from ui_pages import DashboardConsolePage
 from ui_pages.selectors import Dashboard
 
-_RUN_LOCK_IDS = ("#evalRunBtn", "#tuneRunBtn", "#bsRun", "#annScore")
+_RUN_LOCK_IDS = ("#evalRunBtn", "#tuneRunBtn", "#bsRun", "#annScore", "#annCollate")
 
 _BOOTSTRAP_DOC = {
     "bootstrap_schema_version": 1,
