@@ -2309,3 +2309,15 @@ behaviour. `grep` for `_sqlite_check_constraint` across `docs/wiki/pages/` finds
 the two `schema_version` hits (`diagnostics-console.md:75`, `eval-harness.md:18`) are the
 eval-result record schema, not this migration helper. **Verified no-edit.**
 `.last_ingest_sha` not advanced.
+
+## 2026-09-27 — wiki-relevance check, `feat/docs-ia-design` (verified no-edit)
+
+`docs/dev/docs-ia-design.md` (new) and `docs/dev/documentation-architecture.md` (header-only
+pointer + dated correction) classify wiki-relevant; the other touched files
+(`docs/dev/reviews/2026-09-docs-ia/**`, `docs/dev/work/**`, the ledger row) do not. The
+design doc describes a *future* tree, ladders and lints — nothing it proposes exists yet, so
+no page can describe it without asserting beyond source. The one wiki cite of
+`documentation-architecture.md` (`pages/openapi-api-reference.md:126`) points at the L0–L3
+layering, which this branch leaves unchanged. `grep` for `docs/user`, `docs-ia-design` and
+`meta.json` across `docs/wiki/pages/` finds nothing. **Verified no-edit.** `.last_ingest_sha`
+not advanced. The D2 split (file moves) is where wiki pages will need edits.

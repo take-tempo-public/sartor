@@ -207,6 +207,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docs/dev/decisions.md",
         "docs/dev/dependency-triage-pre-v1.1.0.md",
         "docs/dev/doc-style-guide.md",
+        "docs/dev/docs-ia-design.md",
         "docs/dev/docs-site-deploy.md",
         "docs/dev/documentation-architecture.md",
         "docs/dev/generation-experience-rearchitecture.md",
