@@ -96,7 +96,7 @@ def _seed_application_with_run(db_path: Path) -> dict[str, int]:
             session.add(candidate)
             session.flush()
 
-            application_id = session.execute(
+            application_id: int = session.execute(
                 text(
                     "INSERT INTO application "
                     "(candidate_id, title, jd_text, jd_fingerprint, status, "
@@ -255,7 +255,7 @@ class TestMigrationChainDataSafety:
                     == 1
                 )
                 # closed -> withdrawn backfill (0006) landed.
-                status = conn.execute(
+                status: str = conn.execute(
                     text("SELECT status FROM application WHERE id=:id"),
                     {"id": ids["application_id"]},
                 ).scalar_one()
@@ -265,7 +265,7 @@ class TestMigrationChainDataSafety:
                 cols = {row[1] for row in conn.execute(text("PRAGMA table_info(application)"))}
                 assert {"sent_at", "outcome_at", "notes", "is_active"} <= cols
 
-                schema_sql = conn.execute(
+                schema_sql: str = conn.execute(
                     text("SELECT sql FROM sqlite_master WHERE type='table' AND name='application'")
                 ).scalar_one()
                 assert (
@@ -337,7 +337,7 @@ class TestMigrationChainStaysValid:
             with engine.connect() as conn:
                 cols = {row[1] for row in conn.execute(text("PRAGMA table_info(application)"))}
                 assert {"sent_at", "outcome_at", "notes", "is_active"} <= cols
-                schema_sql = conn.execute(
+                schema_sql: str = conn.execute(
                     text("SELECT sql FROM sqlite_master WHERE type='table' AND name='application'")
                 ).scalar_one()
                 assert (

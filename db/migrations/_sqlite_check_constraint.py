@@ -65,7 +65,7 @@ def rewrite_check_constraint(
         return False
     new_sql = row[0].replace(old_clause, new_clause)
 
-    schema_version = bind.execute(sa.text("PRAGMA schema_version")).scalar_one()
+    schema_version: int = bind.execute(sa.text("PRAGMA schema_version")).scalar_one()
     bind.execute(sa.text("PRAGMA writable_schema=ON"))
     try:
         bind.execute(
