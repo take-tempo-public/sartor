@@ -15,6 +15,20 @@
 > domain guide and the
 > [`wiki-architecture-proposal`](reviews/2026-06-product-excellence/03-prescriptions/wiki-architecture-proposal.md);
 > on conflict the charter ([`../governance/charter.md`](../governance/charter.md)) governs.
+>
+> **Extended by [`docs-ia-design.md`](docs-ia-design.md) (Epic D, 2026-09-27)**, which is
+> authoritative for the target `docs/user/` vs `docs/dev/` tree, the onboarding ladders, the
+> link policy, and the doc lints. **Correction (2026-09-27, measured at `88c0011`):** four
+> claims below have drifted.
+> - Not every `dev/**` doc carries a P/A/A header: 17 of the 32 loose ones don't.
+> - The shipped `meta.json` is a flat list, not an ICP + pillar ordering.
+> - Publication follows header presence (42 pages, including handoff briefs and a
+>   diagnosis), not a curated subset.
+> - Most of "Recommendations / sequencing" has shipped: the projector, the deploy, and the
+>   link, frontmatter and single-home gates.
+>
+> Evidence: [`reviews/2026-09-docs-ia/20-dx.md`](reviews/2026-09-docs-ia/20-dx.md) DX-05/DX-06.
+> The body rewrite is Epic D sprint D3's.
 
 ---
 
