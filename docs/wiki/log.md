@@ -2109,3 +2109,12 @@ unchanged).
 execution mode or the ignored directories. `diagnostics-console.md` covers the console
 itself, and this branch changes no console code. `.last_ingest_sha` was not advanced
 (item 98).
+
+## 2026-09-27 — wiki-relevance check, `fix/sqlalchemy-2-1-mypy-drift` (verified no-edit)
+
+`db/migrations/_sqlite_check_constraint.py` classifies wiki-relevant; the other touched
+files do not. The change adds a type annotation (`schema_version: int`) and changes no
+behaviour. `grep` for `_sqlite_check_constraint` across `docs/wiki/pages/` finds nothing;
+the two `schema_version` hits (`diagnostics-console.md:75`, `eval-harness.md:18`) are the
+eval-result record schema, not this migration helper. **Verified no-edit.**
+`.last_ingest_sha` not advanced.
