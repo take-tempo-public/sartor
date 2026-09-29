@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
+**Open 31 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -28,6 +28,10 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **126** -- A stale local docs-site projection reads as authoritative (`agent`) -- An audit cited a months-stale gitignored docs-site/content/docs/*.mdx as the live site; nothing marks it stale.
 - **128** -- Stray python3.13 processes from earlier sessions left running (`user`) -- D1 close-out saw several python3.13 processes started 2026-09-18..25 (~0 MB), not that session's own.
 - **129** -- Personal portfolio/interviewer framing survives in two frozen records (`user`) -- Owner: project docs shouldn't carry personal reviewer/interviewer framing; 2 records still do. Edit records or leave?
+- **130** -- Profile edits (Notes, identity fields) likely never reach the AI after the candidate row exists (`agent`) -- Settings saves to the config file, but prompts read Candidate.notes, filled only on creation or when empty.
+- **131** -- A retired application cannot be found again: the Retire dialog points at a "Show retired" toggle Pipeline doesn't have (`agent`) -- Retire dialog cites a "Show retired" toggle Pipeline lacks; its query drops retired apps.
+- **132** -- "Submit answers and regenerate" may not change the résumé once Compose is saved (`agent`) -- Follow-up answers save, but regenerate re-assembles the frozen composition with no AI call. UNVERIFIED.
+- **133** -- There is no way to delete a candidate profile (`user`) -- No route, UI or script removes a user. Product decision: wanted, and when?
 
 ## Blocked
 
