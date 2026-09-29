@@ -402,6 +402,21 @@ rewriting it. Its body rewrite is D3 content.
 These are the owner's calls. This design does not decide them, and D2 shouldn't start until
 O-1 and O-4 are settled, because both change D2's commit contents.
 
+> **Resolved 2026-09-28 (owner, D2 kickoff on `feat/docs-split`):**
+> - **O-1:** the style guide wins. `Sartor` in sentences, including UI copy. The shipped
+>   assistant string changes in D3, and lint 5.4 encodes this rule in D4.
+> - **O-2:** split `AGENTS.md`, in D3. D2's `docs/dev/README.md` stub reserves the owner-lane
+>   slot.
+> - **O-3:** archive in D2, with one amendment (**O-3a**): `epic-a-chain-design-corrections.md`
+>   and `handoff-integrity-design.md` stay live, because they are the live spec for the N=1
+>   pipeline envelope and for charter C-9. D2 archives 16, not 18.
+> - **O-4:** pull §5.1 (registry) and §5.2 (audience token) into D2.
+> - **O-5:** not raised separately. The recommendation above stands: no Vale for v1.1.0.
+> - **Slugs:** docs-site slugs follow paths (no pinned-slug field). About 7 hosted URLs change
+>   once, before release.
+>
+> D2's consumer enumeration: [`blast-radius/docs-split.md`](blast-radius/docs-split.md).
+
 - **O-1 — Wordmark in UI copy.** `doc-style-guide.md` declares that it covers "user-facing
   UI copy" (`:9-10`) and says `Sartor` in sentences. But `avatar-voice-tone-guidance.md:942`
   freezes the assistant's identity as lowercase "sartor.", and the shipped string at
