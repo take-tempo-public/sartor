@@ -5,7 +5,7 @@
 > entry names an invariant, where it lives, how it could silently regress, and
 > how it's protected — so a future refactor (especially the v1.0.8 blueprint
 > split) can't quietly weaken it.
-> **Audience:** any agent or contributor touching `analyzer.py`, `evals/`,
+> **Audience:** `dev` — any agent or contributor touching `analyzer.py`, `evals/`,
 > `dashboard/`, the `/api/eval` · `/api/tune` routes, the hooks, the subagents,
 > or `docs/wiki/` — read the relevant entry before changing that surface.
 > **Authoritative for:** the affirmation half of the KEEP/BOOST set (records the

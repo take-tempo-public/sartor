@@ -5,7 +5,7 @@
 > review rubric — the standing rubric the future compliance agent and future reviews
 > apply. Companion to [`charter.md`](charter.md) (the binding rules) and
 > [`enforcement.md`](enforcement.md) (gate vs witness).
-> **Audience:** the owner cutting v1.1.0; eval/tuning contributors; the compliance agent.
+> **Audience:** `dev` — the owner cutting v1.1.0; eval/tuning contributors; the compliance agent.
 > **Authoritative for:** the v1.1.0 tag checklist (SC-1..SC-5), the eval ride-along
 > contract, and the review rubric.
 > Written under **C-0**: where a number depends on LLM behavior it is **measured and

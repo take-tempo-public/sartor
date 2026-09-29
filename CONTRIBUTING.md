@@ -3,7 +3,7 @@
 > **Purpose:** how to propose changes — quick start, branch and commit
 > conventions, the local dev loop, what kinds of contributions are
 > welcome vs out of scope.
-> **Audience:** external contributors (humans) sending PRs.
+> **Audience:** `dev` — external contributors (humans) sending PRs.
 > **Authoritative for:** the proposal/review process; the
 > ruff + mypy + pytest minimum-bar; the rule that any LLM prompt
 > change bumps `PROMPT_VERSION` in the same commit. Sibling docs:

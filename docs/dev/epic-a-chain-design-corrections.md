@@ -3,7 +3,7 @@
 > **Purpose:** the durable record of an adversarial review of the Epic A
 > stacked-chain design, plus two supporting audits, recovered from a session
 > that a Windows restart killed before any of it reached disk.
-> **Audience:** whoever runs Epic A sprints A1–A4, and anyone auditing why
+> **Audience:** `dev` — whoever runs Epic A sprints A1–A4, and anyone auditing why
 > `docs/dev/RELEASE_ARC.md`'s cadence rule was amended.
 > **Authoritative for:** the eight corrections to the design captured in
 > [`docs/dev/handoffs/docs-epic-a-wave-orchestration-design.md`](handoffs/docs-epic-a-wave-orchestration-design.md).
@@ -1111,7 +1111,7 @@ preserved above as the rejected draft; the reasons are the artifact.
 3. **It is pre-falsified by data already in hand.** `evidence.py`'s own docstring: *"a
    **ceremony check, not a truth check**… It cannot tell a real observation from a plausible
    story, and it does not try."* Threshold 40 characters; the citation regex accepts any
-   `path.md:12`-shaped string without resolving it. An agent that read **only this errata** —
+   `<path>.md:<line>`-shaped string without resolving it. An agent that read **only this errata** —
    which restates the run vector, halt points, seam and model table — passes comfortably.
    Stop 1's agent produced exactly that kind of confident specific prose. §14.4's own
    falsifier for A is therefore satisfied retrospectively, without running Epic B.

@@ -4,7 +4,7 @@
 > modular subsystem — a reusable retrieval/memory substrate (`recall/`) that
 > *feeds* a small-LLM (Haiku) "avatar" which answers user + dev questions from
 > the system's own knowledge, with citations.
-> **Audience:** agents designing or building the v1.0.7 `feat/doc-assistant`,
+> **Audience:** `dev` — agents designing or building the v1.0.7 `feat/doc-assistant`,
 > `design/self-documenting-loop`, and WS-4b `wiki/cold-ingest-code` branches —
 > and any future project that wants to reuse the substrate.
 > **Status:** **Stage 0 + Stage 1 SHIPPED; deeper tiers still design.** The six

@@ -6,7 +6,7 @@
 > **fallen out of favor** (retire) or **risen in value** as the project evolves
 > (promote into a scheduled epic sprint). Nothing here is committed work; nothing
 > orphaned is lost.
-> **Audience:** humans + LLM agents planning future epics.
+> **Audience:** `dev` — humans + LLM agents planning future epics.
 > **Authoritative for:** the deferred-but-alive idea set and its current scoring.
 > **Siblings:** [`RELEASE_ARC.md`](RELEASE_ARC.md) (scheduled work),
 > [`../PRODUCT_SHAPE.md`](../PRODUCT_SHAPE.md) (product shape),

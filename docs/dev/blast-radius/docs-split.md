@@ -150,6 +150,29 @@ Non-markdown sites plus the gated markdown surfaces. Every site is decided below
 | 22 | live `*.md` (the "Live `.md`" column above) | update, scripted | `docs_move.py`; no hand-edited link rewrites (design §3.2) |
 | 23 | the 24 moved files' **own outbound** relative links | 8 live moves: rewritten by the script. 16 archived: **not rewritten** | Archived files are records. `check_doc_links.py` resolves a moved record's links against its *old* directory, then through the map, so the bytes stay frozen |
 
+
+### Found while landing the registry (step 2), and decided
+
+- **The widened published set widens two gates that reuse `PUBLISHED_DOC_FILES`:**
+  `check_doc_links.py:98` (`CITE_CHECK_FILES`) and `check_doc_single_home.py:56`. That reuse is
+  intentional (the comment at `check_doc_links.py:93-97` says so). The first run surfaced three
+  real stale cites in newly published docs:
+  - `docs/dev/RELEASE_CHECKLIST.md:3457-3458` cited the retired `docs/diagrams/*.mmd` as
+    `path:line`. Reworded to "line N (since retired)".
+  - `docs/dev/epic-a-chain-design-corrections.md:1114` had a placeholder `path.md:12`.
+    Rewritten as `<path>.md:<line>`.
+
+  The single-home gate stayed green.
+- **§5.2 audience tokens:** 24 registered docs gained a leading tier token on their
+  `**Audience:**` line (a header-only edit). The tier is the owner-approved registry tier.
+  `ACCESSIBILITY.md` gets `` `user` · `dev` ``.
+- **`docs/dev/perf/PERFORMANCE_HISTORY.md`** is kept and published as project history.
+  Registry `LIVE_EXCEPTIONS` records the owner's reason. On owner direction (2026-09-28) its
+  personal "portfolio / reviewers, interviewers / presentation" framing was removed (header
+  plus `:300` and `:381`). The same framing survives in two frozen records,
+  `docs/dev/app-blueprints-design.md` (archived by this branch) and
+  `docs/dev/perf/R1_PHASE2_RESULTS.md`. It is left there as records, and surfaced to the owner.
+
 ---
 
 ## Deferred
@@ -158,7 +181,7 @@ Non-markdown sites plus the gated markdown surfaces. Every site is decided below
   `0009_skill_corpus_item.py:8`**: docstrings citing `docs/PRODUCT_SHAPE.md`. Migrations are
   frozen history and a gated prefix (`blast_radius.py:174-182`), and the citation was true when
   written. Left, like records.
-- **`analyzer.py:808`** (`AVATAR_SYSTEM_PROMPT`): `See [architecture.md](docs/architecture.md).`
+- **`analyzer.py:808`** (`AVATAR_SYSTEM_PROMPT`): its NOT-OK example, a markdown link to `docs/architecture.md`,
   is an illustrative NOT-OK example of a forbidden markdown link, not a pointer to the doc.
   Editing it is a prompt change (a `PROMPT_VERSION` bump, eval attribution) for zero behaviour
   change.

@@ -5,7 +5,7 @@
 > A step-by-step procedure for capturing the 10 manifest
 > screenshots, plus the filename convention, target docs, and
 > alt-text drafts.
-> **Audience:** whoever (human + Claude) actually runs the app
+> **Audience:** `dev` — whoever (human + Claude) actually runs the app
 > and captures the screenshots — likely you, with Claude doing
 > the markdown insertions in a follow-up.
 > **Authoritative for:** the capture filenames, the post-capture

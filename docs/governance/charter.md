@@ -4,7 +4,7 @@
 > the constitutional clauses (C-0…C-12), the defaults (D-1…D-7), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
-> **Audience:** every contributor and every AI agent (Claude Code, Cursor, Codex,
+> **Audience:** `dev` — every contributor and every AI agent (Claude Code, Cursor, Codex,
 > Aider, …) making a non-trivial change; the future compliance agent that audits
 > drift against this home.
 > **Authoritative for:** the rule-bearing constitution. On any conflict between this

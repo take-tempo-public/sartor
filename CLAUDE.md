@@ -6,7 +6,7 @@
 > [`AGENTS.md`](AGENTS.md). This file imports it and layers on the
 > Claude-Code-specific bits (skill catalog, plan-mode hook,
 > machine-local override file).
-> **Audience:** Claude Code agents (CLI and IDE extensions) working
+> **Audience:** `dev` — Claude Code agents (CLI and IDE extensions) working
 > in this repo; the harness auto-loads this file at session start.
 > **Authoritative for:** Claude-Code-specific behavior — the
 > `.claude-plugin/` hook semantics, the `CLAUDE.local.md`

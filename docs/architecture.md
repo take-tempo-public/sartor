@@ -4,7 +4,7 @@
 > diagram, the module map, the DB schema, and the LLM routing table.
 > One page that a new contributor (human or LLM) can skim to get
 > oriented and then navigate the codebase confidently.
-> **Audience:** humans contributing PRs; LLM agents (Claude Code,
+> **Audience:** `dev` — humans contributing PRs; LLM agents (Claude Code,
 > sub-agents) onboarding to the repo.
 > **Authoritative for:** the canonical pipeline shape, the on-disk
 > data flow, the model assignment per LLM call, the DB ER model.

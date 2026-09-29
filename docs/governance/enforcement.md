@@ -6,7 +6,7 @@
 > claims are made only where a deterministic test enforces them by construction; soft
 > rules describe mechanism and effort. Honors **P-3 / D-4 / E-1**: prefer machine-run
 > gates that keep themselves honest over recurring human-labor obligations.
-> **Audience:** contributors and agents deciding whether a rule should be a gate; the
+> **Audience:** `dev` — contributors and agents deciding whether a rule should be a gate; the
 > future compliance agent.
 > **Authoritative for:** the gate/witness/tribal split and each item's ship state.
 > Evidence base cited by `F-id` ([`../dev/reviews/2026-06-product-excellence/02-assessment/findings-register.md`](../dev/reviews/2026-06-product-excellence/02-assessment/findings-register.md));

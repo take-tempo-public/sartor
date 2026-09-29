@@ -7,7 +7,7 @@
 > a provenance stamp, a generation/consumption fingerprint validator, and an append-only
 > event ledger, vendored from spolia (formerly ai-research) where the same design has
 > already run through one real branch.
-> **Audience:** the agent implementing `feat/handoff-integrity-kit`, and the owner
+> **Audience:** `dev` — the agent implementing `feat/handoff-integrity-kit`, and the owner
 > reviewing this design. Precedent for a design-branch deliverable:
 > [`governance-extraction-design.md`](governance-extraction-design.md) (`design/` branch,
 > implementation is separate and later).

@@ -2,9 +2,8 @@
 stdlib-only L1 -> Fumadocs MDX projection adapter (`feat/fumadocs-site`).
 
 Scope, per the module's own docstring: the Purpose/Audience/Authoritative-for
--> frontmatter mapping, the audience classification (SCHEMA backtick-token
-parse + blanket-path fallback + conservative `dev` default), slug generation,
-and the MDX-safety escaper (including the `<!-- -->` -> `{/* */}` rewrite).
+-> frontmatter mapping, registry-driven selection and tiering
+(`scripts/doc_registry.py`), slug generation, and the MDX-safety escaper (including the `<!-- -->` -> `{/* */}` rewrite).
 Tests exercise pure, read-only functions only (`collect_pages()` reads the
 real repo tree but writes nothing — `write_pages()`/`write_meta_json()`, which
 DO write into `docs-site/content/docs/`, are deliberately not called here;
@@ -17,10 +16,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import project_docs_to_mdx as pdm  # noqa: E402 - path insert must precede this import
+from doc_registry import PUBLISHED, Entry  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Header parsing -> frontmatter fields
@@ -64,44 +66,6 @@ def test_has_full_header_false_when_incomplete() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Audience classification
-# ---------------------------------------------------------------------------
-
-
-def test_classify_audience_prefers_backtick_token() -> None:
-    # SCHEMA.md's own convention wins even for a path the blanket rule would
-    # otherwise call `dev` (docs/dev/**).
-    assert pdm.classify_audience("docs/dev/documentation-architecture.md", "`dev`") == "dev"
-    assert pdm.classify_audience("docs/dev/anything.md", "`user` — see below") == "user"
-
-
-def test_classify_audience_blanket_path_fallback_user() -> None:
-    for rel, prose in (
-        ("README.md", "the one place all three audiences meet"),
-        ("docs/install.md", "humans installing sartor. for the first time."),
-        ("docs/walkthrough.md", "humans using the app for the first time"),
-        ("docs/walkthrough_example.md", "humans reading the walkthrough"),
-        ("vision.md", "humans evaluating whether to use or contribute"),
-    ):
-        assert pdm.classify_audience(rel, prose) == "user", rel
-
-
-def test_classify_audience_blanket_path_fallback_dev() -> None:
-    assert pdm.classify_audience("docs/dev/nursery.md", "humans + LLM agents") == "dev"
-    assert pdm.classify_audience("docs/dev/perf/PERF_ANALYZE.md", "humans deciding") == "dev"
-
-
-def test_classify_audience_conservative_default_is_dev() -> None:
-    # A path the blanket table doesn't mention and with no backtick token —
-    # e.g. AGENTS.md, docs/governance/charter.md, docs/architecture.md in the
-    # real corpus — must not be silently promoted to the simple `user` front
-    # door.
-    assert pdm.classify_audience("AGENTS.md", "AI coding agents AND humans") == "dev"
-    assert pdm.classify_audience("docs/governance/charter.md", "every contributor") == "dev"
-    assert pdm.classify_audience("docs/architecture.md", "humans contributing PRs") == "dev"
-
-
-# ---------------------------------------------------------------------------
 # Slugs
 # ---------------------------------------------------------------------------
 
@@ -118,9 +82,9 @@ def test_make_slug_examples() -> None:
     assert pdm.make_slug("docs/dev/perf/PERF_ANALYZE.md") == "dev-perf-perf-analyze"
 
 
-def test_make_slug_is_globally_unique_over_real_l1_set() -> None:
-    slugs = [pdm.make_slug(p) for p in pdm.list_repo_md_files()]
-    assert len(slugs) == len(set(slugs)), "make_slug() produced a collision over the real repo tree"
+def test_make_slug_is_unique_over_the_registry() -> None:
+    slugs = [pdm.make_slug(e.path) for e in PUBLISHED]
+    assert len(slugs) == len(set(slugs)), "make_slug() produced a collision over the registry"
 
 
 # ---------------------------------------------------------------------------
@@ -202,9 +166,10 @@ def test_collect_pages_over_real_repo_includes_readme_as_user_tier_index() -> No
     assert readme.body.startswith("---\n")
 
 
-def test_collect_pages_excludes_wiki_pages() -> None:
+def test_collect_pages_projects_exactly_the_registry_in_order() -> None:
     pages = pdm.collect_pages()
-    assert all(not p.rel_posix.startswith("docs/wiki/") for p in pages)
+    assert [p.rel_posix for p in pages] == [e.path for e in PUBLISHED]
+    assert [p.audience for p in pages] == [e.tier for e in PUBLISHED]
 
 
 def test_collect_pages_has_both_audience_tiers() -> None:
@@ -213,39 +178,43 @@ def test_collect_pages_has_both_audience_tiers() -> None:
     assert audiences == {"user", "dev"}
 
 
+def test_collect_pages_rejects_a_registered_doc_without_the_header() -> None:
+    # A registered path that exists but has no Purpose/Audience/Authoritative-for
+    # header must stop the build, not be silently skipped.
+    with pytest.raises(pdm.ProjectionError, match="lacks the full"):
+        pdm.collect_pages((Entry("LICENSE", "dev"),))
+
+
+def test_collect_pages_rejects_a_missing_registered_doc() -> None:
+    with pytest.raises(pdm.ProjectionError, match="unreadable"):
+        pdm.collect_pages((Entry("docs/no-such-doc.md", "dev"),))
+
+
 def test_meta_pages_order_is_index_then_user_tier_then_dev_tier() -> None:
     pages = pdm.collect_pages()
-    readme_lines = (REPO_ROOT / "README.md").read_text(encoding="utf-8").splitlines()
-    doc_map_order = pdm.parse_doc_map_order(readme_lines)
-    assert doc_map_order, "README's Documentation-map block should parse at least one link"
-    in_scope = [p.rel_posix for p in pages]
-    priority = pdm.build_priority_index(doc_map_order, in_scope)
-
-    slug_order = pdm.build_meta_pages_order(pages, priority)
-    by_slug = {p.slug: p for p in pages}
-
-    assert slug_order[0] == "index"
-    tiers = [by_slug[slug].audience for slug in slug_order]
-    # Once a `dev` slug appears, every remaining slug must also be `dev` — i.e.
-    # the array is exactly [index, user..., dev...], never interleaved.
-    first_dev = tiers.index("dev")
-    assert all(t == "dev" for t in tiers[first_dev:])
-    assert all(t == "user" for t in tiers[1:first_dev])
+    order = pdm.build_meta_pages_order(pages)
+    user_slugs = [p.slug for p in pages if p.audience == "user" and p.slug != "index"]
+    dev_slugs = [p.slug for p in pages if p.audience == "dev"]
+    assert order == [
+        "index",
+        pdm.USER_SEPARATOR,
+        *user_slugs,
+        pdm.DEV_SEPARATOR,
+        *dev_slugs,
+    ]
 
 
-def test_meta_pages_order_follows_readme_doc_map_within_user_tier() -> None:
-    # The README Documentation-map lists vision.md before docs/install.md
-    # before docs/walkthrough.md — the ICP-ladder ordering should be literal,
-    # not alphabetical (which would put "install" before "vision").
-    pages = pdm.collect_pages()
-    readme_lines = (REPO_ROOT / "README.md").read_text(encoding="utf-8").splitlines()
-    doc_map_order = pdm.parse_doc_map_order(readme_lines)
-    in_scope = [p.rel_posix for p in pages]
-    priority = pdm.build_priority_index(doc_map_order, in_scope)
-    slug_order = pdm.build_meta_pages_order(pages, priority)
+def test_meta_separators_use_fumadocs_separator_syntax() -> None:
+    # fumadocs-core's loader matches /^---(?:\[(?<icon>[^\]]+)])?(?<name>.+)---|^---$/.
+    for sep in (pdm.USER_SEPARATOR, pdm.DEV_SEPARATOR):
+        assert sep.startswith("---") and sep.endswith("---") and len(sep) > 6
 
-    assert slug_order.index("vision") < slug_order.index("install")
-    assert slug_order.index("install") < slug_order.index("walkthrough")
+
+def test_meta_pages_order_follows_registry_within_user_tier() -> None:
+    # The user ladder (design §4): vision before install before walkthrough, which
+    # is registry order, not alphabetical (which would put "install" first).
+    order = pdm.build_meta_pages_order(pdm.collect_pages())
+    assert order.index("vision") < order.index("install") < order.index("walkthrough")
 
 
 # ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 > **Purpose:** the ship-list. What must be true before tagging a
 > release, in what order, to what quality bar. The verify-before-
 > ship gates for the next release.
-> **Audience:** humans driving a release; LLM agents proposing
+> **Audience:** `dev` — humans driving a release; LLM agents proposing
 > version-bump work or release-blocking fixes.
 > **Authoritative for:** the *active* release definition (v1.0.1
 > at time of writing); the minimum-bar tests / ruff / mypy / eval
@@ -3454,8 +3454,8 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
          `cover_TS.docx`. Harmless, pre-dates recent work.
       **RESOLVED — verified 2026-06-15:** `wiki/cold-ingest-code` (WS-4b, merge `a0a1cb2`)
       reconciled both spots while re-reading the architecture to cold-ingest it —
-      `docs/diagrams/pipeline.mmd:45` now reads "GET CLARIFYING QUESTIONS" (matches
-      `docs/architecture.md:89`) and `docs/diagrams/data-flow.mmd:77` now lists
+      `docs/diagrams/pipeline.mmd` line 45 (since retired, v1.0.9) now read "GET CLARIFYING QUESTIONS" (matches
+      `docs/architecture.md:89`) and `docs/diagrams/data-flow.mmd` line 77 (since retired) now listed
       `cover_TS.docx / .pdf / .md` (matches `docs/architecture.md`); recorded in
       [`docs/wiki/log.md`](../wiki/log.md).
 

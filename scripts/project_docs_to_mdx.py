@@ -10,17 +10,14 @@ page's existing `Purpose / Audience / Authoritative-for` blockquote header
 writes the MDX content tree + a `meta.json` under `docs-site/content/docs/`.
 No LLM, no new Python dependency, stdlib only — a build step, not synthesis.
 
-**Scope — what counts as "L1".**
-Per the source-chain diagram in `documentation-architecture.md`, L1 is the
-*authored* doc set (README + top-level contract docs + `docs/**` EXCLUDING
-`docs/wiki/**`, which is L2 — compiled/synthesized substrate that feeds
-Search + the in-product "Ask" avatar, not this static projection). Within
-that tree, a file is in scope only if it carries the FULL three-line header
-(`**Purpose:**` + `**Audience:**` + `**Authoritative for:**` all present) —
-the same deterministic signal that already distinguishes an L1 "single home"
-doc from an L2 wiki page (wiki pages use `**Purpose:**` / `**Audience:**` /
-`**Grounding:**` instead — no `**Authoritative for:**` line — so they are
-excluded by this parse without needing a path special-case).
+**Scope — the publication registry.** A doc is projected if and only if it is
+listed in `scripts/doc_registry.py` `PUBLISHED` (`docs/dev/docs-ia-design.md`
+§5.1, pulled into Epic D sprint D2). Before the registry, any tracked `.md` with
+a full Purpose/Audience/Authoritative-for header was projected, which put handoff
+briefs, a diagnosis dossier, reviews and perf records on the site. A registered
+doc must still carry the full header (it supplies the frontmatter); one that
+doesn't is a build-stopping error here and a gate failure in
+`scripts/check_doc_frontmatter.py`.
 
 **The frontmatter map (documentation-architecture.md "Fumadocs sourcing").**
 
@@ -31,30 +28,12 @@ excluded by this parse without needing a path special-case).
 | `**Audience:**`         | `audience: [...]`      | which ICP front door it appears under |
 | `**Authoritative for:**`| `authoritativeFor`     | the canonical-home marker       |
 
-**Audience classification — reuses the SCHEMA backtick-token parse, with a
-documented fallback.** `docs/wiki/SCHEMA.md` defines the machine-parseable
-`` `user` ``/`` `dev` `` backtick token immediately after `**Audience:**` —
-but empirically only 2 of the 30 in-scope L1 files (`README.md`,
-`docs/dev/documentation-architecture.md`) actually use that exact token; the
-rest predate it and write free-form prose (e.g. "humans installing sartor.
-for the first time"). This script therefore: (1) tries the SCHEMA backtick
-parse first; (2) falls back to SCHEMA's own documented "blanket path->audience
-rule" table (`README.md` / `docs/install.md` / `docs/walkthrough*.md` /
-`vision.md` -> `user`; `docs/dev/**` -> `dev`); (3) if neither resolves,
-defaults to `dev` — a conservative choice: it nests the page under the
-fuller "developer" tier (never a mis-promotion of internal content to the
-simple front door) rather than silently guessing "user".
-
-**The ICP-ladder ordering (`meta.json`).** The README's own "Documentation
-map" blockquote (the line beginning `**Documentation map.**`) already states
-the canonical doc ordering as a sequence of markdown links — this script
-parses THAT block (no hand-maintained priority table duplicated here) to get
-a base ordering, expands any directory-shaped link (e.g. `docs/governance/`)
-to the in-scope files under it, and appends any in-scope file the map doesn't
-mention (alphabetically, by slug) after the mapped ones. `meta.json`'s
-`pages` array is then: `index` first, then every `user`-tier page in that
-order, then every `dev`-tier page in that order — the "job seeker/coach
-before developer" ICP ladder, made literal.
+**Audience tier and nav order come from the registry.** Each entry's `tier`
+(`user`/`dev`) sets the page's `audience` frontmatter, and `meta.json`'s `pages`
+array is `index`, a "Using Sartor" separator, the user-tier pages, a "Building on
+Sartor" separator, then the dev-tier pages, each in registry order. The old
+path fallback table and the README "Documentation map" parse are gone: one
+definition, not three (design §5.1/§5.2).
 
 **MDX safety escaping.** MDX compiles markdown through an (S)JSX-ish parser:
 a bare `<` outside a fenced code block / inline code span looks like a tag
@@ -71,8 +50,8 @@ blocks and inline code spans byte-identical.
 **Local images.** MDX rewrites markdown `![alt](relative.png)` into a static
 `import`, resolved relative to the MDX file's own directory — so a
 referenced local image must physically exist next to the projected page or
-the Next.js build fails with `Module not found`. `docs/walkthrough.md` and
-`docs/install.md` reference `docs/screenshots/*.png` this way. Because every
+the Next.js build fails with `Module not found`. The user-tier
+walkthrough and install docs reference `docs/screenshots/*.png` this way. Because every
 projected page lives flat in `docs-site/content/docs/`, this script mirrors
 those referenced images (byte-copy, unchanged filenames — no link rewrite
 needed) into a shared `docs-site/content/docs/screenshots/` directory that
@@ -93,8 +72,8 @@ this script's own slug map, so it cannot invent a route.
 - No L2 (`docs/wiki/**`) content — that is Search/"Ask" territory, not
   this static projection (this lane ships a static export only).
 
-Exit 0 on success, printing a one-line summary. Exit 1 on an unrecoverable
-error (e.g. no `git` / not a repo).
+Exit 0 on success, printing a one-line summary. Exit 1 when a registered doc
+is missing or lacks the full header.
 """
 
 from __future__ import annotations
@@ -102,9 +81,10 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
+
+from doc_registry import PUBLISHED, Entry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR = REPO_ROOT / "docs-site" / "content" / "docs"
@@ -120,38 +100,15 @@ _GENERATED_BANNER = (
 
 _HEADER_START_RE = re.compile(r"^> \*\*Purpose:\*\*")
 _HEADER_LABEL_RE = re.compile(r"\*\*([A-Za-z][A-Za-z0-9 /'\-]*):\*\*")
-_BACKTICK_AUDIENCE_RE = re.compile(r"`(user|dev)`")
 _H1_RE = re.compile(r"^#\s+(.+?)\s*$")
 _FENCE_RE = re.compile(r"^(\s*)(```+|~~~+)")
 _WS_RE = re.compile(r"\s+")
 
 REQUIRED_FIELDS = ("Purpose", "Audience", "Authoritative for")
 
-# SCHEMA.md "Blanket path->audience rules" (docs/wiki/SCHEMA.md) — the
-# documented fallback for L1 docs that predate the backtick-token audience
-# convention. Directory prefixes are POSIX-relative to the repo root.
-_USER_TIER_EXACT = {"README.md", "docs/install.md", "vision.md"}
-_USER_TIER_PREFIXES = ("docs/walkthrough",)
-_DEV_TIER_PREFIXES = ("docs/dev/",)
 
-
-def _run_git(args: list[str]) -> str:
-    result = subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
-        ["git", *args],  # noqa: S607 - `git` intentionally resolved from PATH
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=True,
-    )
-    return result.stdout
-
-
-def list_repo_md_files() -> list[str]:
-    """All tracked *.md files (repo-relative POSIX paths), excluding docs/wiki/** (L2)."""
-    out = _run_git(["ls-files", "*.md"])
-    paths = [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
-    return [p for p in paths if not p.startswith("docs/wiki/")]
+class ProjectionError(Exception):
+    """A registered doc can't be projected (missing or lacking the full header)."""
 
 
 def find_header_block(lines: list[str]) -> list[str]:
@@ -198,24 +155,6 @@ def parse_header_fields(lines: list[str]) -> dict[str, str]:
 
 def has_full_header(fields: dict[str, str]) -> bool:
     return all(k in fields and fields[k] for k in REQUIRED_FIELDS)
-
-
-# ---------------------------------------------------------------------------
-# Audience classification
-# ---------------------------------------------------------------------------
-
-
-def classify_audience(rel_posix: str, audience_text: str) -> str:
-    """`user` or `dev` — SCHEMA backtick-token parse first, then SCHEMA's blanket
-    path rule, then a conservative `dev` default. See module docstring."""
-    m = _BACKTICK_AUDIENCE_RE.search(audience_text or "")
-    if m:
-        return m.group(1)
-    if rel_posix in _USER_TIER_EXACT or rel_posix.startswith(_USER_TIER_PREFIXES):
-        return "user"
-    if rel_posix.startswith(_DEV_TIER_PREFIXES):
-        return "dev"
-    return "dev"
 
 
 # ---------------------------------------------------------------------------
@@ -505,64 +444,6 @@ def rewrite_cross_doc_links(
 
 
 # ---------------------------------------------------------------------------
-# ICP-ladder ordering — parsed from README's own "Documentation map" block
-# ---------------------------------------------------------------------------
-
-_DOC_MAP_ANCHOR = "**Documentation map.**"
-_DOC_MAP_LINK_RE = re.compile(r"\[`?([^`\]]+)`?\]\(([^)\s]+)\)")
-
-
-def parse_doc_map_order(readme_lines: list[str]) -> list[str]:
-    """The ordered list of repo-relative link targets in README's Documentation-map
-    blockquote. Directory-shaped targets (e.g. `docs/governance/`) are returned as-is;
-    callers expand them to the in-scope files they contain."""
-    start = None
-    for i, line in enumerate(readme_lines):
-        if line.startswith(">") and _DOC_MAP_ANCHOR in line:
-            start = i
-            break
-    if start is None:
-        return []
-    block: list[str] = []
-    for line in readme_lines[start:]:
-        if not line.startswith(">"):
-            break
-        block.append(line)
-    text = "\n".join(block)
-    targets: list[str] = []
-    for m in _DOC_MAP_LINK_RE.finditer(text):
-        target = m.group(2)
-        if target.startswith(("http://", "https://", "#")):
-            continue
-        targets.append(target)
-    return targets
-
-
-def build_priority_index(doc_map_order: list[str], in_scope_paths: list[str]) -> dict[str, int]:
-    """Map each in-scope repo-relative path -> a priority rank following the README
-    Documentation-map order (directory links expand to their in-scope members, sorted
-    alphabetically among themselves); paths the map doesn't mention sort after, also
-    alphabetically, in their own trailing block."""
-    priority: dict[str, int] = {}
-    rank = 0
-    seen: set[str] = set()
-    for target in doc_map_order:
-        if target.endswith("/"):
-            members = sorted(p for p in in_scope_paths if p.startswith(target) and p not in seen)
-        else:
-            members = [target] if target in in_scope_paths and target not in seen else []
-        for p in members:
-            priority[p] = rank
-            seen.add(p)
-            rank += 1
-    for p in sorted(in_scope_paths):
-        if p not in seen:
-            priority[p] = rank
-            rank += 1
-    return priority
-
-
-# ---------------------------------------------------------------------------
 # Frontmatter + orchestration
 # ---------------------------------------------------------------------------
 
@@ -604,29 +485,34 @@ class Page:
         self.local_images = local_images
 
 
-def collect_pages() -> list[Page]:
-    # Two phases: the link rewriter needs to know the FULL set of projected pages
-    # (a page can link to any other) before any body is rendered, so eligibility is
-    # decided for every doc first, and the slug map handed to phase two.
-    eligible: list[tuple[str, list[str], dict[str, str]]] = []
-    for rel_posix in list_repo_md_files():
-        abs_path = REPO_ROOT / rel_posix
+def collect_pages(entries: tuple[Entry, ...] = PUBLISHED) -> list[Page]:
+    """Render every registered doc, in registry order. Raises `ProjectionError` for a
+    registered doc that is missing or lacks the full header."""
+    # Two phases: the link rewriter needs the FULL set of projected pages (a page can
+    # link to any other) before any body is rendered, so every entry is read and
+    # validated first, and the slug map handed to phase two.
+    loaded: list[tuple[Entry, list[str], dict[str, str]]] = []
+    for entry in entries:
+        abs_path = REPO_ROOT / entry.path
         try:
             text = abs_path.read_text(encoding="utf-8")
-        except OSError:
-            continue
+        except OSError as exc:
+            raise ProjectionError(f"registered doc {entry.path} is unreadable: {exc}") from exc
         lines = text.splitlines()
         fields = parse_header_fields(lines)
         if not has_full_header(fields):
-            continue
-        eligible.append((rel_posix, lines, fields))
+            raise ProjectionError(
+                f"registered doc {entry.path} lacks the full "
+                "Purpose/Audience/Authoritative-for header"
+            )
+        loaded.append((entry, lines, fields))
 
-    slug_map = {rel_posix: make_slug(rel_posix) for rel_posix, _, _ in eligible}
+    slug_map = {entry.path: make_slug(entry.path) for entry, _, _ in loaded}
 
     pages: list[Page] = []
-    for rel_posix, lines, fields in eligible:
+    for entry, lines, fields in loaded:
+        rel_posix = entry.path
         title = first_h1(lines) or rel_posix
-        audience = classify_audience(rel_posix, fields["Audience"])
         local_images = resolve_local_images(rel_posix, lines)
         body_lines = strip_first_h1(lines)
         body_lines = rewrite_cross_doc_links(rel_posix, body_lines, slug_map)
@@ -635,7 +521,7 @@ def collect_pages() -> list[Page]:
         frontmatter = build_frontmatter(
             title=title,
             description=fields["Purpose"],
-            audience=audience,
+            audience=entry.tier,
             authoritative_for=fields["Authoritative for"],
         )
         # YAML frontmatter must be the very first bytes of the file (`---` on
@@ -645,10 +531,10 @@ def collect_pages() -> list[Page]:
         pages.append(
             Page(
                 rel_posix=rel_posix,
-                slug=make_slug(rel_posix),
+                slug=slug_map[rel_posix],
                 title=title,
                 description=fields["Purpose"],
-                audience=audience,
+                audience=entry.tier,
                 body=content,
                 local_images=local_images,
             )
@@ -693,21 +579,25 @@ def write_pages(pages: list[Page]) -> None:
     copy_local_images(pages)
 
 
-def build_meta_pages_order(pages: list[Page], priority: dict[str, int]) -> list[str]:
-    """The `meta.json` `pages` slug order: `index` first, then every `user`-tier
-    page, then every `dev`-tier page — each group internally sorted by the
-    README ICP-ladder `priority` rank. Pure (no I/O) so it's directly testable."""
-    ordered = sorted(pages, key=lambda p: priority.get(p.rel_posix, 1_000_000))
-    index_pages = [p for p in ordered if p.slug == "index"]
-    user_pages = [p for p in ordered if p.audience == "user" and p.slug != "index"]
-    dev_pages = [p for p in ordered if p.audience == "dev" and p.slug != "index"]
-    return [p.slug for p in (index_pages + user_pages + dev_pages)]
+USER_SEPARATOR = "---Using Sartor---"
+DEV_SEPARATOR = "---Building on Sartor---"
 
 
-def write_meta_json(pages: list[Page], priority: dict[str, int]) -> None:
+def build_meta_pages_order(pages: list[Page]) -> list[str]:
+    """The `meta.json` `pages` array: `index`, then the user tier under a "Using Sartor"
+    separator, then the dev tier under "Building on Sartor" (Fumadocs `---Title---`
+    separator syntax). Pages keep registry order within a tier. Pure, so it's directly
+    testable."""
+    index_pages = [p.slug for p in pages if p.slug == "index"]
+    user_pages = [p.slug for p in pages if p.audience == "user" and p.slug != "index"]
+    dev_pages = [p.slug for p in pages if p.audience == "dev" and p.slug != "index"]
+    return [*index_pages, USER_SEPARATOR, *user_pages, DEV_SEPARATOR, *dev_pages]
+
+
+def write_meta_json(pages: list[Page]) -> None:
     meta = {
         "title": "sartor. docs",
-        "pages": build_meta_pages_order(pages, priority),
+        "pages": build_meta_pages_order(pages),
     }
     (CONTENT_DIR / "meta.json").write_text(
         json.dumps(meta, indent=2) + "\n", encoding="utf-8", newline="\n"
@@ -716,20 +606,16 @@ def write_meta_json(pages: list[Page], priority: dict[str, int]) -> None:
 
 def project() -> list[Page]:
     pages = collect_pages()
-    readme_lines = (REPO_ROOT / "README.md").read_text(encoding="utf-8").splitlines()
-    doc_map_order = parse_doc_map_order(readme_lines)
-    in_scope_paths = [p.rel_posix for p in pages]
-    priority = build_priority_index(doc_map_order, in_scope_paths)
     write_pages(pages)
-    write_meta_json(pages, priority)
+    write_meta_json(pages)
     return pages
 
 
 def main() -> int:
     try:
         pages = project()
-    except subprocess.CalledProcessError as exc:
-        print(f"project_docs_to_mdx: FAILED — git error: {exc}", file=sys.stderr)
+    except ProjectionError as exc:
+        print(f"project_docs_to_mdx: FAILED — {exc}", file=sys.stderr)
         return 1
     user_count = sum(1 for p in pages if p.audience == "user")
     dev_count = sum(1 for p in pages if p.audience == "dev")

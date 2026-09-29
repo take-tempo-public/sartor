@@ -14,7 +14,7 @@ on incoming files).
 > it isn't, and the self-imposed constraints that shape every
 > decision. The "why" behind the architecture and the product
 > shape.
-> **Audience:** humans evaluating whether to use or contribute
+> **Audience:** `user` — humans evaluating whether to use or contribute
 > to Sartor; LLM agents proposing significant changes who
 > need to check their proposal against the project's stance.
 > **Authoritative for:** the product's intent, the 10 Principles

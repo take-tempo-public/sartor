@@ -7,7 +7,7 @@ By the end of this doc you'll know what each of the six wizard steps does, what 
 > the hood*, and *what to verify before continuing*. Two flow diagrams
 > at the top — one for screen-to-screen navigation, one for how your
 > data moves through the system.
-> **Audience:** humans using the app for the first time (or coming
+> **Audience:** `user` — humans using the app for the first time (or coming
 > back after a break and wanting a refresher on which step does what).
 > **Authoritative for:** the canonical step-by-step user flow; the
 > mapping from each screen to its Flask route + LLM call + cost band;

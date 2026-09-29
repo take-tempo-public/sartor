@@ -3,7 +3,7 @@
 > **Purpose:** an honest status page for Sartor's accessibility — what is
 > machine-checked today, what was hand-walked, and what is not yet covered.
 > It describes mechanisms and effort, not a conformance grade.
-> **Audience:** anyone evaluating Sartor who relies on assistive technology,
+> **Audience:** `user` · `dev` — anyone evaluating Sartor who relies on assistive technology,
 > keyboard-only operation, zoom/reflow, or sufficient contrast; contributors
 > landing UI changes.
 > **Authoritative for:** the current accessibility posture and its honest

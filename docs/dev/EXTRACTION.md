@@ -4,7 +4,7 @@
 > P-6/W-4): how to incubate a system in-repo, and the *observable* event that says
 > "extract now" — never a feeling. Written under C-0 (mechanisms and effort, no
 > absolutes about LLM behavior, no marketing register).
-> **Audience:** the owner and any agent deciding whether to break a system out.
+> **Audience:** `dev` — the owner and any agent deciding whether to break a system out.
 > **Authoritative for:** the per-incubant extraction gates, the single missing maturity
 > metric (F-gov-08), and the three good practices. Graduated (Sprint 7.2, v1.0.7) from
 > the review's extraction-playbook draft; binding rules it leans on live in

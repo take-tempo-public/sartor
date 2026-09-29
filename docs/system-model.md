@@ -5,7 +5,7 @@
 > entire system*: seven functions, one dependency law, and the split between **the
 > Product you run** and **the Work that evolves it**. One page that lets a reader —
 > human or LLM — place any file in the repo and know what it is *for*.
-> **Audience:** humans meeting the project (portfolio / open-source / contributors);
+> **Audience:** `dev` — humans meeting the project (portfolio / open-source / contributors);
 > LLM agents orienting before a change. Written to read plainly to a well-informed
 > layman and to ground the agent's mental map.
 > **Authoritative for:** the seven-functions vocabulary

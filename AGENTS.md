@@ -5,7 +5,7 @@
 > non-trivial changes to this codebase. Pointers to deeper docs, key
 > code patterns, branch / commit conventions, security guardrails,
 > what NOT to do.
-> **Audience:** AI coding agents AND humans who want the same
+> **Audience:** `dev` — AI coding agents AND humans who want the same
 > at-a-glance rules. This is the *canonical* tool-agnostic version;
 > tool-specific overrides live in companion files like `CLAUDE.md`.
 > **Authoritative for:** branch / commit conventions; the

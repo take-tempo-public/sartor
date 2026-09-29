@@ -3,7 +3,7 @@
 > **Purpose:** end-to-end install guide for users on Windows, macOS,
 > or Linux. The minimum-friction path to a running app + first
 > generated résumé.
-> **Audience:** humans installing Sartor for the first time.
+> **Audience:** `user` — humans installing Sartor for the first time.
 > **Authoritative for:** OS-specific install steps, the Playwright
 > Chromium download step, what gets downloaded & why, API-key setup,
 > troubleshooting.

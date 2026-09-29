@@ -4,7 +4,7 @@
 > description, walked through all six wizard steps with the
 > actual decisions made at each one. Concrete companion to the
 > abstract [`docs/walkthrough.md`](walkthrough.md).
-> **Audience:** humans reading the walkthrough who want to see
+> **Audience:** `user` — humans reading the walkthrough who want to see
 > what a real run feels like before opening the app; future
 > contributors wanting a fixed reference example to compare
 > against.
