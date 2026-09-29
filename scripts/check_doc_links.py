@@ -124,7 +124,7 @@ _CITE_RE = re.compile(
 #    backtick-quoted (and so already skipped); this catches the bare form.
 _PLACEHOLDER_LINK = ("text", "path")
 
-# 2. docs/dev/governance-extraction-design.md's "Generic pointer block" +
+# 2. docs/dev/archive/governance-extraction-design.md's "Generic pointer block" +
 #    per-doc "Pointer:" sections (lines ~99-129) are VERBATIM INSERTION
 #    TEMPLATES meant to be pasted into other docs at OTHER, VARYING depths
 #    (SECURITY.md/CONTRIBUTING.md/AGENTS.md/vision.md at repo root;
@@ -141,9 +141,9 @@ _PLACEHOLDER_LINK = ("text", "path")
 #    docs/governance/compliance-log.md CW-01), so this is a frozen design
 #    artifact, not live navigation. Excluded by exact (file, target) pair.
 _TEMPLATE_QUOTE_LINKS: set[tuple[str, str]] = {
-    ("docs/dev/governance-extraction-design.md", "docs/governance/"),
-    ("docs/dev/governance-extraction-design.md", "docs/governance/charter.md"),
-    ("docs/dev/governance-extraction-design.md", "docs/governance/enforcement.md"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/charter.md"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/enforcement.md"),
 }
 
 

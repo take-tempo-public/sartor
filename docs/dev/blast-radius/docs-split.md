@@ -225,3 +225,29 @@ Control arm for the map lookup: with `check_doc_links.load_moved_paths` stubbed 
 `tests/test_docs_move.py::test_record_links_resolve_through_the_map` fails with
 `docs/dev/archive/old-design.md:8 -> ../install.md  (target does not exist)`. The lookup is
 what makes it pass.
+
+### After `--apply` (move commit)
+
+- `python scripts/docs_move.py --apply`: 24 moves, 468 rewrites in 54 live docs.
+  Re-running the dry run afterwards: `0 rewrite(s) in 0 live markdown file(s)`.
+- The listed non-markdown "update" rows (7-20) were rewritten with the same exact-path pattern
+  (`docs_move._exact_path_re`) applied to exactly those files. `SCHEMA.md:103` and
+  `assistant.py:131` were edited by hand (rows 5, 6). `_path_audience` is newly pinned by
+  `tests/test_assistant_path_audience.py`; nothing tested it before.
+- **`wiki_relevance.py` behaviour change, decided:**
+  - The 16 archived docs change from relevant to irrelevant through the new
+    `docs/dev/archive/` prefix. They are frozen, so an edit there is no longer wiki drift.
+  - `docs/dev/screenshot-capture.md` keeps the irrelevant classification its old `docs/ux/`
+    prefix gave it.
+  - The new `docs/dev/moved-paths.json` is irrelevant.
+  - `docs/user` and the three moved dev docs are relevant, as they were before.
+- **Exact old-path mentions left outside records** (whole-tree scan with the same pattern,
+  excluding `moved-paths.json`, `docs_move.py` and its test), 9 in total:
+  - the 4 Deferred sites: `analyzer.py:808` and migrations `0004`, `0008`, `0009`
+  - `tests/test_assistant_path_audience.py:4`: a docstring describing the old paths on
+    purpose
+  - `tests/test_docs_projection.py:80,238,254,268`: synthetic inputs to the pure
+    `make_slug` / `rewrite_link_target` unit tests against a hand-built slug map. They don't
+    refer to the real file.
+- Gates on the moved tree: `check_doc_links` OK (550 files); `check_doc_frontmatter` OK
+  (31 published); projector OK (31 pages: 7 user, 24 dev).

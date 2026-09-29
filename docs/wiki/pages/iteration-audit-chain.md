@@ -2,14 +2,14 @@
 
 > **Audience:** `dev`
 > **Concept:** every `/api/generate` writes a NEW timestamped child context file; the `parent_context_path` pointer back to the file it was derived from forms an immutable audit trail. The parent is never mutated; `iteration`, `edited_*`, and `last_generated_*` fields carry the loop's state forward.
-> **Sources:** [`hardening.py`](../../../hardening.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/architecture.md`](../../architecture.md) §context_set lifecycle.
+> **Sources:** [`hardening.py`](../../../hardening.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/dev/architecture.md`](../../dev/architecture.md) §context_set lifecycle.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
 
 ## The invariant
 
-A generation is recorded, not overwritten. [`hardening.py:save_iteration_context`](../../../hardening.py) deep-copies the parent context (a JSON round-trip, to avoid aliasing the live dict the caller may still read), then writes the copy to a brand-new file — `context_{ts}_iter{N}.json` — leaving the parent file on disk untouched. The chain of `parent_context_path` back-pointers across those files **is** the audit trail; nothing in the loop edits a prior generation's file `[synthesis]`. The architecture doc states the same as a "Key invariant": *"One file per iteration… the parent is never mutated"* ([`docs/architecture.md`](../../architecture.md)).
+A generation is recorded, not overwritten. [`hardening.py:save_iteration_context`](../../../hardening.py) deep-copies the parent context (a JSON round-trip, to avoid aliasing the live dict the caller may still read), then writes the copy to a brand-new file — `context_{ts}_iter{N}.json` — leaving the parent file on disk untouched. The chain of `parent_context_path` back-pointers across those files **is** the audit trail; nothing in the loop edits a prior generation's file `[synthesis]`. The architecture doc states the same as a "Key invariant": *"One file per iteration… the parent is never mutated"* ([`docs/dev/architecture.md`](../../dev/architecture.md)).
 
 ## What `save_iteration_context` writes into the child
 
@@ -39,11 +39,11 @@ These do not conflict: the file mutated in place is the leaf of the chain, never
 
 ## Why `iteration ≥ 1` matters downstream
 
-The counter is not just bookkeeping. The [`ContextSet`](../../../hardening.py) comment notes that `context_set.get("iteration", 0) >= 1` is the condition that flips the next generate into iteration mode — the original primary + supplementals become historical references and the current draft becomes the `<resume>` block. (How the prompt assembles that block is the generation page's concern, not this one — see D5, [`SCHEMA.md`](../SCHEMA.md).) That condition lives inside `analyzer.py:generate()` itself, so it only matters on the **legacy, non-frozen-composition** résumé branch — the Phase 4 frozen-composition assemble has no résumé-body LLM prompt to condition `[synthesis]`. The data-flow diagram embeds this as the `LLM6 generate iter ≥ 1 … historical_resumes block` branch ([`docs/architecture.md`](../../architecture.md)).
+The counter is not just bookkeeping. The [`ContextSet`](../../../hardening.py) comment notes that `context_set.get("iteration", 0) >= 1` is the condition that flips the next generate into iteration mode — the original primary + supplementals become historical references and the current draft becomes the `<resume>` block. (How the prompt assembles that block is the generation page's concern, not this one — see D5, [`SCHEMA.md`](../SCHEMA.md).) That condition lives inside `analyzer.py:generate()` itself, so it only matters on the **legacy, non-frozen-composition** résumé branch — the Phase 4 frozen-composition assemble has no résumé-body LLM prompt to condition `[synthesis]`. The data-flow diagram embeds this as the `LLM6 generate iter ≥ 1 … historical_resumes block` branch ([`docs/dev/architecture.md`](../../dev/architecture.md)).
 
 ## How the chain is consumed
 
-Because each file carries `parent_context_path`, a reader can walk leaf→root to reconstruct the whole session: every generation, the edits that fed it (via the consumed-then-cleared `edited_*` fields recorded in `iteration_notes`), and the verbatim output snapshot (`last_generated_*`). The architecture doc's same-named **self-referential `parent_run_id`** on the `ApplicationRun` table is the database mirror of this file-level chain ([`docs/architecture.md`](../../architecture.md)) — the persistent audit trail for the corpus path, where this file chain is the per-session one `[synthesis]`. The containment guard (`_within(path, OUTPUT_DIR)`, defined in [`web_infra/security.py`](../../../web_infra/security.py)) on every context read/write is canonical in [`AGENTS.md`](../../../AGENTS.md); cited, not restated here (D5).
+Because each file carries `parent_context_path`, a reader can walk leaf→root to reconstruct the whole session: every generation, the edits that fed it (via the consumed-then-cleared `edited_*` fields recorded in `iteration_notes`), and the verbatim output snapshot (`last_generated_*`). The architecture doc's same-named **self-referential `parent_run_id`** on the `ApplicationRun` table is the database mirror of this file-level chain ([`docs/dev/architecture.md`](../../dev/architecture.md)) — the persistent audit trail for the corpus path, where this file chain is the per-session one `[synthesis]`. The containment guard (`_within(path, OUTPUT_DIR)`, defined in [`web_infra/security.py`](../../../web_infra/security.py)) on every context read/write is canonical in [`AGENTS.md`](../../../AGENTS.md); cited, not restated here (D5).
 
 ## Related
 

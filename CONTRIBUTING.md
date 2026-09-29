@@ -10,12 +10,12 @@
 > [`vision.md`](vision.md) (product intent + constraints),
 > [`AGENTS.md`](AGENTS.md) (AI-agent operational contract — same
 > rules apply to humans),
-> [`docs/architecture.md`](docs/architecture.md) (system + modules),
+> [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
 Thanks for your interest. Sartor tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
-The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/architecture.md`](docs/architecture.md) for the pipeline diagram + module map.
+The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/dev/architecture.md`](docs/dev/architecture.md) for the pipeline diagram + module map.
 
 ---
 
@@ -41,7 +41,7 @@ python app.py            # → http://localhost:5000
 
 Set your Anthropic API key in `ANTHROPIC_API_KEY` or in a local `.api_key` file (gitignored).
 
-For a deeper architectural tour before opening a PR, read [`docs/architecture.md`](docs/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the universal contract — same rules apply whether you're a human or an LLM agent).
+For a deeper architectural tour before opening a PR, read [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the universal contract — same rules apply whether you're a human or an LLM agent).
 
 ---
 

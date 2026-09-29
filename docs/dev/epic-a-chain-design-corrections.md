@@ -95,7 +95,7 @@ Two further holes in the same window:
 
 - The gate is never re-run after the fixes. `scripts/gate.py` runs everything against the
   **working tree**, never the index — so the tree that lands was never gated. This is
-  verbatim item 52 (`docs/dev/gate-window-class-study.md`), which the design claims to
+  verbatim item 52 (`docs/dev/archive/gate-window-class-study.md`), which the design claims to
   fold in while reproducing it.
 - Filing lower-severity findings to the board **after** the gate leaves a stale
   `BOARD.md`, and `scripts/work_items.py` fails on that inside `scripts/gate.py` — so the

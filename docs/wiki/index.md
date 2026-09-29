@@ -9,14 +9,14 @@
 ### Front door
 
 - [`overview.md`](overview.md) — what sartor. is and how the whole system is shaped
-  (seeded from, and deferring to, [`../system-model.md`](../system-model.md)).
+  (seeded from, and deferring to, [`../system-model.md`](../dev/system-model.md)).
 
 ### From the excellence walk (ingested by `wiki/ingest-excellence-walk`, WS-4a step 4)
 
 - [`pages/excellence-walk.md`](pages/excellence-walk.md) — what the 2026-06-07 excellence
   walk was; the provenance hub mapping to every page below.
 - [`pages/system-model-derivation.md`](pages/system-model-derivation.md) — how the
-  seven-functions self-model was form-found (defers to [`../system-model.md`](../system-model.md)).
+  seven-functions self-model was form-found (defers to [`../system-model.md`](../dev/system-model.md)).
 - [`pages/project-self-assessment.md`](pages/project-self-assessment.md) — the Q5
   state-of-the-work: strengths, watch-outs, ambiguous calls, with presentation flags.
 - [`pages/consistency-tracks-enforcement.md`](pages/consistency-tracks-enforcement.md) —

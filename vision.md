@@ -20,8 +20,8 @@ on incoming files).
 > **Authoritative for:** the product's intent, the 10 Principles
 > grounding, the open / standards / minimal-dependencies stance,
 > what counts as in vs out of scope for v1.x. Sibling docs:
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture
-> details + sequencing ladder), [`docs/architecture.md`](docs/architecture.md)
+> [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) (architecture
+> details + sequencing ladder), [`docs/dev/architecture.md`](docs/dev/architecture.md)
 > (module map + diagrams), [`AGENTS.md`](AGENTS.md) (operational
 > contract for AI agents and human contributors), [`README.md`](README.md)
 > (user-facing overview).
@@ -72,7 +72,7 @@ Three goals, in order of priority:
    they look prettier. The escape hatch is the user's, not the
    tool's: anyone who wants a non-ATS design edits the document
    Sartor produced. See
-   [`docs/PRODUCT_SHAPE.md §5.3`](docs/PRODUCT_SHAPE.md) for
+   [`docs/dev/PRODUCT_SHAPE.md §5.3`](docs/dev/PRODUCT_SHAPE.md) for
    the bundled-template curation rationale.
 
 3. **The candidate stays in control.** Two required human
@@ -197,7 +197,7 @@ Every `/api/generate` writes a NEW timestamped child context file
 rather than mutating the parent, so a user (or a developer debugging
 an issue) can always trace what the LLM saw at each step. Full
 mechanics (the `parent_context_path` chain, the on-disk lifecycle):
-[`docs/architecture.md` §context_set lifecycle](docs/architecture.md).
+[`docs/dev/architecture.md` §context_set lifecycle](docs/dev/architecture.md).
 
 ---
 
@@ -217,7 +217,7 @@ load-bearing for Sartor specifically:
 - **P5 Institutional Memory** — ALWAYS / NEVER BECAUSE rules
   in `analyzer.py:SYSTEM_PROMPT`; tuning history in
   `evals/TUNING_LOG.md`; release reasoning in
-  [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md).
+  [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md).
 - **P8 Human Gates** — two required review checkpoints plus
   optional clarification interviews. Skipping any clarification
   step does not degrade output below the prior behavior.
@@ -249,7 +249,7 @@ best summary variant the way it could pick the best bullets,
 and the user couldn't pin a great summary across similar
 applications. v1.0 introduced `SummaryItem` as the second
 specialization of an emerging "Corpus Item" base concept.
-[`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) covers the
+[`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) covers the
 full pattern and the v1.1 / v1.2 plan to extend it to
 `ExperienceSummaryItem`, `SkillGroupItem`,
 `CoverLetterChunkItem`.

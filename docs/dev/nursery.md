@@ -9,7 +9,7 @@
 > **Audience:** `dev` — humans + LLM agents planning future epics.
 > **Authoritative for:** the deferred-but-alive idea set and its current scoring.
 > **Siblings:** [`RELEASE_ARC.md`](RELEASE_ARC.md) (scheduled work),
-> [`../PRODUCT_SHAPE.md`](../PRODUCT_SHAPE.md) (product shape),
+> [`../PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product shape),
 > [`excellence-walk/`](excellence-walk/) (where several of these were first captured).
 
 **Tag legend.** **Value / Effort / Risk** = H/M/L. **Status** = `idea` (ready to

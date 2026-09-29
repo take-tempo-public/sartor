@@ -78,6 +78,10 @@ def test_make_slug_examples() -> None:
     assert pdm.make_slug("vision.md") == "vision"
     assert pdm.make_slug("AGENTS.md") == "agents"
     assert pdm.make_slug("docs/PRODUCT_SHAPE.md") == "product-shape"
+    # Slugs follow paths (owner, 2026-09-28): the tier directory is part of the slug.
+    assert pdm.make_slug("docs/user/install.md") == "user-install"
+    assert pdm.make_slug("docs/dev/architecture.md") == "dev-architecture"
+    assert pdm.make_slug("docs/user/README.md") == "user-readme"
     assert pdm.make_slug("docs/governance/charter.md") == "governance-charter"
     assert pdm.make_slug("docs/dev/perf/PERF_ANALYZE.md") == "dev-perf-perf-analyze"
 

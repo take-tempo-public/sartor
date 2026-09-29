@@ -18,7 +18,7 @@
 Consistency here **tracks enforcement**: every pattern a hook or the linter *guards* is
 uniform to a fault; the only real inconsistencies are the ones left to discipline — and
 both are already named on the backlog. This is the **Regulation** function
-([`../../system-model.md`](../../system-model.md)) doing visible work: mechanized rules
+([`../../system-model.md`](../../dev/system-model.md)) doing visible work: mechanized rules
 produce mechanical consistency `[synthesis]`.
 
 ## Surface consistency (style, naming, structure) — STRONG

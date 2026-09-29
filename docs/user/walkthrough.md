@@ -13,10 +13,10 @@ By the end of this doc you'll know what each of the six wizard steps does, what 
 > mapping from each screen to its Flask route + LLM call + cost band;
 > the human-gate points where the wizard pauses for your review.
 > Sibling docs:
-> [`README.md`](../README.md) (overview + Doc Map),
-> [`docs/install.md`](install.md) (install + first-run),
-> [`docs/architecture.md`](architecture.md) (code-level system view),
-> [`vision.md`](../vision.md) (why Sartor exists).
+> [`README.md`](../../README.md) (overview + Doc Map),
+> [`docs/user/install.md`](install.md) (install + first-run),
+> [`docs/dev/architecture.md`](../dev/architecture.md) (code-level system view),
+> [`vision.md`](../../vision.md) (why Sartor exists).
 
 ---
 
@@ -33,7 +33,7 @@ system (résumé parsing software employers run on incoming files).
 
 For a single synthetic candidate + JD threading through all six
 steps with concrete decisions, see
-[`walkthrough_example.md`](walkthrough_example.md).
+[`walkthrough_example.md`](walkthrough-example.md).
 
 ---
 
@@ -140,7 +140,7 @@ flowchart TB
 artifact. Every LLM call reads from it; nothing gets invented that
 isn't already in your corpus, clarifications, or typed edits. That's
 the grounding rule — it's enforced by the system prompt in
-[`analyzer.py`](../analyzer.py) and verified post-generation by the
+[`analyzer.py`](../../analyzer.py) and verified post-generation by the
 `grounding_overlap` metric.
 
 ---
@@ -158,9 +158,9 @@ and output history. Files live under `configs/<user>.config`,
 Open the **Career Corpus** tab → click **+ Import résumé** → upload
 your existing `.docx`, `.pdf`, or `.md` résumé.
 
-![The Career Corpus tab in its empty state. The + Import résumé button parses an existing résumé into the structured corpus (one Haiku call, ~$0.02).](screenshots/walkthrough_setup_corpus-empty.png)
+![The Career Corpus tab in its empty state. The + Import résumé button parses an existing résumé into the structured corpus (one Haiku call, ~$0.02).](../screenshots/walkthrough_setup_corpus-empty.png)
 
-**Under the hood:** [`/api/upload`](../app.py) runs `parser.py`
+**Under the hood:** [`/api/upload`](../../app.py) runs `parser.py`
 deterministically (no LLM) to extract text, then one Haiku 4.5
 call to `extract_experiences()` parses the text into structured
 experiences, titles, and bullets. Haiku 4.5 is Anthropic's small +
@@ -172,7 +172,7 @@ writes to `db/resume.sqlite` as the canonical corpus.
 wizard needs to recommend, pin, exclude, and re-rank individual
 bullets per application. That only works if each bullet is a
 first-class row in the corpus, not buried inside a Word document.
-See [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) for the Corpus Item
+See [`docs/dev/PRODUCT_SHAPE.md`](../dev/PRODUCT_SHAPE.md) for the Corpus Item
 pattern.
 
 You can also add experiences and bullets manually through the
@@ -198,13 +198,13 @@ Corpus and Application tabs are the two top-level views of the app.
 description" with a paste-the-JD prompt. Right: an empty analysis
 panel that fills in once you click **Analyze**.
 
-![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s two-pass call (Haiku 4.5 extraction → Sonnet 5 synthesis) that fills the right panel with skill matches, gaps, and ATS warnings.](screenshots/walkthrough_step1pre_jd-textarea.png)
+![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s two-pass call (Haiku 4.5 extraction → Sonnet 5 synthesis) that fills the right panel with skill matches, gaps, and ATS warnings.](../screenshots/walkthrough_step1pre_jd-textarea.png)
 
 **What you do:** paste the full JD (title + body + requirements +
 nice-to-haves). Click **Analyze**.
 
-**Under the hood:** [`/api/analyze`](../app.py) calls
-`analyze()` in [`analyzer.py`](../analyzer.py).
+**Under the hood:** [`/api/analyze`](../../app.py) calls
+`analyze()` in [`analyzer.py`](../../analyzer.py).
 
 - **Model:** two-pass — a Haiku 4.5 pass extracts JD signals first,
   then Sonnet 5 (the heavy-reasoning model — Sonnet is used for any
@@ -225,7 +225,7 @@ nice-to-haves). Click **Analyze**.
 
 **Verify before continuing (Human gate #1):**
 
-![Step 1 after analyze: the right panel shows skill matches, a gaps section, and ATS warnings. This is Human Gate #1 — the user reads it and decides whether to enter Clarify next.](screenshots/walkthrough_step1post_analysis-filled.png)
+![Step 1 after analyze: the right panel shows skill matches, a gaps section, and ATS warnings. This is Human Gate #1 — the user reads it and decides whether to enter Clarify next.](../screenshots/walkthrough_step1post_analysis-filled.png)
 
 - Skim the match summary. Does the LLM's read of the JD align with
   what you'd say about the role?
@@ -245,22 +245,22 @@ Clarify next.
 **What you see:** 3–5 LLM-generated interview questions in a
 scrollable list, each with a textarea for your answer.
 
-![The Clarify step with 4 targeted questions. Answers given here become legitimate source material for Step 5 generation.](screenshots/walkthrough_step2_clarify-questions.png)
+![The Clarify step with 4 targeted questions. Answers given here become legitimate source material for Step 5 generation.](../screenshots/walkthrough_step2_clarify-questions.png)
 
 **What you do:** answer the questions in your own words. Skip any
 that aren't relevant. Click **Submit clarifications**.
 
 **Under the hood:** two routes are involved.
 
-- [`/api/clarify`](../app.py) calls `clarify()` in
-  [`analyzer.py`](../analyzer.py) — Haiku 4.5, ~$0.03.
+- [`/api/clarify`](../../app.py) calls `clarify()` in
+  [`analyzer.py`](../../analyzer.py) — Haiku 4.5, ~$0.03.
   Reads the analysis from Step 1 and the gap list, asks
   *targeted* questions to surface real-but-undocumented experience.
-- [`/api/answer-clarifications`](../app.py) saves your answers into
+- [`/api/answer-clarifications`](../../app.py) saves your answers into
   the `context_set` so downstream steps can use them. No LLM call
   on submit — pure persistence.
 - (Iterative re-clarify available via
-  [`/api/iterate-clarify`](../app.py) →
+  [`/api/iterate-clarify`](../../app.py) →
   `clarify_iteration()` — same model, similar cost. Used if your
   first round of answers opened up new gaps.)
 
@@ -289,7 +289,7 @@ bullets plus LLM-recommended bullets (badged differently). At the
 top, a **Positioning** card with the draft summary; a summary
 variants picker; a tag-chip filter for bullets.
 
-![The Compose step showing one experience card with pinned, excluded, and LLM-recommended bullets, plus the summary variant picker. Compose is a selection problem; Haiku 4.5 ranks and proposes, the user decides.](screenshots/walkthrough_step3_compose-experience-card.png)
+![The Compose step showing one experience card with pinned, excluded, and LLM-recommended bullets, plus the summary variant picker. Compose is a selection problem; Haiku 4.5 ranks and proposes, the user decides.](../screenshots/walkthrough_step3_compose-experience-card.png)
 
 **What you do:** for each experience —
 
@@ -319,7 +319,7 @@ fast model used for *picking* and *re-ranking*, not for writing
 fresh prose.
 
 - `recommend_bullets()` in
-  [`analyzer.py`](../analyzer.py) — Haiku 4.5, ~$0.01 per
+  [`analyzer.py`](../../analyzer.py) — Haiku 4.5, ~$0.01 per
   experience. Reads the corpus + JD + clarifications, returns a
   ranked list of which bullets to surface.
 - `recommend_summaries()` — Haiku 4.5, ~$0.005. Reads existing
@@ -349,7 +349,7 @@ grounding check in Step 5 catches anything Haiku slips through.
 Tech) with ATS-safety badges; a live paginated preview on the
 right; an **+ Upload template** button for your own `.docx`.
 
-![The Template step with four ATS-safe templates shown as cards. Live preview re-renders on selection — no LLM call. The Page 1 of N counter reflects the real paged.js page count.](screenshots/walkthrough_step4_template-modern-preview.png)
+![The Template step with four ATS-safe templates shown as cards. Live preview re-renders on selection — no LLM call. The Page 1 of N counter reflects the real paged.js page count.](../screenshots/walkthrough_step4_template-modern-preview.png)
 
 **What you do:** click a template. The preview re-renders in real
 time using the bullets and summary you composed in Step 3.
@@ -359,7 +359,7 @@ time using the bullets and summary you composed in Step 3.
 - The preview is rendered by `generator.py` + `pdf_render.py`
   (Playwright + Chromium) into HTML, then paged.js (a vendored
   third-party library, see
-  [`SECURITY.md`](../SECURITY.md)) splits it into discrete
+  [`SECURITY.md`](../../SECURITY.md)) splits it into discrete
   Letter-sized page boxes inside an `<iframe>`.
 - The "Page 1 of N" counter reflects the *real* paged.js page
   count via postMessage, not a scroll-height estimate.
@@ -368,7 +368,7 @@ time using the bullets and summary you composed in Step 3.
 templates use single-column layouts with standard fonts and no
 inline `<code>` chips or sidebar layouts. The two retired templates
 (Compact, Hybrid Tech) failed ATS testing — they're documented in
-[`CHANGELOG.md`](../CHANGELOG.md) for v1.0.0. Uploaded templates
+[`CHANGELOG.md`](../../CHANGELOG.md) for v1.0.0. Uploaded templates
 show an "ATS · unverified" badge because Sartor can't
 introspect arbitrary user `.docx` files.
 
@@ -390,8 +390,8 @@ runs; a preview of the generated text once done.
 
 **What you do:** pick a format, click **Generate**. Wait ~30–60s.
 
-**Under the hood:** [`/api/generate`](../app.py) calls
-`generate()` in [`analyzer.py`](../analyzer.py).
+**Under the hood:** [`/api/generate`](../../app.py) calls
+`generate()` in [`analyzer.py`](../../analyzer.py).
 
 - **Model:** Sonnet 5 — this is the writing call, the heaviest
   reasoning point in the pipeline.
@@ -424,7 +424,7 @@ runs; a preview of the generated text once done.
 **Refine** textarea; a **Download** button; an **+ Generate cover
 letter** button.
 
-![The Download step. The generated résumé preview is on the left; the Refine textarea on the right takes natural-language change requests. Each Refine click re-runs generate() (~$0.05–$0.15) and writes a new child context_*.json to preserve the audit trail.](screenshots/walkthrough_step6_download-with-refine.png)
+![The Download step. The generated résumé preview is on the left; the Refine textarea on the right takes natural-language change requests. Each Refine click re-runs generate() (~$0.05–$0.15) and writes a new child context_*.json to preserve the audit trail.](../screenshots/walkthrough_step6_download-with-refine.png)
 
 **What you do (Human gate #2):**
 
@@ -438,7 +438,7 @@ letter** button.
 - When satisfied, click **Download**. The file lives under
   `output/<user>/`.
 
-**Under the hood (refine):** [`/api/save-edits`](../app.py) records
+**Under the hood (refine):** [`/api/save-edits`](../../app.py) records
 your refinement note, then re-calls `generate()` with the chain
 extended (new `parent_context_path` pointing at the previous
 iteration). Each iteration is a fresh child file — nothing is
@@ -466,15 +466,15 @@ clarifications, or your typed edit.
 **What you see:** a **+ Generate cover letter** button at the
 bottom of Step 6, available once the résumé is generated.
 
-![The cover-letter generation surface. The cover letter is generated against the finalized résumé, with the same refine / iterate parity as the résumé flow.](screenshots/walkthrough_coverletter_first-generation.png)
+![The cover-letter generation surface. The cover letter is generated against the finalized résumé, with the same refine / iterate parity as the résumé flow.](../screenshots/walkthrough_coverletter_first-generation.png)
 
 **What you do:** click it. The cover letter generates against the
 *finalized* résumé (so it doesn't claim anything the résumé
 doesn't), then you can refine it the same way as the résumé.
 
-**Under the hood:** [`/api/generate-cover-letter`](../app.py)
+**Under the hood:** [`/api/generate-cover-letter`](../../app.py)
 calls `generate_cover_letter_against_resume()` in
-[`analyzer.py`](../analyzer.py) — Sonnet 5, ~$0.04–$0.08.
+[`analyzer.py`](../../analyzer.py) — Sonnet 5, ~$0.04–$0.08.
 The cover letter has full refine/iterate parity with the résumé
 flow (same edit-aware refinement, same audit trail).
 
@@ -501,7 +501,7 @@ change, so almost nothing you do is destructive.
   files linked by `parent_context_path`.
 - **An LLM call errored out.** The `context_set` for that
   attempt is saved; the step's button is safe to re-click. See
-  [`docs/install.md`](install.md#troubleshooting) for the
+  [`docs/user/install.md`](install.md#troubleshooting) for the
   symptom-by-symptom guide.
 - **You want to start over for the same JD.** Start a new
   application from the Application tab; the previous one stays
@@ -526,21 +526,21 @@ overwritten, and the `parent_context_path` chain inside each
 The `context_*.json` chain is the auditable record of how each
 generated document came to exist. Re-run any iteration with the
 `/replay` slash command (see
-[`commands/replay.md`](../commands/replay.md)).
+[`commands/replay.md`](../../commands/replay.md)).
 
 ---
 
 ## See also
 
-- [`docs/install.md`](install.md) — install + first-run.
-- [`docs/architecture.md`](architecture.md) — the same pipeline
+- [`docs/user/install.md`](install.md) — install + first-run.
+- [`docs/dev/architecture.md`](../dev/architecture.md) — the same pipeline
   diagrammed from the code-shape angle (pipeline, persistence,
   data-flow, LLM-routing Mermaid diagrams). Read after this if
   you're curious about the code.
-- [`SECURITY.md`](../SECURITY.md) — what stays on your machine
+- [`SECURITY.md`](../../SECURITY.md) — what stays on your machine
   vs. what goes over the wire.
-- [`vision.md`](../vision.md) — the "why this exists" page.
-- [`evals/README.md`](../evals/README.md) — **for maintainers:** Sartor ships a
+- [`vision.md`](../../vision.md) — the "why this exists" page.
+- [`evals/README.md`](../../evals/README.md) — **for maintainers:** Sartor ships a
   local **diagnostics & tuning console** at `/_dashboard` (localhost-only) where you
   can **tune the system's own LLM prompts** — run evals, A/B a candidate prompt
   against the baseline, and annotate generated bullets, all in the browser. The

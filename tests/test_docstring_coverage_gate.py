@@ -8,7 +8,7 @@ regression that could slip under D's per-file ratchet, and — empirically — i
 on class docstrings than ruff-`D`/google. At adoption it surfaced two undocumented public
 classes (`onboarding`'s `Color` and `ExtractResponse`) that google's D101 leaves un-flagged;
 both were documented to reach the 100% baseline this floor locks. See
-docs/dev/kit-adoption-design.md §4/§6 and docs/dev/decisions.md KIT-6/KIT-7.
+docs/dev/archive/kit-adoption-design.md §4/§6 and docs/dev/decisions.md KIT-6/KIT-7.
 
 HOW: the single source of truth is `[tool.interrogate]` in pyproject.toml (scope, ignore flags,
 and `fail-under`). A bare `python -m interrogate -c pyproject.toml .` reproduces this gate

@@ -1,9 +1,9 @@
 """Drive the wizard to produce the 10 manifest screenshots.
 
 Generates a synthetic Priya master .docx (matching the worked
-example at docs/walkthrough_example.md), walks through all six
+example at docs/user/walkthrough-example.md), walks through all six
 wizard steps via Playwright, and captures the 10 PNGs per
-docs/ux/screenshot_capture.md.
+docs/dev/screenshot-capture.md.
 
 Cost: ~$0.27 in Anthropic API spend per run (full wizard pass:
 extract_experiences + analyze + clarify + recommend_bullets +
@@ -103,7 +103,7 @@ SAMPLE_REFINE_NOTE = "emphasize the team-lead role more in the summary"
 
 
 def write_priya_docx(path: Path) -> None:
-    """Synthetic master résumé matching docs/walkthrough_example.md.
+    """Synthetic master résumé matching docs/user/walkthrough-example.md.
 
     Generates a minimal but parser-friendly .docx with three
     experiences, ~8 bullets each, one Kafka-passing-mention bullet
@@ -543,7 +543,7 @@ def main() -> int:
     print(f"  · review {SHOTS.relative_to(REPO)}/")
     print("  · if any capture looks off, re-run with --keep-user and iterate")
     print("  · once the 10 PNGs look right, I (Claude) can do the markdown")
-    print("    insertion pass per docs/ux/screenshot_capture.md")
+    print("    insertion pass per docs/dev/screenshot-capture.md")
     return 0
 
 

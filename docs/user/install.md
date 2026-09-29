@@ -8,10 +8,10 @@
 > Chromium download step, what gets downloaded & why, API-key setup,
 > troubleshooting.
 > Sibling docs:
-> [`README.md`](../README.md) (overview),
-> [`docs/walkthrough.md`](walkthrough.md) (screen-by-screen guide + flow diagrams),
-> [`SECURITY.md`](../SECURITY.md) (what stays on your machine),
-> [`docs/architecture.md`](architecture.md) (developer view).
+> [`README.md`](../../README.md) (overview),
+> [`docs/user/walkthrough.md`](walkthrough.md) (screen-by-screen guide + flow diagrams),
+> [`SECURITY.md`](../../SECURITY.md) (what stays on your machine),
+> [`docs/dev/architecture.md`](../dev/architecture.md) (developer view).
 
 ---
 
@@ -21,9 +21,9 @@
   `python3 --version` on macOS/Linux).
 - **An Anthropic API key.** Get one at
   [console.anthropic.com](https://console.anthropic.com/). See
-  [Cost guidance](../README.md#install) for the per-application
+  [Cost guidance](../../README.md#install) for the per-application
   breakdown; budget guards are documented in
-  [`SECURITY.md`](../SECURITY.md).
+  [`SECURITY.md`](../../SECURITY.md).
   You do **not** need one to try Sartor — see
   [demo mode](#try-it-without-an-api-key-demo-mode).
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
@@ -92,7 +92,7 @@ invoke it as `python3 -m app` / `python3 app.py` from the repo.
 > sections are kept because they describe the intended shape and the commands
 > are correct once a release exists — but **today, the source clone is the
 > install method**, not a developer footnote. Publication is tracked in
-> [`docs/dev/work/items/0099-install-docs-document-unpublished-paths.md`](dev/work/items/0099-install-docs-document-unpublished-paths.md)
+> [`docs/dev/work/items/0099-install-docs-document-unpublished-paths.md`](../dev/work/items/0099-install-docs-document-unpublished-paths.md)
 > and gated on the one-time maintainer setup below.
 
 Jump to your platform: [Windows](#windows) · [macOS](#macos) · [Linux](#linux).
@@ -312,8 +312,8 @@ Unset the variable and restart to switch back to real AI calls.
 > only working install.
 
 Two workflows do the release automatically on a version tag (`vX.Y.Z`):
-[`docker.yml`](../.github/workflows/docker.yml) builds + pushes the multi-arch
-image to `ghcr.io/take-tempo-public/sartor`; [`release.yml`](../.github/workflows/release.yml)
+[`docker.yml`](../../.github/workflows/docker.yml) builds + pushes the multi-arch
+image to `ghcr.io/take-tempo-public/sartor`; [`release.yml`](../../.github/workflows/release.yml)
 builds the wheel and publishes to PyPI via **Trusted Publishing** (OIDC, no
 stored token). A maintainer only does the console setup CI can't do, then pushes
 the tag:
@@ -367,7 +367,7 @@ runs only in the eval harness, **never** in the app you launch with
 `python app.py`, and end users don't need it. If you do want to run it, the
 exact steps (the hardware-specific `torch` install, the `[eval-grounding]`
 extras, sizes, and licensing) live in
-[`CONTRIBUTING.md` → "Grounding signal scorers"](../CONTRIBUTING.md#grounding-signal-scorers-optional-dev-only).
+[`CONTRIBUTING.md` → "Grounding signal scorers"](../../CONTRIBUTING.md#grounding-signal-scorers-optional-dev-only).
 
 ---
 
@@ -568,14 +568,14 @@ extras, sizes, and licensing) live in
 By the end of these eight steps you'll have your first tailored
 résumé sitting in `output/<your-user>/`. Total time: about 5
 minutes plus one ~30–60s LLM analyze call. Total cost: ~$0.05–$0.30
-([see breakdown](../README.md#install)).
+([see breakdown](../../README.md#install)).
 
 After the app is running:
 
 1. **Select or create a user** in the top-right user picker.
    Each user has their own corpus, settings, and output history.
 
-   ![The user picker dropdown in the top-right corner. Each user has their own corpus, settings, and output history.](screenshots/install_setup_user-picker.png)
+   ![The user picker dropdown in the top-right corner. Each user has their own corpus, settings, and output history.](../screenshots/install_setup_user-picker.png)
 
 2. **Open the Career Corpus tab** and click `+ Import résumé` if
    you have an existing résumé file in `resumes/<user>/`. The
@@ -597,7 +597,7 @@ After the app is running:
 For the full screen-by-screen guide — including user-flow and
 information-flow diagrams, what each LLM call is actually doing,
 and the two human review gates — read
-[`docs/walkthrough.md`](walkthrough.md) next.
+[`docs/user/walkthrough.md`](walkthrough.md) next.
 
 ---
 
@@ -655,11 +655,11 @@ one without echoing it. To check by hand, confirm one of:
 Another process is on `:5000`. On Windows: `netstat -ano | findstr :5000`
 to find the PID, then `taskkill /PID <pid> /F`. On macOS/Linux:
 `lsof -i :5000` then `kill <pid>`. Or change the port in
-[`app.py`](../app.py) `main()` — search for `port=5000`.
+[`app.py`](../../app.py) `main()` — search for `port=5000`.
 
 **"My data is somewhere I can't find."**
 See the "What gets saved on your machine" section in
-[`README.md`](../README.md). The short answer: `configs/`,
+[`README.md`](../../README.md). The short answer: `configs/`,
 `resumes/`, `output/`, `db/resume.sqlite`, `logs/` — all under
 the repo root.
 

@@ -10,7 +10,7 @@
 > converges toward; what is deferred to v1.1 / v1.2 / v2; the asymmetry
 > matrix that explains why each remaining gap exists.
 >
-> **Companion** to [`docs/dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md).
+> **Companion** to [`docs/dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
 > That doc is *what we ship*. This doc is *what shape we're aiming
 > for* — the unified data model the product converges toward and the
 > sequencing ladder that gets us there without schema breaks.
@@ -30,10 +30,10 @@ class. This matrix is the diagnosis.
 
 | Property | `Bullet` | `Experience.summary` | `Candidate.profile_text` | `Skill` | Cover letter | `ExperienceTitle` |
 |---|---|---|---|---|---|---|
-| Own DB table | ✓ ([`db/models.py:134`](../db/models.py)) | ✗ column on `Experience` ([`db/models.py:87`](../db/models.py)) | ✗ column on `Candidate` ([`db/models.py:54`](../db/models.py)) | ✓ `Skill` | ✗ (LLM-generated only) | ✓ `ExperienceTitle` |
+| Own DB table | ✓ ([`db/models.py:134`](../../db/models.py)) | ✗ column on `Experience` ([`db/models.py:87`](../../db/models.py)) | ✗ column on `Candidate` ([`db/models.py:54`](../../db/models.py)) | ✓ `Skill` | ✗ (LLM-generated only) | ✓ `ExperienceTitle` |
 | Multiple variants per parent | ✓ | ✗ one row, one value | ✗ one row, one value | n/a | ✗ | ✓ |
 | Tagged | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| Scored against JD | ✓ `recommend_bullets` ([`analyzer.py`](../analyzer.py)) | ✗ | ✗ | ✗ | ✗ | ✗ |
+| Scored against JD | ✓ `recommend_bullets` ([`analyzer.py`](../../analyzer.py)) | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Pinnable / excludable per application | ✓ `composition_overrides` | ✗ | ✗ | ✗ | ✗ | ✗ |
 | `has_outcome` flag | ✓ | n/a | n/a | n/a | n/a | n/a |
 | Soft-retire | ✓ `is_active` | ✗ | ✗ | ✓ | ✗ | ✓ |
@@ -49,8 +49,8 @@ curation.
 ## 2. Six asymmetries worth naming
 
 1. **Summaries are second-class.** One freeform field per experience
-   ([`db/models.py:87`](../db/models.py)) and one for the candidate
-   ([`db/models.py:54`](../db/models.py)). No per-JD curation, no
+   ([`db/models.py:87`](../../db/models.py)) and one for the candidate
+   ([`db/models.py:54`](../../db/models.py)). No per-JD curation, no
    multi-variant, no recommend call.
 2. **Cover letters are write-only.** Generated from scratch each
    time. Your best paragraph from last month is gone unless you
@@ -100,9 +100,9 @@ Specializations:
 What every kind gets for free once the pattern is in place:
 
 1. **Recommend call** — Haiku, same shape as
-   [`recommend_bullets`](../analyzer.py) (system prompt: no
+   [`recommend_bullets`](../../analyzer.py) (system prompt: no
    near-duplicates rule, deterministic Jaccard dedup safety net per
-   [TUNING_LOG `2026-05-22.2`](../evals/TUNING_LOG.md)).
+   [TUNING_LOG `2026-05-22.2`](../../evals/TUNING_LOG.md)).
 2. **Compose-step UI affordance** — score pill, pin/exclude buttons,
    "find more" drawer.
 3. **Tag composer.**
@@ -160,13 +160,13 @@ to the finished résumé."
 - **The cover letter inherits the full refine / iterate /
   clarify-iteration / edit-detect flow that résumés have today.**
   Specifically:
-  - [`submitRefinement`](../static/app.js) + `runIterateClarify`
+  - [`submitRefinement`](../../static/app.js) + `runIterateClarify`
     operate on cover letters as well as résumés
   - `lastGeneratedCoverLetter` is already tracked in `app.js`
   - The edit-detect modal already handles
     `edited_cover_letter_text`
   - No new pattern — just wiring the existing P8 Human Gates
-    ([`CLAUDE.md`](../CLAUDE.md)) to the cover-letter generation
+    ([`CLAUDE.md`](../../CLAUDE.md)) to the cover-letter generation
     path
 - **Saving:** the deferred call eliminates the cover-letter LLM cost
   on the common path (résumé-only generation), which is what the
@@ -180,10 +180,10 @@ how those resumes are revealed and utilized as part of the flow or
 library."
 
 **Surprise finding from exploration (v1.0-era; `_resolve_default_persona_template_path()`
-now lives in [`blueprints/templates.py`](../blueprints/templates.py) post-8.3e, not
+now lives in [`blueprints/templates.py`](../../blueprints/templates.py) post-8.3e, not
 `app.py`):**
 `PersonaTemplate.is_default` + `primary_role_tag_id` columns already
-exist in [`db/models.py:359, 368-372`](../db/models.py). A partial
+exist in [`db/models.py:359, 368-372`](../../db/models.py). A partial
 unique index enforces at most one `is_default = 1` per candidate per
 role tag. **At the time, `_resolve_default_persona_template_path()` never
 consulted them** — the default resolution hardcoded to bundled Classic
@@ -232,7 +232,7 @@ pip-driven and cross-platform.
   Chromium binary is a one-time `python -m playwright install
   chromium`; binary lives in the OS user cache, NOT in the repo.
   `.gitignore` has defensive entries for `ms-playwright/` etc.
-- New module: [`pdf_render.py`](../pdf_render.py) — Jinja2 renders
+- New module: [`pdf_render.py`](../../pdf_render.py) — Jinja2 renders
   HTML, Playwright loads it via `file://` URL (so the relative CSS
   link resolves), `page.pdf()` emits bytes. Letter format,
   0.6in/0.65in margins.
@@ -319,7 +319,7 @@ different templates would be ideal."
 
 **Today** (from exploration):
 
-- Preview lives at [`/api/personas/<id>/preview`](../blueprints/templates.py)
+- Preview lives at [`/api/personas/<id>/preview`](../../blueprints/templates.py)
   (moved off `app.py` in the v1.0.8 blueprint decomposition, Sprint 8.3e —
   `app.py` is a zero-route composition root today; see §11.2 WS-1)
 - Streams a generated `.docx` file (`send_file`)
@@ -355,7 +355,7 @@ different templates would be ideal."
 
 The shipped step-by-step mechanics (which route fires which model,
 in what order) are canonical in
-[`docs/architecture.md` §System overview](architecture.md) — restated
+[`docs/dev/architecture.md` §System overview](architecture.md) — restated
 here only as the historical baseline that the user's sketch (§6.2)
 and the reconciled flow (§6.3) below diff against.
 
@@ -416,18 +416,18 @@ Proposed final shape:
 
 > **Version labels superseded (2026-06-08).** The "v1.0 / v1.1 / v1.2 / v2" stage
 > labels below predate the **epic/tag versioning model** (patch digit = epic; minor
-> digit = the public tag marker — see [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md)).
+> digit = the public tag marker — see [`dev/RELEASE_ARC.md`](RELEASE_ARC.md)).
 > Read them as *data-model stages*, not release versions. Current dispositions: the
 > **v1.0 stage shipped** (SummaryItem, JSON Resume, PDF, live preview, CL detachment,
 > the `is_default` resolver — all done); **ExperienceSummaryItem (B.4) + Skill-as-Corpus-Item
 > (B.5)** shipped in **v1.0.6** (corpus completion; B.5 dropped the "SkillGroupItem /
 > clusters" framing for individual skills); the rest are dispositioned in §10
-> and [`dev/nursery.md`](dev/nursery.md).
+> and [`dev/nursery.md`](nursery.md).
 
 > **Canonical governance.** This prescriptive ladder and the seven-functions
 > self-model (§11) are descriptive planning detail; the *binding* rules they rest on
 > — the defaults D-1…D-6 and the W-2 "governance is constitution-building" stance —
-> live once in [`governance/charter.md`](governance/charter.md). The ladder stays
+> live once in [`governance/charter.md`](../governance/charter.md). The ladder stays
 > here; on any conflict the charter governs.
 
 Build the unified pattern in stages, no schema breaks between stages.
@@ -437,7 +437,7 @@ Build the unified pattern in stages, no schema breaks between stages.
 - `SummaryItem` table with `parent_kind` / `parent_id` extensibility
 - `recommend_summaries` Haiku call (same shape as
   `recommend_bullets` per
-  [TUNING_LOG `2026-05-22.2`](../evals/TUNING_LOG.md), including
+  [TUNING_LOG `2026-05-22.2`](../../evals/TUNING_LOG.md), including
   the no-near-duplicate rule + Jaccard dedup safety net)
 - Compose step gets a "Positioning" card above the experience cards
 - JSON Resume v1.0 intermediate format introduced
@@ -479,14 +479,14 @@ Build the unified pattern in stages, no schema breaks between stages.
   enough to be useful.
 - **Cross-candidate insights** — impossible by design (local-first
   single-tenant). Will not build. Documented in
-  [`SECURITY.md`](../SECURITY.md) as part of the threat model.
+  [`SECURITY.md`](../../SECURITY.md) as part of the threat model.
 
 ## 9. Bug found during exploration (file under v1.0)
 
 `PersonaTemplate.is_default` is in the schema and has a partial
-unique index ([`db/models.py:359, 368-372`](../db/models.py)) — but at
+unique index ([`db/models.py:359, 368-372`](../../db/models.py)) — but at
 the time, `_resolve_default_persona_template_path()` (now in
-[`blueprints/templates.py`](../blueprints/templates.py) post-8.3e, not
+[`blueprints/templates.py`](../../blueprints/templates.py) post-8.3e, not
 `app.py`) never consulted it. The default resolver hardcoded to bundled
 Classic Single-Column. Five-line fix; **deferred during v1.0.0 cut**
 (see §10) to v1.1 along with the rest of the master-résumé surfacing
@@ -501,8 +501,8 @@ in §5.2.
 > **Post-v1.0.5** items (cover-letter opener tuning, grounding calibration B) are now
 > scheduled as **v1.0.7** pre-public hardening (PV-3 / PV-2); **R2 stream analyze
 > shipped** (v1.0.3); **paged.js elimination → post-public 1.1.x** (design-spike);
-> **master-résumés + field-filter chips → [`dev/nursery.md`](dev/nursery.md)**;
-> **Dockerfile → cut.** See [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) for the
+> **master-résumés + field-filter chips → [`dev/nursery.md`](nursery.md)**;
+> **Dockerfile → cut.** See [`dev/RELEASE_ARC.md`](RELEASE_ARC.md) for the
 > authoritative schedule; entries below are kept for their rationale/context.
 
 Items that surfaced during the v1.0.0 release work and were
@@ -537,7 +537,7 @@ acceptance criteria / target version**.
 
 ### v1.1 (next minor release)
 
-**R2 — stream `analyze()` output. ✓ SHIPPED (v1.0.3).** ([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
+**R2 — stream `analyze()` output. ✓ SHIPPED (v1.0.3).** ([docs/dev/perf/PERF_ANALYZE.md](perf/PERF_ANALYZE.md))
 - *Status:* **shipped in v1.0.3** (commit `c8762bc`) — the SSE
   `/api/analyze/stream` route + incremental frontend render are live.
   Reconciled here per the §10 banner above; **no longer deferred**, kept
@@ -549,7 +549,7 @@ acceptance criteria / target version**.
 - *Cost:* zero; same call, different transport.
 
 **R1 — split `analyze()` into Haiku-fast + Sonnet-deep passes.**
-([docs/dev/perf/PERF_ANALYZE.md](dev/perf/PERF_ANALYZE.md))
+([docs/dev/perf/PERF_ANALYZE.md](perf/PERF_ANALYZE.md))
 - *Why deferred:* touches the prompt, the response schema, and the
   frontend ordering — not a one-commit change. Needs an eval cycle
   before / after so we know we didn't regress analyze quality.
@@ -578,7 +578,7 @@ acceptance criteria / target version**.
 
 **`Dockerfile` + `docker-compose.yml` for one-command run.**
 - *Why deferred:* `pip install -e .` + `python app.py` works
-  cleanly per `docs/install.md`. Docker adds maintenance overhead
+  cleanly per `docs/user/install.md`. Docker adds maintenance overhead
   without clear v1.0 user demand.
 - *Acceptance:* a contributor or external user requests it; image
   builds in CI; image size < 1 GB including Chromium.
@@ -602,7 +602,7 @@ acceptance criteria / target version**.
 - *What:* a throat-clearing / hedging opener ("I am writing to be
   considered for…") tripped the `tone` rubric in 1 of 5 shipped v1.0.3
   runs — a pre-existing `generate_cover_letter` adherence lapse surfaced
-  during R1 Phase 2 eval (see [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+  during R1 Phase 2 eval (see [`RELEASE_ARC.md`](RELEASE_ARC.md)
   §Phase 2 "Documentation debt" item 2). The `/tune-from-annotations`
   machinery to fix it shipped in v1.0.4, but the live run was never
   executed — so this entry also stands in for the v1.0.4 "live shakedown"
@@ -625,8 +625,8 @@ acceptance criteria / target version**.
 **Grounding / hallucination metric — calibrated layers (B), pre-v1.1.0.**
 - *What:* the **calibrated** half of the grounding metric. The deterministic,
   label-free L0 fabricated-specifics rate ships *during* v1.0.5
-  (`eval/grounding-metric-l0`, A — see [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
-  §Phase 4 + [`docs/dev/GROUNDING_METRIC.md`](dev/GROUNDING_METRIC.md)). This
+  (`eval/grounding-metric-l0`, A — see [`RELEASE_ARC.md`](RELEASE_ARC.md)
+  §Phase 4 + [`docs/dev/GROUNDING_METRIC.md`](GROUNDING_METRIC.md)). This
   entry is the follow-up: (1) run the v1.0.4 loop **end-to-end on the real
   corpus** — the live shakedown that was tagged in machinery but never executed
   (seed → bootstrap → annotate) — to produce `annotations.json` labels;
@@ -660,7 +660,7 @@ acceptance criteria / target version**.
   un-`catch`-ed `await preview()`) and `node.getAttribute is not a function`
   (sync, from an off-chain layout sartor). `feat/template-pagination`
   (v1.0.5) **contained** both — the injection (`_PAGED_PREVIEW_INJECTION`,
-  now in [`blueprints/templates.py`](../blueprints/templates.py) post-8.3e,
+  now in [`blueprints/templates.py`](../../blueprints/templates.py) post-8.3e,
   not `app.py`) drives `preview()` itself with `try/catch` +
   `.catch()` and narrowly swallows the two known paged-origin throws — so the
   console is clean and the tests run with no allowlist. But the throws still
@@ -681,7 +681,7 @@ acceptance criteria / target version**.
 - *Acceptance (when picked up):* preview pagination renders with **zero**
   internal paged.js throws (no suppression filter needed) across all four
   bundled templates on sparse + dense content; the
-  [`blueprints/templates.py`](../blueprints/templates.py) paged-origin
+  [`blueprints/templates.py`](../../blueprints/templates.py) paged-origin
   `window.error` / `unhandledrejection` swallows are removed; the UX sentinel
   stays green.
 - *Target:* a deliberate, separately-scoped render-engine decision — v2, or
@@ -696,11 +696,11 @@ acceptance criteria / target version**.
 > engineering-excellence design pass. §1–9 describe the shape of the **product
 > data model** (the Corpus Item). This section names the shape of the **whole
 > system** and the structural levers that move it toward a polished production
-> codebase. Sequencing is authoritative in [`RELEASE_ARC.md`](dev/RELEASE_ARC.md)
+> codebase. Sequencing is authoritative in [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > §Phase 4.5 / §Phase 4.7 / "Post-v1.1.0 workstreams"; this section is the *shape
 > intent*, not the schedule.
 
-### 11.1 The seven-functions self-model → [`docs/system-model.md`](system-model.md)
+### 11.1 The seven-functions self-model → [`docs/dev/system-model.md`](system-model.md)
 
 The system is described by **seven functions + one law**, split across two
 subjects (the Corpus-Item pattern is a piece of the first):
@@ -719,20 +719,20 @@ subjects (the Corpus-Item pattern is a piece of the first):
 **The one law:** every dependency points inward toward **Production**; Production
 answers only upward to **Governance** — the codebase's own one-way dependency rule
 (P1 deterministic/LLM boundary; production ↛ `evals/`) scaled up to the whole
-system. The canonical write-up lives in [`docs/system-model.md`](system-model.md)
+system. The canonical write-up lives in [`docs/dev/system-model.md`](system-model.md)
 (the WS-4 wiki `overview.md` seed); §11 here is the one-paragraph summary that
 defers to it.
 
 ### 11.2 The four workstreams (structural intent)
 
 > **Snapshot — updated as these land; canonical schedule:**
-> [`RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.8 / §"Recurring / continuing
+> [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.8 / §"Recurring / continuing
 > workstreams". Status column as of 2026-07-10.
 
 | WS | Shape lever | Status | What | Sequenced |
 |---|---|---|---|---|
-| **WS-1** | split the monolith | ✓ **SHIPPED (v1.0.8)** | decomposed the monolithic `app.py` (pre-split size per [`RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.8: 8,251 LOC / 93 routes) into Flask blueprints across Sprints 8.3a–h, preserving the `_safe_username`/`_within` gate + its lint hook (since widened to `blueprints/**.py`, PX-29). `app.py` is now a ~296-line application-factory composition root with **zero** `@app.route` handlers — every route lives on a domain blueprint (`blueprints/` + the read-only `dashboard/`), per [`app.py`](../app.py)'s own module docstring. | **v1.0.8** — landed as a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbed PV-4; was never interleaved with a sprint stream |
-| **WS-2** | model the contracts as types | ◐ **PARTIAL** | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 ✓ shipped **v1.0.8** (rode WS-1); the strict-typing ratchet itself ✓ shipped **v1.0.9** (the `mypy --strict` §6 exit criterion was reached 2026-07-10 — every non-exempt production module now type-checks under full `--strict`, see [`kit-adoption-design.md`](dev/kit-adoption-design.md) §6); the **typed `context_set` spine** is still **PLANNED**, post-public 1.1.x |
+| **WS-1** | split the monolith | ✓ **SHIPPED (v1.0.8)** | decomposed the monolithic `app.py` (pre-split size per [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.8: 8,251 LOC / 93 routes) into Flask blueprints across Sprints 8.3a–h, preserving the `_safe_username`/`_within` gate + its lint hook (since widened to `blueprints/**.py`, PX-29). `app.py` is now a ~296-line application-factory composition root with **zero** `@app.route` handlers — every route lives on a domain blueprint (`blueprints/` + the read-only `dashboard/`), per [`app.py`](../../app.py)'s own module docstring. | **v1.0.8** — landed as a dedicated *pre-public* epic (so v1.1.0 ships clean); absorbed PV-4; was never interleaved with a sprint stream |
+| **WS-2** | model the contracts as types | ◐ **PARTIAL** | strict-typing ratchet + a typed `context_set` (TypedDict/dataclass/Pydantic) — the contract becomes a *type*, not prose + JSON-schema | increment 1 = PV-4 ✓ shipped **v1.0.8** (rode WS-1); the strict-typing ratchet itself ✓ shipped **v1.0.9** (the `mypy --strict` §6 exit criterion was reached 2026-07-10 — every non-exempt production module now type-checks under full `--strict`, see [`kit-adoption-design.md`](archive/kit-adoption-design.md) §6); the **typed `context_set` spine** is still **PLANNED**, post-public 1.1.x |
 | **WS-3** | keep the test suite lean | **PLANNED** | recurring engineering-design pass over the ~955-test suite (redundancy, slow tests, fixture dup) | not yet started; recurring, post-public (1.1.x) |
 | **WS-4** | a knowledge substrate | ✓ **SHIPPED** | committed `docs/wiki/` (git-as-engine) + `llms.txt` + `/wiki-*` skills + a canonical **Governance** extraction | substrate (WS-4a/b) shipped **v1.0.6**; the self-documenting loop + the doc-grounded assistant shipped **v1.0.7** |
 
@@ -763,9 +763,9 @@ machinery, not vigilance, keeps them consistent.
   including the assistant.
 
 > **Disposition pointers.** Scheduled work lives in
-> [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) (the epic/tag ladder); deferred-but-alive
-> ideas live in [`dev/nursery.md`](dev/nursery.md); the raw reasoning behind all of
-> this is preserved in [`dev/excellence-walk/`](dev/excellence-walk/).
+> [`dev/RELEASE_ARC.md`](RELEASE_ARC.md) (the epic/tag ladder); deferred-but-alive
+> ideas live in [`dev/nursery.md`](nursery.md); the raw reasoning behind all of
+> this is preserved in [`dev/excellence-walk/`](excellence-walk/).
 
 ---
 
@@ -783,14 +783,14 @@ machinery, not vigilance, keeps them consistent.
 
 ## Related project docs
 
-- [`docs/dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) — the *what we
+- [`docs/dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) — the *what we
   ship for v1* checklist (PII scrub, cleanup pass, docs)
-- [`CLAUDE.md`](../CLAUDE.md) — agent and contributor contract; the
+- [`CLAUDE.md`](../../CLAUDE.md) — agent and contributor contract; the
   10-principles framework references
-- [`evals/TUNING_LOG.md`](../evals/TUNING_LOG.md) — institutional
+- [`evals/TUNING_LOG.md`](../../evals/TUNING_LOG.md) — institutional
   memory of prompt iterations; the `recommend_bullets` pattern this
   doc proposes mirroring lives there
-- [`SECURITY.md`](../SECURITY.md) — single-tenant threat model
+- [`SECURITY.md`](../../SECURITY.md) — single-tenant threat model
 
 ---
 

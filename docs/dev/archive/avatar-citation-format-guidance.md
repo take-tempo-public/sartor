@@ -1,5 +1,10 @@
 # Tuning the sartor. Assistant — Citation & Reference Formatting (Polish Follow-on)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **What this is.** A **focused follow-on** to [`avatar-voice-tone-guidance.md`](avatar-voice-tone-guidance.md) — not a second full package. The voice/tone tuning landed well (owner, 2026-06-19: *"much better than it was"*); what remains is a single, well-diagnosed surface problem: the assistant's **citations and references render inconsistently**, mixing three bracket/parenthesis conventions in the same sentences. This brief captures the owner's testing feedback, the verified root-cause diagnosis, the design decision the implementation sprint must make (posed as clarifying questions with provisional recommendations, the same way the parent guidance posed its Part 2 questions), the lever map, and per-cause requirements + acceptance signals. It does **not** change any code or prompt — that is the next sprint, on its own branch.
 
 > **Audience:** dev / the agent that executes the citation-format polish sprint.

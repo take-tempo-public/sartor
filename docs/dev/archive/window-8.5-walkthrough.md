@@ -1,5 +1,10 @@
 # v1.0.8 gated test window — E2E walkthrough runbook (Sprint 8.5)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the owner-driven runbook for the v1.0.8 **gated test window**
 > (RELEASE_ARC §"Gated test window + correction"). Drives the whole product +
 > the dev surfaces on the **decomposed** code (8.3a–h: `app.py` → zero routes,

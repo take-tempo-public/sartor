@@ -9,7 +9,7 @@
 > [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4).
 > **Authoritative for:** the metric's *design intent* and the A/B split. The
 > branch sequence lives in `RELEASE_ARC.md`; the deferred follow-up lives in
-> [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md).
+> [`docs/dev/PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md).
 
 ---
 
@@ -96,7 +96,7 @@ precision/recall against those labels (this is literally a v1.0.4 tag criterion:
 `annotations.json` / seed anywhere. The v1.0.4 loop shipped the *machinery*
 (`evals/annotation.py`, `evals/bootstrap.py`, `evals/seed_import.py`,
 `evals/grounding_signals.py`) but its **live run was never executed** (see
-[`PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) cover-letter-tuning entry). *(As of
+[`PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) cover-letter-tuning entry). *(As of
 2026-06-07 that machinery is also driveable from the browser — the `/_dashboard`
 console's bootstrap → annotate → "Score grounding" loop — so producing the labels
 is now a click-through, not a CLI chore; but until someone actually runs it the

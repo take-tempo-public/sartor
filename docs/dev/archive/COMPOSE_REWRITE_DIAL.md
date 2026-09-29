@@ -1,5 +1,10 @@
 # Compose-time rewrite latitude — the "generate but don't invent" dial
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Status:** findings + design input for a future tuning pass. **Nothing here is
 > built, scheduled, or approved.** Sourced 2026-07-21 from an owner-led analysis of
 > a real application artifact (see "Provenance" below).

@@ -6,7 +6,7 @@
 > **Grounding:** the status pill + error modal in `templates/index.html`
 > (`#statusPill`, `#errorModal`) driven by `static/app.js` (`reportError`); the API-key
 > lookup in `web_infra/clients.py` (`_get_client`); the PDF/Chromium requirement in
-> `pdf_render.py` + `docs/install.md`; the date-grounding note in
+> `pdf_render.py` + `docs/user/install.md`; the date-grounding note in
 > `blueprints/generation.py` (`_check_date_grounding`).
 
 ---
@@ -40,7 +40,7 @@ available and which need setup.
   without echoing it and writes it with owner-only permissions, so it never reaches
   your shell history — this is the recommended way. Alternatively, set the
   `ANTHROPIC_API_KEY` environment variable or create a `.api_key` file in the repo
-  root. See `docs/install.md` §"API key" for details.
+  root. See `docs/user/install.md` §"API key" for details.
 - **"Where did my data go?" — resumes, templates, and generated files.** Your data lives in
   a data directory (containing `configs/`, `resumes/`, `output/`, and the corpus database).
   [synthesis] The location depends on how you installed sartor: if you cloned the repo or ran

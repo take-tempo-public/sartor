@@ -23,7 +23,7 @@ of truth**; the wiki is a compiled, link-back artifact — never a copy of the c
 
 1. **Pick the mode.** Read [`docs/wiki/.last_ingest_sha`](../docs/wiki/.last_ingest_sha).
    - No 40-char SHA present (empty / sentinel), **or** `--full` was passed ⇒ **cold pass**:
-     a whole-repo pass, chunked per module using [`docs/architecture.md`](../docs/architecture.md)
+     a whole-repo pass, chunked per module using [`docs/dev/architecture.md`](../docs/dev/architecture.md)
      as the module map (the deterministic core, `analyzer.py`, the routes, `db/`, the eval
      harness, the frontend).
    - A real SHA is present ⇒ **diff pass**: `git diff --name-status <sha> HEAD` selects only

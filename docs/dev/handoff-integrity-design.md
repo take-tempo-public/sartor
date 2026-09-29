@@ -9,7 +9,7 @@
 > already run through one real branch.
 > **Audience:** `dev` — the agent implementing `feat/handoff-integrity-kit`, and the owner
 > reviewing this design. Precedent for a design-branch deliverable:
-> [`governance-extraction-design.md`](governance-extraction-design.md) (`design/` branch,
+> [`governance-extraction-design.md`](archive/governance-extraction-design.md) (`design/` branch,
 > implementation is separate and later).
 > **Authoritative for:** the decision to commit handoff files (superseding the June 8
 > chat-text policy), the file/directory layout, the template changes, and the rollout

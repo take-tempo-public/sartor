@@ -1,5 +1,10 @@
 # Governance extraction — design (Sprint 7.2, v1.0.7)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the settled design `feat/governance-extraction` executes against.
 > Resolves the three open implementation sub-decisions from
 > [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.7, reconciles the pre-authored

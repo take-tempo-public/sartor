@@ -1,7 +1,7 @@
 """Tests for the regenerate-gap-fill affordance + durable `retired_gap_fill_keys`.
 
 Generation-experience re-architecture LATER-branch remainder item (d)
-(`feat/regenerate-gap-fill`, see docs/dev/generation-experience-rearchitecture.md
+(`feat/regenerate-gap-fill`, see docs/dev/archive/generation-experience-rearchitecture.md
 §4/§6 and the RELEASE_CHECKLIST ledger row). Phase 3 (fix/compose-frozen-
 composition) shipped drafting + accept/retire for gap-fill bullets but the
 retire was TRANSIENT — a re-draft could resurface a proposal the user had just

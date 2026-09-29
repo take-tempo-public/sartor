@@ -1,5 +1,10 @@
 # paged.js preview-render engine — design spike
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** a timeboxed design/spike document for the paged.js render-engine
 > replacement (B.13) — the current-state fidelity gap, what a swap would change,
 > an explicit scope fence, and bounded de-risking tasks. This is a **spike doc

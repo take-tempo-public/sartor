@@ -21,7 +21,7 @@
   unpredictable surface is the most rigorously checked.
 - **★ Clean deterministic / LLM boundary (the P1 hardening line)** — the deterministic
   core is LLM-free by contract; all model calls live in `analyzer.py`. (Canonical in
-  [`../../system-model.md`](../../system-model.md) under Production.)
+  [`../../system-model.md`](../../dev/system-model.md) under Production.)
 - **★ Security-by-convention, enforced mechanically** — `_safe_username` + `_within` on
   every filesystem-touching route, enforced by a hook rather than reviewer vigilance.
 - **★ Reproducibility / audit trail** — the `context_set` JSON contract +

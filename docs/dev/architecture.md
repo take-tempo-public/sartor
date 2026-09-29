@@ -11,10 +11,10 @@
 > When the code changes shape, this doc — including the four fenced
 > Mermaid diagrams it embeds — must change with it.
 > Sibling docs:
-> [`CLAUDE.md`](../CLAUDE.md) (contributor contract),
-> [`docs/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product intent),
-> [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md) (analyze latency audit),
-> [`vision.md`](../vision.md) (LLM persona rules).
+> [`CLAUDE.md`](../../CLAUDE.md) (contributor contract),
+> [`docs/dev/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product intent),
+> [`docs/dev/perf/PERF_ANALYZE.md`](perf/PERF_ANALYZE.md) (analyze latency audit),
+> [`vision.md`](../../vision.md) (LLM persona rules).
 
 ---
 
@@ -286,27 +286,27 @@ purpose. Code that belongs elsewhere goes elsewhere.
 
 | File | Purpose | Key public surface | What NOT to put here |
 |---|---|---|---|
-| [`app.py`](../app.py) | Thin composition root — the `create_app(Config)` application-factory, the module-level WSGI / console handle (`app = create_app()`), and `main()`. As of v1.0.8 (8.3h) every route lives on a domain blueprint and the security/config helpers live in `web_infra` — none remain here | `create_app()`, `register_blueprints()`, `main()`, `_should_open_browser()` | route handlers, path globals, per-request helpers (they moved to `blueprints/` + `web_infra/`); LLM calls; parsing logic |
-| [`analyzer.py`](../analyzer.py) | All LLM calls; system prompts; response parsing | `analyze()`, `clarify()`, `clarify_iteration()`, `recommend_bullets()`, `recommend_summaries()`, `generate()`, `generate_cover_letter_against_resume()`, `_parse_or_retry()`, `SYSTEM_PROMPT` family | Filesystem I/O, route handling, schema definitions |
-| [`hardening.py`](../hardening.py) | Deterministic Python: keyword extraction, ATS checks, context-set lifecycle, post-generation metrics | `build_context_set()`, `save_iteration_context()`, `summarize_recent_edits()`, `compute_iteration_signals()`, `ContextSet` TypedDict, verb-diversity / specificity / grounding scorers | LLM calls (P1 hardening boundary) |
-| [`generator.py`](../generator.py) | Document output: .md / .docx / .pdf | `generate_resume(content, output_format, ...)`, `_write_docx()`, `_render_pdf_from_json()`, `BULLET_RE` normalizer | LLM calls, parsing of LLM responses |
-| [`parser.py`](../parser.py) | Résumé file parsing (.docx / .pdf / .md → structured dict) | `parse_resume()`, format-specific helpers | LLM calls, document generation |
-| [`pdf_render.py`](../pdf_render.py) | Jinja2 + Playwright PDF and live-preview render | `render_pdf()`, `render_html_string()`, `html_template_path_for()` | LLM calls, route handling |
-| [`json_resume.py`](../json_resume.py) | JSON Resume v1.0 normalizer for markdown → structured | `md_to_json_resume()`, `SCHEMA_URI` | LLM calls, generation |
-| [`corpus_to_json_resume.py`](../corpus_to_json_resume.py) | Build JSON Resume doc directly from corpus DB rows + composition overrides | `build_json_resume_from_corpus()` | LLM calls, route handling |
-| [`scraper.py`](../scraper.py) | LinkedIn / portfolio URL fetch (best-effort) | `scrape_url()` | LLM calls, processing |
-| [`db/models.py`](../db/models.py) | SQLAlchemy 2.0 ORM models — see persistence diagram | `Candidate`, `Experience`, `Bullet`, `SummaryItem`, `Application`, `ApplicationRun`, etc. | Route handlers, business logic |
-| [`db/session.py`](../db/session.py) | SQLAlchemy engine + session factory; Alembic migration runner | `init_db()`, `get_session()` | Business logic |
-| [`db/build_context.py`](../db/build_context.py) | DB-backed `build_context_set` variant; bullet scorer | `score_corpus_bullet()`, `_bullet_tag_values()` | Route handlers |
-| [`dashboard/`](../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
-| [`recall/`](../recall/) | **Memory substrate** (Stages 1–2): deterministic, provenance-stamped retrieval + assembly that *feeds* the doc-grounded avatar. Core is stdlib-only; refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `recall/sources/` adds the generic, injected `WikiSource` (S1) / `GitGrepSource` (S2) / `SessionSource` (S5-P1) / `VectorSource` (S3 static-embedding semantic search — brute-force cosine over a rebuildable sidecar; the one tier that imports `numpy`, embedder injected) tiers | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `WikiSource`, `GitGrepSource`, `SessionSource`, `VectorSource` | LLM calls, `app.py`/`analyzer`/DB/Flask imports, **`model2vec`** (the embedder is injected — it lives in the wiring layer so the substrate stays embedder-agnostic + extractable), sartor-specific paths baked into the tiers (injected by the wiring layer) |
-| [`blueprints/`](../blueprints/) | Flask route modules split out of the `app.py` monolith (born 7.5; the v1.0.8 split target). Domain seams extracted so far (v1.0.8): `analysis.py` (8.3b), `generation.py` (8.3c), `corpus/` (8.3d — a 42-route sub-package: `experiences`/`summaries`/`skills`/`tags`/`curation`/`proposals` on one `corpus_bp`, serializers in `_shared.py`), `templates.py` (8.3e — 11 persona-template + live-preview routes; the canonical home of the `_resolve_persona_*` resolvers, which `generation.py` imports; LLM-free, so not on the egress allowlist), `applications.py` (8.3f — 13 application-tracker + per-application Compose routes; the canonical home of `_load_application_owned`, which `templates.py` imports; on the egress allowlist — `anthropic` error types in the recommend/suggest bodies), `users.py` (8.3g — 6 user/config routes: the SPA shell + user/config CRUD + the PX-02 profile scrape; config-io/security/provisioning helpers from `web_infra`; LLM-free, so not on the egress allowlist), `diagnostics.py` (8.3h — the 9 annotation/bootstrap/eval/tune routes incl. 5 SSE; reads `ANNOTATION_ROOT` from `current_app.config`; LLM-free at this layer — the paid work is delegated to `evals.runner`/`evals.bootstrap`/`evals.grounding_signals`, so not on the egress allowlist). **The split is complete (8.3h): all 93 routes live on a domain blueprint and `app.py` carries zero `@app.route` handlers.** Each seam registers with no `url_prefix` (URLs byte-identical), reads paths from `current_app.config`, imports the shared `web_infra` helpers, and never imports `app.py`. `assistant.py` = the doc-grounded assistant's SSE route (`POST /api/assistant/ask`) + the callback wiring (source roots + SCHEMA audience rules) binding the generic `recall.sources` tiers; it also builds the `model2vec` embedder (lazy, process-cached) and adds the S3 `VectorSource` **"on when available"** (model + index present). The avatar LLM call itself stays in `analyzer.py`; the vector index is built offline by `scripts/build_vector_index.py` into the gitignored `db/vector_index/` sidecar | `assistant_bp` | the LLM call (that is `analyzer.avatar_answer_streaming`); importing `app.py` |
-| [`evals/runner.py`](../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
-| [`scripts/perf_baseline.py`](../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |
-| [`scripts/export_corpus_seed.py`](../scripts/export_corpus_seed.py) | Eval tooling: deterministic, LLM-free snapshot of one candidate's corpus (Candidate / Experience / Bullet / SummaryItem / Skill + tag registry) → `seed.json` under the gitignored `evals/fixtures/real/`. A `_within`-style guard refuses to write elsewhere. Consumed by the corpus-backed eval runner. Not part of the runtime. | CLI only — `python -m scripts.export_corpus_seed --user <name>` | LLM calls, production import |
-| [`evals/seed_import.py`](../evals/seed_import.py) | Eval tooling: deterministic, LLM-free importer — the inverse of `export_corpus_seed`. Reads a `seed.json`, validates the schema version, and reconstructs the corpus into a fresh in-memory SQLite (PKs preserved) so the eval runner's `--seed` path drives `build_context_set_from_db` like the live pipeline. `seeded_session()` is the context-manager entry. Not part of the runtime. | `import_seed()`, `seeded_session()`, `load_seed()`, `validate_seed()` | LLM calls, production import, pre-filtering (lives in `build_context_set_from_db`) |
-| [`evals/bootstrap.py`](../evals/bootstrap.py) | Eval tooling: drives one corpus seed against N JDs through the real `analyze`/`clarify`/`generate` pipeline (reuses the public primitives + `seeded_session` + `build_context_set_from_db`), then deterministically dedups generated bullets/skills across JDs (Jaccard 0.75) into a gitignored `bootstrap.json` under `evals/fixtures/real/`. Second `run_grounding_signals` call site (`--grounding-signals`). **Orchestrates LLM calls; dedup + collation are deterministic.** A `_within` guard refuses to write elsewhere. Not part of the runtime. | CLI — `python -m evals.bootstrap --seed <p> --jd-dir <d>`; `build_bootstrap_document()`, `dedup_texts()`, `run_pipeline_over_jds()` | Production import; duplicating LLM-call logic (reused from `analyzer.py`); touching the runner's `--seed`/file paths |
-| [`evals/annotation.py`](../evals/annotation.py) | Eval tooling: **deterministic, LLM-free** annotation contract — the human-in-the-loop seam from `bootstrap.json` to a `--suite real` fixture. Declares `annotation_schema_version: 1` + a fail-closed validator (mirrors `seed_import.py`). Emits a blank `annotations.json` skeleton (clusters + clarification questions + inline MiniCheck/NLI pre-scores) for a human to fill with a `keep`/`fix`/`omit`/`fabricated` verdict (reusing `evals/rubrics/` `failed_rules` slugs), then collates a completed file into an `expected.json` fixture + an improvement brief. A `_within` guard refuses to write outside `evals/fixtures/real/`. Not part of the runtime. | CLI — `python -m evals.annotation --bootstrap <p> --emit-template` / `--collate`; `validate_annotations()`, `build_annotation_template()`, `collate_expected()`, `build_improvement_brief()` | LLM calls; production import; touching the runner's `--seed`/file/bootstrap paths; editing prompt constants |
+| [`app.py`](../../app.py) | Thin composition root — the `create_app(Config)` application-factory, the module-level WSGI / console handle (`app = create_app()`), and `main()`. As of v1.0.8 (8.3h) every route lives on a domain blueprint and the security/config helpers live in `web_infra` — none remain here | `create_app()`, `register_blueprints()`, `main()`, `_should_open_browser()` | route handlers, path globals, per-request helpers (they moved to `blueprints/` + `web_infra/`); LLM calls; parsing logic |
+| [`analyzer.py`](../../analyzer.py) | All LLM calls; system prompts; response parsing | `analyze()`, `clarify()`, `clarify_iteration()`, `recommend_bullets()`, `recommend_summaries()`, `generate()`, `generate_cover_letter_against_resume()`, `_parse_or_retry()`, `SYSTEM_PROMPT` family | Filesystem I/O, route handling, schema definitions |
+| [`hardening.py`](../../hardening.py) | Deterministic Python: keyword extraction, ATS checks, context-set lifecycle, post-generation metrics | `build_context_set()`, `save_iteration_context()`, `summarize_recent_edits()`, `compute_iteration_signals()`, `ContextSet` TypedDict, verb-diversity / specificity / grounding scorers | LLM calls (P1 hardening boundary) |
+| [`generator.py`](../../generator.py) | Document output: .md / .docx / .pdf | `generate_resume(content, output_format, ...)`, `_write_docx()`, `_render_pdf_from_json()`, `BULLET_RE` normalizer | LLM calls, parsing of LLM responses |
+| [`parser.py`](../../parser.py) | Résumé file parsing (.docx / .pdf / .md → structured dict) | `parse_resume()`, format-specific helpers | LLM calls, document generation |
+| [`pdf_render.py`](../../pdf_render.py) | Jinja2 + Playwright PDF and live-preview render | `render_pdf()`, `render_html_string()`, `html_template_path_for()` | LLM calls, route handling |
+| [`json_resume.py`](../../json_resume.py) | JSON Resume v1.0 normalizer for markdown → structured | `md_to_json_resume()`, `SCHEMA_URI` | LLM calls, generation |
+| [`corpus_to_json_resume.py`](../../corpus_to_json_resume.py) | Build JSON Resume doc directly from corpus DB rows + composition overrides | `build_json_resume_from_corpus()` | LLM calls, route handling |
+| [`scraper.py`](../../scraper.py) | LinkedIn / portfolio URL fetch (best-effort) | `scrape_url()` | LLM calls, processing |
+| [`db/models.py`](../../db/models.py) | SQLAlchemy 2.0 ORM models — see persistence diagram | `Candidate`, `Experience`, `Bullet`, `SummaryItem`, `Application`, `ApplicationRun`, etc. | Route handlers, business logic |
+| [`db/session.py`](../../db/session.py) | SQLAlchemy engine + session factory; Alembic migration runner | `init_db()`, `get_session()` | Business logic |
+| [`db/build_context.py`](../../db/build_context.py) | DB-backed `build_context_set` variant; bullet scorer | `score_corpus_bullet()`, `_bullet_tag_values()` | Route handlers |
+| [`dashboard/`](../../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
+| [`recall/`](../../recall/) | **Memory substrate** (Stages 1–2): deterministic, provenance-stamped retrieval + assembly that *feeds* the doc-grounded avatar. Core is stdlib-only; refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `recall/sources/` adds the generic, injected `WikiSource` (S1) / `GitGrepSource` (S2) / `SessionSource` (S5-P1) / `VectorSource` (S3 static-embedding semantic search — brute-force cosine over a rebuildable sidecar; the one tier that imports `numpy`, embedder injected) tiers | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `WikiSource`, `GitGrepSource`, `SessionSource`, `VectorSource` | LLM calls, `app.py`/`analyzer`/DB/Flask imports, **`model2vec`** (the embedder is injected — it lives in the wiring layer so the substrate stays embedder-agnostic + extractable), sartor-specific paths baked into the tiers (injected by the wiring layer) |
+| [`blueprints/`](../../blueprints/) | Flask route modules split out of the `app.py` monolith (born 7.5; the v1.0.8 split target). Domain seams extracted so far (v1.0.8): `analysis.py` (8.3b), `generation.py` (8.3c), `corpus/` (8.3d — a 42-route sub-package: `experiences`/`summaries`/`skills`/`tags`/`curation`/`proposals` on one `corpus_bp`, serializers in `_shared.py`), `templates.py` (8.3e — 11 persona-template + live-preview routes; the canonical home of the `_resolve_persona_*` resolvers, which `generation.py` imports; LLM-free, so not on the egress allowlist), `applications.py` (8.3f — 13 application-tracker + per-application Compose routes; the canonical home of `_load_application_owned`, which `templates.py` imports; on the egress allowlist — `anthropic` error types in the recommend/suggest bodies), `users.py` (8.3g — 6 user/config routes: the SPA shell + user/config CRUD + the PX-02 profile scrape; config-io/security/provisioning helpers from `web_infra`; LLM-free, so not on the egress allowlist), `diagnostics.py` (8.3h — the 9 annotation/bootstrap/eval/tune routes incl. 5 SSE; reads `ANNOTATION_ROOT` from `current_app.config`; LLM-free at this layer — the paid work is delegated to `evals.runner`/`evals.bootstrap`/`evals.grounding_signals`, so not on the egress allowlist). **The split is complete (8.3h): all 93 routes live on a domain blueprint and `app.py` carries zero `@app.route` handlers.** Each seam registers with no `url_prefix` (URLs byte-identical), reads paths from `current_app.config`, imports the shared `web_infra` helpers, and never imports `app.py`. `assistant.py` = the doc-grounded assistant's SSE route (`POST /api/assistant/ask`) + the callback wiring (source roots + SCHEMA audience rules) binding the generic `recall.sources` tiers; it also builds the `model2vec` embedder (lazy, process-cached) and adds the S3 `VectorSource` **"on when available"** (model + index present). The avatar LLM call itself stays in `analyzer.py`; the vector index is built offline by `scripts/build_vector_index.py` into the gitignored `db/vector_index/` sidecar | `assistant_bp` | the LLM call (that is `analyzer.avatar_answer_streaming`); importing `app.py` |
+| [`evals/runner.py`](../../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
+| [`scripts/perf_baseline.py`](../../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |
+| [`scripts/export_corpus_seed.py`](../../scripts/export_corpus_seed.py) | Eval tooling: deterministic, LLM-free snapshot of one candidate's corpus (Candidate / Experience / Bullet / SummaryItem / Skill + tag registry) → `seed.json` under the gitignored `evals/fixtures/real/`. A `_within`-style guard refuses to write elsewhere. Consumed by the corpus-backed eval runner. Not part of the runtime. | CLI only — `python -m scripts.export_corpus_seed --user <name>` | LLM calls, production import |
+| [`evals/seed_import.py`](../../evals/seed_import.py) | Eval tooling: deterministic, LLM-free importer — the inverse of `export_corpus_seed`. Reads a `seed.json`, validates the schema version, and reconstructs the corpus into a fresh in-memory SQLite (PKs preserved) so the eval runner's `--seed` path drives `build_context_set_from_db` like the live pipeline. `seeded_session()` is the context-manager entry. Not part of the runtime. | `import_seed()`, `seeded_session()`, `load_seed()`, `validate_seed()` | LLM calls, production import, pre-filtering (lives in `build_context_set_from_db`) |
+| [`evals/bootstrap.py`](../../evals/bootstrap.py) | Eval tooling: drives one corpus seed against N JDs through the real `analyze`/`clarify`/`generate` pipeline (reuses the public primitives + `seeded_session` + `build_context_set_from_db`), then deterministically dedups generated bullets/skills across JDs (Jaccard 0.75) into a gitignored `bootstrap.json` under `evals/fixtures/real/`. Second `run_grounding_signals` call site (`--grounding-signals`). **Orchestrates LLM calls; dedup + collation are deterministic.** A `_within` guard refuses to write elsewhere. Not part of the runtime. | CLI — `python -m evals.bootstrap --seed <p> --jd-dir <d>`; `build_bootstrap_document()`, `dedup_texts()`, `run_pipeline_over_jds()` | Production import; duplicating LLM-call logic (reused from `analyzer.py`); touching the runner's `--seed`/file paths |
+| [`evals/annotation.py`](../../evals/annotation.py) | Eval tooling: **deterministic, LLM-free** annotation contract — the human-in-the-loop seam from `bootstrap.json` to a `--suite real` fixture. Declares `annotation_schema_version: 1` + a fail-closed validator (mirrors `seed_import.py`). Emits a blank `annotations.json` skeleton (clusters + clarification questions + inline MiniCheck/NLI pre-scores) for a human to fill with a `keep`/`fix`/`omit`/`fabricated` verdict (reusing `evals/rubrics/` `failed_rules` slugs), then collates a completed file into an `expected.json` fixture + an improvement brief. A `_within` guard refuses to write outside `evals/fixtures/real/`. Not part of the runtime. | CLI — `python -m evals.annotation --bootstrap <p> --emit-template` / `--collate`; `validate_annotations()`, `build_annotation_template()`, `collate_expected()`, `build_improvement_brief()` | LLM calls; production import; touching the runner's `--seed`/file/bootstrap paths; editing prompt constants |
 
 **Code that crosses modules.** When a route in `app.py` needs to
 call the LLM, it imports the analyzer function. When the analyzer
@@ -519,7 +519,7 @@ Highlights:
   for back-compat with pre-`SummaryItem` data).
 - **Experience → ExperienceTitle / Bullet** is the corpus
   backbone. Bullets are the only fully-Corpus-Item type
-  ([`docs/PRODUCT_SHAPE.md §3`](PRODUCT_SHAPE.md) for the
+  ([`docs/dev/PRODUCT_SHAPE.md §3`](PRODUCT_SHAPE.md) for the
   asymmetry matrix); SummaryItem extends the same pattern.
 - **Tag** is shared across bullets, titles, summary items, and
   persona templates via junction tables — one taxonomy, multiple
@@ -654,10 +654,10 @@ graph LR
 *(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/llm-routing.mmd` copy was retired to remove the two-copy sync-drift risk.)*
 This diagram carries no per-call latency numbers as of 2026-07-28 (the prior
 ones were pre-Sonnet-5 synthetic figures, removed rather than left stale).
-[`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md) is the original
+[`docs/dev/perf/PERF_ANALYZE.md`](perf/PERF_ANALYZE.md) is the original
 analyze-latency audit that motivated the R1 split (historical); for current
 real-corpus latency/cost, see
-[`docs/dev/perf/PERFORMANCE_HISTORY.md`](dev/perf/PERFORMANCE_HISTORY.md)'s
+[`docs/dev/perf/PERFORMANCE_HISTORY.md`](perf/PERFORMANCE_HISTORY.md)'s
 Era 4 section.
 
 **Sonnet 5** (`claude-sonnet-5`) handles heavy reasoning:
@@ -679,7 +679,7 @@ selection / classification: `analyze_extraction` (JD signals),
 `avatar_answer` (the doc-grounded assistant), and
 `check_refinement_scope` (fail-open refinement-note classifier,
 `max_tokens=128`). Full table with route + call site:
-[`docs/wiki/pages/llm-call-catalog.md`](wiki/pages/llm-call-catalog.md).
+[`docs/wiki/pages/llm-call-catalog.md`](../wiki/pages/llm-call-catalog.md).
 
 **Cache prefix.** `analyze_synthesis` and `generate` share a heavy
 cached user prefix (corpus + résumé blocks): synthesis runs under
@@ -692,7 +692,7 @@ heavy user prefix is unaffected.
 
 **Retry attribution.** Every call_kind has a sibling
 `<kind>_retry` for dashboard breakdowns. Implementation in
-[`analyzer.py`](../analyzer.py) `_parse_or_retry()`.
+[`analyzer.py`](../../analyzer.py) `_parse_or_retry()`.
 
 **Typed contracts (pydantic-in-the-loop).** Every call's expected shape is a
 `pydantic.BaseModel` subclass — `_LLMResponse` (`analyzer.py:152`) and its
@@ -709,7 +709,7 @@ questions typed `experience_probe`/`context_probe`). The resulting
 `_parse_or_retry()` (`analyzer.py:1405`, streaming variant
 `_parse_or_retry_streaming()`) catches it, appends the error text to the
 prompt inside a `<retry_reason>` block, and re-calls the model
-(`analyzer.py:1452`-1474) — the "structured retry" [`README.md`](../README.md)
+(`analyzer.py:1452`-1474) — the "structured retry" [`README.md`](../../README.md)
 refers to under "For developers."
 
 ---
@@ -841,7 +841,7 @@ Key invariants:
   chain is the audit trail. The parent is never mutated.
 - **Containment guard.** Every route that reads/writes a context
   file checks `_within(path, OUTPUT_DIR)`. Path traversal is
-  CVE-class — see [`SECURITY.md`](../SECURITY.md).
+  CVE-class — see [`SECURITY.md`](../../SECURITY.md).
 - **Resumability.** Clarify questions and answers ride along on
   the same file; users can quit and resume mid-application.
 - **Run ID propagation.** The same 12-hex `run_id` (minted in
@@ -882,7 +882,7 @@ styling decisions). No JSON Resume sidecar — a cover letter is not a résumé.
 ## Security model
 
 Single-tenant local-first; the server binds to `127.0.0.1:5000`
-only. Full threat model in [`SECURITY.md`](../SECURITY.md).
+only. Full threat model in [`SECURITY.md`](../../SECURITY.md).
 
 Two helpers every route that touches the filesystem must use:
 
@@ -910,7 +910,7 @@ synthetic`) is label-gated CI — ~$0.30-0.40 per full run under Sonnet 5
 
 When a prompt changes, bump `PROMPT_VERSION` in the same commit
 so the eval dashboard can attribute score changes correctly.
-The version string lives in [`analyzer.py`](../analyzer.py).
+The version string lives in [`analyzer.py`](../../analyzer.py).
 
 ---
 
@@ -928,5 +928,5 @@ The version string lives in [`analyzer.py`](../analyzer.py).
   `generator.generate_resume()` and a renderer module. The
   JSON Resume intermediate already exists; reuse it.
 - **Debugging a slow call?** Start with
-  [`docs/dev/perf/PERF_ANALYZE.md`](dev/perf/PERF_ANALYZE.md); reproduce the
+  [`docs/dev/perf/PERF_ANALYZE.md`](perf/PERF_ANALYZE.md); reproduce the
   audit query against your own `logs/llm_calls.jsonl`.

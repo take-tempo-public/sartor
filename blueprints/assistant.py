@@ -129,7 +129,7 @@ def _path_audience(path: str) -> Audience:
     p = path.replace("\\", "/")
     if p.endswith(".py") or any(p.startswith(prefix) for prefix in _DEV_PATH_PREFIXES):
         return Audience.DEV
-    if p in _USER_DOC_NAMES or p.startswith(("docs/install", "docs/walkthrough")):
+    if p in _USER_DOC_NAMES or p.startswith("docs/user/"):
         return Audience.USER
     return Audience.DEV
 

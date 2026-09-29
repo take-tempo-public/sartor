@@ -1,5 +1,10 @@
 # v1.0.8 gated test window — findings backlog (Sprint 8.5, PV-1)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the **one numbered, triaged findings backlog** produced by the
 > v1.0.8 gated test window (RELEASE_ARC §"Gated test window + correction"). It is
 > the **single authoritative hand-off to 8.6** (`fix/window-findings-*`): 8.5

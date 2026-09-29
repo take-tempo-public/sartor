@@ -8,5 +8,5 @@ auto-discovers from the root dir the same way `commands/`/`agents/` do.
   files against context-engineering best practices (progressive disclosure,
   just-in-time loading, document structure, instruction-file hygiene,
   freshness, secrets hygiene). Imported from the external agent-coding-practices
-  kit (see [`docs/dev/kit-adoption-design.md`](../docs/dev/kit-adoption-design.md)
+  kit (see [`docs/dev/archive/kit-adoption-design.md`](../docs/dev/archive/kit-adoption-design.md)
   §3 Decision 5, §4 Phase 5); kit source path recorded in `CLAUDE.local.md`.

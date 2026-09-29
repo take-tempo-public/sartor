@@ -6,7 +6,7 @@
 > weights, a credential — split by what you are trying to run. (Q3.)
 > **Sources:** [`q3-downloads.md`](../../dev/excellence-walk/q3-downloads.md), whose
 > facts were **verified 2026-06-07** against [`pyproject.toml`](../../../pyproject.toml),
-> [`../../install.md`](../../install.md), and [`../../../CONTRIBUTING.md`](../../../CONTRIBUTING.md);
+> [`../../install.md`](../../user/install.md), and [`../../../CONTRIBUTING.md`](../../../CONTRIBUTING.md);
 > the `requires-python` / MiniCheck-pin updates below are re-verified against
 > [`pyproject.toml`](../../../pyproject.toml) and [`../../../CHANGELOG.md`](../../../CHANGELOG.md)
 > (PX-42) at HEAD.

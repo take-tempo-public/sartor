@@ -7,7 +7,7 @@
 > **Audience:** `dev`
 > **Authoritative for:** the L0–L3 documentation layering; the ICP-ladder navigation spine;
 > the Fumadocs-as-projection model; the merge=publish gate; the `DOC-STATUS` flag convention.
-> It **defers** to [`../system-model.md`](../system-model.md) for the seven pillars + the one
+> It **defers** to [`../system-model.md`](system-model.md) for the seven pillars + the one
 > law, to [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md) for the wiki contract + the `user`/`dev`
 > audience tag, and to [`memory-architecture.md`](memory-architecture.md) for the recall
 > disclosure plane. It **extends** the prior
@@ -60,7 +60,7 @@ L3  PUBLISHED PRESENTATION         Fumadocs site (renders a curated public subse
     (derived, never authoritative)   surfaces L2 as Search + the "Ask" avatar)
 ```
 
-**The one-way law (from [`../system-model.md`](../system-model.md)):** `L3 -> L2 -> L1 -> L0`,
+**The one-way law (from [`../system-model.md`](system-model.md)):** `L3 -> L2 -> L1 -> L0`,
 never the reverse; Production code depends on none of them. The hosted site is a *pure
 function of `main` HEAD* — repo and site cannot drift by construction. This is the wiki's
 "git HEAD is the source" rule extended to the public site.
@@ -183,7 +183,7 @@ Do not bloat the README to cover items 1–2 — surface hooks, keep depth in th
 
 ## Canonical homes this cites
 
-[`../system-model.md`](../system-model.md) (seven pillars + one law) ·
+[`../system-model.md`](system-model.md) (seven pillars + one law) ·
 [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md) (wiki contract + audience tag) ·
 [`memory-architecture.md`](memory-architecture.md) (recall disclosure plane) ·
 [`../governance/charter.md`](../governance/charter.md) (D5 + the binding rules) ·

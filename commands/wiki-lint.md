@@ -31,7 +31,7 @@ wiki must be honest before a tag).
    - **Orphans:** pages with no inbound `[[links]]` from any other page.
    - **Index agreement:** the `pages/` set and the [`docs/wiki/index.md`](../docs/wiki/index.md)
      listing match — flag pages missing from the index and index entries with no page.
-3. **Coverage gaps.** Source areas (modules in [`docs/architecture.md`](../docs/architecture.md),
+3. **Coverage gaps.** Source areas (modules in [`docs/dev/architecture.md`](../docs/dev/architecture.md),
    key routes, the eval harness) with no corresponding page — where the wiki is silent on
    something load-bearing.
 

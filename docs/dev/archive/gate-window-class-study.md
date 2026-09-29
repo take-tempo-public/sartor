@@ -1,5 +1,10 @@
 # Class study: the gate-window gap — post-gate artifacts are never re-gated
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Status:** documented for resolution in a future sprint — tracked as work item
 > **52** (`docs/dev/work/items/0052-gate-window-final-tree.md`). This document is
 > the durable evidence record: every observed instance, the shared mechanism, what

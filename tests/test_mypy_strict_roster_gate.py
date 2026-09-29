@@ -2,7 +2,7 @@
 
 WHY: the kit-adoption mypy ``--strict`` ratchet reached its §6 exit (2026-07-10) — the
 categorical claim "every non-exempt production module is at full ``--strict``; only the
-Decision-7 exempt set stays permissive" (docs/dev/kit-adoption-design.md §6; the pyproject
+Decision-7 exempt set stays permissive" (docs/dev/archive/kit-adoption-design.md §6; the pyproject
 strict-roster block comment). Charter **C-0** (docs/governance/charter.md) requires a
 categorical claim be enforced BY CONSTRUCTION, not by a one-time manual proof: without a
 gate, a new ``.py`` added outside the exempt set and left off the strict roster would

@@ -53,7 +53,7 @@ wiki is the thing that is wrong (file it back via a `/wiki-*` op once those land
 |---|---|
 | [`SCHEMA.md`](SCHEMA.md) | This file — wiki conventions, grounding rule, source model. |
 | [`index.md`](index.md) | One-line summary per page; doubles as the map the root [`llms.txt`](../../llms.txt) points at. |
-| [`overview.md`](overview.md) | The wiki's front door — a one-page orientation, seeded from and deferring to [`../system-model.md`](../system-model.md). |
+| [`overview.md`](overview.md) | The wiki's front door — a one-page orientation, seeded from and deferring to [`../system-model.md`](../dev/system-model.md). |
 | [`log.md`](log.md) | Append-only record of every ingest / lint run. |
 | `.last_ingest_sha` | The codebase-variant diff checkpoint (see "Source model"). |
 | `pages/` | Flat, slug-named synthesized pages. Populated by ingest — the excellence-walk content pass (WS-4a step 4) + the code cold-ingest (WS-4b). |
@@ -100,7 +100,7 @@ access plane) — referenced, not restated (D5).
 | Source it describes | Tier |
 |---|---|
 | code (`*.py`, `static/`, `templates/`), `docs/dev/`, `evals/`, `dashboard/` | `dev` |
-| `README.md`, `docs/install.md`, `docs/walkthrough*.md`, `vision.md`, wiki `overview.md` | `user` |
+| `README.md`, `docs/user/` (the user-tier docs), `vision.md`, wiki `overview.md` | `user` |
 
 [`overview.md`](overview.md) (the front door) plus the five Sprint-6.5 education guides
 under `pages/` (`using-sartor`, `tailoring-a-resume`, `career-corpus`,
@@ -160,7 +160,7 @@ subagent (author ≠ auditor), runs `wiki-lint` as the deterministic gate, advan
 `.last_ingest_sha`, and **presents a reviewable diff — it never auto-commits**. Its trigger
 is a **bounded checkpoint** (branch close-out / pre-tag), not a scheduler, and the freshness
 reminder escalates its message past a drift threshold to point at it. The design is
-[`../dev/self-documenting-loop-design.md`](../dev/self-documenting-loop-design.md); the
+[`../dev/self-documenting-loop-design.md`](../dev/archive/self-documenting-loop-design.md); the
 cross-document link/cite checker stays a **separate** follow-on (this loop is
 `docs/wiki/`-scoped only).
 

@@ -1,5 +1,10 @@
 # Big-push orchestration playbook
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the model-agnostic conductor guide for the merge-train pattern
 > used by the 2026-07 big-push (Trains 1–5+). A fresh orchestrator session —
 > any model — resumes from this file + the durable state listed in

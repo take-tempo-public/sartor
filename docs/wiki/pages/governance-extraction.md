@@ -40,7 +40,7 @@ each rule lives in exactly one place; everything else references it.
   do" list, branch conventions), [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) (the
   ruff + mypy + pytest bar, commit/branch conventions), [`SECURITY.md`](../../../SECURITY.md)
   (API-key rules, the `_safe_username`/`_within` mandate),
-  [`../../PRODUCT_SHAPE.md`](../../PRODUCT_SHAPE.md) (the prescriptive v1→v2 ladder +
+  [`../../PRODUCT_SHAPE.md`](../../dev/PRODUCT_SHAPE.md) (the prescriptive v1→v2 ladder +
   Corpus-Item rules), and [`../../dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md) (the
   "hard constraints, all phases" + the "do not edit without sign-off" gate).
 

@@ -1,5 +1,10 @@
 # Dependency triage — the 12 open Dependabot PRs, pre-v1.1.0
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the finished research product for clearing Dependabot PRs #5–#18 before the
 > v1.1.0 public release. Per-PR verdict, the reason, and — where it matters — **the thing
 > Dependabot got wrong**. Four of these twelve are **not safe to merge as-authored**.

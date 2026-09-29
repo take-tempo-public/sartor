@@ -33,11 +33,11 @@ The core discipline: **the LLM discovers and phrases — it does not invent.** N
 
 > **Documentation map.** This README orients; the depth lives in single-home docs:
 > [`vision.md`](vision.md) (intent + scope) ·
-> [`docs/install.md`](docs/install.md) (install + first run) ·
-> [`docs/walkthrough.md`](docs/walkthrough.md) (screen-by-screen) ·
-> [`docs/architecture.md`](docs/architecture.md) (system + module map + diagrams) ·
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (data model + roadmap ladder) ·
-> [`docs/system-model.md`](docs/system-model.md) (the seven pillars + one law) ·
+> [`docs/user/install.md`](docs/user/install.md) (install + first run) ·
+> [`docs/user/walkthrough.md`](docs/user/walkthrough.md) (screen-by-screen) ·
+> [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + module map + diagrams) ·
+> [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) (data model + roadmap ladder) ·
+> [`docs/dev/system-model.md`](docs/dev/system-model.md) (the seven pillars + one law) ·
 > [`docs/governance/`](docs/governance/) (the charter + enforcement) ·
 > [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) (agent contract + tooling) ·
 > [`CONTRIBUTING.md`](CONTRIBUTING.md) (dev loop) ·
@@ -102,7 +102,7 @@ Each tier gets everything the tier above it does. A coach is a job seeker with m
 
 ## How it works
 
-A sequence of small, inspectable stages — full sequence + diagrams in [`docs/architecture.md`](docs/architecture.md); stage detail in the wiki ([`pipeline-stages`](docs/wiki/pages/pipeline-stages.md)).
+A sequence of small, inspectable stages — full sequence + diagrams in [`docs/dev/architecture.md`](docs/dev/architecture.md); stage detail in the wiki ([`pipeline-stages`](docs/wiki/pages/pipeline-stages.md)).
 
 ```
 1. Job + Analyze   — paste the job description; the LLM reports skill match + ATS warnings
@@ -122,7 +122,7 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/a
 
 **Prerequisites:** [`git`](https://git-scm.com/downloads), Python 3.11+, and an
 Anthropic API key ([console.anthropic.com](https://console.anthropic.com/)).
-Full prerequisites + OS-specific notes: [`docs/install.md`](docs/install.md).
+Full prerequisites + OS-specific notes: [`docs/user/install.md`](docs/user/install.md).
 
 **From source (works today):**
 
@@ -158,7 +158,7 @@ the bare `docker run` form discards your corpus on the next run, and `/app/db`
 must be a **named volume**, never a bind mount (it is a Python package inside the
 image, not a data directory). Full setup (Windows/macOS/Linux),
 container data-persistence, cost guidance, and troubleshooting:
-[`docs/install.md`](docs/install.md). Cap spend via
+[`docs/user/install.md`](docs/user/install.md). Cap spend via
 [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor
 has no built-in budget guard.
 
@@ -181,13 +181,13 @@ If a real key is present alongside the flag, demo still wins: nothing spends.
 auto-opens a browser and runs Flask's debug reloader — fine for a local
 desktop, surprising elsewhere. `sartor` auto-detects a CI runner or container
 and turns both off by default there; `SARTOR_NO_BROWSER=1` / `FLASK_DEBUG=0`
-set it explicitly. Details: [`docs/install.md`](docs/install.md#local-development-headless--container--ci-runs-f-18).
+set it explicitly. Details: [`docs/user/install.md`](docs/user/install.md#local-development-headless--container--ci-runs-f-18).
 
 ---
 
 ## Model routing
 
-Canonical: [`docs/architecture.md`](docs/architecture.md) ·
+Canonical: [`docs/dev/architecture.md`](docs/dev/architecture.md) ·
 [`llm-call-catalog`](docs/wiki/pages/llm-call-catalog.md). Heavy reasoning
 (analyze's synthesis pass, generate, cover letter) runs on **Claude Sonnet**;
 structured selection (analyze's extraction pass, clarify, recommend, extract,
@@ -200,7 +200,7 @@ tuning, never model fine-tuning.
 
 ## For job seekers
 
-**The core.** Tailor your own résumé to one specific posting, grounded in your real history. Walkthrough: [`docs/walkthrough.md`](docs/walkthrough.md).
+**The core.** Tailor your own résumé to one specific posting, grounded in your real history. Walkthrough: [`docs/user/walkthrough.md`](docs/user/walkthrough.md).
 
 - **Import once, then reuse.** Your résumé becomes a structured **career file** — experiences, bullets, summaries, skills — that every future application draws on and improves.
 - **Tailor to one posting:** paste the JD → analyze fit + ATS warnings → two short clarifying interviews surface real experience you left off (in your own words) → curate the recommended bullets and summary → pick an ATS-safe template with a live preview → generate `.md` / `.docx` / `.pdf`.
@@ -234,7 +234,7 @@ tuning, never model fine-tuning.
 
 ## For developers
 
-**Everything the job seeker and coach experience — and the ability to change it.** Sartor is deliberately **two things at once**: a working résumé product, *and* a testbed for reusable, substrate-independent capacities (memory, governance, grounding, evaluation) engineered to be importable beyond this app. A developer doesn't use Sartor for a different purpose; you make it better at the other two's purposes, add new ones, or lift a capacity out. The canonical write-up is [`docs/system-model.md`](docs/system-model.md).
+**Everything the job seeker and coach experience — and the ability to change it.** Sartor is deliberately **two things at once**: a working résumé product, *and* a testbed for reusable, substrate-independent capacities (memory, governance, grounding, evaluation) engineered to be importable beyond this app. A developer doesn't use Sartor for a different purpose; you make it better at the other two's purposes, add new ones, or lift a capacity out. The canonical write-up is [`docs/dev/system-model.md`](docs/dev/system-model.md).
 
 **One discipline, applied recursively.** "Discover/cite; never assert beyond source" governs the résumé generator, the doc-assistant avatar, *and this documentation itself* (the wiki may not assert beyond its cited sources; every fact has one home). The same `user`/`dev` audience plane the assistant gates disclosure on is the plane this documentation's navigation gates on — one mechanism, two consumers.
 
@@ -244,14 +244,14 @@ tuning, never model fine-tuning.
 - `PROMPT_VERSION` discipline + a `/_dashboard` score-over-time view, so a regression is caught in testing.
 
 **Extend — add new capability the other two then use:**
-- the **Corpus Item** pattern — add new curatable kinds (same shape powers bullets, summaries, skills) — see [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md);
+- the **Corpus Item** pattern — add new curatable kinds (same shape powers bullets, summaries, skills) — see [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md);
 - the **memory substrate** (`recall/`): hybrid retrieval (lexical `git grep` + curated wiki + session buffer + static-embedding semantic), fused with Reciprocal Rank Fusion, every retrieved unit carrying a mandatory `path:line` / `[[wiki]]` citation — behind a **machine-enforced extraction boundary** (an AST test fails the build if `recall/` imports the app or a Sartor-specific literal leaks into a retrieval tier, so "reusable substrate" is *enforced*, not narrated). See [`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md), [`deterministic-llm-boundary`](docs/wiki/pages/deterministic-llm-boundary.md);
 - a deterministic core with **every LLM call quarantined to one module**, and **typed contracts as the seams between pillars** — pydantic is in the control loop (`model_validator`s enforce semantic rules; a validation failure is fed back as a structured retry), and frozen `Unit`/`Scope`/`Context` are the substrate's interface;
 - new ATS-safe templates; the **JSON Resume v1.0** open intermediate; a roadmap **provider abstraction** at the single LLM boundary (local / alternative models).
 
 *Note:* the résumé generator is **not** RAG — it assembles the whole corpus into the prompt. Retrieval-as-RAG is the doc-assistant's mechanism, not the generator's.
 
-**Governed by construction.** Extensions stay trustworthy because the rules are machine-enforced — a written constitution, git hooks (secret-blocking, branch discipline, route-security, merge gates), a read-only compliance-witness agent, and the seven-pillar law (every dependency points inward to Production; Production answers only upward to Governance). In keeping with the project's own claims discipline (C-0), the two boundary gates once flagged as owed — the C-1 loopback-bind test and the C-6 import-boundary lint — **shipped in v1.0.8 Sprint 8.3a** (PX-19, PX-20); the deterministic boundary is fail-closed by a committed test, not merely convention. Canonical: [`docs/governance/`](docs/governance/) (the gate-status table is in [`enforcement.md`](docs/governance/enforcement.md)) · [`docs/system-model.md`](docs/system-model.md).
+**Governed by construction.** Extensions stay trustworthy because the rules are machine-enforced — a written constitution, git hooks (secret-blocking, branch discipline, route-security, merge gates), a read-only compliance-witness agent, and the seven-pillar law (every dependency points inward to Production; Production answers only upward to Governance). In keeping with the project's own claims discipline (C-0), the two boundary gates once flagged as owed — the C-1 loopback-bind test and the C-6 import-boundary lint — **shipped in v1.0.8 Sprint 8.3a** (PX-19, PX-20); the deterministic boundary is fail-closed by a committed test, not merely convention. Canonical: [`docs/governance/`](docs/governance/) (the gate-status table is in [`enforcement.md`](docs/governance/enforcement.md)) · [`docs/dev/system-model.md`](docs/dev/system-model.md).
 <!-- DOC-STATUS(governance-boundary): RESOLVED — C-6 import-boundary lint (PX-20) and C-1 loopback-bind test (PX-19) shipped v1.0.8 Sprint 8.3a; both gates are fail-closed. Canonical: docs/governance/enforcement.md -->
 
 ---
@@ -260,7 +260,7 @@ tuning, never model fine-tuning.
 
 Pointers to the canonical homes; depth lives there, not here.
 
-- **Deterministic boundary (P1).** Every LLM call is quarantined to `analyzer.py`; the rest of the core (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`) is LLM-free by rule, enforced by tests + a route-security hook. Full map: [`docs/architecture.md`](docs/architecture.md).
+- **Deterministic boundary (P1).** Every LLM call is quarantined to `analyzer.py`; the rest of the core (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`) is LLM-free by rule, enforced by tests + a route-security hook. Full map: [`docs/dev/architecture.md`](docs/dev/architecture.md).
 - **Persistence.** A per-candidate SQLite corpus (SQLAlchemy 2.0 + Alembic); `Clarification` is cross-application memory; `Application` / `ApplicationRun` / `ProposalReview` persist every generation, edit, and human accept/reject. Schema home: `db/models.py` · [`corpus-data-model`](docs/wiki/pages/corpus-data-model.md).
 - **Claude Code plugin** (catalog home: [`CLAUDE.md`](CLAUDE.md) · [`commands/`](commands/) · [`agents/`](agents/)):
 
@@ -268,7 +268,7 @@ Pointers to the canonical homes; depth lives there, not here.
   |---|---|
   | `/eval` · `/replay` · `/prompt-tune` · `/tune-from-annotations` · `/bench` · `/inspect-context` · `/wiki-*` · `/compliance-witness` | `eval-judge` · `prompt-archaeologist` · `tune-drafter` · `headhunter` · `git-flow` · `ux-onboarding-designer` · `wiki-scribe` · `wiki-grounding-auditor` · `compliance-witness` |
 
-- **Tech stack.** Python + Flask (localhost-bound) · vanilla JS (no build step) · SQLAlchemy 2.0 + SQLite + Alembic · pydantic v2 · Playwright + headless Chromium (PDF) · JSON Resume v1.0. Detail: [`docs/architecture.md`](docs/architecture.md), `pyproject.toml`.
+- **Tech stack.** Python + Flask (localhost-bound) · vanilla JS (no build step) · SQLAlchemy 2.0 + SQLite + Alembic · pydantic v2 · Playwright + headless Chromium (PDF) · JSON Resume v1.0. Detail: [`docs/dev/architecture.md`](docs/dev/architecture.md), `pyproject.toml`.
 - **Dev loop** (canonical: [`CONTRIBUTING.md`](CONTRIBUTING.md)):
   ```bash
   ruff check . && mypy . && pytest        # the minimum bar; CI runs the same
@@ -286,7 +286,7 @@ Local-first: nothing leaves your computer except the Claude API calls (and the o
 
 ## Status
 
-At-a-glance snapshot — the authoritative schedule is [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (+ [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md)):
+At-a-glance snapshot — the authoritative schedule is [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (+ [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md)):
 
 - ✅ **Shipped:** the tailoring pipeline, two-point clarifying interview, the compounding corpus (cross-application memory + human-gated curation), multiple persistent candidate profiles, grounding check + witness metric, ATS-safe templates, human gates, `.md`/`.docx`/`.pdf`, the recall substrate + doc-grounded avatar, and the eval/test stack.
 - 🟡 **Governance — extracted & live, v1.0.8 boundary gates shipped.** The constitution (charter C-0…C-6), the read-only compliance-witness auditor, and the enforcement hooks are shipped. **The two v1.0.8 boundary gates shipped** — the C-1 loopback-bind test (PX-19) and the C-6 import-boundary lint (PX-20), both landed Sprint 8.3a. **Still open for v1.1.0** — C-5 template-property assertions, the required UX/a11y/PDF CI job, and the E-2 supply-chain badges. *Snapshot — updated as those sprints close; canonical: [`enforcement.md`](docs/governance/enforcement.md).*

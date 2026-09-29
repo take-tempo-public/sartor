@@ -306,7 +306,7 @@ def main(argv: list[str] | None = None) -> None:
     `python app.py` in a CI job or an ad-hoc container/devcontainer no longer
     hangs on a browser open or prints a debug traceback by surprise. The
     shipped `Dockerfile` already sets both env vars explicitly; this only
-    covers runs outside that image. See docs/install.md's "Local development"
+    covers runs outside that image. See docs/user/install.md's "Local development"
     section for the full flag/env reference.
     """
     parser = argparse.ArgumentParser(

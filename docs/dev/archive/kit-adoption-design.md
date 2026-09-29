@@ -1,5 +1,10 @@
 # Agent-coding-practices kit adoption — design + arc (captured 2026-06-23)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Phases 1–2 SHIPPED 2026-07-10.** The mechanizable-gate work this design
 > specifies — `ruff format`/`SIM`/`RUF`/`ANN`/`D` families, `interrogate`
 > docstring-coverage, and the mypy `--strict` ratchet — reached its §6 exit

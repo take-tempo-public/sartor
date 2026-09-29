@@ -4,7 +4,7 @@
 > **Concept:** the form-finding journey behind the seven-functions self-model — the
 > lenses tried, the moves that worked, and why the settled vocabulary looks the way it
 > does. The *result* is canonical elsewhere; this page is the *why*.
-> **Defers to:** [`../../system-model.md`](../../system-model.md) (the canonical
+> **Defers to:** [`../../system-model.md`](../../dev/system-model.md) (the canonical
 > seven functions + one law) and [`../overview.md`](../overview.md) (the same at wiki
 > altitude). This page does **not** restate the settled table — read those for it.
 > **Sources:** [`excellence-walk.md`](../../dev/excellence-walk/excellence-walk.md)
@@ -37,7 +37,7 @@ to the whole system** — the same one-way discipline already enforced in code
 *why* the model maps so cleanly onto what is there: the categories **inherit the
 architecture's existing dependency discipline** rather than importing an outside frame
 `[synthesis]`. The settled statement of this law lives in
-[`../../system-model.md`](../../system-model.md).
+[`../../system-model.md`](../../dev/system-model.md).
 
 ## Three discovery lenses (used to find the model, not to name it)
 
@@ -96,7 +96,7 @@ the **Product / Work split** (which is literally Q5's "as a product AND as a wor
 the **Product** is what the user runs; the **Work** is everything that produces and
 evolves it; **Governance** governs the Work. The settled form of this split — and the
 final seven function-nouns it produced — is canonical in
-[`../../system-model.md`](../../system-model.md); the four still-open framing calls it
+[`../../system-model.md`](../../dev/system-model.md); the four still-open framing calls it
 left (the Governance honesty note, the "AI agents are first-class" line, the file map,
 the opening) are carried in [`../overview.md`](../overview.md).
 

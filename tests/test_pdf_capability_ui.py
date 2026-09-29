@@ -2,7 +2,7 @@
 
 Observed 2026-09-02, macOS 12.7.4: `python -m playwright install chromium` failed
 (current Playwright ships no Chromium build for macOS 12). Setup reported it as a
-warning and continued -- correctly, since `docs/install.md` states PDF is optional.
+warning and continued -- correctly, since `docs/user/install.md` states PDF is optional.
 The gap was everything after: Chromium's absence was a *warning* at setup time and
 an *exception* at use time, with nothing in between. Both PDF buttons stayed
 selectable, and a user who accepted the setup warning had no way to know which of

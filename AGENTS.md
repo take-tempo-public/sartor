@@ -13,8 +13,8 @@
 > `pytest` minimum-bar; `PROMPT_VERSION` discipline; what kinds of
 > changes are NOT welcome. Sibling docs:
 > [`vision.md`](vision.md) (product intent),
-> [`docs/architecture.md`](docs/architecture.md) (system + modules),
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (v1 → v2 ladder).
+> [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + modules),
+> [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) (v1 → v2 ladder).
 
 > **Canonical governance.** The *binding* constitution — claims discipline
 > (C-0), the C-1…C-6 clauses, the D-1…D-6 defaults, the parallel-session
@@ -31,9 +31,9 @@
 
 ## Read these first
 
-- [docs/architecture.md](docs/architecture.md) — system overview, module map, four Mermaid diagrams (pipeline / persistence / data-flow / llm-routing). Start here for a fast tour.
+- [docs/dev/architecture.md](docs/dev/architecture.md) — system overview, module map, four Mermaid diagrams (pipeline / persistence / data-flow / llm-routing). Start here for a fast tour.
 - [vision.md](vision.md) — product intent, self-imposed constraints, learnings + direction.
-- [docs/PRODUCT_SHAPE.md](docs/PRODUCT_SHAPE.md) — unified Corpus Item pattern; v1.0 → v2 sequencing ladder; deferred items.
+- [docs/dev/PRODUCT_SHAPE.md](docs/dev/PRODUCT_SHAPE.md) — unified Corpus Item pattern; v1.0 → v2 sequencing ladder; deferred items.
 - [SECURITY.md](SECURITY.md) — threat model, API key rules, accepted risks.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branch + commit conventions, dev loop.
 - [README.md](README.md) — user-facing overview.
@@ -45,14 +45,14 @@ The project follows the [10 Principles framework](https://jdforsythe.github.io/1
 
 ## Architecture at a glance
 
-Full system + module map in [`docs/architecture.md`](docs/architecture.md). Quick orientation:
+Full system + module map in [`docs/dev/architecture.md`](docs/dev/architecture.md). Quick orientation:
 
 - **All LLM calls live in `analyzer.py`.** Sonnet 5 (`claude-sonnet-5`) for heavy reasoning (`analyze` synthesis pass, `iterate_clarify`, `generate`, `generate_cover_letter`); Haiku 4.5 (`claude-haiku-4-5-20251001`) for structured selection (the `analyze` extraction pass, `clarify`, `recommend`, `recommend_summary`, `critique_proposal`, `extract_experiences`). Verified against `analyzer.py:SONNET_MODEL`/`HAIKU_MODEL`.
 - **`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py` are deterministic** — no LLM calls allowed. The P1 Hardening boundary (canonical rule: charter **C-6**).
 - **`context_set` is the JSON contract** between every pipeline stage. Each `/api/generate` writes a NEW timestamped child file via `hardening.save_iteration_context()`; the `parent_context_path` chain is the iteration audit trail.
 - **`PROMPT_VERSION` in `analyzer.py`** must bump in the SAME commit when any prompt changes, so eval telemetry attributes scores correctly (a charter discipline rule — [`docs/governance/charter.md`](docs/governance/charter.md), C-0 / D-4).
 
-For the full pipeline sequence (with all eight LLM call kinds, which Flask route fires each, and cost/latency footprints), see [`docs/architecture.md`](docs/architecture.md) §"System overview" (pipeline) and §"LLM routing + cost" — the two fenced Mermaid diagrams there are the single source (the standalone `docs/diagrams/*.mmd` copies were retired in v1.0.9).
+For the full pipeline sequence (with all eight LLM call kinds, which Flask route fires each, and cost/latency footprints), see [`docs/dev/architecture.md`](docs/dev/architecture.md) §"System overview" (pipeline) and §"LLM routing + cost" — the two fenced Mermaid diagrams there are the single source (the standalone `docs/diagrams/*.mmd` copies were retired in v1.0.9).
 
 ---
 

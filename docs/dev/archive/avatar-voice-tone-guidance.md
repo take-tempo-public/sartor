@@ -1,5 +1,10 @@
 # Tuning the sartor. Assistant — Voice, Tone & Behavior Guidance
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **What this package is.** This is the complete working package for tuning the voice, tone, and behavior of the **sartor. assistant** — the single Haiku 4.5 avatar that answers questions about how sartor. works, grounded only in retrieved, cited context (wiki pages + code at HEAD). It assembles four deliverables into one continuous artifact: the research that grounds the design, the interview that locks the goals, a set of named example voices to react to, and an executable tuning guide. Read it top to bottom the first time; afterward, jump to the part you need via the table of contents. The four parts are reproduced in full and are meant to be used together — the research justifies the questions, the questions populate the guide's Voice Charter, the example voices calibrate the dial the guide tunes, and the guide tells the executing agent exactly which levers to touch and how to validate the result.
 
 ---

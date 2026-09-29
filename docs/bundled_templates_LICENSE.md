@@ -60,7 +60,7 @@ project's understanding of those conventions but were NOT copied:
   reinforced the value of typographic restraint (originally for the
   since-retired `compact.docx`).
 - **Jobscan's ATS template guidance** (commercial, non-copying) — informed
-  the rule set in `docs/template_authoring.md`.
+  the rule set in `docs/user/templates.md`.
 
 Re-generate with `python -m scripts.build_bundled_templates`. The script is
 the canonical source — the `.docx` files are derivative outputs.

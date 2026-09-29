@@ -18,7 +18,7 @@ This command **orchestrates**; it does not synthesize or grade itself — it del
 synthesis to the `wiki-scribe` subagent (Haiku) and grounding audit to the separate
 `wiki-grounding-auditor` subagent (Haiku, read-only), then runs the deterministic
 [`/wiki-lint`](wiki-lint.md) as the structural backstop. The full design is
-[`docs/dev/self-documenting-loop-design.md`](../docs/dev/self-documenting-loop-design.md);
+[`docs/dev/archive/self-documenting-loop-design.md`](../docs/dev/archive/self-documenting-loop-design.md);
 the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
 
 > **This is an LLM op — a human decides when to pay.** Like [`/wiki-ingest`](wiki-ingest.md)

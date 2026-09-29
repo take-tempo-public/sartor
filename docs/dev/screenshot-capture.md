@@ -1,7 +1,7 @@
 # Screenshot capture checklist
 
 > **Purpose:** the executable companion to the Screenshot Manifest
-> in [`onboarding_audit_2026-05-25.md`](onboarding_audit_2026-05-25.md).
+> in [`onboarding_audit_2026-05-25.md`](../ux/onboarding_audit_2026-05-25.md).
 > A step-by-step procedure for capturing the 10 manifest
 > screenshots, plus the filename convention, target docs, and
 > alt-text drafts.
@@ -26,13 +26,13 @@ state so the screenshots will age well.
 2. **Use a synthetic corpus.** Import a synthetic résumé into
    `demo`'s corpus, NOT your real one. A good source is the
    "Priya" persona used in
-   [`docs/walkthrough_example.md`](../walkthrough_example.md);
+   [`docs/user/walkthrough-example.md`](../user/walkthrough-example.md);
    construct a 3-experience, ~8-bullets-each `.docx` matching
    her shape, save as `resumes/demo/priya_master.docx`, and
    import via `+ Import résumé`.
 3. **Use a synthetic JD.** For Step 1+ shots, paste the Vertica
    Logistics JD from
-   [`docs/walkthrough_example.md`](../walkthrough_example.md#the-job)
+   [`docs/user/walkthrough-example.md`](../user/walkthrough-example.md#the-job)
    verbatim. Consistent JD across shots keeps the analysis
    numbers comparable.
 4. **Browser setup:**
@@ -96,7 +96,7 @@ when Claude does the insertion pass.
   is open. It should show the default user(s) plus `demo`
   highlighted, with the **+ Create user** affordance visible at
   the bottom of the dropdown.
-- **Insertion site:** docs/install.md, "First-run walkthrough"
+- **Insertion site:** docs/user/install.md, "First-run walkthrough"
   §, after step 1 (line ~184).
 - **Alt-text draft:** *"The user picker dropdown in the
   top-right corner. Each user has their own corpus, settings,
@@ -109,7 +109,7 @@ when Claude does the insertion pass.
   list visible, the `+ Import résumé` button prominent. Take
   the shot *before* importing the synthetic résumé so it shows
   the empty state.
-- **Insertion site:** docs/walkthrough.md, "Setup (before the
+- **Insertion site:** docs/user/walkthrough.md, "Setup (before the
   wizard)" §, after "Import your existing résumé" (line ~144).
 - **Alt-text draft:** *"The Career Corpus tab in its empty
   state. The + Import résumé button parses an existing résumé
@@ -122,7 +122,7 @@ when Claude does the insertion pass.
   Vertica JD pasted in but **Analyze not yet clicked** — the
   right panel should be empty / placeholder. The Analyze button
   should be prominent.
-- **Insertion site:** docs/walkthrough.md, "Step 1 — Job +
+- **Insertion site:** docs/user/walkthrough.md, "Step 1 — Job +
   Analyze" §, after "What you see" (line ~169).
 - **Alt-text draft:** *"Step 1 with the job description pasted
   into the left textarea. Clicking Analyze triggers a ~30–60s
@@ -136,7 +136,7 @@ when Claude does the insertion pass.
   completed. The right panel should show: skill matches,
   potential gaps (with the team-leadership gap and the Kafka
   underdocumented call-out), ATS warnings (Kafka frequency).
-- **Insertion site:** docs/walkthrough.md, "Step 1 — Job +
+- **Insertion site:** docs/user/walkthrough.md, "Step 1 — Job +
   Analyze" §, after "Verify before continuing" (line ~195).
 - **Alt-text draft:** *"Step 1 after analyze: the right panel
   shows skill matches, a gaps section, and ATS warnings. This
@@ -150,7 +150,7 @@ when Claude does the insertion pass.
   visible. Type a partial answer in one of them (e.g., a few
   words about Kafka migration scope) so the textarea state is
   realistic — not pristine, not finished.
-- **Insertion site:** docs/walkthrough.md, "Step 2 — Clarify"
+- **Insertion site:** docs/user/walkthrough.md, "Step 2 — Clarify"
   §, after "What you see" (line ~206).
 - **Alt-text draft:** *"The Clarify step with 4 targeted
   questions. Answers given here become legitimate source
@@ -165,7 +165,7 @@ when Claude does the insertion pass.
   (with the strikethrough or exclude indicator), one
   LLM-recommended bullet (with its proposal badge), and the
   summary variant picker at the top.
-- **Insertion site:** docs/walkthrough.md, "Step 3 — Compose"
+- **Insertion site:** docs/user/walkthrough.md, "Step 3 — Compose"
   §, after "What you see" (line ~248).
 - **Alt-text draft:** *"The Compose step showing one experience
   card with pinned, excluded, and LLM-recommended bullets, plus
@@ -180,7 +180,7 @@ when Claude does the insertion pass.
   showing the first page of the rendered résumé. ATS-safety
   badges visible on each card. The "Page 1 of 2" counter
   visible.
-- **Insertion site:** docs/walkthrough.md, "Step 4 — Template"
+- **Insertion site:** docs/user/walkthrough.md, "Step 4 — Template"
   §, after "What you see" (line ~293).
 - **Alt-text draft:** *"The Template step with four ATS-safe
   templates shown as cards. Live preview re-renders on
@@ -195,7 +195,7 @@ when Claude does the insertion pass.
   have a sample note typed in (e.g., "emphasize the team-lead
   role more"). Both **Download** and **+ Generate cover
   letter** buttons visible.
-- **Insertion site:** docs/walkthrough.md, "Step 6 — Download"
+- **Insertion site:** docs/user/walkthrough.md, "Step 6 — Download"
   §, after "What you see" (line ~366).
 - **Alt-text draft:** *"The Download step. The generated
   résumé preview is on the left; the Refine textarea on the
@@ -209,7 +209,7 @@ when Claude does the insertion pass.
 - **UI state:** Cover letter preview pane after the **+
   Generate cover letter** button has been clicked once. Refine
   textarea visible.
-- **Insertion site:** docs/walkthrough.md, "Optional — Generate
+- **Insertion site:** docs/user/walkthrough.md, "Optional — Generate
   cover letter" § (line ~403).
 - **Alt-text draft:** *"The cover-letter generation surface.
   The cover letter is generated against the finalized résumé,
@@ -226,8 +226,8 @@ insertion is straightforward. For each shot:
 ![<alt-text from above>](../screenshots/<filename>.png)
 ```
 
-(Use `../screenshots/...` from `docs/install.md` and
-`docs/walkthrough.md`. From `README.md` use `docs/screenshots/...`.)
+(Use `../screenshots/...` from `docs/user/install.md` and
+`docs/user/walkthrough.md`. From `README.md` use `docs/screenshots/...`.)
 
 For the P0 captures, consider wrapping in a figure caption block
 so the docs render with named figure references:
@@ -271,7 +271,7 @@ GitHub renders this; most local markdown viewers do too.
   highlighter, and save as a *separate* annotated version with
   `_annotated` suffix.
 - **Animated GIFs.** A demo GIF is listed in
-  [`docs/dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md) under
+  [`docs/dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) under
   "Nice to have." Different artifact, different procedure.
 - **Re-capture cadence.** Screenshots will rot as the UI
   evolves. The audit-doc pattern (timestamped under

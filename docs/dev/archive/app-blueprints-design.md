@@ -1,5 +1,10 @@
 # Design — `app.py` → Flask blueprints (v1.0.8, item 8.1)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **SHIPPED 2026-06-22.** All eight domain-seam branches (8.1 design → 8.2
 > route-security-lint widen → 8.3a–h decomposition) landed; `app.py` carries
 > zero routes. This document is now the **historical design record** — read

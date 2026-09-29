@@ -1,5 +1,10 @@
 # Self-documenting wiki loop — design (Sprint 7.3, v1.0.7)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the settled design `feat/self-documenting-wiki` executes against.
 > Settles the three the arc names — **trigger / cost / scope** — plus the
 > orchestration shape, the autonomy / human-gate boundary, and the trust model, for

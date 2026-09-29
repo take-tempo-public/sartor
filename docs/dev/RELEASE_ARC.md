@@ -314,7 +314,7 @@ New Pareto frontier panel at top of `/_dashboard`:
 These are tracked, NOT blockers for the v1.0.3 tag. Fold into the next docs-focused branch
 (or the v1.0.5 redesign's doc work):
 
-1. **`docs/architecture.md` + `docs/diagrams/pipeline.mmd` + `docs/diagrams/llm-routing.mmd`** —
+1. **`docs/dev/architecture.md` + `docs/diagrams/pipeline.mmd` + `docs/diagrams/llm-routing.mmd`** —
    `analyze` is now **two passes** (Haiku `analyze_extraction` → Sonnet `analyze_synthesis`),
    not one Sonnet call. Update the sequence diagram, the LLM-routing diagram (add the Haiku
    extraction node; mark synthesis as the cache writer), and the module/routing prose. *(The
@@ -390,7 +390,7 @@ This phase carries the product redesign **and** the polished home for the Phase 
 > split the work: the **deterministic, label-free L0 slice ships now** (gives the
 > dashboard a real metric contract), and the **calibrated model-based layers +
 > the v1.0.4 live loop + the evals/tuning update are deferred to pre-v1.1.0** —
-> tracked in [`docs/PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) "Grounding /
+> tracked in [`docs/dev/PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) "Grounding /
 > hallucination metric — calibrated layers (B)". Full design rationale, the
 > detector ladder, and the hard parts live in
 > [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md). This deviation pushes the v1.0.5
@@ -427,7 +427,7 @@ is independently shippable.
 This arc rides within the v1.0.5 stream (or a v1.0.6 cut per the size note below —
 user's call). It also advances the deferred grounding calibration ("B"): the
 in-browser annotation loop is what *produces the labels* `GROUNDING_METRIC.md` /
-[`PRODUCT_SHAPE.md` §10](../PRODUCT_SHAPE.md) need.
+[`PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) need.
 
 *If this phase is too large for clean small-stepping, the natural cut is v1.0.5 = redesign + WYSIWYG + tuning UI; v1.0.6 = formats + prior-app + reorder + playwright + pagination. User's call.*
 
@@ -597,7 +597,7 @@ once on first view and is re-openable via its (i)-circle (KW10):
 > wiki, not into throwaway prose.
 
 **WS-4a — front-loaded (start of the epic, right after the walkthrough; depends on no churn):**
-1. `docs/system-model` ✓ **DONE (this branch)** — authored **[`docs/system-model.md`](../system-model.md)** from the seven-functions
+1. `docs/system-model` ✓ **DONE (this branch)** — authored **[`docs/dev/system-model.md`](system-model.md)** from the seven-functions
    language: **Substrate · Production · Evaluation · Operation · Memory · Regulation ·
    Governance**, the one-way dependency law (every dependency points inward toward
    Production; Production answers only upward to Governance), and the **Product / Work**
@@ -606,7 +606,7 @@ once on first view and is re-openable via its (i)-circle (KW10):
    [`excellence-walk/q1-overview.md`](excellence-walk/q1-overview.md).)*
 2. `docs/wiki-skeleton` ✓ **DONE (this branch)** — committed the `docs/wiki/` skeleton
    (`SCHEMA.md`, `index.md`, `overview.md` ← seeded from + deferring to
-   `docs/system-model.md` as canonical, carrying its 4 revision points; `log.md`;
+   `docs/dev/system-model.md` as canonical, carrying its 4 revision points; `log.md`;
    `.last_ingest_sha` sentinel; empty `pages/`) + a root `llms.txt`. **Git HEAD is the
    source**, diff-driven ingest. `SCHEMA.md` **references** AGENTS.md / CLAUDE.md /
    vision; it does not duplicate them. `raw/` starts at zero (introduced later by
@@ -655,7 +655,7 @@ extraction**.
 | `feat/help-pattern-component` | (mechanism) | Build the reusable a11y-safe help primitive once (per-tab description + per-panel summary + contextual tooltip; real `aria` wiring; no color-only meaning). **Kickoff KW10/KW3:** the interaction model is a first-view auto-modal (graceful fade-in, closes on click-away) + a persistent (i)-circle on every significant block that re-opens that block's modal — the modal carries the canonical pathfinding copy, the inline block text is the short form. *(Resolved 2026-06-14: shipped the **mechanism only**. ONE shared `#helpModal` (`.cb-modal` clone) + ONE generic `openHelpModal(blockId, triggerEl)` **factored from the duplicated per-modal pattern** (Esc / Tab focus-trap / backdrop click-away / focus-restore; the five existing modals untouched). A `_HELP_REGISTRY` keyed by block id is the **extension point** — the next branches add per-surface copy by adding keys, **no engine change**; this branch ships one minimal demo entry (`panelUser`), no per-surface copy. `_initHelp()` injects a `.help-info` (i)-circle into each registered `.cb-panel` header (mirrors `.compose-order-info`; `.has-help-icon` keeps title+icon left, chevron right) + an optional inline short-form (`aria-describedby`-linked). aria: icon `aria-haspopup=dialog`/`aria-controls`/`aria-expanded` + `aria-label`; **no color-only meaning** (literal "i" glyph). First-view welcome auto-modal shows **once-ever** via a `cb_help_seen:<block>` **localStorage** flag (the app's first client-side storage — owner-approved; throwing-store-safe). UX suite kept green by default-suppressing the welcome (autouse `_help_welcome_default_seen` fixture + `show_welcome` opt-in marker — a global first-view modal's z-1000 backdrop would otherwise obscure controls). `test_20260614_help_pattern.py` (6 cases) + `#helpModal` added to the axe gate + a `Help` selector class. Front-end only — no route, no LLM, no `PROMPT_VERSION` bump, no dep, no migration. ruff/mypy ✓, pytest **1197/1197** incl. `-m ux`.)* |
 | `feat/education-tailor-corpus-wizard` | #1 + #18 | Apply the pattern across Tailor / Career corpus / Résumé templates / Candidate memory + each wizard step. Plain-language, assumes no technical background. **Authors into the WS-4 wiki's reserved user-facing section.** **Kickoff KW3:** the new-user first-run sequence (welcome → add-user → post-ingest → tailor → clarify/skip → recommended-corpus → template/preview → generate → live-preview → cover-letter) is fully specced in the Sprint 6.0 KW3 detail — author from there; new-users-only (empty → first-ingest). |
 | `feat/education-diagnostics-annotate` | #15 + #20 + #22 | Apply across all diagnostics tabs + the annotate tab: verdict legend + per-option tooltips; annotate instructions rewritten for lay users + auto-expand the bootstrap panel when no fixtures exist; a summary on every panel. **Kickoff KW9/KW13:** a first-expand modal per diagnostics tab/panel (mirror the user-side pattern); explain the grounding box, the synthetic/smoke options, and *why* groundedness/tuning/annotate are empty + what populates them. |
-| `docs/eval-stack-install-guide` | #17 | A user-facing install/prepare guide for the tuning/grounding/eval stack — **authored from the excellence walk's Q3 deliverable** (`output/_dev-notes/Q3_downloads_draft.md`; facts verified against `pyproject.toml` + `install.md` + `CONTRIBUTING.md`) — plus a README/`install.md` "what gets downloaded & why" section + an in-app pointer where the stack is needed. *(Resolved 2026-06-15: shipped the **user layer** only. The dev-tier provenance already existed — the **committed** `docs/dev/excellence-walk/q3-downloads.md` (the live source; the cited `output/_dev-notes/` draft is gitignored + absent in-clone) + the `audience:dev` wiki page `non-dependency-downloads.md` — and `CONTRIBUTING.md` "Grounding signal scorers" owns the exact eval-stack commands. So #17 = a plain-language **"What gets downloaded & why"** section in `docs/install.md` (`what-gets-downloaded` anchor) + a README "what actually downloads" pointer beside "What gets saved" + a one-sentence in-app pointer on the dashboard `dashQuality` help body. Eval stack kept as **flag-and-link** (→ `CONTRIBUTING.md`), no dev commands on user surfaces (honors the dev/user doc boundary). All figures re-verified vs `pyproject.toml` + `install.md` + `CONTRIBUTING.md`. Docs + one help-copy line — no route, LLM, prompt, dep, or migration; `PROMPT_VERSION` unchanged. ruff/mypy ✓ (162), pytest **1212/1212** incl. `-m ux`.)* |
+| `docs/eval-stack-install-guide` | #17 | A user-facing install/prepare guide for the tuning/grounding/eval stack — **authored from the excellence walk's Q3 deliverable** (`output/_dev-notes/Q3_downloads_draft.md`; facts verified against `pyproject.toml` + `install.md` + `CONTRIBUTING.md`) — plus a README/`install.md` "what gets downloaded & why" section + an in-app pointer where the stack is needed. *(Resolved 2026-06-15: shipped the **user layer** only. The dev-tier provenance already existed — the **committed** `docs/dev/excellence-walk/q3-downloads.md` (the live source; the cited `output/_dev-notes/` draft is gitignored + absent in-clone) + the `audience:dev` wiki page `non-dependency-downloads.md` — and `CONTRIBUTING.md` "Grounding signal scorers" owns the exact eval-stack commands. So #17 = a plain-language **"What gets downloaded & why"** section in `docs/user/install.md` (`what-gets-downloaded` anchor) + a README "what actually downloads" pointer beside "What gets saved" + a one-sentence in-app pointer on the dashboard `dashQuality` help body. Eval stack kept as **flag-and-link** (→ `CONTRIBUTING.md`), no dev commands on user surfaces (honors the dev/user doc boundary). All figures re-verified vs `pyproject.toml` + `install.md` + `CONTRIBUTING.md`. Docs + one help-copy line — no route, LLM, prompt, dep, or migration; `PROMPT_VERSION` unchanged. ruff/mypy ✓ (162), pytest **1212/1212** incl. `-m ux`.)* |
 
 Then: `chore/version-bump-v1.0.6` (pyproject, CHANGELOG, tag) + re-check the
 RELEASE_CHECKLIST risk register.
@@ -672,7 +672,7 @@ RELEASE_CHECKLIST risk register.
 - Sprints 6.1–6.6 merged; the a11y axe gate is live and green.
 - **Corpus-item completers B.4/B.5 merged** (before the 6.5 sweep so they're
   documented); **B.8 Part 1** outcome capture complete + verified end-to-end.
-- **WS-4a landed early + WS-4b before the 6.5 sweep** — `docs/system-model.md` + the
+- **WS-4a landed early + WS-4b before the 6.5 sweep** — `docs/dev/system-model.md` + the
   `docs/wiki/` skeleton + the wiki skills exist; the **preserved excellence-walk
   source is ingested into the wiki** (and may then retire into its `raw/` layer); the
   code architecture is cold-ingested (WS-4b ✓ `a0a1cb2`); 6.5 authors into the wiki's reserved section.
@@ -714,7 +714,7 @@ RELEASE_CHECKLIST risk register.
   Mixed docs keep their descriptive content + a pointer.
 - **Implementation sub-decisions — RESOLVED 2026-06-15** on `design/governance-extraction`
   (the design half of 7.2); full design in
-  [`governance-extraction-design.md`](governance-extraction-design.md): (i) Governance home =
+  [`governance-extraction-design.md`](archive/governance-extraction-design.md): (i) Governance home =
   **`docs/governance/`** (a directory: `charter.md` + `enforcement.md` + `metrics.md`);
   (ii) per-doc extraction boundaries fixed by the constitution's `[src: …]` citation map
   (six source docs lose their canonical rule, keep descriptive prose + a pointer); (iii)
@@ -736,7 +736,7 @@ RELEASE_CHECKLIST risk register.
 ### The self-aware capability (built on the WS-4 wiki)
 | Branch | Design-first? | Key work |
 |---|---|---|
-| `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. **Model strategy (recorded 2026-06-12 — design input, not a hard lock):** *warm-start* — the capable session model runs the WS-4b cold-ingest + a short calibration window, and its produced pages are harvested as **baked-in few-shot exemplars**; **Haiku then runs steady-state diff-passes** against `SCHEMA.md` + those exemplars + the deterministic `/wiki-lint` + `/wiki-audit` backstop. Haiku at steady-state is what makes "bounded, cost-aware autonomy" real; the from-scratch taxonomy / synthesis-boundary calls stay on the capable cold pass, which the loop never repeats. **Design half DONE 2026-06-16** (`design/self-documenting-loop`): trigger / cost / scope settled — **trigger** = bounded checkpoint (close-out / pre-tag) + the freshness witness hook escalates its message past a drift threshold (no scheduler); **cost** = Haiku diff-pass, warm-start exemplars by-reference, cost-surfaced-before-spend, per-run page cap; **scope** = `docs/wiki/`-only (the cross-document link/cite checker is the separate tracked follow-on, not absorbed). **Orchestration** = a new `/wiki-self-update` command + a Haiku `wiki-scribe` subagent + a separate Haiku read-only `wiki-grounding-auditor` subagent (author≠auditor) + `/wiki-lint` as the deterministic gate; the loop **never auto-commits** (always a reviewable diff). Full spec in [`self-documenting-loop-design.md`](self-documenting-loop-design.md). **feat/ half DONE 2026-06-16** (`feat/self-documenting-wiki`): built per the design §4 — the `/wiki-self-update` orchestrator + the Haiku `wiki-scribe` + the read-only Haiku `wiki-grounding-auditor` subagents + the freshness-hook drift escalation; dev-harness only (no product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged). Owner-approved: the loop's **first real run** performed the consolidated v1.0.7 wiki refresh on this branch ([`docs/wiki/log.md`](../wiki/log.md)). |
+| `design/self-documenting-loop` → `feat/self-documenting-wiki` | **yes** | The **autonomous** self-documenting / self-tuning docs loop — the wiki ingests + lints itself on change so the docs track the code without a human author. Autonomy is the goal, **but designed performant + not overdone** (per the steer): a **Haiku-class** model, **bounded triggers** (not per-commit), cost-aware. The design pass settles trigger / cost / scope before any build. **Model strategy (recorded 2026-06-12 — design input, not a hard lock):** *warm-start* — the capable session model runs the WS-4b cold-ingest + a short calibration window, and its produced pages are harvested as **baked-in few-shot exemplars**; **Haiku then runs steady-state diff-passes** against `SCHEMA.md` + those exemplars + the deterministic `/wiki-lint` + `/wiki-audit` backstop. Haiku at steady-state is what makes "bounded, cost-aware autonomy" real; the from-scratch taxonomy / synthesis-boundary calls stay on the capable cold pass, which the loop never repeats. **Design half DONE 2026-06-16** (`design/self-documenting-loop`): trigger / cost / scope settled — **trigger** = bounded checkpoint (close-out / pre-tag) + the freshness witness hook escalates its message past a drift threshold (no scheduler); **cost** = Haiku diff-pass, warm-start exemplars by-reference, cost-surfaced-before-spend, per-run page cap; **scope** = `docs/wiki/`-only (the cross-document link/cite checker is the separate tracked follow-on, not absorbed). **Orchestration** = a new `/wiki-self-update` command + a Haiku `wiki-scribe` subagent + a separate Haiku read-only `wiki-grounding-auditor` subagent (author≠auditor) + `/wiki-lint` as the deterministic gate; the loop **never auto-commits** (always a reviewable diff). Full spec in [`self-documenting-loop-design.md`](archive/self-documenting-loop-design.md). **feat/ half DONE 2026-06-16** (`feat/self-documenting-wiki`): built per the design §4 — the `/wiki-self-update` orchestrator + the Haiku `wiki-scribe` + the read-only Haiku `wiki-grounding-auditor` subagents + the freshness-hook drift escalation; dev-harness only (no product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged). Owner-approved: the loop's **first real run** performed the consolidated v1.0.7 wiki refresh on this branch ([`docs/wiki/log.md`](../wiki/log.md)). |
 | `feat/doc-assistant` | (design rides the loop) | The **doc-grounded chat assistant** — *"a product that knows itself."* Both users and devs ask "how do I…" questions; it answers from the committed `docs/wiki/` **with citations** (the LLM-wiki **query** op as a chat). **Haiku model, reuses the user's existing Anthropic key** (no new credential). A public UX/DX feature → **ships in v1.1.0.** **DONE 2026-06-16** (`feat/doc-assistant`, 7.5 — the Stage-1 build per [`memory-architecture.md`](memory-architecture.md) "Stage 1"): the two free retrieval tiers + S5-P1 session buffer landed as generic, injected `Source`s in [`recall/sources/`](../../recall/) (`WikiSource` S1 / `GitGrepSource` S2 / `SessionSource`), kept project-agnostic by a new `test_recall_sources_no_hardcoded_roots` guard; the Haiku **avatar** (`analyzer.avatar_answer_streaming` + `AVATAR_SYSTEM_PROMPT`, its own `AVATAR_PROMPT_VERSION`) **honors charter C-6** (all LLM calls stay in `analyzer.py` — **owner decision D1=A**, no charter amendment); the SSE route is the first module of a new `blueprints/` package ([`blueprints/assistant.py`](../../blueprints/assistant.py), `POST /api/assistant/ask`, no `app.py` import — the v1.0.8 split is a *move*), holding the callback wiring (source roots + SCHEMA audience rules injected into the generic tiers); a minimal collapsible in-shell panel ships the UX now (the polished public UI stays the v1.1.0 epic). **Owner decisions:** D1=A (avatar in `analyzer.py`), D2=Y (sources parameterized in `recall/sources/`), UI=minimal in-shell panel. **Zero new deps; no migration; résumé `PROMPT_VERSION` unchanged.** |
 | `feat/compliance-agent-pilot` | (design done — [`compliance-agent-design.md`](reviews/2026-06-product-excellence/03-prescriptions/compliance-agent-design.md)) | The **compliance-agent pilot** — a read-only **governance drift witness** for the *Regulation* function: the [`/wiki-lint`](../../commands/wiki-lint.md) witness posture turned on the governance surface (per-edit machine hooks → a periodic narrative read of whole-repo coherence). Composes two **existing** primitives — the read-only-subagent pattern (`agents/prompt-archaeologist.md`) + the witness-command pattern (`/wiki-lint`) — so it re-decides nothing. **DONE 2026-06-16** (`feat/compliance-agent-pilot`): new `/compliance-witness` command (`commands/compliance-witness.md`) + read-only **Sonnet** `compliance-witness` subagent (`agents/compliance-witness.md`; `Read`/`Grep`/`Glob`/`Bash` read-only git — **no `Edit`/`Write`/`Task`**, the tool grant *is* the HARD-non-goal enforcement); resolves a pinned sha (`--since` or last tag), delegates the read via `Task`, caps flags (**default 12**, `--cap N`), renders a findings-register table (FLAG/WATCH/AFFIRM + suggested direction) + a `/wiki-lint`-style gate verdict, appends a dated counts line to `docs/governance/compliance-log.md`. **Never edits, never blocks, never commits.** Dev-harness only (no product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged). Lands at **repo-root** `commands/`+`agents/` (the design's `.claude-plugin/` Appendix path predates the 7.1 move). Owner-approved: one supervised **pilot run** against the freshly-graduated `docs/governance/` (born `docs/governance/compliance-log.md`; window `e299ac8`→`1741ab1`, FLAG 1 / WATCH 2 / AFFIRM 3). **Pilot PASSES** the design's self-eval rubric — the one FLAG (CW-01: the `RELEASE_CHECKLIST` 7.2 row left `[ ]` after `feat/governance-extraction` merged) was owner-scored **true drift → precision 1.0 ≥ 0.66** and corrected; the witness caught real drift on its first run against the surface that branch created. |
 
@@ -873,7 +873,7 @@ the real labels these consume.
 > (`analyzer.py:1595`), not the cited set. **Moved in from a v1.0.8 deferral at owner
 > direction — the last UI-polish before the tag, so 7.9 waits on it**; bumps
 > `AVATAR_PROMPT_VERSION`. Requirements:
-> [`avatar-citation-format-guidance.md`](avatar-citation-format-guidance.md); granular row in
+> [`avatar-citation-format-guidance.md`](archive/avatar-citation-format-guidance.md); granular row in
 > [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) (7.8d).
 
 Then: `chore/version-bump-v1.0.7`.
@@ -919,7 +919,7 @@ Then: `chore/version-bump-v1.0.7`.
   `_safe_username`, `_within`); app-factory vs. module-global `app`; SSE routes; the
   32 test-file imports; `route-security-lint` hook compatibility (it currently targets
   `app.py`).
-  **RESOLVED (8.1, owner-locked 2026-06-21 — see [`app-blueprints-design.md`](app-blueprints-design.md)):**
+  **RESOLVED (8.1, owner-locked 2026-06-21 — see [`app-blueprints-design.md`](archive/app-blueprints-design.md)):**
   **Crafted** architecture — a `create_app(config)` **application-factory** (with a retained
   module-level `app = create_app()` WSGI/console handle) + a typed injected **`Config`** (the
   paths/flags; ends the ~35-file monkeypatch-the-global test smell) + a shared **web-infra
@@ -978,11 +978,11 @@ Then: `chore/version-bump-v1.0.7`.
     (the optional grounding failure aborts the whole bootstrap) + **EV-3** (seed-export
     Windows-console crash) + **S3-1** (the vector index staled post-split). The **S3
     before/after labeled eval** cleared its gate-override → **KEEP** (relevance 1.12→2.58).
-    Findings: [`window-8.5-findings.md`](window-8.5-findings.md). **Owner-decided at
+    Findings: [`window-8.5-findings.md`](archive/window-8.5-findings.md). **Owner-decided at
     close-out:** PV-1 *label production* defers to **8.6** (fix EV-1's minicheck FIRST, then
     one full L0+L1+L2 annotation pass — no double annotation), and the **E2E walkthrough +
     R2-live** half defers to a run against `main` (runbook
-    [`window-8.5-walkthrough.md`](window-8.5-walkthrough.md)). 8.5 delivered the findings +
+    [`window-8.5-walkthrough.md`](archive/window-8.5-walkthrough.md)). 8.5 delivered the findings +
     the S3 verdict + the flaky-UX stabilization; the walkthrough findings + calibration
     labels land via 8.6.
 - **Correction sprint** (`fix/window-findings-*`): burn the backlog + **PV-2** grounding
@@ -1004,7 +1004,7 @@ Then: `chore/version-bump-v1.0.7`.
     and the L0+L1+L2 scorers are proven on CPU, so it is **unblocked but staged**, and **may spill to a
     v1.0.9 epic** (slotted explicitly 2026-06-23). **(4)** the **`/wiki-ingest` re-anchor folds into
     8.6a** (`docs/assistant-wiki-coverage`, which already rewrites wiki pages) rather than this sprint.
-    Findings + resolution: [`window-8.5-findings.md`](window-8.5-findings.md).
+    Findings + resolution: [`window-8.5-findings.md`](archive/window-8.5-findings.md).
 - `docs/assistant-wiki-coverage` (proposed **8.6a**, owner-confirmed 2026-06-20) — the
   doc-authoring sprint that fills the doc-grounded assistant's "woefully uninformed" coverage
   gap (only the ~6 Sprint-6.5 `audience: user` wiki pages exist today, so many "how do I…"
@@ -1087,7 +1087,7 @@ Then: `chore/version-bump-v1.0.8`.
 | Phase 1 | Wave 0 + packaging → **TRAIN 1** | `fix/ux-f01-keyword-score` (DONE, merged `f82fd00` 2026-07-07), `fix/ux-f02-import-skill-rows` (F-02), `fix/eval-f11-frozen-assembly` (F-11), `fix/packaging-install` (ledger #2 + PX-42 floor ≥3.11 + F-24/25/26); conditional `fix/walkthrough-p0` (owner E2E findings). |
 | Phase 2 | `feat/grounding-calibration-8.6b` | Owner PV-1 annotation (30–60 min) → PV-2 calibration → ledger #10 fresh Sonnet-5 baseline (~$0.30). |
 | Phase 3 | UX Waves 1–4 → **TRAIN 2** (7 branches) | `feat/ux-w1-first-run-flow` (F-12/06/05/15) · `feat/ux-w1-skills-education` (F-03/04) · `feat/ux-w1-generate-surface` (F-09/10) · `feat/ux-w3-demo-mode` (F-19) · `docs/ux-w3-contributor` (F-21/22/20/27/06d) · `feat/ux-w2-recruiter` (F-08/17/16) · `feat/ux-w4-aesthetic` (F-07/23/13/14/18). Shared `static/app.js`/templates → pre-train merge-tree preflight mandatory. |
-| Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
+| Phase 3b | gen-exp completion → **TRAIN 3** | (a) `fix/surgical-refinement-and-loopback` + (d) `feat/regenerate-gap-fill` in parallel, then (b) `feat/wysiwyg-source-of-truth` + (c) `feat/clarifications-to-corpus`. Spec home: [`generation-experience-rearchitecture.md`](archive/generation-experience-rearchitecture.md) §4/§6. Corpus-mode validation on a saved context + one real generate (NOT `--suite synthetic`). |
 | Phase 4 | 8.7 public-prep → **TRAIN 4** → **CODE FREEZE** | `feat/portable-enforcement-core` (ledger #6) · `ci/ux-a11y-required-check` (PX-25) · `chore/doc-link-sweep` (ledger #7). Then **[HUMAN]**: GitHub repo `take-tempo-public/sartor` (private) + PyPI Trusted Publisher + required checks. **[Reconciled 2026-07-09: repo created + `main` pushed private; PyPI/GHCR/required-checks activation DEFERRED to pre-v1.1.0 per owner — see the RELEASE_CHECKLIST [HUMAN] row.]** Then assets: `docs/screenshots-refresh` ($0.27, app running) · `docs/badges-readme-prep` (PX-26 + PX-54) → **TRAIN 4b**. |
 | Phase 5 | v1.0.8 tag ceremony | `/compliance-witness` at pinned sha + `/wiki-lint` (staleness carried as accepted note; PX-41 scheduled Phase 6) + `RELEASE_CHECKLIST` sweep + `CHANGELOG` cut → owner confirms → tag **v1.0.8** → verify published wheel. |
 | Phase 6 | v1.0.9 docs epic → **TRAIN 5** → v1.0.9 tag | ~~`docs/readme-icp-ladder`~~ **DONE** (`323bf6c`/`996d1c9`, on `main`; DOC-STATUS governance-boundary reconcile RESOLVED — PX-19/PX-20 closed) · `docs/dev-home-depth-wsb` (+ PX-40/48 + avatar-voice casing) · `docs/wiki-content-pass` (PX-41 catch-up ingest 150+ commits via `/wiki-self-update` + PX-50/53 + user-tier pages + `llms.txt`) · `docs/diagrams-a11y` (new `accTitle`/`accDescr` diagrams; retire the 4 drifted `.mmd`) · `feat/fumadocs-site` (projection adapter + spectree/OpenAPI Layer-B) · `ci/doc-merge-gate` (last) · `chore/mypy-strict` (burn the normalized error count) · `spike/pagedjs-design` (timeboxed doc). Voice/tone reference: Google developer style guide tone (record in `documentation-architecture.md`). <br>**[TRAIN 5 assembled 2026-07-10 — pending owner train-confirm]** landed as one chain: `docs/dev-home-depth-wsb` · `docs/wiki-content-pass` (the F-17 recruiter-Pipeline `audience: user` page; the PX-41 catch-up already landed separately as `docs/wiki-v109-refresh`) · `docs/diagrams-a11y` · `feat/fumadocs-site` (L1→MDX projection core + SFTP self-host deploy to `sartor-docs.taketempo.com`; **spectree/OpenAPI Layer-B deferred** — spectree was never wired, the "pulled into v1.0.8" note above was drift) · `ci/doc-merge-gate` · `spike/pagedjs-design`. **spectree/OpenAPI Layer-B Phase 1 — LANDED separately (2026-07-10, `feat/spectree-openapi-emit`):** spec-emission only (decorator + `resp=`, 5 read-only GET routes, `web_infra/openapi.py` + `scripts/generate_openapi_spec.py` → `docs-site/openapi.json`, gitignored); Fumadocs rendering that spec into a hosted reference page remains not built. **`chore/mypy-strict` burn** = satisfied by the mypy `--strict` §6 exit (all production modules strict + roster-gated, landed 2026-07-10); the exempt-tree (`tests/`/`evals/`/`scripts/`, ~2821 errors) burn is **deferred post-public** unless the owner directs otherwise. |
@@ -1153,7 +1153,7 @@ re-confirmation doubles as resume.
 > `chore/px-v110-gate-batch` row in the scope brief above, decomposing the
 > remaining in-scope `[AGENT]` debt into a 7-lane / 3-wave merge train so the
 > owner can flip public with ~zero agent-side debt. Run under the
-> [`ORCHESTRATION_PLAYBOOK.md`](ORCHESTRATION_PLAYBOOK.md) merge-train pattern
+> [`ORCHESTRATION_PLAYBOOK.md`](archive/ORCHESTRATION_PLAYBOOK.md) merge-train pattern
 > (Opus conductor · Sonnet worktree lanes · serialized rebase chain · one owner
 > confirm per train). **Base:** `main` @ `904fe8d` (v1.0.9 tagged locally, tag
 > HELD/unpushed — pushing it fires PyPI/GHCR publish early; leave it).
@@ -1567,7 +1567,7 @@ Sequence (each its own branch, in dependency order):
 (`tests/`/`evals/`/`scripts/`/`db/migrations/versions`) stays permissive, and the exit
 is enforced **by construction** via `tests/test_mypy_strict_roster_gate.py` (closes
 compliance-witness CW-118), not a one-time proof. Rung history:
-[`kit-adoption-design.md`](kit-adoption-design.md) §4/§6 + `CHANGELOG.md` `[Unreleased]`.
+[`kit-adoption-design.md`](archive/kit-adoption-design.md) §4/§6 + `CHANGELOG.md` `[Unreleased]`.
 **Tooling-slice pull-in — ✅ LANDED (2026-07-10, `chore/mypy-strict-tooling`,
 owner-directed).** Decision 7 AMENDED: the exempt set narrows to **`tests/` only** —
 `scripts/` (22 errs) + `evals/` (44 errs) + `db/migrations/versions/` (6 errs) = 72
@@ -1576,7 +1576,7 @@ zero behavior change). `tests/test_mypy_strict_roster_gate.py` updated to match
 (`_EXEMPT_PREFIXES` narrowed, the migrations/versions guard inverted to assert
 coverage). The remaining `tests/` strict burn (~3,252 errors measured) **stays
 deferred** per owner direction 2026-07-10 — out of scope for this pull-in; see
-[`kit-adoption-design.md`](kit-adoption-design.md) §6 for the full amendment record.
+[`kit-adoption-design.md`](archive/kit-adoption-design.md) §6 for the full amendment record.
 The original plan is retained below for the record. — Complete the
 `mypy --strict` ratchet to the §6 end-state so strict typing can be claimed for all
 non-test code. Empirically measured 2026-06-29: **146 errors across 18 of 69 production
@@ -2006,7 +2006,7 @@ subagent on user docs). Runs after all UI epics so assets are produced once.
   `scripts/project_docs_to_mdx.py` audience fallback-table updates (28 of 30 L1
   docs rely on the hardcoded path table), `meta.json` two-tier nav (User guide /
   Developer), and a scripted link-rewrite over source markdown
-  (`docs/architecture.md` alone has ~101 inbound referencing files; the vision.md
+  (`docs/dev/architecture.md` alone has ~101 inbound referencing files; the vision.md
   move once broke ~490 refs). Entry gate: run `python scripts/wiki_freshness.py`
   first and clear elevated drift with `/wiki-self-update` BEFORE the split.
 - **D3 — content** (`feat/user-docs` + `feat/dev-docs`). User path: assumes no
@@ -2077,7 +2077,7 @@ subagent on user docs). Runs after all UI epics so assets are produced once.
   train (`chore/mypy-strict-tooling`); the exempt set narrowed from
   `tests/`/`evals/`/`scripts/`/`db/migrations/versions` to `tests/` only, so `scripts/`,
   `evals/`, and `db/migrations/versions/` are now strict-rostered — see
-  [`kit-adoption-design.md`](kit-adoption-design.md) §6 + [`decisions.md`](decisions.md)
+  [`kit-adoption-design.md`](archive/kit-adoption-design.md) §6 + [`decisions.md`](decisions.md)
   KIT-7a). **Split 2026-06-29 (owner):**
   the **`--strict` ratchet completion is pulled pre-public into v1.0.9** (to claim strict
   typing at launch — see §Phase 4.9); only the **typed `context_set` spine** remains
@@ -2086,7 +2086,7 @@ subagent on user docs). Runs after all UI epics so assets are produced once.
   ~955-test suite (redundancy, slow tests, coverage gaps, fixture dup). Define cadence
   + what "good" looks like.
 - **Agent-coding-practices kit adoption** (captured 2026-06-23,
-  [`kit-adoption-design.md`](kit-adoption-design.md)) — adopt the lichen
+  [`kit-adoption-design.md`](archive/kit-adoption-design.md)) — adopt the lichen
   `agent-coding-practices-kit` (context / docs / strict-typing + the
   `context-structure-review` skill). Eight decisions settled
   ([`decisions.md`](decisions.md) KIT-1…8; full faithful adoption, "implement + flag
@@ -2126,10 +2126,10 @@ moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with b
 | `docs/dev/RELEASE_CHECKLIST.md` | Open items per release |
 | `docs/dev/nursery.md` | Deferred-but-alive feature ideas (value/effort/risk-tagged) |
 | `docs/dev/excellence-walk/` | Preserved raw source from the 2026-06-07 excellence walk (→ WS-4 wiki) |
-| `docs/PRODUCT_SHAPE.md` §11 | The seven-functions system self-model + the WS-1…WS-4 workstreams |
+| `docs/dev/PRODUCT_SHAPE.md` §11 | The seven-functions system self-model + the WS-1…WS-4 workstreams |
 | `evals/TUNING_LOG.md` | Baseline floors; prompt change history |
 | `docs/dev/AGENT_FAILURE_PATTERNS.md` | Failure patterns to avoid |
-| `docs/architecture.md` | Module map, LLM routing |
+| `docs/dev/architecture.md` | Module map, LLM routing |
 | `%USERPROFILE%\.claude\research\resume-eval-2026-05\followup.md` | 25-item Phase 1 checklist |
 | `docs/dev/perf/R1_BENCHMARK_2026-05-26.md` | R1 diagnosis (Phase 2 start point) |
 | `%USERPROFILE%\.claude\research\resume-eval-2026-05\report.md` | Tool recs (Promptfoo, MiniCheck, DeBERTa) |

@@ -148,7 +148,7 @@ def test_avatar_prompt_version_is_distinct_from_prompt_version():
 # --------------------------------------------------------------------------- #
 # Deterministic tone checks (voice/tone tuning, AVATAR_PROMPT_VERSION 2026-06-18.1).
 #
-# The guidance doc (docs/dev/avatar-voice-tone-guidance.md §6.2) specifies an
+# The guidance doc (docs/dev/archive/avatar-voice-tone-guidance.md §6.2) specifies an
 # LLM-free layer that runs on the gate. These cover the cheap-and-load-bearing
 # guards: the byte-exact refusal sync, the persona clauses that must stay present,
 # the brand-mark + GitHub-link microcopy invariants, and the reusable scanners

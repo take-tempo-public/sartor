@@ -46,7 +46,7 @@
   stays covered `[synthesis]`. The typed `context_set` spine (a typed model, not
   just strict-checked `dict`s) is the remaining, still-open half — that stays the
   post-public **WS-2-full** (1.1.x recurring; see
-  [`docs/dev/kit-adoption-design.md`](../../dev/kit-adoption-design.md) §6)
+  [`docs/dev/archive/kit-adoption-design.md`](../../dev/archive/kit-adoption-design.md) §6)
   `[synthesis]`.
 
 ## WS-3 — test-suite engineering-design pass

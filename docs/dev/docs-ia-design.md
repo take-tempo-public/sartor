@@ -118,20 +118,20 @@ AGENTS.md · CLAUDE.md      stay at root (agent tool convention; see O-2)
 docs/
   user/                    NEW — zero-technical-knowledge product docs (the user ladder)
     README.md              NEW — user index: the ladder, one line per rung
-    install.md             ← docs/install.md (user half; maintainer sections → dev, D3)
-    walkthrough.md         ← docs/walkthrough.md ("Under the hood" blocks → dev, D3)
-    walkthrough-example.md ← docs/walkthrough_example.md
+    install.md             ← docs/user/install.md (user half; maintainer sections → dev, D3)
+    walkthrough.md         ← docs/user/walkthrough.md ("Under the hood" blocks → dev, D3)
+    walkthrough-example.md ← docs/user/walkthrough-example.md
     iterating.md           NEW (D3) — rung 3: second application, refine, Prior Applications,
                            Candidate Memory (UX-§8)
     coaching.md            NEW (D3) — rung 4a: multi-candidate use (UX-§8)
-    templates.md           ← docs/template_authoring.md (user half; maintainer half → dev, D3)
+    templates.md           ← docs/user/templates.md (user half; maintainer half → dev, D3)
   dev/
     README.md              NEW — dev front door: the dev ladder + a routed index
                            (reference · runbooks · designs · templates · records) (DX-07)
-    architecture.md        ← docs/architecture.md
-    system-model.md        ← docs/system-model.md
-    PRODUCT_SHAPE.md       ← docs/PRODUCT_SHAPE.md
-    screenshot-capture.md  ← docs/ux/screenshot_capture.md
+    architecture.md        ← docs/dev/architecture.md
+    system-model.md        ← docs/dev/system-model.md
+    PRODUCT_SHAPE.md       ← docs/dev/PRODUCT_SHAPE.md
+    screenshot-capture.md  ← docs/dev/screenshot-capture.md
     <14 live-reference loose docs stay>   (table §2.2)
     archive/               NEW — the 18 finished-design / stale loose docs (table §2.2)
     handoffs/ ledger/ diagnosis/ blast-radius/ reviews/ perf/ excellence-walk/
@@ -167,14 +167,14 @@ navigation benefit without the move.
 | `CODE_OF_CONDUCT.md` | stays | dev | reference | — |
 | `CHANGELOG.md`, `CHANGELOG-archive.md` | stay | dev | reference (record-like) | History; lint-exempt for wordmark (TW implication 4) |
 | `AGENTS.md`, `CLAUDE.md` | stay | dev | reference | See [O-2](#open-decisions-for-the-owner) |
-| `docs/install.md` | `docs/user/install.md` | user | how-to | Maintainer runbook (`install.md:305-337`) → `docs/dev/` in D3 |
-| `docs/walkthrough.md` | `docs/user/walkthrough.md` | user | tutorial | Walkthrough still says Generate always calls Sonnet; `architecture.md` says only when Compose wasn't frozen (TW-F2) — D3 |
-| `docs/walkthrough_example.md` | `docs/user/walkthrough-example.md` | user | tutorial | Kebab-case on move |
-| `docs/template_authoring.md` | `docs/user/templates.md` | user | how-to | Split; currently has no header and isn't on the site (UX B5) |
-| `docs/architecture.md` | `docs/dev/architecture.md` | dev | explanation | 43 link-bearing files; 3 are records → moved-paths map (§3) |
-| `docs/system-model.md` | `docs/dev/system-model.md` | dev | explanation | Its wiki twin is tagged `user` (TW-§2); the tier conflict is D3's to settle |
-| `docs/PRODUCT_SHAPE.md` | `docs/dev/PRODUCT_SHAPE.md` | dev | explanation | Historical sections → `archive/` in D3 (DX implication 10) |
-| `docs/ux/screenshot_capture.md` | `docs/dev/screenshot-capture.md` | dev | how-to | — |
+| `docs/user/install.md` | `docs/user/install.md` | user | how-to | Maintainer runbook (`install.md:305-337`) → `docs/dev/` in D3 |
+| `docs/user/walkthrough.md` | `docs/user/walkthrough.md` | user | tutorial | Walkthrough still says Generate always calls Sonnet; `architecture.md` says only when Compose wasn't frozen (TW-F2) — D3 |
+| `docs/user/walkthrough-example.md` | `docs/user/walkthrough-example.md` | user | tutorial | Kebab-case on move |
+| `docs/user/templates.md` | `docs/user/templates.md` | user | how-to | Split; currently has no header and isn't on the site (UX B5) |
+| `docs/dev/architecture.md` | `docs/dev/architecture.md` | dev | explanation | 43 link-bearing files; 3 are records → moved-paths map (§3) |
+| `docs/dev/system-model.md` | `docs/dev/system-model.md` | dev | explanation | Its wiki twin is tagged `user` (TW-§2); the tier conflict is D3's to settle |
+| `docs/dev/PRODUCT_SHAPE.md` | `docs/dev/PRODUCT_SHAPE.md` | dev | explanation | Historical sections → `archive/` in D3 (DX implication 10) |
+| `docs/dev/screenshot-capture.md` | `docs/dev/screenshot-capture.md` | dev | how-to | — |
 | `dashboard/README.md`, `recall/README.md`, `skills/README.md`, `.githooks/README.md`, `agents/*.md`, `commands/*.md`, `skills/**` | stay | dev | reference | Code-adjacent; the directory is the home. Catalogs generated or checked, not restated (§5.5) |
 
 ### 2.2 Mapping — the 32 loose `docs/dev/*.md` files

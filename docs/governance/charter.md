@@ -9,7 +9,7 @@
 > drift against this home.
 > **Authoritative for:** the rule-bearing constitution. On any conflict between this
 > charter and a restatement in a descriptive doc (`vision.md`, `AGENTS.md`,
-> `SECURITY.md`, `CONTRIBUTING.md`, `docs/PRODUCT_SHAPE.md`, `docs/dev/RELEASE_ARC.md`),
+> `SECURITY.md`, `CONTRIBUTING.md`, `docs/dev/PRODUCT_SHAPE.md`, `docs/dev/RELEASE_ARC.md`),
 > **the charter governs.** Enforcement detail (what is a gate vs witness vs tribal)
 > lives in [`enforcement.md`](enforcement.md); success criteria + the eval ride-along
 > + the review rubric live in [`metrics.md`](metrics.md).
@@ -336,7 +336,7 @@ dishonest one becomes impossible.]*
   extra installs (grounding-scorer models, Chromium) bundle per system; install docs are
   progressive. *[src: charter D-6. Chromium's docs classification (was inconsistent
   across docs, basic-tool vs dev-only — **F-docs-05**) was reconciled in v1.0.7
-  (**PX-31**): reclassified PDF-output-only across `docs/install.md`'s Prerequisites +
+  (**PX-31**): reclassified PDF-output-only across `docs/user/install.md`'s Prerequisites +
   all 3 OS sequences, correcting the "renders every PDF and the live preview"
   conflation (the live preview is browser-side paged.js, Chromium-free). Cited as
   corrected; do not re-flag. Owner-approved factual reconcile, 2026-07-09, witness

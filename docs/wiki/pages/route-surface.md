@@ -9,7 +9,7 @@
 > **Sources:** [`blueprints/`](../../../blueprints/),
 > [`web_infra/security.py`](../../../web_infra/security.py),
 > [`app.py`](../../../app.py),
-> [`docs/architecture.md` §Module map](../../architecture.md),
+> [`docs/dev/architecture.md` §Module map](../../dev/architecture.md),
 > [`scripts/enforcement/guards/route_security_lint.py`](../../../scripts/enforcement/guards/route_security_lint.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -40,7 +40,7 @@ the full per-blueprint inventory.
 
 Every route that reaches the filesystem runs the same trio. The canonical statement
 of *why* lives in [`AGENTS.md` §Key patterns / Security](../../../AGENTS.md) and
-[`docs/architecture.md` §Security model](../../architecture.md) — cited here, not
+[`docs/dev/architecture.md` §Security model](../../dev/architecture.md) — cited here, not
 restated (design fork D5). The guards themselves moved out of `app.py` (Sprint
 8.3a) into the leaf package `web_infra/` so `app.py` and every blueprint share
 one definition instead of each carrying (or re-inlining) a copy — `web_infra/`

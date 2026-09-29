@@ -2,7 +2,7 @@
 
 > **Audience:** `dev`
 > **Concept:** the full set of LLM call kinds sartor. makes, which model tier each routes to (Sonnet 5 = heavy reasoning; Haiku 4.5 = structured selection), and the two-pass analyze (Haiku extraction → Sonnet synthesis) that anchors the analyze→generate cache.
-> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`blueprints/corpus/skills.py`](../../../blueprints/corpus/skills.py), [`architecture.md` §"LLM routing + cost"](../../architecture.md), [`architecture.md` §"System overview"](../../architecture.md).
+> **Sources:** [`analyzer.py`](../../../analyzer.py), [`onboarding/extract_experiences.py`](../../../onboarding/extract_experiences.py), [`blueprints/applications.py`](../../../blueprints/applications.py), [`blueprints/corpus/skills.py`](../../../blueprints/corpus/skills.py), [`architecture.md` §"LLM routing + cost"](../../dev/architecture.md), [`architecture.md` §"System overview"](../../dev/architecture.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -23,7 +23,7 @@ points at `SONNET_MODEL` but new code references the tier constants directly
 
 The split is deliberate: **Sonnet 5 for heavy reasoning** (large JSON, strategy,
 prose); **Haiku 4.5 for structured selection / classification** (cheap, fast, ~5 s
-median per [`architecture.md`](../../architecture.md) §"LLM routing + cost"). Every
+median per [`architecture.md`](../../dev/architecture.md) §"LLM routing + cost"). Every
 call carries a `call_kind` string for JSONL telemetry + the dashboard, with a
 `<kind>_retry` sibling on the retry path ([`analyzer.py:_parse_or_retry`](../../../analyzer.py)).
 
@@ -139,7 +139,7 @@ block; the cheap small calls
 also pass `cached_user_prefix=""` because there is no long static block worth caching
 ([`analyzer.py:_call_llm`](../../../analyzer.py)) `[synthesis]`.
 Only `analyze_synthesis` and `generate` ride the heavy corpus-prefix cache — see
-[`architecture.md`](../../architecture.md) §"LLM routing + cost" for the green/red
+[`architecture.md`](../../dev/architecture.md) §"LLM routing + cost" for the green/red
 cache map. That diagram deliberately carries no per-call latency numbers as of
 2026-07-28 — the prior figures were pre-Sonnet-5 synthetic measurements and were
 removed rather than left to mislead; for current real-corpus latency/cost, see

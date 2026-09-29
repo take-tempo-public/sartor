@@ -31,7 +31,7 @@ export const docs = defineDocs({
 export default defineConfig({
   mdxOptions: {
     // The four architecture diagrams are authored as ```mermaid fences in
-    // docs/architecture.md (the single source — the standalone docs/diagrams/*.mmd
+    // docs/dev/architecture.md (the single source — the standalone docs/diagrams/*.mmd
     // copies were retired). Fumadocs ships no Mermaid renderer by default, so
     // those fences were shipping to the public site as raw code blocks. This
     // plugin rewrites a ```mermaid fence into <Mermaid chart="…" />, which

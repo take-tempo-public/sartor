@@ -15,12 +15,12 @@
 > Sibling docs:
 > [`architecture.md`](architecture.md) (the code-level module map + LLM routing),
 > [`PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) (product-data-model intent),
-> [`vision.md`](../vision.md) + the 10 Principles (the Governance north-star),
-> [`dev/excellence-walk/`](dev/excellence-walk/) (the preserved reasoning this was
+> [`vision.md`](../../vision.md) + the 10 Principles (the Governance north-star),
+> [`dev/excellence-walk/`](excellence-walk/) (the preserved reasoning this was
 > distilled from).
 >
 > This doc is the **seed for the WS-4 wiki `overview.md`**; ingesting it into the
-> wiki is a later branch ([`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.5),
+> wiki is a later branch ([`dev/RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.5),
 > not this one.
 
 ---
@@ -90,13 +90,13 @@ The people and assistants who change the system. Notably, **AI coding agents are
 first-class contributors here** — much of the work is done by agents working under
 strict, mechanically-enforced rules. *(Lives in: `commands/` +
 `agents/`; the human + AI operators; the operating contract in
-[`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md).)*
+[`../AGENTS.md`](../../AGENTS.md) / [`../CLAUDE.md`](../../CLAUDE.md).)*
 
 ### Memory — recallable knowledge and rules
 The project's drawn-upon knowledge: the documentation, the design rationale, and the
 contributor contract that both humans and AI read *before* changing anything. It is
 pulled when needed, not pushed. Also the module-level `Memory` capacity described in
-[`dev/memory-architecture.md`](dev/memory-architecture.md): `recall/`, a reusable,
+[`dev/memory-architecture.md`](memory-architecture.md): `recall/`, a reusable,
 project-agnostic retrieval substrate (git-grep + the wiki + a static-embedding vector
 tier, fused by Reciprocal Rank Fusion) that feeds a citing Haiku avatar. *(Lives in:
 `docs/`, `CHANGELOG.md`, the compiled knowledge wiki `docs/wiki/`, and the `recall/`
@@ -107,14 +107,14 @@ The rules, enforced by machines rather than by vigilance: automated checks that 
 unsafe changes (leaked secrets, missing security guards, edits on the wrong branch)
 and a release discipline that gates what ships. *(Lives in: `.claude-plugin/hooks/`,
 the `ruff` + `mypy` + `pytest` quality gate, the branch/release discipline in
-[`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md).)*
+[`dev/RELEASE_ARC.md`](RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).)*
 
 ### Governance — the north-star answered to
 The written vision and the set of principles stating what Sartor is *for* and what
 it must never do. Everything else is measured against this. **Honest seam:** this is
 the one layer that is deliberately **prescribed** rather than emergent — it is the
 human intent the rest is held to, not something the system discovers on its own.
-*(Lives in: [`vision.md`](../vision.md) and the 10 Principles.)*
+*(Lives in: [`vision.md`](../../vision.md) and the 10 Principles.)*
 
 ## The one law
 
@@ -140,10 +140,10 @@ navigable as it grows.
 | **Substrate** | `configs/`, `resumes/`, `output/`, `db/resume.sqlite` |
 | **Production** | `app.py` (composition root) + `blueprints/` (routes, web layer) · `analyzer.py` (**all** AI calls) · the deterministic core `hardening.py` / `generator.py` / `parser.py` / `pdf_render.py` / `json_resume.py` · `db/` |
 | **Evaluation** | `tests/` · `evals/` · `dashboard/` |
-| **Operation** | `commands/` + `agents/` · [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) (the operating contract) |
+| **Operation** | `commands/` + `agents/` · [`../AGENTS.md`](../../AGENTS.md) / [`../CLAUDE.md`](../../CLAUDE.md) (the operating contract) |
 | **Memory** | `docs/` · `CHANGELOG.md` · `docs/wiki/` (compiled) · `recall/` (the retrieval substrate) |
-| **Regulation** | `.claude-plugin/hooks/` · the `ruff` + `mypy` + `pytest` gate · [`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](dev/RELEASE_CHECKLIST.md) |
-| **Governance** | [`vision.md`](../vision.md) · the 10 Principles |
+| **Regulation** | `.claude-plugin/hooks/` · the `ruff` + `mypy` + `pytest` gate · [`dev/RELEASE_ARC.md`](RELEASE_ARC.md) / [`dev/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) |
+| **Governance** | [`vision.md`](../../vision.md) · the 10 Principles |
 
 > **Self-similarity worth naming:** the *Product* is a grounding-and-synthesis engine
 > (raw history → tailored draft, no invention). The constitutional discipline of the
@@ -155,7 +155,7 @@ navigable as it grows.
 
 ## Open revision points (raised 2026-06-07, not yet resolved — carry into the wiki `overview.md` refinement)
 
-These four were flagged when the source draft ([`dev/excellence-walk/q1-overview.md`](dev/excellence-walk/q1-overview.md))
+These four were flagged when the source draft ([`dev/excellence-walk/q1-overview.md`](excellence-walk/q1-overview.md))
 was written and are **deliberately not resolved here** — they are framing calls best
 settled when this doc seeds the wiki `overview.md`. Recorded so they are not silently
 dropped.
@@ -177,13 +177,13 @@ dropped.
 Distilled from the **settled** output of the 2026-06-07 "excellence walk" — the
 seven-functions vocabulary and the one law were form-found and user-locked there:
 
-- [`dev/excellence-walk/excellence-walk.md`](dev/excellence-walk/excellence-walk.md)
+- [`dev/excellence-walk/excellence-walk.md`](excellence-walk/excellence-walk.md)
   — the SETTLED seven-functions table + the one law + the Product/Work split.
-- [`dev/excellence-walk/q1-overview.md`](dev/excellence-walk/q1-overview.md) — the
+- [`dev/excellence-walk/q1-overview.md`](excellence-walk/q1-overview.md) — the
   layered layman draft this prose tightens, and the source of the four revision
   points above.
 - [`PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) §11 — the one-paragraph summary that defers
   to this canonical write-up.
 
 Scheduling for the WS-4 knowledge substrate that this seeds lives in
-[`dev/RELEASE_ARC.md`](dev/RELEASE_ARC.md) §Phase 4.5.
+[`dev/RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.5.

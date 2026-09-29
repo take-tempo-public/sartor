@@ -3,15 +3,15 @@
 > **Purpose:** one synthetic candidate, one synthetic job
 > description, walked through all six wizard steps with the
 > actual decisions made at each one. Concrete companion to the
-> abstract [`docs/walkthrough.md`](walkthrough.md).
+> abstract [`docs/user/walkthrough.md`](walkthrough.md).
 > **Audience:** `user` — humans reading the walkthrough who want to see
 > what a real run feels like before opening the app; future
 > contributors wanting a fixed reference example to compare
 > against.
 > **Authoritative for:** nothing — this is a teaching artifact.
 > The canonical step definitions live in
-> [`docs/walkthrough.md`](walkthrough.md); the canonical pipeline
-> behavior lives in [`docs/architecture.md`](architecture.md).
+> [`docs/user/walkthrough.md`](walkthrough.md); the canonical pipeline
+> behavior lives in [`docs/dev/architecture.md`](../dev/architecture.md).
 
 Acronyms used (same as the walkthrough): **JD** = job description;
 **LLM** = large language model (Anthropic's Claude); **ATS** =
@@ -326,7 +326,7 @@ reading and decisions.
 | **Total** | | | **~$0.22** |
 
 This is the "résumé + clarify" band from
-[Cost guidance](../README.md#install) — squarely in the typical-use
+[Cost guidance](../../README.md#install) — squarely in the typical-use
 range.
 
 ---

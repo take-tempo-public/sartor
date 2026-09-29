@@ -13,8 +13,8 @@
 > [`web_infra/http.py`](../../../web_infra/http.py),
 > [`web_infra/request_gates.py`](../../../web_infra/request_gates.py),
 > [`app.py`](../../../app.py),
-> [`docs/architecture.md`](../../architecture.md),
-> [`docs/system-model.md`](../../system-model.md).
+> [`docs/dev/architecture.md`](../../dev/architecture.md),
+> [`docs/dev/system-model.md`](../../dev/system-model.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -32,9 +32,9 @@ roster). The blueprint object is built in
 tuning is *observable* — which prompt revision moved a score, which rubric fails
 most, what each failure cost in dollars and seconds `[synthesis]`.
 
-It is not Product. [`system-model.md`](../../system-model.md) files `dashboard/`
+It is not Product. [`system-model.md`](../../dev/system-model.md) files `dashboard/`
 under the **Evaluation** function ("measures, verifies, improves Production"),
-alongside `tests/` and `evals/`; [`architecture.md`](../../architecture.md)'s
+alongside `tests/` and `evals/`; [`architecture.md`](../../dev/architecture.md)'s
 module map lists it between `db/` and `evals/`. Its *dependency* direction is the
 category: it reads the eval harness's outputs and the analyzer's telemetry —
 co-location in the route tree is not membership in the Product pipeline

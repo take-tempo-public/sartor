@@ -1,5 +1,10 @@
 # Generation-experience re-architecture — design + decision record
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** the single durable, in-repo home for the "unusable" remediation
 > re-architecture — the owner's binding behavior spec, every locked decision, the
 > full reasoning thread behind those decisions, the build sequence, and the

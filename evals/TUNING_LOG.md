@@ -595,7 +595,7 @@ The fix (in `analyzer.py`):
 
 ### Why
 
-The analyze→generate cache overlap is a deliberate optimization (`docs/architecture.md`):
+The analyze→generate cache overlap is a deliberate optimization (`docs/dev/architecture.md`):
 within one iteration the `[SYSTEM_PROMPT][_stable_user_prefix]` block is byte-identical, so the
 second Sonnet call reads it instead of re-prefilling the whole corpus. The `.2` split silently
 forfeited it. The dollar delta is tiny on the synthetic fixtures (~$0.006/run) but **grows with
@@ -771,7 +771,7 @@ Cleared the dual gate on the first n=3 — no `/prompt-tune` iterations consumed
    system prompt that diverges from `generate`'s `SYSTEM_PROMPT` at the cached prefix's head).
    Moving the high-token extraction work to Haiku more than offsets the lost Sonnet cache read.
 
-4. **Stale doc flagged:** `docs/architecture.md`'s "analyze and generate share a heavy cached
+4. **Stale doc flagged:** `docs/dev/architecture.md`'s "analyze and generate share a heavy cached
    user prefix" and the single-call analyze in `pipeline.mmd` / `llm-routing.mmd` are now
    inaccurate. Out of scope for this branch (RELEASE_ARC §Phase 2 bounds it to the split + gate);
    surfaced to the user for a follow-up doc pass.
@@ -2245,7 +2245,7 @@ using the literal code identifier):
 > `AVATAR_SYSTEM_PROMPT`), NOT the résumé pipeline. `PROMPT_VERSION` is untouched and the
 > avatar is **not** a `_BASE_SYSTEM_PROMPTS` / synthetic-suite target — so this entry uses
 > the avatar's own deterministic checks + a live manual spot-check matrix (the guide's §6),
-> never the résumé runner. Executes [`docs/dev/avatar-voice-tone-guidance.md`](../docs/dev/avatar-voice-tone-guidance.md) Part 4.
+> never the résumé runner. Executes [`docs/dev/archive/avatar-voice-tone-guidance.md`](../docs/dev/archive/avatar-voice-tone-guidance.md) Part 4.
 
 ### 1. What changed
 
@@ -2334,7 +2334,7 @@ screen-reader a11y defect (per-token announcement of a live region).
 > the `done`-payload renderer), NOT the résumé pipeline. `PROMPT_VERSION` untouched; avatar
 > not a `_BASE_SYSTEM_PROMPTS` target — so this entry uses the avatar's own deterministic
 > checks + a live in-process spot-check, never the résumé runner. Executes
-> [`docs/dev/avatar-citation-format-guidance.md`](../docs/dev/avatar-citation-format-guidance.md).
+> [`docs/dev/archive/avatar-citation-format-guidance.md`](../docs/dev/archive/avatar-citation-format-guidance.md).
 
 ### 1. What changed
 
@@ -2407,7 +2407,7 @@ problem, not cosmetics.
 > **Not a prompt change** (`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched). The
 > v1.0.8 gated test window's eval half. (A) closes the "still owed (v1.0.8)" item the
 > 2026-06-16 S3 probe entry above flagged; (B) is the first run of the real-data
-> eval/tuning loop. Full findings backlog: [`docs/dev/window-8.5-findings.md`](../docs/dev/window-8.5-findings.md).
+> eval/tuning loop. Full findings backlog: [`docs/dev/archive/window-8.5-findings.md`](../docs/dev/archive/window-8.5-findings.md).
 
 ### A. S3 vector tier — judge-scored before/after relevance eval (Carry-forward #2 → RESOLVED: KEEP)
 
@@ -2470,7 +2470,7 @@ the real-suite eval scores + the #4 calibration labels move to 8.6 PV-2.
 > **Not a prompt change** (`PROMPT_VERSION` / `AVATAR_PROMPT_VERSION` untouched). Recorded
 > here because it unblocks the **PV-2 grounding-calibration loop** — the next tuner needs to
 > know the L0+L1+L2 scorers run, and on what stack. Findings + resolution:
-> [`../docs/dev/window-8.5-findings.md`](../docs/dev/window-8.5-findings.md).
+> [`../docs/dev/window-8.5-findings.md`](../docs/dev/archive/window-8.5-findings.md).
 
 **What changed?** Pinned `minicheck` to `b58b9fa…` (`pyproject.toml` `eval-grounding`), dropped
 the removed `device="cpu"` kwarg in `evals/grounding_signals.py:_load_minicheck_scorer`, added
@@ -2852,7 +2852,7 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
 
 1. **What changed?** The generation-experience re-architecture's LATER-branch
    remainder item (c) — D5 cross-JD clarification reuse
-   ([`generation-experience-rearchitecture.md`](../docs/dev/generation-experience-rearchitecture.md)
+   ([`generation-experience-rearchitecture.md`](../docs/dev/archive/generation-experience-rearchitecture.md)
    §2 Stage 3 / §3.5 point 3). `db.build_context.build_context_set_from_db` now
    stages `context_set["prior_clarifications"]` — every `clarification` DB row
    for the candidate from an EARLIER application (candidate-scoped, capped at

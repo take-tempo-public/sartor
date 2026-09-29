@@ -1,5 +1,10 @@
 # Board → forge sync review (design-sprint input, item 97)
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Status:** design-sprint INPUT, not a decision record. Written 2026-08-14 at the
 > owner's direction ("review our board as it is and the possible integrations with
 > github/gitea/gitlab... describe needed changes, and document for the next design

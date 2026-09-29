@@ -8,7 +8,7 @@
 > `_renderAnalysis`, `loadComposition`, `_renderGenerateStepCopy`,
 > `_refreshLiveEditPreview`, `_submitSurgicalRefinement`); mirrors the in-app step
 > help. The Compose/Generate mechanics are the user-facing view of
-> [`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md)
+> [`docs/dev/archive/generation-experience-rearchitecture.md`](../../dev/archive/generation-experience-rearchitecture.md)
 > (see [[frontend-wizard]] for the developer's account).
 
 ---

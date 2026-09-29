@@ -1,5 +1,10 @@
 # Full-system verification — everything since the v1.0.1 end-to-end
 
+> **Archived 2026-09-28 (Epic D, D2).** A historical record kept for its rationale, and no
+> longer maintained. Its links are as they were when it was written; see
+> [`docs/dev/moved-paths.json`](../moved-paths.json) for where moved docs went.
+
+
 > **Purpose:** a human-driven, real-corpus walkthrough that verifies the **cumulative
 > change set across v1.0.2 → v1.0.5** — i.e. everything built since the last
 > full end-to-end test at v1.0.1. It is structured so the v1.0.5 release cut can

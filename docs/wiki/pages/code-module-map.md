@@ -5,7 +5,7 @@
 > everything points toward Production, and Production answers only upward to
 > Governance. The navigational hub for every code page (the code analogue of
 > [[excellence-walk]]).
-> **Sources:** [`docs/architecture.md`](../../architecture.md) §"System overview" +
+> **Sources:** [`docs/dev/architecture.md`](../../dev/architecture.md) §"System overview" +
 > §"Module map"; the root modules ([`analyzer.py`](../../../analyzer.py),
 > [`hardening.py`](../../../hardening.py), [`config.py`](../../../config.py),
 > [`app.py`](../../../app.py), [`generator.py`](../../../generator.py), the `db/` +
