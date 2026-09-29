@@ -146,7 +146,7 @@ Non-markdown sites plus the gated markdown surfaces. Every site is decided below
 | 18 | `tests/test_pdf_capability_ui.py:5`, `tests/test_preflight.py:15` | update | Docstring paths |
 | 19 | `tests/test_docstring_coverage_gate.py:11`, `tests/test_mypy_strict_roster_gate.py:5` | update | Docstring paths to `kit-adoption-design.md` (the directory-qualified ones only) |
 | 20 | `tests/test_avatar_streaming.py:151`, `tests/test_regenerate_gap_fill.py:4` | update | Comment paths to archived docs |
-| 21 | `docs/dev/AGENT_HANDOFF_TEMPLATE.md` (gated) | no change expected | It links `handoff-integrity-design.md`, which stays. If the dry-run shows a rewrite here, it changes canonical verbatim text, so it is recorded and surfaced before applying |
+| 21 | `docs/dev/AGENT_HANDOFF_TEMPLATE.md:77` (gated) | update, scripted | The dry run found one hit: item 5 of the **verbatim** "Documents to read" list names `docs/architecture.md`. It becomes `docs/dev/architecture.md`, which changes the canonical verbatim text. That's correct, because the old path would be a dead instruction in every future handoff. Handoffs already consumed are unaffected; the next one (this branch's) is generated from the new text |
 | 22 | live `*.md` (the "Live `.md`" column above) | update, scripted | `docs_move.py`; no hand-edited link rewrites (design §3.2) |
 | 23 | the 24 moved files' **own outbound** relative links | 8 live moves: rewritten by the script. 16 archived: **not rewritten** | Archived files are records. `check_doc_links.py` resolves a moved record's links against its *old* directory, then through the map, so the bytes stay frozen |
 
@@ -204,3 +204,24 @@ Non-markdown sites plus the gated markdown surfaces. Every site is decided below
   `moved-paths.json`, or the Deferred sites above. The result is appended here.
 - New tests: `tests/test_doc_registry.py` (no record path registered, every entry exists,
   valid tier, unique slugs); `tests/test_docs_move.py` (tmp git repo); seeded link-map cases.
+
+### Dry-run receipt (`python scripts/docs_move.py`, before `--apply`)
+
+```
+docs_move: 24 moves
+docs_move: 468 rewrite(s) in 54 live markdown file(s)
+docs_move: 65 old-path mention(s) in non-markdown files (not rewritten)
+```
+
+The 54 files are all live. No record path appears in the list (`is_record` is judged on the
+post-move path, so the 16 archived files are excluded), and neither does `CHANGELOG*`. The
+gated markdown hits are `docs/dev/AGENT_HANDOFF_TEMPLATE.md:77` (row 21) and
+`docs/wiki/SCHEMA.md:56,103,163`. For `:103` the script rewrites the exact
+`docs/install.md` but not the `docs/walkthrough*.md` glob, so that line is finished by hand to
+`docs/user/**` (row 5). The 65 non-markdown mentions are exactly the rows above plus the
+Deferred sites, and the registry/`wiki_relevance.py` entries edited in the move commit.
+
+Control arm for the map lookup: with `check_doc_links.load_moved_paths` stubbed to `{}`,
+`tests/test_docs_move.py::test_record_links_resolve_through_the_map` fails with
+`docs/dev/archive/old-design.md:8 -> ../install.md  (target does not exist)`. The lookup is
+what makes it pass.

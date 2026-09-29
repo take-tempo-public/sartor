@@ -80,6 +80,8 @@ Exit 0 clean; exit 1 with a `file:line -> broken-target` listing.
 
 from __future__ import annotations
 
+import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -87,6 +89,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from check_doc_frontmatter import PUBLISHED_DOC_FILES
+from doc_registry import is_record
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -250,6 +253,37 @@ class Violation:
         return f"{posix}:{self.line} -> {self.target}  ({self.reason})"
 
 
+# Design §3.3 (`docs/dev/docs-ia-design.md`): records are never rewritten when docs move, so a
+# record's link to a moved doc resolves through this map. It is consulted ONLY for links whose
+# source file is a record (`doc_registry.is_record`): a live doc linking an old path still
+# fails, because live docs are rewritten by `scripts/docs_move.py`, and the map must not hide a
+# missed rewrite.
+MOVED_PATHS_FILE = "docs/dev/moved-paths.json"
+
+
+def load_moved_paths() -> dict[str, str]:
+    """The old -> new repo-path map written by `scripts/docs_move.py` (empty if absent)."""
+    path = REPO_ROOT / MOVED_PATHS_FILE
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {str(k): str(v) for k, v in data.items()}
+
+
+def resolve_record_link(
+    src: str, path_part: str, moves: dict[str, str], reverse: dict[str, str]
+) -> Path | None:
+    """Resolve a record's link the way it was written: against the record's OLD directory
+    (when the record itself moved, e.g. into `docs/dev/archive/`), then through the map.
+    Returns the existing target, or None."""
+    base = posixpath.dirname(reverse.get(src, src))
+    old = posixpath.normpath(posixpath.join(base, path_part))
+    if old.startswith("../"):
+        return None
+    candidate = REPO_ROOT / moves.get(old, old)
+    return candidate if candidate.exists() else None
+
+
 def _split_target(target: str) -> tuple[str, str | None]:
     if "#" in target:
         path_part, _, frag = target.partition("#")
@@ -272,6 +306,16 @@ def check_links(md_files: list[Path]) -> list[Violation]:
                 slug_cache[abs_path] = slugs_for(text.splitlines())
         return slug_cache[abs_path]
 
+    # The moved-paths map is loaded at most once, and only when a record link misses.
+    moved: tuple[dict[str, str], dict[str, str]] | None = None
+
+    def moved_paths() -> tuple[dict[str, str], dict[str, str]]:
+        nonlocal moved
+        if moved is None:
+            moves = load_moved_paths()
+            moved = (moves, {new: old for old, new in moves.items()})
+        return moved
+
     for rel_path in md_files:
         abs_path = REPO_ROOT / rel_path
         try:
@@ -280,6 +324,7 @@ def check_links(md_files: list[Path]) -> list[Violation]:
             violations.append(Violation(rel_path, 0, str(rel_path), f"unreadable: {exc}"))
             continue
         lines = text.splitlines()
+        src_is_record = is_record(rel_path.as_posix())
 
         for lineno, line in _iter_unfenced_lines(lines):
             for m in _LINK_RE.finditer(line):
@@ -315,6 +360,10 @@ def check_links(md_files: list[Path]) -> list[Violation]:
                     continue
 
                 resolved = (abs_path.parent / path_part).resolve()
+                if not resolved.exists() and src_is_record:
+                    via_map = resolve_record_link(rel_path.as_posix(), path_part, *moved_paths())
+                    if via_map is not None:
+                        resolved = via_map
                 if not resolved.exists():
                     if _is_gitignored(resolved):
                         continue  # expected-absent user-data / ignored path
