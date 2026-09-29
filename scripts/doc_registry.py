@@ -97,6 +97,7 @@ PUBLISHED: tuple[Entry, ...] = (
     Entry("docs/dev/documentation-architecture.md", "dev"),
     Entry("docs/dev/docs-ia-design.md", "dev"),
     Entry("docs/dev/docs-site-deploy.md", "dev"),
+    Entry("docs/dev/releasing.md", "dev"),
     Entry("docs/dev/screenshot-capture.md", "dev"),
     Entry("docs/dev/EXTRACTION.md", "dev"),
     Entry("docs/dev/keep-ledger.md", "dev"),

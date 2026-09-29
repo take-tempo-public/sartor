@@ -63,6 +63,21 @@ boundary, charter C-6):
 7. **Generate cover letter** *(optional, Sonnet)* — against the
    finalized résumé, with the same refine/iterate affordances
 
+Two steps sit outside that sequence. They're listed here because the user walkthrough
+deliberately carries no route or model detail and points at this section:
+
+- **Corpus import** (before any application): the Career corpus tab's **+ Import résumé**
+  posts to `POST /api/users/<username>/corpus/ingest-resume`
+  (`blueprints/corpus/curation.py:442`). The file is saved under `resumes/<user>/`, and one
+  Haiku `extract_experiences` call splits it into roles and bullets. The new rows land as
+  pending review (`is_pending_review=1`; the route's docstring, `curation.py:443-452`).
+- **Post-generation metrics**: every generation carries deterministic metrics — verb
+  diversity, specificity density, and `grounding_overlap`, the fabrication signal —
+  computed in `hardening.py` (`compute_grounding_overlap`, `hardening.py:997`; assembled at
+  `hardening.py:2026-2029`) against the same source union the drafting calls treat as
+  ground truth. Preview edits are saved as the next round's baseline by
+  `POST /api/save-edits` (`blueprints/generation.py:662`).
+
 Full sequence diagram — rendered inline below (the single source; see [The four canonical diagrams](#the-four-canonical-diagrams)).
 
 ```mermaid

@@ -71,3 +71,12 @@ tag is pushed and both publish workflows are green. That work is gated on item 3
 (owner-only GitHub console settings), which this item already depends on.
 
 Nothing further is owed from an agent here until an artifact is published.
+
+### 2026-09-29 — maintainer section moved out of the user guide (`feat/user-docs`, Epic D D3)
+
+The one-time publishing setup this item's closure depends on moved from
+`docs/user/install.md` to [`docs/dev/releasing.md`](../../releasing.md), since a first-time
+installer never needs it. The install guide's pre-release warnings stay, and they now link
+there. Re-verified the same day: `git ls-remote --tags origin` returns 0 lines,
+`gh release list` is empty, and `gh run list --workflow=release.yml` shows no runs. The
+item's state is unchanged.

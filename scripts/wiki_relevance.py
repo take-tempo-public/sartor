@@ -202,6 +202,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docs/dev/keep-ledger.md",
         "docs/dev/memory-architecture.md",
         "docs/dev/nursery.md",
+        "docs/dev/releasing.md",  # maintainer publishing runbook, out of install.md (Epic D D3)
     }
 )
 

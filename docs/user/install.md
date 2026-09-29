@@ -1,4 +1,4 @@
-# Installing sartor.
+# Installing Sartor
 
 > **Purpose:** end-to-end install guide for users on Windows, macOS,
 > or Linux. The minimum-friction path to a running app + first
@@ -21,13 +21,28 @@
   `python3 --version` on macOS/Linux).
 - **An Anthropic API key.** Get one at
   [console.anthropic.com](https://console.anthropic.com/). See
-  [Cost guidance](../../README.md#install) for the per-application
-  breakdown; budget guards are documented in
-  [`SECURITY.md`](../../SECURITY.md).
+  [What an application costs](#what-an-application-costs) below.
   You do **not** need one to try Sartor — see
   [demo mode](#try-it-without-an-api-key-demo-mode).
 - **A modern browser** (Chrome / Edge / Firefox / Safari).
   Sartor runs as a local Flask app you access in your browser.
+
+### What an application costs
+
+Sartor itself is free; the AI calls are billed to your Anthropic account. **About US$0.25
+and about two minutes of total AI processing time per application**, summed across every
+AI call the application makes. That is the median of 13 real applications, all from one person's use before the first
+public release, so treat it as a rough guide rather than a promise. A larger corpus or
+job description costs more, and you can check your own numbers in the diagnostics console
+(`http://localhost:5000/_dashboard`). The measurement and its caveats are in
+[`docs/dev/perf/PERFORMANCE_HISTORY.md`](../dev/perf/PERFORMANCE_HISTORY.md).
+
+Two things cost nothing: [demo mode](#try-it-without-an-api-key-demo-mode), and every step
+that doesn't use AI (choosing a template, generating from a saved composition,
+downloading).
+
+**Sartor has no built-in spending limit.** To cap what you can spend, set a limit in
+[Anthropic's usage limits](https://console.anthropic.com/settings/limits).
 
 ### Check your machine first: `sartor --doctor`
 
@@ -87,13 +102,14 @@ invoke it as `python3 -m app` / `python3 app.py` from the repo.
 > **Read this first.** The container image and the PyPI wheel described below
 > are **not published yet** — no version tag has been pushed, so neither
 > `ghcr.io/take-tempo-public/sartor` nor `pip install sartor` resolves to
-> anything. Verified 2026-09-02: `git ls-remote --tags origin` returns nothing,
+> anything. Verified 2026-09-02 and again 2026-09-29: `git ls-remote --tags origin` returns nothing,
 > `gh release list` is empty, and neither publish workflow has ever run. Both
 > sections are kept because they describe the intended shape and the commands
 > are correct once a release exists — but **today, the source clone is the
 > install method**, not a developer footnote. Publication is tracked in
 > [`docs/dev/work/items/0099-install-docs-document-unpublished-paths.md`](../dev/work/items/0099-install-docs-document-unpublished-paths.md)
-> and gated on the one-time maintainer setup below.
+> and gated on the one-time maintainer setup in
+> [`docs/dev/releasing.md`](../dev/releasing.md).
 
 Jump to your platform: [Windows](#windows) · [macOS](#macos) · [Linux](#linux).
 Then run `sartor --doctor` to confirm what your machine supports.
@@ -301,37 +317,6 @@ What to expect:
   *is* present alongside the flag, demo still wins: nothing spends.
 
 Unset the variable and restart to switch back to real AI calls.
-
-## Maintainer: publishing (one-time `[HUMAN]` setup)
-
-> **Status, verified 2026-09-02: nothing has been published.**
-> `git ls-remote --tags origin` returns no tags (all local tags `v0.2.0`–`v1.0.9`
-> exist only in the maintainer's clone), `gh release list` is empty, and neither
-> workflow below has ever run. Until step 5 happens, the container and PyPI
-> sections above describe an intended future state, and the source clone is the
-> only working install.
-
-Two workflows do the release automatically on a version tag (`vX.Y.Z`):
-[`docker.yml`](../../.github/workflows/docker.yml) builds + pushes the multi-arch
-image to `ghcr.io/take-tempo-public/sartor`; [`release.yml`](../../.github/workflows/release.yml)
-builds the wheel and publishes to PyPI via **Trusted Publishing** (OIDC, no
-stored token). A maintainer only does the console setup CI can't do, then pushes
-the tag:
-
-1. **GitHub** — create org + repo `take-tempo-public/sartor` (the image namespace,
-   the PyPI publisher, and the in-app citation URLs all key off it).
-2. **PyPI** — [pypi.org](https://pypi.org) → *Your account → Publishing* → add a
-   pending publisher: project `sartor`, owner `take-tempo-public`, repo `sartor`,
-   workflow `release.yml`, environment `pypi`. Then in the GitHub repo →
-   *Settings → Environments* → create the `pypi` environment.
-3. **GHCR** — after the first image push, set the package public and link it to the
-   repo (org → Packages → package settings).
-4. **Un-gate PyPI** — the `release.yml` publish job is intentionally gated (a `GATE`
-   step) until the wheel ships the app's data dirs. Fix that packaging follow-up,
-   verify a fresh-venv `pip install <wheel>` serves a page, then delete the `GATE`
-   step. Until then, ship via the container or a source install.
-5. **Each release (recurring)** — bump `version` in `pyproject.toml`, commit/merge,
-   then `git tag vX.Y.Z && git push --tags`. The tag fires both workflows.
 
 ---
 
@@ -567,8 +552,8 @@ extras, sizes, and licensing) live in
 
 By the end of these eight steps you'll have your first tailored
 résumé sitting in `output/<your-user>/`. Total time: about 5
-minutes plus one ~30–60s LLM analyze call. Total cost: ~$0.05–$0.30
-([see breakdown](../../README.md#install)).
+minutes of your own time plus the AI's processing time. Cost: see
+[What an application costs](#what-an-application-costs).
 
 After the app is running:
 
@@ -577,17 +562,17 @@ After the app is running:
 
    ![The user picker dropdown in the top-right corner. Each user has their own corpus, settings, and output history.](../screenshots/install_setup_user-picker.png)
 
-2. **Open the Career Corpus tab** and click `+ Import résumé` if
-   you have an existing résumé file in `resumes/<user>/`. The
-   importer extracts experiences and bullets into the structured
-   corpus (uses one Haiku call, ~$0.02).
-3. **Click the Application tab → Start application.**
+2. **Open the Career corpus tab** and click **+ Import résumé** to
+   upload your existing résumé (`.docx`, `.pdf` or `.md`). One short
+   AI call splits it into roles and bullets in your corpus.
+3. **Click the Tailor tab.**
 4. Follow the six-step wizard:
-   1. **Job description** — paste the JD text.
-   2. **Clarify** *(optional)* — answer 3-5 LLM questions that
-      surface real-but-undocumented experience.
-   3. **Compose** — pin, exclude, or add bullets and pick which
-      summary variant to use.
+   1. **Job description** — paste the job description and click
+      **Analyze**.
+   2. **Clarify** *(optional)* — answer a few AI questions that
+      surface real experience your résumé doesn't mention yet.
+   3. **Compose** — review the AI's proposed bullets and summary; pin,
+      exclude or add bullets, then **Save and continue to Template →**.
    4. **Template** — choose a layout; preview updates live.
    5. **Generate** — produce the résumé in DOCX, PDF, or Markdown.
    6. **Download** — review, refine, and download.
@@ -595,8 +580,8 @@ After the app is running:
    résumé using the **+ Generate cover letter** button.
 
 For the full screen-by-screen guide — including user-flow and
-information-flow diagrams, what each LLM call is actually doing,
-and the two human review gates — read
+information-flow diagrams, which steps use AI, and the two human
+review gates — read
 [`docs/user/walkthrough.md`](walkthrough.md) next.
 
 ---

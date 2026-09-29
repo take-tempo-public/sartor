@@ -1,21 +1,23 @@
-# Using sartor. — screen-by-screen walkthrough
+# Using Sartor — screen-by-screen walkthrough
 
-By the end of this doc you'll know what each of the six wizard steps does, what it costs, and what to look for before you click forward.
+By the end of this doc you'll know what each of the six wizard steps does, which ones use AI, and what to look for before you click forward.
 
 > **Purpose:** the user-facing walkthrough. Each wizard step explained
-> in terms of *what you see*, *what you do*, *what's happening under
-> the hood*, and *what to verify before continuing*. Two flow diagrams
-> at the top — one for screen-to-screen navigation, one for how your
-> data moves through the system.
-> **Audience:** `user` — humans using the app for the first time (or coming
+> in terms of *what you see*, *what you do*, *what happens*, and *what
+> to check before continuing*. Two flow diagrams at the top — one for
+> screen-to-screen navigation, one for how your information moves
+> through the app.
+> **Audience:** `user` — people using the app for the first time (or coming
 > back after a break and wanting a refresher on which step does what).
-> **Authoritative for:** the canonical step-by-step user flow; the
-> mapping from each screen to its Flask route + LLM call + cost band;
-> the human-gate points where the wizard pauses for your review.
+> **Type:** tutorial
+> **Authoritative for:** the step-by-step user flow of one application;
+> which steps use AI and which don't; the human-gate points where the
+> wizard pauses for your review. The code-level view of each step (routes,
+> model per call) lives in [`docs/dev/architecture.md`](../dev/architecture.md).
 > Sibling docs:
-> [`README.md`](../../README.md) (overview + Doc Map),
-> [`docs/user/install.md`](install.md) (install + first-run),
-> [`docs/dev/architecture.md`](../dev/architecture.md) (code-level system view),
+> [`README.md`](../../README.md) (overview),
+> [`docs/user/install.md`](install.md) (install + first run + cost),
+> [`docs/user/iterating.md`](iterating.md) (second applications, refining, earlier work),
 > [`vision.md`](../../vision.md) (why Sartor exists).
 
 ---
@@ -23,17 +25,17 @@ By the end of this doc you'll know what each of the six wizard steps does, what 
 ## How to read this doc
 
 The two diagrams below are the map. Skim them first, then read the
-per-step sections for the educational depth — what each LLM call is
-actually doing, what's deterministic, and what to look at before
-moving on.
+step sections for detail: what each step does, whether it uses AI,
+and what to look at before moving on.
 
-Acronyms used throughout: **JD** = job description; **LLM** = large
-language model (Anthropic Claude); **ATS** = applicant tracking
-system (résumé parsing software employers run on incoming files).
+Acronyms used throughout: **JD** = job description; **AI** here means
+the large language model (Anthropic's Claude) that Sartor calls for the
+fuzzy work; **ATS** = applicant tracking system (the résumé-reading
+software employers run on incoming files).
 
-For a single synthetic candidate + JD threading through all six
-steps with concrete decisions, see
-[`walkthrough_example.md`](walkthrough-example.md).
+For one synthetic candidate and job threading through all six steps
+with concrete decisions, see
+[the worked example](walkthrough-example.md).
 
 ---
 
@@ -50,8 +52,8 @@ flowchart LR
   T --> Gen[5. Generate]
   Gen --> D[6. Download]
   D --> G2{Human gate #2<br/>refine?}
-  G2 -->|refine via NL note| Gen
-  G2 -->|approve| Out([Save / share])
+  G2 -->|Refine: one targeted change| P
+  G2 -->|approve| Out([Download])
   D -.optional.-> CL[+ Generate<br/>cover letter]
   CL -.-> Out
 
@@ -60,62 +62,67 @@ flowchart LR
   classDef det  fill:#e8f5e9,stroke:#2e7d32,color:#1b3b1d
   classDef opt  fill:#f3e8ff,stroke:#6b21a8,color:#3b1554,stroke-dasharray: 4 3
   class G1,G2 gate
-  class J,C,Gen llm
-  class P,T,D det
+  class J,C,P llm
+  class T,Gen,D det
   class CL opt
   class S det
 ```
 
-**Read this left-to-right:** Setup and Import feed into the six wizard steps, which always flow left-to-right; the two amber gates are where you decide whether to branch into an optional step (Clarify) or re-run a step (Generate → refine); the purple-dashed cover-letter path is fully optional.
+**Read this left-to-right:** setup feeds the six wizard steps, which
+flow left to right. The two amber gates are where you decide: whether
+to answer Clarify's questions, and whether to refine the finished
+résumé. A refinement sends you **back to Compose** to review one
+proposed change. The purple-dashed cover-letter path is optional.
 
-**Legend:** blue = LLM call fires here · green = deterministic
-(no LLM) · amber = human review gate · purple-dashed = optional path.
+**Legend:** blue = uses AI · green = no AI (instant, and the same input
+always gives the same result) · amber = your review · purple-dashed =
+optional.
 
-Sartor's design rule is *LLM only for fuzzy work*; everything
-else (parsing, rendering, file I/O) is plain Python you can trace
-line-by-line. The diagram's green nodes are the parts you can
-debug without paying for an API call.
+Sartor's design rule is *AI only for the fuzzy work*: reading the job,
+asking questions, drafting wording. Rendering your template, assembling
+the final document and saving files are ordinary code with no AI. That
+is why Steps 4, 5 and 6 are green: once you've approved your content in
+Compose, the résumé is assembled from exactly what you approved.
 
-The wizard has **two required human gates**:
+The wizard has **two human gates**:
 
 1. **Gate #1, after Step 1** — read the analysis. Decide whether
-   to enter Clarify (Step 2) or skip straight to Compose (Step 3).
-2. **Gate #2, in Step 6** — read the generated document.
-   Refine via natural-language note (re-runs Step 5 with edit-aware
-   context) or approve and download.
+   to answer clarifying questions (Step 2) or go straight to Compose
+   (Step 3).
+2. **Gate #2, in Step 6** — read the finished document. Download it,
+   or ask for a refinement.
 
-You can navigate backward through completed steps via the wizard
-rail at the top of the app — the LLM calls don't re-run unless you
-explicitly re-trigger them.
+You can move back to any completed step with the wizard rail at the
+top of the page. Going back doesn't re-run the AI unless you ask it to.
 
 ---
 
-## Information flow — what you give vs. what the system produces
+## Information flow — what you give vs. what Sartor produces
 
 ```mermaid
 flowchart TB
   subgraph You["What you provide"]
     direction TB
-    U1[Master résumé<br/>.docx / .pdf / .md]
-    U2[JD text<br/>pasted in Step 1]
+    U1[Your existing résumé<br/>.docx / .pdf / .md]
+    U2[Job description text<br/>pasted in Step 1]
     U3[Clarify answers<br/>Step 2, optional]
-    U4[Bullet pins / excludes<br/>Step 3]
-    U5[Refinement notes<br/>Step 6, natural language]
+    U4[Pins, excludes, edits<br/>Step 3]
+    U5[Refinement requests<br/>Step 6, plain language]
   end
 
-  subgraph Corpus["⬢ Structured career corpus (db/resume.sqlite) — single source of truth"]
+  subgraph Corpus["⬢ Your career corpus — the single source of truth"]
     direction TB
-    K1[Experiences + bullets<br/>+ summary variants]
-    K2[Tags + skills + scores]
+    K1[Roles + bullets<br/>+ summary variants]
+    K2[Skills + tags]
   end
 
-  subgraph System["What the system computes"]
+  subgraph System["What Sartor produces"]
     direction TB
     A1[Match summary<br/>+ ATS warnings]
-    A2[Clarification questions<br/>3-5 targeted]
-    A3[Recommended bullets<br/>+ summary variant]
+    A2[Clarifying questions]
+    A3[Proposed résumé content<br/>bullets, summary, skills]
     A4[Tailored r&#233;sum&#233;<br/>.docx / .pdf / .md]
-    A5[Cover letter<br/>opt-in]
+    A5[Cover letter<br/>optional]
   end
 
   U1 --> K1 --> A3
@@ -123,9 +130,9 @@ flowchart TB
   U2 --> A2
   U3 --> K1
   K2 --> A3
+  U4 --> A3
+  U5 --> A3
   A3 --> A4
-  U4 --> A4
-  U5 --> A4
   A4 --> A5
 
   classDef user fill:#fff3e0,stroke:#bf6000,color:#3b2200
@@ -136,12 +143,11 @@ flowchart TB
   class A1,A2,A3,A4,A5 out
 ```
 
-**Read this top-down:** the corpus in the middle is the load-bearing
-artifact. Every LLM call reads from it; nothing gets invented that
-isn't already in your corpus, clarifications, or typed edits. That's
-the grounding rule — it's enforced by the system prompt in
-[`analyzer.py`](../../analyzer.py) and verified post-generation by the
-`grounding_overlap` metric.
+**Read this top-down:** the corpus in the middle is the part everything
+depends on. The AI drafts from your corpus, your clarify answers and
+your own edits, and it is instructed not to add facts beyond them. That
+is a mechanism, not a guarantee, which is why every step leaves you the
+final say.
 
 ---
 
@@ -149,399 +155,298 @@ the grounding rule — it's enforced by the system prompt in
 
 ### Pick or create a user
 
-Top-right user picker. Each user has their own corpus, settings,
-and output history. Files live under `configs/<user>.config`,
-`resumes/<user>/`, and `output/<user>/`.
+Top-right user picker: choose a name from **-- Select User --**, or
+click **New user**. Each user has their own corpus, settings and
+application history. If you tailor résumés for more than one person,
+see [Coaching several people](coaching.md).
 
 ### Import your existing résumé (one-time)
 
-Open the **Career Corpus** tab → click **+ Import résumé** → upload
+Open the **Career corpus** tab → click **+ Import résumé** → upload
 your existing `.docx`, `.pdf`, or `.md` résumé.
 
-![The Career Corpus tab in its empty state. The + Import résumé button parses an existing résumé into the structured corpus (one Haiku call, ~$0.02).](../screenshots/walkthrough_setup_corpus-empty.png)
+![The Career Corpus tab in its empty state. The + Import résumé button reads an existing résumé into the structured corpus with one short AI call.](../screenshots/walkthrough_setup_corpus-empty.png)
 
-**Under the hood:** [`/api/upload`](../../app.py) runs `parser.py`
-deterministically (no LLM) to extract text, then one Haiku 4.5
-call to `extract_experiences()` parses the text into structured
-experiences, titles, and bullets. Haiku 4.5 is Anthropic's small +
-fast model — Sartor uses it for selection and parsing; the
-larger Sonnet 5 model handles writing. Cost: ~$0.02. The result
-writes to `db/resume.sqlite` as the canonical corpus.
+**What happens:** Sartor reads the text out of your file without AI,
+then makes one short AI call to split it into roles, titles and
+bullets. The result becomes your **career corpus**, the pool every
+application draws from.
 
-**Why a structured corpus instead of just file uploads:** the
-wizard needs to recommend, pin, exclude, and re-rank individual
-bullets per application. That only works if each bullet is a
-first-class row in the corpus, not buried inside a Word document.
-See [`docs/dev/PRODUCT_SHAPE.md`](../dev/PRODUCT_SHAPE.md) for the Corpus Item
-pattern.
+**Why a structured corpus instead of just a file:** the wizard needs to
+recommend, pin, exclude and reorder individual bullets for each job.
+That only works if each bullet is its own item, not text buried inside
+a Word document.
 
-You can also add experiences and bullets manually through the
-corpus tab. The import is just a faster start. **If extraction
-looks wrong** — wrong job titles, scrambled bullets, missing
-sections — open the Corpus tab and edit them by hand. The parser
-is deterministic but no parser is perfect on every résumé layout;
-correcting it once here is cheaper than fighting bad source data
-through every later step.
+You can also add roles and bullets by hand on the corpus tab; the import
+is a faster start. **If the import looks wrong** — wrong job titles,
+scrambled bullets, missing sections — fix it on the corpus tab. Correcting
+it once here is cheaper than fighting bad source data in every later
+application.
 
 ---
 
-Once the corpus is populated, click the **Application** tab in the top bar,
-then select **Step 1 — Job + Analyze** in the wizard rail that appears across
-the top of the page. The wizard rail is how you move between steps; the
-Corpus and Application tabs are the two top-level views of the app.
+Once the corpus is populated, click the **Tailor** tab in the top bar.
+The wizard rail across the top of that tab shows the six steps; it is
+how you move between them. **Career corpus** and **Tailor** are the two
+views you'll use most.
 
 ---
 
 ## Step 1 — Job + Analyze
 
-**What you see:** two panels. Left: a textarea labeled "Job
-description" with a paste-the-JD prompt. Right: an empty analysis
-panel that fills in once you click **Analyze**.
+**What you see:** two panels. Left: a box for the job description.
+Right: an analysis panel that fills in once you click **Analyze**.
 
-![Step 1 with the job description pasted into the left textarea. Clicking Analyze triggers a ~30–60s two-pass call (Haiku 4.5 extraction → Sonnet 5 synthesis) that fills the right panel with skill matches, gaps, and ATS warnings.](../screenshots/walkthrough_step1pre_jd-textarea.png)
+![Step 1 with the job description pasted into the left box. Clicking Analyze fills the right panel with skill matches, gaps, and ATS warnings.](../screenshots/walkthrough_step1pre_jd-textarea.png)
 
-**What you do:** paste the full JD (title + body + requirements +
-nice-to-haves). Click **Analyze**.
+**What you do:** paste the full job description (title, body,
+requirements, nice-to-haves). Click **Analyze**.
 
-**Under the hood:** [`/api/analyze`](../../app.py) calls
-`analyze()` in [`analyzer.py`](../../analyzer.py).
+**What happens:** the AI reads the job against your corpus. This is
+the longest single wait in the wizard; the panel shows its progress as
+it goes, so a long wait here is normal, not stuck. It returns:
 
-- **Model:** two-pass — a Haiku 4.5 pass extracts JD signals first,
-  then Sonnet 5 (the heavy-reasoning model — Sonnet is used for any
-  call where the LLM is writing or reasoning, not picking)
-  synthesizes the comparison, suggestions, and overall strategy.
-- **Cost:** ~$0.04 per call (most of the user prefix is cache-hit
-  on the second analysis in a session).
-- **Latency:** ~30–60s — the slowest call in the pipeline. It
-  re-reads the JD + your full master résumé (plus any LinkedIn /
-  website / portfolio text you fetched via **Settings → Fetch
-  profile content**, which is cached into your corpus, not
-  re-scraped each analyze), which is why the wait is real. A
-  spinner that long is normal here; it's not stuck.
-- **What it returns:** a structured analysis with skill matches,
-  potential gaps, ATS warnings (e.g., "the JD mentions Kafka 6
-  times — make sure your résumé reflects that if it's true"), and
-  a draft positioning statement.
+- how your experience matches the job, and where the gaps are;
+- ATS warnings (for example, a term the job repeats that your résumé
+  never mentions);
+- a draft positioning statement.
 
-**Verify before continuing (Human gate #1):**
+**Check before continuing (Human gate #1):**
 
-![Step 1 after analyze: the right panel shows skill matches, a gaps section, and ATS warnings. This is Human Gate #1 — the user reads it and decides whether to enter Clarify next.](../screenshots/walkthrough_step1post_analysis-filled.png)
+![Step 1 after analyze: the right panel shows skill matches, a gaps section, and ATS warnings. This is Human Gate #1.](../screenshots/walkthrough_step1post_analysis-filled.png)
 
-- Skim the match summary. Does the LLM's read of the JD align with
-  what you'd say about the role?
-- Look at the gaps section. Are any of those *real but
-  undocumented* (you have the experience but didn't write it
-  down)? → those are candidates for Clarify.
-- ATS warnings — anything load-bearing missing from your résumé?
+- Skim the match summary. Does the AI's read of the job match what
+  you'd say about the role?
+- Look at the gaps. Are any of them *real but undocumented* — you have
+  the experience, you just never wrote it down? Those are what Clarify
+  is for.
+- ATS warnings: is anything important missing from your résumé?
 
-If everything looks good and the gaps section is empty or
-irrelevant: skip Clarify, go to Compose. If gaps are real, enter
-Clarify next.
+If the gaps are empty or irrelevant, skip Clarify and go to Compose.
+If they're real, answer Clarify's questions next.
 
 ---
 
 ## Step 2 — Clarify *(optional)*
 
-**What you see:** 3–5 LLM-generated interview questions in a
-scrollable list, each with a textarea for your answer.
+**What you see:** a **Get clarifying questions** button (and **Skip**).
+Once clicked, a short list of targeted questions, each with a box for
+your answer.
 
-![The Clarify step with 4 targeted questions. Answers given here become legitimate source material for Step 5 generation.](../screenshots/walkthrough_step2_clarify-questions.png)
+![The Clarify step with targeted questions. Answers given here become legitimate source material for your résumé.](../screenshots/walkthrough_step2_clarify-questions.png)
 
-**What you do:** answer the questions in your own words. Skip any
-that aren't relevant. Click **Submit clarifications**.
+**What you do:** answer in your own words. Leave out any that don't
+apply. Click **Submit answers, continue →**.
 
-**Under the hood:** two routes are involved.
+**What happens:** the AI writes questions aimed at the gaps from
+Step 1, digging for specifics — numbers, scale, what you owned. Your
+answers are saved, used as source material for this résumé, and kept in
+**Candidate memory** so later applications can reuse them (see
+[Iterating](iterating.md)).
 
-- [`/api/clarify`](../../app.py) calls `clarify()` in
-  [`analyzer.py`](../../analyzer.py) — Haiku 4.5, ~$0.03.
-  Reads the analysis from Step 1 and the gap list, asks
-  *targeted* questions to surface real-but-undocumented experience.
-- [`/api/answer-clarifications`](../../app.py) saves your answers into
-  the `context_set` so downstream steps can use them. No LLM call
-  on submit — pure persistence.
-- (Iterative re-clarify available via
-  [`/api/iterate-clarify`](../../app.py) →
-  `clarify_iteration()` — same model, similar cost. Used if your
-  first round of answers opened up new gaps.)
+**Why the questions feel pointed:** they're written to get specifics,
+not vague claims. A vague answer produces a vague bullet; a specific
+one produces a bullet you can defend in an interview.
 
-**Why the questions feel pointed:** the system prompt for
-`clarify()` is a hiring-manager-as-interviewer persona — it's
-written to dig for specifics (numbers, scale, ownership scope),
-not to fish for vague claims. Your honest answers become legitimate
-source material for generation (the grounding rule widens to accept
-them). If a question feels uncomfortably specific, that's the
-point: a vague answer here produces a vague bullet at Step 5.
+**Check before continuing (Human gate #1, second pass):**
 
-**Verify before continuing (Human gate #1, second pass):**
-
-- Did you actually have the experience the question is probing?
-  If yes, answer with specifics. If no, leave it blank — the LLM
-  won't invent.
-- Numbers and scope claims here will show up nearly verbatim in
-  Step 5's generated bullets. Be accurate.
+- Did you actually do what the question is probing? If yes, answer with
+  specifics. If no, leave it blank; a blank answer gives the AI nothing
+  to build on.
+- Numbers and scope you give here can appear nearly word for word in
+  your résumé. Be accurate.
 
 ---
 
 ## Step 3 — Compose
 
-**What you see:** experience cards. Each card lists your existing
-bullets plus LLM-recommended bullets (badged differently). At the
-top, a **Positioning** card with the draft summary; a summary
-variants picker; a tag-chip filter for bullets.
+**What you see:** a **Positioning** card at the top with your tailored
+two-sentence summary, then one card per role listing its bullets. While
+the AI works, a note reads "Composing your tailored résumé — picking
+bullets, positioning and skills…".
 
-![The Compose step showing one experience card with pinned, excluded, and LLM-recommended bullets, plus the summary variant picker. Compose is a selection problem; Haiku 4.5 ranks and proposes, the user decides.](../screenshots/walkthrough_step3_compose-experience-card.png)
+![The Compose step showing one role card with pinned, excluded, and AI-recommended bullets, plus the positioning card.](../screenshots/walkthrough_step3_compose-experience-card.png)
 
-**What you do:** for each experience —
+**What happens:** this is where the tailoring happens. The AI picks the
+bullets from your corpus that fit this job best, drafts the positioning
+summary, drafts new bullets for job requirements your corpus covers only
+partly (each one grounded in what you've told Sartor), suggests skills,
+and drafts a one-line intro for each role. Everything it drafts waits
+for your decision.
 
-- **Pin** bullets you definitely want in the final résumé.
-- **Exclude** bullets that don't fit this JD.
-- Accept, reject, or edit **LLM-recommended bullets** (proposals
-  drawn from your clarifications or rewrites of existing bullets
-  for this JD's vocabulary).
-- Pick a **summary variant** (the LLM proposed 2–3; pick the one
-  that fits or write your own).
-- **Reorder bullets** within an experience by dragging the `≡`
-  handle (or, for keyboard users, the Up/Down buttons). This is
-  *not* cosmetic, for two reasons: recruiters scan résumés
-  top-down in seconds, so the first bullet under each role does
-  the load-bearing work of selling that role; and the résumé
-  generator reads your bullets *in this order* — when it trims to
-  fit a length-limited résumé, earlier bullets carry more weight
-  than later ones. So the order you set here is a real lever on
-  the final document, not just the on-screen list. The default is
-  sartor's AI fit-ranking; **"Reset to AI ranking"** restores it
-  per experience. A bullet you add from the drawer *after*
-  ordering lands at the end, flagged "newly added — drag to
-  reposition," so your existing order is never silently disturbed.
+**What you do:**
 
-**Under the hood:** Compose makes Haiku 4.5 calls — the cheap,
-fast model used for *picking* and *re-ranking*, not for writing
-fresh prose.
+- **Pin** bullets you want in the final résumé, and **Exclude** ones
+  that don't fit this job. Open *find more* to add others from your
+  corpus. These choices affect this application only.
+- Accept or retire each drafted bullet, and keep or reject each role
+  intro.
+- Edit the positioning summary directly, click **Regenerate** for a
+  fresh draft, or pin one of your saved summary variants as its source.
+- **Reorder bullets** within a role by dragging the `≡` handle (or, with
+  a keyboard, the Up/Down buttons). This is not cosmetic: recruiters
+  read top-down in seconds, so the first bullet under each role does the
+  most work. The default order is Sartor's AI fit-ranking; **Reset to AI
+  ranking** restores it for that role. A bullet you add after ordering
+  lands at the end, marked "newly added — drag to reposition", so your
+  order is never silently changed.
 
-- `recommend_bullets()` in
-  [`analyzer.py`](../../analyzer.py) — Haiku 4.5, ~$0.01 per
-  experience. Reads the corpus + JD + clarifications, returns a
-  ranked list of which bullets to surface.
-- `recommend_summaries()` — Haiku 4.5, ~$0.005. Reads existing
-  summary variants and proposes new ones tuned to this JD.
-- `critique_proposal()` — Haiku 4.5, ~$0.005 per proposal. When
-  you accept a proposal, this call validates whether to fold it
-  into the corpus permanently or keep it application-scoped.
+Then click **Save and continue to Template →**. That saves (freezes)
+your composition: from here on, the résumé is built from exactly what
+you approved.
 
-**Why Haiku here and Sonnet for generate:** the Compose step is a
-selection problem (which bullets / which summary), not a writing
-problem. Haiku is faster and ~10× cheaper at selection, and the
-grounding check in Step 5 catches anything Haiku slips through.
+**Check before continuing:**
 
-**Verify before continuing:**
-
-- Have you pinned at least one bullet per experience you want in
-  the final résumé? Unpinned bullets may be dropped during
-  generation if they don't earn their slot.
-- Is the chosen summary variant honest? It will be the first thing
-  a recruiter reads.
+- Is every bullet you want pinned or kept?
+- Is the positioning summary honest? It's the first thing a recruiter
+  reads.
 
 ---
 
 ## Step 4 — Template
 
-**What you see:** four template cards (Classic, Modern, Spacious,
-Tech) with ATS-safety badges; a live paginated preview on the
-right; an **+ Upload template** button for your own `.docx`.
+**What you see:** the template cards (Classic, Modern, Spacious, Tech)
+with ATS-safety badges, a live page-by-page preview, and an
+**+ Upload .docx** button for your own Word template.
 
-![The Template step with four ATS-safe templates shown as cards. Live preview re-renders on selection — no LLM call. The Page 1 of N counter reflects the real paged.js page count.](../screenshots/walkthrough_step4_template-modern-preview.png)
+![The Template step with four ATS-safe templates shown as cards. The live preview re-renders on selection with no AI call. The Page 1 of N counter reflects the real page count.](../screenshots/walkthrough_step4_template-modern-preview.png)
 
-**What you do:** click a template. The preview re-renders in real
-time using the bullets and summary you composed in Step 3.
+**What you do:** click a template. The preview redraws right away with
+the content you approved in Step 3.
 
-**Under the hood:** *no LLM call.* This step is fully deterministic.
+**What happens:** no AI. The template controls how the résumé looks,
+never what it says.
 
-- The preview is rendered by `generator.py` + `pdf_render.py`
-  (Playwright + Chromium) into HTML, then paged.js (a vendored
-  third-party library, see
-  [`SECURITY.md`](../../SECURITY.md)) splits it into discrete
-  Letter-sized page boxes inside an `<iframe>`.
-- The "Page 1 of N" counter reflects the *real* paged.js page
-  count via postMessage, not a scroll-height estimate.
+**Why the bundled templates are ATS-safe:** all four use a single
+column, standard fonts, and no tables or sidebars, so screening software
+can read them. A template you upload shows an **ATS · unverified** badge,
+because Sartor can't check an arbitrary Word file. See
+[Templates](templates.md) for the rules and for uploading your own.
 
-**Why all four bundled templates are ATS-safe:** the four shipped
-templates use single-column layouts with standard fonts and no
-inline `<code>` chips or sidebar layouts. The two retired templates
-(Compact, Hybrid Tech) failed ATS testing — they're documented in
-[`CHANGELOG.md`](../../CHANGELOG.md) for v1.0.0. Uploaded templates
-show an "ATS · unverified" badge because Sartor can't
-introspect arbitrary user `.docx` files.
+**Check before continuing:**
 
-**Verify before continuing:**
-
-- Page count reasonable? If you're a senior engineer and the
-  preview says 5 pages, something is off — go back to Compose and
-  exclude more bullets.
-- Does the styling reflect your seniority and field? Tech serif vs.
-  Classic sans-serif is a real signal.
+- Is the page count reasonable? If a mid-career résumé previews at five
+  pages, go back to Compose and exclude some bullets.
+- Does the style suit your field and seniority?
 
 ---
 
 ## Step 5 — Generate
 
-**What you see:** a **Generate** button with format toggles
-(`.docx`, `.pdf`, `.md`); a progress indicator while the LLM call
-runs; a preview of the generated text once done.
+**What you see:** output-format buttons (**DOCX**, **PDF**, **Markdown**)
+and a **Generate documents** button.
 
-**What you do:** pick a format, click **Generate**. Wait ~30–60s.
+**What you do:** pick a format, click **Generate documents**.
 
-**Under the hood:** [`/api/generate`](../../app.py) calls
-`generate()` in [`analyzer.py`](../../analyzer.py).
+**What happens:**
 
-- **Model:** Sonnet 5 — this is the writing call, the heaviest
-  reasoning point in the pipeline.
-- **Cost:** ~$0.05–$0.15 depending on context size (longer corpus +
-  more clarifications = more tokens).
-- **Latency:** ~30–60s.
-- **What it does:** reads the full `context_set` (résumé + JD +
-  clarifications + Compose decisions + Positioning) and writes a
-  tailored résumé that *only uses facts present in the context*.
-  This is the grounding rule.
-- **Each generate writes a NEW timestamped child file** under
-  `output/<user>/context_<timestamp>.json`. The
-  `parent_context_path` field links the chain — that's your
-  iteration audit trail.
-- After generation, four deterministic metrics are computed: verb
-  diversity, specificity density, grounding overlap (the
-  fabrication signal — anything in the output that *isn't* in the
-  context shows up in `grounding_overlap.missing_samples`), and
-  cost. These ride along on every result for the eval dashboard.
+- **If you saved Compose (the usual case):** no AI call. The résumé is
+  assembled instantly from your approved composition. The step says so:
+  "Assembled instantly from your approved composition — same input,
+  same résumé, no AI variation."
+- **If you reached this step without saving Compose:** the AI writes the
+  résumé from your curated bullets instead, which takes about 30–60
+  seconds.
 
-**Verify before continuing:**
-
-- Move to Step 6 to read the actual generated document.
+Each generation is saved as a new file; nothing earlier is overwritten.
+PDF output needs an optional component; if it isn't installed, the PDF
+button tells you how to add it (see [Install](install.md)).
 
 ---
 
 ## Step 6 — Download
 
-**What you see:** the generated résumé in a preview pane; a
-**Refine** textarea; a **Download** button; an **+ Generate cover
-letter** button.
+**What you see:** the finished résumé in a preview, a **Download
+résumé** button, **✎ Edit before downloading**, the **Document
+refinement** controls, and the cover-letter option.
 
-![The Download step. The generated résumé preview is on the left; the Refine textarea on the right takes natural-language change requests. Each Refine click re-runs generate() (~$0.05–$0.15) and writes a new child context_*.json to preserve the audit trail.](../screenshots/walkthrough_step6_download-with-refine.png)
+![The Download step: the generated résumé preview, with the Document refinement box below it.](../screenshots/walkthrough_step6_download-with-refine.png)
 
 **What you do (Human gate #2):**
 
-- **Read the generated résumé carefully.** Does every claim ring
-  true? Are numbers accurate? Are scope claims honest?
-- If something needs to change, write a natural-language note in
-  the **Refine** box ("emphasize the team-lead role more",
-  "shorten the second experience", "swap in the Kubernetes
-  bullet"). Click **Refine** — this re-runs `generate()` with
-  the note appended as edit-aware context.
-- When satisfied, click **Download**. The file lives under
-  `output/<user>/`.
+- **Read the résumé carefully.** Does every claim ring true? Are the
+  numbers right? Is the scope honest?
+- **To change the wording yourself,** use **✎ Edit before downloading**.
+  Your edits apply to this document and become the starting point for
+  any later refinement.
+- **To ask for a change,** describe it in the refinement box ("make the
+  tone more formal", "emphasize cloud experience") and click **Refine**.
+  Sartor proposes **one targeted change** and takes you back to Compose
+  to review it. [Iterating](iterating.md#refining-a-résumé) walks
+  through what you'll see there.
+- When you're satisfied, click **Download résumé**. After downloading,
+  Sartor asks "Submitted this application?" so you can track it (see
+  [Iterating](iterating.md#finding-earlier-applications)).
 
-**Under the hood (refine):** [`/api/save-edits`](../../app.py) records
-your refinement note, then re-calls `generate()` with the chain
-extended (new `parent_context_path` pointing at the previous
-iteration). Each iteration is a fresh child file — nothing is
-overwritten. Cost: another ~$0.05–$0.15.
+**Check before downloading:**
 
-**Why refinement is "edit-aware" instead of fully regenerating:**
-the grounding rule widens during refinement to accept your typed
-edits as legitimate source material. The system can incorporate
-"emphasize Y" without inventing Y if Y is in your corpus, your
-clarifications, or your typed edit.
-
-**Verify before downloading:**
-
-- Spot-check three to five specific claims (numbers, dates,
-  scopes). Each should map to something you can defend in an
-  interview.
-- If the `grounding_overlap` metric is low and you can see
-  invented details in the preview, refine again — don't just
-  download and edit by hand. The signal exists for a reason.
+- Spot-check three to five specific claims (numbers, dates, scope).
+  Each should map to something you can defend in an interview.
+- If something reads as invented, remove it — with **✎ Edit before
+  downloading**, or by excluding the bullet in Compose — rather than
+  sending it out and hoping.
 
 ---
 
 ## Optional — Generate cover letter
 
-**What you see:** a **+ Generate cover letter** button at the
-bottom of Step 6, available once the résumé is generated.
+**What you see:** a **+ Generate cover letter** option in Step 6, once
+the résumé exists.
 
-![The cover-letter generation surface. The cover letter is generated against the finalized résumé, with the same refine / iterate parity as the résumé flow.](../screenshots/walkthrough_coverletter_first-generation.png)
+![The cover-letter generation surface. The cover letter is generated against the finished résumé.](../screenshots/walkthrough_coverletter_first-generation.png)
 
-**What you do:** click it. The cover letter generates against the
-*finalized* résumé (so it doesn't claim anything the résumé
-doesn't), then you can refine it the same way as the résumé.
+**What you do:** click it. The AI writes the letter against your
+*finished* résumé, so it doesn't claim anything the résumé doesn't. You
+can edit it before downloading the same way as the résumé.
 
-**Under the hood:** [`/api/generate-cover-letter`](../../app.py)
-calls `generate_cover_letter_against_resume()` in
-[`analyzer.py`](../../analyzer.py) — Sonnet 5, ~$0.04–$0.08.
-The cover letter has full refine/iterate parity with the résumé
-flow (same edit-aware refinement, same audit trail).
-
-**Why cover letter is detached from the main flow:** about a third
-of applications don't ask for one. The β.5 release made it opt-in
-specifically so users aren't paying for a cover letter call they'll
-never use.
+**Why it's separate from the main flow:** many applications don't ask
+for a cover letter, so it's opt-in and you never pay for one you won't
+use.
 
 ---
 
 ## If something goes wrong mid-wizard
 
-Sartor writes a new `context_*.json` file at every state
-change, so almost nothing you do is destructive.
+Sartor saves your work as you go, so almost nothing you do is
+destructive.
 
-- **You closed the browser tab partway through.** Reopen
-  `http://localhost:5000`, pick the same user, and the wizard
-  resumes from your last completed step. The corpus, your JD
-  paste, your clarifications, and any prior generations are all
-  loaded from disk.
-- **You came back the next day.** Same — pick the user, the most
-  recent in-flight application is restored. Past applications
-  live under `output/<user>/` as a chain of `context_*.json`
-  files linked by `parent_context_path`.
-- **An LLM call errored out.** The `context_set` for that
-  attempt is saved; the step's button is safe to re-click. See
-  [`docs/user/install.md`](install.md#troubleshooting) for the
-  symptom-by-symptom guide.
-- **You want to start over for the same JD.** Start a new
-  application from the Application tab; the previous one stays
-  on disk untouched. Nothing forces you to discard a draft.
-
-The pattern: every state change writes a new file, nothing is
-overwritten, and the `parent_context_path` chain inside each
-`context_*.json` is your audit trail.
+- **You closed the browser tab partway through, or came back the next
+  day.** Reopen `http://localhost:5000` and pick the same user. The
+  wizard starts at Step 1, but your application is saved: open the
+  **Pipeline** tab, click the application, and choose **Resume in
+  wizard** to pick up where you left off. Your corpus is always kept.
+- **An AI call failed.** The step's button is safe to click again. See
+  [Install → Troubleshooting](install.md#troubleshooting) for
+  symptom-by-symptom help.
+- **You want to start over.** Click **↻ Start new tailoring** next to the
+  wizard rail. It clears the current run and returns to Step 1; your
+  corpus and your earlier applications are untouched.
 
 ---
 
 ## After the wizard — where your files live
 
-| Path                                                   | What it is                                        |
-|--------------------------------------------------------|---------------------------------------------------|
-| `output/<user>/resume_<timestamp>.docx` (or `.pdf`, `.md`) | The generated résumé                       |
-| `output/<user>/cover_letter_<timestamp>.docx` (or `.pdf`, `.md`) | The generated cover letter             |
-| `output/<user>/context_<timestamp>.json`               | The full `context_set` snapshot for that iteration |
-| `db/resume.sqlite`                                     | Your structured corpus (cross-application)        |
-| `logs/llm_calls.jsonl`                                 | One JSONL line per LLM call (cost, latency, tokens) |
+| Path | What it is |
+|---|---|
+| `output/<user>/resume_<timestamp>.docx` (or `.pdf`, `.md`) | The generated résumé |
+| `output/<user>/cover_letter_<timestamp>.docx` (or `.pdf`, `.md`) | The generated cover letter |
+| `output/<user>/context_<timestamp>.json` | A snapshot of everything that went into that document |
+| `db/resume.sqlite` | Your career corpus and application history, for every user |
 
-The `context_*.json` chain is the auditable record of how each
-generated document came to exist. Re-run any iteration with the
-`/replay` slash command (see
-[`commands/replay.md`](../../commands/replay.md)).
+Every generation writes new files and overwrites nothing, so each
+document you've produced can be traced back to what went into it.
 
 ---
 
 ## See also
 
-- [`docs/user/install.md`](install.md) — install + first-run.
-- [`docs/dev/architecture.md`](../dev/architecture.md) — the same pipeline
-  diagrammed from the code-shape angle (pipeline, persistence,
-  data-flow, LLM-routing Mermaid diagrams). Read after this if
-  you're curious about the code.
-- [`SECURITY.md`](../../SECURITY.md) — what stays on your machine
-  vs. what goes over the wire.
-- [`vision.md`](../../vision.md) — the "why this exists" page.
-- [`evals/README.md`](../../evals/README.md) — **for maintainers:** Sartor ships a
-  local **diagnostics & tuning console** at `/_dashboard` (localhost-only) where you
-  can **tune the system's own LLM prompts** — run evals, A/B a candidate prompt
-  against the baseline, and annotate generated bullets, all in the browser. The
-  console section there walks the full loop end to end.
+- [Iterating](iterating.md) — your second application, refining, and
+  finding earlier work.
+- [Install](install.md) — install, first run, and what an application
+  costs.
+- [`SECURITY.md`](../../SECURITY.md) — what stays on your machine and
+  what goes over the network.
+- [`vision.md`](../../vision.md) — why Sartor exists.
+- [`docs/dev/architecture.md`](../dev/architecture.md) — the same
+  pipeline from the code's side: which route and which model each step
+  uses.

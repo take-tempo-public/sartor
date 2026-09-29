@@ -2,7 +2,7 @@ name: Release (PyPI)
 
 # Build the wheel + sdist on a version tag and publish to PyPI via OIDC Trusted
 # Publishing (no stored token). One-time [HUMAN] setup is documented in
-# docs/user/install.md (PyPI → project → Publishing → add this repo/workflow/env).
+# docs/dev/releasing.md (PyPI → project → Publishing → add this repo/workflow/env).
 #
 # The wheel-packaging gap that used to block this workflow (`pip install sartor`
 # 500ing on first page load because templates/static/personas/docs-wiki weren't
