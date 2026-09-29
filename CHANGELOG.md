@@ -2880,6 +2880,31 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   must start with `` `user` `` or `` `dev` ``, matching its registered tier.
   `scripts/check_doc_frontmatter.py` enforces it.
 
+### Epic D, D3 (user half): the user guides (`feat/user-docs`, board 39)
+
+- **Added: two new user guides.** `docs/user/iterating.md` covers starting your next
+  application, what carries over, refining a finished résumé, Candidate memory, and finding
+  and tracking earlier applications on the Pipeline tab. `docs/user/coaching.md` covers using
+  one copy of Sartor for several people. Both are on the docs site and linked from the user
+  front door.
+- **Changed: the walkthrough matches the app again.** It now says which steps use AI, without
+  route or model detail; those facts live in `docs/dev/architecture.md`. Corrected: Generate
+  makes no AI call once Compose is saved; Refine proposes one change you review in Compose; the
+  tab is called "Tailor"; returning to a user starts at Step 1, with Pipeline's "Resume in
+  wizard" to continue.
+- **Changed: install and template guides split by audience.** The one-time publishing setup
+  moved to `docs/dev/releasing.md`, and the template build notes to
+  `docs/dev/bundled-templates.md`. The install guide now states what an application costs in
+  one place: about US$0.25 in the one measured sample, with its caveats. It points to
+  Anthropic's usage limits, since Sartor has no spending limit of its own. The template guide's
+  font list is corrected to Arial, Calibri and Georgia.
+- **Changed: "Sartor" in sentences across the app.** Help text and the assistant use `Sartor`
+  in sentences, keeping the `sartor.` wordmark for the logo and page title. The assistant's
+  prompt changed wording only (`AVATAR_PROMPT_VERSION` → `2026-09-29.1`); `PROMPT_VERSION` is
+  unchanged.
+- **Added: help for the Pipeline tab**, and the Step 6 help now explains Refine and follow-up
+  questions. The Pipeline hint no longer calls the tab read-only.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

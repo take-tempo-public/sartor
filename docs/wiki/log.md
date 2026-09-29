@@ -2344,3 +2344,33 @@ not advanced. The D2 split (file moves) is where wiki pages will need edits.
   0 UNSUPPORTED. **Catch-rate 0/1.**
 - **Structural check** (backlinks, cite-file existence with basename resolution, index
   agreement): 39 pages, 0 errors.
+
+## 2026-09-29 — scoped `/wiki-self-update`, `feat/user-docs` (Epic D D3, user half)
+
+**Mode:** scoped to this branch's own diff (`epic/d-docs-ia`...`feat/user-docs`), not the
+`.last_ingest_sha` window. **`.last_ingest_sha` not advanced.**
+
+- **Semantic sources:** `analyzer.py` (`AVATAR_PROMPT_VERSION` bump, `AVATAR_SYSTEM_PROMPT`
+  wording), `static/app.js` (`_HELP_REGISTRY` copy + new `panelPipeline` entry),
+  `templates/index.html` + `dashboard/templates/dashboard.html` (assistant strings, Pipeline
+  hint), `scripts/doc_registry.py`, `scripts/wiki_relevance.py`,
+  `scripts/build_bundled_templates.py` (docstring), and the `docs/user/**` / `docs/dev/**`
+  guides.
+- **Line-shift check:** wiki pages cite these files by symbol, not line number. A scan for
+  `analyzer.py:N` / `static/app.js:N` / `templates/index.html:N` cites past each edit point
+  found 0, so the branch's line shifts cause no drift.
+- **Page changed (1):** `prompt-version-discipline`. The quoted `AVATAR_PROMPT_VERSION`
+  value is updated `"2026-07-08.1"` → `"2026-09-29.1"` (scribe, one-token edit).
+- **Verified no-edit:**
+  - `recruiter-pipeline-tab`: "read-only board" is still true of the board; status changes
+    in the details, as `:68-71` says.
+  - `frontend-wizard`: the help mechanism is unchanged; only registry entries were added.
+  - `using-sartor`: its help section is generic.
+  - `using-the-assistant`: it doesn't quote the changed intro.
+  - `editing-and-refining`: it already describes the surgical Refine.
+
+  The wiki's own lowercase `sartor` stays out of scope (item 2 exclusion).
+- **Audit (author ≠ auditor):** `wiki-grounding-auditor` ruled 13 SUPPORTED / 0 DRIFTED /
+  0 UNSUPPORTED. **Catch-rate 0/1.**
+- **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
+  pages, 0 errors; links OK across 565 files.
