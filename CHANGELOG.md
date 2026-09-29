@@ -2862,6 +2862,24 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   follow-on branch `test/fixture-scoping` recommended, piloted on one
   low-risk file first.
 
+### Epic D, D2: the docs split (`feat/docs-split`, board 39)
+
+- **Changed: user and developer docs now live apart.** The install guide, walkthrough, worked
+  example and template guide moved to `docs/user/`. The architecture, system model and product
+  shape docs moved to `docs/dev/`. Each tier has a `README.md` front door listing its docs in
+  reading order. Sixteen finished or stale design docs moved to `docs/dev/archive/`, each with
+  an "archived" banner. Links in live docs were rewritten by a script
+  (`scripts/docs_move.py`). Historical records keep their original links, which now resolve
+  through `docs/dev/moved-paths.json`.
+- **Changed: the docs site publishes only what's registered.** `scripts/doc_registry.py` is
+  now the one list of published docs, with each doc's tier. Before this, any doc with a full
+  header was published, including handoff briefs, a diagnosis, reviews and perf records.
+  Those no longer appear. The site navigation is split into "Using Sartor" and "Building on
+  Sartor". Page URLs follow the new paths (for example `/docs/user-install`).
+- **Added: an audience check for published docs.** Every published doc's `**Audience:**` line
+  must start with `` `user` `` or `` `dev` ``, matching its registered tier.
+  `scripts/check_doc_frontmatter.py` enforces it.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

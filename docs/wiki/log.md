@@ -2321,3 +2321,26 @@ no page can describe it without asserting beyond source. The one wiki cite of
 layering, which this branch leaves unchanged. `grep` for `docs/user`, `docs-ia-design` and
 `meta.json` across `docs/wiki/pages/` finds nothing. **Verified no-edit.** `.last_ingest_sha`
 not advanced. The D2 split (file moves) is where wiki pages will need edits.
+
+## 2026-09-28 — scoped `/wiki-self-update`, `feat/docs-split` (Epic D D2)
+
+**Mode:** scoped to this branch's own diff (`epic/d-docs-ia`...`feat/docs-split`), not the
+`.last_ingest_sha` window. **`.last_ingest_sha` not advanced.**
+
+- **Mechanical, done by `scripts/docs_move.py`** (not by the scribe): link and exact-path
+  rewrites in 20 wiki pages plus `index.md`, `overview.md` and `SCHEMA.md`, following the moves
+  to `docs/user/`, `docs/dev/` and `docs/dev/archive/`. `SCHEMA.md:103`'s blanket
+  user-audience rule was hand-edited to `docs/user/`.
+- **Semantic sources:** `scripts/project_docs_to_mdx.py` (now registry-driven),
+  `scripts/doc_registry.py` (new), `scripts/check_doc_frontmatter.py`,
+  `scripts/check_doc_links.py`, `scripts/docs_move.py` (new) and `blueprints/assistant.py`
+  (`_path_audience` prefix). A grep over `pages/` for each symbol found one cited claim:
+  `pages/code-module-map.md:151`.
+- **Page changed (1):** `code-module-map`. The projector row was rewritten: the registry, not
+  a header scan, decides what ships. A `scripts/doc_registry.py` row was added. The
+  `route-surface`, `using-the-assistant` and `engineering-workstreams` pages cite
+  `blueprints/assistant.py` for its route only, so they need no edit.
+- **Audit (author ≠ auditor):** `wiki-grounding-auditor` ruled 10 SUPPORTED / 0 DRIFTED /
+  0 UNSUPPORTED. **Catch-rate 0/1.**
+- **Structural check** (backlinks, cite-file existence with basename resolution, index
+  agreement): 39 pages, 0 errors.

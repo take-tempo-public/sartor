@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 22 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
+**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 37
 
 ## Open
 
@@ -24,6 +24,10 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **122** -- Weak C3 test assertions: raw-name denylist, unbounded registry-title regex, bare 'error' in body (`agent`) -- Three C3 assertions survive plausible mutants; tighten each to fail on the regression it names.
 - **123** -- verify-binary-on-path blocks shell brace groups: "'{', '}' not found on PATH" (`agent`) -- A `{ cmd; cmd; } | head` brace group is parsed as binaries named { and }; blocked an epic refuter.
 - **124** -- Recurrence: agents invoke bare `ruff` (not on PATH here) and get hook-blocked mid-run (`agent`) -- Pipeline run wf_fd312963-54d's implementer stopped on a bare-ruff block; the guard should steer to python -m.
+- **125** -- Merged epics 37 and 38 still read status = "blocked" (`user`) -- Epics 37/38 merged (PRs #128, #148) but still blocked on the epic before them; closing needs a verified_by.
+- **126** -- A stale local docs-site projection reads as authoritative (`agent`) -- An audit cited a months-stale gitignored docs-site/content/docs/*.mdx as the live site; nothing marks it stale.
+- **128** -- Stray python3.13 processes from earlier sessions left running (`user`) -- D1 close-out saw several python3.13 processes started 2026-09-18..25 (~0 MB), not that session's own.
+- **129** -- Personal portfolio/interviewer framing survives in two frozen records (`user`) -- Owner: project docs shouldn't carry personal reviewer/interviewer framing; 2 records still do. Edit records or leave?
 
 ## Blocked
 
@@ -129,6 +133,7 @@ No children filed yet.
 IA research + design; full user/dev docs split; user + dev content; screenshots, links, doc-governance lints.
 
 - **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
+- **127** -- Live docs contradict AGENTS.md: local --no-ff merge, "latent" CI, four-step gate (`agent`) -- CONTRIBUTING + git-flow subagent say local git merge --no-ff (AGENTS step 4 forbids); gate called 4 steps, runs 6.
 
 ### 40 -- Final March epic E - the public v1.1.0 cut (blocked)
 

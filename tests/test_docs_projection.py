@@ -218,7 +218,7 @@ def test_meta_pages_order_follows_registry_within_user_tier() -> None:
     # The user ladder (design §4): vision before install before walkthrough, which
     # is registry order, not alphabetical (which would put "install" first).
     order = pdm.build_meta_pages_order(pdm.collect_pages())
-    assert order.index("vision") < order.index("install") < order.index("walkthrough")
+    assert order.index("vision") < order.index("user-install") < order.index("user-walkthrough")
 
 
 # ---------------------------------------------------------------------------
