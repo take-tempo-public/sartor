@@ -338,15 +338,12 @@ and a **Generate documents** button.
 
 **What you do:** pick a format, click **Generate documents**.
 
-**What happens:**
-
-- **If you saved Compose (the usual case):** no AI call. The résumé is
-  assembled instantly from your approved composition. The step says so:
-  "Assembled instantly from your approved composition — same input,
-  same résumé, no AI variation."
-- **If you reached this step without saving Compose:** the AI writes the
-  résumé from your curated bullets instead, which takes about 30–60
-  seconds.
+**What happens:** no AI call. The résumé is assembled instantly from the
+composition you saved in Compose. The step says so: "Assembled instantly
+from your approved composition — same input, same résumé, no AI
+variation." That's also why this step only opens once Compose has been
+saved: if the rail won't let you in, go back to Step 3 and click **Save
+and continue to Template →**.
 
 Each generation is saved as a new file; nothing earlier is overwritten.
 PDF output needs an optional component; if it isn't installed, the PDF

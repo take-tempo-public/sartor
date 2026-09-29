@@ -15,8 +15,9 @@ Start at the top and stop when you have what you need.
    before you spend anything.
 3. **Your first tailored résumé:** the [walkthrough](walkthrough.md), then a
    [worked example](walkthrough-example.md) showing a real run from start to finish.
-4. **Second applications, refining, and finding earlier work:** not written yet.
-5. **Coaching several people:** not written yet.
+4. **Second applications, refining, and finding earlier work:** [Iterating](iterating.md).
+5. **Coaching several people:** [Coaching](coaching.md), for tailoring résumés for more than
+   one person.
 6. **Custom résumé templates:** [Templates](templates.md).
 
 Also useful at any point: [Accessibility](../../ACCESSIBILITY.md) and the troubleshooting

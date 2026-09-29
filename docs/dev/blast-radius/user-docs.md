@@ -96,10 +96,10 @@ $ git grep -n "user-walkthrough\|user-install" tests/
 | 6 | `scripts/check_doc_links.py:102` (cite check = `PUBLISHED_DOC_FILES`) | no change | Registering widens the cite check. Expect stale `path:line` cites to surface (D2 recurrence 1); fix them in the doc |
 | 7 | `scripts/check_doc_single_home.py` | no change | Moved text is **moved**, not copied. No paragraph may exist in two registered docs |
 | 8 | `.github/workflows/release.yml:5` | update | Repoint the comment to `docs/dev/releasing.md` |
-| 9 | `README.md:160` (cost guidance → install.md) | update | Cost guidance gets one home in install.md; README keeps a link to it |
+| 9 | `README.md:160` (cost guidance → install.md) | no change *(revised in execution)* | README already sends readers to install.md for cost guidance, and install.md now actually carries it (§"What an application costs"), so the loop is broken on the install.md side alone |
 | 10 | `README.md:184` → `install.md#local-development-headless--container--ci-runs-f-18` | no change | Heading kept; the anchor must survive (link gate checks anchors) |
 | 11 | `docs/user/walkthrough.md:504` → `install.md#troubleshooting` | no change | Heading kept |
-| 12 | `docs/bundled_templates_LICENSE.md:63`, `scripts/build_bundled_templates.py:10` | no change | Both cite the ATS **rule set**, which stays in `docs/user/templates.md` |
+| 12 | `docs/bundled_templates_LICENSE.md:63`, `scripts/build_bundled_templates.py:10` | no change to the pointer; docstring font list updated *(execution)* | Both cite the ATS **rule set**, which stays in `docs/user/templates.md`. The script's docstring restated the stale "Arial, Calibri, Helvetica" font list, now corrected to `json_resume.APPROVED_FONTS` (`json_resume.py:965`) |
 | 13 | `docs/user/README.md:18-20` | update | Fill rungs 4 and 5 with the new docs |
 | 14 | `docs/dev/docs-ia-design.md:58,127,170,173,273` | no change | Design record of the plan; its path mentions stay accurate (`templates.md` keeps its path) |
 | 15 | `templates/index.html:1148,1169` | update | O-1: "how Sartor works" |
@@ -126,6 +126,12 @@ $ git grep -n "user-walkthrough\|user-install" tests/
 - **The Notes field in user docs.** Held by owner decision: `Candidate.notes` is written only on
   creation or when empty (`onboarding/corpus_import.py:183,193-196`), and analyze reads the DB
   (`db/build_context.py:214`). Filed as a board item; documented once it's verified or fixed.
+- **`docs/dev/architecture.md`'s item-20 claim in its diagrams** (`:98-100` Mermaid comment,
+  `:208` sequence-diagram `else` label, `:816` flowchart edge). They still call the no-freeze
+  Generate path "a known live gap", but item 20 gated the Step-5 rail on a frozen composition
+  (`static/app.js:7051-7081`). The prose (System overview, step 4) was corrected on this
+  branch. The diagrams are D4's "diagram refresh" and the dev half's module-map refresh, so
+  they're left for `feat/dev-docs` and named in its handoff.
 - **`docs/wiki/**` in-sentence wordmarks.** Item 2's exclusion, and the D4 lint's scope.
 
 ---

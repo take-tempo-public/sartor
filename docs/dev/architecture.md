@@ -49,10 +49,10 @@ boundary, charter C-6):
    that point on.
 4. **Generate** — if Compose was frozen: **zero LLM calls**, the
    résumé body assembles directly from `approved_composition`.
-   If the user reached this step without freezing — still a live
-   path today, not yet closed off (see the wizard-rail gap noted
-   below the diagram) — it falls back to the legacy Sonnet
-   `generate()` call instead.
+   Without a frozen composition the server still falls back to the
+   legacy Sonnet `generate()` call, but the wizard rail no longer
+   reaches that path: Step 5 opens only when the server reports a
+   frozen composition (item 20, `static/app.js:7051-7081`).
 5. **Surgical refinement** *(optional, corpus mode)* — Sonnet
    drafts a reworded bullet (`draft_surgical_refinement`, no new
    facts permitted); accepting loops back to Compose rather than

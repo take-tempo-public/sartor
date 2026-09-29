@@ -1,95 +1,90 @@
-# Authoring ATS-Friendly Persona Templates
+# Résumé templates
 
-This document defines the rules every persona template — bundled or
-user-uploaded — must follow. The rules exist so that:
+> **Purpose:** how to choose a résumé template, and how to use your own Word document as
+> one, including the rules a template must follow so screening software can still read the
+> résumé it produces.
+> **Audience:** `user` — anyone choosing or uploading a résumé template. No technical
+> knowledge assumed.
+> **Type:** how-to
+> **Authoritative for:** the ATS rule set every template (bundled or uploaded) should follow;
+> what the bundled templates are for; how uploading your own works and what Sartor checks.
+> How the bundled templates are built and how to add one is maintainer material, in
+> [`docs/dev/bundled-templates.md`](../dev/bundled-templates.md).
 
-1. The downstream generator's `_capture_template_styles` in `generator.py`
-   can reliably extract role-paragraph formatting (name, section_heading,
-   job_title, etc.)
-2. The output `.docx` passes ATS resume parsers without losing sections or
-   bullets
-3. The round-trip self-check in `app.py` can verify any generated document
-   parses back through `parser.py` with all sections + bullets recoverable
+A template controls how your résumé **looks**: fonts, sizes, spacing, alignment. It never
+changes what your résumé **says**. The content comes from what you approved in Compose, and
+the same content can be shown in any template.
 
-## ATS rules — every template must satisfy
+---
+
+## Choosing a bundled template
+
+Sartor ships four templates. All four are built to be read reliably by applicant tracking
+systems (ATS), the software many employers use to read incoming résumés.
+
+| Template | Typeface | A good fit when |
+|---|---|---|
+| **Classic** | Arial | You want the safest, most conventional choice. It's also the fallback. |
+| **Modern** | Calibri, small-caps headings | You want a slightly more contemporary look for most roles. |
+| **Spacious** | Arial, generous spacing | You're early in your career or changing fields, and have less to fit on the page. |
+| **Tech** | Georgia, centered name, underlined headings | You're applying for engineering, data or AI roles. |
+
+**Where to choose:** in the wizard's **Step 4 — Template**, click a template card. The
+preview on the right redraws right away, with no AI call and no cost. You can also browse
+them on the **Résumé templates** tab.
+
+**What to check:** the page count in the preview, and whether the style suits your field.
+If a mid-career résumé previews at five pages, go back to Compose and exclude some bullets
+rather than looking for a smaller template.
+
+---
+
+## Using your own Word template
+
+**Why you'd do it:** to keep a look you already have, such as a résumé design you've used
+before.
+
+**How:**
+- In **Step 4**, click **+ Upload .docx**, or
+- on the **Résumé templates** tab, under **My templates**, click **UPLOAD .DOCX TEMPLATE**.
+  You can give it a display name first.
+
+Uploaded templates belong to the user who uploaded them; other users on the same machine
+don't see them. You can rename or delete your own uploads, but not the bundled four.
+
+**What to expect:**
+- Your template shows an **ATS · unverified** badge. Sartor can't inspect an arbitrary Word
+  file closely enough to promise it's ATS-safe, so follow the rules below.
+- **Fonts.** Sartor's output uses one of three fonts: Arial, Calibri or Georgia. If your
+  template uses another font, the résumé Sartor produces uses the closest of those three
+  instead. The app doesn't show a notice when this happens yet.
+- The downloaded `.docx` can differ slightly in styling from the preview; the `.pdf`
+  download matches the preview.
+
+---
+
+## The ATS rules every template should follow
+
+These apply to the bundled templates and to anything you upload. They exist so that an ATS
+reading your résumé finds every section and every bullet, in order.
 
 | Rule | Why |
 |---|---|
-| Single column only | Multi-column layouts confuse ATS line-by-line parsing |
-| No tables, text boxes, headers/footers, or images | All can scramble extraction order or be dropped entirely |
-| Standard fonts: Arial, Calibri, or Helvetica | Custom or display fonts may not embed; ATS engines fall back to substitutes that change line widths |
-| 10–12pt body, 12–16pt headings | Below 10pt risks OCR failure if PDF; above 16pt is non-resume convention |
-| Standard section headings: Experience, Education, Skills, Projects, Certifications, Publications | ATS keyword-section mapping is keyed to these words |
-| Bullet glyphs: `-` or `•` only | Other glyphs may render as boxes or get dropped |
-| Right-aligned dates via tab stop (not table cells) | Tab-aligned dates parse as same-line text; table cells parse as separate rows |
-| Page margins 0.5–1.0 inch | Margins outside this range trigger flag-as-unusual in some ATS configs |
+| Single column only | Multi-column layouts can be read line by line across the columns, mixing them up |
+| No tables, text boxes, headers/footers, or images | Any of these can scramble the reading order or be dropped entirely |
+| Fonts: Arial, Calibri, or Georgia | Unusual fonts may not be available to the reader, and a substitute changes line widths |
+| 10–12pt body, 12–16pt headings | Smaller text risks misreading; larger is unusual for a résumé |
+| Standard section headings: Experience, Education, Skills, Projects, Certifications, Publications | Screening software looks for these words to find each section |
+| Bullet glyphs: `-` or `•` only | Other symbols may show up as boxes or disappear |
+| Dates aligned right with a tab stop, not a table cell | Tab-aligned dates are read as part of the same line |
+| Page margins 0.5–1.0 inch | Margins outside this range look unusual to some systems |
 
-## Role-paragraph order (load-bearing)
+**What Sartor checks for you.** After every generation, Sartor reads its own `.docx` back the
+way a simple screening parser would, and counts whether every section and bullet it wrote
+comes back out. The result is shown per version of the application, as **ATS: pass**,
+**warning** or **fail**, in the application's details on the **Pipeline** tab (see
+[Iterating](iterating.md#finding-earlier-applications)).
 
-`generator.py:_capture_template_styles` walks the first ~30 paragraphs and
-classifies each by role using positional + formatting heuristics. The
-generator then re-renders the user's content by mapping its markdown to
-these captured roles.
-
-The required order is:
-
-| # | Role | What it carries | Notes |
-|---|---|---|---|
-| 1 | `name` | Candidate's full name | Bold, larger than body. Alignment may vary by preset. |
-| 2 | `subtitle` | Optional title line (e.g., "Senior Product Manager") | Same alignment as name. Smaller font. |
-| 3 | `contact` | Email \| phone \| linkedin \| website | Same alignment. Body-sized or smaller. |
-| 4 | `section_heading` | "Experience" (first section heading) | Bold; uppercase / underline / small-caps optional. |
-| 5 | `job_title` | "Company, Role" + right tab + "Date – Date" | Tab stop required for date alignment. |
-| 6 | `job_subtitle` | Optional italic context line | One line under job_title; commonly italic. |
-| 7 | `body` | Plain prose paragraph | Used for Summary sections that aren't bulleted. |
-| 8 | `bullet` | List Bullet style paragraph | Indented `-` glyph; preserves throughout the document. |
-
-After the first instance of each role, the generator extends with cloned
-copies. Adding more paragraphs to the template beyond the role examples is
-fine but optional.
-
-## Bundled gallery — four presets
-
-The four templates under `personas/bundled/` differ ONLY in typography
-(font, size, spacing, alignment, casing) at the **`.docx`** level. Structure is
-identical. (Their `.html`/`.css` companions, used by the live preview + PDF
-render, additionally differ in layout — see `personas/bundled/*.css`.) New
-templates added later should follow the same role-paragraph order.
-
-| File | Use when |
-|---|---|
-| `classic.docx` | The default fallback. Maximally ATS-safe. Arial 11pt. |
-| `modern.docx` | Calibri with small-caps section headings. Middle-ground for most roles. |
-| `spacious.docx` | Junior / career-changer. Arial 11pt, generous spacing, lots of whitespace. |
-| `tech.docx` | Engineering / data / AI roles. Georgia, centered name, underlined section headings. |
-
-All four are regenerated by `python -m scripts.build_bundled_templates`.
-Re-run anytime to refresh; the script overwrites existing files.
-
-*(The set was curated from 5 → 4 at v1.0.0: Compact's sidebar layout was
-ATS-unsafe, and Hybrid Tech was rebuilt as `tech.docx`. See
-`db/migrations/versions/0005_curate_bundled_templates.py`.)*
-
-## How to add a new bundled template
-
-1. Add a new `TypographyPreset` entry to `scripts/build_bundled_templates.py:PRESETS`.
-2. Choose `filename`, `display_name`, `description`, and tweak the
-   typography knobs. Structure stays the same.
-3. Add `suggested_role_tags` — these are surfaced in the eventual
-   persona-picker UI as defaults.
-4. Run `python -m scripts.build_bundled_templates` to regenerate.
-5. Update the seed migration (`db/migrations/versions/0002_seed_bundled_templates.py`)
-   to insert the new `persona_template` row.
-6. Update `docs/bundled_templates_LICENSE.md`.
-
-## How to validate a user-uploaded template
-
-Once Phase C.3 ships the ATS round-trip check, every generated `.docx` is
-parsed back through `parser.py` to verify all sections + bullets are
-recoverable. A failure surfaces as `ats_roundtrip_failed` on the
-application_run, blocks the dispatch UI, and points the user at this doc.
-
-Best-effort, not certified — real ATS systems (Workday, Greenhouse, Lever,
-Taleo, iCIMS) require commercial access to test directly. The round-trip
-catches gross failures (lost sections, scrambled bullets) but is not a
-guarantee of acceptance by any specific ATS.
+This check is best-effort, not a certification. Real screening systems can't be tested
+without commercial access, so a pass means no gross problems were found (lost sections,
+scrambled bullets), not that any particular employer's system will accept the file.

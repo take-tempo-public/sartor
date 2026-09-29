@@ -9,7 +9,7 @@ body, bullet). Each template differs in typography + spacing, not structure.
 
 ATS rules (see docs/user/templates.md):
 - Single column only; no tables, text boxes, or images
-- Standard fonts (Arial, Calibri, Helvetica); 11pt body, 12-14pt headings
+- Standard fonts (Arial, Calibri, Georgia -- json_resume.APPROVED_FONTS); 11pt body, 12-14pt headings
 - Standard section headings (Experience, Education, Skills, ...)
 - Bullet glyphs: `•` or `-` (we use `-` via Word's List Bullet style)
 - Right-aligned dates via tab stop on job_title lines

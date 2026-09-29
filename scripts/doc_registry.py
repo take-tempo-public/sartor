@@ -80,6 +80,9 @@ PUBLISHED: tuple[Entry, ...] = (
     Entry("docs/user/install.md", "user"),
     Entry("docs/user/walkthrough.md", "user"),
     Entry("docs/user/walkthrough-example.md", "user"),
+    Entry("docs/user/iterating.md", "user"),
+    Entry("docs/user/coaching.md", "user"),
+    Entry("docs/user/templates.md", "user"),
     Entry("ACCESSIBILITY.md", "user"),
     # --- dev tier: the dev ladder (design §4), then reference ---
     Entry("docs/dev/README.md", "dev"),
@@ -98,6 +101,7 @@ PUBLISHED: tuple[Entry, ...] = (
     Entry("docs/dev/docs-ia-design.md", "dev"),
     Entry("docs/dev/docs-site-deploy.md", "dev"),
     Entry("docs/dev/releasing.md", "dev"),
+    Entry("docs/dev/bundled-templates.md", "dev"),
     Entry("docs/dev/screenshot-capture.md", "dev"),
     Entry("docs/dev/EXTRACTION.md", "dev"),
     Entry("docs/dev/keep-ledger.md", "dev"),
