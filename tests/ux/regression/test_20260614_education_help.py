@@ -45,6 +45,7 @@ _ALL_HELP_PANELS = [
     "panelCorpus",
     "panelPersonas",
     "panelMemory",
+    "panelPipeline",  # Epic D D3 (feat/user-docs): Pipeline gained its help entry
 ]
 
 

@@ -2184,33 +2184,32 @@ function openSettingsDrawer() {
 const _HELP_REGISTRY = {
   // ---- Tailor tab -------------------------------------------------------
   panelUser: {
-    title: 'Welcome to sartor',
-    body: "sartor tailors your résumé to a specific job from a career corpus "
+    title: 'Welcome to Sartor',
+    body: "Sartor tailors your résumé to a specific job from a career corpus "
       + 'it builds out of your past résumés — nothing is locked in a file you '
       + 'hand-edit per application. Select a user to begin, or add a new one to '
       + 'import your first résumé. Every section has an “i” you can click for a '
       + 'quick explanation.',
     short: 'Select a user to begin, or add a new one to import your first résumé.',
-    tip: 'About sartor',
+    tip: 'About Sartor',
     welcome: true,
   },
   // A4 (feat/prior-apps-pipeline): panelApplications's help entry removed
   // along with the panel itself. Prior applications live in the Pipeline tab
-  // now; it has no _HELP_REGISTRY entry of its own (out of this sprint's
-  // scope; not added here).
+  // now; its entry (panelPipeline) was added in Epic D D3 (feat/user-docs).
 
   // ---- Wizard steps (Tailor tab) ---------------------------------------
   panelJD: {
     title: 'Step 1 — Job description',
     body: 'Paste the full text of the job you’re applying for, then click '
-      + 'Analyze. sartor reads the posting and weighs it against your career '
+      + 'Analyze. Sartor reads the posting and weighs it against your career '
       + 'corpus to find the experience that fits this role best. The numbered '
       + 'steps along the top let you move back and forward at any time.',
     tip: 'Step 1 — Job description',
   },
   panelAnalysis: {
     title: 'Step 1 — Analysis',
-    body: 'This is sartor’s read of the job — the themes it found and how '
+    body: 'This is Sartor’s read of the job — the themes it found and how '
       + 'your experience lines up. The JD Keyword Coverage percentage at the '
       + 'top measures how much of the job posting’s meaningful vocabulary '
       + 'shows up in your corpus, after cleaning out the company’s name and '
@@ -2225,7 +2224,7 @@ const _HELP_REGISTRY = {
   },
   panelClarify: {
     title: 'Step 2 — Clarify',
-    body: 'Optional, but worth it. sartor asks a few short questions to draw '
+    body: 'Optional, but worth it. Sartor asks a few short questions to draw '
       + 'out real experience your résumé didn’t spell out and to pin down '
       + 'anything vague. Your answers become new candidate bullet points (added '
       + 'to your corpus to accept now or review later) and keep the résumé '
@@ -2234,7 +2233,7 @@ const _HELP_REGISTRY = {
   },
   panelCompose: {
     title: 'Step 3 — Compose',
-    body: 'Here’s the résumé sartor proposes for this job: the title it chose '
+    body: 'Here’s the résumé Sartor proposes for this job: the title it chose '
       + 'for each role and the bullet points it selected and ordered, including '
       + 'any new ones from your clarifying answers. Pin a bullet to force-include '
       + 'it, exclude ones you don’t want, or open “find more” to pull others from '
@@ -2247,7 +2246,7 @@ const _HELP_REGISTRY = {
     body: 'Your selected content is loaded — now choose how it looks. Pick a '
       + 'template on the left and the preview shows the pages exactly as they’ll '
       + 'print: same words, different typography and layout. You can also upload '
-      + 'your own .docx for sartor to reuse (ATS-safe templates strongly '
+      + 'your own .docx for Sartor to reuse (ATS-safe templates strongly '
       + 'recommended). Click Generate when you’re happy with the look. Note: the '
       + 'preview and PDF paginate identically (same render engine); a .docx '
       + 'download page-breaks the same words through Word instead, so exactly '
@@ -2257,13 +2256,11 @@ const _HELP_REGISTRY = {
   },
   panelGenerate: {
     title: 'Step 5 — Generate',
-    body: 'Choose your output format and click Generate. If you saved and '
-      + 'continued from Compose, sartor already has your approved composition — '
-      + 'clicking Generate just assembles it into the chosen format, instantly '
-      + 'and identically every time (no further AI writing, so re-generating '
-      + 'the same composition never changes the wording). If you skipped ahead '
-      + 'without approving a composition, sartor writes the résumé fresh with '
-      + 'an AI call instead, which usually takes about 30–60 seconds.',
+    body: 'Choose your output format and click Generate documents. Sartor '
+      + 'assembles the composition you saved in Compose into that format — '
+      + 'instantly and identically every time, with no further AI writing, so '
+      + 'generating again never changes the wording. That is why this step '
+      + 'opens only after you click “Save and continue” in Compose.',
     tip: 'Step 5 — Generate',
   },
   panelOutput: {
@@ -2272,14 +2269,18 @@ const _HELP_REGISTRY = {
       + 'place and those edits are saved as the starting point for your next '
       + 'iteration. Editing here changes the document text only; it does not '
       + 'change your career corpus. Download when you’re ready, and you can also '
-      + 'generate an editable cover letter from the same job and résumé.',
+      + 'generate an editable cover letter from the same job and résumé. To ask '
+      + 'for a change instead, describe it under Document refinement and click '
+      + 'Refine: Sartor proposes one targeted change and takes you back to '
+      + 'Compose to accept or retire it. Get follow-up questions asks new '
+      + 'clarifying questions aimed at this draft.',
     tip: 'Step 6 — Preview & download',
   },
 
   // ---- Career corpus / Templates / Memory tabs -------------------------
   panelCorpus: {
     title: 'Your career corpus',
-    body: 'Your career corpus is the pool of experience sartor draws from when '
+    body: 'Your career corpus is the pool of experience Sartor draws from when '
       + 'it writes a tailored résumé — the roles and bullet points it built from '
       + 'the résumé you imported. Everything starts as “pending review”: accept '
       + 'items one at a time, by role, or all at once. Reviewing and accepting '
@@ -2293,17 +2294,28 @@ const _HELP_REGISTRY = {
     body: 'Templates control how your résumé looks — typography, spacing, and '
       + 'layout — without changing a word of the content. A few ATS-friendly '
       + 'templates ship with the app, and you can upload your own .docx for '
-      + 'sartor to reuse as a template. ATS-safe templates are strongly '
+      + 'Sartor to reuse as a template. ATS-safe templates are strongly '
       + 'recommended so applicant-tracking systems can read your résumé cleanly.',
     tip: 'Résumé templates',
   },
   panelMemory: {
     title: 'Candidate memory',
-    body: 'Candidate memory keeps the questions sartor asked during “Clarify” '
+    body: 'Candidate memory keeps the questions Sartor asked during “Clarify” '
       + 'and the answers you gave, across every application. Answers with '
       + 'concrete numbers and outcomes make the strongest new résumé bullets, so '
       + 'they’re highlighted here. Nothing is shared between users.',
     tip: 'Candidate memory',
+  },
+  panelPipeline: {
+    title: 'Pipeline',
+    body: 'Every application you’ve started, for every user, grouped by where '
+      + 'it stands: Draft, No response yet, Got interview, Rejected and '
+      + 'Withdrawn. Click a card to open it: you can record what happened '
+      + '(Mark submitted, then Got Interview, Got Rejection or Withdrew), add '
+      + 'notes, see each version you generated, and click Resume in wizard to '
+      + 'pick up where you left off. Sartor never submits anything for you — '
+      + 'the status is yours to record.',
+    tip: 'Pipeline',
   },
 
   // ---- KW3 first-run tour stops with no panel of their own -------------
@@ -2311,10 +2323,10 @@ const _HELP_REGISTRY = {
   // by the nearest section’s (i) for later reference (see _maybeFireTourStop).
   tourAddUser: {
     title: 'Add yourself as a user',
-    body: 'Start by importing a résumé — sartor builds your first career '
+    body: 'Start by importing a résumé — Sartor builds your first career '
       + 'corpus from it, so you don’t have to type everything in by hand. An '
       + 'ATS-friendly résumé (plain text, clear month/year dates) works best; '
-      + 'sartor does its best with other formats. You can add your name and '
+      + 'Sartor does its best with other formats. You can add your name and '
       + 'contact details now or later.',
     tip: 'Adding a user',
   },
@@ -2324,7 +2336,7 @@ const _HELP_REGISTRY = {
   tourCorpusLanding: {
     title: 'Let’s build your corpus first',
     body: 'You landed on the Career corpus tab because your profile is empty — '
-      + 'sartor tailors résumés from a corpus of your experience, so that’s '
+      + 'Sartor tailors résumés from a corpus of your experience, so that’s '
       + 'the one thing to set up first. Import a résumé (fastest) or add an '
       + 'experience by hand; when the corpus is ready, head to Tailor to '
       + 'target a job.',
@@ -2332,15 +2344,15 @@ const _HELP_REGISTRY = {
   },
   tourGenerating: {
     title: 'Generating your résumé',
-    body: 'sartor is writing your tailored résumé now — this usually takes '
-      + '30–60 seconds. When it’s done you’ll get a live preview you can edit '
-      + 'and download, plus the option to generate a matching, editable cover '
-      + 'letter.',
+    body: 'Sartor is putting together your tailored résumé — from a saved '
+      + 'composition this takes only a moment. When it’s done '
+      + 'you’ll get a live preview you can edit and download, plus the option '
+      + 'to generate a matching, editable cover letter.',
     tip: 'Generating',
   },
   tourCoverLetter: {
     title: 'Your cover letter',
-    body: 'sartor drafts a cover letter from the same job and résumé. Like the '
+    body: 'Sartor drafts a cover letter from the same job and résumé. Like the '
       + 'résumé preview, it’s editable in place — adjust the wording, then '
       + 'download. Generating it again rewrites it from scratch.',
     tip: 'Cover letter',
@@ -8958,7 +8970,7 @@ function _renderComposeCard(exp) {
   const hintWrap = _el('div', { className: 'compose-order-hint-wrap' });
   hintWrap.appendChild(_el('span', {
     className: 'compose-order-hint',
-    textContent: "Bullets are ranked by sartor's AI by fit to this job. "
+    textContent: "Bullets are ranked by Sartor's AI by fit to this job. "
       + 'Drag to reorder — your order shapes the final résumé.',
   }));
   const info = _el('button', { className: 'compose-order-info', textContent: 'i' });

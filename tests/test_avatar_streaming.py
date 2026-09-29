@@ -292,11 +292,11 @@ def test_l1_carries_exists_vs_planned_split_clause():
     assert "blends shipped and proposed into a single claim" in p
 
 
-def test_avatar_prompt_version_bumped_for_dev_gate_and_planned_split():
+def test_avatar_prompt_version_bumped_with_prompt_edit():
     # AVATAR_PROMPT_VERSION must bump in the same commit as the prompt edit
     # (AGENTS.md discipline); the résumé-pipeline PROMPT_VERSION is untouched
-    # by this avatar-only change.
-    assert analyzer.AVATAR_PROMPT_VERSION == "2026-07-08.1"
+    # by this avatar-only change. (Current bump: the O-1 wordmark edit, Epic D D3.)
+    assert analyzer.AVATAR_PROMPT_VERSION == "2026-09-29.1"
 
 
 def test_banned_tell_scanner_flags_overpromise_and_performed():
@@ -337,13 +337,16 @@ def test_assistant_microcopy_brand_mark_and_github_link():
     # Plain-languaged intro + empty-state scope line landed. (ASCII-only substrings —
     # the line also contains "résumé", but asserting non-ASCII trips source-encoding
     # mismatches on Windows; the brand-mark/link checks below are what matter here.)
-    assert "how sartor. works" in html
+    assert "how Sartor works" in html
     assert "won't touch your private resumes or configs" in html
     # The real repo issues URL is the SINGLE source of the link (the model never
     # emits a URL — it only states the behavior; cf. test_no_url_scanner_*).
     assert html.count("https://github.com/take-tempo-public/sartor/issues") == 1
-    # Brand mark casing: never the wrong forms anywhere in the shell.
-    assert "Sartor" not in html  # capitalized brand (also catches "Sartor.")
+    # Brand mark casing (owner decision O-1, docs/dev/docs-ia-design.md, 2026-09-28):
+    # `Sartor` in sentences, the `sartor.` wordmark only where the name stands alone
+    # (the <title>, the top-bar logo). So the wordmark never appears mid-sentence in
+    # the assistant copy, and the all-caps form never appears at all.
+    assert "how sartor. works" not in html
     assert "SARTOR" not in html  # all-caps
 
 

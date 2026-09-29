@@ -114,6 +114,9 @@ $ git grep -n "user-walkthrough\|user-install" tests/
 | 24 | `docs/dev/archive/avatar-voice-tone-guidance.md:942` (frozen lowercase identity) | no change | Record (archive). Superseded by O-1, recorded in `docs-ia-design.md` "Open decisions" |
 | 25 | `static/app.js` `_HELP_REGISTRY` (new keys for Pipeline, refinement, Settings profile) | update | RELEASE_ARC D3 "progressive-discovery copy for main-app bubbles"; the registration mechanism (`:2368-2414`) is reused unchanged |
 | 26 | `blueprints/assistant.py:125-136` (audience by path) | no change | `docs/user/**` is user-tier automatically; the new `docs/dev/**` files are dev-tier |
+| 27 | `tests/ux/regression/test_20260614_education_help.py:36-47` `_ALL_HELP_PANELS` *(found in execution)* | update | An exact list of panels expected to carry an (i). `panelPipeline` added with the new registry entry |
+| 28 | `tests/test_avatar_streaming.py:294-298` (`AVATAR_PROMPT_VERSION == "2026-07-08.1"` pin) *(found in execution)* | update | The version pin moves with the bump. The test's name described the 07-08 change, so it's renamed to the invariant it checks |
+| 29 | `templates/index.html:951-955` Pipeline comment + `:961-962` hint ("Read-only") | update | The comment said a click opens the Tailor tab (pre-A4); the hint said read-only, but the modal edits status, title and notes |
 
 ---
 
@@ -132,6 +135,12 @@ $ git grep -n "user-walkthrough\|user-install" tests/
   (`static/app.js:7051-7081`). The prose (System overview, step 4) was corrected on this
   branch. The diagrams are D4's "diagram refresh" and the dev half's module-map refresh, so
   they're left for `feat/dev-docs` and named in its handoff.
+- **A Settings → Profile help bubble** (planned in step 7). **Not added, and this is a declared
+  gap, not an oversight:** `_initHelp` attaches the (i) only to a `.cb-panel` block
+  (`static/app.js:2371`), and Settings is a drawer, not a panel. A Settings bubble needs new
+  mechanism code (drawer-level help), which is product-code scope, not D3 copy. The Notes copy
+  it would carry is held anyway (item 130). The refinement bubble folds into `panelOutput`'s
+  existing entry, because Document refinement sits inside that panel.
 - **`docs/wiki/**` in-sentence wordmarks.** Item 2's exclusion, and the D4 lint's scope.
 
 ---
