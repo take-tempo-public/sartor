@@ -210,7 +210,14 @@ would itself violate the charter.
 
 ## Implementation status (so this maps cleanly)
 
-The v1.0.7 governance slice, with current ship state:
+> **Status 2026-09-30 (Epic D D3):** everything in the list below has shipped. That includes
+> items 1–2 and the four forward-sequenced gates in item 5; the ship-state columns of §A and
+> §B above are current. The dispatcher consolidation described at the end has since grown:
+> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs five. The live roster
+> is [`../dev/tooling.md`](../dev/tooling.md). The list and paragraphs below are kept as the
+> record of how the v1.0.7 slice was sequenced.
+
+The v1.0.7 governance slice, as it was sequenced:
 
 1. **F-gov-07** — delete the `check-plan-approved.sh` hand-create hint. **This branch
    (PX-28).** One-line-class, no risk.

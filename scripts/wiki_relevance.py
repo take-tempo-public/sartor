@@ -206,6 +206,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docs/dev/releasing.md",  # maintainer publishing runbook, out of install.md (Epic D D3)
         "docs/dev/maintainer-lane.md",  # owner session protocol, split out of AGENTS.md (O-2, D3)
         "docs/dev/diagnostics.md",  # per-tab diagnostics console reference (Epic D D3)
+        "docs/dev/tooling.md",  # hooks/guards/commands/subagents/skills roster (Epic D D3)
     }
 )
 

@@ -214,3 +214,22 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
 - **Item 134 filed.** The Tuning smoke estimate (≈$0.20 for two runs) contradicts Quality
   smoke (≈$0.35–0.40 for one). The full-subset estimates are consistent. The subagent's
   "contradicts 'about twice'" was only half right; re-derived from `dashboard.html:2346-2434`.
+
+## Addendum (during C5)
+
+- **Roster completeness check** (run 2026-09-30). Every name found in any of these sources
+  appears backticked in `docs/dev/tooling.md`: 44 names, 0 missing.
+  - Sources: the `.claude/settings.json` hook commands, `scripts/enforcement/guards/*.py`
+    (minus `__init__` and `result`), `commands/*.md`, `agents/*.md`, `skills/*/`.
+  - The one-off script lives in this branch's session notes. D4's enumeration-drift lint is
+    the standing mechanism.
+- **`enforcement.md` "Implementation status":** a dated status note was added, and nothing
+  above it was rewritten.
+  - Items 1–2: verified in code. `hooks/check-plan-approved.sh` has 0 `New-Item` hits, and
+    the merge guard resolves HEAD via `scripts/enforcement/gitutil.py:33`.
+  - Item 5: the four gates read SHIPPED in the same doc's §A and §B tables.
+- **Fixed in `CLAUDE.md`:**
+  - the dangling README catalog pointer and the stale "v1.0.7" clause;
+  - the missing plan-gate and `require-feature-branch` bullets;
+  - the subagent roster (plus `n1-refuter`, `n1-judge`) and the skill;
+  - the model-pin count (it said "other six": now 7 Sonnet, 1 Opus, 3 Haiku).
