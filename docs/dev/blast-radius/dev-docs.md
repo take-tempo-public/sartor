@@ -188,3 +188,29 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
   - Known cost: a non-Claude agent working in the owner's lane must follow the link from
     AGENTS.md §"Branch close-out checklist". Nothing mechanical makes it read the target.
 - AGENTS.md went from 31,961 B to 23,220 B.
+
+## Addendum (during C3)
+
+- **Mermaid parse: not verified locally.** `docs-site/node_modules/mermaid` (`mermaid.core.mjs`)
+  can't parse without a DOM: every block fails with `DOMPurify.addHook is not a function`.
+  That includes the **control arm**, the four existing, known-good diagrams in
+  `architecture.md`. So the failure belongs to the harness and says nothing about the new
+  blocks. No DOM shim is installed (`jsdom`/`happy-dom` absent), and adding one for a check
+  isn't worth a dependency (D-1).
+  - The new blocks use the same conventions as the existing ones: `&lt;id&gt;` placeholders,
+    quoted labels whenever a label starts with `/` or holds parentheses, and no `end` node
+    ids.
+  - Rendering is D4's diagram pass.
+- **O-1 in `dashboard.html`: verified no-op.** A case-sensitive grep for `sartor` finds
+  only:
+  - the isolated wordmark at `:6` and `:282`;
+  - JS identifiers such as `sartorRunLock` and `sartorEval`;
+  - the `sartor_ann_draft:` storage key;
+  - one URL.
+
+  In-sentence uses already read `Sartor` (`:919`, `:939`, `:1310`). The handoff's "~69 hits"
+  doesn't reproduce at `f0e1b5f`; the D3 user half (`596230f`) had already fixed the two
+  assistant strings.
+- **Item 134 filed.** The Tuning smoke estimate (≈$0.20 for two runs) contradicts Quality
+  smoke (≈$0.35–0.40 for one). The full-subset estimates are consistent. The subagent's
+  "contradicts 'about twice'" was only half right; re-derived from `dashboard.html:2346-2434`.

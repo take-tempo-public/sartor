@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 30 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 38
+**Open 31 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 38
 
 ## Open
 
@@ -138,6 +138,7 @@ IA research + design; full user/dev docs split; user + dev content; screenshots,
 
 - **9** -- release/visual-assets refresh - stale screenshots (`agent`) -- 10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in.
 - **127** -- Live docs contradict AGENTS.md: local --no-ff merge, "latent" CI, four-step gate (`agent`) -- CONTRIBUTING + git-flow subagent say local git merge --no-ff (AGENTS step 4 forbids); gate called 4 steps, runs 6.
+- **134** -- Diagnostics console: the Tuning smoke cost estimate contradicts the Quality smoke estimate (`agent`) -- Tuning smoke says ~$0.20 for TWO suite runs; Quality smoke says ~$0.35-0.40 for ONE. At most one is right.
 
 ### 40 -- Final March epic E - the public v1.1.0 cut (blocked)
 
