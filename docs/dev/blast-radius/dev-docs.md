@@ -172,3 +172,19 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
     `docs-deploy.yml:11` and `scorecard.yml:7`, plus the `ci.yml:51` four-steps comment.
     All are fixed in the same commit. `gh run list` shows docs-deploy (2026-09-28) and
     scorecard (2026-09-29) running on `main`.
+
+## Addendum (during C2)
+
+- **`AGENTS.md:19-21` header** repeated TW-F3's stale "C-1…C-6 clauses, the D-1…D-6 defaults".
+  It now names the clause families without a range. The range is the charter's to state; this
+  is the same class as the `vision.md:94` row.
+- **The F-gov-05 tension, stated rather than hidden.** `charter.md:47-51` says AGENTS.md
+  "keeps its rules **inline** (non-Claude agents read it raw)". It also names an "explicit
+  canonical pointer" as a way to preserve rule access.
+  - The moved protocol is reached by a pointer for non-Claude agents, and by `@import` for
+    Claude Code.
+  - The code rules stay inline.
+  - The owner decided this shape at kickoff (O-2, 2026-09-28; shape 2026-09-30).
+  - Known cost: a non-Claude agent working in the owner's lane must follow the link from
+    AGENTS.md §"Branch close-out checklist". Nothing mechanical makes it read the target.
+- AGENTS.md went from 31,961 B to 23,220 B.

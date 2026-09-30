@@ -15,15 +15,20 @@
 
 @AGENTS.md
 
+@docs/dev/maintainer-lane.md
+
 ---
 
 ## Read AGENTS.md first
 
 Universal rules — branch conventions, the security guard pattern,
 the dev loop, the LLM call boundary, what NOT to do — live in
-[`AGENTS.md`](AGENTS.md). The `@AGENTS.md` line above asks Claude
-Code to inline that content; this file adds only Claude-specific
-overrides on top.
+[`AGENTS.md`](AGENTS.md). The owner's session protocol (taking over
+a handoff, the branch close-out checklist) lives in
+[`docs/dev/maintainer-lane.md`](docs/dev/maintainer-lane.md). The two
+`@` lines above ask Claude Code to inline both; every Claude Code
+session in this repo works for the owner, so both bind. This file adds
+only Claude-specific overrides on top.
 
 If you're not Claude Code and you're reading this file by
 accident, jump straight to [`AGENTS.md`](AGENTS.md).

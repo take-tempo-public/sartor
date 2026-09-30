@@ -17,8 +17,8 @@
 4. **Your first change:** the code rules in [AGENTS.md](../../AGENTS.md).
 5. **Why the rules are binding:** the [charter](../governance/charter.md) and
    [enforcement](../governance/enforcement.md).
-6. **The maintainer lane** (handoffs, the provenance ledger, releases, the N=1 pipeline): in
-   [AGENTS.md](../../AGENTS.md) for now. It moves to its own doc when AGENTS.md is split.
+6. **The maintainer lane** (handoffs, the provenance ledger, the close-out checklist):
+   [maintainer-lane](maintainer-lane.md).
 
 ## Where things live
 

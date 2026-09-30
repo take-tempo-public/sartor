@@ -8,8 +8,8 @@
 > ruff + mypy + pytest minimum-bar; the rule that any LLM prompt
 > change bumps `PROMPT_VERSION` in the same commit. Sibling docs:
 > [`vision.md`](vision.md) (product intent + constraints),
-> [`AGENTS.md`](AGENTS.md) (AI-agent operational contract — same
-> rules apply to humans),
+> [`AGENTS.md`](AGENTS.md) (the code rules — the same ones bind humans
+> and AI agents),
 > [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
@@ -40,7 +40,7 @@ python app.py            # → http://localhost:5000
 
 Set your Anthropic API key in `ANTHROPIC_API_KEY` or in a local `.api_key` file (gitignored).
 
-For a deeper architectural tour before opening a PR, read [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the universal contract — same rules apply whether you're a human or an LLM agent).
+For a deeper architectural tour before opening a PR, read [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the code rules — the same ones apply whether you're a human or an LLM agent). The owner's session protocol (handoffs, the provenance ledger, the close-out checklist) lives separately in [`docs/dev/maintainer-lane.md`](docs/dev/maintainer-lane.md); you don't need it to send a pull request.
 
 ---
 

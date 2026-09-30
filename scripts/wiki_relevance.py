@@ -204,6 +204,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docs/dev/nursery.md",
         "docs/dev/bundled-templates.md",  # maintainer half of docs/user/templates.md (Epic D D3)
         "docs/dev/releasing.md",  # maintainer publishing runbook, out of install.md (Epic D D3)
+        "docs/dev/maintainer-lane.md",  # owner session protocol, split out of AGENTS.md (O-2, D3)
     }
 )
 
