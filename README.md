@@ -234,46 +234,43 @@ tuning, never model fine-tuning.
 
 ## For developers
 
-**Everything the job seeker and coach experience — and the ability to change it.** Sartor is deliberately **two things at once**: a working résumé product, *and* a testbed for reusable, substrate-independent capacities (memory, governance, grounding, evaluation) engineered to be importable beyond this app. A developer doesn't use Sartor for a different purpose; you make it better at the other two's purposes, add new ones, or lift a capacity out. The canonical write-up is [`docs/dev/system-model.md`](docs/dev/system-model.md).
+Sartor is deliberately **two things at once**: a working résumé product, *and* a testbed for
+reusable capacities (memory, governance, grounding, evaluation) built to be importable beyond
+this app. [`docs/dev/system-model.md`](docs/dev/system-model.md) is the canonical write-up.
+A developer doesn't use Sartor for a different purpose: you make it better at the product's
+purposes, add new ones, or lift a capacity out.
 
-**One discipline, applied recursively.** "Discover/cite; never assert beyond source" governs the résumé generator, the doc-assistant avatar, *and this documentation itself* (the wiki may not assert beyond its cited sources; every fact has one home). The same `user`/`dev` audience plane the assistant gates disclosure on is the plane this documentation's navigation gates on — one mechanism, two consumers.
+**Start at [Building on Sartor](docs/dev/README.md):** the dev ladder (install, first green
+gate, the system map, your first change, why the rules bind) and an index of every dev doc.
 
-**Tune — change behavior without new features** (improves the grounding, recommendations, and tone the other two feel directly):
-- an A/B prompt-override primitive (`/prompt-tune`, `/tune-from-annotations`) that tests a candidate prompt **without editing the live persona** — the default path stays byte-identical; candidate runs are quarantined from the score-over-time chart;
-- an LLM-as-judge eval harness + deterministic metrics (the grounding witness, verb diversity, specificity, cost) with a regression gate — see [`eval-harness`](docs/wiki/pages/eval-harness.md), [`evals/TUNING_LOG.md`](evals/TUNING_LOG.md);
-- `PROMPT_VERSION` discipline + a `/_dashboard` score-over-time view, so a regression is caught in testing.
+- **Tune behavior without new features:** the prompt-override A/B (`/prompt-tune`,
+  `/tune-from-annotations`), the eval harness and its deterministic metrics
+  ([`eval-harness`](docs/wiki/pages/eval-harness.md),
+  [`evals/TUNING_LOG.md`](evals/TUNING_LOG.md)), and the diagnostics console
+  ([`docs/dev/diagnostics.md`](docs/dev/diagnostics.md)).
+- **Extend it:** the Corpus Item pattern ([`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md)),
+  the memory substrate in `recall/` ([`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md)),
+  new templates ([`docs/dev/bundled-templates.md`](docs/dev/bundled-templates.md)).
 
-**Extend — add new capability the other two then use:**
-- the **Corpus Item** pattern — add new curatable kinds (same shape powers bullets, summaries, skills) — see [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md);
-- the **memory substrate** (`recall/`): hybrid retrieval (lexical `git grep` + curated wiki + session buffer + static-embedding semantic), fused with Reciprocal Rank Fusion, every retrieved unit carrying a mandatory `path:line` / `[[wiki]]` citation — behind a **machine-enforced extraction boundary** (an AST test fails the build if `recall/` imports the app or a Sartor-specific literal leaks into a retrieval tier, so "reusable substrate" is *enforced*, not narrated). See [`docs/dev/memory-architecture.md`](docs/dev/memory-architecture.md), [`deterministic-llm-boundary`](docs/wiki/pages/deterministic-llm-boundary.md);
-- a deterministic core with **every LLM call quarantined to one module**, and **typed contracts as the seams between pillars** — pydantic is in the control loop (`model_validator`s enforce semantic rules; a validation failure is fed back as a structured retry), and frozen `Unit`/`Scope`/`Context` are the substrate's interface;
-- new ATS-safe templates; the **JSON Resume v1.0** open intermediate; a roadmap **provider abstraction** at the single LLM boundary (local / alternative models).
-
-*Note:* the résumé generator is **not** RAG — it assembles the whole corpus into the prompt. Retrieval-as-RAG is the doc-assistant's mechanism, not the generator's.
-
-**Governed by construction.** Extensions stay trustworthy because the rules are machine-enforced — a written constitution, git hooks (secret-blocking, branch discipline, route-security, merge gates), a read-only compliance-witness agent, and the seven-pillar law (every dependency points inward to Production; Production answers only upward to Governance). In keeping with the project's own claims discipline (C-0), the two boundary gates once flagged as owed — the C-1 loopback-bind test and the C-6 import-boundary lint — **shipped in v1.0.8 Sprint 8.3a** (PX-19, PX-20); the deterministic boundary is fail-closed by a committed test, not merely convention. Canonical: [`docs/governance/`](docs/governance/) (the gate-status table is in [`enforcement.md`](docs/governance/enforcement.md)) · [`docs/dev/system-model.md`](docs/dev/system-model.md).
-<!-- DOC-STATUS(governance-boundary): RESOLVED — C-6 import-boundary lint (PX-20) and C-1 loopback-bind test (PX-19) shipped v1.0.8 Sprint 8.3a; both gates are fail-closed. Canonical: docs/governance/enforcement.md -->
+*Note:* the résumé generator is **not** RAG. It puts the whole corpus into the prompt.
+Retrieval is the doc assistant's mechanism, not the generator's.
 
 ---
 
 ## Architecture & developer reference
 
-Pointers to the canonical homes; depth lives there, not here.
+Pointers to the canonical homes; the depth lives there.
 
-- **Deterministic boundary (P1).** Every LLM call is quarantined to `analyzer.py`; the rest of the core (`hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`) is LLM-free by rule, enforced by tests + a route-security hook. Full map: [`docs/dev/architecture.md`](docs/dev/architecture.md).
-- **Persistence.** A per-candidate SQLite corpus (SQLAlchemy 2.0 + Alembic); `Clarification` is cross-application memory; `Application` / `ApplicationRun` / `ProposalReview` persist every generation, edit, and human accept/reject. Schema home: `db/models.py` · [`corpus-data-model`](docs/wiki/pages/corpus-data-model.md).
-- **Claude Code plugin** (catalog home: [`CLAUDE.md`](CLAUDE.md) · [`commands/`](commands/) · [`agents/`](agents/)):
-
-  | Commands | Subagents |
-  |---|---|
-  | `/eval` · `/replay` · `/prompt-tune` · `/tune-from-annotations` · `/bench` · `/inspect-context` · `/wiki-*` · `/compliance-witness` | `eval-judge` · `prompt-archaeologist` · `tune-drafter` · `headhunter` · `git-flow` · `ux-onboarding-designer` · `wiki-scribe` · `wiki-grounding-auditor` · `compliance-witness` |
-
-- **Tech stack.** Python + Flask (localhost-bound) · vanilla JS (no build step) · SQLAlchemy 2.0 + SQLite + Alembic · pydantic v2 · Playwright + headless Chromium (PDF) · JSON Resume v1.0. Detail: [`docs/dev/architecture.md`](docs/dev/architecture.md), `pyproject.toml`.
-- **Dev loop** (canonical: [`CONTRIBUTING.md`](CONTRIBUTING.md)):
-  ```bash
-  ruff check . && mypy . && pytest        # the minimum bar; CI runs the same
-  python evals/runner.py --suite synthetic --subset smoke   # grounding-only, ~$0.35-0.40 under Sonnet 5
-  ```
+- **Architecture:** [`docs/dev/architecture.md`](docs/dev/architecture.md): the pipeline, the
+  module map, persistence, LLM routing and cost. The deterministic boundary (every LLM call in
+  `analyzer.py`) is stated in [`AGENTS.md`](AGENTS.md).
+- **Governance:** [`docs/governance/`](docs/governance/): the charter, and in
+  [`enforcement.md`](docs/governance/enforcement.md) the gate-status table saying which rules
+  are machine-enforced.
+- **Tooling:** [`docs/dev/tooling.md`](docs/dev/tooling.md): every hook, guard, slash command,
+  subagent and skill.
+- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md). `python -m scripts.gate` is the bar,
+  and CI runs the same script.
 
 ---
 
@@ -289,11 +286,11 @@ Local-first: nothing leaves your computer except the Claude API calls (and the o
 At-a-glance snapshot — the authoritative schedule is [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (+ [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md)):
 
 - ✅ **Shipped:** the tailoring pipeline, two-point clarifying interview, the compounding corpus (cross-application memory + human-gated curation), multiple persistent candidate profiles, grounding check + witness metric, ATS-safe templates, human gates, `.md`/`.docx`/`.pdf`, the recall substrate + doc-grounded avatar, and the eval/test stack.
-- 🟡 **Governance — extracted & live, v1.0.8 boundary gates shipped.** The constitution (charter C-0…C-6), the read-only compliance-witness auditor, and the enforcement hooks are shipped. **The two v1.0.8 boundary gates shipped** — the C-1 loopback-bind test (PX-19) and the C-6 import-boundary lint (PX-20), both landed Sprint 8.3a. **Still open for v1.1.0** — C-5 template-property assertions, the required UX/a11y/PDF CI job, and the E-2 supply-chain badges. *Snapshot — updated as those sprints close; canonical: [`enforcement.md`](docs/governance/enforcement.md).*
+- 🟡 **Governance — extracted & live.** The constitution ([charter](docs/governance/charter.md)), the read-only compliance-witness auditor, and the enforcement hooks are shipped. So are the C-1 loopback-bind test and the C-6 import-boundary lint (v1.0.8), the required UX/a11y/PDF CI job and the E-2 supply-chain badges (v1.1.0). **Still open for v1.1.0:** the C-5 template-property assertions. *Snapshot; canonical: the gate-status table in [`enforcement.md`](docs/governance/enforcement.md).*
 - 🚧 **In the codebase:** the static-embedding semantic search tier (local, no hosted DB).
 - 🔭 **Roadmap:** outcome-weighted recommendations · master files per role · provider-agnostic / local models.
 - ⛔ **Out of scope by design:** multi-user / multi-tenant (the threat model is a single trusted local user).
-<!-- DOC-STATUS(governance): PARTIAL — v1.0.8 landed PX-19 (C-1 loopback-bind test) + PX-20 (C-6 import-boundary gate, F-arch-01), Sprint 8.3a; still open — update when v1.1.0 lands C-5 template-property assertions + the required UX/a11y/PDF CI job + the E-2 supply-chain badges. Canonical homes: docs/governance/enforcement.md (gate-status table) + docs/dev/RELEASE_ARC.md (schedule). -->
+<!-- DOC-STATUS(governance): PARTIAL — PX-19/PX-20 (v1.0.8), the UX/a11y/PDF CI job and the E-2 badges (v1.1.0) shipped; still open — update when C-5 template-property assertions land. Canonical homes: docs/governance/enforcement.md (gate-status table) + docs/dev/RELEASE_ARC.md (schedule). -->
 
 ---
 

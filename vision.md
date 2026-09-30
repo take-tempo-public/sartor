@@ -91,8 +91,8 @@ them would be convenient. Together they define what kind of
 software this is.
 
 > **Canonical governance.** The *binding* form of these constraints — the
-> C-0…C-6 clauses, the D-1…D-6 defaults, and the working-model rules — now
-> lives in [`docs/governance/charter.md`](docs/governance/charter.md). This
+> constitutional clauses (C-), the defaults (D-), and the working-model rules
+> (W-) — now lives in [`docs/governance/charter.md`](docs/governance/charter.md). This
 > section keeps the *why* and the worked detail; the charter states each rule
 > once and is the home audits and gates read against. Where a line below
 > restates a rule, the charter governs on conflict.

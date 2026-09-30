@@ -5,9 +5,13 @@
 > entire system*: seven functions, one dependency law, and the split between **the
 > Product you run** and **the Work that evolves it**. One page that lets a reader —
 > human or LLM — place any file in the repo and know what it is *for*.
-> **Audience:** `dev` — humans meeting the project (portfolio / open-source / contributors);
+> **Audience:** `dev` — humans meeting the project (open-source readers, contributors);
 > LLM agents orienting before a change. Written to read plainly to a well-informed
-> layman and to ground the agent's mental map.
+> layman and to ground the agent's mental map. Its user-tier twin is the wiki's front door,
+> [`../wiki/overview.md`](../wiki/overview.md), which is `user` by the wiki's own rule
+> ([`../wiki/SCHEMA.md`](../wiki/SCHEMA.md), path→audience table). The two tiers differ on
+> purpose: the twin presents this model to anyone, and this doc stays the canonical,
+> dev-tier statement it defers to.
 > **Authoritative for:** the seven-functions vocabulary
 > (Substrate · Production · Evaluation · Operation · Memory · Regulation ·
 > Governance), the one-way dependency law, and the Product / Work split. The short
