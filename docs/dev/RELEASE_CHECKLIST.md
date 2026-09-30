@@ -9,9 +9,9 @@
 > at time of writing); the minimum-bar tests / ruff / mypy / eval
 > gates; which items are shipping-blockers vs nice-to-haves.
 >
-> **Companion:** see
-> [`docs/dev/PRODUCT_SHAPE.md`](PRODUCT_SHAPE.md) §10 for the full
-> deferred-items table that drives the v1.0.1 / v1.1 / v2 ladder.
+> **Companion:** open and deferred work is tracked in
+> [`work/BOARD.md`](work/BOARD.md). The original v1.0.0-cut deferred-items
+> table is archived in [`PRODUCT_SHAPE-history.md`](archive/PRODUCT_SHAPE-history.md) §10.
 
 ---
 
@@ -4415,10 +4415,10 @@ After every release tag:
 1. Move "Active release" items that shipped → "Archive — v1.X.Y
    release completed items" subsection.
 2. Bump the "Active release" header to the next planned version.
-3. Pull next release's items from PRODUCT_SHAPE §10 (move them
-   in, don't duplicate them).
+3. Pull next release's items from [`work/BOARD.md`](work/BOARD.md)
+   (reference the item; don't duplicate it).
 4. Re-check the Risk register evergreen items.
 
-If a release cut surfaces a new "Forward-looking" item that
-isn't in PRODUCT_SHAPE §10, add it there first, then reference
-here.
+If a release cut surfaces a new "Forward-looking" item that isn't on
+the board, file it as a work item first (`docs/dev/work/items/`), then
+reference it here.

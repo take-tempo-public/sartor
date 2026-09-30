@@ -47,7 +47,7 @@ only the surfacing UX remains, which is why this is nursery, not a bug.*
 A Haiku call that suggests which persona template fits a JD's inferred role class.
 Low value without outcome data (it reduces to scoring template metadata); becomes
 worthwhile once "this template + this JD class → interview" signal exists.
-*Source: PRODUCT_SHAPE §8/§10.*
+*Source: PRODUCT_SHAPE §8 / [history §10](archive/PRODUCT_SHAPE-history.md).*
 
 ### 4. `CoverLetterChunkItem` — reusable cover-letter paragraphs
 *Value L–M · Effort M · Risk L · Status: idea · Added 2026-06-08*
@@ -62,7 +62,7 @@ priority — the primary user rarely uses cover letters (PRODUCT_SHAPE §5.1).*
 
 Chips above the source chips to filter templates by role tag. Pointless until the
 template set has meaningful role-tag coverage — "chips with one template each is
-worse UX than no chips." *Source: PRODUCT_SHAPE §10.*
+worse UX than no chips." *Source: [PRODUCT_SHAPE history §10](archive/PRODUCT_SHAPE-history.md).*
 
 ### 6. Corpus-groomer LLM — dedup / tighten on demand
 *Value H · Effort H · Risk M · Status: blocked: outcome data (B.8 Part 2) · Added 2026-07-08*

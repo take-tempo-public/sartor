@@ -390,7 +390,8 @@ This phase carries the product redesign **and** the polished home for the Phase 
 > split the work: the **deterministic, label-free L0 slice ships now** (gives the
 > dashboard a real metric contract), and the **calibrated model-based layers +
 > the v1.0.4 live loop + the evals/tuning update are deferred to pre-v1.1.0** —
-> tracked in [`docs/dev/PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) "Grounding /
+> tracked as [item 5](work/items/0005-grounding-calibration-persistence-gap.md); the original entry is
+> [`PRODUCT_SHAPE-history.md` §10](archive/PRODUCT_SHAPE-history.md) "Grounding /
 > hallucination metric — calibrated layers (B)". Full design rationale, the
 > detector ladder, and the hard parts live in
 > [`GROUNDING_METRIC.md`](GROUNDING_METRIC.md). This deviation pushes the v1.0.5
@@ -427,7 +428,7 @@ is independently shippable.
 This arc rides within the v1.0.5 stream (or a v1.0.6 cut per the size note below —
 user's call). It also advances the deferred grounding calibration ("B"): the
 in-browser annotation loop is what *produces the labels* `GROUNDING_METRIC.md` /
-[`PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) need.
+[item 5](work/items/0005-grounding-calibration-persistence-gap.md) need.
 
 *If this phase is too large for clean small-stepping, the natural cut is v1.0.5 = redesign + WYSIWYG + tuning UI; v1.0.6 = formats + prior-app + reorder + playwright + pagination. User's call.*
 

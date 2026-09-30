@@ -8,8 +8,8 @@
 > deterministic slice ahead of the v1.0.5 dashboard/tuning UI — see
 > [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4).
 > **Authoritative for:** the metric's *design intent* and the A/B split. The
-> branch sequence lives in `RELEASE_ARC.md`; the deferred follow-up lives in
-> [`docs/dev/PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md).
+> branch sequence lives in `RELEASE_ARC.md`; the deferred follow-up is tracked as
+> [item 5](work/items/0005-grounding-calibration-persistence-gap.md) (its original rationale: [`PRODUCT_SHAPE-history.md` §10](archive/PRODUCT_SHAPE-history.md)).
 
 ---
 
@@ -96,7 +96,7 @@ precision/recall against those labels (this is literally a v1.0.4 tag criterion:
 `annotations.json` / seed anywhere. The v1.0.4 loop shipped the *machinery*
 (`evals/annotation.py`, `evals/bootstrap.py`, `evals/seed_import.py`,
 `evals/grounding_signals.py`) but its **live run was never executed** (see
-[`PRODUCT_SHAPE.md` §10](PRODUCT_SHAPE.md) cover-letter-tuning entry). *(As of
+[`PRODUCT_SHAPE-history.md` §10](archive/PRODUCT_SHAPE-history.md) cover-letter-tuning entry). *(As of
 2026-06-07 that machinery is also driveable from the browser — the `/_dashboard`
 console's bootstrap → annotate → "Score grounding" loop — so producing the labels
 is now a click-through, not a CLI chore; but until someone actually runs it the
@@ -121,7 +121,7 @@ tuning loop by — a metric you haven't defined. But the binding constraint is t
   groundedness signal. This gives the dashboard a **real metric contract** to be
   designed around. Deterministic → lives in `hardening.py` + `evals/`; **no LLM,
   no `PROMPT_VERSION` bump, no new dependency.**
-- **B (deferred, pre-v1.1.0 — tracked in PRODUCT_SHAPE §10):** run the loop
+- **B (deferred, pre-v1.1.0 — tracked as [item 5](work/items/0005-grounding-calibration-persistence-gap.md)):** run the loop
   end-to-end on the real corpus (seed → bootstrap → annotate → grounding-score) to
   produce labels, **calibrate** the L0 tolerances + L1/L2 thresholds against them,
   then update the eval suite + the tuning interface to consume the calibrated metric.

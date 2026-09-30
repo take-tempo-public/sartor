@@ -233,3 +233,23 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
   - the missing plan-gate and `require-feature-branch` bullets;
   - the subagent roster (plus `n1-refuter`, `n1-judge`) and the skill;
   - the model-pin count (it said "other six": now 7 Sonnet, 1 Opus, 3 Haiku).
+
+## Addendum (during C6 — PRODUCT_SHAPE)
+
+- **Enumeration** (run before the move): `git grep -o -E 'PRODUCT_SHAPE\.md#[A-Za-z0-9_-]+'`
+  returned 0 anchor links.
+  - A prose-cite grep for `PRODUCT_SHAPE … §1/§6.1/§7/§9/§10` over the live set found **§10
+    only**: `GROUNDING_METRIC.md:12,99,124`, `RELEASE_ARC.md:393,430`, `nursery.md:50,65`
+    and `RELEASE_CHECKLIST.md:13,4418-4423` (a standing process step). There were also ~7
+    dated `RELEASE_CHECKLIST` ledger entries.
+  - §6.1 is the baseline that §6.2/§6.3 diff against, so it stays.
+- **Owner decision (2026-09-30):** move §1, §7, §9 and §10 to
+  `docs/dev/archive/PRODUCT_SHAPE-history.md` (numbering kept), and repoint the live §10
+  cites.
+  - Grounding calibration "B" now points at its live tracker, item 5 (status `blocked`),
+    plus the archived rationale.
+  - RELEASE_CHECKLIST's process step now says `work/BOARD.md`.
+  - The dated RELEASE_CHECKLIST ledger entries keep their text. Their links still resolve,
+    to `PRODUCT_SHAPE.md`, whose §9–10 pointer leads to the archive.
+- Relative links in the moved text were rebased from `docs/dev/` to `docs/dev/archive/`
+  (script: `posixpath.relpath`). `check_doc_links` finds 0 broken links.
