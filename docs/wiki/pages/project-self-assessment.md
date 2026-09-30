@@ -41,7 +41,7 @@
 - **★ `app.py` was a 6,290-line / 75-route monolith** — the clearest smell at the time;
   hurt navigability even though each function was readable. **✅ Resolved:** WS-1
   ([[engineering-workstreams]]) shipped as Sprint 8.3a–h (tagged v1.0.8) — `app.py` is
-  now a ~296-line composition root with zero routes; every route lives on a domain
+  now a ~392-line composition root with zero routes; every route lives on a domain
   blueprint under [`blueprints/`](../../../blueprints/) (see [[code-module-map]],
   [[route-surface]]) `[synthesis]`.
 - **Typing was "typed, not strict"** — mypy ran in the gate but not `strict=true`;

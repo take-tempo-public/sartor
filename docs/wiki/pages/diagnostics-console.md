@@ -145,10 +145,11 @@ runtime CDN; lazy-init on open):
   [`_dedup_by_run`](../../../dashboard/routes.py)) plus the latest run's
   `fabricated_specifics` drill-down
   ([`_latest_groundedness_detail`](../../../dashboard/routes.py)).
-- **Tuning** — runs an A/B pair (baseline vs. candidate override) and writes eval results via the SSE
-  [`tune_run_stream`](../../../blueprints/diagnostics.py) route in `blueprints/diagnostics.py`;
-  the console UI is a read-only scaffold fed by [`_tune_prompt_choices`](../../../dashboard/routes.py),
-  a lazy import of `analyzer._BASE_SYSTEM_PROMPTS`.
+- **Tuning** — runs an A/B pair (baseline vs. candidate override) from the browser via
+  `POST /api/tune/run` ([`blueprints/diagnostics.py:tune_run_stream`](../../../blueprints/diagnostics.py)),
+  writing eval results via SSE; the prompt picker in [`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html)
+  is populated by [`dashboard/routes.py:_tune_prompt_choices`](../../../dashboard/routes.py),
+  which reads `analyzer._BASE_SYSTEM_PROMPTS`.
 
 `prompt_version` is the trend axis throughout — score / groundedness charts drop
 records lacking one, so a regression is attributable to a specific prompt

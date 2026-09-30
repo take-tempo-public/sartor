@@ -2374,3 +2374,59 @@ not advanced. The D2 split (file moves) is where wiki pages will need edits.
   0 UNSUPPORTED. **Catch-rate 0/1.**
 - **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
   pages, 0 errors; links OK across 565 files.
+
+## 2026-09-29 — checkpoint-advancing `/wiki-self-update`, `feat/user-docs` (Epic D D3)
+
+**Mode:** diff, window `f42b2ea`→`ca17897` (173 commits: the tail of Epics B and C, plus Epic D
+D1–D3). **Why now:** the merge-blocking freshness gate (`tests/test_wiki_freshness_gate.py`)
+failed at D3 close-out. It counted 78 wiki-relevant files changed since the checkpoint,
+against a block threshold of 75. That's item 98's mechanism: the scoped close-out passes
+(B1a, B2, preflight, Epic C, D2, D3) each fixed their own pages, and none advanced the
+checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haiku calls).
+**`.last_ingest_sha` advanced to `ca178977474ee7bc8d88be2d7edac67d71f24d9a`.**
+
+- **Triage:** a read-only pass over the 38 pages that cite a changed file. 11 had a concrete
+  stale claim; 27 were verified no-edit (e.g. document-rendering, deterministic-llm-boundary,
+  llm-call-catalog, machine-capability-preflight, troubleshooting, frontend-wizard, the user
+  guides).
+- **Pages changed (11):**
+  - `code-module-map`: the `app.py` row (392 lines; `_run_setup` / `_prompt_for_api_key` /
+    `_write_api_key`, `--setup`/`--doctor`); the `json_resume.py` symbols (`APPROVED_FONTS`,
+    `map_to_approved_font`, `needs_month_precision`, `education_position_text`); the
+    `scripts/gate.py` memory preflight; blueprint decorator counts 118 / `applications.py` 22.
+  - `route-surface`: 392 lines, 120 decorators (new `dashboard/routes.py:run_detail`).
+  - `openapi-api-reference`: 120 total / 115 undecorated. This also fixed a pre-existing
+    112-vs-114 disagreement on the same page.
+  - `project-self-assessment` and `engineering-workstreams`: 392 lines. The latter's blueprint
+    total is 117 → 118.
+  - `eval-harness`: `PROMPT_VERSION` `2026-08-14.1`.
+  - `consistency-tracks-enforcement` and `governance-extraction`: `block_subagent_git_stash`
+    added to the Claude-Code-only guard list.
+  - `diagnostics-console`: Tuning no longer called a read-only scaffold (`POST /api/tune/run`).
+  - `pipeline-stages`: the B2 month hard block (422) before the Generate branches.
+  - `corpus-to-output-reach`: a third active-only chokepoint
+    (`blueprints/applications.py:_build_experience_summary_targets`, item 75).
+- **Audit (author ≠ auditor):** six `wiki-grounding-auditor` runs.
+  - Verdicts: 84 SUPPORTED / 4 DRIFTED / 0 UNSUPPORTED.
+  - One DRIFTED was accepted: `engineering-workstreams` 117. The auditor proposed 120; the
+    orchestrator applied 118, because the sentence counts `blueprints/` only.
+  - Three DRIFTED were rejected on direct measurement:
+    - "`app.py` is 393 lines": `wc -l` gives 392, and the file ends in a single newline.
+    - "`applications.py` has 23 routes": the 23rd `applications_bp.route` match is the docstring
+      at `blueprints/applications.py:15`, not a decorator.
+    - "118 → 119": follows from the previous point.
+  - One scribe error was caught by the orchestrator before audit: `route-surface` "~346-line"
+    was corrected to 392.
+  - **Catch-rate:** 2 real errors caught / 11 pages (the 1 accepted DRIFTED + the 1
+    orchestrator catch).
+- **Not done:** the new-concept coverage gaps went to D4's wiki item via the D3 handoff:
+  - keyless-client refusal (`LLMConfigurationError`);
+  - education degree + field rendering (`education_position_text`, the reversed
+    `area`/`studyType` mapping);
+  - the docs IA split.
+
+  The `route-surface` egress-allowlist line still awaits the owner (2026-08-14 entry).
+  Auditor side-note, not a wiki issue: the code comment at `db/build_context.py:92` still
+  says "two chokepoints".
+- **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
+  pages, 0 errors; links OK across 565 files.
