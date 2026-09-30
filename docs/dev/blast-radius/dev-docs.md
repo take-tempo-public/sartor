@@ -253,3 +253,24 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
     to `PRODUCT_SHAPE.md`, whose §9–10 pointer leads to the archive.
 - Relative links in the moved text were rebased from `docs/dev/` to `docs/dev/archive/`
   (script: `posixpath.relpath`). `check_doc_links` finds 0 broken links.
+
+## Addendum (during C6 — documentation-architecture, ACCESSIBILITY)
+
+- **`documentation-architecture.md` body rewrite.** Its consumers are the code that cites it
+  by section name (`git grep -n documentation-architecture -- tests scripts hooks .github`):
+  `check_doc_frontmatter.py:4,46`, `check_doc_single_home.py:4`,
+  `project_docs_to_mdx.py:4,22,63,226`, `wiki_freshness.py:4`, `block_merge_to_main.py:36`,
+  `docs-deploy.yml:5,68`, and the docstrings of `test_doc_{frontmatter,single_home,status}_gate.py`
+  and `test_wiki_freshness_gate.py`.
+  - The cited section names are kept: "Fumadocs sourcing", "Gates — merge = publish",
+    "Portability" and the DOC-STATUS convention.
+  - `tests/test_doc_status_gate.py::test_marker_discovery_has_teeth` needs the grammar
+    template line to exist. It is kept byte-identical, and the test passes.
+  - That test's *comments* cite `documentation-architecture.md:113` / `:140` by line; the
+    line numbers now differ. **No change:** comment-only, and no checker resolves them.
+  - The D1 correction note is folded into the body and removed, because the body is now
+    true. The "Recommendations / sequencing" section became "Status", and 0 inbound anchors
+    point at it (`git grep -o 'documentation-architecture\.md#…'` → none).
+- **`ACCESSIBILITY.md`: verified no-op.** `:6` already reads `` `user` · `dev` ``, which
+  `check_doc_frontmatter.py`'s audience regex accepts. The registry tier stays `user`
+  (single-valued by design, `doc_registry.py` `Tier`).

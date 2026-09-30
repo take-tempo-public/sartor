@@ -1,128 +1,115 @@
 # Documentation architecture — how sartor.'s docs are organized & published
 
-> **Purpose:** the documentation *publishing strategy* — the layered source chain, the
-> three-audience navigation spine, the Fumadocs projection, the merge=publish gate, and the
-> deterministic gates + flag convention that keep the published site honest as it grows to
-> include a hosted Fumadocs site.
+> **Purpose:** the documentation *publishing model*: the layered source chain, how the
+> governed markdown is projected to the hosted Fumadocs site, the merge=publish gates that
+> keep the site honest, and the `DOC-STATUS` flag convention.
 > **Audience:** `dev`
-> **Authoritative for:** the L0–L3 documentation layering; the ICP-ladder navigation spine;
-> the Fumadocs-as-projection model; the merge=publish gate; the `DOC-STATUS` flag convention.
-> It **defers** to [`../system-model.md`](system-model.md) for the seven pillars + the one
-> law, to [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md) for the wiki contract + the `user`/`dev`
-> audience tag, and to [`memory-architecture.md`](memory-architecture.md) for the recall
-> disclosure plane. It **extends** the prior
-> [`docs-wiki-architecture`](reviews/2026-06-product-excellence/01-maps/domain-guides/docs-wiki-architecture.md)
-> domain guide and the
-> [`wiki-architecture-proposal`](reviews/2026-06-product-excellence/03-prescriptions/wiki-architecture-proposal.md);
-> on conflict the charter ([`../governance/charter.md`](../governance/charter.md)) governs.
->
-> **Extended by [`docs-ia-design.md`](docs-ia-design.md) (Epic D, 2026-09-27)**, which is
-> authoritative for the target `docs/user/` vs `docs/dev/` tree, the onboarding ladders, the
-> link policy, and the doc lints. **Correction (2026-09-27, measured at `88c0011`):** four
-> claims below have drifted.
-> - Not every `dev/**` doc carries a P/A/A header: 17 of the 32 loose ones don't.
-> - The shipped `meta.json` is a flat list, not an ICP + pillar ordering.
-> - Publication follows header presence (42 pages, including handoff briefs and a
->   diagnosis), not a curated subset.
-> - Most of "Recommendations / sequencing" has shipped: the projector, the deploy, and the
->   link, frontmatter and single-home gates.
->
-> Evidence: [`reviews/2026-09-docs-ia/20-dx.md`](reviews/2026-09-docs-ia/20-dx.md) DX-05/DX-06.
-> The body rewrite is Epic D sprint D3's.
+> **Authoritative for:** the L0–L3 documentation layering; the Fumadocs-as-projection model;
+> the merge=publish gate set; the `DOC-STATUS` flag convention. It **defers** to
+> [`docs-ia-design.md`](docs-ia-design.md) for the `docs/user/` vs `docs/dev/` tree, the
+> onboarding ladders, the link policy and the planned doc lints; to
+> [`../../scripts/doc_registry.py`](../../scripts/doc_registry.py) for *which* docs are
+> published; to [`system-model.md`](system-model.md) for the seven pillars and the one law;
+> to [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md) for the wiki contract and the `user`/`dev`
+> audience tag; and to [`memory-architecture.md`](memory-architecture.md) for the recall
+> disclosure plane. On conflict the charter
+> ([`../governance/charter.md`](../governance/charter.md)) governs.
 
 ---
 
 ## Context
 
-sartor. is adding a **hosted Fumadocs site**, generated from `main` on each merge. That
-raises a design question with one right answer under the project's existing disciplines:
-**Fumadocs must be a projection of the governed corpus, never a second source of truth.**
-This doc states the layering, the navigation spine, the sourcing mechanism, and the gates so
-the site strengthens the documentation practice rather than forking it. It is the canonical
-home for the *publishing strategy*; the wiki SCHEMA already states the same one-way model for
-the wiki, and this generalizes it to the hosted site.
+Sartor publishes a **hosted Fumadocs site**, rebuilt from `main` on every merge
+([`.github/workflows/docs-deploy.yml`](../../.github/workflows/docs-deploy.yml); it also
+builds on every pull request so a broken site fails a visible check). One rule shapes
+everything below: **the site is a projection of the governed markdown, never a second
+source of truth.** Every fact is edited in the repo; the site is a pure function of `main`.
+[`docs-site-deploy.md`](docs-site-deploy.md) is the deploy runbook.
 
 ## The source chain (L0 → L3, one-way)
 
 ```
 L0  GOVERNANCE (north star)        vision.md · governance/{charter,enforcement,metrics}.md
         ^ everything answers up to this
-L1  AUTHORED SOURCE OF TRUTH       AGENTS.md/CLAUDE.md · architecture.md · PRODUCT_SHAPE.md ·
-    (ONE home per fact; every        system-model.md · install.md · walkthrough.md · dev/** ·
-     doc has a P/A/A header)         README.md (the front door)
+L1  AUTHORED SOURCE OF TRUTH       the docs listed in scripts/doc_registry.py PUBLISHED
+    (ONE home per fact; every        (user tier: README, vision, docs/user/**, …;
+     published doc has a P/A/A       dev tier: docs/dev/*.md, AGENTS.md, CLAUDE.md,
+     header)                          CONTRIBUTING, governance/**, …)
         |  /wiki-ingest (diff-driven, git-as-engine, .last_ingest_sha checkpoint)
         v
 L2  COMPILED SUBSTRATE             wiki/** (synthesized · path:line cited · audience-stamped ·
-    (lossy synthesis, cited)         lint-gated) -> feeds recall/ + the avatar + llms.txt
-        |  projection / sync adapter (build step -> MDX content tree)
+    (lossy synthesis, cited)         lint-gated) -> feeds recall/ + the assistant + llms.txt
+        |  scripts/project_docs_to_mdx.py (build step -> MDX content tree + meta.json)
         v
-L3  PUBLISHED PRESENTATION         Fumadocs site (renders a curated public subset of L1;
-    (derived, never authoritative)   surfaces L2 as Search + the "Ask" avatar)
+L3  PUBLISHED PRESENTATION         the Fumadocs site: the L1 registry set, plus the
+    (derived, never authoritative)   assistant over L2
 ```
 
-**The one-way law (from [`../system-model.md`](system-model.md)):** `L3 -> L2 -> L1 -> L0`,
-never the reverse; Production code depends on none of them. The hosted site is a *pure
-function of `main` HEAD* — repo and site cannot drift by construction. This is the wiki's
-"git HEAD is the source" rule extended to the public site.
+**The one-way law (from [`system-model.md`](system-model.md)):** `L3 -> L2 -> L1 -> L0`,
+never the reverse; Production code depends on none of them.
+
+**Records are not L1.** Handoffs, the provenance ledger, diagnosis and blast-radius dossiers,
+reviews, perf records and `docs/dev/archive/` are frozen history. They are never published
+and never rewritten; `doc_registry.RECORD_PREFIXES` is the single list of them. A record's link
+to a doc that has since moved resolves through
+[`moved-paths.json`](moved-paths.json) (docs-ia-design §3).
 
 ## Two axes, reconciled
 
-- **The seven pillars = ownership / source structure.** Substrate · Production · Evaluation ·
-  Operation · Memory · Regulation · Governance is how **L1 is owned** — each fact's single
-  home maps to a pillar. The developer/governance map.
-- **The three ICPs = navigation / entry.** Job seeker -> coach -> developer
-  (`one -> many -> extend`) is how the **site is entered**. The cumulative ladder is the
-  navigation spine; its canonical home is [`../../README.md`](../../README.md).
+- **The seven pillars = ownership.** Substrate · Production · Evaluation · Operation ·
+  Memory · Regulation · Governance is how L1 is owned: each fact's single home maps to a
+  pillar ([`system-model.md`](system-model.md)).
+- **The two tiers = navigation.** A reader enters as a user (job seeker or coach) or as a
+  developer. Each published doc has exactly one tier in the registry. The site nav is
+  generated from it as two sections, "Using Sartor" and "Building on Sartor"
+  (`build_meta_pages_order`, [`project_docs_to_mdx.py`](../../scripts/project_docs_to_mdx.py)).
+  Each tier's reading order is its ladder: [`../user/README.md`](../user/README.md) and
+  [`README.md`](README.md).
 - **The bridge is the `user`/`dev` audience tag** ([`../wiki/SCHEMA.md`](../wiki/SCHEMA.md)).
-  It already gates the avatar's disclosure plane; it now also gates Fumadocs nav depth. One
-  mechanism, two consumers. ICPs are the front of house; the pillars are the structure behind
-  it.
+  The same tag gates the assistant's disclosure plane and the site's nav: one mechanism, two
+  consumers.
 
 ## Fumadocs sourcing (the mechanism)
 
-The existing `Purpose / Audience / Authoritative-for` header maps 1:1 onto frontmatter — no
-new convention:
+`project_docs_to_mdx.py` reads the registry, not the tree. For each `PUBLISHED` entry, the
+existing `Purpose / Audience / Authoritative-for` header maps onto frontmatter:
 
-| Existing header line | -> frontmatter | Drives |
+| Header line | -> frontmatter | Drives |
 |---|---|---|
 | **Purpose:** | `title` / `description` | page identity |
-| **Audience:** `` `user`/`dev` `` | `audience: [...]` (reuse the SCHEMA backtick-token parse) | which ICP front door it appears under; the leak check |
+| **Audience:** `` `user`/`dev` `` | `audience: [<registry tier>]` | the nav section the page sits in. The header must name the registry tier (`check_doc_frontmatter.py`) |
 | **Authoritative for:** | `authoritativeFor: [...]` | the canonical-home marker; cross-refs link here |
 
-- Canonical `.md` stays in-repo; the MDX content tree is **generated/synced** (a build step),
-  so editing happens in the governed source. `meta.json` encodes the ICP + pillar ordering.
-- **"Ask" = the avatar over L2**, citations preserved, gated by the same `user`/`dev` plane —
-  in-product help and the public docs chat become one memory system, two front ends.
-- **`llms.txt`** is the machine sibling of the human nav (already points at the wiki index).
-- **Portability:** all load-bearing content stays plain markdown that degrades on GitHub;
-  frontmatter + `meta.json` are additive only. No Fumadocs-only component holds a fact. This
-  is what guarantees the corpus is self-contained locally, with or without the site.
-- **Cross-doc links are rewritten at projection time, not in the source** (added 2026-07-13).
-  Portability means the source keeps linking `[vision.md](vision.md)` — correct on GitHub,
-  but `/docs/vision.md` is not a site route, so those links 404'd on the published site (~490
-  of them). `scripts/project_docs_to_mdx.py` now rewrites each link as it projects: a link to
-  a projected doc → its site route; a link to anything the site doesn't carry (source files,
-  `docs/wiki/**`) → the GitHub URL. The rewrite is a pure function of the projection's own slug
-  map, so the projection still cannot assert anything the source doesn't — portability holds,
-  and the L3 view stops lying about where things are.
+- **Canonical `.md` stays in the repo.** The MDX content tree and `meta.json` are generated
+  at build time, so editing happens in the governed source.
+- **Portability.** All load-bearing content stays plain markdown that reads correctly on
+  GitHub. Frontmatter and `meta.json` are additive; no Fumadocs-only component holds a fact.
+- **Cross-doc links are rewritten at projection time, not in the source.** A link to a
+  projected doc becomes its site route. A link to anything the site doesn't carry (source
+  files, `docs/wiki/**`, records) becomes the GitHub URL. The rewrite is a pure function of
+  the projection's own slug map, so the site can't assert anything the source doesn't.
+- **The assistant over L2** answers on the site and in the app from the same memory
+  system, with citations, gated by the same `user`/`dev` plane.
+- **`llms.txt`** is the machine sibling of the human nav.
 
 ## Gates — merge = publish
 
-Because every merge to `main` republishes the site, **the PR merge gate is the publish gate.**
-Promote the doc checks from local reminders to PR-blocking CI (extends `block-merge-to-main` +
-`wiki-lint`):
+Every merge to `main` republishes the site, so **the PR merge gate is the publish gate.**
+Each check below runs inside `pytest`, so it runs in `python -m scripts.gate` and in CI's
+required `quality` job:
 
-| Gate | Blocks merge if… |
-|---|---|
-| link-integrity | any doc-map / cross-doc / `[[backlink]]` link is dead at HEAD |
-| frontmatter + audience | a published page lacks Purpose/Audience/Authoritative-for |
-| single-home (D5) | a page restates a fact owned elsewhere instead of linking |
-| cite-resolution | any `path:line` cite is unresolvable at HEAD |
-| wiki-freshness | the wiki is staler than threshold vs HEAD |
+| Gate | Blocks merge if… | Checker (test) |
+|---|---|---|
+| link-integrity + cite-resolution | a relative link or `#anchor` is dead at HEAD, or the file a `path:line` / `path:SYMBOL` cite names doesn't exist (an existence check; lines and symbols aren't resolved) | [`check_doc_links.py`](../../scripts/check_doc_links.py) ([`test_doc_links.py`](../../tests/test_doc_links.py)) |
+| frontmatter + audience | a published doc lacks Purpose/Audience/Authoritative-for, or its Audience omits its registry tier | [`check_doc_frontmatter.py`](../../scripts/check_doc_frontmatter.py) ([`test_doc_frontmatter_gate.py`](../../tests/test_doc_frontmatter_gate.py)) |
+| single-home (D5) | two published docs carry the same long paragraph (a heuristic, documented as one) | [`check_doc_single_home.py`](../../scripts/check_doc_single_home.py) ([`test_doc_single_home_gate.py`](../../tests/test_doc_single_home_gate.py)) |
+| DOC-STATUS reconciliation | a `DOC-STATUS` marker is malformed, or its trigger has shipped without the claim being reconciled | [`test_doc_status_gate.py`](../../tests/test_doc_status_gate.py) |
+| wiki-freshness | the wiki's checkpoint is staler than the threshold against the PR's merge ref | [`wiki_freshness.py`](../../scripts/wiki_freshness.py) ([`test_wiki_freshness_gate.py`](../../tests/test_wiki_freshness_gate.py)); a local push to `main` is also checked by `block-merge-to-main` |
 
-**Freshness nuance:** CI *checks* `.last_ingest_sha` vs HEAD and warns/blocks past threshold;
-it does **not** run the LLM `/wiki-ingest` (cost + manual by SCHEMA). A human runs the bounded
-`/wiki-self-update` at close-out / pre-tag so `main` carries a fresh wiki for Search + Ask.
+**Freshness nuance:** CI *checks* `.last_ingest_sha` against HEAD; it never runs the LLM
+`/wiki-ingest` (cost, and manual by SCHEMA). A session runs the bounded `/wiki-self-update` at
+close-out or pre-tag. The gate measures how stale the checkpoint is, not how stale each page
+is (item 98).
 
 ## The `DOC-STATUS` flag convention
 
@@ -138,56 +125,44 @@ layers:
   no raw-HTML-comment syntax, so the projector converts rather than relying on
   Fumadocs to hide it). Greppable in-repo either way.
 
-**Hook point (proposed):** the freshness gate can `grep` for `DOC-STATUS` markers whose
-trigger sprint has tagged and fail the build until the line is reconciled — turning "remember
-to update the README when v1.0.8 ships" from vigilance into machinery. Live examples are in
+**Enforced by** [`tests/test_doc_status_gate.py`](../../tests/test_doc_status_gate.py) (PX-50),
+which checks the machine-checkable subset of the grammar. Live examples are in
 [`../../README.md`](../../README.md) (governance status; egress claim).
 
 ## Disciplines this rests on
 
-- **Single home / cite-don't-restate (D5).** Each fact lives once; the wiki and Fumadocs link,
-  never fork. The README is a *thorough front door of links*, not a parallel encyclopedia.
+- **Single home / cite-don't-restate (D5).** Each fact lives once; the wiki and the site
+  link, never fork. The README is a *front door of links*, not a parallel encyclopedia.
 - **Recursive grounding (the through-line).** "Discover/cite; never assert beyond source"
-  governs the résumé generator, the doc-assistant avatar
-  ([`memory-architecture.md`](memory-architecture.md)), **and this documentation itself** (the
-  wiki may not assert beyond its cited sources — [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md)). The
-  docs are a third instance of the product's own discipline.
-- **The agent-contract carve-out.** `AGENTS.md` / `CLAUDE.md` deliberately restate canonical
-  governance inline (non-Claude agents read them raw — the "don't let this become a pure
-  import shell" rule). They stay raw-readable in-repo and are **not** the site's canonical home
-  for governance — the charter is.
+  governs the résumé generator, the doc assistant
+  ([`memory-architecture.md`](memory-architecture.md)), **and this documentation itself**:
+  the wiki may not assert beyond its cited sources ([`../wiki/SCHEMA.md`](../wiki/SCHEMA.md)).
+- **The agent-contract carve-out.** `AGENTS.md` keeps the code rules inline, because
+  non-Claude agents read it raw (the "don't let this become a pure import shell" rule). The
+  owner's session protocol lives in [`maintainer-lane.md`](maintainer-lane.md), which
+  `CLAUDE.md` imports. Neither file is the canonical home for governance: the charter is.
 
-## Recommendations / sequencing
+## Status
 
-> **Scheduled as the v1.0.9 "Documentation & docs-site" epic** — [`RELEASE_ARC.md`](RELEASE_ARC.md) §Phase 4.9 owns the authoritative sequence, branch names, and the v1.0.8-tail policy; this section is the *rationale*. _(RELEASE_ARC and this doc mutually reference — co-merge `docs/release-arc-v1.0.9` with this branch at the top of v1.0.9 to keep both links live.)_
+Shipped:
+- the projector and the registry-driven two-tier nav;
+- the deploy on merge, and the PR build;
+- all five gates above;
+- the D2 split into `docs/user/` and `docs/dev/`;
+- the D3 user and dev content.
 
-Status: the **README front door is shipped** (this branch — the L1 flagship + the ICP ladder +
-the two C-0 corrections + the `DOC-STATUS` examples). The rest is proposed, in order:
-
-1. **WS-B — verify the dev-tier homes carry the depth** the README now hooks into
-   (behavior-corpus thesis -> `system-model.md`; extraction boundary + the two planes ->
-   `memory-architecture.md`; pydantic-in-loop -> `architecture.md`). Verify-first; fill only
-   genuine gaps; never duplicate. The 2026-06 architecture digest is a useful checklist.
-2. **WS-E — the unification note** (recursive grounding + the shared audience plane) is folded
-   into *this* doc; ensure `system-model.md` carries the one-law framing it cites.
-3. **The Fumadocs adapter** — a build step that projects L1 + frontmatter -> MDX content tree;
-   `meta.json` from the ICP ladder + audience tags. Deploy on merge to `main`.
-4. **The CI merge-gate job** — the five gates above, extending `block-merge-to-main` +
-   `wiki-lint`; plus the portability lint and the `DOC-STATUS`-trigger check.
-5. **The wiki content pass** — refresh `overview.md` + the user-tier education pages to the
-   three-audience ladder (a *content* pass; does **not** advance `.last_ingest_sha` per SCHEMA);
-   refresh `llms.txt`.
-
-Do not bloat the README to cover items 1–2 — surface hooks, keep depth in the homes. Each of
-1–5 is its own branch (one item per branch).
+What's next is Epic D sprint D4: screenshots and diagram refresh, in-app "Learn more" links,
+and the docs IA design's §5 lints (enumeration drift, wordmark, and the shared doc corpus).
+[`RELEASE_ARC.md`](RELEASE_ARC.md) §"Epic D" owns the sequence;
+[`docs-ia-design.md`](docs-ia-design.md) §5 owns the lint designs.
 
 ## Canonical homes this cites
 
-[`../system-model.md`](system-model.md) (seven pillars + one law) ·
+[`docs-ia-design.md`](docs-ia-design.md) (the tree, ladders, link policy, lints) ·
+[`../../scripts/doc_registry.py`](../../scripts/doc_registry.py) (what is published, and the
+record classes) ·
+[`system-model.md`](system-model.md) (seven pillars + one law) ·
 [`../wiki/SCHEMA.md`](../wiki/SCHEMA.md) (wiki contract + audience tag) ·
 [`memory-architecture.md`](memory-architecture.md) (recall disclosure plane) ·
 [`../governance/charter.md`](../governance/charter.md) (D5 + the binding rules) ·
-[`../../README.md`](../../README.md) (the ICP ladder + the front door) ·
-the prior
-[`docs-wiki-architecture`](reviews/2026-06-product-excellence/01-maps/domain-guides/docs-wiki-architecture.md)
-+ [`wiki-architecture-proposal`](reviews/2026-06-product-excellence/03-prescriptions/wiki-architecture-proposal.md).
+[`docs-site-deploy.md`](docs-site-deploy.md) (deploy runbook).
