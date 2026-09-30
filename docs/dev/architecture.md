@@ -52,7 +52,8 @@ boundary, charter C-6):
    Without a frozen composition the server still falls back to the
    legacy Sonnet `generate()` call, but the wizard rail no longer
    reaches that path: Step 5 opens only when the server reports a
-   frozen composition (item 20, `static/app.js:7051-7081`).
+   frozen composition (item 20, `static/app.js:7094`, reasoning at `:7068-7083`). The
+   fallback is reachable only by a direct `POST /api/generate` (item 67).
 5. **Surgical refinement** *(optional, corpus mode)* — Sonnet
    drafts a reworded bullet (`draft_surgical_refinement`, no new
    facts permitted); accepting loops back to Compose rather than
@@ -95,9 +96,9 @@ Full sequence diagram — rendered inline below (the single source; see [The fou
 %% recommend_skills/suggest_skills (Haiku) handle skills. "Save and
 %% continue" freezes the composition (approved_composition) —
 %% Generate then assembles the résumé body with ZERO LLM calls
-%% (Charter C-6). A user who reaches Generate without freezing still
-%% falls back to the legacy generate() Sonnet call (see the alt
-%% branch below) — this is a known live gap, not a documented design.
+%% (Charter C-6). The wizard locks Step 5 until the composition is
+%% frozen (static/app.js:7094), so the legacy generate() Sonnet call
+%% (the else branch below) is reachable only by a direct POST (item 67).
 %% draft_surgical_refinement (Sonnet 5) handles post-generate rewording
 %% and loops back to Compose rather than re-calling Generate.
 %% 
@@ -205,7 +206,7 @@ sequenceDiagram
         APP->>APP: _assemble_from_frozen_composition(frozen_doc)
         Note over APP: Charter C-6: ZERO LLM calls for the résumé body.<br/>markdown + selected_bullets derived from approved_composition.work_provenance
         APP->>FS: write resume_*.docx / .pdf / .md directly from the JSON Resume doc
-    else legacy — user reached Generate without freezing (still a live path today, see note below diagram)
+    else legacy — no frozen composition (direct POST only; the wizard locks Step 5 until frozen, item 67)
         APP->>ANL: generate(ctx, with_cover_letter=False)
         ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
         SO-->>ANL: {resume_content, changes_summary}
@@ -296,38 +297,59 @@ table's route-map source, not `app.py`.
 
 ## Module map
 
-Each top-level Python file at the project root has one stated
-purpose. Code that belongs elsewhere goes elsewhere.
+Every module has one stated purpose; code that belongs elsewhere goes elsewhere. The table
+covers the root modules, then the packages. It names each module's main public surface and
+does not count routes or files. Counts drift, so re-derive them when you need them (for
+routes: `grep -rcE '@[a-z_]+\.(route|get|post|put|patch|delete)\(' blueprints/`).
+
+**Root modules**
 
 | File | Purpose | Key public surface | What NOT to put here |
 |---|---|---|---|
-| [`app.py`](../../app.py) | Thin composition root — the `create_app(Config)` application-factory, the module-level WSGI / console handle (`app = create_app()`), and `main()`. As of v1.0.8 (8.3h) every route lives on a domain blueprint and the security/config helpers live in `web_infra` — none remain here | `create_app()`, `register_blueprints()`, `main()`, `_should_open_browser()` | route handlers, path globals, per-request helpers (they moved to `blueprints/` + `web_infra/`); LLM calls; parsing logic |
+| [`app.py`](../../app.py) | Thin composition root — the `create_app(Config)` application factory, the module-level WSGI / console handle (`app = create_app()`), and `main()`. It holds no routes: every route lives on a blueprint, and the security/config helpers live in `web_infra/` | `create_app()`, `register_blueprints()`, `main()` | route handlers, path globals, per-request helpers; LLM calls; parsing logic |
+| [`config.py`](../../config.py) | The typed application configuration the factory is built from (paths and flags, injected rather than read from globals) | `Config` | request handling, business logic |
 | [`analyzer.py`](../../analyzer.py) | All LLM calls; system prompts; response parsing | `analyze()`, `clarify()`, `clarify_iteration()`, `recommend_bullets()`, `recommend_summaries()`, `generate()`, `generate_cover_letter_against_resume()`, `_parse_or_retry()`, `SYSTEM_PROMPT` family | Filesystem I/O, route handling, schema definitions |
 | [`hardening.py`](../../hardening.py) | Deterministic Python: keyword extraction, ATS checks, context-set lifecycle, post-generation metrics | `build_context_set()`, `save_iteration_context()`, `summarize_recent_edits()`, `compute_iteration_signals()`, `ContextSet` TypedDict, verb-diversity / specificity / grounding scorers | LLM calls (P1 hardening boundary) |
-| [`generator.py`](../../generator.py) | Document output: .md / .docx / .pdf | `generate_resume(content, output_format, ...)`, `_write_docx()`, `_render_pdf_from_json()`, `BULLET_RE` normalizer | LLM calls, parsing of LLM responses |
+| [`generator.py`](../../generator.py) | Document output: .md / .docx / .pdf | `generate_resume()`, `generate_resume_from_json_resume()`, `generate_cover_letter()`, `_write_docx_from_json_resume()`, `_render_pdf_from_json()`, `BULLET_RE` normalizer | LLM calls, parsing of LLM responses |
 | [`parser.py`](../../parser.py) | Résumé file parsing (.docx / .pdf / .md → structured dict) | `parse_resume()`, format-specific helpers | LLM calls, document generation |
 | [`pdf_render.py`](../../pdf_render.py) | Jinja2 + Playwright PDF and live-preview render | `render_pdf()`, `render_html_string()`, `html_template_path_for()` | LLM calls, route handling |
 | [`json_resume.py`](../../json_resume.py) | JSON Resume v1.0 normalizer for markdown → structured | `md_to_json_resume()`, `SCHEMA_URI` | LLM calls, generation |
 | [`corpus_to_json_resume.py`](../../corpus_to_json_resume.py) | Build JSON Resume doc directly from corpus DB rows + composition overrides | `build_json_resume_from_corpus()` | LLM calls, route handling |
-| [`scraper.py`](../../scraper.py) | LinkedIn / portfolio URL fetch (best-effort) | `scrape_url()` | LLM calls, processing |
+| [`docx_to_persona_html.py`](../../docx_to_persona_html.py) | Deterministic HTML+CSS preview companion for an uploaded persona `.docx` (so the live preview matches the template) | `generate_companion()`, `resolve_companion_html()`, `extract_persona_style()`, `detect_layout_fidelity()` | LLM calls, route handling |
+| [`scraper.py`](../../scraper.py) | LinkedIn / portfolio URL fetch (best-effort) | `fetch_url_content()`, `fetch_profile_content()` | LLM calls, processing |
+| [`preflight.py`](../../preflight.py) | Capability preflight: what this machine can do (Python, OS, Chromium, API key, vector index, container), asked before it matters; behind `--doctor` | `probe_all()`, `Capability`, the per-capability probes | LLM calls, installing anything |
+| [`demo_fixtures.py`](../../demo_fixtures.py) | Canned analyzer payloads for offline demo mode (F-19): the app runs end to end with no API key | `is_demo_mode()`, `demo_analysis()`, `demo_generate()`, and one `demo_*` per analyzer call | real LLM calls, real user data |
+
+**Packages**
+
+| Package / file | Purpose | Key public surface | What NOT to put here |
+|---|---|---|---|
+| [`blueprints/`](../../blueprints/) | Every Flask route, one domain seam per module: `analysis`, `generation`, `corpus/` (a sub-package on one `corpus_bp`: experiences, summaries, skills, tags, curation, proposals, and `career_assets` for education + certifications; serializers in `_shared.py`), `templates` (persona templates + live preview; home of the `_resolve_persona_*` resolvers), `applications` (the application tracker + per-application Compose; home of `_load_application_owned`), `users` (the SPA shell + user/config CRUD), `diagnostics` (the console's paid and write routes, [diagnostics](diagnostics.md)) and `assistant` (the doc-grounded assistant's SSE route plus the `recall.sources` wiring and the lazily built `model2vec` embedder). Each seam registers without a `url_prefix` (except `assistant`, at `/api/assistant`), reads paths from `current_app.config`, imports `web_infra`, and never imports `app.py`. Which seams may import `anthropic` is fixed by the egress allowlist (`tests/test_egress_allowlist.py`) | one `*_bp` per module | the LLM call itself (that is `analyzer.py`); importing `app.py` |
+| [`web_infra/`](../../web_infra/) | Cross-cutting HTTP-layer helpers shared by every blueprint: `security` (`_safe_username`, `_within`), `request_gates` (`_is_localhost_request`), `http` (SSE), `config_io`, `provisioning`, `clients` (the Anthropic client factory), `openapi` | `_safe_username()`, `_within()`, `_sse()`, `_get_client()`, `_is_localhost_request()` | route handlers; LLM calls |
 | [`db/models.py`](../../db/models.py) | SQLAlchemy 2.0 ORM models — see persistence diagram | `Candidate`, `Experience`, `Bullet`, `SummaryItem`, `Application`, `ApplicationRun`, etc. | Route handlers, business logic |
 | [`db/session.py`](../../db/session.py) | SQLAlchemy engine + session factory; Alembic migration runner | `init_db()`, `get_session()` | Business logic |
-| [`db/build_context.py`](../../db/build_context.py) | DB-backed `build_context_set` variant; bullet scorer | `score_corpus_bullet()`, `_bullet_tag_values()` | Route handlers |
-| [`dashboard/`](../../dashboard/) | Read-only Flask blueprint at `/_dashboard` for eval results, cost cards, failure-mode heatmap | `dashboard_bp` | LLM calls, mutation |
-| [`recall/`](../../recall/) | **Memory substrate** (Stages 1–2): deterministic, provenance-stamped retrieval + assembly that *feeds* the doc-grounded avatar. Core is stdlib-only; refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `recall/sources/` adds the generic, injected `WikiSource` (S1) / `GitGrepSource` (S2) / `SessionSource` (S5-P1) / `VectorSource` (S3 static-embedding semantic search — brute-force cosine over a rebuildable sidecar; the one tier that imports `numpy`, embedder injected) tiers | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `WikiSource`, `GitGrepSource`, `SessionSource`, `VectorSource` | LLM calls, `app.py`/`analyzer`/DB/Flask imports, **`model2vec`** (the embedder is injected — it lives in the wiring layer so the substrate stays embedder-agnostic + extractable), sartor-specific paths baked into the tiers (injected by the wiring layer) |
-| [`blueprints/`](../../blueprints/) | Flask route modules split out of the `app.py` monolith (born 7.5; the v1.0.8 split target). Domain seams extracted so far (v1.0.8): `analysis.py` (8.3b), `generation.py` (8.3c), `corpus/` (8.3d — a 42-route sub-package: `experiences`/`summaries`/`skills`/`tags`/`curation`/`proposals` on one `corpus_bp`, serializers in `_shared.py`), `templates.py` (8.3e — 11 persona-template + live-preview routes; the canonical home of the `_resolve_persona_*` resolvers, which `generation.py` imports; LLM-free, so not on the egress allowlist), `applications.py` (8.3f — 13 application-tracker + per-application Compose routes; the canonical home of `_load_application_owned`, which `templates.py` imports; on the egress allowlist — `anthropic` error types in the recommend/suggest bodies), `users.py` (8.3g — 6 user/config routes: the SPA shell + user/config CRUD + the PX-02 profile scrape; config-io/security/provisioning helpers from `web_infra`; LLM-free, so not on the egress allowlist), `diagnostics.py` (8.3h — the 9 annotation/bootstrap/eval/tune routes incl. 5 SSE; reads `ANNOTATION_ROOT` from `current_app.config`; LLM-free at this layer — the paid work is delegated to `evals.runner`/`evals.bootstrap`/`evals.grounding_signals`, so not on the egress allowlist). **The split is complete (8.3h): all 93 routes live on a domain blueprint and `app.py` carries zero `@app.route` handlers.** Each seam registers with no `url_prefix` (URLs byte-identical), reads paths from `current_app.config`, imports the shared `web_infra` helpers, and never imports `app.py`. `assistant.py` = the doc-grounded assistant's SSE route (`POST /api/assistant/ask`) + the callback wiring (source roots + SCHEMA audience rules) binding the generic `recall.sources` tiers; it also builds the `model2vec` embedder (lazy, process-cached) and adds the S3 `VectorSource` **"on when available"** (model + index present). The avatar LLM call itself stays in `analyzer.py`; the vector index is built offline by `scripts/build_vector_index.py` into the gitignored `db/vector_index/` sidecar | `assistant_bp` | the LLM call (that is `analyzer.avatar_answer_streaming`); importing `app.py` |
+| [`db/migrations/`](../../db/migrations/) | Alembic migrations, one numbered revision per schema change | revision files | data fixes that aren't schema changes |
+| [`db/build_context.py`](../../db/build_context.py) | Builds the `context_set` from the corpus DB (the corpus-mode counterpart of `hardening.build_context_set`); bullet scoring | `build_context_set_from_db()`, `score_corpus_bullet()` | Route handlers |
+| [`db/persist_run.py`](../../db/persist_run.py) | Writes a generation's structured output (résumé markdown, selected bullets and titles, cover letter) back to the corpus DB as a run row | `persist_corpus_generation()`, `persist_cover_letter_md()` | LLM calls |
+| [`db/ats_roundtrip.py`](../../db/ats_roundtrip.py) | ATS round-trip self-check: re-parses a generated `.docx` and compares it with what was meant to be written | `run_ats_roundtrip()` | LLM calls |
+| [`onboarding/`](../../onboarding/) | One-shot import of file-based résumés into the corpus: `corpus_import` (the importer), `extract_experiences` (the Haiku extraction call, made through `analyzer._parse_or_retry`; on the egress allowlist), `experience_match` (duplicate-role merge scoring), `review_cli` | the importer entry points | request handling |
+| [`recall/`](../../recall/) | **Memory substrate**: deterministic, provenance-stamped retrieval and assembly that *feeds* the doc-grounded assistant. The core is stdlib-only and refactor-immune (`tests/test_recall_boundary.py` enforces the boundary). `memory_source.InMemorySource` is the reference `Source`; `planes` is the access/disclosure filter (audience + scope). `recall/sources/` adds the injected `WikiSource` (S1), `GitGrepSource` (S2), `SessionSource` (S5-P1) and `VectorSource` (S3: brute-force cosine over a rebuildable sidecar, the one tier that imports `numpy`; embedder injected). The vector index is built offline by `scripts/build_vector_index.py` into the gitignored `db/vector_index/` | `Unit`, `Source`, `Scope`, `Context`, `assemble()`, `InMemorySource`, `filter_units()`, the four source tiers | LLM calls; `app.py`/`analyzer`/DB/Flask imports; **`model2vec`** (the embedder is injected by the wiring layer, which keeps the substrate embedder-agnostic and extractable); sartor-specific paths baked into the tiers |
+| [`dashboard/`](../../dashboard/) | The diagnostics console's page at `/_dashboard`: server-rendered tabs over the LLM call log and eval results, plus `GET /_dashboard/api/run/<id>`. It never writes; its paid and write controls call `blueprints/diagnostics.py`. Per-tab reference: [diagnostics](diagnostics.md) | `dashboard_bp` | LLM calls, mutation |
+| [`personas/bundled/`](../../personas/bundled/) | The bundled résumé templates, each a `.docx` + `.html` + `.css` triple (see [bundled templates](bundled-templates.md)) | template files | code |
+| [`ui_pages/`](../../ui_pages/) | Framework-free Page Object Model for the wizard and the console, with one selector registry (`selectors.py`), shared by the Playwright UX suite and `scripts/capture_screenshots.py` | one page object per screen | test assertions (they belong in `tests/ux/`) |
 | [`evals/runner.py`](../../evals/runner.py) | LLM eval harness — synthetic + real fixtures, 0.0-5.0 rubric scoring | `run_suite()`, `_load_baseline_scores()` | Production paths |
-| [`scripts/perf_baseline.py`](../../scripts/perf_baseline.py) | Release-cycle tool: print p50/p90 latency percentiles from `logs/llm_calls.jsonl` as a before/after snapshot for perf interventions (R2 streaming, R3 schema trim, R1 split). Not part of the runtime. | CLI only — `python -m scripts.perf_baseline [--since N] [--log path]` | Production import |
-| [`scripts/export_corpus_seed.py`](../../scripts/export_corpus_seed.py) | Eval tooling: deterministic, LLM-free snapshot of one candidate's corpus (Candidate / Experience / Bullet / SummaryItem / Skill + tag registry) → `seed.json` under the gitignored `evals/fixtures/real/`. A `_within`-style guard refuses to write elsewhere. Consumed by the corpus-backed eval runner. Not part of the runtime. | CLI only — `python -m scripts.export_corpus_seed --user <name>` | LLM calls, production import |
-| [`evals/seed_import.py`](../../evals/seed_import.py) | Eval tooling: deterministic, LLM-free importer — the inverse of `export_corpus_seed`. Reads a `seed.json`, validates the schema version, and reconstructs the corpus into a fresh in-memory SQLite (PKs preserved) so the eval runner's `--seed` path drives `build_context_set_from_db` like the live pipeline. `seeded_session()` is the context-manager entry. Not part of the runtime. | `import_seed()`, `seeded_session()`, `load_seed()`, `validate_seed()` | LLM calls, production import, pre-filtering (lives in `build_context_set_from_db`) |
-| [`evals/bootstrap.py`](../../evals/bootstrap.py) | Eval tooling: drives one corpus seed against N JDs through the real `analyze`/`clarify`/`generate` pipeline (reuses the public primitives + `seeded_session` + `build_context_set_from_db`), then deterministically dedups generated bullets/skills across JDs (Jaccard 0.75) into a gitignored `bootstrap.json` under `evals/fixtures/real/`. Second `run_grounding_signals` call site (`--grounding-signals`). **Orchestrates LLM calls; dedup + collation are deterministic.** A `_within` guard refuses to write elsewhere. Not part of the runtime. | CLI — `python -m evals.bootstrap --seed <p> --jd-dir <d>`; `build_bootstrap_document()`, `dedup_texts()`, `run_pipeline_over_jds()` | Production import; duplicating LLM-call logic (reused from `analyzer.py`); touching the runner's `--seed`/file paths |
-| [`evals/annotation.py`](../../evals/annotation.py) | Eval tooling: **deterministic, LLM-free** annotation contract — the human-in-the-loop seam from `bootstrap.json` to a `--suite real` fixture. Declares `annotation_schema_version: 1` + a fail-closed validator (mirrors `seed_import.py`). Emits a blank `annotations.json` skeleton (clusters + clarification questions + inline MiniCheck/NLI pre-scores) for a human to fill with a `keep`/`fix`/`omit`/`fabricated` verdict (reusing `evals/rubrics/` `failed_rules` slugs), then collates a completed file into an `expected.json` fixture + an improvement brief. A `_within` guard refuses to write outside `evals/fixtures/real/`. Not part of the runtime. | CLI — `python -m evals.annotation --bootstrap <p> --emit-template` / `--collate`; `validate_annotations()`, `build_annotation_template()`, `collate_expected()`, `build_improvement_brief()` | LLM calls; production import; touching the runner's `--seed`/file/bootstrap paths; editing prompt constants |
+| [`evals/seed_import.py`](../../evals/seed_import.py) | Eval tooling: deterministic, LLM-free importer — the inverse of `export_corpus_seed`. Reads a `seed.json`, validates the schema version, and reconstructs the corpus into a fresh in-memory SQLite (PKs preserved) so the eval runner's `--seed` path drives `build_context_set_from_db` like the live pipeline. Not part of the runtime. | `import_seed()`, `seeded_session()`, `load_seed()`, `validate_seed()` | LLM calls, production import, pre-filtering (lives in `build_context_set_from_db`) |
+| [`evals/bootstrap.py`](../../evals/bootstrap.py) | Eval tooling: drives one corpus seed against N JDs through the real `analyze`/`clarify`/`generate` pipeline, then deterministically dedups generated bullets/skills across JDs (Jaccard 0.75) into a gitignored `bootstrap.json` under `evals/fixtures/real/`. **Orchestrates LLM calls; dedup + collation are deterministic.** A `_within` guard refuses to write elsewhere. Not part of the runtime. | CLI — `python -m evals.bootstrap --seed <p> --jd-dir <d>`; `build_bootstrap_document()`, `dedup_texts()`, `run_pipeline_over_jds()` | Production import; duplicating LLM-call logic (reused from `analyzer.py`) |
+| [`evals/annotation.py`](../../evals/annotation.py) | Eval tooling: **deterministic, LLM-free** annotation contract, from `bootstrap.json` to a `--suite real` fixture: a fail-closed validator, the blank `annotations.json` skeleton, and collation into `expected.json` + an improvement brief. A `_within` guard refuses to write outside `evals/fixtures/real/`. Not part of the runtime. | CLI — `python -m evals.annotation --bootstrap <p> --emit-template` / `--collate`; `validate_annotations()`, `build_annotation_template()`, `collate_expected()`, `build_improvement_brief()` | LLM calls; production import; editing prompt constants |
+| [`evals/grounding_signals.py`](../../evals/grounding_signals.py) | Offline grounding scorers (DeBERTa NLI, MiniCheck-FT5) over generated bullets; needs the `[eval-grounding]` extras. Eval-only | `run_grounding_signals()`, `score_nli_bullets()`, `score_minicheck_bullets()` | production import |
+| [`evals/tune.py`](../../evals/tune.py) | Deterministic candidate-vs-baseline delta table for the prompt-tuning loop | `build_delta_table()`, `format_delta_table()`, `load_scores()` | LLM calls |
+| [`evals/corpus_drafting_probe.py`](../../evals/corpus_drafting_probe.py) | A targeted corpus-mode probe for `analyzer.draft_experience_summaries` (A3) | `run()`, `main()` | production import |
+| [`scripts/`](../../scripts/) | Tooling, never imported by the running app. The main groups: the quality gate (`gate.py`), CI and PR helpers (`ci_wait.py`), work tracking (`work_items.py`), the docs toolchain (`doc_registry.py`, `check_doc_*.py`, `docs_move.py`, `project_docs_to_mdx.py`, `wiki_relevance.py`, `wiki_freshness.py`), handoff provenance (`verify_doc_template.py`, `print_handoff_pointer.py`, `check_handoff_pointer.py`), the enforcement core (`enforcement/`), eval and data tooling (`export_corpus_seed.py`, `perf_baseline.py`, `build_vector_index.py`), and screenshots (`capture_screenshots.py`) | CLIs (`python -m scripts.<name>`) | production import |
 
-**Code that crosses modules.** When a route in `app.py` needs to
-call the LLM, it imports the analyzer function. When the analyzer
-needs deterministic processing, it imports from `hardening.py`.
-**These directions never reverse** — `hardening.py` does not
-import `analyzer.py`; `analyzer.py` does not import `app.py`.
+**Code that crosses modules.** When a blueprint route needs to call the LLM, it imports the
+analyzer function. When the analyzer needs deterministic processing, it imports from
+`hardening.py`. **These directions never reverse**: `hardening.py` does not import
+`analyzer.py`, and neither `analyzer.py` nor any blueprint imports `app.py`.
 
 ---
 
@@ -813,7 +835,7 @@ flowchart TD
     DEC -->|yes: frozen, common path| ASM[_assemble_from_frozen_composition<br/>ZERO LLM for résumé body]:::det
     ASM --> SIC[save_iteration_context<br/>writes NEW child file]:::det
     ASM --> RUNDB[persist_corpus_generation<br/>resume md + bullets/titles → run row]:::det
-    DEC -->|no: legacy — Compose skipped,<br/>a known live gap, see prose above| ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
+    DEC -->|no: legacy — direct POST only,<br/>the wizard locks Step 5 until frozen| ACS[_apply_chosen_summary<br/>resolve pin > rec > default]:::det
     ACS --> LLM4{{generate<br/>Sonnet 5}}:::llm
     LLM4 --> SIC
     LLM4 --> RUNDB
@@ -865,9 +887,10 @@ Key invariants:
 - **Freeze is the fork point.** `approved_composition` (written by
   `freeze_approved_composition`, deterministic) is what `/api/generate`
   checks to decide its branch. Present → zero LLM calls for the résumé
-  body. Absent — because the user reached Generate without going through
-  Compose's "Save and continue" — → the legacy Sonnet `generate()` call
-  fires instead. Both are live paths today.
+  body. Absent → the legacy Sonnet `generate()` call fires instead. The
+  wizard can't get there: Step 5 stays locked until the server reports a
+  frozen composition (`static/app.js:7094`). Only a direct
+  `POST /api/generate` reaches the legacy branch (item 67, watching).
 
 ---
 
