@@ -6,10 +6,6 @@
 # RELEASE_CHECKLIST.md Carry-forward ledger). `github-actions` covers the
 # pinned action versions in .github/workflows/*.yml.
 #
-# Latent until the repo is pushed to GitHub and this file is read by
-# Dependabot on the real remote (matches ci.yml's "committed but dormant
-# until pushed" framing — see docs/governance/enforcement.md).
-#
 # `groups:` (chore/dependabot-groups) collapses same-ecosystem minor/patch bumps
 # into one PR per ecosystem per run, per GitHub's documented schema
 # (https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#groups).

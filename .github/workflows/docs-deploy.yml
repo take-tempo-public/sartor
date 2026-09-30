@@ -8,9 +8,7 @@ name: Docs site deploy
 # always a valid deploy path). An OPTIONAL, GUARDED SFTP/SSH auto-push runs
 # on top of that when the four SFTP_* secrets are configured in the repo
 # settings; until then it skips gracefully (exit 0, logged as "not
-# configured") — this workflow is authored now but latent until the repo is
-# pushed to a GitHub remote (same "committed but latent" status as the rest
-# of CI; see docs/governance/enforcement.md). No literal secrets — see
+# configured"). No literal secrets — see
 # docs/dev/docs-site-deploy.md for the setup runbook.
 #
 # Also runs on pull_request (fix/docs-site-typescript-detection) — the build

@@ -271,13 +271,13 @@ names (the charter's extract-don't-restate rule, `docs/governance/charter.md`
 ## Testing and validation
 
 Every change should pass the local validator loop before commit. **`scripts/gate.py`
-(PX-55) is the single definition of "gate green"** — the same four steps in the
-same order run locally, in CI (`.github/workflows/ci.yml`'s `quality` job), and in
-`CONTRIBUTING.md`'s PR checklist, so there is exactly one place that list can drift:
+(PX-55) is the single definition of "gate green"**. Locally, in CI
+(`.github/workflows/ci.yml`'s `quality` job) and in `CONTRIBUTING.md`'s PR checklist, the
+gate is this one command, so the step list lives in exactly one place. Read
+[`scripts/gate.py`](scripts/gate.py) for the steps; don't restate them.
 
 ```bash
 python -m scripts.gate
-# equivalent to, in order: ruff check . / ruff format --check . / mypy . / pytest
 ```
 
 The Playwright **UX** tier (`pytest -m ux`) drives the wizard in a headless Chromium against a threaded live server (LLM-free — analyzer functions are stubbed, the real routes run). It skips when the Chromium binary is absent (`python -m playwright install chromium`), so the default `pytest` stays green everywhere. The shared navigation/selector driver lives in [`ui_pages/`](ui_pages/) — one registry, consumed by the suite **and** `scripts/capture_screenshots.py`.

@@ -61,7 +61,7 @@ Same environment-variable opt-ins as the Claude Code plugin hooks:
 - `CLAUDE_ALLOW_MAIN_EDITS=1` — allow a commit while `HEAD` is `main`/`master`
   (`pre-commit`'s `require-feature-branch` check).
 
-Example: `CLAUDE_CONFIRM_MERGE=1 git merge feature-branch --no-ff -m '...'`.
+Example: `CLAUDE_CONFIRM_MERGE=1 git merge feature-branch -m '...'`. That is for an owner-directed exception only: the normal way onto `main` is a pull request (`main` is branch-protected).
 
 ## Windows
 

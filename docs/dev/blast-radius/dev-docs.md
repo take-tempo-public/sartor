@@ -147,3 +147,28 @@ agents/commands/skills, the tests, `analyzer.py` and `hardening.py`.
   `Branch close-out` in AGENTS.md, and 0 live hits for `merge --no-ff`, "latent until" or
   "four steps".
 - Full `python -m scripts.gate` at close-out, reading the log for 0 RERUN.
+
+---
+
+## Addendum (during C1)
+
+- `scripts/enforcement/guards/block_merge_to_main.py:101`: the block message's hatch example
+  still says `git merge feature-branch --no-ff`. **No change.** The message leads with the
+  PR-only rule (`:95-98`), and the example shows the hatch syntax for an owner-directed
+  exception. The tests (`tests/test_enforcement_core.py:275+`), `hooks/cleanup-plan-on-merge.sh:34`
+  and `tests/test_plan_approval_scoping.py` use `--no-ff` as a real merge form the guard and
+  the witness must catch. That is behavior, not a doc claim.
+- The `agents/git-flow.md:23` claim is narrowed to what the guard's regexes match
+  (`_MERGE_MAIN_RE` / `_PUSH_MAIN_RE`, `block_merge_to_main.py:90-92`). `gh pr merge` is not
+  hook-gated.
+- **Item 127 verification scan.** The scan runs over live `*.md`/`*.yml` from `git ls-files`.
+  - **Excluded:** the record classes, plus the dated plan/design docs `RELEASE_ARC`,
+    `RELEASE_CHECKLIST`, `docs-ia-design` and `handoff-integrity-design`. Those docs describe
+    the defect historically.
+  - **Patterns** (case-insensitive): `git merge --no-ff`, `latent until`, `same four steps`,
+    `four steps below`.
+  - **Result:** 9 hits at `f0e1b5f`, 0 on this branch.
+  - **Widened scope:** the scan also found `latent` wording in `.github/dependabot.yml:9`,
+    `docs-deploy.yml:11` and `scorecard.yml:7`, plus the `ci.yml:51` four-steps comment.
+    All are fixed in the same commit. `gh run list` shows docs-deploy (2026-09-28) and
+    scorecard (2026-09-29) running on `main`.

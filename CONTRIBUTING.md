@@ -30,9 +30,8 @@ pip install -e ".[dev]"
 # rendering. ~150 MB, lives in your OS user cache (NOT in the repo).
 python -m playwright install chromium
 
-# Sanity-check the toolchain — scripts/gate.py (PX-55) is the single definition
-# of "gate green", also run by CI and named in AGENTS.md; equivalent to, in
-# order: ruff check . / ruff format --check . / mypy . / pytest
+# Sanity-check the toolchain. scripts/gate.py is the single definition of
+# "gate green" (CI runs the same script); read it for the step list.
 python -m scripts.gate
 
 # Run the app
@@ -55,8 +54,10 @@ For a deeper architectural tour before opening a PR, read [`docs/dev/architectur
 
 - One branch per change: `kebab-case-description` (e.g. `fix/cover-letter-spacing`, `feat/jd-template-library`)
 - Branch off `main`
-- Merge with `git merge --no-ff` so branch history is preserved
-- Delete the branch after merge
+- Land it through a pull request against `main`. `main` is branch-protected: the required
+  checks must pass, and the only merge method enabled is a merge commit (squash and rebase are
+  off). There is no local `git merge` into `main`.
+- Delete the branch after merge (GitHub deletes the remote copy automatically)
 
 ## Commit messages
 
@@ -83,7 +84,7 @@ This signals collaboration without conflating attribution. The human author rema
 
 Before opening a PR:
 
-- [ ] `python -m scripts.gate` — clean (PX-55's unified wrapper: `ruff check .` + `ruff format --check .` + `mypy .` + `pytest` in one run; the Playwright UX tier runs automatically as part of `pytest` once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so the wrapper stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
+- [ ] `python -m scripts.gate` — clean. [`scripts/gate.py`](scripts/gate.py) is the single definition of what it runs, in what order; the Playwright UX tier runs as one of its steps once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so the wrapper stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
@@ -111,7 +112,7 @@ Hooks should remain deterministic shell. LLM-backed review is reserved for expli
 
 ## Portable enforcement hooks (git-native, optional)
 
-The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, latent until the GitHub remote activates — same posture as the rest of `.github/workflows/ci.yml`).
+The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, a step in `.github/workflows/ci.yml`'s `quality` job, which runs on every pull request).
 
 The git-native hooks are **not activated by cloning the repo** — opt in once per clone:
 
