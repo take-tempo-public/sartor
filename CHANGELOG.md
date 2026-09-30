@@ -2905,6 +2905,41 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
 - **Added: help for the Pipeline tab**, and the Step 6 help now explains Refine and follow-up
   questions. The Pipeline hint no longer calls the tab read-only.
 
+### Epic D, D3 (dev half): the developer guides (`feat/dev-docs`, board 39)
+
+- **Added: a developer front door with a reading order.** `docs/dev/README.md` lays out the
+  dev ladder: install, first green gate, the system map, your first change, why the rules
+  bind, and the maintainer lane. It adds a "where to make a change" table and indexes every
+  developer doc by kind.
+- **Added: three developer references.**
+  - `docs/dev/diagnostics.md` documents each diagnostics-console tab with a flow diagram and a
+    table of its controls, routes, paid calls and run-lock behavior.
+  - `docs/dev/tooling.md` lists every hook, guard, slash command, subagent and skill, and
+    where each one runs.
+  - `docs/dev/maintainer-lane.md` holds the owner's session protocol.
+- **Changed: `AGENTS.md` keeps the code rules; the owner's session protocol moved out.** The
+  branch close-out checklist and the handoff steps now live in `docs/dev/maintainer-lane.md`,
+  which `CLAUDE.md` imports. Outside contributors are no longer routed through it. AGENTS.md
+  shrank from about 32 KB to 23 KB.
+- **Fixed: contradictions in the contributor docs (item 127).**
+  - CONTRIBUTING and the `git-flow` subagent no longer tell anyone to merge locally with
+    `--no-ff`; changes land through a pull request.
+  - CI is no longer described as "latent" (in CONTRIBUTING, three workflow comments and the
+    CI backstop).
+  - The quality gate is no longer described as four steps. The docs now point at
+    `scripts/gate.py`.
+- **Changed: the architecture map matches the code.** The module map now covers the
+  factory's `config.py`, `preflight.py`, demo mode, `web_infra/`, `onboarding/`,
+  `ui_pages/` and the eval tooling. Two stale function names are fixed, and route counts
+  are replaced by the command that recounts them. The diagrams no longer call the legacy
+  Generate path a live gap in the wizard: it is reachable only by a direct request (item 67).
+- **Changed: developer docs trimmed and archived.**
+  - The README's developer sections are now links.
+  - `PRODUCT_SHAPE.md`'s pre-v1.0 sections moved to `docs/dev/archive/PRODUCT_SHAPE-history.md`.
+  - `documentation-architecture.md` now describes the shipped publishing model.
+  - `dashboard/README.md` now says five tabs.
+- **Filed:** item 134, a cost-estimate contradiction in the diagnostics console.
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)
