@@ -110,8 +110,8 @@ would inflate every column
 
 The aggregation helpers are **pure** (record list in, dict out, no I/O except
 [`_load_baseline`](../../../dashboard/routes.py)) so they unit-test without a live
-app `[synthesis]`. They populate four tabbed bento grids of tiles, each opening a
-shared right-hand drawer (Chart.js — vendored at
+app `[synthesis]`. They populate five tabbed bento grids of tiles, each opening an
+inline full-width detail panel ([`dashboard.html:135–137`](../../../dashboard/templates/dashboard.html); Chart.js — vendored at
 [`static/vendor/chart.umd.min.js`](../../../static/vendor/chart.umd.min.js), no
 runtime CDN; lazy-init on open):
 
@@ -363,6 +363,7 @@ otherwise be transparent, breaking the sticky affordance `[synthesis]`.
 
 ## Related
 
+- [`docs/dev/diagnostics.md`](../../dev/diagnostics.md) — canonical per-tab developer reference (routes, paid-run gating, run-lock mechanics).
 - [[code-module-map]] — where `dashboard/`, `blueprints/diagnostics.py`, and the eval tooling sit in the tree.
 - [[eval-harness]] — `evals/runner.py`, whose `results/*.jsonl` this console reads.
 - [[route-surface]] — the Flask routes, including the SSE eval/tune/annotation seam.

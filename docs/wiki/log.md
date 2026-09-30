@@ -2430,3 +2430,29 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   says "two chokepoints".
 - **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
   pages, 0 errors; links OK across 565 files.
+
+## 2026-09-30 — `/wiki-self-update`, scoped (`feat/dev-docs`, Epic D D3 dev half)
+
+- **Mode:** diff, scoped to this branch's own window `f0e1b5f..e836886`. It is **not**
+  checkpoint-advancing: `.last_ingest_sha` stays at `ca17897`.
+- **Sources read:** the 19 wiki-relevant changed paths. They are `AGENTS.md`, `CLAUDE.md`,
+  `CONTRIBUTING.md`, `README.md`, `vision.md`, `dashboard/README.md`,
+  `docs/governance/enforcement.md`, and these in `docs/dev/`: `architecture.md`,
+  `diagnostics.md`, `documentation-architecture.md`, `GROUNDING_METRIC.md`,
+  `maintainer-lane.md`, `nursery.md`, `PRODUCT_SHAPE.md`, `README.md`, `RELEASE_ARC.md`,
+  `RELEASE_CHECKLIST.md`, `system-model.md` and `tooling.md`.
+- **Pages changed (3):**
+  - `code-module-map`: the `ci_wait.py` row now cites `docs/dev/maintainer-lane.md` step 4
+    (the close-out moved out of AGENTS.md). The stale "architecture doc names `scrape_url()`"
+    note is removed, because the architecture module map now names the real symbols.
+  - `diagnostics-console`: four tabs are now five, and the right-hand drawer is now the inline
+    `#detailPanel`. The Related section links the new `docs/dev/diagnostics.md`.
+  - `governance-extraction`: a dated O-2 follow-on under the AGENTS.md-shape decision.
+- **Verified no-edit** for the other 16 sources. The wiki references them by name only (D5),
+  or cites sections that didn't change. A grep for every stale claim this branch fixed found
+  no other page.
+- **Auditor catch rate:** 0 of 3 pages (0 DRIFTED, 0 UNSUPPORTED; author ≠ auditor on every
+  page).
+- **Structural check:** no new `[[backlinks]]`, no pages created, index unchanged.
+  `scripts/check_doc_links.py` is OK across 574 files, and `wiki_freshness.py` is OK (19
+  changed, under the 75-file threshold).

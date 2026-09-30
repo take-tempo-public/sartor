@@ -93,6 +93,15 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
    an explicit canonical pointer to `docs/governance/charter.md` (**F-gov-05**; RELEASE_ARC
    §Phase 4.7, the AGENTS.md-shape sub-decision) `[synthesis]`.
 
+   **Follow-on (2026-09-30, Epic D sprint D3, owner decision O-2):** The owner's session
+   protocol (handoff intake, escape-hatch/marker rules, branch close-out checklist steps 0–5)
+   moved to [`docs/dev/maintainer-lane.md`](../../dev/maintainer-lane.md) so outside
+   contributors stop at AGENTS.md; CLAUDE.md imports the lane file next to `@AGENTS.md`
+   (CLAUDE.md line 18); AGENTS.md retains its code rules inline + a ["Branch close-out
+   checklist"](../../../AGENTS.md#branch-close-out-checklist) pointer section so rules stay
+   raw-readable for non-Claude agents `[synthesis]` (`docs-ia-design.md` O-2, resolved
+   2026-09-28).
+
 ## Working model (W-1/W-2) + amendment ceremony — landed 2026-07-23
 
 The charter grew past its original C-0…C-6 clause set: `charter.md` now carries
