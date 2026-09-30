@@ -1,1 +1,4 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/docs-split.md", "session": "d3d2e857-5e71-497d-8e08-a2079eee5c9c", "branch": "epic/d-docs-ia", "commit": "c52fc06", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-29T06:47:56Z", "fingerprint": "5f4580cf9162"}
+{"event": "compacted", "session": "d3d2e857-5e71-497d-8e08-a2079eee5c9c", "branch": "feat/user-docs", "trigger": "unknown", "ts": "2026-09-29T22:14:56Z"}
+{"event": "compacted", "session": "d3d2e857-5e71-497d-8e08-a2079eee5c9c", "branch": "feat/user-docs", "trigger": "unknown", "ts": "2026-09-30T02:49:58Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/user-docs.md", "session": "d3d2e857-5e71-497d-8e08-a2079eee5c9c", "branch": "feat/user-docs", "commit": "a47ea16", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-30T05:01:14Z", "fingerprint": "845dc5c35b32"}
