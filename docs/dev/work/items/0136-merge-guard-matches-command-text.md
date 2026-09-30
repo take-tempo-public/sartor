@@ -31,6 +31,14 @@ A fix has to keep that property, for example by matching only a `git` token in c
 position, the way `verify-binary-on-path` parses leading binaries. It must not loosen into
 missing a real merge. Low priority.
 
+**This is a recurrence.** The owner's session memory recorded "`block_merge_to_main` matches
+command TEXT" as a live trap on 2026-08-04. Epic branches were named `epic/a-app-core` and
+so on to avoid a `main` substring. Under C-11 a recurrence obligates a mechanism. **None was
+authored on `feat/dev-docs`:** the fix changes a safety guard's matching behavior, which is
+outside a docs sprint's scope. The current failure is also in the safe direction: it
+over-blocks. That gap was stated to the owner at close-out. Until then, the workaround is to
+put multi-line scripts in a file and run them by path.
+
 ## Updates
 
 ### 2026-09-30 — filed on `feat/dev-docs`
