@@ -196,7 +196,7 @@ inline.
   the FLAG/WATCH/AFFIRM disposition taxonomy, the read-only tool
   grant *as* the enforcement) live in its own frontmatter/body —
   read there rather than restated here.
-- **Skills** — [`skills/`](skills/): `context-structure-review`.
+- **Skills** — [`skills/`](skills/): `context-structure-review`, `doc-writing`.
 
 They load namespaced once the `sartor-tools` marketplace +
 `enabledPlugins` entry in [`.claude/settings.json`](.claude/settings.json)

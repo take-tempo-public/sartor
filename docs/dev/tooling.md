@@ -120,4 +120,5 @@ convention".
 
 | Skill | Where | For |
 |---|---|---|
+| `doc-writing` | [`skills/doc-writing/`](../../skills/doc-writing/) | writing or revising a doc in the order the docs IA requires, ending with the doc lints |
 | `context-structure-review` | [`skills/context-structure-review/`](../../skills/context-structure-review/) | auditing a repository's markdown and agent-instruction files against context-engineering practice (see [`skills/README.md`](../../skills/README.md)) |

@@ -2969,6 +2969,11 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   C-12 are now `###` headings, so a citation can link straight to a clause, and the charter
   says `Sartor` in sentences. No clause's wording or meaning changed beyond the product name.
   A dated note in the charter records this.
+- **Added: a `doc-writing` skill** (`skills/doc-writing/`). It walks a doc through the order
+  the docs IA requires: tier and type, ladder rung, header, cite instead of restating,
+  registration, then the doc lints until no block remains. It names each rule's home rather
+  than restating it. Its evaluation plan (with-skill against baseline, scored by the lints)
+  is written but not yet run.
 - **Filed:** item 137 (review the pinned models and call settings for performance and cost)
   and item 138 (the Settings drawer has no help bubble).
 
