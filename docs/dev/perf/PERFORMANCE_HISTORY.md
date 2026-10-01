@@ -24,7 +24,7 @@
 
 ## TL;DR — the headline
 
-sartor.'s critical path is a chain of LLM calls (analyze → clarify → generate).
+Sartor's critical path is a chain of LLM calls (analyze → clarify → generate).
 `analyze` started as a **90-second opaque wall**. Over four weeks we cut the core
 pipeline **~27% in wall-clock and ~20% in cost**, turned the worst wait into a
 live progress experience, and **recovered the most important quality rubric from
@@ -209,7 +209,7 @@ application reached Compose's freeze step or not:
 **Mandatory caveats — read before citing either row:**
 
 - **Single-user traffic.** All 15 runs are the owner's own usage (`robert`
-  persona), pre-1.1-tag — sartor. has had no other users yet. This is a
+  persona), pre-1.1-tag — Sartor has had no other users yet. This is a
   founding baseline, not a population measurement. **Re-measure once the 1.1
   tag opens real user traffic**, and revisit whether n is still this small.
 - **n=13 (frozen) supports a p50, not a p95.** Era 2's 84.6 s p95 rested on

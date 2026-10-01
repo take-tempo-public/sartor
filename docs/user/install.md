@@ -12,6 +12,7 @@
 > [`docs/user/walkthrough.md`](walkthrough.md) (screen-by-screen guide + flow diagrams),
 > [`SECURITY.md`](../../SECURITY.md) (what stays on your machine),
 > [`docs/dev/architecture.md`](../dev/architecture.md) (developer view).
+> **Type:** how-to
 
 ---
 
@@ -19,7 +20,8 @@
 
 - **Python 3.11 or newer.** Verify with `python --version` (or
   `python3 --version` on macOS/Linux).
-- **An Anthropic API key.** Get one at
+- **An Anthropic API key.** An API (application programming interface) key is the
+  credential that lets Sartor call Claude. Get one at
   [console.anthropic.com](https://console.anthropic.com/). See
   [What an application costs](#what-an-application-costs) below.
   You do **not** need one to try Sartor — see
@@ -598,7 +600,7 @@ then reload). One-time fix.
 
 **"Generation fails with 'AI generation response was malformed
 after retry.'"**
-Rare. The LLM occasionally emits raw control characters in its
+Rare. The LLM (large language model) occasionally emits raw control characters in its
 JSON response — the parser tolerates the common case, but new
 failure modes occasionally surface. If you hit this on current
 `main`, file an issue with the `detail:` field attached.

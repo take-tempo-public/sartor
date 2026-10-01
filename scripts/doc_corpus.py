@@ -66,6 +66,18 @@ class DocCorpus:
         self.root = root
         self._text: dict[str, str] = {}
         self._unfenced: dict[str, list[tuple[int, str]]] = {}
+        self._in_memory = False
+
+    @classmethod
+    def from_texts(cls, texts: dict[str, str], root: Path = REPO_ROOT) -> DocCorpus:
+        """An in-memory corpus: `texts` is the whole tracked tree. For seeded-violation tests
+        and for running the lints on a draft, without touching git or the disk."""
+        corpus = cls(root)
+        corpus._text.update(texts)
+        corpus.__dict__["index_paths"] = sorted(texts)
+        corpus.__dict__["tracked"] = frozenset(texts)
+        corpus._in_memory = True
+        return corpus
 
     def _git(self, *args: str) -> list[str]:
         out = subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
@@ -109,6 +121,8 @@ class DocCorpus:
         """The file's text, read once. Raises OSError like `Path.read_text`."""
         text = self._text.get(path)
         if text is None:
+            if self._in_memory:
+                raise FileNotFoundError(path)
             text = (self.root / path).read_text(encoding="utf-8")
             self._text[path] = text
         return text
@@ -139,6 +153,8 @@ class DocCorpus:
             return "file"
         if path == "" or path in self.tracked_dirs:
             return "dir"
+        if self._in_memory:
+            return None
         full = self.root / path
         if full.is_file():
             return "file"

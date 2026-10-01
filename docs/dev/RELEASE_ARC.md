@@ -2112,9 +2112,9 @@ moved **pre-public** into v1.0.8 and v1.0.7 respectively, so v1.1.0 ships with b
 ## Hard constraints (all phases)
 
 - Branch before any code edit
-- Quality gate before every commit: `ruff check . + mypy . + pytest`
+- Quality gate before every commit: `python -m scripts.gate` (steps: `scripts/gate.py`)
 - PROMPT_VERSION bumped in same commit as any prompt change
-- No LLM calls in `hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`
+- No LLM calls in `hardening.py`, `parser.py`, `generator.py`, `scraper.py`, `json_resume.py`, `corpus_to_json_resume.py`, `pdf_render.py`, `docx_to_persona_html.py`
 - New dependency = `pyproject.toml` + CHANGELOG entry (Pydantic is the only new dep in this plan)
 - Security pattern on every new Flask route: `_safe_username() + _within() + secure_filename()`
 - If a hook blocks you: surface the hook name + error to the user, do not bypass, wait for authorization

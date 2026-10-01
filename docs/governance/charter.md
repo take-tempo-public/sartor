@@ -1,6 +1,6 @@
 # Constitution — sartor.
 
-> **Purpose:** the single canonical home for sartor.'s *binding* governance —
+> **Purpose:** the single canonical home for Sartor's *binding* governance —
 > the constitutional clauses (C-0…C-12), the defaults (D-1…D-7), the parallel-session
 > working model (W-1/W-2), and the amendment ceremony. Each rule is stated **once**,
 > here; the descriptive docs that used to carry it now keep their prose and point back.
@@ -18,7 +18,7 @@
 
 ## What this is
 
-This is the constitution sartor. is built and audited against. It graduated
+This is the constitution Sartor is built and audited against. It graduated
 (Sprint 7.2, v1.0.7) from the SIGNED Product Charter that governed the 2026-06
 product-excellence review
 ([`../dev/reviews/2026-06-product-excellence/00-interview/product-charter.md`](../dev/reviews/2026-06-product-excellence/00-interview/product-charter.md))
@@ -61,7 +61,9 @@ as a gate still owed); a clause resting on LLM behavior is written as
 mechanism-and-effort. The flat "won't-cross" list in `vision.md` is replaced by this
 enforceability tiering — **F-vision-01**.*
 
-**C-0 — Claims discipline.** Categorical claims are made only where a deterministic
+### C-0 — Claims discipline
+
+Categorical claims are made only where a deterministic
 test enforces them by construction (network egress, module boundary, shipped-template
 properties). Where a claim depends on LLM behavior, describe mechanisms and effort,
 never absolutes. *[src: charter C-0 (signed). The LLM-behavior absolutes flagged by
@@ -71,7 +73,9 @@ reworded to mechanism-and-effort in v1.0.6 (**PX-09**): `vision.md` goal 1 + "Gr
 mechanism, not a guarantee", and the wiki overview / `llms.txt` copy. Cited as
 corrected; not re-fixed.]*
 
-**C-1 — Local and yours.** sartor. is a local tool under the control of a single
+### C-1 — Local and yours
+
+Sartor is a local tool under the control of a single
 unauthenticated user; all user artifacts stay on the user's disk, never uploaded; there
 is no hosted service. The loopback bind is the construction that makes this categorical
 true. *[src: charter C-1; `../../vision.md` "Local-first, single-tenant"; `../../SECURITY.md`
@@ -84,7 +88,9 @@ neither pinned nor asserted — **F-sec-02**, `app.py app.run()` had no `host=`;
 `SERVER_NAME` a silent-flip vector) — see [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)
 Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
 
-**C-2 — Egress.** Outbound traffic is confined to an enumerable destination set;
+### C-2 — Egress
+
+Outbound traffic is confined to an enumerable destination set;
 because it is enumerable, this clause is machine-verifiable. The sanctioned classes are
 exactly two: **(a)** the configured LLM provider, and **(b)** the optional
 profile/website scrape when the user supplies LinkedIn/portfolio URLs. JDs are pasted
@@ -100,7 +106,9 @@ phantom third JD-URL egress class corrected to the two-class enumeration (**PX-0
 huggingface.co) is a sanctioned power-user opt-in under D-6, not a third egress class —
 **F-sec-10**.]*
 
-**C-3 — Grounding mechanisms; grounded synthesis is the feature.** sartor. works to
+### C-3 — Grounding mechanisms; grounded synthesis is the feature
+
+Sartor works to
 keep the LLM grounded in real experience through stated mechanisms — grounding rules in
 the prompts (with worked OK/NOT-OK examples), clarifying questions that extend ground
 truth, human review at each step, corpus approval of LLM-generated bullets, and a
@@ -116,14 +124,18 @@ union as of **PX-14** (**F-eval-04**, WEAKENED AFFIRM — cited as corrected). A
 over-suppression is uninstrumented in eval data today (**F-eval-01**) — tracked in
 [`metrics.md`](metrics.md) §2.]*
 
-**C-4 — The candidate stays in control.** Human review gates sit along the pipeline;
+### C-4 — The candidate stays in control
+
+Human review gates sit along the pipeline;
 the user can edit anything before using it, and the tool produces documents rather than
 submitting them. *[src: charter C-4; `../../vision.md` goal 3 + P8 Human Gates;
 `../system-model.md` "Production". Affirmed surfaces to protect: keyboard
 bullet-reorder alternative (**F-expa11y-07**), live-region announcements
 (**F-expa11y-08**), manual-promote annotation contract (**F-eval-06**).]*
 
-**C-5 — Everything sartor. ships is ATS-safe.** All bundled templates are
+### C-5 — Everything Sartor ships is ATS-safe
+
+All bundled templates are
 single-column, plain-bullet, standard-font; non-ATS templates are retired. Users who
 want non-ATS output edit the document they produced. This categorical is enforceable on
 shipped-template properties (a deterministic domain under C-0). *[src: charter C-5;
@@ -132,7 +144,9 @@ want non-ATS output edit the document they produced") is named in `vision.md` go
 of this branch's PX-27 edit (**F-vision-07**). The shipped-template property gate is
 forward-sequenced to v1.1.0 — see [`enforcement.md`](enforcement.md) §A.]*
 
-**C-6 — The deterministic–LLM boundary.** Deterministic modules make no LLM calls; one
+### C-6 — The deterministic–LLM boundary
+
+Deterministic modules make no LLM calls; one
 module (`analyzer.py`) owns all LLM calls. *[src: charter C-6; `../../vision.md`
 "Deterministic where possible"; `../../AGENTS.md` "Architecture at a glance" + "What NOT
 to do"; `../system-model.md` "Production" + "the one law". The boundary **holds by
@@ -143,7 +157,9 @@ no import-lint/boundary test fails on a regression. **Gate shipped — v1.0.8 Sp
 (**F-arch-01** / **F-qe-rel-04**) — see [`../dev/RELEASE_CHECKLIST.md`](../dev/RELEASE_CHECKLIST.md)
 Sprint 8.3a. Owner-approved factual reconcile, 2026-07-09, witness CW-102.]*
 
-**C-7 — Evidence before mechanism.** A causal claim is a claim, and therefore falls under
+### C-7 — Evidence before mechanism
+
+A causal claim is a claim, and therefore falls under
 C-0. Reading code and finding a plausible mechanism is a **hypothesis**, not an observation.
 Four binding rules follow. (1) For a defect you cannot reproduce on demand, **the first commit
 on the branch is the instrument or the reproduction — never the fix.** (2) A commit that
@@ -166,7 +182,9 @@ This clause exists because the *advisory* form of it (§5a/5b/5e) was read and o
 failure mode is an agent judging that the rule does not apply this time, which is precisely
 what a rule may not leave to judgment.]*
 
-**C-8 — Durable before deep.** The context window is **not a durable store**. A fact that cost
+### C-8 — Durable before deep
+
+The context window is **not a durable store**. A fact that cost
 work to learn — a measurement, a falsified hypothesis, an observed artifact — is written to its
 durable home **in the turn it is learned**, never deferred to close-out; the pre-close sweep
 *reconciles*, it must not *discover*. Compaction is an unannounced **data-loss event**: after
@@ -191,7 +209,9 @@ PreCompact hook; both in
 gated by [`../../tests/test_evidence_gate.py`](../../tests/test_evidence_gate.py). C-8 is the
 structural complement to C-7: C-7 makes the evidence exist, C-8 makes it survive.]*
 
-**C-9 — Corrupted or fingerprint-mismatched input is a blocked gate.** A handoff (or other
+### C-9 — Corrupted or fingerprint-mismatched input is a blocked gate
+
+A handoff (or other
 durable artifact transferred between sessions) that fails structural, verbatim, or fingerprint
 validation is not trusted on faith and not silently reconstructed — it is surfaced as the
 consuming session's **first output**, and the session **stops** until a human resolves it. This
@@ -214,7 +234,9 @@ advisory at launch (design decision iv,
 here as an honest gap under this clause's own claims discipline (C-0), not silently upgraded to
 "enforced."]*
 
-**C-10 — Enumerate consumers before changing a contract.** Before implementing any change
+### C-10 — Enumerate consumers before changing a contract
+
+Before implementing any change
 to a **schema, a shared contract, or a widely-consumed helper**, its consumers are enumerated
 **grep-complete** — the whole tree, and every name the thing goes by (symbol, string form,
 re-export, raw-SQL column, template selector) — and **each site is decided and documented
@@ -250,7 +272,9 @@ motivates this clause sits in that blind spot. Neither gap is silently upgraded 
 the evidence exist, C-8 makes it survive the context window, C-9 makes its carrier
 verifiable, C-10 makes the **scope** of a change knowable before it is made.]*
 
-**C-11 — Enforcement before discipline; the default response is a gate.** **A constraint
+### C-11 — Enforcement before discipline; the default response is a gate
+
+**A constraint
 with no mechanism that fails closed is not a constraint** — it is a prediction about the
 model's future good behavior, and this project has now measured that prediction and found it
 false. The **first** time a failure mode is recognized as a **recurrence** — a second
@@ -285,7 +309,9 @@ those mechanisms force the question to be asked and an artifact to be named; nei
 verify that the artifact is real. That is a bound on the enforcement, not a licence to
 narrate past it.]*
 
-**C-12 — Declare the gap; never fill it.** Information the session no longer holds is
+### C-12 — Declare the gap; never fill it
+
+Information the session no longer holds is
 surfaced as **missing** before any action depends on it. Reconstructing a lost fact from
 plausibility and then proceeding as though it were sourced is a **C-0 violation**, and it is
 the mechanism underneath most C-7 failures: a filled gap becomes a premise, the premise gets
@@ -440,7 +466,7 @@ clause existed to back it — this authoring makes those citations resolve. **F-
 
 **W-2 — Governance is constitution-building.** This document *is* the extraction
 vehicle: one canonical home the descriptive layer (`vision.md`, `AGENTS.md`,
-`SECURITY.md`, and the rest) is audited against — does what sartor. built still match
+`SECURITY.md`, and the rest) is audited against — does what Sartor built still match
 what this charter says? The operator-stack triad — memory supplies context, governance
 directs posture, the operator LLM occupies that space — is the extraction architecture;
 the doc-grounded assistant receives its governance interface at build time. A dedicated
@@ -468,6 +494,13 @@ Amending a **constitutional clause (C-0…C-12)** requires, in order:
 4. once the compliance-witness subagent runs against the change, a flag in its next
    drift report — **witness, not approver**: it records the amendment, it does not
    gate the merge.
+
+*[src: editorial change, 2026-10-01, owner-directed, from `feat/docs-assets-enforcement`
+(Epic D, D4): each clause C-0…C-12 now has its own `###` heading, so a citation can
+deep-link to it and the doc lints can check clause references (docs IA design §5.8); and
+the product name in sentences is `Sartor`, not the `sartor.` wordmark (style guide §1,
+owner decision O-1). No clause's wording or meaning changed beyond the product name.
+Recorded in `CHANGELOG.md`; owner sign-off at the Epic D PR.]*
 
 **Defaults (D-1…D-7) and the working model (W-1/W-2)** change in normal branch flow
 with a single written rationale line — no full ceremony; they are named "binding until

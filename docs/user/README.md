@@ -6,6 +6,7 @@
 > they coach. No technical knowledge assumed.
 > **Authoritative for:** the order of the user guides. Each guide is the home of its own
 > content.
+> **Type:** reference
 
 Start at the top and stop when you have what you need.
 

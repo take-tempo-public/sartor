@@ -8,7 +8,7 @@ Sartor answers one question, honestly:
 Acronyms used throughout: **JD** = job description; **LLM** =
 large language model (Anthropic's Claude, here); **ATS** =
 applicant tracking system (résumé-parsing software employers run
-on incoming files).
+on incoming files); **API** = application programming interface.
 
 > **Purpose:** the high-level guide to what Sartor is, what
 > it isn't, and the self-imposed constraints that shape every
@@ -25,6 +25,7 @@ on incoming files).
 > (module map + diagrams), [`AGENTS.md`](AGENTS.md) (operational
 > contract for AI agents and human contributors), [`README.md`](README.md)
 > (user-facing overview).
+> **Type:** explanation
 
 ---
 
@@ -65,7 +66,7 @@ Three goals, in order of priority:
    the LLM can't invent.
 
 2. **ATS-safe output by default.** Most applications are
-   parsed by software before any human sees them. sartor.
+   parsed by software before any human sees them. Sartor
    ships templates that are single-column, plain-bullet, in
    standard fonts, with no tables / text boxes / icons / sidebars.
    Templates that *aren't* ATS-safe are retired — even when
@@ -157,7 +158,7 @@ Per-file responsibility:
 
 - `hardening.py`, `parser.py`, `generator.py`, `scraper.py`,
   `json_resume.py`, `corpus_to_json_resume.py`,
-  `pdf_render.py` — **no LLM calls allowed**. These are the
+  `pdf_render.py`, `docx_to_persona_html.py` — **no LLM calls allowed**. These are the
   deterministic core: file I/O, keyword extraction, ATS
   format checks, document rendering, schema transformations.
 - `analyzer.py` — the only module that calls the LLM. Every

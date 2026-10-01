@@ -3,12 +3,13 @@
 > **Purpose:** the product front door — what Sartor is, who it's for, and where to go deeper. Also the home page the hosted docs site renders.
 > **Audience:** `user` — the one place all three audiences (job seeker · coach · developer) meet; routes developers onward to the dev-tier homes.
 > **Authoritative for:** the product positioning, the three-audience cumulative ladder, and at-a-glance orientation + the documentation map. Everything else is **cited**; the linked canonical home governs on conflict.
+> **Type:** explanation
 
 > Tailor a résumé — and an optional cover letter — to **one** specific job, on your own machine, without inventing anything about the candidate.
 
-**Sartor** is a local-first web app that takes a single job description and a person's real career history, then produces a tailored draft — by *discovering* what's true about them (including real experience left off the résumé, surfaced through a short interview in their own words) and *phrasing* it for the posting. It runs on your laptop and calls the Claude API for the reasoning; nothing else leaves your machine. It produces documents — it never submits an application or sends an email.
+**Sartor** is a local-first web app that takes a single job description and a person's real career history, then produces a tailored draft — by *discovering* what's true about them (including real experience left off the résumé, surfaced through a short interview in their own words) and *phrasing* it for the posting. It runs on your laptop and calls Anthropic's Claude API (application programming interface) for the reasoning; nothing else leaves your machine. It produces documents — it never submits an application or sends an email.
 
-The core discipline: **the LLM discovers and phrases — it does not invent.** No fabricated titles, numbers, or dates. A grounding check in the prompt plus a deterministic "witness" metric measure how much of the output traces back to real material. That's a *mechanism and a constraint*, **not** a guarantee a language model can never hallucinate — the full rationale lives in [`vision.md`](vision.md).
+The core discipline: **the LLM (large language model) discovers and phrases — it does not invent.** No fabricated titles, numbers, or dates. A grounding check in the prompt plus a deterministic "witness" metric measure how much of the output traces back to real material. That's a *mechanism and a constraint*, **not** a guarantee a language model can never hallucinate — the full rationale lives in [`vision.md`](vision.md).
 
 [![CI](https://img.shields.io/github/actions/workflow/status/take-tempo-public/sartor/ci.yml?branch=main&label=CI)](https://github.com/take-tempo-public/sartor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -69,7 +70,7 @@ However you found this repo, pick your lane — each points into the doc set abo
 
 ## What Sartor does
 
-Three things work against a candidate. A padded history makes claims that fall apart in an interview. A résumé an automated screener (ATS) can't read never reaches a human. And keeping a tailored copy per application turns into document management — hunting through old files for the one experience point that fits this posting.
+Three things work against a candidate. A padded history makes claims that fall apart in an interview. A résumé that an applicant tracking system (ATS), the automated screener employers run, can't read never reaches a human. And keeping a tailored copy per application turns into document management — hunting through old files for the one experience point that fits this posting.
 
 Sartor addresses all three. It treats a career history as a **corpus**, not a pile of files: sourced from the résumés you already have, kept as structured, searchable experience, and grown by clarifying interview questions that surface real work no résumé recorded. Every tailored résumé is drawn from that corpus:
 
@@ -286,7 +287,7 @@ Local-first: nothing leaves your computer except the Claude API calls (and the o
 At-a-glance snapshot — the authoritative schedule is [`docs/dev/RELEASE_ARC.md`](docs/dev/RELEASE_ARC.md) (+ [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md)):
 
 - ✅ **Shipped:** the tailoring pipeline, two-point clarifying interview, the compounding corpus (cross-application memory + human-gated curation), multiple persistent candidate profiles, grounding check + witness metric, ATS-safe templates, human gates, `.md`/`.docx`/`.pdf`, the recall substrate + doc-grounded avatar, and the eval/test stack.
-- 🟡 **Governance — extracted & live.** The constitution ([charter](docs/governance/charter.md)), the read-only compliance-witness auditor, and the enforcement hooks are shipped. So are the C-1 loopback-bind test and the C-6 import-boundary lint (v1.0.8), the required UX/a11y/PDF CI job and the E-2 supply-chain badges (v1.1.0). **Still open for v1.1.0:** the C-5 template-property assertions. *Snapshot; canonical: the gate-status table in [`enforcement.md`](docs/governance/enforcement.md).*
+- 🟡 **Governance — extracted & live.** The constitution ([charter](docs/governance/charter.md)), the read-only compliance-witness auditor, and the enforcement hooks are shipped. So are the loopback-bind test behind the charter's local-only clause and the import-boundary lint that keeps the deterministic modules free of LLM calls (v1.0.8), the required UX/a11y/PDF CI job and the E-2 supply-chain badges (v1.1.0). **Still open for v1.1.0:** the template-property assertions behind the ATS-safe clause. *Snapshot; canonical: the gate-status table in [`enforcement.md`](docs/governance/enforcement.md).*
 - 🚧 **In the codebase:** the static-embedding semantic search tier (local, no hosted DB).
 - 🔭 **Roadmap:** outcome-weighted recommendations · master files per role · provider-agnostic / local models.
 - ⛔ **Out of scope by design:** multi-user / multi-tenant (the threat model is a single trusted local user).

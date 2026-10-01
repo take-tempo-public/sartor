@@ -140,7 +140,7 @@ see [Coaching several people](coaching.md).
 Click a card to open its details:
 - the job title and company (both editable), and the job description;
 - each version you generated ("Iteration 1", "Iteration 2", …), with its résumé, any cover
-  letter, and an **ATS** result: Sartor's own check that screening software can read the file
+  letter, and an **ATS** (applicant tracking system) result: Sartor's own check that screening software can read the file
   back (see [Templates](templates.md#the-ats-rules-every-template-should-follow));
 - a **Notes** box for your own notes about the application;
 - **Resume in wizard**, which reopens the application where you left off, with your analysis,
@@ -162,5 +162,5 @@ Status changes are yours to record; Sartor never submits anything for you.
 now you can only undo this before closing that window**: the **Restore** button appears in its
 place, but once you close the details, a retired application no longer appears anywhere in the
 app. The confirmation message mentions a "Show retired" option, which Pipeline doesn't have
-yet. Retire only applications you're sure you won't need to reopen. (Tracked as a known issue:
-[item 131](../dev/work/items/0131-retired-application-unrecoverable-from-pipeline.md).)
+yet. Retire only applications you're sure you won't need to reopen. (Tracked as a
+[known issue](../dev/work/items/0131-retired-application-unrecoverable-from-pipeline.md).)

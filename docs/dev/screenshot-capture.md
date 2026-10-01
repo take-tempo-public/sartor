@@ -83,7 +83,7 @@ when Claude does the insertion pass.
   panels, and any visible Human Gate #1 indicator.
 - **Insertion site:** README.md, "The wizard at a glance" §,
   after the ASCII block (line ~109).
-- **Alt-text draft:** *"sartor.'s six-step wizard with Step 1
+- **Alt-text draft:** *"Sartor's six-step wizard with Step 1
   active. The wizard rail at the top shows step progression;
   the right panel shows the analysis output that the user
   reviews at Human Gate #1 before deciding whether to enter

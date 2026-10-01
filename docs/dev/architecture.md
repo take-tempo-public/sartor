@@ -940,8 +940,8 @@ without these guards. Don't bypass it.
 
 ## Test discipline
 
-`python -m scripts.gate` (ruff check + ruff format --check + mypy +
-pytest, the same steps CI runs) is the minimum bar and must pass before
+`python -m scripts.gate` (its steps are listed once, in
+[`scripts/gate.py`](../../scripts/gate.py); CI runs the same script) is the minimum bar and must pass before
 any commit lands. The eval harness (`python evals/runner.py --suite
 synthetic`) is label-gated CI — ~$0.30-0.40 per full run under Sonnet 5
 (down from ~$1.50 pre-Sonnet-5; see `evals/TUNING_LOG.md`).

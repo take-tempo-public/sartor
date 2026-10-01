@@ -1,4 +1,4 @@
-# Metrics & rubrics — sartor. governance
+# Metrics & rubrics — Sartor governance
 
 > **Purpose:** the quantified success criteria `vision.md` states in prose (made
 > testable), the deterministic product metrics that ride every eval, and the per-domain
@@ -25,7 +25,7 @@ gap they close: the machinery has been measured on synthetic fixtures, never a r
 corpus (F-eval-02; F-qe-rel-07 WEAKENED — already a named, sequenced, release-blocking
 task set, so this *tracks* the work).
 
-**SC-1 — The 10-application matrix.** ≥10 real applications submitted via sartor. with
+**SC-1 — The 10-application matrix.** ≥10 real applications submitted via Sartor with
 **zero release-blocking bugs**, spanning, as a coverage matrix: ≥3 with a clarify round
 · ≥2 iterating after first generate · ≥2 cover letters · ≥2 distinct templates · both
 output formats · ≥1 prior-app reuse. The Application rows + `parent_context_path` chains
@@ -46,7 +46,7 @@ full clarify-inclusive first run **~15 min**, quality evidenced by a one-time
 a standing SLA). Both unbuilt (F-expa11y-10 WATCH).
 
 **SC-4 — Explainability artifacts (v1.0.7).** Three shipped: the user-facing "how
-sartor. grounds, clarifies, and tunes" wiki page; a **lay metrics legend** in
+Sartor grounds, clarifies, and tunes" wiki page; a **lay metrics legend** in
 diagnostics; the planned diagnostics improvements. The lay legend and lay-register
 console copy are the open work (F-expa11y-04 / F-eval-03; S-3 is the owner's weakest
 area); ACCESSIBILITY.md as an honest-status page is the adjacent E-2 artifact

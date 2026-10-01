@@ -2950,6 +2950,25 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   checker on a seeded set of 18 link shapes. The link check went from 6.52 s to 1.98 s (best
   of seven interleaved runs, same machine; the medians, 9.08 s and 3.29 s, were inflated by
   machine load).
+- **Added: the doc lints from the docs IA design (§5).** `scripts/doc_lints.py`, gated through
+  `tests/test_doc_lints.py`, which gives every rule a seeded violation it must catch:
+  - every user-tier doc carries a Diátaxis `**Type:**`;
+  - published docs write `Sartor` in sentences, keeping `sartor.` for the wordmark alone;
+  - a live doc that lists the deterministic modules, the subagents or the gate's tools must
+    list all of them or cite the code, and `docs/dev/tooling.md` must match the tree;
+  - user-tier docs avoid the banned words, expand LLM/JD/ATS/SSE/API on first use, and
+    carry no internal tracker IDs;
+  - no `[[wikilink]]` outside the wiki, and every charter clause has its own heading.
+
+  A widened single-home check runs as a report only (`--report`).
+- **Changed: the docs now pass those lints.** Six user docs gained a `**Type:**` line. The
+  README, install guide, iterating guide and vision expand their acronyms and no longer show
+  tracker IDs. Seventeen sentences say `Sartor`. Two module lists and two gate descriptions
+  were brought in line with the code or replaced with a pointer to it.
+- **Changed (editorial, owner-directed): each charter clause has its own heading.** C-0 to
+  C-12 are now `###` headings, so a citation can link straight to a clause, and the charter
+  says `Sartor` in sentences. No clause's wording or meaning changed beyond the product name.
+  A dated note in the charter records this.
 - **Filed:** item 137 (review the pinned models and call settings for performance and cost)
   and item 138 (the Settings drawer has no help bubble).
 

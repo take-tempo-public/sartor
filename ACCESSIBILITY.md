@@ -10,6 +10,7 @@
 > limits. This is **not** a conformance claim and **not** a release gate.
 > Sibling docs: [`SECURITY.md`](SECURITY.md) (threat model),
 > [`CONTRIBUTING.md`](CONTRIBUTING.md) (workflow).
+> **Type:** reference
 
 ## What this page is (and is not)
 

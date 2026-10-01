@@ -28,8 +28,9 @@ Two tests already check part of it:
 - [`tests/test_enforcement_coverage.py`](../../tests/test_enforcement_coverage.py) checks
   that every guard on disk is classified.
 
-No test yet checks this page against the tree. That lint is planned for Epic D sprint D4
-(docs IA design §5.5).
+[`tests/test_doc_lints.py`](../../tests/test_doc_lints.py) checks this page against the
+tree, section by section and in both directions (`doc_lints.lint_tooling_roster`): a name
+missing from a table, or a row whose file is gone, fails the gate.
 
 ## Claude Code hooks
 

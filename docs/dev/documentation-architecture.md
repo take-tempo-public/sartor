@@ -1,4 +1,4 @@
-# Documentation architecture — how sartor.'s docs are organized & published
+# Documentation architecture — how Sartor's docs are organized & published
 
 > **Purpose:** the documentation *publishing model*: the layered source chain, how the
 > governed markdown is projected to the hosted Fumadocs site, the merge=publish gates that
@@ -103,6 +103,7 @@ required `quality` job:
 | link-integrity + cite-resolution | a relative link or `#anchor` is dead at HEAD, or the file a `path:line` / `path:SYMBOL` cite names doesn't exist (an existence check; lines and symbols aren't resolved) | [`check_doc_links.py`](../../scripts/check_doc_links.py) ([`test_doc_links.py`](../../tests/test_doc_links.py)) |
 | frontmatter + audience | a published doc lacks Purpose/Audience/Authoritative-for, or its Audience omits its registry tier | [`check_doc_frontmatter.py`](../../scripts/check_doc_frontmatter.py) ([`test_doc_frontmatter_gate.py`](../../tests/test_doc_frontmatter_gate.py)) |
 | single-home (D5) | two published docs carry the same long paragraph (a heuristic, documented as one) | [`check_doc_single_home.py`](../../scripts/check_doc_single_home.py) ([`test_doc_single_home_gate.py`](../../tests/test_doc_single_home_gate.py)) |
+| doc lints (design §5) | a user-tier doc lacks its Diátaxis `**Type:**`, uses a banned word, an unexpanded acronym or a tracker ID; a published doc uses `sartor.` mid-sentence; a live doc's list of deterministic modules, subagents or gate steps drifts from the code; `docs/dev/tooling.md` drifts from the tree; a `[[wikilink]]` sits outside the wiki; a charter clause lacks its heading | [`doc_lints.py`](../../scripts/doc_lints.py) ([`test_doc_lints.py`](../../tests/test_doc_lints.py)) |
 | DOC-STATUS reconciliation | a `DOC-STATUS` marker is malformed, or its trigger has shipped without the claim being reconciled | [`test_doc_status_gate.py`](../../tests/test_doc_status_gate.py) |
 | wiki-freshness | the wiki's checkpoint is staler than the threshold against the PR's merge ref | [`wiki_freshness.py`](../../scripts/wiki_freshness.py) ([`test_wiki_freshness_gate.py`](../../tests/test_wiki_freshness_gate.py)); a local push to `main` is also checked by `block-merge-to-main` |
 

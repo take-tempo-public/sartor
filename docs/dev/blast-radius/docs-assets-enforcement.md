@@ -196,3 +196,72 @@ deleted-but-indexed targets failing. Reading and fence-splitting 618 files takes
 check-ignore`. This branch first checks the filesystem on a miss, then `git check-ignore`. A
 link to a new file that hasn't been `git add`-ed yet therefore stays valid, as it always
 was. Pure lexical-then-check-ignore would have turned it into a false failure.
+
+## Addendum — step 2 owner decision (2026-10-01)
+
+**Charter edits are editorial (owner: "Editorial: do both, note it").** Lint 5.4's fix
+changes lowercase `sartor.` to `Sartor` in `docs/governance/charter.md` (6 lines) and
+`docs/governance/metrics.md` (3 lines). Lint 5.8 gives each C-clause its own `###` heading.
+Neither changes a clause's meaning. They land on this branch with one dated
+`[src: editorial, owner-directed]` note in the charter and a CHANGELOG line. The owner signs
+off at the epic PR. Added consumer rows:
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 21 | `docs/governance/charter.md:64-288` (13 clause openers) | update | `**C-n — Title.** text` becomes `### C-n — Title` plus the text. Inbound `charter.md#…` anchors are re-checked by `check_doc_links` in the same commit. |
+| 22 | `docs/governance/charter.md`, `metrics.md` wordmark lines | update | `sartor.` → `Sartor` in sentences (style guide; O-1). |
+
+## Addendum — step 2: the §5 lints (2026-10-01)
+
+`scripts/doc_lints.py` + `tests/test_doc_lints.py` (27 tests: each gated lint on the real
+tree, plus one seeded violation per row 5.2–5.9).
+
+**Day-one findings on the real tree, before any doc fix** (first full run): 49 blocks.
+Three classes turned out to be lint bugs, found by reading each hit, and were fixed in the lint:
+- an acronym expansion wrapped onto the next line wasn't counted (vision, walkthrough-example);
+- inline code spanning a line break wasn't seen as code (`RELEASE_CHECKLIST.md:4380`);
+- double-backtick spans were mis-paired (`docs-ia-design.md:328`);
+- `<!-- -->` inside inline code was read as a comment.
+
+Two over-reaches were narrowed:
+- 5.5 compared against prose with inline code stripped, so it never saw backticked module
+  names. It now reads raw unfenced text.
+- 5.5's gate-step check matched gate-run *logs* in long DONE items. It now needs a
+  gate-description marker (`quality gate`, `scripts.gate`, `gate.py`, `the gate runs/is`)
+  and counts per list item, table row or paragraph.
+
+YAML frontmatter is skipped (an agent's `description:` isn't rendered prose).
+
+True violations fixed, by row:
+- **5.3:** `**Type:**` added to 6 user docs, using the D1 design's types.
+- **5.4:** `sartor.` → `Sartor` in 17 sentences across charter, metrics, EXTRACTION,
+  RELEASE_CHECKLIST, documentation-architecture, PERFORMANCE_HISTORY, screenshot-capture and
+  vision.
+- **5.5:** `vision.md` and `RELEASE_ARC.md` listed 7 of 8 deterministic modules;
+  `architecture.md` and `RELEASE_ARC.md` restated 4 and 3 of the gate's 5 tools. Each now
+  lists all of them or cites `scripts/gate.py`.
+- **5.6:** "sanity check" in walkthrough-example.
+- **5.7:** 9 acronym first uses expanded (README, install, iterating, vision); 5 tracker IDs
+  removed from rendered user text (README governance line, coaching, iterating).
+- **5.8:** 13 charter clause headings (owner decision above); 2 memory `[[…]]` refs in
+  RELEASE_CHECKLIST.
+
+**Reviewed exceptions** (`doc_lints._REVIEWED_ENUMERATIONS`, each with its reason in code;
+`test_reviewed_exceptions_still_match_something` fails if one goes stale):
+- the handoff template's module list and its gate line (item 135, owner);
+- epic-a design's consumer list;
+- two historical gate-run logs;
+- two historical `C-0…C-6` ranges;
+- the quoted old UI string in docs-ia-design.
+
+**Perf.** The first version ran 9.46 s under cProfile: 5.3 s in 190k per-member regex
+searches. One precompiled alternation per set, plus cheap prefilters, brought the lint to
+1.96 s in-test, and the whole module from 20.4 s to 10.8 s on the same loaded machine.
+
+**Stated limits (C-0):**
+- 5.5 catches a list missing at most two members; a shorter list reads as prose about a
+  subset and is not checked.
+- The gate-step check needs the description marker.
+- 5.6's `just` + imperative uses a closed verb list.
+- 5.3 checks that the type is present, not that it is right.
+- 5.9 is report-only.

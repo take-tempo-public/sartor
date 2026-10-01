@@ -83,5 +83,5 @@ Rejection** or **Withdrew**) and add notes. The details are described in
 
 There is **no way to delete a person in the app today**. The only thing you can remove is a
 single application, by retiring it (and read the caveat about retiring in
-[Iterating](iterating.md#retiring-an-application) first). Tracked as
-[item 133](../dev/work/items/0133-no-way-to-delete-a-candidate-profile.md).
+[Iterating](iterating.md#retiring-an-application) first). Tracked as a
+[known issue](../dev/work/items/0133-no-way-to-delete-a-candidate-profile.md).

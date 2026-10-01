@@ -133,7 +133,8 @@ The charter's **C-0** applies to sentences, not just code:
 - Human contributors: [`CONTRIBUTING.md`](../../CONTRIBUTING.md) points here.
 - AI agents: [`AGENTS.md`](../../AGENTS.md) points here — read this before writing
   docs or UI copy.
-- There is **no automated gate** for voice (`ruff` can't hear tone). The wordmark
-  rule and the no-disparagement rule are the two mechanically checkable parts; if
-  either regresses in practice, a `scripts/` lint is the natural next step, not a
-  stricter prose review.
+- The mechanically checkable parts of this guide are gated by
+  [`scripts/doc_lints.py`](../../scripts/doc_lints.py): the wordmark rule, the
+  banned-word and soft-word lists, acronym expansion and tracker IDs on the user tier.
+  The rest of the voice is not gated (`ruff` can't hear tone), and neither is the
+  no-disparagement rule.

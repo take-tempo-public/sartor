@@ -12,6 +12,7 @@
 > The canonical step definitions live in
 > [`docs/user/walkthrough.md`](walkthrough.md); the canonical pipeline
 > behavior lives in [`docs/dev/architecture.md`](../dev/architecture.md).
+> **Type:** tutorial
 
 Acronyms used (same as the walkthrough): **JD** = job description;
 **LLM** = large language model (Anthropic's Claude); **ATS** =
@@ -255,7 +256,7 @@ JD reads cross-functional ("partner with SRE and data teams") —
 Modern's blue-accent header feels more right.
 
 > **Lesson:** template choice is a signal. Page count is a
-> sanity check on Compose.
+> quick check on Compose.
 
 ---
 
