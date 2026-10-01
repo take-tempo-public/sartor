@@ -2940,6 +2940,19 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   - `dashboard/README.md` now says five tabs.
 - **Filed:** item 134, a cost-estimate contradiction in the diagnostics console.
 
+### Epic D, D4: docs assets and enforcement (`feat/docs-assets-enforcement`, board 39)
+
+- **Changed: the doc checks share one corpus pass, and the link check is faster.** A new
+  `scripts/doc_corpus.py` lists tracked files once, reads each doc once, and answers whether
+  a link target exists from the tracked set, touching the disk only on a miss.
+  `check_doc_links`, `check_doc_frontmatter` and `check_doc_single_home` now read through it.
+  Their output is unchanged: identical on the real tree, and identical to the old link
+  checker on a seeded set of 18 link shapes. The link check went from 6.52 s to 1.98 s (best
+  of seven interleaved runs, same machine; the medians, 9.08 s and 3.29 s, were inflated by
+  machine load).
+- **Filed:** item 137 (review the pinned models and call settings for performance and cost)
+  and item 138 (the Settings drawer has no help bubble).
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

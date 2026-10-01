@@ -106,6 +106,10 @@ required `quality` job:
 | DOC-STATUS reconciliation | a `DOC-STATUS` marker is malformed, or its trigger has shipped without the claim being reconciled | [`test_doc_status_gate.py`](../../tests/test_doc_status_gate.py) |
 | wiki-freshness | the wiki's checkpoint is staler than the threshold against the PR's merge ref | [`wiki_freshness.py`](../../scripts/wiki_freshness.py) ([`test_wiki_freshness_gate.py`](../../tests/test_wiki_freshness_gate.py)); a local push to `main` is also checked by `block-merge-to-main` |
 
+The doc checks read through one shared corpus,
+[`doc_corpus.py`](../../scripts/doc_corpus.py): one `git ls-files`, each file read once,
+link targets answered from the tracked set.
+
 **Freshness nuance:** CI *checks* `.last_ingest_sha` against HEAD; it never runs the LLM
 `/wiki-ingest` (cost, and manual by SCHEMA). A session runs the bounded `/wiki-self-update` at
 close-out or pre-tag. The gate measures how stale the checkpoint is, not how stale each page

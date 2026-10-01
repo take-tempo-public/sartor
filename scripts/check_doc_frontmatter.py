@@ -37,6 +37,7 @@ import re
 import sys
 from pathlib import Path
 
+from doc_corpus import DocCorpus
 from doc_registry import PUBLISHED, PUBLISHED_PATHS, Entry, is_record
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -70,21 +71,22 @@ class MissingHeader:
         return f"{self.path} -> missing {', '.join(self.missing)}"
 
 
-def check_frontmatter(entries: tuple[Entry, ...] = PUBLISHED) -> list[MissingHeader]:
+def check_frontmatter(
+    entries: tuple[Entry, ...] = PUBLISHED, corpus: DocCorpus | None = None
+) -> list[MissingHeader]:
     """Every registered doc must be a non-record, carry all three header fields near its top,
     and open its Audience with tier token(s) that include its registry tier."""
+    corpus = corpus or DocCorpus(REPO_ROOT)  # lazy: reads only the registered files
     violations: list[MissingHeader] = []
     for entry in sorted(entries, key=lambda e: e.path):
         if is_record(entry.path):
             violations.append(MissingHeader(entry.path, ["registered, but it is a record path"]))
             continue
-        abs_path = REPO_ROOT / entry.path
         try:
-            text = abs_path.read_text(encoding="utf-8")
+            head = corpus.head(entry.path, _HEADER_SCAN_CHARS)
         except OSError as exc:
             violations.append(MissingHeader(entry.path, [f"unreadable: {exc}"]))
             continue
-        head = text[:_HEADER_SCAN_CHARS]
         missing = [marker for marker in _REQUIRED_MARKERS if marker not in head]
         if "**Audience:**" in head:
             m = _AUDIENCE_RE.search(head)

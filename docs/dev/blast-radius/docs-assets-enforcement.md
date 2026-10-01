@@ -140,3 +140,59 @@ re-checked per step below.
   `href`, and Tab reaching the link. axe smoke stays green.
 - A gate test asserts every `learnMore` slug maps to a `doc_registry` entry's projected route,
   so a missed or renamed page fails closed.
+
+---
+
+## Addendum — step 1 baseline (2026-10-01, `092e544`)
+
+Measured before any checker edit. Script: five subprocess runs per checker, wall time,
+`time.perf_counter()` (session scratch `time_checkers.py`).
+
+```
+check_doc_links:       min 5.40s median 6.07s (n=5, exit 0)  578 tracked markdown files
+check_doc_frontmatter: min 0.32s median 0.42s (n=5, exit 0)  39 published docs
+check_doc_single_home: min 0.71s median 0.85s (n=5, exit 0)  39 published docs
+sum of medians: 7.35s
+```
+
+`python -m cProfile -s cumtime scripts/check_doc_links.py` (8.51 s under the profiler):
+`check_links` 7.90 s cumulative; `Path.resolve` 2,718 calls, 3.35 s (`nt._getfinalpathname`
+2.78 s); `Path.exists` 5,675 calls, 2.32 s (`nt.stat` 2.11 s); `read_text` 648 calls, 0.67 s;
+`_iter_unfenced_lines` 0.56 s. So about 5.7 of 8.5 s is per-link filesystem resolution, the
+cost §5's lexical resolution removes.
+
+The D1 baseline (`docs-ia-design.md:63-69`) was 3.51 s total. Today's figure is higher on a
+larger tree (578 files) and a loaded machine; the before/after comparison uses only today's
+numbers, same machine, same session.
+
+## Addendum — step 1 after (2026-10-01): corpus refactor measured
+
+**Behavior preserved.**
+- `check_doc_links`, `check_doc_frontmatter` and `check_doc_single_home` print byte-identical
+  output before and after on the real tree (`diff` of saved stdout, all three exit 0).
+- Differential run on a throwaway worktree: the `092e544` link checker and the new one gave
+  **identical output** on a seeded doc with 18 link shapes. Shapes: missing file, existing
+  file, good and bad target anchor, good and bad same-file anchor, a dir with and without a
+  slash, a missing dir, an untracked-but-present file, a gitignored target, a
+  deleted-but-indexed file, a case mismatch, a path escaping the repo, a non-md fragment, an
+  anchor on a dir, `./`, a backslash path. Both exited 1 with the same 7 violations.
+- `tests/test_doc_links.py` + `tests/test_docs_move.py`: 11 passed.
+
+**Timing, interleaved A/B** (old = `092e544` version, new = this branch, alternating runs,
+same tree, same moment). The machine was under heavy load (one old run took 39.85 s), so min
+is the fairest figure:
+
+```
+old: min 6.52s median 9.08s max 39.85s (n=7)
+new: min 1.98s median 3.29s max 16.96s (n=7)
+```
+
+New profile (3.18 s under cProfile): the two `git` calls take 0.83 s, of which `git ls-files
+--deleted` is about 0.32 s. It stats every index entry, and it is the price of keeping
+deleted-but-indexed targets failing. Reading and fence-splitting 618 files takes 1.09 s.
+`Path.resolve` / `Path.exists` no longer appear.
+
+**One deliberate departure from the §5 text.** §5 says a lexical miss falls back to `git
+check-ignore`. This branch first checks the filesystem on a miss, then `git check-ignore`. A
+link to a new file that hasn't been `git add`-ed yet therefore stays valid, as it always
+was. Pure lexical-then-check-ignore would have turned it into a false failure.
