@@ -100,12 +100,13 @@ access plane) — referenced, not restated (D5).
 | Source it describes | Tier |
 |---|---|
 | code (`*.py`, `static/`, `templates/`), `docs/dev/`, `evals/`, `dashboard/` | `dev` |
-| `README.md`, `docs/user/` (the user-tier docs), `vision.md`, wiki `overview.md` | `user` |
+| `README.md`, `docs/user/` (the user-tier docs), `vision.md`, `ACCESSIBILITY.md`, wiki `overview.md` | `user` |
 
-[`overview.md`](overview.md) (the front door) plus the five Sprint-6.5 education guides
-under `pages/` (`using-sartor`, `tailoring-a-resume`, `career-corpus`,
-`resume-templates`, `candidate-memory`) are the `user`-tier pages — authored INTO the
-wiki by `feat/education-tailor-corpus-wizard`. Infra files (`index.md`, `log.md`, this
+[`overview.md`](overview.md) (the front door) and every page under `pages/` whose header
+says ``**Audience:** `user` `` are the `user`-tier pages. The tag on each page is the single
+source, and `blueprints/assistant.py` (`_wiki_audience`) reads it, so this file does not
+list them. The first five were the Sprint-6.5 education guides, authored into the wiki by
+`feat/education-tailor-corpus-wizard`. Infra files (`index.md`, `log.md`, this
 `SCHEMA.md`, `.last_ingest_sha`) are wiki meta, not retrieval Units, and are **not**
 stamped.
 
