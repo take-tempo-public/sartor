@@ -208,8 +208,11 @@ written. Collate is deterministic and makes no model call.
 
 ## When the console changes
 
-- A new tab or control gets a `_DASH_HELP` entry first. Then add it to the tab's table
-  here, with its route and whether it is paid or locked.
+- A new tab or control gets a `_DASH_HELP` entry first, with a `learnMore` target: this
+  page's slug and the tab's section, such as `dev-diagnostics#quality`.
+  `tests/test_help_learn_more.py` fails on an entry without one, or on a target that
+  doesn't resolve. Then add the control to the tab's table here, with its route and whether
+  it is paid or locked.
 - A new paid route belongs on `diagnostics_bp`, with the localhost check and, for the
   button, a `confirm()` plus a run-lock `acquire()` whose result is checked.
 - Diagram regeneration and screenshots are handled by the docs asset pass (Epic D, D4). The

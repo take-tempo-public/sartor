@@ -16,14 +16,29 @@
 //   window.CB_HELP_SEEN_PREFIX        — the localStorage key prefix.
 //   window.cbHelpSeen(id)             — seam read  (storage-safe, false on throw).
 //   window.cbMarkHelpSeen(id)         — seam write (storage-safe, no-op on throw).
+//   window.CB_DOCS_BASE               — the published docs site's /docs/ root.
+//   window.cbDocsUrl(learnMore)       — 'slug#anchor' -> a docs-site URL.
 //   window.cbOpenHelpModal(entry, triggerEl)
-//        — opens #helpModal for an ALREADY-RESOLVED { title, body } entry (each
+//        — opens #helpModal for an ALREADY-RESOLVED { title, body, learnMore? } entry
+//          (learnMore = a docs-site page slug, optionally '#anchor'; it renders
+//          #helpModalLearnMore, hidden when absent) (each
 //          page resolves it from its own registry). Esc closes, Tab focus-trap,
 //          [data-help-dismiss] click-away, aria-expanded toggle, focus restored
 //          to triggerEl (null-safe). No-op if #helpModal or entry is missing.
 // ============================================================================
 (function () {
   var PREFIX = 'cb_help_seen:';
+  // The published docs site (docs/dev/docs-site-deploy.md). A page's slug is
+  // scripts/project_docs_to_mdx.py:make_slug of its repo path; 'index' is the README.
+  // tests/test_help_learn_more.py checks every learnMore slug + anchor against the
+  // publication registry, so a link to a page that doesn't exist fails the gate.
+  var DOCS_BASE = 'https://sartor-docs.taketempo.com/docs/';
+
+  function cbDocsUrl(learnMore) {
+    var parts = String(learnMore).split('#');
+    var url = DOCS_BASE + (parts[0] === 'index' ? '' : parts[0] + '/');
+    return parts[1] ? url + '#' + encodeURIComponent(parts[1]) : url;
+  }
 
   // localStorage seam — wrapped so a disabled/throwing store (private mode,
   // quota, file:// origin) never breaks the host. An unreadable store reads as
@@ -50,8 +65,20 @@
     var bodyEl = document.getElementById('helpModalBody');
     if (titleEl) titleEl.textContent = entry.title;
     if (bodyEl) bodyEl.textContent = entry.body;
+    var linkEl = document.getElementById('helpModalLearnMore');
+    if (linkEl) {
+      if (entry.learnMore) {
+        linkEl.setAttribute('href', cbDocsUrl(entry.learnMore));
+        linkEl.classList.remove('hidden');
+      } else {
+        linkEl.removeAttribute('href');
+        linkEl.classList.add('hidden');
+      }
+    }
 
-    var focusable = modal.querySelectorAll('button');
+    // The link joins the Tab cycle only when it is shown (an <a> without href
+    // isn't focusable).
+    var focusable = modal.querySelectorAll('button, a[href]');
     var closeBtn = document.getElementById('btnCloseHelp');
     var dismissers = Array.prototype.slice.call(
       modal.querySelectorAll('[data-help-dismiss]')
@@ -86,6 +113,8 @@
   }
 
   window.CB_HELP_SEEN_PREFIX = PREFIX;
+  window.CB_DOCS_BASE = DOCS_BASE;
+  window.cbDocsUrl = cbDocsUrl;
   window.cbHelpSeen = cbHelpSeen;
   window.cbMarkHelpSeen = cbMarkHelpSeen;
   window.cbOpenHelpModal = cbOpenHelpModal;

@@ -2984,6 +2984,13 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
 - **Filed:** item 139 (the screenshot script leaves its demo user behind after a failed run)
   and item 140 (generated text can echo internal bullet ids such as `b180`, and the cover
   letter makes up its date; both are visible in two of the new screenshots).
+- **Added: every help bubble links to its page in the docs.** All 16 wizard bubbles and all
+  39 diagnostics-console bubbles now end with "Read more in the docs ↗", which opens the
+  matching section of the published docs in a new tab. A test resolves every link against
+  the published pages and their headings, and fails if a bubble has no link.
+- **Fixed: the in-app assistant can cite the accessibility page in user answers.**
+  `ACCESSIBILITY.md` is a user-tier page, but the assistant treated it as developer-only. A
+  test now checks every published page's tier against the assistant's rule.
 - **Filed:** item 137 (review the pinned models and call settings for performance and cost)
   and item 138 (the Settings drawer has no help bubble).
 
