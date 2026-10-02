@@ -115,6 +115,8 @@ A sequence of small, inspectable stages — full sequence + diagrams in [`docs/d
                      Optional: + generate a cover letter against the finalized résumé
 ```
 
+![Step 1 of Sartor's wizard: the pasted job description and Analyze button above, and the analysis below it, with keyword coverage and a numbered list of where to focus.](docs/screenshots/readme_hero_wizard-step1-filled.png)
+
 **Two required human gates** bracket the work; the clarification interviews between them are optional and cheap. **Discover, don't invent:** output is grounded in the union of (corpus + clarifying answers + the candidate's own typed edits); a grounding check and a deterministic witness metric measure that it holds — see [`generation-and-grounding`](docs/wiki/pages/generation-and-grounding.md) and [`docs/dev/GROUNDING_METRIC.md`](docs/dev/GROUNDING_METRIC.md).
 
 ---

@@ -116,9 +116,12 @@ def write_priya_docx(path: Path) -> None:
     doc.add_paragraph("priya.sharma@example.com · linkedin.com/in/priya-sharma")
 
     doc.add_heading("Experience", level=1)
+    # Month-level dates: generation refuses a role without start/end months
+    # (blueprints/generation.py:_month_block_response). Months match the rows earlier
+    # runs stored for the demo user, so a re-import merges instead of duplicating.
 
     doc.add_heading("Helix Logistics — Senior Backend Engineer", level=2)
-    doc.add_paragraph("2023 – Present")
+    doc.add_paragraph("Jan 2023 – Present")
     for bullet in [
         "Built and maintained Python services on the order-routing platform serving 4M+ daily shipments.",
         "Owned the order-events pipeline; helped migrate it off AWS SQS to Kafka over a six-month dual-write/cutover phase.",
@@ -132,7 +135,7 @@ def write_priya_docx(path: Path) -> None:
         doc.add_paragraph(bullet, style="List Bullet")
 
     doc.add_heading("Northwind Foods — Backend Engineer", level=2)
-    doc.add_paragraph("2019 – 2023")
+    doc.add_paragraph("Jan 2019 – Jan 2023")
     for bullet in [
         "Built Postgres-backed inventory and pricing services in Python and FastAPI.",
         "Tuned Postgres query plans and indexing for the catalog service; improved key endpoint throughput 3x.",
@@ -146,7 +149,7 @@ def write_priya_docx(path: Path) -> None:
         doc.add_paragraph(bullet, style="List Bullet")
 
     doc.add_heading("Carver Robotics — Junior Backend Engineer", level=2)
-    doc.add_paragraph("2017 – 2019")
+    doc.add_paragraph("Jan 2017 – Jan 2019")
     for bullet in [
         "Wrote Python services for the robot fleet's command-and-control layer.",
         "Built REST APIs in Flask for the operator console.",

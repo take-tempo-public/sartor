@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 35 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 38
+**Open 37 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 38
 
 ## Open
 
@@ -34,6 +34,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **133** -- There is no way to delete a candidate profile (`user`) -- No route, UI or script removes a user. Product decision: wanted, and when?
 - **136** -- block-merge-to-main blocks commands that only contain merge-to-main text (grep patterns, heredoc bodies) (`agent`) -- _MERGE_MAIN_RE searches raw command text, so a grep pattern or heredoc line holding the phrase blocks.
 - **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Short review: are the pinned models and call settings (thinking, caching, routing) still the best performance/cost fit?
+- **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Prompts hand bullets to the model as id="b{id}"; the model echoes the handle into prose. Letter date is ungrounded.
 
 ## Blocked
 
@@ -143,6 +144,7 @@ IA research + design; full user/dev docs split; user + dev content; screenshots,
 - **134** -- Diagnostics console: the Tuning smoke cost estimate contradicts the Quality smoke estimate (`agent`) -- Tuning smoke says ~$0.20 for TWO suite runs; Quality smoke says ~$0.35-0.40 for ONE. At most one is right.
 - **135** -- Copies of the close-out protocol drift from docs/dev/maintainer-lane.md: the template's step 1 and charter.md:206's step number (`user`) -- Template close-out step 1 says ruff+mypy+pytest (gate runs 6); charter:206 cites step 4 for a step-5 rule.
 - **138** -- The Settings drawer has no help bubble (`user`) -- _initHelp attaches only to .cb-panel; Settings is a drawer, so it gets no (i) bubble or Learn more link.
+- **139** -- capture_screenshots leaves its demo user behind: cleanup skips on failure, and DB rows always persist (`agent`) -- cleanup() runs only on success; demo DB rows are never removed, so a stale import blocks later runs.
 
 ### 40 -- Final March epic E - the public v1.1.0 cut (blocked)
 

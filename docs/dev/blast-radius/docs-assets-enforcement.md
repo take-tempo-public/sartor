@@ -265,3 +265,104 @@ searches. One precompiled alternation per set, plus cheap prefilters, brought th
 - 5.6's `just` + imperative uses a closed verb list.
 - 5.3 checks that the type is present, not that it is right.
 - 5.9 is report-only.
+
+## Addendum — step 7: assistant audience gating (2026-10-01, before the edit)
+
+**Observed.** Each `doc_registry.PUBLISHED` entry was checked against
+`blueprints.assistant._path_audience` (a one-off script, output:
+`MISMATCH ACCESSIBILITY.md user Audience.DEV`). That was the only mismatch among 39 entries.
+`ACCESSIBILITY.md` is user-tier in the registry, but the assistant classes it `dev`, so a
+user-mode turn can never cite the accessibility page. The direction is safe (it under-
+rather than over-discloses), but it is drift.
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 23 | `blueprints/assistant.py:101` (`_USER_DOC_NAMES`) | update | Add `ACCESSIBILITY.md`. Consumers: `GitGrepSource` (`:200`) and `VectorSource` (`:211`) take the resolver as a function, so neither signature changes. |
+| 24 | `tests/test_assistant_path_audience.py` | update | Registry as oracle: every `PUBLISHED` entry resolves to its tier (fails closed on the next drift). Edge cases: `docs/user/README.md`, `docs/dev/README.md`, `docs/work/`, `docs/ux/`, backslash paths. |
+| 25 | `docs/wiki/SCHEMA.md:100-107` (gated) | update | The user-tier row gains `ACCESSIBILITY.md`, and the stale "five Sprint-6.5 education guides" sentence is corrected (row 19). |
+
+Left as is, documented: a user-tagged wiki page reached through git-grep or the vector
+index resolves `dev` (path rule), while `WikiSource` serves it as `user`. This is
+conservative. The wiki tier is the canonical way user turns reach those pages.
+
+## Addendum — step 4: screenshot capture, run 1 failed (2026-10-01)
+
+**Observed.** `python -m scripts.capture_screenshots --headless` (owner-approved) captured 8
+of 10 shots, then failed at step 9:
+
+```
+playwright._impl._errors.TimeoutError: Page.wait_for_selector: Timeout 120000ms exceeded.
+  - waiting for locator("#outputPreviewBlock") to be visible
+    223 × locator resolved to hidden <div id="outputPreviewBlock" class="live-preview-block hidden">
+```
+
+The app log shows `2026-10-01 14:35:19,030 [werkzeug] INFO:  * Restarting with stat`, which
+lines up with this session's edit to `blueprints/assistant.py` (step 7). The debug reloader
+restarted the server during the in-flight Generate call. **The cause was the session's own
+concurrent edit, not a product defect.** Run 2 started with no `.py` edits allowed until it
+finished.
+
+Side finding: the script's `cleanup()` runs only on success (it is not in a `finally`), so the
+failed run left `configs/demo.config`, `resumes/demo/` and `output/demo/` behind. Run 2
+reuses them.
+
+**Correction (run 2, same day): the reloader explanation above was a hypothesis, and it is
+falsified.** Run 2 had no `.py` edits and failed the same way:
+
+```
+- waiting for locator("#outputPreviewBlock") to be visible
+  222 × locator resolved to hidden <div id="outputPreviewBlock" class="live-preview-block hidden">
+```
+
+`logs/llm_calls.jsonl` shows that in **neither** run was a generation call ever made. The
+last logged call in each run is Step 4's (run 1 `2026-10-01T21:33:28Z`, run 2 `21:47:32Z`).
+In run 1 the reload came at 21:35:19, almost two minutes into the 120 s wait. So the Generate
+click never started a generation request. What stops it is **not yet observed**.
+
+**Run 3 (instrumented, owner-approved; scratch wrapper around `run_step5_and_6`, capture script
+unchanged).** Events recorded at the Generate click:
+
+```
+state-before-generate  lastContextPath=C:\Dev\sartor\output\demo\context_20261001_151538.json  btnDisabled=false
+request   POST http://localhost:5000/api/generate/stream
+response  422  http://localhost:5000/api/generate/stream
+console   error "Failed to load resource: the server responded with a status of 422 (UNPROCESSABLE ENTITY)"
+```
+
+- **Falsified:** "`lastContextPath` is empty and the alert guard fires". It was set, and the
+  request went out.
+- **Observed:** the server refuses the generate request with a 422.
+- **Not yet observed:** why the server refuses it (the response body).
+
+**Root cause, observed** (run 3's failure screenshot, the app's own Error-detail dialog):
+
+```
+Stage:   Generate
+User:    demo
+When:    2026-10-01T22:16:23.982Z
+Message: 3 role(s) need month precision before generating: Helix L…
+```
+
+That text comes from `blueprints/generation.py:_month_block_response`, the month-precision
+hard block on both generate routes. The capture script's synthetic Priya résumé
+(`scripts/capture_screenshots.py`, built at `:105-180`) gives year-only dates, so Generate
+is refused before any LLM call. Steps 1–4 have no such gate. `capture-smoke.yml` runs only
+to Step 1 (`--smoke`), so CI could not have caught it: it is the "zero automated coverage"
+class the script's docstring already records.
+
+**Fix, owner-directed (2026-10-01).**
+- **Fixture.** The capture script's synthetic Priya résumé gets month dates ("Jan 2023 –
+  Present", "Jan 2019 – Jan 2023", "Jan 2017 – Jan 2019"). The owner confirmed month dates
+  are the enforced rule.
+- **Demo data.** The demo candidate (id 5) held 6 roles: 17–19 with months (`2023-01`…)
+  and 26–28 as year-only duplicates (`2023`…) from a later import. Owner: "if they are
+  dupes then keep the ones with months and drop the ones without". `db/resume.sqlite` was
+  backed up first (SQLite online backup, to session scratch). Rows 26–28 were deleted with
+  `PRAGMA foreign_keys=ON` (cascade: 22 bullets, 3 titles). Verified afterwards: no
+  `application_bullet` referenced them (0 rows), 0 orphan bullets, `foreign_key_check`
+  clean. The demo now has exactly rows 17–19. The fixture's "Jan" months match them, so
+  the next import merges instead of duplicating.
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 26 | `scripts/capture_screenshots.py` (synthetic docx dates) | update | Consumers: the script itself and `.github/workflows/capture-smoke.yml` (Step 1 only, no Generate, so it is unaffected). |

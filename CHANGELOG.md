@@ -2974,6 +2974,16 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   registration, then the doc lints until no block remains. It names each rule's home rather
   than restating it. Its evaluation plan (with-skill against baseline, scored by the lints)
   is written but not yet run.
+- **Changed: all ten documentation screenshots are regenerated (item 9).** They had still
+  shown the old product name. The README now opens its "How it works" section with the
+  Step 1 screenshot.
+- **Fixed: the screenshot script can get past Generate again.** Its synthetic résumé used
+  year-only dates, which the month-precision rule refuses, so every full run stopped at
+  Step 5. The monthly smoke run stops after Step 1 and never saw it. The fixture now
+  carries months. The screenshot runbook now leads with the scripted path.
+- **Filed:** item 139 (the screenshot script leaves its demo user behind after a failed run)
+  and item 140 (generated text can echo internal bullet ids such as `b180`, and the cover
+  letter makes up its date; both are visible in two of the new screenshots).
 - **Filed:** item 137 (review the pinned models and call settings for performance and cost)
   and item 138 (the Settings drawer has no help bubble).
 

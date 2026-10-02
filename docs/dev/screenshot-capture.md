@@ -14,6 +14,21 @@
 
 ---
 
+## The automated path (use this)
+
+`scripts/capture_screenshots.py` does everything below in one run. It builds the synthetic
+Priya résumé, creates the `demo` user, drives the wizard headless and writes all 10 PNGs to
+`docs/screenshots/`:
+
+```bash
+python app.py                                        # in another shell
+python -m scripts.capture_screenshots --headless     # billed: a full wizard pass with the key in .api_key
+```
+
+Stop the app afterwards. The script removes the demo user's files on success, but not its
+database rows, so a later run merges into them (item 139). The manual steps below are the
+fallback and the record of what each shot should show.
+
 ## Pre-capture setup
 
 Before starting, set the app and environment to a clean, neutral
@@ -81,8 +96,7 @@ when Claude does the insertion pass.
   from a completed analyze call against the Vertica JD.
 - **Show:** full app viewport including wizard rail, both
   panels, and any visible Human Gate #1 indicator.
-- **Insertion site:** README.md, "The wizard at a glance" §,
-  after the ASCII block (line ~109).
+- **Insertion site:** README.md, "How it works" §, after the ASCII block.
 - **Alt-text draft:** *"Sartor's six-step wizard with Step 1
   active. The wizard rail at the top shows step progression;
   the right panel shows the analysis output that the user
@@ -97,7 +111,7 @@ when Claude does the insertion pass.
   highlighted, with the **+ Create user** affordance visible at
   the bottom of the dropdown.
 - **Insertion site:** docs/user/install.md, "First-run walkthrough"
-  §, after step 1 (line ~184).
+  §, after step 1.
 - **Alt-text draft:** *"The user picker dropdown in the
   top-right corner. Each user has their own corpus, settings,
   and output history."*
@@ -110,7 +124,7 @@ when Claude does the insertion pass.
   the shot *before* importing the synthetic résumé so it shows
   the empty state.
 - **Insertion site:** docs/user/walkthrough.md, "Setup (before the
-  wizard)" §, after "Import your existing résumé" (line ~144).
+  wizard)" §, after "Import your existing résumé".
 - **Alt-text draft:** *"The Career Corpus tab in its empty
   state. The + Import résumé button parses an existing résumé
   into the structured corpus (one Haiku call, ~$0.02)."*
@@ -123,10 +137,10 @@ when Claude does the insertion pass.
   right panel should be empty / placeholder. The Analyze button
   should be prominent.
 - **Insertion site:** docs/user/walkthrough.md, "Step 1 — Job +
-  Analyze" §, after "What you see" (line ~169).
+  Analyze" §, after "What you see".
 - **Alt-text draft:** *"Step 1 with the job description pasted
   into the left textarea. Clicking Analyze triggers a ~30–60s
-  Sonnet 4.6 call that fills the right panel with skill
+  Sonnet 5 call that fills the right panel with skill
   matches, gaps, and ATS warnings."*
 
 ### S05 — Step 1 post-analyze (P0)
@@ -137,7 +151,7 @@ when Claude does the insertion pass.
   potential gaps (with the team-leadership gap and the Kafka
   underdocumented call-out), ATS warnings (Kafka frequency).
 - **Insertion site:** docs/user/walkthrough.md, "Step 1 — Job +
-  Analyze" §, after "Verify before continuing" (line ~195).
+  Analyze" §, after "Verify before continuing".
 - **Alt-text draft:** *"Step 1 after analyze: the right panel
   shows skill matches, a gaps section, and ATS warnings. This
   is Human Gate #1 — the user reads it and decides whether to
@@ -151,7 +165,7 @@ when Claude does the insertion pass.
   words about Kafka migration scope) so the textarea state is
   realistic — not pristine, not finished.
 - **Insertion site:** docs/user/walkthrough.md, "Step 2 — Clarify"
-  §, after "What you see" (line ~206).
+  §, after "What you see".
 - **Alt-text draft:** *"The Clarify step with 4 targeted
   questions. Answers given here become legitimate source
   material for Step 5 generation."*
@@ -166,7 +180,7 @@ when Claude does the insertion pass.
   LLM-recommended bullet (with its proposal badge), and the
   summary variant picker at the top.
 - **Insertion site:** docs/user/walkthrough.md, "Step 3 — Compose"
-  §, after "What you see" (line ~248).
+  §, after "What you see".
 - **Alt-text draft:** *"The Compose step showing one experience
   card with pinned, excluded, and LLM-recommended bullets, plus
   the summary variant picker. Compose is a selection problem;
@@ -181,7 +195,7 @@ when Claude does the insertion pass.
   badges visible on each card. The "Page 1 of 2" counter
   visible.
 - **Insertion site:** docs/user/walkthrough.md, "Step 4 — Template"
-  §, after "What you see" (line ~293).
+  §, after "What you see".
 - **Alt-text draft:** *"The Template step with four ATS-safe
   templates shown as cards. Live preview re-renders on
   selection — no LLM call. The Page 1 of N counter reflects
@@ -196,7 +210,7 @@ when Claude does the insertion pass.
   role more"). Both **Download** and **+ Generate cover
   letter** buttons visible.
 - **Insertion site:** docs/user/walkthrough.md, "Step 6 — Download"
-  §, after "What you see" (line ~366).
+  §, after "What you see".
 - **Alt-text draft:** *"The Download step. The generated
   résumé preview is on the left; the Refine textarea on the
   right takes natural-language change requests. Each Refine
@@ -210,7 +224,7 @@ when Claude does the insertion pass.
   Generate cover letter** button has been clicked once. Refine
   textarea visible.
 - **Insertion site:** docs/user/walkthrough.md, "Optional — Generate
-  cover letter" § (line ~403).
+  cover letter" §.
 - **Alt-text draft:** *"The cover-letter generation surface.
   The cover letter is generated against the finalized résumé,
   with the same refine / iterate parity as the résumé flow."*
