@@ -2175,9 +2175,11 @@ function openSettingsDrawer() {
 // (feat/education-tailor-corpus-wizard) layers a small once-ever sequence on top
 // — see _maybeFireTourStop / _fireWizardTourStop below.
 //
-// Each entry: { title, body, short?, tip?, welcome? }
+// Each entry: { title, body, learnMore, short?, tip?, welcome? }
 //   title   — heading swapped into #helpModalTitle (also the icon's a11y name)
 //   body    — canonical "pathfinding" copy swapped into #helpModalBody
+//   learnMore — docs-site page slug, optionally '#anchor', for the modal's "Read more
+//             in the docs" link (static/help-modal.js); required, tests/test_help_learn_more.py
 //   short   — optional inline short-form, injected atop the block's .panel-body
 //   tip     — optional native-tooltip text for the (i) icon (defaults to title)
 //   welcome — when true, this block auto-opens once-ever on first view
