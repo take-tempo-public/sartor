@@ -756,7 +756,7 @@ browser: the diagnostics console at `http://localhost:5000/_dashboard` (served b
 the running app, **localhost-only** by its own host-header guard) wraps the eval +
 annotation + tuning machinery into a tabbed, click-through self-tuning loop. This
 is the dev-doc home for that console; the user-facing
-[`docs/walkthrough.md`](../docs/walkthrough.md) only flags that it exists.
+[`docs/user/walkthrough.md`](../docs/user/walkthrough.md) only flags that it exists.
 
 The four shipped surfaces form one browser-driven loop — **produce → annotate →
 grounding-score → run eval → A/B → read deltas** — ending at the single

@@ -343,7 +343,7 @@ class MergeDismissal(Base):
 # ---------------------------------------------------------------------------
 # β.6 — Summary items (Corpus Item pattern for the candidate's
 # positioning summary). Parallel to Bullet for experience-bound content.
-# Per docs/PRODUCT_SHAPE.md §3 + §6, every curatable résumé element gets
+# Per docs/dev/PRODUCT_SHAPE.md §3 + §6, every curatable résumé element gets
 # the same lifecycle: variants, tags, scoring, has_outcome, soft-retire,
 # pin/exclude per application. SummaryItem is the first new CorpusItem
 # specialization landing in v1.0.

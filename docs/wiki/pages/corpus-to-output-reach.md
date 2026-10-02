@@ -238,12 +238,12 @@ sartor-specific resolution state (`chosen_summary_id`, `summary_source`,
 `use_experience_summaries`, `skill_curation_active`, …) is stamped under
 `meta.sartor.*` so standard JSON Resume themes ignore it.
 
-## Active-only filtering: two chokepoints
+## Active-only filtering: three chokepoints
 
 Soft-retired roles (`Experience.is_active = 0`) are hard-excluded from all
 generated output — they can never reach the LLM, the JSON Resume document, or a
-downloaded file. This is enforced at two chokepoints that together cover the
-entire generation blast radius:
+downloaded file. This is enforced at three distinct sites across the generation
+pipeline:
 
 1. [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py)
    — the single `select(Experience)` query filters `Experience.is_active == 1`.
@@ -257,6 +257,12 @@ entire generation blast radius:
    `meta.sartor.work_provenance` are built in lockstep from it — a second,
    separate filter would silently drift the provenance out of alignment with the
    entries it describes `[synthesis]`.
+
+3. [`blueprints/applications.py:_build_experience_summary_targets`](../../../blueprints/applications.py)
+   — the per-role intro drafting call (A3 `draft_experience_summaries`) filters
+   roles by `active_exp_ids` passed from the caller (line 2783). Because the frozen
+   `career_corpus` snapshot persists after soft-retirement, this filter is necessary
+   to prevent retired roles from being drafted (item 75) `[synthesis]`.
 
 **Consequence:** `context_set` and `hardening.CorpusExperience` carry no
 `is_active` key; filtering upstream means a retired role never enters the

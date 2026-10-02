@@ -54,10 +54,11 @@ import sys
 from pathlib import Path
 
 from check_doc_frontmatter import PUBLISHED_DOC_FILES
+from doc_corpus import FENCE_RE, DocCorpus
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-_FENCE_RE = re.compile(r"^(\s*)(```+|~~~+)")
+_FENCE_RE = FENCE_RE  # one fence grammar, owned by doc_corpus
 _WHITESPACE_RE = re.compile(r"\s+")
 
 # A paragraph must be at least this long (post-normalization) to count as a genuine
@@ -130,14 +131,16 @@ def _is_reviewed_exception(file_a: str, file_b: str, normalized: str) -> bool:
     return False
 
 
-def check_single_home(files: frozenset[str] = PUBLISHED_DOC_FILES) -> list[DuplicateBlock]:
+def check_single_home(
+    files: frozenset[str] = PUBLISHED_DOC_FILES, corpus: DocCorpus | None = None
+) -> list[DuplicateBlock]:
     """Find normalized paragraphs shared verbatim across 2+ distinct registered files."""
     # normalized paragraph -> list of (file, raw) that contain it
+    corpus = corpus or DocCorpus(REPO_ROOT)  # lazy: reads only the files in scope
     seen: dict[str, list[str]] = {}
     for rel_path in sorted(files):
-        abs_path = REPO_ROOT / rel_path
         try:
-            text = abs_path.read_text(encoding="utf-8")
+            text = corpus.read(rel_path)
         except OSError:
             continue
         for paragraph in _iter_unfenced_paragraphs(text):

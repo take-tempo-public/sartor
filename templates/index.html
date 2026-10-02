@@ -36,7 +36,7 @@
        are preserved so app.js bindings keep working. -->
   <header class="cb-topbar" id="cbTopbar">
     <div class="cb-topbar-row">
-      <a href="#" class="cb-wordmark" aria-label="sartor, home"
+      <a href="#" class="cb-wordmark" aria-label="Sartor, home"
          title="Return to the start" onclick="goHome(); return false;">
         <span class="ch">s</span><span class="ch">a</span><span class="ch">r</span><span class="ch">t</span><span class="ch">o</span><span class="ch">r</span><span class="cb-dot" aria-hidden="true"></span>
       </a>
@@ -952,15 +952,16 @@
        every candidate's applications, grouped by canonical lifecycle status.
        Backed by the same /api/candidates/roster aggregate the candidate
        roster picker uses (F-08); a card click switches #userSelect to that
-       candidate and opens the Tailor tab on their applications list. -->
+       candidate and opens the application's detail modal in place (A4). -->
   <div id="tab-pipeline" class="top-tab-panel hidden" role="tabpanel" aria-labelledby="topTabPipeline">
     <div class="cb-main">
       <section class="cb-panel" id="panelPipeline">
         <div class="panel-header cb-bg-blue">Pipeline</div>
         <div class="panel-body">
           <div class="edit-hint">
-            Every candidate's applications, grouped by status. Read-only —
-            click a card to switch to that candidate and open the application.
+            Every candidate's applications, grouped by status. Click a card
+            to switch to that candidate and open the application, where you can
+            record its status and add notes.
           </div>
           <div class="form-row" style="margin-bottom:8px">
             <button class="cb-btn cb-bg-teal" onclick="refreshPipeline()">Refresh</button>
@@ -1124,6 +1125,9 @@
     <div class="cb-modal-content" role="document">
       <h2 id="helpModalTitle" class="cb-modal-title"></h2>
       <p id="helpModalBody" class="cb-modal-body"></p>
+      <a id="helpModalLearnMore" class="cb-modal-link hidden" target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Read more in the docs (opens in a new tab)">Read more in the docs ↗</a>
       <div class="modal-actions">
         <button class="cb-btn cb-bg-blue" id="btnCloseHelp" data-help-dismiss>Got it</button>
       </div>
@@ -1145,7 +1149,7 @@
       <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
       <div class="cb-modal-body">
         <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
-          Ask how sartor. works or how to use it, and I'll answer from the
+          Ask how Sartor works or how to use it, and I'll answer from the
           project's own docs and code — with citations, so I show my sources.
           Tick Dev mode for technical detail.
         </p>
@@ -1166,7 +1170,7 @@
              hazard); hidden by askAssistant() once the first answer streams in. -->
         <div id="assistantEmptyState" style="margin-top:0.75rem;">
           <p class="edit-hint" style="margin:0 0 0.5rem">
-            I explain how sartor. works and how to use it. I answer only from the
+            I explain how Sartor works and how to use it. I answer only from the
             project's committed docs and code, with citations — I'm not the résumé
             writer, and I won't touch your private resumes or configs.
           </p>

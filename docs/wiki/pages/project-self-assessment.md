@@ -21,7 +21,7 @@
   unpredictable surface is the most rigorously checked.
 - **★ Clean deterministic / LLM boundary (the P1 hardening line)** — the deterministic
   core is LLM-free by contract; all model calls live in `analyzer.py`. (Canonical in
-  [`../../system-model.md`](../../system-model.md) under Production.)
+  [`../../system-model.md`](../../dev/system-model.md) under Production.)
 - **★ Security-by-convention, enforced mechanically** — `_safe_username` + `_within` on
   every filesystem-touching route, enforced by a hook rather than reviewer vigilance.
 - **★ Reproducibility / audit trail** — the `context_set` JSON contract +
@@ -41,7 +41,7 @@
 - **★ `app.py` was a 6,290-line / 75-route monolith** — the clearest smell at the time;
   hurt navigability even though each function was readable. **✅ Resolved:** WS-1
   ([[engineering-workstreams]]) shipped as Sprint 8.3a–h (tagged v1.0.8) — `app.py` is
-  now a ~296-line composition root with zero routes; every route lives on a domain
+  now a ~392-line composition root with zero routes; every route lives on a domain
   blueprint under [`blueprints/`](../../../blueprints/) (see [[code-module-map]],
   [[route-surface]]) `[synthesis]`.
 - **Typing was "typed, not strict"** — mypy ran in the gate but not `strict=true`;

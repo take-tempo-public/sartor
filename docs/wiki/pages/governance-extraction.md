@@ -40,7 +40,7 @@ each rule lives in exactly one place; everything else references it.
   do" list, branch conventions), [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) (the
   ruff + mypy + pytest bar, commit/branch conventions), [`SECURITY.md`](../../../SECURITY.md)
   (API-key rules, the `_safe_username`/`_within` mandate),
-  [`../../PRODUCT_SHAPE.md`](../../PRODUCT_SHAPE.md) (the prescriptive v1→v2 ladder +
+  [`../../PRODUCT_SHAPE.md`](../../dev/PRODUCT_SHAPE.md) (the prescriptive v1→v2 ladder +
   Corpus-Item rules), and [`../../dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md) (the
   "hard constraints, all phases" + the "do not edit without sign-off" gate).
 
@@ -82,7 +82,7 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
 2. **Per-doc extraction boundaries — RESOLVED**
    Each source doc retains descriptive content + adds a pointer to the canonical rule home.
    The extraction boundaries are codified in `charter.md`'s citation map — not a table, but
-   the inline `[src: …]` tag carried by every clause (`charter.md`'s "Evidence base" preamble:
+   the inline `[src: …]` tag carried by every clause (`charter.md`'s "What this is" preamble, just before "Evidence base":
    "Every clause is tagged `[src: …]` so the extraction is a verifiable citation map") —
    six source docs (vision.md, AGENTS.md, SECURITY.md, CONTRIBUTING.md, PRODUCT_SHAPE.md, RELEASE_ARC.md)
    now reference rather than restate the rules `[synthesis]`.
@@ -92,6 +92,15 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
    Confirmed in AGENTS.md's "Canonical governance" note: it keeps the rules inline + adds
    an explicit canonical pointer to `docs/governance/charter.md` (**F-gov-05**; RELEASE_ARC
    §Phase 4.7, the AGENTS.md-shape sub-decision) `[synthesis]`.
+
+   **Follow-on (2026-09-30, Epic D sprint D3, owner decision O-2):** The owner's session
+   protocol (handoff intake, escape-hatch/marker rules, branch close-out checklist steps 0–5)
+   moved to [`docs/dev/maintainer-lane.md`](../../dev/maintainer-lane.md) so outside
+   contributors stop at AGENTS.md; CLAUDE.md imports the lane file next to `@AGENTS.md`
+   (CLAUDE.md line 18); AGENTS.md retains its code rules inline + a ["Branch close-out
+   checklist"](../../../AGENTS.md#branch-close-out-checklist) pointer section so rules stay
+   raw-readable for non-Claude agents `[synthesis]` (`docs-ia-design.md` O-2, resolved
+   2026-09-28).
 
 ## Working model (W-1/W-2) + amendment ceremony — landed 2026-07-23
 
@@ -118,6 +127,13 @@ page's own grounding rule, the clauses are not restated here; the durable home i
   discipline this page's own history already practiced (a dated `[src: adopted …]`
   tag per amendment) — see `enforcement.md`'s "Parallel-session isolation (W-1)" row,
   which tracked the W-1 citation gap (**F-gov-03**) as open until this landed.
+- **Clause deep-linking & validation (2026-10-01, editorial):** The charter's
+  constitutional clauses now carry distinct `### C-n — Title` headings (per the
+  editorial-change note in [`charter.md`](../../governance/charter.md) lines 498–503),
+  enabling deep-links to specific clauses. The `lint_charter_clauses` check
+  (`scripts/doc_lints.py:lint_charter_clauses`) verifies that all headings C-0…C-n
+  exist without gaps and that published docs do not cite clauses past the highest
+  numbered clause `[synthesis]`.
 
 ## The extraction checklist nobody had: enforcement reach (2026-08-05)
 
@@ -132,7 +148,7 @@ The load-bearing fact: **a clause enforced only by a Claude Code hook does not t
 into another project tomorrow. Guards route through three adapters with very different
 coverage (per [`enforcement.md` §"Enforcement reach"](../../governance/enforcement.md) — a tool-agnostic opt-in git-hook path; a CI/`gate.py` path that binds everyone;
 and a Claude-Code-only PreToolUse path). C-7's `require_evidence_before_fix`, C-10's
-`require_consumer_enumeration`, `interrogative_witness`, the C-8/C-12 context hooks, and `verify_binary_on_path`
+`require_consumer_enumeration`, `interrogative_witness`, the C-8/C-12 context hooks, `verify_binary_on_path`, and `block_subagent_git_stash` (`scripts/enforcement/guards/block_subagent_git_stash.py:claude_check`)
 are all on the third. `verify_binary_on_path` has **no planned git-native
 path** — it parses a Bash command string, a shape a `pre-commit` hook never sees, so
 there is no equivalent input to route it from. `interrogative_witness`, by contrast, is Claude Code only **by nature, not by gap** `[synthesis]` — it enforces a pause based on whether the user prompt is a question or directive, a property of Claude *sessions* that git hooks do not have, so extraction closes nothing here.
@@ -154,3 +170,4 @@ guard has to say so in the diff `[synthesis]`.
 - [[system-model-derivation]] — the seven-functions language that dissolved the crux.
 - [[consistency-tracks-enforcement]] — the finding this extends to the vision.
 - [[excellence-walk]] — the walk this design belongs to.
+- [[docs-information-architecture]] — how the docs around the charter are organized and linted.

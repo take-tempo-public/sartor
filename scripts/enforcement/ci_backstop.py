@@ -9,11 +9,8 @@ This script is the server-side net: a repo-wide secrets scan over every
 tracked file, independent of what a contributor's local hooks did or didn't
 catch.
 
-Wired into `.github/workflows/ci.yml`'s `quality` job. Per
-`docs/governance/enforcement.md` ("CI is committed but latent until the git
-remote activates"), this step is authored now and starts running for real
-only once `main` is pushed to a GitHub remote (Sprint 8.7) — it is not a new
-latency mechanism, just another step inside the already-latent workflow file.
+Wired into `.github/workflows/ci.yml`'s `quality` job, which runs on every
+pull request (CI is live: `docs/governance/enforcement.md`, "CI gate").
 
 Usage: python -m scripts.enforcement.ci_backstop
 """

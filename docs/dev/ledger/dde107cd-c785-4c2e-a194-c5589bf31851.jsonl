@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/docs-ia-design.md", "session": "dde107cd-c785-4c2e-a194-c5589bf31851", "branch": "feat/docs-split", "commit": "756f954", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-29T00:45:44Z", "fingerprint": "0e7edcf5cff5"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-split.md", "session": "dde107cd-c785-4c2e-a194-c5589bf31851", "branch": "feat/docs-split", "commit": "406858d", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-29T02:07:11Z", "fingerprint": "5f4580cf9162"}
+{"event": "compacted", "session": "dde107cd-c785-4c2e-a194-c5589bf31851", "branch": "feat/docs-split", "trigger": "unknown", "ts": "2026-09-29T02:13:43Z"}
+{"event": "compacted", "session": "dde107cd-c785-4c2e-a194-c5589bf31851", "branch": "feat/docs-split", "trigger": "unknown", "ts": "2026-09-29T03:10:02Z"}

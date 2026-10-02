@@ -8,23 +8,24 @@ Sartor answers one question, honestly:
 Acronyms used throughout: **JD** = job description; **LLM** =
 large language model (Anthropic's Claude, here); **ATS** =
 applicant tracking system (résumé-parsing software employers run
-on incoming files).
+on incoming files); **API** = application programming interface.
 
 > **Purpose:** the high-level guide to what Sartor is, what
 > it isn't, and the self-imposed constraints that shape every
 > decision. The "why" behind the architecture and the product
 > shape.
-> **Audience:** humans evaluating whether to use or contribute
+> **Audience:** `user` — humans evaluating whether to use or contribute
 > to Sartor; LLM agents proposing significant changes who
 > need to check their proposal against the project's stance.
 > **Authoritative for:** the product's intent, the 10 Principles
 > grounding, the open / standards / minimal-dependencies stance,
 > what counts as in vs out of scope for v1.x. Sibling docs:
-> [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) (architecture
-> details + sequencing ladder), [`docs/architecture.md`](docs/architecture.md)
+> [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) (architecture
+> details + sequencing ladder), [`docs/dev/architecture.md`](docs/dev/architecture.md)
 > (module map + diagrams), [`AGENTS.md`](AGENTS.md) (operational
 > contract for AI agents and human contributors), [`README.md`](README.md)
 > (user-facing overview).
+> **Type:** explanation
 
 ---
 
@@ -65,14 +66,14 @@ Three goals, in order of priority:
    the LLM can't invent.
 
 2. **ATS-safe output by default.** Most applications are
-   parsed by software before any human sees them. sartor.
+   parsed by software before any human sees them. Sartor
    ships templates that are single-column, plain-bullet, in
    standard fonts, with no tables / text boxes / icons / sidebars.
    Templates that *aren't* ATS-safe are retired — even when
    they look prettier. The escape hatch is the user's, not the
    tool's: anyone who wants a non-ATS design edits the document
    Sartor produced. See
-   [`docs/PRODUCT_SHAPE.md §5.3`](docs/PRODUCT_SHAPE.md) for
+   [`docs/dev/PRODUCT_SHAPE.md §5.3`](docs/dev/PRODUCT_SHAPE.md) for
    the bundled-template curation rationale.
 
 3. **The candidate stays in control.** Two required human
@@ -91,8 +92,8 @@ them would be convenient. Together they define what kind of
 software this is.
 
 > **Canonical governance.** The *binding* form of these constraints — the
-> C-0…C-6 clauses, the D-1…D-6 defaults, and the working-model rules — now
-> lives in [`docs/governance/charter.md`](docs/governance/charter.md). This
+> constitutional clauses (C-), the defaults (D-), and the working-model rules
+> (W-) — now lives in [`docs/governance/charter.md`](docs/governance/charter.md). This
 > section keeps the *why* and the worked detail; the charter states each rule
 > once and is the home audits and gates read against. Where a line below
 > restates a rule, the charter governs on conflict.
@@ -157,7 +158,7 @@ Per-file responsibility:
 
 - `hardening.py`, `parser.py`, `generator.py`, `scraper.py`,
   `json_resume.py`, `corpus_to_json_resume.py`,
-  `pdf_render.py` — **no LLM calls allowed**. These are the
+  `pdf_render.py`, `docx_to_persona_html.py` — **no LLM calls allowed**. These are the
   deterministic core: file I/O, keyword extraction, ATS
   format checks, document rendering, schema transformations.
 - `analyzer.py` — the only module that calls the LLM. Every
@@ -197,7 +198,7 @@ Every `/api/generate` writes a NEW timestamped child context file
 rather than mutating the parent, so a user (or a developer debugging
 an issue) can always trace what the LLM saw at each step. Full
 mechanics (the `parent_context_path` chain, the on-disk lifecycle):
-[`docs/architecture.md` §context_set lifecycle](docs/architecture.md).
+[`docs/dev/architecture.md` §context_set lifecycle](docs/dev/architecture.md).
 
 ---
 
@@ -217,7 +218,7 @@ load-bearing for Sartor specifically:
 - **P5 Institutional Memory** — ALWAYS / NEVER BECAUSE rules
   in `analyzer.py:SYSTEM_PROMPT`; tuning history in
   `evals/TUNING_LOG.md`; release reasoning in
-  [`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md).
+  [`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md).
 - **P8 Human Gates** — two required review checkpoints plus
   optional clarification interviews. Skipping any clarification
   step does not degrade output below the prior behavior.
@@ -249,7 +250,7 @@ best summary variant the way it could pick the best bullets,
 and the user couldn't pin a great summary across similar
 applications. v1.0 introduced `SummaryItem` as the second
 specialization of an emerging "Corpus Item" base concept.
-[`docs/PRODUCT_SHAPE.md`](docs/PRODUCT_SHAPE.md) covers the
+[`docs/dev/PRODUCT_SHAPE.md`](docs/dev/PRODUCT_SHAPE.md) covers the
 full pattern and the v1.1 / v1.2 plan to extend it to
 `ExperienceSummaryItem`, `SkillGroupItem`,
 `CoverLetterChunkItem`.

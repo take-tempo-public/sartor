@@ -3,19 +3,19 @@
 > **Purpose:** how to propose changes — quick start, branch and commit
 > conventions, the local dev loop, what kinds of contributions are
 > welcome vs out of scope.
-> **Audience:** external contributors (humans) sending PRs.
+> **Audience:** `dev` — external contributors (humans) sending PRs.
 > **Authoritative for:** the proposal/review process; the
 > ruff + mypy + pytest minimum-bar; the rule that any LLM prompt
 > change bumps `PROMPT_VERSION` in the same commit. Sibling docs:
 > [`vision.md`](vision.md) (product intent + constraints),
-> [`AGENTS.md`](AGENTS.md) (AI-agent operational contract — same
-> rules apply to humans),
-> [`docs/architecture.md`](docs/architecture.md) (system + modules),
+> [`AGENTS.md`](AGENTS.md) (the code rules — the same ones bind humans
+> and AI agents),
+> [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + modules),
 > [`SECURITY.md`](SECURITY.md) (threat model).
 
 Thanks for your interest. Sartor tailors a résumé and (optionally) a cover letter to one specific job at a time, using a deterministic Python core and the Claude API for fuzzy reasoning. It is intentionally small — most contributions should *make it more deterministic*, not less.
 
-The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/architecture.md`](docs/architecture.md) for the pipeline diagram + module map.
+The guiding philosophy is the [10 Principles framework](https://jdforsythe.github.io/10-principles/overview/). Read [`vision.md`](vision.md) before proposing significant changes; skim [`docs/dev/architecture.md`](docs/dev/architecture.md) for the pipeline diagram + module map.
 
 ---
 
@@ -30,9 +30,8 @@ pip install -e ".[dev]"
 # rendering. ~150 MB, lives in your OS user cache (NOT in the repo).
 python -m playwright install chromium
 
-# Sanity-check the toolchain — scripts/gate.py (PX-55) is the single definition
-# of "gate green", also run by CI and named in AGENTS.md; equivalent to, in
-# order: ruff check . / ruff format --check . / mypy . / pytest
+# Sanity-check the toolchain. scripts/gate.py is the single definition of
+# "gate green" (CI runs the same script); read it for the step list.
 python -m scripts.gate
 
 # Run the app
@@ -41,7 +40,7 @@ python app.py            # → http://localhost:5000
 
 Set your Anthropic API key in `ANTHROPIC_API_KEY` or in a local `.api_key` file (gitignored).
 
-For a deeper architectural tour before opening a PR, read [`docs/architecture.md`](docs/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the universal contract — same rules apply whether you're a human or an LLM agent).
+For a deeper architectural tour before opening a PR, read [`docs/dev/architecture.md`](docs/dev/architecture.md) (system + module map + four Mermaid diagrams) and [`AGENTS.md`](AGENTS.md) (the code rules — the same ones apply whether you're a human or an LLM agent). The owner's session protocol (handoffs, the provenance ledger, the close-out checklist) lives separately in [`docs/dev/maintainer-lane.md`](docs/dev/maintainer-lane.md); you don't need it to send a pull request.
 
 ---
 
@@ -55,8 +54,10 @@ For a deeper architectural tour before opening a PR, read [`docs/architecture.md
 
 - One branch per change: `kebab-case-description` (e.g. `fix/cover-letter-spacing`, `feat/jd-template-library`)
 - Branch off `main`
-- Merge with `git merge --no-ff` so branch history is preserved
-- Delete the branch after merge
+- Land it through a pull request against `main`. `main` is branch-protected: the required
+  checks must pass, and the only merge method enabled is a merge commit (squash and rebase are
+  off). There is no local `git merge` into `main`.
+- Delete the branch after merge (GitHub deletes the remote copy automatically)
 
 ## Commit messages
 
@@ -83,7 +84,7 @@ This signals collaboration without conflating attribution. The human author rema
 
 Before opening a PR:
 
-- [ ] `python -m scripts.gate` — clean (PX-55's unified wrapper: `ruff check .` + `ruff format --check .` + `mypy .` + `pytest` in one run; the Playwright UX tier runs automatically as part of `pytest` once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so the wrapper stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
+- [ ] `python -m scripts.gate` — clean. [`scripts/gate.py`](scripts/gate.py) is the single definition of what it runs, in what order; the Playwright UX tier runs as one of its steps once Chromium is installed — `python -m playwright install chromium`, see [Quick start](#quick-start) — and self-skips otherwise, so the wrapper stays green either way. Don't also run `pytest -m ux` separately — that re-executes the same UX tests the full run already covered; use `pytest -m ux` on its own only to isolate/debug that tier. For the honest fast-lane (`-m "not slow and not ux"`) timing and why it's not module-scoped further yet, see [`docs/dev/perf/TEST_SUITE_PERFORMANCE.md`](docs/dev/perf/TEST_SUITE_PERFORMANCE.md))
 - [ ] `CHANGELOG.md` — entry under `[Unreleased]` describing the user-visible change
 - [ ] No real personal data committed (`evals/fixtures/real/` is gitignored — keep it that way)
 - [ ] If you touched a Flask route that reads or writes the filesystem, the route uses `_safe_username()` and `_within()` — see [`app.py`](app.py)
@@ -100,10 +101,10 @@ CI runs the same `scripts/gate.py` steps on every PR (`.github/workflows/ci.yml`
 The project ships a Claude Code plugin (`sartor`). The pieces live in three places:
 
 - **Slash commands** in repo-root [`commands/`](commands/) and **subagents** in repo-root [`agents/`](agents/) — they load as the `sartor` plugin via a bundled local marketplace (`sartor-tools`), declared by the `extraKnownMarketplaces` + `enabledPlugins` entries committed in `.claude/settings.json`. Because they load as a plugin they appear **namespaced**: commands as `/sartor:<name>`, subagents as `sartor:<name>`.
-- **Hooks** in [`hooks/`](hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader. Six of the ten are thin wrappers over the tool-agnostic [`scripts/enforcement/`](scripts/enforcement/) core (see "Portable enforcement hooks" below); the three plan-mode lifecycle hooks and the wiki-freshness reminder stay Claude-only, standalone scripts.
+- **Hooks** in [`hooks/`](hooks/) — wired **directly** in the same `.claude/settings.json` (path-referenced, not plugin-discovered), so they stay independent of the marketplace loader. Most are thin wrappers over the tool-agnostic [`scripts/enforcement/`](scripts/enforcement/) core (see "Portable enforcement hooks" below); the plan-mode lifecycle hooks and the wiki-freshness reminder are Claude-only, standalone scripts. [`docs/dev/tooling.md`](docs/dev/tooling.md) lists every hook and which is which.
 - The plugin **manifest** + local **marketplace** definition live in [`.claude-plugin/`](.claude-plugin/) (`plugin.json` + `marketplace.json`).
 
-Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook catalog see [README → Architecture & developer reference](README.md#architecture--developer-reference) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
+Cloning the repo activates everything on session start — a fresh clone needs a one-time marketplace-trust prompt + reload, no install step. For the full command/subagent/hook/skill roster see [`docs/dev/tooling.md`](docs/dev/tooling.md) (and [`CLAUDE.md`](CLAUDE.md) for the agent-facing contract); this section is the layout-and-activation orientation, not a catalog, so it deliberately doesn't re-list every entry.
 
 Hooks should remain deterministic shell. LLM-backed review is reserved for explicit `/code-review:code-review` and `/security-review` invocations.
 
@@ -111,7 +112,7 @@ Hooks should remain deterministic shell. LLM-backed review is reserved for expli
 
 ## Portable enforcement hooks (git-native, optional)
 
-The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, latent until the GitHub remote activates — same posture as the rest of `.github/workflows/ci.yml`).
+The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, a step in `.github/workflows/ci.yml`'s `quality` job, which runs on every pull request).
 
 The git-native hooks are **not activated by cloning the repo** — opt in once per clone:
 

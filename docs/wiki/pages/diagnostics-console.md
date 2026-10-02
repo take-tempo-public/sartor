@@ -13,8 +13,8 @@
 > [`web_infra/http.py`](../../../web_infra/http.py),
 > [`web_infra/request_gates.py`](../../../web_infra/request_gates.py),
 > [`app.py`](../../../app.py),
-> [`docs/architecture.md`](../../architecture.md),
-> [`docs/system-model.md`](../../system-model.md).
+> [`docs/dev/architecture.md`](../../dev/architecture.md),
+> [`docs/dev/system-model.md`](../../dev/system-model.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -32,9 +32,9 @@ roster). The blueprint object is built in
 tuning is *observable* — which prompt revision moved a score, which rubric fails
 most, what each failure cost in dollars and seconds `[synthesis]`.
 
-It is not Product. [`system-model.md`](../../system-model.md) files `dashboard/`
+It is not Product. [`system-model.md`](../../dev/system-model.md) files `dashboard/`
 under the **Evaluation** function ("measures, verifies, improves Production"),
-alongside `tests/` and `evals/`; [`architecture.md`](../../architecture.md)'s
+alongside `tests/` and `evals/`; [`architecture.md`](../../dev/architecture.md)'s
 module map lists it between `db/` and `evals/`. Its *dependency* direction is the
 category: it reads the eval harness's outputs and the analyzer's telemetry —
 co-location in the route tree is not membership in the Product pipeline
@@ -110,8 +110,8 @@ would inflate every column
 
 The aggregation helpers are **pure** (record list in, dict out, no I/O except
 [`_load_baseline`](../../../dashboard/routes.py)) so they unit-test without a live
-app `[synthesis]`. They populate four tabbed bento grids of tiles, each opening a
-shared right-hand drawer (Chart.js — vendored at
+app `[synthesis]`. They populate five tabbed bento grids of tiles, each opening an
+inline full-width detail panel ([`dashboard.html:135–137`](../../../dashboard/templates/dashboard.html); Chart.js — vendored at
 [`static/vendor/chart.umd.min.js`](../../../static/vendor/chart.umd.min.js), no
 runtime CDN; lazy-init on open):
 
@@ -145,10 +145,11 @@ runtime CDN; lazy-init on open):
   [`_dedup_by_run`](../../../dashboard/routes.py)) plus the latest run's
   `fabricated_specifics` drill-down
   ([`_latest_groundedness_detail`](../../../dashboard/routes.py)).
-- **Tuning** — runs an A/B pair (baseline vs. candidate override) and writes eval results via the SSE
-  [`tune_run_stream`](../../../blueprints/diagnostics.py) route in `blueprints/diagnostics.py`;
-  the console UI is a read-only scaffold fed by [`_tune_prompt_choices`](../../../dashboard/routes.py),
-  a lazy import of `analyzer._BASE_SYSTEM_PROMPTS`.
+- **Tuning** — runs an A/B pair (baseline vs. candidate override) from the browser via
+  `POST /api/tune/run` ([`blueprints/diagnostics.py:tune_run_stream`](../../../blueprints/diagnostics.py)),
+  writing eval results via SSE; the prompt picker in [`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html)
+  is populated by [`dashboard/routes.py:_tune_prompt_choices`](../../../dashboard/routes.py),
+  which reads `analyzer._BASE_SYSTEM_PROMPTS`.
 
 `prompt_version` is the trend axis throughout — score / groundedness charts drop
 records lacking one, so a regression is attributable to a specific prompt
@@ -184,6 +185,8 @@ suite's tour-stop seed relies on `[synthesis]`. The annotate tab's verdict legen
 (`keep`/`fix`/`omit`/`fabricated`, each glossed plainly) and the per-pane "why empty" copy
 were rewritten for lay readers in the same pass — the write mechanism (routes + gating) is
 unchanged from "The SSE self-tuning loop" below.
+
+Each entry in [`dashboard/templates/dashboard.html:_DASH_HELP`](../../../dashboard/templates/dashboard.html) carries a `learnMore` field (e.g. `'dev-diagnostics#pipeline'`) that [`static/help-modal.js:cbOpenHelpModal`](../../../static/help-modal.js) renders as a "Read more in the docs" link. The URL is constructed via [`cbDocsUrl`](../../../static/help-modal.js), resolving to the published docs root [`CB_DOCS_BASE`](../../../static/help-modal.js) (`https://sartor-docs.taketempo.com/docs/`); the link element is hidden when no `learnMore` target exists. [`tests/test_help_learn_more.py`](../../../tests/test_help_learn_more.py) enforces that every help bubble carries a `learnMore` target and that the page slug and anchor (if any) resolve to published doc page headings `[synthesis]`.
 
 ## The SSE self-tuning loop (writes live in `blueprints/diagnostics.py`)
 
@@ -362,6 +365,7 @@ otherwise be transparent, breaking the sticky affordance `[synthesis]`.
 
 ## Related
 
+- [`docs/dev/diagnostics.md`](../../dev/diagnostics.md) — canonical per-tab developer reference (routes, paid-run gating, run-lock mechanics).
 - [[code-module-map]] — where `dashboard/`, `blueprints/diagnostics.py`, and the eval tooling sit in the tree.
 - [[eval-harness]] — `evals/runner.py`, whose `results/*.jsonl` this console reads.
 - [[route-surface]] — the Flask routes, including the SSE eval/tune/annotation seam.

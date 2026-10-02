@@ -896,6 +896,9 @@
   <div class="cb-modal-content" role="document">
     <h2 id="helpModalTitle" class="cb-modal-title"></h2>
     <p id="helpModalBody" class="cb-modal-body"></p>
+    <a id="helpModalLearnMore" class="cb-modal-link hidden" target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Read more in the docs (opens in a new tab)">Read more in the docs ↗</a>
     <div class="modal-actions">
       <button class="cb-btn cb-bg-blue" id="btnCloseHelp" data-help-dismiss>Got it</button>
     </div>
@@ -916,7 +919,7 @@
     <h2 id="assistantModalTitle" class="cb-modal-title">Ask the assistant</h2>
     <div class="cb-modal-body">
       <p id="assistantModalIntro" class="edit-hint" style="margin-top:0">
-        Ask how sartor. works or how to use it, and I'll answer from the
+        Ask how Sartor works or how to use it, and I'll answer from the
         project's own docs and code — with citations, so I show my sources.
         Dev mode is on by default here; untick it for user-facing answers only.
       </p>
@@ -936,7 +939,7 @@
            Hidden by askAssistant() once the first answer streams in. -->
       <div id="assistantEmptyState" style="margin-top:0.75rem;">
         <p class="edit-hint" style="margin:0 0 0.5rem">
-          I explain how sartor. works and how to use it. I answer only from the
+          I explain how Sartor works and how to use it. I answer only from the
           project's committed docs and code, with citations — I'm not the résumé
           writer, and I won't touch your private resumes or configs.
         </p>
@@ -1280,6 +1283,7 @@
   var _DASH_HELP = {
     dashPipeline: {
       title: 'Pipeline — live call telemetry',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'This tab shows telemetry for every LLM call the app makes — total '
         + 'cost, token usage, cache-hit rate, latency, error rate, and a '
         + 'per-run trace waterfall. It reads logs/llm_calls.jsonl, which fills '
@@ -1289,6 +1293,7 @@
     },
     dashQuality: {
       title: 'Quality — eval scores by rubric',
+      learnMore: 'dev-diagnostics#quality',
       body: 'This tab grades generated résumés against the eval rubrics on a 0–5 '
         + 'scale. The Suite picks which fixtures: "synthetic" grades the committed '
         + 'sample fixtures; "anchor" grades a frozen, versioned copy of them. The '
@@ -1300,11 +1305,12 @@
         + 'evals/results/. Those grounding scorers need the optional '
         + '[eval-grounding] extras (~3.2 GB of model weights, dev-only — never '
         + 'used by the running app); see CONTRIBUTING.md, section "Grounding '
-        + 'signal scorers", to install them, or docs/install.md, section "What '
+        + 'signal scorers", to install them, or docs/user/install.md, section "What '
         + 'gets downloaded & why", for what they pull and why.',
     },
     dashGroundedness: {
       title: 'Groundedness — the no-invention check',
+      learnMore: 'dev-diagnostics#groundedness',
       // UX-21: lay rewrite — no "L0", no "grounding box" (nothing on screen
       // is called that), no "source union".
       body: 'Groundedness is Sartor’s core promise made measurable: did the '
@@ -1320,6 +1326,7 @@
     },
     dashTuning: {
       title: 'Tuning — candidate-vs-baseline A/B',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'This tab lets you try a prompt change safely, without touching '
         + 'analyzer.py: pick a persona constant, edit its text, and run it '
         + 'against the current baseline. Nothing you write here is saved to the '
@@ -1333,6 +1340,7 @@
     },
     dashAnnotate: {
       title: 'Annotate — the label-the-truth surface',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'This is a read-write surface (localhost only) — Quality and Tuning '
         + 'runs also write eval-result files. It produces and labels '
         + 'the annotations.json ground-truth that the deferred grounding '
@@ -1353,6 +1361,7 @@
     // so one shared entry each rather than a near-duplicate per tab.
     dashSuiteField: {
       title: 'Suite — which fixtures to grade',
+      learnMore: 'dev-diagnostics#quality',
       body: 'The Suite picks which fixtures get graded; the Subset (next to it) '
         + 'picks which rubrics. "Synthetic" grades the committed sample fixtures '
         + 'under evals/fixtures/synthetic/, which change as the product does. '
@@ -1361,6 +1370,7 @@
     },
     dashSubsetField: {
       title: 'Subset — how much of the suite to run',
+      learnMore: 'dev-diagnostics#quality',
       body: 'The Subset picks which rubrics grade each fixture; the Suite (next '
         + 'to it) picks the fixtures. "Smoke" runs the grounding rubric only — '
         + 'a quick check that nothing is being invented. "Full" runs every '
@@ -1370,6 +1380,7 @@
     },
     dashGroundingSignals: {
       title: 'Grounding signals — the offline scorers',
+      learnMore: 'dev-diagnostics#groundedness',
       // UX-16: what the scorers are, the Hugging Face download, why optional,
       // why free, and how to read a score. Sources: CONTRIBUTING.md "Grounding
       // signal scorers" (models, ~3.2 GB, HF cache, MiniCheck licence, 2–4 s
@@ -1394,6 +1405,7 @@
     },
     dashTuneConstant: {
       title: 'Constant — which prompt you’re A/B-ing',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'Pick the analyzer.py persona or system-prompt constant you want '
         + 'to test a change against. The candidate text below REPLACES this '
         + 'constant for the run only, via analyzer.prompt_overrides() — '
@@ -1402,6 +1414,7 @@
     },
     dashTuneCandidate: {
       title: 'Candidate text — the full replacement',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'Paste the FULL text you want to try in place of the chosen '
         + 'constant — not a diff, not a snippet to append. Click "Load current '
         + 'text" first so you’re editing the real baseline rather than '
@@ -1410,6 +1423,7 @@
     },
     dashTuneSeed: {
       title: 'Real-corpus seed — A/B against your own data',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'Optional. By default the A/B runs against committed fixtures; '
         + 'filling in a candidate username and fixture slug here instead seeds '
         + 'the run from that candidate’s real corpus '
@@ -1420,6 +1434,7 @@
     },
     dashBootstrapRun: {
       title: 'Bootstrap — produce something to annotate',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'A bootstrap runs the real analyze → clarify → generate pipeline '
         + 'over the job descriptions you paste, for one candidate, then merges '
         + 'the results into one bootstrap.json you can label. It makes paid '
@@ -1433,6 +1448,7 @@
     },
     dashVerdicts: {
       title: 'Verdicts — keep / fix / omit / fabricated',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Every bullet and skill needs one verdict before you can save, '
         + 'exactly like the CLI. Keep — true and usable as written. Fix — true '
         + 'but needs rewording; fill in an honest_rewrite. Omit — leave it off '
@@ -1449,6 +1465,7 @@
     // server's own remedy (pinned by tests/test_annotation_routes.py).
     dashAnnScore: {
       title: 'Score grounding — run the offline scorers here',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Runs the same local DeBERTa NLI + MiniCheck fact-checking models '
         + 'as the eval’s grounding-signals checkbox, but only over this '
         + 'fixture’s bullets — on your CPU, no paid calls — and writes the '
@@ -1466,6 +1483,7 @@
     // dashboard-copy-discovery.md, Observation 8. No new $ figure is minted.
     dashFilters: {
       title: 'Filters — what Since, User and Model narrow',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'Since, User and Model narrow the AI-call log this Pipeline tab '
         + 'summarizes — its cost, call counts, error rate, traces and latency. '
         + 'They do not change the Quality, Groundedness or Tuning tabs: those '
@@ -1478,6 +1496,7 @@
     },
     dashPercentiles: {
       title: 'p50, p95, median and mean',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'Four ways to sum up many measurements (how long each call took, '
         + 'or what it cost). The median — also called p50 — is the middle '
         + 'value: half of the calls were faster (or cheaper) than it and half '
@@ -1492,6 +1511,7 @@
     },
     dashTileCost: {
       title: 'Total cost — what the AI calls cost',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'The estimated spend, in US dollars, of every AI call in the '
         + 'current filter — worked out from each call’s token counts and the '
         + 'model price table. Under it, p50 is what a typical single call cost '
@@ -1502,6 +1522,7 @@
     },
     dashTileCalls: {
       title: 'Calls — how much work the pipeline did',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'How many AI calls are in the current filter. “Cache hit” is how '
         + 'often the cached part of a prompt was read back instead of being '
         + 'written fresh — higher is cheaper and faster. “in / out” are tokens '
@@ -1511,6 +1532,7 @@
     },
     dashTileErrors: {
       title: 'Error rate — failed or cut-off calls',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'The share of calls in the current filter that failed (an error '
         + 'from the AI service or the app) or were truncated — stopped at the '
         + 'length limit (max_tokens) before finishing. Open the tile for a '
@@ -1523,6 +1545,7 @@
     },
     dashTileTrace: {
       title: 'Latest trace — one run, step by step',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'A run is one trip through the pipeline — for example one analyze '
         + 'followed by a generate — and each AI call in it is a span. This '
         + 'tile shows the most recent run: how many spans it had and their '
@@ -1532,6 +1555,7 @@
     },
     dashTileLatency: {
       title: 'Latency — how long AI calls take',
+      learnMore: 'dev-diagnostics#pipeline',
       body: 'How long a single AI call took, in milliseconds (1000 ms = 1 '
         + 'second), across the calls in the current filter. p50 is the typical '
         + 'call — half were faster. p95 is a slow call — 95 in 100 were '
@@ -1541,6 +1565,7 @@
     },
     dashEvalRun: {
       title: 'Run eval — grade the pipeline now',
+      learnMore: 'dev-diagnostics#quality',
       body: 'Runs the real résumé pipeline on each test case in the chosen '
         + 'suite, then has the AI grader score the results against the rubrics '
         + '(grading checklists) from 0 to 5. It is the same run as python '
@@ -1552,6 +1577,7 @@
     },
     dashTileHealth: {
       title: 'Health vs baseline — are scores holding up?',
+      learnMore: 'dev-diagnostics#quality',
       body: 'The baseline is a saved set of reference scores '
         + '(evals/results/baseline_v1.json), one per test case and rubric. '
         + 'This tile compares the latest score for each pair with its '
@@ -1563,6 +1589,7 @@
     },
     dashTilePassRate: {
       title: 'Rubrics tracked — pass rate per rubric',
+      learnMore: 'dev-diagnostics#quality',
       body: 'A rubric is one grading checklist the AI grader applies — for '
         + 'example grounding (did it invent anything?), keyword coverage, ATS '
         + 'format or tone. The number is how many rubrics have results, and it '
@@ -1574,6 +1601,7 @@
     },
     dashTileScoreTrend: {
       title: 'Score trend — scores over time',
+      learnMore: 'dev-diagnostics#quality',
       body: 'One line per rubric, plotting its scores over time. Each point '
         + 'records which prompt version produced it (hover to see it), so when '
         + 'a line drops you can tell which prompt change caused it. The number '
@@ -1583,6 +1611,7 @@
     },
     dashTileHeatmap: {
       title: 'Heatmap — every test case at a glance',
+      learnMore: 'dev-diagnostics#quality',
       body: 'A test case (fixture) is a sample job posting plus a résumé to '
         + 'tailor for it. The heatmap puts rubrics down the side and test '
         + 'cases across the top; each cell is that pair’s most recent score, '
@@ -1592,6 +1621,7 @@
     },
     dashTileFailureModes: {
       title: 'Top failure mode — what breaks most',
+      learnMore: 'dev-diagnostics#quality',
       body: 'When the AI grader fails a result, it names the rule that was '
         + 'broken with a short tag — for example invented_metric (a number '
         + 'that isn’t in the source) or missing_must_keyword (a required '
@@ -1601,6 +1631,7 @@
     },
     dashTilePareto: {
       title: 'Pareto verdict — better, worse, or a trade-off?',
+      learnMore: 'dev-diagnostics#quality',
       body: 'Compares the two most recent prompt versions on three things at '
         + 'once: overall score (the composite — a weighted average of the '
         + 'rubric scores), typical (p50) latency, and typical (p50) cost. '
@@ -1612,6 +1643,7 @@
     },
     dashTileRecent: {
       title: 'Recent evals — the raw results',
+      learnMore: 'dev-diagnostics#quality',
       body: 'Every other tile on this tab is built from these records: one row '
         + 'per graded result (test case × rubric), newest first, up to 200. A '
         + 'score of 4.0 or more is a pass. The “failed rules” column lists the '
@@ -1620,6 +1652,7 @@
     },
     dashTileGroundedScore: {
       title: 'Groundedness score — did it invent anything?',
+      learnMore: 'dev-diagnostics#groundedness',
       body: 'Out of 5, higher is better, for one fixture (test case) from the '
         + 'most recent eval run — it is not an average across the suite. A '
         + 'rule-based check (no AI involved) pulls the specifics out of the '
@@ -1630,6 +1663,7 @@
     },
     dashTileFlagged: {
       title: 'Flagged specifics — worth a look',
+      learnMore: 'dev-diagnostics#groundedness',
       body: 'How many specifics in the latest run had no match in the '
         + 'candidate’s material, out of all the specifics found. A flag is a '
         + 'prompt to check, not proof of invention: a real fact that the '
@@ -1638,6 +1672,7 @@
     },
     dashTuneRun: {
       title: 'A/B a candidate prompt — how it works',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'Runs the eval twice on the same test cases — once with the app’s '
         + 'current prompt, once with your edited version — and shows the score '
         + 'change for every test case and rubric. Your text replaces the '
@@ -1650,6 +1685,7 @@
     },
     dashTileTuningLoop: {
       title: 'Tuning loop — how prompt changes get tested',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'The prompt-tuning loop is how a prompt change earns its way into '
         + 'the app: try a candidate (here, or with the /prompt-tune and '
         + '/tune-from-annotations skills), compare its scores with the '
@@ -1659,6 +1695,7 @@
     },
     dashTileBaseline: {
       title: 'Baseline — the saved reference scores',
+      learnMore: 'dev-diagnostics#tuning',
       body: 'The prompt version the saved reference scores '
         + '(evals/results/baseline_v1.json) were recorded with, and that '
         + 'baseline’s name. The Quality tab’s Health tile compares new scores '
@@ -1667,6 +1704,7 @@
     },
     dashFixtureSlug: {
       title: 'Fixture slug — where the bootstrap is saved',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'The folder name under evals/fixtures/real/ that this bootstrap is '
         + 'saved in; it defaults to <candidate>-bootstrap. Reusing a slug does '
         + 'not add JDs to an earlier run: every run is saved as its own, '
@@ -1678,6 +1716,7 @@
     },
     dashFixturePicker: {
       title: 'Pick a bootstrap — what you are about to label',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Lists every bootstrap saved under evals/fixtures/real/. Each entry '
         + 'shows its bullet (b) and skill (s) counts after near-duplicates are '
         + 'merged, “annotated” once labels have been saved, and the job(s) it '
@@ -1687,6 +1726,7 @@
     },
     dashAnnFields: {
       title: 'Failed rules, honest rewrite, forbidden pattern',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Failed rules: optional tags naming which grading rule an item '
         + 'breaks (for example invented_metric or scope_inflation). Pick them '
         + 'from the suggestions — Save refuses a tag that is not in the '
@@ -1706,6 +1746,7 @@
     },
     dashCollate: {
       title: 'Collate — turn your labels into a test case',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Collate saves your labels first, then turns them into a runnable '
         + 'test case in the fixture’s folder — deterministic, no AI calls, no '
         + 'cost. It writes expected.json (the skills you marked keep become '
@@ -1718,6 +1759,7 @@
     },
     dashCollateRun: {
       title: 'Run this fixture — grade the test case you just built',
+      learnMore: 'dev-diagnostics#annotate',
       body: 'Runs the paid eval on the test case Collate just wrote. The '
         + '“real --seed” part means it builds the candidate’s context from '
         + 'this fixture’s seed.json (the corpus snapshot) instead of a sample '

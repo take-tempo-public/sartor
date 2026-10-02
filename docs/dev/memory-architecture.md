@@ -4,7 +4,7 @@
 > modular subsystem — a reusable retrieval/memory substrate (`recall/`) that
 > *feeds* a small-LLM (Haiku) "avatar" which answers user + dev questions from
 > the system's own knowledge, with citations.
-> **Audience:** agents designing or building the v1.0.7 `feat/doc-assistant`,
+> **Audience:** `dev` — agents designing or building the v1.0.7 `feat/doc-assistant`,
 > `design/self-documenting-loop`, and WS-4b `wiki/cold-ingest-code` branches —
 > and any future project that wants to reuse the substrate.
 > **Status:** **Stage 0 + Stage 1 SHIPPED; deeper tiers still design.** The six
@@ -16,7 +16,7 @@
 > design only. Read the per-stage notes below for what is built vs. held.
 > **Authoritative for:** the tier model, the two cross-cutting planes, the
 > hybrid-retrieval decision, and the **reuse/extraction contract**. Defers to
-> [`../system-model.md`](../system-model.md) (the seven-function model),
+> [`../system-model.md`](system-model.md) (the seven-function model),
 > [`../wiki/pages/llm-wiki-design.md`](../wiki/pages/llm-wiki-design.md)
 > (git-as-engine + the wiki query op), and [`RELEASE_ARC.md`](RELEASE_ARC.md)
 > §Phase 4.5 / §4.7 for sequencing.
@@ -40,7 +40,7 @@
      (no-LLM turn ingest, source-turn recall, importance-over-recency
      forgetting) fits — *not* the corpus.
 3. **This is the project's *Memory* function, made first-class.** Per
-   [`../system-model.md`](../system-model.md) (Substrate · Production ·
+   [`../system-model.md`](system-model.md) (Substrate · Production ·
    Evaluation · Operation · **Memory** · Regulation · Governance), we are
    building out Memory as a module; the avatar is an **Operation** surface that
    consumes it. The substrate depends only *inward* (Substrate: git / fs / db),
@@ -258,6 +258,6 @@ agents build against (the way [`../../AGENTS.md`](../../AGENTS.md) governs):
   `audience:` tag) / §4.7 (`feat/doc-assistant`, `self-documenting-loop`).
 - [`../wiki/pages/llm-wiki-design.md`](../wiki/pages/llm-wiki-design.md) —
   git-as-engine, the query op, the "unreliable narrator" grounding guard.
-- [`../system-model.md`](../system-model.md) — the seven-function model this
+- [`../system-model.md`](system-model.md) — the seven-function model this
   realizes the **Memory** function of.
 - [`nursery.md`](nursery.md) — looser deferred ideas.

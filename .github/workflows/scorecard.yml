@@ -4,10 +4,7 @@ name: OpenSSF Scorecard
 # Guarded `if: ${{ !github.event.repository.private }}` so it is an inert
 # no-op while this repo is private — Scorecard requires a public repo (or a
 # GitHub App install for private ones, not set up here) and would otherwise
-# fail every run. Matches ci.yml's own "committed but latent until the repo
-# is pushed + promoted public" framing (see docs/governance/enforcement.md).
-# Activates for real once the [HUMAN] GitHub-repo-creation + public-promotion
-# step lands (RELEASE_ARC.md "Big-push scope brief" Phase 4).
+# fail every run.
 
 on:
   branch_protection_rule:

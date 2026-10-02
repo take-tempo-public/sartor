@@ -378,7 +378,7 @@ exclude = ["^docs-site/"]
 # the existing `pydantic` dep — no new dependency. The legacy SQLAlchemy mypy
 # plugin is deliberately NOT enabled: db/models.py uses native 2.0 typing
 # (DeclarativeBase + Mapped[...] + mapped_column), for which that plugin is
-# deprecated/unneeded. See docs/dev/kit-adoption-design.md §4.
+# deprecated/unneeded. See docs/dev/archive/kit-adoption-design.md §4.
 plugins = ["pydantic.mypy"]
 strict_optional = true
 ignore_missing_imports = true

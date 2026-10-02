@@ -2862,6 +2862,150 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
   follow-on branch `test/fixture-scoping` recommended, piloted on one
   low-risk file first.
 
+### Epic D, D2: the docs split (`feat/docs-split`, board 39)
+
+- **Changed: user and developer docs now live apart.** The install guide, walkthrough, worked
+  example and template guide moved to `docs/user/`. The architecture, system model and product
+  shape docs moved to `docs/dev/`. Each tier has a `README.md` front door listing its docs in
+  reading order. Sixteen finished or stale design docs moved to `docs/dev/archive/`, each with
+  an "archived" banner. Links in live docs were rewritten by a script
+  (`scripts/docs_move.py`). Historical records keep their original links, which now resolve
+  through `docs/dev/moved-paths.json`.
+- **Changed: the docs site publishes only what's registered.** `scripts/doc_registry.py` is
+  now the one list of published docs, with each doc's tier. Before this, any doc with a full
+  header was published, including handoff briefs, a diagnosis, reviews and perf records.
+  Those no longer appear. The site navigation is split into "Using Sartor" and "Building on
+  Sartor". Page URLs follow the new paths (for example `/docs/user-install`).
+- **Added: an audience check for published docs.** Every published doc's `**Audience:**` line
+  must start with `` `user` `` or `` `dev` ``, matching its registered tier.
+  `scripts/check_doc_frontmatter.py` enforces it.
+
+### Epic D, D3 (user half): the user guides (`feat/user-docs`, board 39)
+
+- **Added: two new user guides.** `docs/user/iterating.md` covers starting your next
+  application, what carries over, refining a finished résumé, Candidate memory, and finding
+  and tracking earlier applications on the Pipeline tab. `docs/user/coaching.md` covers using
+  one copy of Sartor for several people. Both are on the docs site and linked from the user
+  front door.
+- **Changed: the walkthrough matches the app again.** It now says which steps use AI, without
+  route or model detail; those facts live in `docs/dev/architecture.md`. Corrected: Generate
+  makes no AI call once Compose is saved; Refine proposes one change you review in Compose; the
+  tab is called "Tailor"; returning to a user starts at Step 1, with Pipeline's "Resume in
+  wizard" to continue.
+- **Changed: install and template guides split by audience.** The one-time publishing setup
+  moved to `docs/dev/releasing.md`, and the template build notes to
+  `docs/dev/bundled-templates.md`. The install guide now states what an application costs in
+  one place: about US$0.25 in the one measured sample, with its caveats. It points to
+  Anthropic's usage limits, since Sartor has no spending limit of its own. The template guide's
+  font list is corrected to Arial, Calibri and Georgia.
+- **Changed: "Sartor" in sentences across the app.** Help text and the assistant use `Sartor`
+  in sentences, keeping the `sartor.` wordmark for the logo and page title. The assistant's
+  prompt changed wording only (`AVATAR_PROMPT_VERSION` → `2026-09-29.1`); `PROMPT_VERSION` is
+  unchanged.
+- **Added: help for the Pipeline tab**, and the Step 6 help now explains Refine and follow-up
+  questions. The Pipeline hint no longer calls the tab read-only.
+
+### Epic D, D3 (dev half): the developer guides (`feat/dev-docs`, board 39)
+
+- **Added: a developer front door with a reading order.** `docs/dev/README.md` lays out the
+  dev ladder: install, first green gate, the system map, your first change, why the rules
+  bind, and the maintainer lane. It adds a "where to make a change" table and indexes every
+  developer doc by kind.
+- **Added: three developer references.**
+  - `docs/dev/diagnostics.md` documents each diagnostics-console tab with a flow diagram and a
+    table of its controls, routes, paid calls and run-lock behavior.
+  - `docs/dev/tooling.md` lists every hook, guard, slash command, subagent and skill, and
+    where each one runs.
+  - `docs/dev/maintainer-lane.md` holds the owner's session protocol.
+- **Changed: `AGENTS.md` keeps the code rules; the owner's session protocol moved out.** The
+  branch close-out checklist and the handoff steps now live in `docs/dev/maintainer-lane.md`,
+  which `CLAUDE.md` imports. Outside contributors are no longer routed through it. AGENTS.md
+  shrank from about 32 KB to 23 KB.
+- **Fixed: contradictions in the contributor docs (item 127).**
+  - CONTRIBUTING and the `git-flow` subagent no longer tell anyone to merge locally with
+    `--no-ff`; changes land through a pull request.
+  - CI is no longer described as "latent" (in CONTRIBUTING, three workflow comments and the
+    CI backstop).
+  - The quality gate is no longer described as four steps. The docs now point at
+    `scripts/gate.py`.
+- **Changed: the architecture map matches the code.** The module map now covers the
+  factory's `config.py`, `preflight.py`, demo mode, `web_infra/`, `onboarding/`,
+  `ui_pages/` and the eval tooling. Two stale function names are fixed, and route counts
+  are replaced by the command that recounts them. The diagrams no longer call the legacy
+  Generate path a live gap in the wizard: it is reachable only by a direct request (item 67).
+- **Changed: developer docs trimmed and archived.**
+  - The README's developer sections are now links.
+  - `PRODUCT_SHAPE.md`'s pre-v1.0 sections moved to `docs/dev/archive/PRODUCT_SHAPE-history.md`.
+  - `documentation-architecture.md` now describes the shipped publishing model.
+  - `dashboard/README.md` now says five tabs.
+- **Filed:** item 134, a cost-estimate contradiction in the diagnostics console.
+
+### Epic D, D4: docs assets and enforcement (`feat/docs-assets-enforcement`, board 39)
+
+- **Changed: the doc checks share one corpus pass, and the link check is faster.** A new
+  `scripts/doc_corpus.py` lists tracked files once, reads each doc once, and answers whether
+  a link target exists from the tracked set, touching the disk only on a miss.
+  `check_doc_links`, `check_doc_frontmatter` and `check_doc_single_home` now read through it.
+  Their output is unchanged: identical on the real tree, and identical to the old link
+  checker on a seeded set of 18 link shapes. The link check went from 6.52 s to 1.98 s (best
+  of seven interleaved runs, same machine; the medians, 9.08 s and 3.29 s, were inflated by
+  machine load).
+- **Added: the doc lints from the docs IA design (§5).** `scripts/doc_lints.py`, gated through
+  `tests/test_doc_lints.py`, which gives every rule a seeded violation it must catch:
+  - every user-tier doc carries a Diátaxis `**Type:**`;
+  - published docs write `Sartor` in sentences, keeping `sartor.` for the wordmark alone;
+  - a live doc that lists the deterministic modules, the subagents or the gate's tools must
+    list all of them or cite the code, and `docs/dev/tooling.md` must match the tree;
+  - user-tier docs avoid the banned words, expand LLM/JD/ATS/SSE/API on first use, and
+    carry no internal tracker IDs;
+  - no `[[wikilink]]` outside the wiki, and every charter clause has its own heading.
+
+  A widened single-home check runs as a report only (`--report`).
+- **Changed: the docs now pass those lints.** Six user docs gained a `**Type:**` line. The
+  README, install guide, iterating guide and vision expand their acronyms and no longer show
+  tracker IDs. Seventeen sentences say `Sartor`. Two module lists and two gate descriptions
+  were brought in line with the code or replaced with a pointer to it.
+- **Changed (editorial, owner-directed): each charter clause has its own heading.** C-0 to
+  C-12 are now `###` headings, so a citation can link straight to a clause, and the charter
+  says `Sartor` in sentences. No clause's wording or meaning changed beyond the product name.
+  A dated note in the charter records this.
+- **Added: a `doc-writing` skill** (`skills/doc-writing/`). It walks a doc through the order
+  the docs IA requires: tier and type, ladder rung, header, cite instead of restating,
+  registration, then the doc lints until no block remains. It names each rule's home rather
+  than restating it. Its evaluation plan (with-skill against baseline, scored by the lints)
+  is written but not yet run.
+- **Changed: all ten documentation screenshots are regenerated (item 9).** They had still
+  shown the old product name. The README now opens its "How it works" section with the
+  Step 1 screenshot.
+- **Fixed: the screenshot script can get past Generate again.** Its synthetic résumé used
+  year-only dates, which the month-precision rule refuses, so every full run stopped at
+  Step 5. The monthly smoke run stops after Step 1 and never saw it. The fixture now
+  carries months. The screenshot runbook now leads with the scripted path.
+- **Filed:** item 139 (the screenshot script leaves its demo user behind after a failed run)
+  and item 140 (generated text can echo internal bullet ids such as `b180`, and the cover
+  letter makes up its date; both are visible in two of the new screenshots).
+- **Added: every help bubble links to its page in the docs.** All 16 wizard bubbles and all
+  39 diagnostics-console bubbles now end with "Read more in the docs ↗", which opens the
+  matching section of the published docs in a new tab. A test resolves every link against
+  the published pages and their headings, and fails if a bubble has no link.
+- **Fixed: the in-app assistant can cite the accessibility page in user answers.**
+  `ACCESSIBILITY.md` is a user-tier page, but the assistant treated it as developer-only. A
+  test now checks every published page's tier against the assistant's rule.
+- **Fixed: the docs site builds again, and a broken diagram now fails the build.**
+  - Since the docs split (D2), every screenshot link in the projected pages pointed outside
+    the site, and the static build failed on all ten. The projector now points each image at
+    the copy it makes.
+  - The architecture page's pipeline diagram had been showing as raw source: a `;` in one
+    label ended the Mermaid statement early. It is fixed.
+  - The docs-site workflow now loads every published page in headless Chromium and fails if
+    any diagram doesn't render or any local image doesn't load
+    (`scripts/check_docs_site_mermaid.py`). All 11 diagrams render.
+- **Added: each projected docs page records the commit it came from (item 126).**
+  `python scripts/check_docs_projection_fresh.py` says whether a local copy of the
+  generated site matches `HEAD`, so a stale copy can't pass for the live site.
+- **Filed:** item 137 (review the pinned models and call settings for performance and cost)
+  and item 138 (the Settings drawer has no help bubble).
+
 ## [1.0.9] — 2026-07-10
 
 ### Added: spectree/OpenAPI Layer B, Phase 1 — spec emission only (`feat/spectree-openapi-emit`)

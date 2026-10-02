@@ -9,7 +9,7 @@
 > + `static/app.js`, and the in-app help copy in `static/app.js` (`_HELP_REGISTRY`).
 > The "approve once, no surprises" framing reflects the Compose-authors /
 > deterministic-Generate re-architecture — see
-> [`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md)
+> [`docs/dev/archive/generation-experience-rearchitecture.md`](../../dev/archive/generation-experience-rearchitecture.md)
 > and [[frontend-wizard]]. The no-fabrication promise is the one in
 > [`../overview.md`](../overview.md).
 

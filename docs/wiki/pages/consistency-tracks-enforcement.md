@@ -18,7 +18,7 @@
 Consistency here **tracks enforcement**: every pattern a hook or the linter *guards* is
 uniform to a fault; the only real inconsistencies are the ones left to discipline — and
 both are already named on the backlog. This is the **Regulation** function
-([`../../system-model.md`](../../system-model.md)) doing visible work: mechanized rules
+([`../../system-model.md`](../../dev/system-model.md)) doing visible work: mechanized rules
 produce mechanical consistency `[synthesis]`.
 
 ## Surface consistency (style, naming, structure) — STRONG
@@ -136,7 +136,7 @@ records a split that is invisible from any single file and went unrecorded until
 git-hook adapter is tool-agnostic (Codex, Cursor, Aider, a human on the CLI);
 `ci_backstop.py` + `scripts/gate.py` bind everyone even with no hooks installed; but
 `require_evidence_before_fix` (C-7), `require_consumer_enumeration` (C-10), `interrogative_witness` (work item 87), the C-8/C-12
-context hooks, and `verify_binary_on_path` are **Claude Code only**. Unlike C-7/C-10, `interrogative_witness` is by *nature* — it depends on Claude's *session* prompt/turn structure, which git hooks cannot access; see [`docs/governance/enforcement.md` §"The gap, named"](../../governance/enforcement.md). Of the C-11/C-12
+context hooks, `verify_binary_on_path`, and `block_subagent_git_stash` (`scripts/enforcement/guards/block_subagent_git_stash.py:claude_check`) are **Claude Code only**. Unlike C-7/C-10, `interrogative_witness` is by *nature* — it depends on Claude's *session* prompt/turn structure, which git hooks cannot access; see [`docs/governance/enforcement.md` §"The gap, named"](../../governance/enforcement.md). Of the C-11/C-12
 mechanisms, only the closure bar binds every agent.
 
 So the honest statement of this page's thesis at HEAD is narrower than it looks:

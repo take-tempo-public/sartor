@@ -6,7 +6,7 @@
 > claims are made only where a deterministic test enforces them by construction; soft
 > rules describe mechanism and effort. Honors **P-3 / D-4 / E-1**: prefer machine-run
 > gates that keep themselves honest over recurring human-labor obligations.
-> **Audience:** contributors and agents deciding whether a rule should be a gate; the
+> **Audience:** `dev` — contributors and agents deciding whether a rule should be a gate; the
 > future compliance agent.
 > **Authoritative for:** the gate/witness/tribal split and each item's ship state.
 > Evidence base cited by `F-id` ([`../dev/reviews/2026-06-product-excellence/02-assessment/findings-register.md`](../dev/reviews/2026-06-product-excellence/02-assessment/findings-register.md));
@@ -123,7 +123,7 @@ incident that motivates C-10 sits in that blind spot. There is also no CI backst
 | Wiki freshness | **witness hook** (always exit 0) + honest sentinel | an ingest costs LLM tokens; a human decides when to pay. The freshness reminder is the amendment-ceremony precedent (F-gov-06), not a gate |
 | Grounding strictness / no-invention | **prompt mechanism + witness metric** (`grounding_overlap`), never a categorical | C-0 bars LLM-behavior absolutes; the metric *measures*, it does not enforce by construction. The absolute "the LLM cannot invent facts" copy was struck in v1.0.6 (PX-09, F-vision-02/F-docs-03). Over-suppression is uninstrumented (F-eval-01) — instrument as a witness signal, not a gate |
 | Parallel-session isolation (W-1) | **worktree-local hooks: DONE; written governance: DONE** | the "make the plan hooks worktree-scoped" half **shipped** on `fix/plan-approval-hook-scope` — `check-plan-approved.sh`/`mark-plan-approved.sh`/`cleanup-plan-on-merge.sh` now key their marker/pointer state off `CLAUDE_PROJECT_DIR`, so a concurrent session in a different project/worktree can no longer false-block or wipe this one's approved plan (F-gov-02, backing **W-1.2**). The written-governance half **landed on `docs/charter-w1-amendment`**: [`charter.md`](charter.md#working-model-w-1w-2) now carries the real W-1.1–W-1.4 clauses + the serial-posture paragraph — **F-gov-03 resolved**, the citation is no longer dangling |
-| Close-out sweep / handoff / carry-forward ledger | **tribal (AGENTS.md) — keep tribal** | judgement-shaped, no clean deterministic predicate; honestly separated from the enforced set today (F-gov-04). The cumulative open-ledger discipline (charter W-1.4) is a written rule, not a gate — do not manufacture a brittle predicate |
+| Close-out sweep / handoff / carry-forward ledger | **tribal (`docs/dev/maintainer-lane.md`, split out of AGENTS.md in Epic D D3) — keep tribal** | judgement-shaped, no clean deterministic predicate; honestly separated from the enforced set today (F-gov-04). The cumulative open-ledger discipline (charter W-1.4) is a written rule, not a gate — do not manufacture a brittle predicate |
 | New-dependency justification, PROMPT_VERSION bump | **convention + witness** | `ruff-changed` blocks lint, but the "couldn't be done in pure Python" and version-bump rules stay reviewer-judgement; gating them invites false positives |
 
 ## Enforcement reach — WHICH agents each gate actually binds (read this before extracting governance)
@@ -210,7 +210,14 @@ would itself violate the charter.
 
 ## Implementation status (so this maps cleanly)
 
-The v1.0.7 governance slice, with current ship state:
+> **Status 2026-09-30 (Epic D D3):** everything in the list below has shipped. That includes
+> items 1–2 and the four forward-sequenced gates in item 5; the ship-state columns of §A and
+> §B above are current. The dispatcher consolidation described at the end has since grown:
+> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs five. The live roster
+> is [`../dev/tooling.md`](../dev/tooling.md). The list and paragraphs below are kept as the
+> record of how the v1.0.7 slice was sequenced.
+
+The v1.0.7 governance slice, as it was sequenced:
 
 1. **F-gov-07** — delete the `check-plan-approved.sh` hand-create hint. **This branch
    (PX-28).** One-line-class, no risk.

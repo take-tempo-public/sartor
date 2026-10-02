@@ -54,7 +54,7 @@ cannot verify a claim against the source, do not assert it.
 - **Audience stamp.** Every content page carries `> **Audience:** ` + a backticked
   `user` or `dev` token in its blockquote header. Preserve the existing stamp; for a new
   page, set the tier from the SCHEMA blanket path→audience rule (code / `docs/dev/` /
-  `evals/` / `dashboard/` → `dev`; `README.md` / `docs/install.md` / walkthrough /
+  `evals/` / `dashboard/` → `dev`; `README.md` / `docs/user/install.md` / walkthrough /
   `vision.md` → `user`).
 
 ## The contract lives elsewhere (D5) — cite, never restate

@@ -3,11 +3,17 @@ schema = 1
 id = 9
 kind = "item"
 title = "release/visual-assets refresh - stale screenshots"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 epic = 39
 refs = ["RELEASE_ARC.md step 15", "scripts/capture_screenshots.py"]
 summary = "10 committed PNGs were ~7.5 weeks stale as of 2026-07-21 (predate the diagnostics redesign); README hero never wired in."
+resolution = "Done on feat/docs-assets-enforcement (Epic D D4, 2026-10-01). All 10 PNGs regenerated with scripts/capture_screenshots.py (they still showed the pre-rename product name). The README hero is wired under How it works. Two defects found on the way are fixed: the capture fixture's year-only dates (the month-precision gate refused Generate) and the projector's image links (all 10 images broke the docs-site build since D2). Follow-ons: item 139 (capture leaves demo state behind) and item 140 (bullet-id leak and invented letter date visible in two shots)."
+verified_by = [
+  "scripts/check_docs_site_mermaid.py in .github/workflows/docs-deploy.yml: every published page's same-origin images must return 200 (seeded: hero PNG removed -> HTTP 404, exit 1)",
+  "tests/test_docs_site_checks.py::test_projected_images_point_at_the_copied_screenshots",
+]
+branches = ["feat/docs-assets-enforcement"]
 ```
 
 Capture is a working, debugged Playwright run (`scripts/capture_screenshots.py`,

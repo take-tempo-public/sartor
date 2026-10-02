@@ -1,9 +1,9 @@
 """Drive the wizard to produce the 10 manifest screenshots.
 
 Generates a synthetic Priya master .docx (matching the worked
-example at docs/walkthrough_example.md), walks through all six
+example at docs/user/walkthrough-example.md), walks through all six
 wizard steps via Playwright, and captures the 10 PNGs per
-docs/ux/screenshot_capture.md.
+docs/dev/screenshot-capture.md.
 
 Cost: ~$0.27 in Anthropic API spend per run (full wizard pass:
 extract_experiences + analyze + clarify + recommend_bullets +
@@ -103,7 +103,7 @@ SAMPLE_REFINE_NOTE = "emphasize the team-lead role more in the summary"
 
 
 def write_priya_docx(path: Path) -> None:
-    """Synthetic master résumé matching docs/walkthrough_example.md.
+    """Synthetic master résumé matching docs/user/walkthrough-example.md.
 
     Generates a minimal but parser-friendly .docx with three
     experiences, ~8 bullets each, one Kafka-passing-mention bullet
@@ -116,9 +116,12 @@ def write_priya_docx(path: Path) -> None:
     doc.add_paragraph("priya.sharma@example.com · linkedin.com/in/priya-sharma")
 
     doc.add_heading("Experience", level=1)
+    # Month-level dates: generation refuses a role without start/end months
+    # (blueprints/generation.py:_month_block_response). Months match the rows earlier
+    # runs stored for the demo user, so a re-import merges instead of duplicating.
 
     doc.add_heading("Helix Logistics — Senior Backend Engineer", level=2)
-    doc.add_paragraph("2023 – Present")
+    doc.add_paragraph("Jan 2023 – Present")
     for bullet in [
         "Built and maintained Python services on the order-routing platform serving 4M+ daily shipments.",
         "Owned the order-events pipeline; helped migrate it off AWS SQS to Kafka over a six-month dual-write/cutover phase.",
@@ -132,7 +135,7 @@ def write_priya_docx(path: Path) -> None:
         doc.add_paragraph(bullet, style="List Bullet")
 
     doc.add_heading("Northwind Foods — Backend Engineer", level=2)
-    doc.add_paragraph("2019 – 2023")
+    doc.add_paragraph("Jan 2019 – Jan 2023")
     for bullet in [
         "Built Postgres-backed inventory and pricing services in Python and FastAPI.",
         "Tuned Postgres query plans and indexing for the catalog service; improved key endpoint throughput 3x.",
@@ -146,7 +149,7 @@ def write_priya_docx(path: Path) -> None:
         doc.add_paragraph(bullet, style="List Bullet")
 
     doc.add_heading("Carver Robotics — Junior Backend Engineer", level=2)
-    doc.add_paragraph("2017 – 2019")
+    doc.add_paragraph("Jan 2017 – Jan 2019")
     for bullet in [
         "Wrote Python services for the robot fleet's command-and-control layer.",
         "Built REST APIs in Flask for the operator console.",
@@ -543,7 +546,7 @@ def main() -> int:
     print(f"  · review {SHOTS.relative_to(REPO)}/")
     print("  · if any capture looks off, re-run with --keep-user and iterate")
     print("  · once the 10 PNGs look right, I (Claude) can do the markdown")
-    print("    insertion pass per docs/ux/screenshot_capture.md")
+    print("    insertion pass per docs/dev/screenshot-capture.md")
     return 0
 
 

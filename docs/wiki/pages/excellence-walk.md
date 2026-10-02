@@ -19,7 +19,7 @@ partnered, evidence-first** mode — no code changed during it. It set a directi
 ("a polished production codebase") and produced three durable things:
 
 1. a **system self-model** — the seven functions + one dependency law (the settled
-   result now lives canonically in [`../../system-model.md`](../../system-model.md));
+   result now lives canonically in [`../../system-model.md`](../../dev/system-model.md));
 2. a **five-question assessment** of the project (Q1–Q5); and
 3. an **engineering-excellence backlog** of workstreams (WS-1…WS-4), including the
    LLM-wiki knowledge architecture (WS-4) and a follow-on Governance extraction.
@@ -53,8 +53,8 @@ ingest synthesizes the *reasoning*, it does not re-decide anything `[synthesis]`
 
 - the epic ladder / realization plan → [`../../dev/RELEASE_ARC.md`](../../dev/RELEASE_ARC.md);
 - release gates → [`../../dev/RELEASE_CHECKLIST.md`](../../dev/RELEASE_CHECKLIST.md);
-- the system self-model + workstreams → [`../../PRODUCT_SHAPE.md`](../../PRODUCT_SHAPE.md) §11
-  (which defers to [`../../system-model.md`](../../system-model.md));
+- the system self-model + workstreams → [`../../PRODUCT_SHAPE.md`](../../dev/PRODUCT_SHAPE.md) §11
+  (which defers to [`../../system-model.md`](../../dev/system-model.md));
 - deferred feature ideas → [`../../dev/nursery.md`](../../dev/nursery.md).
 
 The fifth raw file,

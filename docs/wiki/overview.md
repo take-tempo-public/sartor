@@ -3,11 +3,11 @@
 > **Purpose:** the wiki's front door — a one-page orientation to what sartor. is and
 > how the whole system is shaped. The **canonical** statement of the system model (the
 > seven functions, the one law, the Product/Work split, the full "Where it lives" file
-> map) is [`../system-model.md`](../system-model.md); this page presents it at the
+> map) is [`../system-model.md`](../dev/system-model.md); this page presents it at the
 > wiki's altitude and **defers to it** for the authoritative vocabulary.
 > **Audience:** `user` — anyone meeting the project; a human reader, or an LLM agent
 > orienting before a change.
-> **Grounding:** synthesized from [`../system-model.md`](../system-model.md) (the
+> **Grounding:** synthesized from [`../system-model.md`](../dev/system-model.md) (the
 > canonical self-model) per [`SCHEMA.md`](SCHEMA.md)'s one grounding rule. Where this
 > page and the canonical doc differ, the canonical doc is right.
 
@@ -60,7 +60,7 @@ Product**, with an AI coding agent treated as a first-class inhabitant of it.
 | **Governance** | The north-star answered to — the written vision and the 10 Principles. The one layer deliberately *prescribed* rather than emergent. |
 
 The full descriptions and the per-function "Where it lives" file map are in the
-canonical [`../system-model.md`](../system-model.md) — not duplicated here.
+canonical [`../system-model.md`](../dev/system-model.md) — not duplicated here.
 
 ## The one law
 
@@ -78,7 +78,7 @@ core still runs. That one-way discipline is why the codebase stays navigable as 
 ## Open revision points (inherited from `system-model.md`; not yet resolved)
 
 These four framing calls were raised 2026-06-07 in
-[`../system-model.md`](../system-model.md) §"Open revision points" and were
+[`../system-model.md`](../dev/system-model.md) §"Open revision points" and were
 deliberately left open to settle here, as this page is refined. Recorded so they are
 not silently dropped.
 

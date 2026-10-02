@@ -49,6 +49,7 @@ IRRELEVANT_PREFIXES = frozenset(
         "docs/dev/prov/",  # provenance spec — process meta, not wiki-cited
         "docs/dev/work/items/",  # per-item filings — BOARD.md is generated FROM these
         "docs/work/",  # isidium-store governed tracking root (cards + config.toml) — an indexed tier, not curated wiki content (round 7l.5); the store is its only writer
+        "docs/dev/archive/",  # archived designs (Epic D D2) — frozen records, never updated
         "docs/dev/flake-rates/",  # CI flake-rate measurement store — process/telemetry
         # record (per-run JSONL shards), never a wiki source; see
         # docs/dev/blast-radius/flake-rate-measurement.md
@@ -79,9 +80,6 @@ IRRELEVANT_FILES = frozenset(
         "CHANGELOG.md",  # release notes, not a wiki source
         "CHANGELOG-archive.md",
         "docs/bundled_templates_LICENSE.md",
-        # dev-process failure-class study (item 52) — same process-record character
-        # as docs/dev/diagnosis/; never cited by a wiki page
-        "docs/dev/gate-window-class-study.md",
         # dev-process errata for one epic's execution method — same process-record
         # character as the study above and as docs/dev/diagnosis/; never cited by a
         # wiki page. Consumer enumeration:
@@ -94,12 +92,11 @@ IRRELEVANT_FILES = frozenset(
         # authorized run. Consumer enumeration:
         # docs/dev/blast-radius/n1-baseline-pipeline.md
         "docs/dev/n1-baseline-pipeline.md",
-        # design-sprint input for the item-97 external-orchestration move
-        # (board-as-is facts + owner's no-Issues-projection directive) —
-        # dev-process design record, same character as the study/errata
-        # entries above; describes agent tooling, not the product. Never
-        # cited by a wiki page.
-        "docs/dev/board-forge-sync-review.md",
+        # screenshot-capture runbook, moved from docs/ux/ (an irrelevant prefix) by Epic D
+        # D2 — keeps the classification it had there. docs/dev/blast-radius/docs-split.md
+        "docs/dev/screenshot-capture.md",
+        # machine-read old -> new path map written by scripts/docs_move.py (Epic D D2)
+        "docs/dev/moved-paths.json",
     }
 )
 
@@ -181,45 +178,35 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docs/dev",
         "docs/dev/work",  # SCHEMA.md defaults relevant; items/ and BOARD.md carved out separately
         # docs/ immediate children
-        "docs/PRODUCT_SHAPE.md",
-        "docs/architecture.md",
-        "docs/install.md",
-        "docs/system-model.md",
-        "docs/template_authoring.md",
-        "docs/walkthrough.md",
-        "docs/walkthrough_example.md",
+        "docs/user",  # user-tier docs (Epic D D2); files below default relevant
         "docs/governance",
         # docs/dev/ immediate children (subdirectories not already in the prefix sets,
         # and every loose top-level docs/dev/*.md file)
         "docs/dev/excellence-walk",  # the wiki's excellence-walk pages are built FROM this
         "docs/dev/AGENT_FAILURE_PATTERNS.md",
         "docs/dev/AGENT_HANDOFF_TEMPLATE.md",
-        "docs/dev/COMPOSE_REWRITE_DIAL.md",
+        "docs/dev/PRODUCT_SHAPE.md",  # moved from docs/ (Epic D D2)
+        "docs/dev/README.md",  # dev front door (Epic D D2)
+        "docs/dev/architecture.md",  # moved from docs/ (Epic D D2)
+        "docs/dev/system-model.md",  # moved from docs/ (Epic D D2)
         "docs/dev/EXTRACTION.md",
         "docs/dev/GROUNDING_METRIC.md",
-        "docs/dev/ORCHESTRATION_PLAYBOOK.md",
         "docs/dev/RELEASE_ARC.md",
         "docs/dev/RELEASE_CHECKLIST.md",
-        "docs/dev/V1_0_5_VERIFICATION.md",
-        "docs/dev/app-blueprints-design.md",
-        "docs/dev/avatar-citation-format-guidance.md",
-        "docs/dev/avatar-voice-tone-guidance.md",
         "docs/dev/decisions.md",
-        "docs/dev/dependency-triage-pre-v1.1.0.md",
         "docs/dev/doc-style-guide.md",
+        "docs/dev/docs-ia-design.md",
         "docs/dev/docs-site-deploy.md",
         "docs/dev/documentation-architecture.md",
-        "docs/dev/generation-experience-rearchitecture.md",
-        "docs/dev/governance-extraction-design.md",
         "docs/dev/handoff-integrity-design.md",
         "docs/dev/keep-ledger.md",
-        "docs/dev/kit-adoption-design.md",
         "docs/dev/memory-architecture.md",
         "docs/dev/nursery.md",
-        "docs/dev/pagedjs-preview-spike.md",
-        "docs/dev/self-documenting-loop-design.md",
-        "docs/dev/window-8.5-findings.md",
-        "docs/dev/window-8.5-walkthrough.md",
+        "docs/dev/bundled-templates.md",  # maintainer half of docs/user/templates.md (Epic D D3)
+        "docs/dev/releasing.md",  # maintainer publishing runbook, out of install.md (Epic D D3)
+        "docs/dev/maintainer-lane.md",  # owner session protocol, split out of AGENTS.md (O-2, D3)
+        "docs/dev/diagnostics.md",  # per-tab diagnostics console reference (Epic D D3)
+        "docs/dev/tooling.md",  # hooks/guards/commands/subagents/skills roster (Epic D D3)
     }
 )
 

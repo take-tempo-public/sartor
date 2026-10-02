@@ -1,6 +1,6 @@
 """JSON Resume v1.0 intermediate format — canonical structured shape.
 
-Per docs/PRODUCT_SHAPE.md §6.4, sartor. adopts JSON Resume v1.0
+Per docs/dev/PRODUCT_SHAPE.md §6.4, sartor. adopts JSON Resume v1.0
 (jsonresume.org) as the canonical intermediate between the LLM's
 markdown emit and the downstream renderers (.md, .docx, .pdf, HTML).
 

@@ -150,3 +150,5 @@ enforceable: the judge lives on the deterministic side of the line.
 - [[project-self-assessment]] — the boundary as a state-of-the-work strength.
 - [[eval-harness]] — `hardening.extract_jd_label`, a deterministic helper that exists
   for the eval side only.
+- [[keyless-client-refusal]] — the credential check at the top of the one LLM call site.
+- [[education-degree-field-rendering]] — a deterministic rendering path, end to end.

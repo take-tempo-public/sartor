@@ -1,6 +1,6 @@
 """Print the handoff pointer line — the one line of copyable chat text a
-closing agent hands the user at the end of a branch (AGENTS.md "Branch
-close-out checklist" step 5; docs/dev/AGENT_HANDOFF_TEMPLATE.md Close-out
+closing agent hands the user at the end of a branch (docs/dev/maintainer-lane.md
+"Branch close-out checklist" step 5; docs/dev/AGENT_HANDOFF_TEMPLATE.md Close-out
 checklist step 5; docs/dev/handoffs/README.md "The pointer").
 
 Exists because that line's commit hash was, until now, hand-typed from

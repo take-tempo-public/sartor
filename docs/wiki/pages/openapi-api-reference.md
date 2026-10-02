@@ -18,8 +18,8 @@
 
 "Layer B" of the kit-adoption spectree wiring adds machine-readable OpenAPI
 documentation over a deliberately small slice of the route surface — **five**
-read-only `GET` routes out of **119** total (`grep -rE "@[a-zA-Z_]+\.route\("
-blueprints/ dashboard/ app.py` `[synthesis]`) — without touching the other 114
+read-only `GET` routes out of **120** total (`grep -rE "@[a-zA-Z_]+\.route\("
+blueprints/ dashboard/ app.py` `[synthesis]`) — without touching the other 115
 routes or adding request-side validation anywhere. Every decorated route also
 passes
 `skip_validation=True`
@@ -39,7 +39,7 @@ Two config choices matter:
 
 - **`mode="strict"`** — spectree's default ("normal") mode would also collect
   every *undecorated* route with an empty/schema-less entry, misrepresenting
-  the other 112 routes as "documented" (the module docstring's own estimate,
+  the other 115 routes as "documented" (the module docstring's own estimate,
   written when the route count was lower, says "~85" — the wiki cites the
   live-verified count instead `[synthesis]`). `strict` mode restricts spec
   collection to only the routes this `spec` instance actually decorates
@@ -137,3 +137,4 @@ for the L0–L3 layering (cited, not restated — D5).
 - [[consistency-tracks-enforcement]] — `mode="strict"` + the 5-path self-check
   in `generate_openapi_spec.py` are another instance of "consistency tracks
   enforcement": the spec can't silently over- or under-claim coverage.
+- [[docs-information-architecture]] — the publication registry the docs site projects from.

@@ -18,100 +18,21 @@ Then visit `http://localhost:5000/_dashboard`. The blueprint refuses any request
 
 ## What it shows
 
-**Four tabs, each a bento grid of summary tiles.** A tile shows a headline stat;
-clicking it opens one shared **right-hand drawer** with the full chart/table +
-detail. Charts lazy-init when their drawer first opens. The console is built on
-the cb-* design system (links `static/style.css`); layout is scoped under
-`.cb-dash`. Everything is server-rendered — with JS off, panes stack and details
-render inline (graceful degradation).
+**Five tabs** (Pipeline, Quality, Groundedness, Tuning, Annotate), each a bento grid of
+summary tiles. Clicking a tile opens its detail in one shared **inline, full-width detail
+panel** (`#detailPanel`). JS moves the tile's detail block in from `#detailStore`, and charts
+lazy-init the first time their detail opens. The console is built on the cb-* design system
+(it links `static/style.css`); layout is scoped under `.cb-dash`. Everything is
+server-rendered, so with JS off the panes stack and the details render inline.
 
-**Write surfaces.** The **blueprint itself never writes** — it has two GET
-routes: the index, and `GET /api/run/<run_id>` (Epic C C2), which returns one
-run's detail for the run-detail modal. The console's write and paid-run routes
-live in `blueprints/diagnostics.py`, not this blueprint, and each checks for a
-localhost request: **Quality**'s Run eval (`POST /api/eval/run`, writes
-`evals/results/`), **Tuning**'s A/B run (`POST /api/tune/run`), and the
-**Annotate** tab's bootstrap / save / collate / score / seed-export routes
-(`/api/annotation/...`, slug-contained under `evals/fixtures/real/`) — see the
-Annotate section below. Every one of those runs spends money except Save,
-Collate and Export seed.
+**What each tab reads, which routes it calls, what is paid and what it writes** is documented
+per tab, with flow diagrams, in
+[`docs/dev/diagnostics.md`](../docs/dev/diagnostics.md). This README covers the code in this
+directory.
 
-### Pipeline
-
-| Tile | Drawer detail | Source |
-|---|---|---|
-| **Cost meter** (total · p50 · p95) | cost-by-call-kind bar + table | `_summarize_calls` + `_cost_by_call_kind` |
-| **Throughput** (calls · cache-hit · tokens) | recent-calls table (most recent 200), filterable by since/user/model | `_summarize_calls` |
-| **Reliability** (error % · truncation %) | error + `max_tokens`-truncation rates, split by call kind | `_reliability` |
-| **Trace** (latest run spans / total latency) | per-`run_id` span **waterfall** + recent-runs table | `_run_trace` |
-| **Latency** (p50 / p95) | percentile detail | `_summarize_calls` / `_percentile` |
-
-Filter calls by since-date, user, model. To isolate eval traffic set **user** to
-`eval:{fixture}` (e.g. `eval:pm-senior`). The `run_id` joins both calls of a
-pipeline and the per-rubric eval rows from that pipeline.
-
-### Quality
-
-| Tile | Drawer detail | Source |
-|---|---|---|
-| **Health vs baseline** (overall badge) | per-(fixture×rubric) delta vs the `baseline_v1.json` floor | `_baseline_health` / `_load_baseline` |
-| **Pass rate** | per-rubric pass-rate bar (pass = score ≥ 4.0) | `_per_rubric_pass_rate` |
-| **Score trend** | score-over-time line, one per rubric, `prompt_version` on hover | `_score_over_time` |
-| **Heatmap** | most-recent score per (rubric, fixture), `hsl(120·score/5)` cells | `_rubric_fixture_heatmap` |
-| **Failure modes** | top-20 `failed_rules` slugs (per-record dedup) | `_failure_mode_frequency` |
-| **Pareto** (verdict badge) | quality-vs-latency scatter + latency/cost trends | `_pareto_data` |
-
-Health bands: **regressed** Δ<−0.5 (the merge-block gate), **watch** Δ<−0.3,
-else **ok**. The overall badge is the worst verdict present.
-
-### Groundedness
-
-The marquee surface, designed around the 2026-06-06 metric contract
-(`deterministic_metrics.groundedness`). Tile shows the latest L0 score (0–5),
-fabricated-specifics rate, and flagged count. The drawer charts
-`groundedness.score` **over time by `prompt_version`** (one point per run,
-**deduped by `run_id`** — the block repeats across every rubric row of a run) and
-drills into the `fabricated_specifics` evidence: `flagged_samples` +
-per-bullet breakdown. L0 is a **flag-for-review** signal (high precision on novel
-specifics; false-positives on paraphrase), uncalibrated until labels exist — see
-`docs/dev/GROUNDING_METRIC.md`. Helpers: `_groundedness_trend`,
-`_latest_groundedness_detail` (both via `_groundedness_points` / `_dedup_by_run`).
-
-### Tuning
-
-Runs the `analyzer.prompt_overrides()` candidate-vs-baseline A/B from the
-browser (`POST /api/tune/run` — paid, confirm-gated, and it writes eval results
-like a Quality run), and links to `/prompt-tune`, `/tune-from-annotations`, and
-`evals/TUNING_LOG.md`. The candidate text is sent as an override only; the
-persona constants in `analyzer.py` are never edited from here.
-
-### Annotate
-
-One of the console's write surfaces (`feat/annotation-tab`, v1.0.5) — it runs the
-v1.0.4 eval tuning loop in-browser instead of via raw JSON + CLI. Three steps:
-
-1. **Produce a bootstrap** — the browser bootstrap wrapper drives
-   `analyze → clarify → generate` over N pasted JDs against the live corpus
-   (reusing the `/api/analyze/stream` SSE pattern + `evals.bootstrap`'s
-   deterministic dedup) and writes a `bootstrap.json`. **Paid (Sonnet/Haiku) +
-   slow (~70s/JD).**
-2. **Annotate** — per bullet/skill cluster: a verdict
-   (`keep`/`fix`/`omit`/`fabricated`), `failed_rules` from the rubric vocabulary,
-   `should_omit`, and a conditional `honest_rewrite` (fix) / `forbidden_pattern`
-   (fabricated); plus clarification-question ratings. Save runs the **fail-closed
-   `evals.annotation.validate_annotations`**, so the written `annotations.json` is
-   always collation-ready.
-3. **Collate** — deterministic `collate_expected` + `build_improvement_brief` →
-   `expected.json` + `improvement_brief.md` + an anchor `jd.txt`, runnable by
-   `runner.py --suite real`.
-
-The routes live in **`blueprints/diagnostics.py`** (`/api/annotation/...`), not
-this blueprint, so the blueprint itself never writes. They reuse `evals.annotation` / `evals.bootstrap`
-verbatim (the `annotations.json` schema is **not forked**), are **localhost-only**,
-and write ONLY under `ANNOTATION_ROOT` = `evals/fixtures/real/` (gitignored) via
-`_safe_username()` + `secure_filename(slug)` + `_within(...)`. The labels it
-produces are the corpus the deferred grounding calibration (B) needs — see
-`docs/dev/GROUNDING_METRIC.md` §calibration.
+**This blueprint never writes.** It has two GET routes: the index, and `GET /api/run/<run_id>`
+for the run-detail modal. The console's paid and write routes live in
+`blueprints/diagnostics.py`.
 
 ---
 
@@ -136,14 +57,14 @@ The `score_over_time` chart filters out v1 records (no `prompt_version`); the he
 dashboard/
 ├── routes.py          ← Flask blueprint, aggregations, route handler
 ├── templates/
-│   └── dashboard.html ← Single template; tabs + bento + drawer; Chart.js vendored locally
+│   └── dashboard.html ← Single template; tabs + bento + inline detail panel; Chart.js vendored locally
 └── README.md          ← this file
 ```
 
 `app.py` registers the blueprint at `/_dashboard`. Besides the index, the
 blueprint has one JSON route, `GET /api/run/<run_id>`, which the run-detail modal
 fetches. Everything else is server-rendered into the single template; tabs and
-the drawer are vanilla JS over that server-rendered content.
+the detail panel are vanilla JS over that server-rendered content.
 
 ### Aggregation helpers
 
@@ -169,7 +90,7 @@ except `_load_baseline`, which reads the in-repo baseline file):
 
 ### No new Python deps
 
-The dashboard uses **Chart.js vendored locally** at `static/vendor/chart.umd.min.js` (no runtime CDN fetch; see [`SECURITY.md`](../SECURITY.md) bundled-assets). No Python charting library, no pandas. Graceful degradation: tables and the trace waterfall render server-side; charts require JS and lazy-init on drawer-open. With JS off, the `.js`-gated CSS leaves all panes + detail blocks visible (stacked inline), and the `<noscript>` bar-chart fallback table remains.
+The dashboard uses **Chart.js vendored locally** at `static/vendor/chart.umd.min.js` (no runtime CDN fetch; see [`SECURITY.md`](../SECURITY.md) bundled-assets). No Python charting library, no pandas. Graceful degradation: tables and the trace waterfall render server-side; charts require JS and lazy-init when their detail first opens. With JS off, the `.js`-gated CSS leaves all panes + detail blocks visible (stacked inline), and the `<noscript>` bar-chart fallback table remains.
 
 ---
 
@@ -177,7 +98,7 @@ The dashboard uses **Chart.js vendored locally** at `static/vendor/chart.umd.min
 
 1. Add a **pure** helper in `routes.py` that takes the (already-normalized) records and returns Chart.js-shaped data.
 2. Wire it into `index()`'s template context.
-3. Add a summary `tile` (with `data-detail="…"`) in the relevant tab pane, and a matching `<div class="detail" data-detail="…">` in `#detailStore` holding the table/`<canvas>`. For a chart, register a `data-chart="…"` canvas + an entry in the `INIT` map in the page `<script>` (it lazy-inits on first drawer-open).
+3. Add a summary `tile` (with `data-detail="…"`) in the relevant tab pane, and a matching `<div class="detail" data-detail="…">` in `#detailStore` holding the table/`<canvas>`. For a chart, register a `data-chart="…"` canvas + an entry in the `INIT` map in the page `<script>` (it lazy-inits the first time its detail opens).
 4. Add a unit test in `tests/test_dashboard_routes.py` (empty-input, expected-shape, edge cases). For interactive surfaces, extend `tests/ux/flows/test_dashboard_console.py`.
 
 Keep aggregation functions pure — that's what lets `tests/test_dashboard_routes.py` cover them without spinning up the Flask app.
@@ -189,7 +110,7 @@ Keep aggregation functions pure — that's what lets `tests/test_dashboard_route
 | File | Role |
 |---|---|
 | [`routes.py`](routes.py) | Flask blueprint + aggregation helpers |
-| [`templates/dashboard.html`](templates/dashboard.html) | Tabbed console template (bento tiles + shared drawer), cb-* tokens via `static/style.css`, Chart.js vendored at `static/vendor/chart.umd.min.js` |
+| [`templates/dashboard.html`](templates/dashboard.html) | Tabbed console template (bento tiles + inline detail panel), cb-* tokens via `static/style.css`, Chart.js vendored at `static/vendor/chart.umd.min.js` |
 | [`../ui_pages/dashboard_console.py`](../ui_pages/dashboard_console.py) | Page Object for the console (used by `tests/ux/`) |
 | [`../analyzer.py`](../analyzer.py) | Source of `logs/llm_calls.jsonl` telemetry (`_emit_call_log`) |
 | [`../hardening.py`](../hardening.py) | Source of `compute_call_cost` and `MODEL_PRICING` |

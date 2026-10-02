@@ -92,3 +92,8 @@ here, or when you accept a clarifying answer as a new bullet.
 See [[using-sartor]] for the whole first run, [[candidate-memory]] for where
 clarifying answers are kept, and [[frontend-wizard]] for how the corpus panel
 itself is built.
+
+## Related
+
+- [[education-degree-field-rendering]] — how education entries are rendered across different output formats.
+- [[document-rendering]] — how corpus data becomes downloadable documents.

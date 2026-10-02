@@ -1,6 +1,6 @@
 """PDF rendering — Playwright (headless Chromium) + Jinja2.
 
-Phase β.3 per docs/PRODUCT_SHAPE.md §6.3. The decision was reassessed
+Phase β.3 per docs/dev/PRODUCT_SHAPE.md §6.3. The decision was reassessed
 mid-build: WeasyPrint requires GTK3 / Pango system libraries on Windows
 + macOS (the "pip-installable, no system deps" claim was incorrect),
 so we switched to Playwright + headless Chromium. The Chromium binary

@@ -34,7 +34,7 @@ export const meta = {
 
 // ---------------------------------------------------------------------------
 // Envelope citation block, embedded in every prompt (cite, don't restate —
-// agents read the sections themselves; docs/dev/ORCHESTRATION_PLAYBOOK.md
+// agents read the sections themselves; docs/dev/archive/ORCHESTRATION_PLAYBOOK.md
 // "cite this section in every lane prompt" precedent).
 // ---------------------------------------------------------------------------
 

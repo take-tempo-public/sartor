@@ -840,6 +840,17 @@ textarea {
   flex: 1 1 auto;
   min-height: 0;
 }
+/* "Read more in the docs" in the shared help modal (static/help-modal.js). */
+.cb-modal-link {
+  display: inline-block;
+  margin: 0 0 14px;
+  color: var(--brand);
+  font-size: 13px;
+}
+.cb-modal-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
 .modal-actions {
   display: flex;
   flex-wrap: wrap;

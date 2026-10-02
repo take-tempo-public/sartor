@@ -1,8 +1,13 @@
 'use client';
 
-// Client-side Mermaid renderer for the ```mermaid fences in the projected docs
-// (the four architecture diagrams). `remarkMdxMermaid` (source.config.ts) turns
-// each fence into <Mermaid chart="…" />; this renders it.
+// Client-side Mermaid renderer for the ```mermaid fences in the projected docs.
+// `remarkMdxMermaid` (source.config.ts) turns each fence into <Mermaid chart="…" />;
+// this renders it.
+//
+// `data-mermaid` says which state a diagram is in: `pending` (not drawn yet),
+// `ok` (drawn), or `failed` (mermaid rejected the source). The pending and failed
+// states show the same <pre>, so scripts/check_docs_site_mermaid.py reads this
+// attribute to fail the docs build on a diagram that doesn't render.
 //
 // Client-only by necessity: mermaid parses and lays out in the browser (it needs
 // a DOM to measure text). Under `output: 'export'` the page HTML is generated at
@@ -48,7 +53,10 @@ export function Mermaid({ chart }: { chart: string }) {
 
   if (failed || !svg) {
     return (
-      <pre className="fd-codeblock overflow-x-auto text-sm">
+      <pre
+        className="fd-codeblock overflow-x-auto text-sm"
+        data-mermaid={failed ? 'failed' : 'pending'}
+      >
         <code>{chart.trim()}</code>
       </pre>
     );
@@ -60,6 +68,7 @@ export function Mermaid({ chart }: { chart: string }) {
   return (
     <div
       className="my-4 overflow-x-auto [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:max-w-full"
+      data-mermaid="ok"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

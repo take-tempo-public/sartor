@@ -98,7 +98,10 @@ _EMBEDDER_LOADED = False
 # no-hardcoded-roots guard enforces.
 
 _AUDIENCE_TAG_RE = re.compile(r"\*\*Audience:\*\*\s*`(user|dev)`", re.IGNORECASE)
-_USER_DOC_NAMES = frozenset({"README.md", "vision.md"})
+# The user-tier docs outside `docs/user/`. `tests/test_assistant_path_audience.py` checks
+# every `scripts/doc_registry.py` entry against this rule, so a doc added to the user tier
+# without a matching name here fails the gate instead of silently dropping out of user turns.
+_USER_DOC_NAMES = frozenset({"README.md", "vision.md", "ACCESSIBILITY.md"})
 _DEV_PATH_PREFIXES = (
     "docs/dev/",
     "evals/",
@@ -129,7 +132,7 @@ def _path_audience(path: str) -> Audience:
     p = path.replace("\\", "/")
     if p.endswith(".py") or any(p.startswith(prefix) for prefix in _DEV_PATH_PREFIXES):
         return Audience.DEV
-    if p in _USER_DOC_NAMES or p.startswith(("docs/install", "docs/walkthrough")):
+    if p in _USER_DOC_NAMES or p.startswith("docs/user/"):
         return Audience.USER
     return Audience.DEV
 

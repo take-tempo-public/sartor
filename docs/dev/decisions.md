@@ -53,7 +53,7 @@ PX-47 row. **Document-only — no re-pin executed.**
 
 ### 2026-07-10 — mypy `--strict` exempt set narrowed (supersedes KIT-7)
 
-Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §6 (the
+Full record + rationale: [`kit-adoption-design.md`](archive/kit-adoption-design.md) §6 (the
 2026-07-10 amendment record — `chore/mypy-strict-tooling`, owner-directed v1.0.9
 tooling-slice pull-in).
 
@@ -63,7 +63,7 @@ tooling-slice pull-in).
 
 ### 2026-06-23 — Agent-coding-practices kit adoption (8 decisions)
 
-Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §3.
+Full record + rationale: [`kit-adoption-design.md`](archive/kit-adoption-design.md) §3.
 
 | # | Decision | Resolution |
 |---|---|---|
@@ -78,7 +78,7 @@ Full record + rationale: [`kit-adoption-design.md`](kit-adoption-design.md) §3.
 | KIT-8 | `uv` migration | **Out of scope** (stay pip/setuptools; translate commands) |
 
 Framing: **implement Sartor's deltas + flag what's promotable to `take-tempo-public`**
-(Sartor is the donor, not a blank canary) — [`kit-adoption-design.md`](kit-adoption-design.md) §1, §7.
+(Sartor is the donor, not a blank canary) — [`kit-adoption-design.md`](archive/kit-adoption-design.md) §1, §7.
 
 ### 2026-06-15 — Enforcement portability (security/quality hooks)
 
@@ -89,5 +89,5 @@ plugin, with CI as the server-side backstop; plan-mode lifecycle + `wiki-freshne
 Claude-only. Implementation deferred to **8.7** (`feat/portable-enforcement-core`), gated on the
 GitHub remote/CI landing.
 Full record: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) (8.7 + the `[x]` decision entry) +
-[`governance-extraction-design.md`](governance-extraction-design.md) §5. *(Backfill entry, added
+[`governance-extraction-design.md`](archive/governance-extraction-design.md) §5. *(Backfill entry, added
 2026-06-23 to seed this log — demonstrates the cite-don't-restate pattern over an existing record.)*

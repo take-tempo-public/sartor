@@ -1,0 +1,4 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/user-docs.md", "session": "e9e3e26d-6a92-45a0-b258-2053289bf4ab", "branch": "feat/dev-docs", "commit": "f0e1b5f", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-30T17:18:19Z", "fingerprint": "845dc5c35b32"}
+{"event": "compacted", "session": "e9e3e26d-6a92-45a0-b258-2053289bf4ab", "branch": "feat/dev-docs", "trigger": "unknown", "ts": "2026-09-30T17:49:57Z"}
+{"event": "compacted", "session": "e9e3e26d-6a92-45a0-b258-2053289bf4ab", "branch": "feat/dev-docs", "trigger": "unknown", "ts": "2026-09-30T22:58:19Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/dev-docs.md", "session": "e9e3e26d-6a92-45a0-b258-2053289bf4ab", "branch": "feat/dev-docs", "commit": "6eacaf5", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-10-01T01:31:30Z", "fingerprint": "28cc1a1c2196"}

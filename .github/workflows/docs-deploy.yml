@@ -8,9 +8,7 @@ name: Docs site deploy
 # always a valid deploy path). An OPTIONAL, GUARDED SFTP/SSH auto-push runs
 # on top of that when the four SFTP_* secrets are configured in the repo
 # settings; until then it skips gracefully (exit 0, logged as "not
-# configured") — this workflow is authored now but latent until the repo is
-# pushed to a GitHub remote (same "committed but latent" status as the rest
-# of CI; see docs/governance/enforcement.md). No literal secrets — see
+# configured"). No literal secrets — see
 # docs/dev/docs-site-deploy.md for the setup runbook.
 #
 # Also runs on pull_request (fix/docs-site-typescript-detection) — the build
@@ -101,6 +99,19 @@ jobs:
       - name: Verify static export was produced
         working-directory: docs-site
         run: test -f out/index.html
+
+      # Epic D, D4: the build can't see a broken diagram. Mermaid parses in the
+      # browser, and on an error the page silently shows the diagram source.
+      # It can't see a broken image path either. This loads every published
+      # page from out/ in headless Chromium and fails on a diagram that didn't
+      # render (each source doc's ```mermaid fences must all be data-mermaid="ok")
+      # or a same-origin image whose URL doesn't return 200. Runs on PRs too, so a broken
+      # diagram fails a visible check instead of shipping.
+      - name: Install Chromium for the render check
+        run: python -m playwright install --with-deps chromium
+
+      - name: Check diagrams render and images load
+        run: python scripts/check_docs_site_mermaid.py
 
       # PRIMARY output — always produced on push. A zip any webhost can serve:
       # download from the workflow run, upload via FTP/SFTP/cPanel/File

@@ -9,7 +9,7 @@
 > **Sources:** [`blueprints/`](../../../blueprints/),
 > [`web_infra/security.py`](../../../web_infra/security.py),
 > [`app.py`](../../../app.py),
-> [`docs/architecture.md` §Module map](../../architecture.md),
+> [`docs/dev/architecture.md` §Module map](../../dev/architecture.md),
 > [`scripts/enforcement/guards/route_security_lint.py`](../../../scripts/enforcement/guards/route_security_lint.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -21,10 +21,10 @@ monolith-to-blueprints split, see [[engineering-workstreams]]) moved every
 [`blueprints/`](../../../blueprints/) — `analysis.py`, `generation.py`,
 `corpus/` (a 7-submodule sub-package), `templates.py`, `applications.py`,
 `users.py`, `diagnostics.py`, `assistant.py` — plus the pre-existing read-only
-`dashboard/` blueprint. At HEAD, `app.py` is a ~296-line composition root
+`dashboard/` blueprint. At HEAD, `app.py` is a ~392-line composition root
 (`create_app()` factory + `register_blueprints()` + `main()`) carrying **zero**
 `@app.route` decorators [`app.py`](../../../app.py); the route count that used
-to live in one file (93 at the walk's 2026-06-07 reading) is now **119**
+to live in one file (93 at the walk's 2026-06-07 reading) is now **120**
 `@<bp>.route` decorators spread across the nine blueprint modules — up from 117
 after Epic A sprint A3 added two routes to `blueprints/applications.py`
 (`draft-experience-summaries`, `experience-summary-decide`) `[synthesis]`. The
@@ -40,7 +40,7 @@ the full per-blueprint inventory.
 
 Every route that reaches the filesystem runs the same trio. The canonical statement
 of *why* lives in [`AGENTS.md` §Key patterns / Security](../../../AGENTS.md) and
-[`docs/architecture.md` §Security model](../../architecture.md) — cited here, not
+[`docs/dev/architecture.md` §Security model](../../dev/architecture.md) — cited here, not
 restated (design fork D5). The guards themselves moved out of `app.py` (Sprint
 8.3a) into the leaf package `web_infra/` so `app.py` and every blueprint share
 one definition instead of each carrying (or re-inlining) a copy — `web_infra/`

@@ -74,7 +74,7 @@ output.
 4. `docs/governance/charter.md` — the binding
    constitution. **C-7 (evidence before mechanism) and C-8 (durable before
    deep) are enforced by hooks, not by your judgment.**
-5. `docs/architecture.md` — module map and LLM routing
+5. `docs/dev/architecture.md` — module map and LLM routing
    boundary. The deterministic / LLM split is load-bearing.
 6. `evals/TUNING_LOG.md` — baseline floors and
    prompt change history.

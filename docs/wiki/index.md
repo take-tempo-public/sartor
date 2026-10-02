@@ -9,14 +9,14 @@
 ### Front door
 
 - [`overview.md`](overview.md) — what sartor. is and how the whole system is shaped
-  (seeded from, and deferring to, [`../system-model.md`](../system-model.md)).
+  (seeded from, and deferring to, [`../system-model.md`](../dev/system-model.md)).
 
 ### From the excellence walk (ingested by `wiki/ingest-excellence-walk`, WS-4a step 4)
 
 - [`pages/excellence-walk.md`](pages/excellence-walk.md) — what the 2026-06-07 excellence
   walk was; the provenance hub mapping to every page below.
 - [`pages/system-model-derivation.md`](pages/system-model-derivation.md) — how the
-  seven-functions self-model was form-found (defers to [`../system-model.md`](../system-model.md)).
+  seven-functions self-model was form-found (defers to [`../system-model.md`](../dev/system-model.md)).
 - [`pages/project-self-assessment.md`](pages/project-self-assessment.md) — the Q5
   state-of-the-work: strengths, watch-outs, ambiguous calls, with presentation flags.
 - [`pages/consistency-tracks-enforcement.md`](pages/consistency-tracks-enforcement.md) —
@@ -29,6 +29,8 @@
   and what it became — the v1.1.0 Final March epics A–E.
 - [`pages/llm-wiki-design.md`](pages/llm-wiki-design.md) — why this wiki is shaped as it
   is (the WS-4 design rationale; defers to [`SCHEMA.md`](SCHEMA.md) for the conventions).
+- [`pages/docs-information-architecture.md`](pages/docs-information-architecture.md) — the
+  docs tree (user/dev), the publication registry, records and moves, and the doc lints.
 - [`pages/governance-extraction.md`](pages/governance-extraction.md) — the
   canonical-Governance extraction that resolves the mixed-doc crux (LANDED Sprint 7.2 at
   `docs/governance/`).
@@ -56,6 +58,8 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
   DB record: `Application` / `ApplicationRun` / the proposal-review trail.
 - [`pages/pipeline-stages.md`](pages/pipeline-stages.md) — the end-to-end apply-run:
   analyze → clarify → compose → generate → iterate.
+- [`pages/keyless-client-refusal.md`](pages/keyless-client-refusal.md) — how an LLM call
+  with no API key is refused before any network I/O, and why it reuses `LLMResponseError`.
 - [`pages/llm-call-catalog.md`](pages/llm-call-catalog.md) — the LLM call kinds, model
   routing (Sonnet/Haiku), and the two-pass analyze.
 - [`pages/generation-and-grounding.md`](pages/generation-and-grounding.md) — `generate`
@@ -65,6 +69,8 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/frontend-wizard.md`](pages/frontend-wizard.md) — the six-step wizard, the
   Compose cards + the "Composing…" wait gate, the live preview, smart landing, and
   the corpus panel's section order.
+- [`pages/education-degree-field-rendering.md`](pages/education-degree-field-rendering.md) —
+  how an education entry's degree and field travel to every output format, and the one joiner.
 - [`pages/document-rendering.md`](pages/document-rendering.md) — the deterministic
   markdown → JSON-Resume → docx/pdf/md render path.
 - [`pages/machine-capability-preflight.md`](pages/machine-capability-preflight.md) —

@@ -1,11 +1,10 @@
 # Performance history — sartor.
 
-> **Purpose:** the portfolio-grade narrative of sartor.'s pipeline-performance
-> work — what was slow, what we tried, what each experiment yielded, and how we
-> proved it without trading away output quality. Written to be *presented*:
-> every number traces to committed telemetry.
-> **Audience:** anyone evaluating the engineering (reviewers, interviewers,
-> future contributors) and agents proposing the next perf intervention.
+> **Purpose:** the project's history of its pipeline-performance work — what was
+> slow, what we tried, what each experiment yielded, and how we proved it without
+> trading away output quality. Every number traces to committed telemetry.
+> **Audience:** `dev` — contributors working on or evaluating pipeline performance,
+> and agents proposing the next perf intervention.
 > **Authoritative for:** the measured latency / cost trajectory and the
 > synthetic-vs-real-corpus analysis. Companions:
 > [`PERF_ANALYZE.md`](PERF_ANALYZE.md) (the original analyze audit that kicked
@@ -25,7 +24,7 @@
 
 ## TL;DR — the headline
 
-sartor.'s critical path is a chain of LLM calls (analyze → clarify → generate).
+Sartor's critical path is a chain of LLM calls (analyze → clarify → generate).
 `analyze` started as a **90-second opaque wall**. Over four weeks we cut the core
 pipeline **~27% in wall-clock and ~20% in cost**, turned the worst wait into a
 live progress experience, and **recovered the most important quality rubric from
@@ -210,7 +209,7 @@ application reached Compose's freeze step or not:
 **Mandatory caveats — read before citing either row:**
 
 - **Single-user traffic.** All 15 runs are the owner's own usage (`robert`
-  persona), pre-1.1-tag — sartor. has had no other users yet. This is a
+  persona), pre-1.1-tag — Sartor has had no other users yet. This is a
   founding baseline, not a population measurement. **Re-measure once the 1.1
   tag opens real user traffic**, and revisit whether n is still this small.
 - **n=13 (frozen) supports a p50, not a p95.** Era 2's 84.6 s p95 rested on
@@ -297,7 +296,7 @@ within ~1 s, progress throughout."** This axis does not show up in `latency_ms`
 (it is a UX metric) but it is the single biggest *felt* improvement of the project.
 No prompt change — `PROMPT_VERSION` stayed `2026-05-24.4`.
 
-> **Naming note for the presentation:** "R1" and "R2" are *leverage-ranked
+> **Naming note:** "R1" and "R2" are *leverage-ranked
 > recommendation IDs* from [`PERF_ANALYZE.md`](PERF_ANALYZE.md), **not**
 > chronological. R2 (streaming, lower effort) shipped *first* in v1.0.1; R1 (the
 > split, higher leverage) shipped *later* in v1.0.3.
@@ -378,8 +377,8 @@ work to Haiku is the whole win.
 the original benchmark, was measured at ~103 s — which the log shows aligns with
 **real-corpus** scale (104 s), not synthetic (86 s). The clean **synthetic-to-
 synthetic** delta is **86 → 67 s = −22%**; the cross-segment headline is −34%. Both
-are real; they measure different baselines. Stated plainly because a presentation
-audience will (rightly) ask.
+are real; they measure different baselines. Stated plainly because the two numbers
+are easy to conflate.
 
 ### `generate` — flat latency, cost held by the cache
 

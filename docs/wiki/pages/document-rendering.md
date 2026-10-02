@@ -4,7 +4,7 @@
 > **Concept:** the deterministic render path — LLM markdown (or the corpus DB)
 > → JSON Resume v1.0 → `.docx` (original-as-style-template), `.pdf` (Playwright
 > Chromium), or `.md`. No LLM call lives on this path, by contract.
-> **Sources:** [`generator.py`](../../../generator.py), [`json_resume.py`](../../../json_resume.py), [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py), [`pdf_render.py`](../../../pdf_render.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/architecture.md`](../../architecture.md) §Output formats.
+> **Sources:** [`generator.py`](../../../generator.py), [`json_resume.py`](../../../json_resume.py), [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py), [`pdf_render.py`](../../../pdf_render.py), [`blueprints/generation.py`](../../../blueprints/generation.py), [`docs/dev/architecture.md`](../../dev/architecture.md) §Output formats.
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -35,7 +35,7 @@ and ATS-unsafe characters, then branches on `output_format`:
 - `.pdf` → `_render_pdf_from_json` → [`pdf_render.py:render_pdf`](../../../pdf_render.py).
 - else (`.docx`) → [`generator.py:_write_docx_from_json_resume`](../../../generator.py) with the persona `.docx` as template.
 
-The three-format table is mirrored in [`docs/architecture.md`](../../architecture.md) §Output formats.
+The three-format table is mirrored in [`docs/dev/architecture.md`](../../dev/architecture.md) §Output formats.
 
 ## The frozen-composition entry point (no markdown round-trip)
 
@@ -260,5 +260,6 @@ out of the formatting layer entirely `[synthesis]`.
 - [[corpus-to-output-reach]] — how corpus curation reaches both the preview and the generate prompt.
 - [[deterministic-llm-boundary]] — the P1 rule that forbids an LLM call here.
 - [[machine-capability-preflight]] — checks Chromium availability before PDF rendering becomes an option.
+- [[education-degree-field-rendering]] — how education entries' degree and field travel through this pipeline.
 - [[eval-harness]] — the other consumer of `json_resume.split_outside_brackets`.
 - [[machine-capability-preflight]] — how the system checks Chromium availability before offering PDF.

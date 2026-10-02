@@ -2309,3 +2309,190 @@ behaviour. `grep` for `_sqlite_check_constraint` across `docs/wiki/pages/` finds
 the two `schema_version` hits (`diagnostics-console.md:75`, `eval-harness.md:18`) are the
 eval-result record schema, not this migration helper. **Verified no-edit.**
 `.last_ingest_sha` not advanced.
+
+## 2026-09-27 — wiki-relevance check, `feat/docs-ia-design` (verified no-edit)
+
+`docs/dev/docs-ia-design.md` (new) and `docs/dev/documentation-architecture.md` (header-only
+pointer + dated correction) classify wiki-relevant; the other touched files
+(`docs/dev/reviews/2026-09-docs-ia/**`, `docs/dev/work/**`, the ledger row) do not. The
+design doc describes a *future* tree, ladders and lints — nothing it proposes exists yet, so
+no page can describe it without asserting beyond source. The one wiki cite of
+`documentation-architecture.md` (`pages/openapi-api-reference.md:126`) points at the L0–L3
+layering, which this branch leaves unchanged. `grep` for `docs/user`, `docs-ia-design` and
+`meta.json` across `docs/wiki/pages/` finds nothing. **Verified no-edit.** `.last_ingest_sha`
+not advanced. The D2 split (file moves) is where wiki pages will need edits.
+
+## 2026-09-28 — scoped `/wiki-self-update`, `feat/docs-split` (Epic D D2)
+
+**Mode:** scoped to this branch's own diff (`epic/d-docs-ia`...`feat/docs-split`), not the
+`.last_ingest_sha` window. **`.last_ingest_sha` not advanced.**
+
+- **Mechanical, done by `scripts/docs_move.py`** (not by the scribe): link and exact-path
+  rewrites in 20 wiki pages plus `index.md`, `overview.md` and `SCHEMA.md`, following the moves
+  to `docs/user/`, `docs/dev/` and `docs/dev/archive/`. `SCHEMA.md:103`'s blanket
+  user-audience rule was hand-edited to `docs/user/`.
+- **Semantic sources:** `scripts/project_docs_to_mdx.py` (now registry-driven),
+  `scripts/doc_registry.py` (new), `scripts/check_doc_frontmatter.py`,
+  `scripts/check_doc_links.py`, `scripts/docs_move.py` (new) and `blueprints/assistant.py`
+  (`_path_audience` prefix). A grep over `pages/` for each symbol found one cited claim:
+  `pages/code-module-map.md:151`.
+- **Page changed (1):** `code-module-map`. The projector row was rewritten: the registry, not
+  a header scan, decides what ships. A `scripts/doc_registry.py` row was added. The
+  `route-surface`, `using-the-assistant` and `engineering-workstreams` pages cite
+  `blueprints/assistant.py` for its route only, so they need no edit.
+- **Audit (author ≠ auditor):** `wiki-grounding-auditor` ruled 10 SUPPORTED / 0 DRIFTED /
+  0 UNSUPPORTED. **Catch-rate 0/1.**
+- **Structural check** (backlinks, cite-file existence with basename resolution, index
+  agreement): 39 pages, 0 errors.
+
+## 2026-09-29 — scoped `/wiki-self-update`, `feat/user-docs` (Epic D D3, user half)
+
+**Mode:** scoped to this branch's own diff (`epic/d-docs-ia`...`feat/user-docs`), not the
+`.last_ingest_sha` window. **`.last_ingest_sha` not advanced.**
+
+- **Semantic sources:** `analyzer.py` (`AVATAR_PROMPT_VERSION` bump, `AVATAR_SYSTEM_PROMPT`
+  wording), `static/app.js` (`_HELP_REGISTRY` copy + new `panelPipeline` entry),
+  `templates/index.html` + `dashboard/templates/dashboard.html` (assistant strings, Pipeline
+  hint), `scripts/doc_registry.py`, `scripts/wiki_relevance.py`,
+  `scripts/build_bundled_templates.py` (docstring), and the `docs/user/**` / `docs/dev/**`
+  guides.
+- **Line-shift check:** wiki pages cite these files by symbol, not line number. A scan for
+  `analyzer.py:N` / `static/app.js:N` / `templates/index.html:N` cites past each edit point
+  found 0, so the branch's line shifts cause no drift.
+- **Page changed (1):** `prompt-version-discipline`. The quoted `AVATAR_PROMPT_VERSION`
+  value is updated `"2026-07-08.1"` → `"2026-09-29.1"` (scribe, one-token edit).
+- **Verified no-edit:**
+  - `recruiter-pipeline-tab`: "read-only board" is still true of the board; status changes
+    in the details, as `:68-71` says.
+  - `frontend-wizard`: the help mechanism is unchanged; only registry entries were added.
+  - `using-sartor`: its help section is generic.
+  - `using-the-assistant`: it doesn't quote the changed intro.
+  - `editing-and-refining`: it already describes the surgical Refine.
+
+  The wiki's own lowercase `sartor` stays out of scope (item 2 exclusion).
+- **Audit (author ≠ auditor):** `wiki-grounding-auditor` ruled 13 SUPPORTED / 0 DRIFTED /
+  0 UNSUPPORTED. **Catch-rate 0/1.**
+- **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
+  pages, 0 errors; links OK across 565 files.
+
+## 2026-09-29 — checkpoint-advancing `/wiki-self-update`, `feat/user-docs` (Epic D D3)
+
+**Mode:** diff, window `f42b2ea`→`ca17897` (173 commits: the tail of Epics B and C, plus Epic D
+D1–D3). **Why now:** the merge-blocking freshness gate (`tests/test_wiki_freshness_gate.py`)
+failed at D3 close-out. It counted 78 wiki-relevant files changed since the checkpoint,
+against a block threshold of 75. That's item 98's mechanism: the scoped close-out passes
+(B1a, B2, preflight, Epic C, D2, D3) each fixed their own pages, and none advanced the
+checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haiku calls).
+**`.last_ingest_sha` advanced to `ca178977474ee7bc8d88be2d7edac67d71f24d9a`.**
+
+- **Triage:** a read-only pass over the 38 pages that cite a changed file. 11 had a concrete
+  stale claim; 27 were verified no-edit (e.g. document-rendering, deterministic-llm-boundary,
+  llm-call-catalog, machine-capability-preflight, troubleshooting, frontend-wizard, the user
+  guides).
+- **Pages changed (11):**
+  - `code-module-map`: the `app.py` row (392 lines; `_run_setup` / `_prompt_for_api_key` /
+    `_write_api_key`, `--setup`/`--doctor`); the `json_resume.py` symbols (`APPROVED_FONTS`,
+    `map_to_approved_font`, `needs_month_precision`, `education_position_text`); the
+    `scripts/gate.py` memory preflight; blueprint decorator counts 118 / `applications.py` 22.
+  - `route-surface`: 392 lines, 120 decorators (new `dashboard/routes.py:run_detail`).
+  - `openapi-api-reference`: 120 total / 115 undecorated. This also fixed a pre-existing
+    112-vs-114 disagreement on the same page.
+  - `project-self-assessment` and `engineering-workstreams`: 392 lines. The latter's blueprint
+    total is 117 → 118.
+  - `eval-harness`: `PROMPT_VERSION` `2026-08-14.1`.
+  - `consistency-tracks-enforcement` and `governance-extraction`: `block_subagent_git_stash`
+    added to the Claude-Code-only guard list.
+  - `diagnostics-console`: Tuning no longer called a read-only scaffold (`POST /api/tune/run`).
+  - `pipeline-stages`: the B2 month hard block (422) before the Generate branches.
+  - `corpus-to-output-reach`: a third active-only chokepoint
+    (`blueprints/applications.py:_build_experience_summary_targets`, item 75).
+- **Audit (author ≠ auditor):** six `wiki-grounding-auditor` runs.
+  - Verdicts: 84 SUPPORTED / 4 DRIFTED / 0 UNSUPPORTED.
+  - One DRIFTED was accepted: `engineering-workstreams` 117. The auditor proposed 120; the
+    orchestrator applied 118, because the sentence counts `blueprints/` only.
+  - Three DRIFTED were rejected on direct measurement:
+    - "`app.py` is 393 lines": `wc -l` gives 392, and the file ends in a single newline.
+    - "`applications.py` has 23 routes": the 23rd `applications_bp.route` match is the docstring
+      at `blueprints/applications.py:15`, not a decorator.
+    - "118 → 119": follows from the previous point.
+  - One scribe error was caught by the orchestrator before audit: `route-surface` "~346-line"
+    was corrected to 392.
+  - **Catch-rate:** 2 real errors caught / 11 pages (the 1 accepted DRIFTED + the 1
+    orchestrator catch).
+- **Not done:** the new-concept coverage gaps went to D4's wiki item via the D3 handoff:
+  - keyless-client refusal (`LLMConfigurationError`);
+  - education degree + field rendering (`education_position_text`, the reversed
+    `area`/`studyType` mapping);
+  - the docs IA split.
+
+  The `route-surface` egress-allowlist line still awaits the owner (2026-08-14 entry).
+  Auditor side-note, not a wiki issue: the code comment at `db/build_context.py:92` still
+  says "two chokepoints".
+- **Structural check** (backlinks, index agreement) plus `scripts/check_doc_links.py`: 39
+  pages, 0 errors; links OK across 565 files.
+
+## 2026-09-30 — `/wiki-self-update`, scoped (`feat/dev-docs`, Epic D D3 dev half)
+
+- **Mode:** diff, scoped to this branch's own window `f0e1b5f..e836886`. It is **not**
+  checkpoint-advancing: `.last_ingest_sha` stays at `ca17897`.
+- **Sources read:** the 19 wiki-relevant changed paths. They are `AGENTS.md`, `CLAUDE.md`,
+  `CONTRIBUTING.md`, `README.md`, `vision.md`, `dashboard/README.md`,
+  `docs/governance/enforcement.md`, and these in `docs/dev/`: `architecture.md`,
+  `diagnostics.md`, `documentation-architecture.md`, `GROUNDING_METRIC.md`,
+  `maintainer-lane.md`, `nursery.md`, `PRODUCT_SHAPE.md`, `README.md`, `RELEASE_ARC.md`,
+  `RELEASE_CHECKLIST.md`, `system-model.md` and `tooling.md`.
+- **Pages changed (3):**
+  - `code-module-map`: the `ci_wait.py` row now cites `docs/dev/maintainer-lane.md` step 4
+    (the close-out moved out of AGENTS.md). The stale "architecture doc names `scrape_url()`"
+    note is removed, because the architecture module map now names the real symbols.
+  - `diagnostics-console`: four tabs are now five, and the right-hand drawer is now the inline
+    `#detailPanel`. The Related section links the new `docs/dev/diagnostics.md`.
+  - `governance-extraction`: a dated O-2 follow-on under the AGENTS.md-shape decision.
+- **Verified no-edit** for the other 16 sources. The wiki references them by name only (D5),
+  or cites sections that didn't change. A grep for every stale claim this branch fixed found
+  no other page.
+- **Auditor catch rate:** 0 of 3 pages (0 DRIFTED, 0 UNSUPPORTED; author ≠ auditor on every
+  page).
+- **Structural check:** no new `[[backlinks]]`, no pages created, index unchanged.
+  `scripts/check_doc_links.py` is OK across 574 files, and `wiki_freshness.py` is OK (19
+  changed, under the 75-file threshold).
+
+## 2026-10-01 — `/wiki-self-update`, checkpoint-advancing (`feat/docs-assets-enforcement`, Epic D D4)
+
+- **Mode:** diff, window `ca17897..3798e2d` (the D3 and D4 changes). **Checkpoint advanced**
+  to `3798e2d18a8a269128ebb9042f2e1988146543cf`. Owner-authorized spend: 8 pages, about 16
+  Haiku calls.
+- **Line cites:** the wiki cites almost entirely by symbol. The 4 `path:line` cites in all
+  pages were checked against HEAD (`dashboard.html:135–137`, two `pyproject.toml`,
+  `web_infra/openapi.py:138`): unchanged, no re-anchor. No page cites a symbol this window
+  removed (`list_tracked_files`, the old `_prose_cache`).
+- **Pages created (3)**, the coverage gaps handed on from `user-docs`:
+  `keyless-client-refusal`, `education-degree-field-rendering` and
+  `docs-information-architecture`. The scribe can only edit, so it returned each new page's
+  text and the orchestrator wrote the files. The only orchestrator edits were link paths
+  (stray `:N` suffixes in link URLs, and wrong `../` depths).
+- **Pages updated (5):** `diagnostics-console` and `frontend-wizard` (help bubbles now link
+  to their docs section); `using-the-assistant` (plain answers can draw on the accessibility
+  page); `code-module-map` (four new docs-toolchain scripts, and the projector's stamp and
+  image rewrite); `governance-extraction` (each charter clause has its own heading).
+- **Backlinks:** reconciled both ways for the new pages: `llm-call-catalog`,
+  `deterministic-llm-boundary`, `troubleshooting`, `llm-wiki-design`,
+  `governance-extraction`, `code-module-map`, `openapi-api-reference`, plus the
+  `document-rendering` and `career-corpus` links the education scribe added.
+  `index.md` lists the three new pages.
+- **Auditor catch rate (author ≠ auditor on every page):** 5 DRIFTED caught across 8 audited
+  pages, 0 UNSUPPORTED reported:
+  - `governance-extraction`: a pre-existing quote attributed to "Evidence base"; it sits in
+    "What this is". Re-anchored.
+  - `frontend-wizard`: the entry-shape list omitted `tip`. Fixed. The same audit showed the
+    code's own registry comment lacked `learnMore`, fixed in `3798e2d`.
+  - `education-degree-field-rendering`: two line cites off by a few lines. Re-anchored.
+  - `docs-information-architecture`: "words" vs the design's "tokens". The page keeps
+    "words", which is what the shipped lint counts, and notes the design's term.
+- **Orchestrator catches before the audit (scribe claims removed):** on
+  `docs-information-architecture`, "the projector reads the moved-paths map" (it doesn't:
+  only `check_doc_links.py` does) and a 5.9 description comparing two published docs (it
+  compares wiki pages with published docs).
+- **Structural check** (backlinks resolve, audience tags, index and pages agree): 42 pages,
+  0 ERROR. 32 one-way-link WARNs are all pre-existing, none on the new pages.
+  `scripts/check_doc_links.py` is OK across 584 files.

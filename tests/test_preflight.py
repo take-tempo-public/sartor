@@ -12,7 +12,7 @@ would reach for:
     `chromium.executable_path` names. A probe that stats only the headed artifact
     reports "available" for an install that cannot render a PDF.
   - `test_report_is_pure_ascii` pins O-7 and the module's own printed-output claim.
-    A cp1252 console is what `docs/install.md` tells a Windows user to open, and a
+    A cp1252 console is what `docs/user/install.md` tells a Windows user to open, and a
     stray em-dash in a `remedy` string turns `--doctor` into a UnicodeEncodeError.
     This session hit exactly that, in this module, and fixed it -- the test is the
     mechanism so the next one cannot (C-11).

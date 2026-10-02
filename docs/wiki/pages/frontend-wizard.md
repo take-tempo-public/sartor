@@ -11,7 +11,7 @@
 > **Sources:** [`static/app.js`](../../../static/app.js),
 > [`templates/index.html`](../../../templates/index.html),
 > [`static/style.css`](../../../static/style.css),
-> [`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md).
+> [`docs/dev/archive/generation-experience-rearchitecture.md`](../../dev/archive/generation-experience-rearchitecture.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -251,7 +251,7 @@ cache) byte-identical `[synthesis]`. The override schema itself lives in
 Compose is no longer just a curation surface — it is where content is *authored*.
 The full design record (locked owner decisions D1–D6, the build sequence, and the
 as-built record for every phase) lives in
-[`docs/dev/generation-experience-rearchitecture.md`](../../../docs/dev/generation-experience-rearchitecture.md);
+[`docs/dev/archive/generation-experience-rearchitecture.md`](../../dev/archive/generation-experience-rearchitecture.md);
 this section is the frontend's view of it.
 
 **Auto-drafting on arrival.** `loadComposition()` fires up to three background
@@ -416,7 +416,7 @@ spread is the surviving remnant of that path `[synthesis]`.
 A single shared `#helpModal` ([`templates/index.html`](../../../templates/index.html)) is
 the whole help surface; [`app.js:openHelpModal`](../../../static/app.js) swaps its
 title/body per block from [`app.js:_HELP_REGISTRY`](../../../static/app.js) (one entry per
-`.cb-panel`: a title, pathfinding body, optional inline short-form, and a `welcome` flag).
+`.cb-panel`: a title, pathfinding body, a `learnMore` docs-site page slug + optional #anchor, optional inline short-form, optional tooltip text for the (i) icon (`tip`), and a `welcome` flag). Each entry's `learnMore` target is verified against the published docs site; the modal's `#helpModalLearnMore` link ([`templates/index.html`](../../../templates/index.html), rendered by [`static/help-modal.js:cbOpenHelpModal`](../../../static/help-modal.js)) shows it as an external link and is hidden when absent. The link joins the focus trap (`button, a[href]`) so keyboard Tab navigation includes it `[synthesis]`.
 On load [`app.js:_initHelp`](../../../static/app.js) injects a `.help-info` `(i)`-circle
 into each registered block's `.panel-header` (idempotent; adds `.has-help-icon` so the
 title + icon group left and the collapse chevron stays right — see

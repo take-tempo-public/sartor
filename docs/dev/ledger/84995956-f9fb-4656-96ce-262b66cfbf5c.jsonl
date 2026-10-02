@@ -1,0 +1,6 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/dashboard-copy-discovery.md", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "main", "commit": "f3dd472", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-28T03:16:48Z", "fingerprint": "c277692ccb62"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-ia-design.md", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "feat/docs-ia-design", "commit": "d979884", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-28T03:56:23Z", "fingerprint": "f08358ef552b"}
+{"event": "compacted", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "feat/docs-ia-design", "trigger": "unknown", "ts": "2026-09-28T19:03:55Z"}
+{"event": "generated", "doc": "docs/dev/handoffs/docs-ia-design.md", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "feat/docs-ia-design", "commit": "d979884", "actor": "amodal1", "agent": "anthropic/claude-opus-5-5", "ts": "2026-09-28T19:19:05Z", "fingerprint": "0e7edcf5cff5"}
+{"event": "compacted", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "feat/docs-ia-design", "trigger": "unknown", "ts": "2026-09-28T19:24:50Z"}
+{"event": "compacted", "session": "84995956-f9fb-4656-96ce-262b66cfbf5c", "branch": "feat/docs-ia-design", "trigger": "unknown", "ts": "2026-09-28T20:48:00Z"}

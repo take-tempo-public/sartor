@@ -77,6 +77,8 @@ class Help:
     MODAL = "#helpModal"
     MODAL_TITLE = "#helpModalTitle"
     MODAL_BODY = "#helpModalBody"
+    # "Read more in the docs" link; hidden when the entry has no learnMore target.
+    MODAL_LEARN_MORE = "#helpModalLearnMore"
     CLOSE = "#btnCloseHelp"
     BACKDROP = "#helpModal .cb-modal-backdrop"
     ICON = ".help-info"

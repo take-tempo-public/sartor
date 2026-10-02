@@ -80,6 +80,8 @@ Exit 0 clean; exit 1 with a `file:line -> broken-target` listing.
 
 from __future__ import annotations
 
+import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -87,6 +89,8 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from check_doc_frontmatter import PUBLISHED_DOC_FILES
+from doc_corpus import FENCE_RE, DocCorpus, iter_unfenced
+from doc_registry import is_record
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -100,7 +104,7 @@ CITE_CHECK_FILES: frozenset[str] = PUBLISHED_DOC_FILES
 CITE_CHECK_DIRS = ("docs/governance/",)
 
 _URI_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*:")
-_FENCE_RE = re.compile(r"^(\s*)(```+|~~~+)")
+_FENCE_RE = FENCE_RE  # one fence grammar, owned by doc_corpus
 _ATX_RE = re.compile(r"^#{1,6}\s+(.*)$")
 _LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)\)")
 _MD_INLINE_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
@@ -121,7 +125,7 @@ _CITE_RE = re.compile(
 #    backtick-quoted (and so already skipped); this catches the bare form.
 _PLACEHOLDER_LINK = ("text", "path")
 
-# 2. docs/dev/governance-extraction-design.md's "Generic pointer block" +
+# 2. docs/dev/archive/governance-extraction-design.md's "Generic pointer block" +
 #    per-doc "Pointer:" sections (lines ~99-129) are VERBATIM INSERTION
 #    TEMPLATES meant to be pasted into other docs at OTHER, VARYING depths
 #    (SECURITY.md/CONTRIBUTING.md/AGENTS.md/vision.md at repo root;
@@ -138,9 +142,9 @@ _PLACEHOLDER_LINK = ("text", "path")
 #    docs/governance/compliance-log.md CW-01), so this is a frozen design
 #    artifact, not live navigation. Excluded by exact (file, target) pair.
 _TEMPLATE_QUOTE_LINKS: set[tuple[str, str]] = {
-    ("docs/dev/governance-extraction-design.md", "docs/governance/"),
-    ("docs/dev/governance-extraction-design.md", "docs/governance/charter.md"),
-    ("docs/dev/governance-extraction-design.md", "docs/governance/enforcement.md"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/charter.md"),
+    ("docs/dev/archive/governance-extraction-design.md", "docs/governance/enforcement.md"),
 }
 
 
@@ -162,12 +166,6 @@ def list_md_files() -> list[Path]:
     return [Path(line) for line in out.splitlines() if line.strip()]
 
 
-def list_tracked_files() -> set[str]:
-    """Basenames -> set of tracked repo-relative paths (for cite/basename lookup)."""
-    out = _run_git(["ls-files"])
-    return {line.strip() for line in out.splitlines() if line.strip()}
-
-
 def _is_gitignored(path: Path) -> bool:
     result = subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
         ["git", "check-ignore", "-q", str(path)],  # noqa: S607 - `git` intentionally resolved from PATH
@@ -179,23 +177,7 @@ def _is_gitignored(path: Path) -> bool:
 
 def _iter_unfenced_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
     """Yield (1-based lineno, line) for lines NOT inside a fenced code block."""
-    in_fence = False
-    fence_char = None
-    for lineno, line in enumerate(lines, start=1):
-        m = _FENCE_RE.match(line)
-        if m:
-            marker = m.group(2)
-            char = marker[0]
-            if not in_fence:
-                in_fence = True
-                fence_char = char
-            elif char == fence_char:
-                in_fence = False
-                fence_char = None
-            continue
-        if in_fence:
-            continue
-        yield lineno, line
+    yield from iter_unfenced(lines)
 
 
 def _plain_text(heading_text: str) -> str:
@@ -250,6 +232,37 @@ class Violation:
         return f"{posix}:{self.line} -> {self.target}  ({self.reason})"
 
 
+# Design §3.3 (`docs/dev/docs-ia-design.md`): records are never rewritten when docs move, so a
+# record's link to a moved doc resolves through this map. It is consulted ONLY for links whose
+# source file is a record (`doc_registry.is_record`): a live doc linking an old path still
+# fails, because live docs are rewritten by `scripts/docs_move.py`, and the map must not hide a
+# missed rewrite.
+MOVED_PATHS_FILE = "docs/dev/moved-paths.json"
+
+
+def load_moved_paths() -> dict[str, str]:
+    """The old -> new repo-path map written by `scripts/docs_move.py` (empty if absent)."""
+    path = REPO_ROOT / MOVED_PATHS_FILE
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {str(k): str(v) for k, v in data.items()}
+
+
+def resolve_record_link(
+    src: str, path_part: str, moves: dict[str, str], reverse: dict[str, str]
+) -> Path | None:
+    """Resolve a record's link the way it was written: against the record's OLD directory
+    (when the record itself moved, e.g. into `docs/dev/archive/`), then through the map.
+    Returns the existing target, or None."""
+    base = posixpath.dirname(reverse.get(src, src))
+    old = posixpath.normpath(posixpath.join(base, path_part))
+    if old.startswith("../"):
+        return None
+    candidate = REPO_ROOT / moves.get(old, old)
+    return candidate if candidate.exists() else None
+
+
 def _split_target(target: str) -> tuple[str, str | None]:
     if "#" in target:
         path_part, _, frag = target.partition("#")
@@ -257,31 +270,43 @@ def _split_target(target: str) -> tuple[str, str | None]:
     return target, None
 
 
-def check_links(md_files: list[Path]) -> list[Violation]:
+def check_links(md_files: list[Path], corpus: DocCorpus | None = None) -> list[Violation]:
+    # The corpus is built here, not at import, so a caller that repoints REPO_ROOT (the
+    # docs_move tests do) gets a corpus for that tree.
+    corpus = corpus or DocCorpus(REPO_ROOT)
     violations: list[Violation] = []
-    # Cache heading-slug sets per resolved target file, computed lazily.
-    slug_cache: dict[Path, set[str]] = {}
+    # Cache heading-slug sets per target file, computed lazily. Text comes from the corpus,
+    # so a file that is both a source and a link target is read once, not twice.
+    slug_cache: dict[str, set[str]] = {}
 
-    def slugs_of(abs_path: Path) -> set[str]:
-        if abs_path not in slug_cache:
+    def slugs_of(rel: str) -> set[str]:
+        if rel not in slug_cache:
             try:
-                text = abs_path.read_text(encoding="utf-8")
+                slug_cache[rel] = slugs_for(corpus.lines(rel))
             except OSError:
-                slug_cache[abs_path] = set()
-            else:
-                slug_cache[abs_path] = slugs_for(text.splitlines())
-        return slug_cache[abs_path]
+                slug_cache[rel] = set()
+        return slug_cache[rel]
+
+    # The moved-paths map is loaded at most once, and only when a record link misses.
+    moved: tuple[dict[str, str], dict[str, str]] | None = None
+
+    def moved_paths() -> tuple[dict[str, str], dict[str, str]]:
+        nonlocal moved
+        if moved is None:
+            moves = load_moved_paths()
+            moved = (moves, {new: old for old, new in moves.items()})
+        return moved
 
     for rel_path in md_files:
-        abs_path = REPO_ROOT / rel_path
+        src = rel_path.as_posix()
         try:
-            text = abs_path.read_text(encoding="utf-8")
+            unfenced = corpus.unfenced(src)
         except OSError as exc:
             violations.append(Violation(rel_path, 0, str(rel_path), f"unreadable: {exc}"))
             continue
-        lines = text.splitlines()
+        src_is_record = is_record(src)
 
-        for lineno, line in _iter_unfenced_lines(lines):
+        for lineno, line in unfenced:
             for m in _LINK_RE.finditer(line):
                 start, end = m.span()
                 # Skip a link written as a literal backtick-quoted example:
@@ -296,7 +321,7 @@ def check_links(md_files: list[Path]) -> list[Violation]:
                 if (text_part, target) == _PLACEHOLDER_LINK:
                     continue  # generic "a markdown link looks like this" idiom
 
-                if (rel_path.as_posix(), target) in _TEMPLATE_QUOTE_LINKS:
+                if (src, target) in _TEMPLATE_QUOTE_LINKS:
                     continue  # destination-relative insertion template; see module docstring
 
                 if _URI_SCHEME_RE.match(target) or target.startswith("mailto:"):
@@ -307,24 +332,32 @@ def check_links(md_files: list[Path]) -> list[Violation]:
                 if path_part == "":
                     # Same-file fragment-only link, e.g. (#some-heading).
                     if frag:
-                        if _github_slug_lookup(frag, slugs_of(abs_path)):
+                        if _github_slug_lookup(frag, slugs_of(src)):
                             continue
                         violations.append(
                             Violation(rel_path, lineno, target, "anchor not found in this file")
                         )
                     continue
 
-                resolved = (abs_path.parent / path_part).resolve()
-                if not resolved.exists():
-                    if _is_gitignored(resolved):
+                # Lexical resolution against the tracked set, the filesystem only on a miss
+                # (doc_corpus.DocCorpus.kind). Replaces Path.resolve() + exists() per link.
+                resolved = corpus.join(src, path_part)
+                kind = corpus.kind(resolved)
+                if kind is None and src_is_record:
+                    via_map = resolve_record_link(src, path_part, *moved_paths())
+                    if via_map is not None:
+                        resolved = via_map.relative_to(REPO_ROOT).as_posix()
+                        kind = "file" if via_map.is_file() else "dir"
+                if kind is None:
+                    if _is_gitignored(REPO_ROOT / resolved):
                         continue  # expected-absent user-data / ignored path
                     violations.append(Violation(rel_path, lineno, target, "target does not exist"))
                     continue
 
                 if (
                     frag
-                    and resolved.suffix.lower() == ".md"
-                    and resolved.is_file()
+                    and resolved.lower().endswith(".md")
+                    and kind == "file"
                     and not _github_slug_lookup(frag, slugs_of(resolved))
                 ):
                     violations.append(
@@ -342,7 +375,10 @@ def _github_slug_lookup(fragment: str, slugs: set[str]) -> bool:
     return fragment in slugs
 
 
-def check_cites(md_files: list[Path], tracked: set[str]) -> list[Violation]:
+def check_cites(
+    md_files: list[Path], tracked: set[str] | frozenset[str], corpus: DocCorpus | None = None
+) -> list[Violation]:
+    corpus = corpus or DocCorpus(REPO_ROOT)
     violations: list[Violation] = []
     basename_index: dict[str, list[str]] = {}
     for t in tracked:
@@ -356,18 +392,15 @@ def check_cites(md_files: list[Path], tracked: set[str]) -> list[Violation]:
     ]
 
     for rel_path in in_scope:
-        abs_path = REPO_ROOT / rel_path
         try:
-            text = abs_path.read_text(encoding="utf-8")
+            unfenced = corpus.unfenced(rel_path.as_posix())
         except OSError:
             continue
-        lines = text.splitlines()
 
-        for lineno, line in _iter_unfenced_lines(lines):
+        for lineno, line in unfenced:
             for m in _CITE_RE.finditer(line):
                 cited_path = m.group(1)
-                root_relative = REPO_ROOT / cited_path
-                if root_relative.exists():
+                if corpus.kind(posixpath.normpath(cited_path.replace("\\", "/"))) is not None:
                     continue
                 if Path(cited_path).name in basename_index:
                     continue  # resolvable by basename elsewhere in the tree
@@ -381,11 +414,11 @@ def check_cites(md_files: list[Path], tracked: set[str]) -> list[Violation]:
 
 
 def main() -> int:
-    md_files = list_md_files()
-    tracked = list_tracked_files()
+    corpus = DocCorpus(REPO_ROOT)
+    md_files = [Path(p) for p in corpus.md_paths]
 
-    violations = check_links(md_files)
-    violations += check_cites(md_files, tracked)
+    violations = check_links(md_files, corpus)
+    violations += check_cites(md_files, corpus.tracked, corpus)
 
     if not violations:
         print(
