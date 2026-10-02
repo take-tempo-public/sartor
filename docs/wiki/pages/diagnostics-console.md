@@ -186,6 +186,8 @@ suite's tour-stop seed relies on `[synthesis]`. The annotate tab's verdict legen
 were rewritten for lay readers in the same pass — the write mechanism (routes + gating) is
 unchanged from "The SSE self-tuning loop" below.
 
+Each entry in [`dashboard/templates/dashboard.html:_DASH_HELP`](../../../dashboard/templates/dashboard.html) carries a `learnMore` field (e.g. `'dev-diagnostics#pipeline'`) that [`static/help-modal.js:cbOpenHelpModal`](../../../static/help-modal.js) renders as a "Read more in the docs" link. The URL is constructed via [`cbDocsUrl`](../../../static/help-modal.js), resolving to the published docs root [`CB_DOCS_BASE`](../../../static/help-modal.js) (`https://sartor-docs.taketempo.com/docs/`); the link element is hidden when no `learnMore` target exists. [`tests/test_help_learn_more.py`](../../../tests/test_help_learn_more.py) enforces that every help bubble carries a `learnMore` target and that the page slug and anchor (if any) resolve to published doc page headings `[synthesis]`.
+
 ## The SSE self-tuning loop (writes live in `blueprints/diagnostics.py`)
 
 The interactive write surface is **not** in the blueprint — it is a set of

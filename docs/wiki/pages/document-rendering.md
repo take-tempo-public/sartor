@@ -260,5 +260,6 @@ out of the formatting layer entirely `[synthesis]`.
 - [[corpus-to-output-reach]] — how corpus curation reaches both the preview and the generate prompt.
 - [[deterministic-llm-boundary]] — the P1 rule that forbids an LLM call here.
 - [[machine-capability-preflight]] — checks Chromium availability before PDF rendering becomes an option.
+- [[education-degree-field-rendering]] — how education entries' degree and field travel through this pipeline.
 - [[eval-harness]] — the other consumer of `json_resume.split_outside_brackets`.
 - [[machine-capability-preflight]] — how the system checks Chromium availability before offering PDF.

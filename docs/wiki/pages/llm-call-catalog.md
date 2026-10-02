@@ -158,3 +158,4 @@ canonical in [`AGENTS.md`](../../../AGENTS.md) — referenced here, not restated
 - [[pipeline-stages]] — the route → call sequence these kinds fire in.
 - [[generation-and-grounding]] — what the `generate` call must not invent.
 - [[route-surface]] — the Flask routes that invoke each call kind.
+- [[keyless-client-refusal]] — what happens to any of these calls when no API key is configured.

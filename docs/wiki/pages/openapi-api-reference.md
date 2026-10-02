@@ -137,3 +137,4 @@ for the L0–L3 layering (cited, not restated — D5).
 - [[consistency-tracks-enforcement]] — `mode="strict"` + the 5-path self-check
   in `generate_openapi_spec.py` are another instance of "consistency tracks
   enforcement": the spec can't silently over- or under-claim coverage.
+- [[docs-information-architecture]] — the publication registry the docs site projects from.

@@ -2456,3 +2456,43 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Structural check:** no new `[[backlinks]]`, no pages created, index unchanged.
   `scripts/check_doc_links.py` is OK across 574 files, and `wiki_freshness.py` is OK (19
   changed, under the 75-file threshold).
+
+## 2026-10-01 — `/wiki-self-update`, checkpoint-advancing (`feat/docs-assets-enforcement`, Epic D D4)
+
+- **Mode:** diff, window `ca17897..3798e2d` (the D3 and D4 changes). **Checkpoint advanced**
+  to `3798e2d18a8a269128ebb9042f2e1988146543cf`. Owner-authorized spend: 8 pages, about 16
+  Haiku calls.
+- **Line cites:** the wiki cites almost entirely by symbol. The 4 `path:line` cites in all
+  pages were checked against HEAD (`dashboard.html:135–137`, two `pyproject.toml`,
+  `web_infra/openapi.py:138`): unchanged, no re-anchor. No page cites a symbol this window
+  removed (`list_tracked_files`, the old `_prose_cache`).
+- **Pages created (3)**, the coverage gaps handed on from `user-docs`:
+  `keyless-client-refusal`, `education-degree-field-rendering` and
+  `docs-information-architecture`. The scribe can only edit, so it returned each new page's
+  text and the orchestrator wrote the files. The only orchestrator edits were link paths
+  (stray `:N` suffixes in link URLs, and wrong `../` depths).
+- **Pages updated (5):** `diagnostics-console` and `frontend-wizard` (help bubbles now link
+  to their docs section); `using-the-assistant` (plain answers can draw on the accessibility
+  page); `code-module-map` (four new docs-toolchain scripts, and the projector's stamp and
+  image rewrite); `governance-extraction` (each charter clause has its own heading).
+- **Backlinks:** reconciled both ways for the new pages: `llm-call-catalog`,
+  `deterministic-llm-boundary`, `troubleshooting`, `llm-wiki-design`,
+  `governance-extraction`, `code-module-map`, `openapi-api-reference`, plus the
+  `document-rendering` and `career-corpus` links the education scribe added.
+  `index.md` lists the three new pages.
+- **Auditor catch rate (author ≠ auditor on every page):** 5 DRIFTED caught across 8 audited
+  pages, 0 UNSUPPORTED reported:
+  - `governance-extraction`: a pre-existing quote attributed to "Evidence base"; it sits in
+    "What this is". Re-anchored.
+  - `frontend-wizard`: the entry-shape list omitted `tip`. Fixed. The same audit showed the
+    code's own registry comment lacked `learnMore`, fixed in `3798e2d`.
+  - `education-degree-field-rendering`: two line cites off by a few lines. Re-anchored.
+  - `docs-information-architecture`: "words" vs the design's "tokens". The page keeps
+    "words", which is what the shipped lint counts, and notes the design's term.
+- **Orchestrator catches before the audit (scribe claims removed):** on
+  `docs-information-architecture`, "the projector reads the moved-paths map" (it doesn't:
+  only `check_doc_links.py` does) and a 5.9 description comparing two published docs (it
+  compares wiki pages with published docs).
+- **Structural check** (backlinks resolve, audience tags, index and pages agree): 42 pages,
+  0 ERROR. 32 one-way-link WARNs are all pre-existing, none on the new pages.
+  `scripts/check_doc_links.py` is OK across 584 files.

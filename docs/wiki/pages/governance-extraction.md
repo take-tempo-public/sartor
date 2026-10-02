@@ -82,7 +82,7 @@ were resolved on 2026-06-15 (per RELEASE_ARC §Phase 4.7 governance extraction s
 2. **Per-doc extraction boundaries — RESOLVED**
    Each source doc retains descriptive content + adds a pointer to the canonical rule home.
    The extraction boundaries are codified in `charter.md`'s citation map — not a table, but
-   the inline `[src: …]` tag carried by every clause (`charter.md`'s "Evidence base" preamble:
+   the inline `[src: …]` tag carried by every clause (`charter.md`'s "What this is" preamble, just before "Evidence base":
    "Every clause is tagged `[src: …]` so the extraction is a verifiable citation map") —
    six source docs (vision.md, AGENTS.md, SECURITY.md, CONTRIBUTING.md, PRODUCT_SHAPE.md, RELEASE_ARC.md)
    now reference rather than restate the rules `[synthesis]`.
@@ -127,6 +127,13 @@ page's own grounding rule, the clauses are not restated here; the durable home i
   discipline this page's own history already practiced (a dated `[src: adopted …]`
   tag per amendment) — see `enforcement.md`'s "Parallel-session isolation (W-1)" row,
   which tracked the W-1 citation gap (**F-gov-03**) as open until this landed.
+- **Clause deep-linking & validation (2026-10-01, editorial):** The charter's
+  constitutional clauses now carry distinct `### C-n — Title` headings (per the
+  editorial-change note in [`charter.md`](../../governance/charter.md) lines 498–503),
+  enabling deep-links to specific clauses. The `lint_charter_clauses` check
+  (`scripts/doc_lints.py:lint_charter_clauses`) verifies that all headings C-0…C-n
+  exist without gaps and that published docs do not cite clauses past the highest
+  numbered clause `[synthesis]`.
 
 ## The extraction checklist nobody had: enforcement reach (2026-08-05)
 
@@ -163,3 +170,4 @@ guard has to say so in the diff `[synthesis]`.
 - [[system-model-derivation]] — the seven-functions language that dissolved the crux.
 - [[consistency-tracks-enforcement]] — the finding this extends to the vision.
 - [[excellence-walk]] — the walk this design belongs to.
+- [[docs-information-architecture]] — how the docs around the charter are organized and linted.

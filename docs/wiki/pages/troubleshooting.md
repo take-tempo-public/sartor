@@ -56,3 +56,6 @@ available and which need setup.
 If a step just errors out, it may be a temporary network hiccup — try it again. If it
 keeps happening, the error panel's **Copy** button gives you the exact message to share
 when reporting it. See [[using-sartor]] for the basics.
+
+If an AI step fails with a message about a missing API key, the technical detail of
+that check is in [[keyless-client-refusal]].

@@ -91,3 +91,4 @@ is the branch close-out + the pre-release lint gate `[synthesis]`.
 - [[project-self-assessment]] — the Q4 docs-discoverability watch-out this answers.
 - [[governance-extraction]] — the follow-on that resolved (and rejected) the constitutional
   `raw/` question in favor of `docs/governance/`.
+- [[docs-information-architecture]] — the docs tree, registry and lints this wiki sits beside.

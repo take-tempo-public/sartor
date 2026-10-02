@@ -6,8 +6,8 @@
 > **Grounding:** the assistant pill + modal in `templates/index.html`
 > (`#assistantPill`, `#assistantModal`, `#assistantDevMode`) driven by
 > `static/assistant.js` (`openAssistantModal`, `askAssistant`); the
-> `/api/assistant/ask` route in `blueprints/assistant.py` and
-> `analyzer.avatar_answer_streaming` (`AVATAR_SYSTEM_PROMPT`).
+> `/api/assistant/ask` route in `blueprints/assistant.py` (`_USER_DOC_NAMES`
+> now includes `ACCESSIBILITY.md`) and `analyzer.avatar_answer_streaming` (`AVATAR_SYSTEM_PROMPT`).
 
 ---
 
@@ -21,7 +21,7 @@ Click the **magnifier** icon in the top bar to open the assistant, type your que
 answers are the same for everyone, and it never reads your private data.
 
 ## What it can answer
-It draws on these how-to pages and the rest of sartor's wiki. If something isn't
+It draws on these how-to pages and the rest of sartor's wiki, including the accessibility guide. If something isn't
 documented, it says so plainly — "I don't have that in my docs" — rather than making
 something up, and points you to the nearest thing it does cover. Each answer ends with
 **numbered sources** you can click to read the original.
