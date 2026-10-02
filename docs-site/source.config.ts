@@ -13,6 +13,9 @@ import { z } from 'zod';
 const projectedPageSchema = pageSchema.extend({
   audience: z.array(z.enum(['user', 'dev'])).optional(),
   authoritativeFor: z.string().optional(),
+  // The commit the page was projected from (item 126): a local copy of this gitignored
+  // output says how old it is. scripts/check_docs_projection_fresh.py compares it to HEAD.
+  sourceCommit: z.string().optional(),
 });
 
 export const docs = defineDocs({
@@ -30,9 +33,8 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    // The four architecture diagrams are authored as ```mermaid fences in
-    // docs/dev/architecture.md (the single source — the standalone docs/diagrams/*.mmd
-    // copies were retired). Fumadocs ships no Mermaid renderer by default, so
+    // Diagrams are authored as ```mermaid fences in the published docs (the
+    // single source — the standalone docs/diagrams/*.mmd copies were retired). Fumadocs ships no Mermaid renderer by default, so
     // those fences were shipping to the public site as raw code blocks. This
     // plugin rewrites a ```mermaid fence into <Mermaid chart="…" />, which
     // src/components/mermaid.tsx renders client-side (registered in

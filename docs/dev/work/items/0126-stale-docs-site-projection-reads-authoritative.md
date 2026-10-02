@@ -3,15 +3,20 @@ schema = 1
 id = 126
 kind = "item"
 title = "A stale local docs-site projection reads as authoritative"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/docs-ia-design", "feat/docs-split"]
+branches = ["feat/docs-assets-enforcement", "feat/docs-ia-design", "feat/docs-split"]
 refs = [
   ".gitignore:134-137",
   "scripts/project_docs_to_mdx.py",
   "docs/dev/reviews/2026-09-docs-ia/10-ux-onboarding.md",
 ]
 summary = "An audit cited a months-stale gitignored docs-site/content/docs/*.mdx as the live site; nothing marks it stale."
+resolution = "Fixed on feat/docs-assets-enforcement (Epic D D4, 2026-10-01). Every projected page now carries the commit it came from: sourceCommit in its frontmatter, plus a visible banner comment. +uncommitted marks a projection made from local source edits. scripts/check_docs_projection_fresh.py compares the stamps to HEAD. On the July-era local copy it reported STALE (36 unstamped pages); after re-projection it reported OK. Stated limit (C-0): nothing forces the check to run before someone reads the files; the stamp in every page is the always-visible half."
+verified_by = [
+  "tests/test_docs_site_checks.py (test_every_projected_page_is_stamped, test_verdict_fresh_only_when_every_page_is_from_head, test_stamps_reads_a_long_frontmatter)",
+  "scripts/check_docs_projection_fresh.py (exit 1 on stale/unstamped/mixed/uncommitted)",
+]
 ```
 
 **Observed.** During D1, the UX-onboarding auditor read a 2026-07-26 local copy of the

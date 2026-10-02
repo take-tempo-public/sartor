@@ -121,6 +121,16 @@ step 2's automation.
 - `docs-site/out/index.html` exists locally after `npm run build` (the CI
   workflow asserts this too — see `docs-deploy.yml` "Verify static export
   was produced").
+- `python scripts/check_docs_site_mermaid.py` passes against that `out/`
+  (needs `python -m playwright install chromium`). It loads every published
+  page in headless Chromium, and fails on a diagram that didn't render or on
+  a local image whose URL doesn't return 200. The build can't see either.
+  The workflow runs it too ("Check diagrams render and images load"), on PRs
+  as well as pushes.
+- Before reading a local `docs-site/content/docs/` copy as current, run
+  `python scripts/check_docs_projection_fresh.py`. Each projected page
+  records the commit it came from (`sourceCommit`), and the check compares
+  it to `HEAD`.
 - After upload, `https://sartor-docs.taketempo.com` should load the
   projected README home page, and `https://sartor-docs.taketempo.com/docs`
   should list the full nav (`meta.json`'s ICP-ladder order — see

@@ -89,14 +89,14 @@ _CODE_SPAN_RE = re.compile(r"(`+)(?!`).*?(?<!`)\1(?!`)")
 _LINK_URL_RE = re.compile(r"\]\([^)]*\)")
 _COMMENT_RE = re.compile(r"<!--.*?-->")
 
-_prose_cache: dict[tuple[int, str], list[tuple[int, str]]] = {}
-
 
 def prose(corpus: DocCorpus, path: str) -> list[tuple[int, str]]:
     """(lineno, text) for the doc's rendered prose. Fenced code, `<!-- -->` comments (one- or
-    multi-line), inline code spans and link URLs are blanked. Cached per corpus and path."""
-    key = (id(corpus), path)
-    cached = _prose_cache.get(key)
+    multi-line), inline code spans and link URLs are blanked. Cached on the corpus itself,
+    so the cache lives and dies with it. A module-level cache keyed by `id(corpus)` served
+    stale text when a collected corpus's id was reused (observed under pytest-xdist)."""
+    cache: dict[str, list[tuple[int, str]]] = corpus.__dict__.setdefault("_doc_lints_prose", {})
+    cached = cache.get(path)
     if cached is not None:
         return cached
     out: list[tuple[int, str]] = []
@@ -139,7 +139,7 @@ def prose(corpus: DocCorpus, path: str) -> list[tuple[int, str]]:
             in_code = True
         text = _LINK_URL_RE.sub("]", text)
         out.append((lineno, text))
-    _prose_cache[key] = out
+    cache[path] = out
     return out
 
 

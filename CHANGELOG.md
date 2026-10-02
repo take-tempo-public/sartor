@@ -2991,6 +2991,18 @@ Closes the two residual follow-ups left open by `fix/packaging-install`
 - **Fixed: the in-app assistant can cite the accessibility page in user answers.**
   `ACCESSIBILITY.md` is a user-tier page, but the assistant treated it as developer-only. A
   test now checks every published page's tier against the assistant's rule.
+- **Fixed: the docs site builds again, and a broken diagram now fails the build.**
+  - Since the docs split (D2), every screenshot link in the projected pages pointed outside
+    the site, and the static build failed on all ten. The projector now points each image at
+    the copy it makes.
+  - The architecture page's pipeline diagram had been showing as raw source: a `;` in one
+    label ended the Mermaid statement early. It is fixed.
+  - The docs-site workflow now loads every published page in headless Chromium and fails if
+    any diagram doesn't render or any local image doesn't load
+    (`scripts/check_docs_site_mermaid.py`). All 11 diagrams render.
+- **Added: each projected docs page records the commit it came from (item 126).**
+  `python scripts/check_docs_projection_fresh.py` says whether a local copy of the
+  generated site matches `HEAD`, so a stale copy can't pass for the live site.
 - **Filed:** item 137 (review the pinned models and call settings for performance and cost)
   and item 138 (the Settings drawer has no help bubble).
 

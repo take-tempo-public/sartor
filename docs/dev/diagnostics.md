@@ -215,5 +215,6 @@ written. Collate is deterministic and makes no model call.
   it is paid or locked.
 - A new paid route belongs on `diagnostics_bp`, with the localhost check and, for the
   button, a `confirm()` plus a run-lock `acquire()` whose result is checked.
-- Diagram regeneration and screenshots are handled by the docs asset pass (Epic D, D4). The
-  diagrams here are hand-written Mermaid.
+- The diagrams here are hand-written Mermaid. The docs-site workflow checks that each one
+  renders (`scripts/check_docs_site_mermaid.py`). Mermaid ends a statement at `;`, so keep
+  semicolons out of message and branch labels.

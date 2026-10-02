@@ -206,7 +206,7 @@ sequenceDiagram
         APP->>APP: _assemble_from_frozen_composition(frozen_doc)
         Note over APP: Charter C-6: ZERO LLM calls for the résumé body.<br/>markdown + selected_bullets derived from approved_composition.work_provenance
         APP->>FS: write resume_*.docx / .pdf / .md directly from the JSON Resume doc
-    else legacy — no frozen composition (direct POST only; the wizard locks Step 5 until frozen, item 67)
+    else legacy — no frozen composition (direct POST only, the wizard locks Step 5 until frozen, item 67)
         APP->>ANL: generate(ctx, with_cover_letter=False)
         ANL->>SO: call_kind="generate" (~50s, ~2.3k out)
         SO-->>ANL: {resume_content, changes_summary}

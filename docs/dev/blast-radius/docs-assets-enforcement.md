@@ -366,3 +366,86 @@ class the script's docstring already records.
 | # | Site | Decision | Rationale |
 |---|---|---|---|
 | 26 | `scripts/capture_screenshots.py` (synthetic docx dates) | update | Consumers: the script itself and `.github/workflows/capture-smoke.yml` (Step 1 only, no Generate, so it is unaffected). |
+
+## Addendum — step 5: Mermaid render check + projection stamp (before the edits)
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 27 | `docs-site/src/components/mermaid.tsx` | update | Adds `data-mermaid="pending|ok|failed"` on the wrapper. Today the loading and failed states render the same `<pre>`, so a browser check can't tell them apart. The rendered output is otherwise unchanged. Its only consumer is `src/components/mdx.tsx` (registration). |
+| 28 | `docs-site/source.config.ts` (`projectedPageSchema`) | update | Adds optional `sourceCommit`. Optional, so a projection without it still validates. The stale "four architecture diagrams" comment is fixed here too. |
+| 29 | `scripts/project_docs_to_mdx.py` (`_GENERATED_BANNER`, `build_frontmatter`, `main`) | update | Stamps the source commit (plus "+ uncommitted changes" when registered sources are dirty) into the banner and the frontmatter. `build_frontmatter` gains an optional keyword, so existing callers and tests are unaffected. One `git rev-parse` per run, not per page. |
+| 30 | `.github/workflows/docs-deploy.yml` | update | After "Verify static export", installs Chromium and runs the new Mermaid check on both triggers (push and PR). |
+| 31 | `scripts/check_docs_site_mermaid.py`, `scripts/check_docs_projection_fresh.py` (new) | add | The new checks. They are test-covered for their pure parts. |
+
+**Observed (step 5, local build of the docs site, 2026-10-01).** The CI sequence was run
+locally (`generate_openapi_spec.py`, `project_docs_to_mdx.py`, `npm run gen:api-docs`,
+`npm run build`, with existing `node_modules`):
+
+```
+Error: Turbopack build failed with 10 errors:
+Module not found: Can't resolve '../screenshots/install_setup_user-picker.png'
+… (8 more '../screenshots/walkthrough_*.png')
+Module not found: Can't resolve './docs/screenshots/readme_hero_wizard-step1-filled.png'
+```
+
+Nine of the ten are image links this branch did not touch. The projector copies each local
+image to `content/docs/screenshots/`, but it leaves the image link as the source wrote it,
+so `../screenshots/x.png` resolves from `content/docs/` to a directory that doesn't exist.
+**Not yet observed:** which commit broke it. Plausibly D2's move of the guides into
+`docs/user/` (written there as `../screenshots/`), but that is unverified. Either way, the
+epic's docs-deploy check would fail as it stands.
+
+| # | Site | Decision | Rationale |
+|---|---|---|---|
+| 32 | `scripts/project_docs_to_mdx.py` (image references) | update | Rewrite each local image's link to `./screenshots/<name>`, the place `copy_local_images` puts the file. The basename-collision guard already makes that name unique. Tested in `tests/test_docs_projection.py`. |
+
+**Observed: diagrams, rendered in headless Chromium with the site's own mermaid**
+(`docs-site/node_modules/mermaid`; scratch probe that renders each fence and records
+`mermaid.render`'s error). 10 of 11 render, including the five in `docs/dev/diagnostics.md`
+that D3 could not verify. One fails:
+
+```
+FAIL docs/dev/architecture.md:84 Parse error on line 99:
+... Step 5 until frozen, item 67)        A
+-----------------------^
+Expecting '()', 'SOLID_OPEN_ARROW', … 
+```
+
+The fence at `architecture.md:84` is the pipeline sequence diagram. Its line 99 carries the
+item-67 relabel D3 wrote (`4fac13a`, "the legacy Generate branch is reachable only by a
+direct POST"). On the published site that diagram shows as raw source. The build stayed
+green, which is exactly the blind spot this check closes. The built site
+(`check_docs_site_mermaid.py`) reported the same: `/docs/dev-architecture/: 3 of 4
+diagram(s) rendered (1 failed, 0 still pending)`.
+
+The same run reported all 10 local images as "did not load". **Not yet verified as real:**
+Next renders them `loading="lazy"`, so an off-screen image hasn't loaded when the page is
+inspected. The check is being changed to test each image URL's HTTP status instead.
+
+**Fixed and verified (step 5).**
+- **The broken diagram.** `architecture.md:209`'s `;` became `,`. Mermaid ends a statement
+  at `;`, so the label stopped mid-parenthesis. The probe then rendered **11 of 11**.
+- **The image check.** It now fetches each same-origin image URL and requires HTTP 200,
+  instead of reading load state (the images are lazy-loaded).
+- **Re-projected and rebuilt:** `build exit 0`. Then
+  `check_docs_site_mermaid: OK — 39 pages, 11 diagram(s) rendered, every local image
+  returned 200.`
+- **Seeded violations**, so neither half passes vacuously:
+  - the unfixed diagram gave `/docs/dev-architecture/: 3 of 4 diagram(s) rendered (1
+    failed…)`;
+  - moving the hero PNG out of `out/` gave `/docs/: image
+    /_next/static/media/readme_hero_wizard-step1-filled.….png -> HTTP 404`, exit 1. The
+    PNG was restored afterwards.
+- **The projection stamp.** `check_docs_projection_fresh` read the July-era local copy as
+  `STALE — 36 page(s) carry no sourceCommit`. After re-projection it reads
+  `OK — projected from HEAD`. A frontmatter longer than the first read window was found
+  and fixed along the way (the stamp is now read from the whole frontmatter block).
+
+**Observed (step 5 test run, `pytest -n 4`):** `tests/test_doc_lints.py::test_5_8_wikilink_seeded`
+failed with `assert [] == [('x.md', 4)]`, after passing in the step-2 runs.
+**Inferred, not observed:** `doc_lints.prose()` cached by `(id(corpus), path)` in a
+module-level dict. Once a test's in-memory corpus is garbage-collected, CPython can reuse its
+id, so a later corpus with the same `x.md` path got the earlier test's cached text. The
+cache now lives on the corpus object, so it can't outlive it. After the change, three runs of
+the module under `-n 4` passed (27/27 each). An intermittent failure makes that weak
+evidence, and it is recorded as such.
