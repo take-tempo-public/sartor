@@ -5,7 +5,6 @@ kind = "item"
 title = "Copies of the close-out protocol drift from docs/dev/maintainer-lane.md: the template's step 1 and charter.md:206's step number"
 status = "open"
 decision_owner = "user"
-epic = 39
 branches = ["feat/dev-docs"]
 refs = [
   "docs/dev/AGENT_HANDOFF_TEMPLATE.md:320",
@@ -39,3 +38,7 @@ block and `maintainer-lane.md` agree on each step's command. The two are hand-sy
 ## Updates
 
 ### 2026-09-30 — filed on `feat/dev-docs` (Epic D D3)
+
+### 2026-10-02 — re-parented out of epic 39 (`chore/release-v1.1.0`)
+
+Epic 39 merged as PR #150 and closed. The owner directed its open children to stand on their own under Open, rather than hold the epic open.

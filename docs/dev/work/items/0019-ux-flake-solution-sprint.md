@@ -250,3 +250,19 @@ rates, and the store's own stated limits: `docs/dev/flake-rates/README.md`.
 **What this does not do:** set a threshold, propose a fix, or argue any item should
 close. The instrument is a `verified_by`-shaped artifact for whichever branch next
 picks up item 30 or a similar recurrence — it does not spend that artifact here.
+
+### 2026-10-02 — child 30 re-measured; 19 stays open (`chore/release-v1.1.0`, E1 pre-flight)
+
+The owner asked for 19 to be resolved **with evidence** before the v1.1.0 cut. The
+measurement (the 2026-10-02 `flake_rates collect` shard `985e9282` (held uncommitted for slimming, item 144); detail in item 30's 2026-10-02 update):
+- **Child 30:** 5/153 failed attempts (3.3%), including two occurrences not filed before
+  (08-11, 09-03). The last one was 2026-09-03.
+- **Since then:** 0 in 47 runs, with no code change on the path. At the measured rate that
+  streak has about a 21% chance by luck alone.
+- **Item 44's test** (`test_scroll_spy_attributes_overlapping_refresh_corpus_calls`): all 21
+  failures are dated 08-03/08-04, before its fix, and there are none after it. That
+  independently confirms the 08-06 finding.
+
+**Verdict:** there is no falsifiable `verified_by` for 30, so 19 cannot close on this
+evidence. Per C-7, the way forward is a `fix/*` branch for item 30, with a diagnosis
+dossier as its first commit. The owner decides that next step at the E1 decision point.

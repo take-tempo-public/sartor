@@ -5,7 +5,6 @@ kind = "item"
 title = "The Settings drawer has no help bubble"
 status = "open"
 decision_owner = "user"
-epic = 39
 branches = ["feat/docs-assets-enforcement"]
 refs = [
   "static/app.js:2383",
@@ -22,3 +21,7 @@ drawer is `<aside id="settingsDrawer" class="settings-drawer">`
 Carried as a declared gap since the `user-docs` handoff. **Owner decision, 2026-10-01:** not
 built in D4; filed here. Adding it is a product change (a new bubble, copy, and a "Learn
 more" target), so whether it's wanted is the owner's call.
+
+### 2026-10-02 — re-parented out of epic 39 (`chore/release-v1.1.0`)
+
+Epic 39 merged as PR #150 and closed. The owner directed its open children to stand on their own under Open, rather than hold the epic open.

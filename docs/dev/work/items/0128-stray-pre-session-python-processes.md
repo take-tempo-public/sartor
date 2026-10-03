@@ -18,3 +18,17 @@ processes causing a later test failure.
 ## Updates
 
 ### 2026-09-28 — filed on `feat/docs-split` (Epic D D2), carried from the D1 handoff
+
+### 2026-10-02 — inventory (read-only, `chore/release-v1.1.0`)
+
+`Get-CimInstance Win32_Process -Filter "Name like 'python%'"` found 13 stale processes, dated
+2026-09-18 to 2026-10-01. Every one shows a 0 MB working set.
+- 2× `security_reminder_hook.py`, the `security-guidance` plugin's hook.
+- 11× one-line `python3 -c` stdin-JSON readers:
+  - 9 print `tool_input.command`;
+  - 1 prints `tool_input.file_path`;
+  - 1 counts `is_wiki_relevant()` paths.
+
+All of them read stdin, which fits a process blocked on a stdin that never reached EOF. **That
+mechanism has not been verified:** parent liveness and pipe state weren't checked. Nothing was
+killed.
