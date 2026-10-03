@@ -230,3 +230,38 @@ still exactly as open as the 2026-08-06 entry left it.
 branch that cannot plausibly have caused it — filed as evidence, not fixed, because
 fixing it needs its own `fix/*` branch with a diagnosis dossier per C-7, not a
 docs-only branch's close-out. Flagging explicitly rather than merging past it silently.
+
+### 2026-10-02 — re-measured over 148 CI runs (`chore/release-v1.1.0`, E1 pre-flight)
+
+`python -m scripts.flake_rates collect --workflow ci.yml --limit 130` added shard
+the 2026-10-02 `flake_rates collect` shard `985e9282` (held uncommitted for slimming, item 144) (PARTIAL, exit 3: 4 runs' logs expired — `35792455028` 09-22,
+`31532932535` and `31448207623` 08-11, `31225698714` 08-07 — and 1 session unreconciled).
+`report --tier ux` across both shards:
+
+```
+  3.3%    1.4%     5/153       148      5  ux  tests/ux/regression/test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts
+```
+
+The five failed attempts, each a rerun-then-pass:
+
+| CI run | date (UTC) | branch | filed before? |
+|---|---|---|---|
+| `30859772069` | 2026-08-03 | `fix/wiki-freshness-relevance-classification` | yes (08-06 update) |
+| `31047661015` | 2026-08-05 | `feat/ci-wait-wrapper` (PR #102) | yes (reopen) |
+| `31449717508` | 2026-08-11 | `docs/post-epic-a-findings` | **no — new** |
+| `33708934519` | 2026-09-03 | `docs/container-persistence-guidance` (PR #131) | yes (09-03 update) |
+| `33805467341` | 2026-09-03 | a Dependabot actions bump | **no — new** |
+
+Raw-log check of `33805467341` (`gh run view 33805467341 --log`), not taken from the parser:
+`[ux] RERUN — this attempt FAILED` at 21:01:45, `TimeoutError: Timeout 30000ms exceeded.`,
+`[settle-instrument] {'reach': 9, ...}`, then `PASSED` at 21:01:49. Same signature as
+08-05 and 09-03.
+
+**Since the last failure (2026-09-03 21:01Z): 0 failures in 47 UX-tier runs**, through
+2026-10-02. That is **not evidence of a fix**:
+- `git log --since=2026-09-03` shows no change to `ui_pages/wizard_compose.py` or to this
+  test file.
+- At the measured 3.3% per-attempt rate, 47 clean runs in a row has probability about
+  0.967^47 ≈ 0.21. A clean streak this long is unremarkable if nothing changed.
+
+Status stays `watching`. No mechanism has been identified.

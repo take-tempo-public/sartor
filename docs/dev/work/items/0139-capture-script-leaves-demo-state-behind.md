@@ -5,7 +5,6 @@ kind = "item"
 title = "capture_screenshots leaves its demo user behind: cleanup skips on failure, and DB rows always persist"
 status = "open"
 decision_owner = "agent"
-epic = 39
 branches = ["feat/docs-assets-enforcement"]
 refs = [
   "scripts/capture_screenshots.py:408",
@@ -35,3 +34,7 @@ reasons the script never sees.
   candidate's corpus, which doesn't exist yet (item 133). Until it does, a pre-run check
   that **refuses** when the demo candidate already holds roles would at least fail loudly
   at the start, instead of at Step 5 after the paid calls.
+
+### 2026-10-02 — re-parented out of epic 39 (`chore/release-v1.1.0`)
+
+Epic 39 merged as PR #150 and closed. The owner directed its open children to stand on their own under Open, rather than hold the epic open.

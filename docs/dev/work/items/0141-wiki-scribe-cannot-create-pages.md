@@ -5,7 +5,6 @@ kind = "item"
 title = "wiki-scribe is told to create new pages but its tool grant has no Write"
 status = "open"
 decision_owner = "agent"
-epic = 39
 branches = ["feat/docs-assets-enforcement"]
 refs = [
   "agents/wiki-scribe.md:5",
@@ -30,3 +29,7 @@ model output, with room for silent edits (here: only link-path fixes, recorded i
 files under `docs/wiki/pages/`, or have the command state that new pages are written by the
 orchestrator verbatim. The first keeps author ≠ orchestrator; it is a tool-grant change, so
 it is a decision about the agent's safety boundary.
+
+### 2026-10-02 — re-parented out of epic 39 (`chore/release-v1.1.0`)
+
+Epic 39 merged as PR #150 and closed. The owner directed its open children to stand on their own under Open, rather than hold the epic open.

@@ -5,7 +5,6 @@ kind = "item"
 title = "Diagnostics console: the Tuning smoke cost estimate contradicts the Quality smoke estimate"
 status = "open"
 decision_owner = "agent"
-epic = 39
 branches = ["feat/dev-docs"]
 refs = [
   "dashboard/templates/dashboard.html:2346",
@@ -36,3 +35,7 @@ figures; it points at the console's own `confirm()` dialogs.
 ## Updates
 
 ### 2026-09-30 — filed on `feat/dev-docs` (Epic D D3)
+
+### 2026-10-02 — re-parented out of epic 39 (`chore/release-v1.1.0`)
+
+Epic 39 merged as PR #150 and closed. The owner directed its open children to stand on their own under Open, rather than hold the epic open.
