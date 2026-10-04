@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Flake-rate store: skip lists by digest, held shard committed (`chore/flake-shard-slim`, item 144)
+
+- **Changed: `scripts/flake_rates.py` parser v2.** A session's skipped set is stored as a
+  content-addressed `roster` record (`skipped_digest`, `skipped_size`) instead of an inline
+  list, and rosters are de-duplicated per shard rather than per run. The quality job's
+  `-m ux` skip-only leg skips the whole UX tier, so the old shape made one 123-run shard
+  8 MB.
+- **Added: `python -m scripts.flake_rates slim <shard>`** rewrites a v1 shard offline,
+  because a shard can't be re-collected once its CI logs expire.
+- **Recorded:** shard `985e9282` (item 30's 2026-10-02 re-measure) is committed after
+  slimming, 8.06 MB → 1.24 MB. `report` output is byte-identical before and after.
+
 ### Epic C kickoff: design brief, UX audit, and pipeline fixes (`docs/epic-c-kickoff`, items 93, 95, 96)
 
 - **Fixed: the pipeline's implementer model is required (item 96).**

@@ -27,7 +27,9 @@ Three classes are load-bearing rather than incidental:
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -49,6 +51,7 @@ from scripts.flake_rates import (
     parse_summary,
     rank,
     roster_digest,
+    slim_v1_records,
     split_log_line,
     split_sessions,
     wilson_lower_bound,
@@ -390,6 +393,91 @@ class TestEncodeSessionRosterPolicy:
         meta = RunMeta("1", 1, 1, "CI", "push", "main", "sha", "t", "completed", "success", "u")
         _record, rosters = encode_session(session, meta)
         assert rosters == []  # quality tier is a control arm, not a per-test series
+
+    def test_skipped_set_is_stored_by_digest_not_inline(self) -> None:
+        # Item 144: the `-m ux` skip-only leg skips the whole UX tier; inline lists were
+        # 63% of an 8 MB shard. The set now rides a content-addressed roster record.
+        base = _make_session(_QUAL_JOB, 0, _QUAL_XDIST_SESSION_LINES)
+        skipped = ("tests/ux/a.py::t1", "tests/ux/b.py::t2")
+        session = dataclasses.replace(base, skipped=skipped)
+        meta = RunMeta("1", 1, 1, "CI", "push", "main", "sha", "t", "completed", "success", "u")
+        record, rosters = encode_session(session, meta)
+        assert "skipped_nodeids" not in record
+        assert record["skipped_digest"] == roster_digest(skipped)
+        assert record["skipped_size"] == 2
+        assert [r["nodeids"] for r in rosters] == [list(skipped)]
+        assert record["parser_version"] == 2
+
+    def test_empty_skipped_set_has_no_digest_and_no_roster(self) -> None:
+        session = _make_session(_QUAL_JOB, 0, _QUAL_XDIST_SESSION_LINES)
+        meta = RunMeta("1", 1, 1, "CI", "push", "main", "sha", "t", "completed", "success", "u")
+        record, rosters = encode_session(dataclasses.replace(session, skipped=()), meta)
+        assert (record["skipped_digest"], record["skipped_size"], rosters) == ("", 0, [])
+
+
+class TestSlimV1Records:
+    """Item 144: an expired-log shard can only be rewritten offline, so the rewrite must
+    lose nothing -- every session's skip set must be recoverable from its digest."""
+
+    @staticmethod
+    def _v1_session(run_id: str, skipped: list[str]) -> dict[str, Any]:
+        return {
+            "kind": "session",
+            "run_id": run_id,
+            "parser_version": 1,
+            "roster_digest": "sha256:r",
+            "skipped_nodeids": skipped,
+            "failed_nodeids": [],
+        }
+
+    def test_skip_lists_become_digests_with_one_roster_per_distinct_set(self) -> None:
+        ux_list = ["tests/ux/a.py::t1", "tests/ux/b.py::t2"]
+        records = [
+            {"kind": "run", "run_id": "1", "parser_version": 1},
+            self._v1_session("1", ux_list),
+            {"kind": "roster", "digest": "sha256:r", "size": 1, "nodeids": ["x"]},
+            {"kind": "run", "run_id": "2", "parser_version": 1},
+            self._v1_session("2", list(ux_list)),
+            {"kind": "roster", "digest": "sha256:r", "size": 1, "nodeids": ["x"]},
+            self._v1_session("2", []),
+        ]
+        out = slim_v1_records(records)
+
+        sessions = [r for r in out if r["kind"] == "session"]
+        rosters = {r["digest"]: r["nodeids"] for r in out if r["kind"] == "roster"}
+        assert len(sessions) == 3
+        assert all("skipped_nodeids" not in s for s in sessions)
+        for original, slim in zip(
+            [r for r in records if r["kind"] == "session"], sessions, strict=True
+        ):
+            expected = original["skipped_nodeids"]
+            got = rosters[slim["skipped_digest"]] if slim["skipped_digest"] else []
+            assert got == expected
+            assert slim["skipped_size"] == len(expected)
+        # One executed roster (de-duplicated across runs) + one skip roster.
+        assert len([r for r in out if r["kind"] == "roster"]) == 2
+        assert all(
+            r["parser_version"] == 2 and r["slimmed_from_parser_version"] == 1
+            for r in out
+            if r["kind"] in ("run", "session")
+        )
+
+    def test_v2_records_pass_through_unchanged(self) -> None:
+        record = {"kind": "session", "parser_version": 2, "skipped_digest": "", "skipped_size": 0}
+        assert slim_v1_records([record]) == [record]
+
+    def test_slim_preserves_compute_rates(self) -> None:
+        ux_session = _make_session(_UX_JOB, 0, _UX_SESSION_LINES)
+        meta = RunMeta("9", 1, 9, "CI", "push", "main", "s", "t", "completed", "success", "u")
+        record, rosters = encode_session(ux_session, meta)
+        # Re-shape into a v1 record, the form the held shard 985e9282 is in.
+        v1 = {k: v for k, v in record.items() if k not in ("skipped_digest", "skipped_size")}
+        v1["skipped_nodeids"] = ["tests/ux/z.py::t"]
+        v1["parser_version"] = 1
+        exec_rosters = [r for r in rosters if r["digest"] == record["roster_digest"]]
+        before = _compute_rates([v1, *exec_rosters])
+        after = _compute_rates(slim_v1_records([v1, *exec_rosters]))
+        assert before == after
 
 
 class TestParseRunList:

@@ -99,7 +99,9 @@ Three JSON record kinds share that stream, `kind` discriminates:
               run-level denominator knowable rather than silently shrinking it).
 * `session` -- one per pytest invocation found in a run's log.
 * `roster` -- content-addressed `{digest, size, nodeids}`, written once per distinct
-              digest. Full executed rosters are stored for the **ux tier only**; the
+              digest per shard. Every session's skipped set is stored this way too
+              (`skipped_digest`, parser v2, item 144). Full executed rosters are stored
+              for the **ux and pdf tiers only**; the
               quality tier (single-attempt -- `ci.yml` never passes `--reruns` to the
               `gate.py` pytest steps) stores digest + size + failing nodeids and is
               treated as a control arm, not a per-test series -- its rate quantises to
@@ -120,6 +122,7 @@ Usage::
     python -m scripts.flake_rates collect --limit 30
     python -m scripts.flake_rates report --min-attempts 20
     python -m scripts.flake_rates report --tier ux --json
+    python -m scripts.flake_rates slim docs/dev/flake-rates/runs/<uuid>.jsonl
 """
 
 from __future__ import annotations
@@ -142,7 +145,10 @@ SCHEMA = 1
 #: Bump when `parse_session`/`parse_run_log`'s output shape changes, so a later
 #: `report` (or a human) can tell a stored record was produced by different logic
 #: rather than silently trusting stale semantics.
-PARSER_VERSION = 1
+#: v2 (item 144): `session.skipped_nodeids` became `skipped_digest` + `skipped_size`,
+#: the list itself stored once per shard as a content-addressed `roster` record, and
+#: roster de-duplication widened from per-run to per-shard.
+PARSER_VERSION = 2
 
 EXIT_OK = 0
 EXIT_NOTHING_TO_REPORT = 1
@@ -688,25 +694,79 @@ def encode_run(
     }
 
 
+def _roster_record(digest: str, nodeids: Sequence[str]) -> dict[str, Any]:
+    return {
+        "schema": SCHEMA,
+        "kind": "roster",
+        "digest": digest,
+        "size": len(nodeids),
+        "nodeids": list(nodeids),
+    }
+
+
+def slim_v1_records(records: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Re-encode a parser-v1 shard's records into the v2 store shape, offline (item 144).
+
+    CI logs expire after ~90 days, so an old shard cannot be re-collected; this rewrites
+    it from the local file instead. Per v1 session record, the inline `skipped_nodeids`
+    becomes `skipped_digest` + `skipped_size`, with one `roster` record per distinct
+    set placed right after the first session that needs it; duplicate `roster` records
+    (v1 de-duplicated per run, not per shard) are dropped. Record order is otherwise
+    preserved, and every rewritten run/session record carries
+    `slimmed_from_parser_version` so its provenance stays visible. Anything not at v1
+    passes through unchanged.
+    """
+    out: list[dict[str, Any]] = []
+    seen_digests: set[str] = set()
+    for record in records:
+        kind = record.get("kind")
+        if kind == "roster":
+            digest = str(record.get("digest", ""))
+            if digest not in seen_digests:
+                seen_digests.add(digest)
+                out.append(record)
+            continue
+        if record.get("parser_version") != 1 or kind not in ("run", "session"):
+            out.append(record)
+            continue
+        new: dict[str, Any] = {}
+        skipped: list[str] = []
+        for key, value in record.items():
+            if key == "skipped_nodeids":
+                skipped = [str(n) for n in value]
+                new["skipped_digest"] = roster_digest(skipped) if skipped else ""
+                new["skipped_size"] = len(skipped)
+            elif key == "parser_version":
+                new[key] = PARSER_VERSION
+                new["slimmed_from_parser_version"] = 1
+            else:
+                new[key] = value
+        out.append(new)
+        skip_digest = str(new.get("skipped_digest", ""))
+        if skipped and skip_digest not in seen_digests:
+            seen_digests.add(skip_digest)
+            out.append(_roster_record(skip_digest, skipped))
+    return out
+
+
 def encode_session(session: Session, meta: RunMeta) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Build a `kind: "session"` record plus any new `kind: "roster"` records it needs.
 
     Returns `(session_record, roster_records)` -- the caller is responsible for only
-    writing a roster record once per distinct digest across the whole store, but this
-    function always returns one so a fresh store never has a dangling digest.
+    writing a roster record once per distinct digest within a shard, but this
+    function always returns one so a fresh shard never has a dangling digest.
+
+    The skipped set is content-addressed the same way, for every tier (item 144): the
+    quality job's `-m ux` skip-only leg skips the whole UX tier, so an inline list was
+    63% of an 8 MB shard while being identical across almost every session.
     """
     digest = roster_digest(session.executed)
     roster_records: list[dict[str, Any]] = []
     if session.tier in _FULL_ROSTER_TIERS:
-        roster_records.append(
-            {
-                "schema": SCHEMA,
-                "kind": "roster",
-                "digest": digest,
-                "size": len(session.executed),
-                "nodeids": list(session.executed),
-            }
-        )
+        roster_records.append(_roster_record(digest, session.executed))
+    skipped_digest = roster_digest(session.skipped) if session.skipped else ""
+    if session.skipped:
+        roster_records.append(_roster_record(skipped_digest, session.skipped))
     summary = session.summary
     record = {
         "schema": SCHEMA,
@@ -740,7 +800,8 @@ def encode_session(session: Session, meta: RunMeta) -> tuple[dict[str, Any], lis
         else None,
         "roster_digest": digest,
         "roster_size": len(session.executed),
-        "skipped_nodeids": list(session.skipped),
+        "skipped_digest": skipped_digest,
+        "skipped_size": len(session.skipped),
         "failed_nodeids": list(session.failed_nodeids),
         "error_nodeids": list(session.error_nodeids),
         "xpassed_nodeids": list(session.xpassed_nodeids),
@@ -876,6 +937,9 @@ def _collect(args: argparse.Namespace) -> int:
     print(f"flake-rates: listed {len(listed)} run(s), {len(to_fetch)} new")
 
     records: list[dict[str, Any]] = []
+    # Per shard, not per run (item 144): per-run de-duplication re-wrote the same UX
+    # roster once per run, ~2 MB of an 8 MB shard. A shard stays self-contained.
+    seen_digests: set[str] = set()
     fetch_failures = 0
     unreconciled_sessions = 0
     for meta in to_fetch:
@@ -919,7 +983,6 @@ def _collect(args: argparse.Namespace) -> int:
             print(
                 f"flake-rates: NOTE - run {meta.run_id}: {top_unparsed} top-level line(s) unparsed"
             )
-        seen_digests: set[str] = set()
         for session in sessions:
             if not session.reconciled:
                 unreconciled_sessions += 1
@@ -1122,6 +1185,30 @@ def _report(args: argparse.Namespace) -> int:
     return EXIT_PARTIAL if unreconciled else EXIT_OK
 
 
+def _slim(args: argparse.Namespace) -> int:
+    """Rewrite one v1 shard in place into the v2 shape (`slim_v1_records`). Refuses a
+    malformed line rather than skipping it: a rewrite that silently dropped a record
+    would destroy the only copy of an expired CI log's measurement."""
+    path = Path(args.shard)
+    records: list[dict[str, Any]] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            print(f"flake-rates: {path}:{lineno} is not valid JSON ({exc}) - refusing to rewrite")
+            return EXIT_ERROR
+    slimmed = slim_v1_records(records)
+    before = path.stat().st_size
+    _write_shard(path, slimmed)
+    print(
+        f"flake-rates: slimmed {path.name}: {len(records)} -> {len(slimmed)} record(s), "
+        f"{before} -> {path.stat().st_size} bytes"
+    )
+    return EXIT_OK
+
+
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m scripts.flake_rates",
@@ -1139,6 +1226,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     report_parser.add_argument("--tier", default=None, help="restrict to one tier")
     report_parser.add_argument("--json", action="store_true")
 
+    slim_parser = sub.add_parser("slim", help="rewrite a parser-v1 shard into the v2 shape")
+    slim_parser.add_argument("shard", help="path to the shard .jsonl to rewrite in place")
+
     return parser.parse_args(argv)
 
 
@@ -1151,6 +1241,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             code = _collect(args)
         elif args.command == "report":
             code = _report(args)
+        elif args.command == "slim":
+            code = _slim(args)
     except FileNotFoundError:
         print("flake-rates: `gh` not found on PATH - install the GitHub CLI", file=sys.stderr)
         code = EXIT_ERROR
