@@ -1,3 +1,4 @@
 {"event": "consumed", "doc": "docs/dev/handoffs/chore-release-v1-1-0.md", "session": "3abb1df0-508c-47d8-a203-98005849c215", "branch": "main", "commit": "d270506", "actor": "amodal1", "agent": "claude-opus-5-5", "ts": "2026-10-03T20:16:03Z", "fingerprint": "e353595b4e43"}
 {"event": "plan-archived", "session": "3abb1df0-508c-47d8-a203-98005849c215", "branch": "chore/flake-shard-slim", "archive_id": "20261003T202002Z-142537ca4cdd", "plan": "golden-dancing-flame.md", "ts": "2026-10-03T20:20:08Z"}
 {"event": "compacted", "session": "3abb1df0-508c-47d8-a203-98005849c215", "branch": "chore/flake-shard-slim", "trigger": "unknown", "ts": "2026-10-04T17:31:58Z"}
+{"event": "compacted", "session": "3abb1df0-508c-47d8-a203-98005849c215", "branch": "chore/agent-doc-drift", "trigger": "unknown", "ts": "2026-10-04T21:21:17Z"}
