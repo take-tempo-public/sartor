@@ -50,3 +50,22 @@ generated`) still ran. It built the handoff from the OLD header and validated it
   high-stakes half.
 - **The general half needs** the witness to exempt directive-continuation turns, or a harness
   change. Surfaced to the owner.
+
+### 2026-10-04 — RECURRED twice more (session 3abb1df0, `chore/agent-doc-drift` close-out)
+
+The same shape again, with no plan file involved:
+- A `Write` of a commit-message file was PAUSEd. The `git commit -F <that file>` batched with it
+  still ran and failed (`fatal: could not read log file …`). The files were already staged, and
+  nothing was committed until the Write was re-run.
+- A `Write` of the project memory file was PAUSEd while a batched index edit went through. The
+  index briefly pointed at a file that didn't exist yet.
+- **Both caught** by reading the tool results before moving on, and both were harmless in the end.
+  The second shows the hazard isn't only about stale content: a dependent call can act on
+  content that doesn't exist yet.
+- **Also seen:** the witness re-arms after every subagent hand-back (memory
+  `reference-subagent-pretooluse-agent-id`). In a long autonomous run, a "first Edit/Write of the
+  turn" can come many times per user prompt.
+- **No mechanism authored on this branch (C-11, declared).** This is a docs branch, and the fix
+  is a hook change. The working rule that avoided harm in both cases: never batch a call that
+  reads a file with the Write that creates it. That rule is prose and **unenforced**. Surfaced to
+  the owner in the `chore-agent-doc-drift` handoff.
