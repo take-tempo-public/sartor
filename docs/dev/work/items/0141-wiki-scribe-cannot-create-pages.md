@@ -3,9 +3,14 @@ schema = 1
 id = 141
 kind = "item"
 title = "wiki-scribe is told to create new pages but its tool grant has no Write"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement"]
+branches = ["feat/docs-assets-enforcement", "chore/agent-doc-drift"]
+resolution = "2026-10-03, chore/agent-doc-drift: took the item's second option, which leaves the agent's safety boundary unchanged. The scribe's tool grant is unchanged (no Write). Step 5 now says to hand back the path and the complete page text, and /wiki-self-update step 3 says the orchestrator writes it verbatim and logs any change it makes as a separate Edit. A test pins tool grants against create-a-file instructions for every subagent. Granting Write stays open as a future decision if hand copies prove error-prone."
+verified_by = [
+  "tests/test_agent_tool_grant_consistency.py::test_no_create_instruction_without_a_creating_tool",
+  "tests/test_agent_tool_grant_consistency.py::test_the_check_catches_the_original_wording",
+]
 refs = [
   "agents/wiki-scribe.md:5",
   "agents/wiki-scribe.md:94",

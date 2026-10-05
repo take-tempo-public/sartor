@@ -91,10 +91,13 @@ right (dense `path:line`/symbol cites, clean bidirectional `[[backlinks]]`, corr
    for a genuinely new behavior beats a restructure. If a relationship changed, fix the
    `[[backlink]]` on both pages.
 4. **Re-anchor cites you touch** to a symbol/anchor where one exists, not a bare line.
-5. **For a genuinely new concept** with no existing page, create
+5. **For a genuinely new concept** with no existing page, draft
    `pages/<kebab-slug>.md` with the full SCHEMA shape (blockquote header with
    Concept / Sources / Audience / Grounding lines, the body, a `## Related` backlink
    block) — but prefer extending an existing page over spawning a thin new one.
+   **You cannot create the file:** your grant has `Edit`, which only changes an existing
+   file, and no `Write`. Hand back the target path and the **complete page text** in one
+   fenced block; the orchestrator writes it verbatim and records any change it had to make.
 
 ## What you never do
 

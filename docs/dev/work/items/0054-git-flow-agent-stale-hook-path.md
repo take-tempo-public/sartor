@@ -3,10 +3,16 @@ schema = 1
 id = 54
 kind = "item"
 title = "agents/git-flow.md cites hooks at the retired .claude-plugin/hooks/ path"
-status = "watching"
+status = "closed"
 decision_owner = "agent"
+branches = ["chore/agent-doc-drift"]
 refs = [
   "agents/git-flow.md",
+  "SECURITY.md",
+]
+resolution = "2026-10-03, chore/agent-doc-drift: agents/git-flow.md was already corrected on main (line 23 cites hooks/bash-dispatcher.sh; no .claude-plugin/hooks reference remains). The same retired path was still live in SECURITY.md (route-security-lint section) and is fixed there. A test now fails if any subagent definition or SECURITY.md names the retired path."
+verified_by = [
+  "tests/test_agent_tool_grant_consistency.py::test_no_retired_plugin_hook_path",
 ]
 summary = "Doc cites .claude-plugin/hooks/ (retired path); doubly stale now the hook dispatches via bash-dispatcher.sh."
 ```
