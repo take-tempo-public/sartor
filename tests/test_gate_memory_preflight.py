@@ -296,6 +296,7 @@ class TestCheckMemoryPreflight:
 
     def test_main_refuses_before_running_any_step(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """The preflight must short-circuit main() -- no real step subprocess runs."""
+        monkeypatch.setattr(gate, "_check_hooks_path", lambda: 0)  # item 150 runs first
         monkeypatch.setattr(gate, "_available_memory_gb", lambda: 0.0)
         monkeypatch.setattr(gate, "_top_memory_consumers", lambda: [])
 
@@ -312,7 +313,11 @@ class TestCheckMemoryPreflight:
         `^gate: (all steps passed|FAILED)`, and states the gate prints exactly one
         of the two. A preflight refusal used to print neither, so a waiter spun
         forever (observed 2026-09-23 on docs/epic-c-kickoff: 30 silent minutes).
+
+        The hooksPath preflight (item 150) runs first and is stubbed to pass. The result
+        file (item 151) is redirected for every test by `tests/conftest.py`.
         """
+        monkeypatch.setattr(gate, "_check_hooks_path", lambda: 0)
         monkeypatch.setattr(gate, "_available_memory_gb", lambda: 0.5)
         monkeypatch.setattr(gate, "_top_memory_consumers", lambda: [])
         assert gate.main([]) != 0

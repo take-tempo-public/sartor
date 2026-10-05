@@ -327,7 +327,7 @@ class TestBlockMergeToMainUnit:
             "git -c core.editor=true merge main",
             "FOO=1 git merge main",
             "bash -c 'git merge main'",
-            "sh -c \"git merge --no-ff master\"",
+            'sh -c "git merge --no-ff master"',
             "eval 'git merge main'",
             "bash <<'EOF'\ngit merge main\nEOF",
             "python - <<'EOF'\nimport os; os.system('git merge main')\nEOF",
@@ -573,9 +573,9 @@ class TestVerifyBinaryOnPathUnit:
         """Item 124: a bare `ruff` (not on PATH here) stopped a pipeline implementer, and
         every agent rediscovered `python -m ruff`. When the missing name is importable as a
         module by this interpreter, the block says the exact replacement."""
-        real_which = verify_binary_on_path.shutil.which
+        real_which = shutil.which
         monkeypatch.setattr(
-            verify_binary_on_path.shutil,
+            shutil,  # the same module object the guard calls `shutil.which` on
             "which",
             lambda name: None if name in ("ruff", "pytest") else real_which(name),
         )

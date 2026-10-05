@@ -53,7 +53,7 @@ from typing import Any
 
 from scripts.enforcement.blast_radius import Surface, classify
 from scripts.enforcement.evidence import branch_slug, section, substantive
-from scripts.enforcement.gitutil import git_branch
+from scripts.enforcement.gitutil import git_branch, repo_root
 from scripts.enforcement.guards.result import GuardResult
 
 BLAST_RADIUS_DIR = "docs/dev/blast-radius"
@@ -105,15 +105,8 @@ def has_consumer_enumeration(text: str, surface_path: str, template: str = "") -
 
 
 def _repo_root_for(norm_path: str, env: Mapping[str, str]) -> Path:
-    """Best-effort repo root: `CLAUDE_PROJECT_DIR` if set, else walk up from the target."""
-    project_dir = env.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-    directory = Path(posixpath.dirname(norm_path) or ".")
-    for candidate in (directory, *directory.parents):
-        if (candidate / ".git").exists():
-            return candidate
-    return Path(".")
+    """The checkout holding the edited file -- its worktree, not the session's (item 148)."""
+    return repo_root(norm_path, env)
 
 
 def _relative_to_repo(norm_path: str, repo_root: Path) -> str:

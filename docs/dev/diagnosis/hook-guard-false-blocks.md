@@ -61,6 +61,17 @@ added (Windows 11, Python 3.13.14). Command:
   also failed in this PowerShell-launched run (`assert 127 == 2`: the OLD shell hook it runs as a
   subprocess got "command not found"). It is selected only because its name contains
   "worktree"; this branch does not touch it. Expected to pass under the gate's Git Bash launch.
+- **Re-run after rebasing onto `main` c384fad (2026-10-05, session 2b79cef7, Git Bash launch,
+  same `-k` command):** `13 failed, 16 passed, 170 deselected in 622.68s`. The 13 are exactly
+  the 123/124/136/149/148 tests above. `test_defect_ii_regression_cross_worktree_cwd` passed, as
+  predicted under a Git Bash launch, so 13 is the defect count; the earlier 14 included that
+  launcher artifact. Wall time was 10 minutes because the laptop had 0.5 GB free RAM (96% load).
+- **136, live again (2026-10-05, this session):** a Bash call running `python - <<'PYEOF' ...`,
+  whose heredoc body was Python source for this fix (it holds the string
+  `"merge(?!-)\b.*\b(?:main|master)"` and docstring prose naming `git merge`), was refused with
+  `BLOCKED (block-merge-to-main): git merge/push targeting main or master.` The branch was
+  `fix/hook-guard-false-blocks`, not main, so the raw `_MERGE_MAIN_RE` text match fired on body
+  text. The edit was redone with the Edit tool. No hatch was used.
 
 ---
 

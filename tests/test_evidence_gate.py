@@ -22,6 +22,8 @@ See `docs/dev/diagnosis/compose-summary-draft-settle-hole.md` for the worked fai
 from __future__ import annotations
 
 import json
+import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -287,3 +289,88 @@ class TestEnforcementIsWired:
     def test_template_exists_where_the_block_message_says_it_does(self) -> None:
         assert _TEMPLATE.is_file()
         assert template_text(_REPO_ROOT) != ""
+
+
+class TestRepoRootFollowsTheWorktree:
+    """Item 148: the guards and context hooks resolve the repo root from the edited file (or
+    the payload `cwd`), never from `CLAUDE_PROJECT_DIR` first. Exercised for real against a
+    `git worktree add` checkout, since a worktree's `.git` is a file, not a directory."""
+
+    _ENV_READ = re.compile(
+        r"""(?:get|getenv)\(\s*["']CLAUDE_PROJECT_DIR["']|\[\s*["']CLAUDE_PROJECT_DIR["']\s*\]"""
+    )
+
+    def test_only_gitutil_reads_claude_project_dir_as_a_root(self) -> None:
+        """A new direct reader re-opens item 148. `claude_hook.py` is the one recorded
+        exception (validate-context; see docs/dev/blast-radius/hook-guard-false-blocks.md
+        `## Deferred`)."""
+        readers = {
+            path.relative_to(_REPO_ROOT).as_posix()
+            for path in (_REPO_ROOT / "scripts" / "enforcement").rglob("*.py")
+            if self._ENV_READ.search(path.read_text(encoding="utf-8"))
+        }
+        assert readers == {
+            "scripts/enforcement/gitutil.py",
+            "scripts/enforcement/adapters/claude_hook.py",
+        }
+
+    def test_a_non_repo_cwd_stays_put(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The fallback must never become the hook process's own cwd (the real repo): a
+        compaction receipt would then land in a tracked ledger shard."""
+        monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+        assert claude_context_hook._project_dir({"cwd": str(tmp_path)}) == tmp_path
+
+    def test_end_to_end_edit_in_a_worktree_uses_its_own_dossier(
+        self, fix_repo: Path, tmp_path_factory: pytest.TempPathFactory
+    ) -> None:
+        """The real Edit|Write dispatcher, with `CLAUDE_PROJECT_DIR` naming this repo (as in
+        a live session), judging an edit inside a separate `git worktree` of another repo."""
+        _git(fix_repo, "checkout", "-q", "-b", "chore/park")  # free fix/some-bug for the worktree
+        worktree = tmp_path_factory.mktemp("wt") / "checkout"
+        _git(fix_repo, "worktree", "add", "-q", str(worktree), "fix/some-bug")
+        assert (worktree / ".git").is_file()
+        (worktree / "blueprints").mkdir(exist_ok=True)
+        (worktree / "blueprints" / "applications.py").write_text("x = 1\n", encoding="utf-8")
+        diagnosis = worktree / "docs" / "dev" / "diagnosis"
+        diagnosis.mkdir(parents=True, exist_ok=True)
+        shutil.copy(_TEMPLATE, diagnosis / "TEMPLATE.md")
+
+        def run() -> subprocess.CompletedProcess[str]:
+            payload = {
+                "tool_name": "Edit",
+                "agent_id": "test-subagent",  # skip the interrogative-witness pause
+                "cwd": str(worktree),
+                "tool_input": {
+                    "file_path": str(worktree / "blueprints" / "applications.py"),
+                    "new_string": "x = 2\n",
+                },
+            }
+            env = {
+                k: v
+                for k, v in os.environ.items()
+                if k not in ("CLAUDE_ALLOW_MAIN_EDITS", "CLAUDE_CONFIRM_MERGE")
+            }
+            env["CLAUDE_PROJECT_DIR"] = str(_REPO_ROOT)
+            return subprocess.run(  # noqa: S603 - fixed argv (bash + a known script path)
+                ["bash", str(_REPO_ROOT / "hooks" / "edit-write-dispatcher.sh")],
+                input=json.dumps(payload),
+                cwd=str(worktree),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+                check=False,
+            )
+
+        blocked = run()
+        assert blocked.returncode == 2, blocked.stderr
+        assert "require-evidence-before-fix" in blocked.stderr
+        (diagnosis / "some-bug.md").write_text(
+            _TEMPLATE.read_text(encoding="utf-8").replace(_PLACEHOLDER, _REAL_EVIDENCE),
+            encoding="utf-8",
+        )
+        allowed = run()
+        assert allowed.returncode == 0, allowed.stderr

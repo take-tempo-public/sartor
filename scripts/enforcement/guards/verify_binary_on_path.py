@@ -65,12 +65,14 @@ expansion (`$FOO`) or that this guard cannot tokenize at all is skipped
 
 from __future__ import annotations
 
+import importlib.util
 import re
-import shlex
 import shutil
 from typing import Any
 
 from scripts.enforcement.guards.result import GuardResult
+from scripts.enforcement.shell_split import split_top_level as _split_top_level
+from scripts.enforcement.shell_split import tokenize
 
 # Bash builtins/keywords that never resolve via PATH. Extend conservatively —
 # an unrecognized leading word is treated as a real binary and checked, so
@@ -138,6 +140,11 @@ _BUILTINS_AND_KEYWORDS = frozenset(
         "dirs",
         "history",
         "printf",
+        # Brace-group reserved words (item 123). A leading `{` is dropped by
+        # `_leading_binary_token` so the group's first command is still checked;
+        # a lone `}` closes the group.
+        "{",
+        "}",
     }
 )
 
@@ -153,11 +160,9 @@ _ENV_ASSIGN_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 # skip rather than risk a false BLOCK on a binary that is actually present.
 _MSYS_ABS_PATH_RE = re.compile(r"^/[A-Za-z](?:/|$)")
 
-# Stand-in for a literal backslash while tokenizing (see `_leading_binary_
-# token`) — swapped back immediately after. A shell command string cannot
-# contain a real NUL byte (bash cannot even represent one in argv), so this
-# never collides with real input.
-_BACKSLASH_SENTINEL = "\x00"
+# A name `importlib.util.find_spec` may be asked about without importing anything: one
+# top-level identifier. A dotted name would import its parent package to resolve it.
+_MODULE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 _MESSAGE_HEADER = "BLOCKED (verify-binary-on-path): {names} not found on PATH."
 _MESSAGE_FOOTER = (
@@ -171,108 +176,6 @@ _MESSAGE_FOOTER = (
 )
 
 
-def _split_top_level(command: str) -> tuple[list[str], list[str]] | None:
-    """Split `command` into segments at top-level `&&`, `||`, `;`, `|`, `&`,
-    and newlines, respecting single/double-quoted spans.
-
-    Returns `(segments, operators)` where `operators[i]` is the operator that
-    follows `segments[i]` (so `len(operators) == len(segments) - 1`).
-
-    Returns `None` when the command contains a construct this scanner does
-    not model with confidence: unbalanced quotes, `$(...)`/backtick command
-    substitution, `(...)` subshell/grouping, or a heredoc redirect (`<<`).
-    The caller must then ALLOW THE WHOLE COMMAND — segment boundaries found
-    by a scanner that does not understand these constructs cannot be
-    trusted (fail open; see module docstring).
-    """
-    segments: list[str] = []
-    operators: list[str] = []
-    buf: list[str] = []
-    quote: str | None = None
-    i = 0
-    n = len(command)
-    while i < n:
-        ch = command[i]
-        if quote:
-            buf.append(ch)
-            if ch == quote:
-                quote = None
-            i += 1
-            continue
-        if ch in ("'", '"'):
-            quote = ch
-            buf.append(ch)
-            i += 1
-            continue
-        if ch == "\\" and i + 1 < n:
-            # Never interpret the escape — just don't let the escaped char
-            # (which could itself be a quote or operator) confuse the scan.
-            buf.append(ch)
-            buf.append(command[i + 1])
-            i += 2
-            continue
-        if ch == "$" and i + 1 < n and command[i + 1] == "(":
-            return None
-        if ch == "`":
-            return None
-        if ch in "()":
-            return None
-        if ch == "<" and i + 1 < n and command[i + 1] == "<":
-            return None
-        if ch == "&":
-            if i + 1 < n and command[i + 1] == "&":
-                segments.append("".join(buf))
-                buf = []
-                operators.append("&&")
-                i += 2
-                continue
-            # Fd-duplication/combined redirection (`2>&1`, `>&2`, `&>out`):
-            # `&` immediately adjacent to `>`/`<` is redirection syntax, NOT
-            # the background/separator operator. Hand-tested finding, not a
-            # hypothesis: without this, `python -m mypy . 2>&1 | tail -5`
-            # split "1" out as its own segment and got checked (and BLOCKED)
-            # as if it were a binary name. Treat the whole run as literal.
-            prev = buf[-1] if buf else ""
-            if prev in (">", "<"):
-                buf.append(ch)
-                i += 1
-                continue
-            if i + 1 < n and command[i + 1] == ">":
-                buf.append(ch)
-                buf.append(command[i + 1])
-                i += 2
-                continue
-            segments.append("".join(buf))
-            buf = []
-            operators.append("&")
-            i += 1
-            continue
-        if ch == "|":
-            if i + 1 < n and command[i + 1] == "|":
-                segments.append("".join(buf))
-                buf = []
-                operators.append("||")
-                i += 2
-                continue
-            segments.append("".join(buf))
-            buf = []
-            operators.append("|")
-            i += 1
-            continue
-        if ch in (";", "\n"):
-            segments.append("".join(buf))
-            buf = []
-            operators.append(";")
-            i += 1
-            continue
-        buf.append(ch)
-        i += 1
-    if quote is not None:
-        return None
-    segments.append("".join(buf))
-    return segments, operators
-
-
 def _leading_binary_token(segment: str) -> str | None:
     """The candidate binary token to check for `segment`, or `None` if there
     is nothing to check — a blank segment, a pure env-assignment, a shell
@@ -283,22 +186,11 @@ def _leading_binary_token(segment: str) -> str | None:
     segment = segment.strip()
     if not segment:
         return None
-    try:
-        # posix=True correctly merges a quoted span with adjacent unquoted
-        # text into ONE token (e.g. `BAZ="a b"` -> one token, quotes
-        # stripped) — `posix=False` does NOT do this merge (hand-verified:
-        # it splits `BAZ="a b"` into TWO tokens, `BAZ="a` and `b"`, which
-        # then mis-tokenizes any env-assignment with a quoted, spaced
-        # value). But posix mode also treats `\` as an escape character,
-        # which would mangle the Windows-style backslash paths this repo's
-        # commands routinely carry (`C:\Program Files\...`). Route around
-        # both problems: swap every literal backslash for a sentinel byte
-        # before splitting (so posix mode has no backslash to "escape" with
-        # at all), then swap it back in every resulting token.
-        tokens = shlex.split(segment.replace("\\", _BACKSLASH_SENTINEL), posix=True)
-    except ValueError:
+    tokens = tokenize(segment)
+    if tokens is None:
         return None  # unbalanced quote inside this segment -- fail open
-    tokens = [t.replace(_BACKSLASH_SENTINEL, "\\") for t in tokens]
+    if tokens and tokens[0] == "{":
+        tokens.pop(0)  # brace group (item 123): check the group's first command
     while tokens and _ENV_ASSIGN_RE.match(tokens[0]):
         tokens.pop(0)
     if not tokens:
@@ -346,7 +238,32 @@ def decide(command: str) -> GuardResult:
         return GuardResult.allow()
 
     names = ", ".join(f"'{name}'" for name in missing)
-    return GuardResult.block(_MESSAGE_HEADER.format(names=names), _MESSAGE_FOOTER)
+    return GuardResult.block(
+        _MESSAGE_HEADER.format(names=names), *_python_dash_m_hints(missing), _MESSAGE_FOOTER
+    )
+
+
+def _python_dash_m_hints(missing: list[str]) -> list[str]:
+    """Item 124: name the exact replacement for a missing tool this interpreter can import.
+
+    Checked, not listed: a hint is given only when `importlib.util.find_spec` resolves the
+    name here, so a missing tool with no importable module gets none. Only runs on the
+    block path, so an allowed command pays nothing for it.
+    """
+    hints: list[str] = []
+    for name in missing:
+        if not _MODULE_NAME_RE.match(name):
+            continue
+        try:
+            found = importlib.util.find_spec(name) is not None
+        except (ImportError, ValueError):
+            found = False
+        if found:
+            hints.append(
+                f"'{name}' is importable as a module by the Python running this hook: "
+                f"run `python -m {name}` instead."
+            )
+    return hints
 
 
 def claude_check(payload: dict[str, Any]) -> GuardResult:

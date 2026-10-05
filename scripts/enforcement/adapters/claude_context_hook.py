@@ -53,7 +53,7 @@ from scripts.enforcement.evidence import (  # noqa: E402
     replay_text,
     template_text,
 )
-from scripts.enforcement.gitutil import git_branch  # noqa: E402
+from scripts.enforcement.gitutil import git_branch, repo_root  # noqa: E402
 
 _HOOK_NAMES = ("restore-evidence", "capture-before-compact")
 
@@ -79,8 +79,9 @@ _TRUNCATED = "\n\n[... truncated — read the full dossier at {path} ...]"
 
 
 def _project_dir(payload: dict[str, Any]) -> Path:
-    """Repo root: `CLAUDE_PROJECT_DIR` if set, else the payload's `cwd`, else the cwd."""
-    return Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or ".")
+    """The checkout holding the payload's `cwd` -- a worktree session's own (item 148)."""
+    cwd = payload.get("cwd") or "."
+    return repo_root(cwd, os.environ, default=cwd)
 
 
 def _dossier(payload: dict[str, Any]) -> tuple[str, Path, str | None]:
