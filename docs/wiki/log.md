@@ -2507,3 +2507,17 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   (`agents/wiki-scribe.md`, `commands/wiki-self-update.md`, a new test) are not wiki-relevant
   per `scripts/wiki_relevance.py`.
 - **No scribe or auditor run, no checkpoint advance** (scoped passes never advance it).
+
+## 2026-10-05 — scoped relevance check, one row edited (`fix/hook-guard-false-blocks`)
+
+- **Wiki-relevant sources touched (2):** `CONTRIBUTING.md` (the git-native hooks section is no
+  longer optional for a local gate) and `docs/dev/maintainer-lane.md` (close-out step 1 names
+  `python -m scripts.gate --result`). **Verified no-edit:** `governance-extraction` and
+  `non-dependency-downloads` cite both files by name only, not the changed sentences.
+- **Edited, though the classifier missed it:** `code-module-map`'s `scripts/gate.py` row
+  described the memory preflight as first and had no result file. `scripts/gate.py` is
+  classified wiki-irrelevant by `scripts/wiki_relevance.py` although 26 wiki lines cite it;
+  filed as item 153. The orchestrator wrote the row; `wiki-grounding-auditor` (separate
+  context) found 7/7 claims SUPPORTED, and its line citations were spot-checked against
+  `scripts/gate.py`.
+- **No scribe run, no checkpoint advance** (scoped passes never advance it).

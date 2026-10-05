@@ -110,15 +110,17 @@ Hooks should remain deterministic shell. LLM-backed review is reserved for expli
 
 ---
 
-## Portable enforcement hooks (git-native, optional)
+## Portable enforcement hooks (git-native, required for a local gate)
 
 The six portable guards (`require-feature-branch`, `block-merge-to-main`, `block-secrets`, `route-security-lint`, `ruff-changed`, `validate-context`) live once in [`scripts/enforcement/`](scripts/enforcement/) and have three consumers: the Claude Code plugin hooks above, native git hooks under [`.githooks/`](.githooks/), and a repo-wide secrets scan in CI (`scripts/enforcement/ci_backstop.py`, a step in `.github/workflows/ci.yml`'s `quality` job, which runs on every pull request).
 
-The git-native hooks are **not activated by cloning the repo** — opt in once per clone:
+The git-native hooks are **not activated by cloning the repo**. Turn them on once per clone:
 
 ```bash
 git config core.hooksPath .githooks
 ```
+
+Until you do, a local `python -m scripts.gate` refuses at its hooksPath preflight and prints that command. CI skips the check, because it never merges or pushes locally.
 
 This gives you the same branch/merge/secrets/route-security/ruff/context-JSON checks from plain `git commit`/`git merge`/`git push`, without a Claude Code session. See [`.githooks/README.md`](.githooks/README.md) for the per-hook breakdown and the `CLAUDE_CONFIRM_MERGE=1` / `CLAUDE_ALLOW_MAIN_EDITS=1` escape hatches (same as the Claude Code plugin hooks).
 

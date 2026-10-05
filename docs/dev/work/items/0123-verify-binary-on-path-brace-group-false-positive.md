@@ -3,12 +3,17 @@ schema = 1
 id = 123
 kind = "item"
 title = "verify-binary-on-path blocks shell brace groups: \"'{', '}' not found on PATH\""
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "fix/hook-guard-false-blocks"]
 refs = [
   "scripts/enforcement/guards/verify_binary_on_path.py",
   "tests/test_enforcement_core.py",
+]
+resolution = "2026-10-05, fix/hook-guard-false-blocks: verify-binary-on-path drops a leading `{` (so the group's first command is still checked) and treats `{`/`}` as reserved words."
+verified_by = [
+  "tests/test_enforcement_core.py::TestVerifyBinaryOnPathUnit::test_brace_group_braces_are_not_binaries",
+  "tests/test_enforcement_core.py::TestVerifyBinaryOnPathUnit::test_brace_group_first_command_is_still_checked",
 ]
 summary = "A `{ cmd; cmd; } | head` brace group is parsed as binaries named { and }; blocked an epic refuter."
 ```
@@ -31,3 +36,7 @@ segment starting with a reserved word), with a `decide()` test for the command a
 ## Updates
 
 ### 2026-09-26 — filed at Epic C close (epic-close fixer, `feat/dashboard-copy-discovery`, from the three-refuter epic review)
+
+### 2026-10-05 — closed on `fix/hook-guard-false-blocks`
+
+verify-binary-on-path drops a leading `{` (so the group's first command is still checked) and treats `{`/`}` as reserved words.

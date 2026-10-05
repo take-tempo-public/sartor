@@ -3,7 +3,7 @@ schema = 1
 id = 150
 kind = "item"
 title = "The git-native .githooks guards are opt-in, and off on the owner's own clone; the gate never checks"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["fix/hook-guard-false-blocks"]
 refs = [
@@ -11,6 +11,10 @@ refs = [
   ".githooks/pre-push",
   "CONTRIBUTING.md:120",
   "scripts/gate.py",
+]
+resolution = "2026-10-05, fix/hook-guard-false-blocks: scripts/gate.py runs a hooksPath preflight that refuses unless core.hooksPath is .githooks and prints the one command that fixes it; skipped (with a log line) when CI is set."
+verified_by = [
+  "tests/test_gate_result_and_hooks_path.py::TestHooksPathPreflight",
 ]
 summary = "core.hooksPath is unset on the owner's clone, so pre-merge-commit/pre-push never run; nothing fails when they're off."
 ```
@@ -33,3 +37,7 @@ happens, and CI says so in its log instead of passing silently.
 ## Updates
 
 ### 2026-10-03 — filed on `chore/agent-doc-drift`
+
+### 2026-10-05 — closed on `fix/hook-guard-false-blocks`
+
+scripts/gate.py runs a hooksPath preflight that refuses unless core.hooksPath is .githooks and prints the one command that fixes it; skipped (with a log line) when CI is set.

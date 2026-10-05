@@ -3,12 +3,17 @@ schema = 1
 id = 136
 kind = "item"
 title = "block-merge-to-main blocks commands that only contain merge-to-main text (grep patterns, heredoc bodies)"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dev-docs"]
+branches = ["feat/dev-docs", "fix/hook-guard-false-blocks"]
 refs = [
   "scripts/enforcement/guards/block_merge_to_main.py:90",
   "scripts/enforcement/guards/block_merge_to_main.py:133",
+]
+resolution = "2026-10-05, fix/hook-guard-false-blocks: targets_main judges each top-level segment by its command word (scripts/enforcement/shell_split.py). Text-only commands (grep, rg, echo, printf, cat, ...) and git subcommands other than merge/push no longer block on merge text. Stated limit, by design: a heredoc BODY still gets the raw regexes, because whatever reads it may execute it, so a body that only mentions a merge to main still blocks (observed live this session; see docs/dev/diagnosis/hook-guard-false-blocks.md)."
+verified_by = [
+  "tests/test_enforcement_core.py::TestBlockMergeToMainUnit::test_merge_text_in_arguments_is_not_a_merge",
+  "tests/test_enforcement_core.py::TestBlockMergeToMainUnit::test_real_merges_still_block",
 ]
 summary = "_MERGE_MAIN_RE searches raw command text, so a grep pattern or heredoc line holding the phrase blocks."
 ```
@@ -42,3 +47,7 @@ put multi-line scripts in a file and run them by path.
 ## Updates
 
 ### 2026-09-30 — filed on `feat/dev-docs`
+
+### 2026-10-05 — closed on `fix/hook-guard-false-blocks`
+
+targets_main judges each top-level segment by its command word (scripts/enforcement/shell_split.py). Text-only commands (grep, rg, echo, printf, cat, ...) and git subcommands other than merge/push no longer block on merge text. Stated limit, by design: a heredoc BODY still gets the raw regexes, because whatever reads it may execute it, so a body that only mentions a merge to main still blocks (observed live this session; see docs/dev/diagnosis/hook-guard-false-blocks.md).
