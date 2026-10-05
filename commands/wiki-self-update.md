@@ -68,6 +68,11 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
    [`using-sartor`](../docs/wiki/pages/using-sartor.md)), holding the one grounding rule.
    It edits the page and hands back a one-line summary of what changed and which source
    line(s) ground it. It does **not** grade itself or touch index/log/checkpoint.
+   - **A created page comes back as text.** The scribe has no `Write`, so for a new page it
+     returns the path and the full page in one fenced block. Write that text **verbatim**
+     with `Write`; if anything must change (a broken link path, say), make the change as a
+     separate `Edit` and record it in the `log.md` entry, so the hand copy can't silently
+     alter model output. The auditor then audits the file on disk like any changed page.
 
 4. **Audit — delegate per changed page to `wiki-grounding-auditor` (author≠auditor).** For
    each page the scribe touched, launch the **`wiki-grounding-auditor`** subagent via `Task`

@@ -2496,3 +2496,14 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Structural check** (backlinks resolve, audience tags, index and pages agree): 42 pages,
   0 ERROR. 32 one-way-link WARNs are all pre-existing, none on the new pages.
   `scripts/check_doc_links.py` is OK across 584 files.
+
+## 2026-10-03 — scoped relevance check, no page edit (`chore/agent-doc-drift`)
+
+- **Wiki-relevant source touched (1):** `SECURITY.md`, the `route-security-lint` sentence
+  (retired `.claude-plugin/hooks/` path replaced by the guard module and its dispatcher).
+- **Verified no-edit:** `grep` over `docs/wiki/` for `SECURITY.md` and `claude-plugin/hooks`
+  finds `governance-extraction` and `diagnostics-console`, which cite the file by name and
+  §User data residency only. Neither cites the changed sentence. The other touched files
+  (`agents/wiki-scribe.md`, `commands/wiki-self-update.md`, a new test) are not wiki-relevant
+  per `scripts/wiki_relevance.py`.
+- **No scribe or auditor run, no checkpoint advance** (scoped passes never advance it).

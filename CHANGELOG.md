@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Subagent docs match their tool grants (`chore/agent-doc-drift`, items 54, 141)
+
+- **Fixed: `wiki-scribe` no longer told to create a file it can't create (item 141).** Its
+  grant has `Edit` but no `Write`. Step 5 now says to hand back the new page's path and full
+  text, and `/wiki-self-update` says the orchestrator writes that text verbatim and logs any
+  change it makes. The grant itself is unchanged.
+- **Fixed: `SECURITY.md` named the retired `.claude-plugin/hooks/` path (item 54).** It now
+  names the `route-security-lint` guard module and the dispatcher that runs it.
+  `agents/git-flow.md` was already correct.
+- **Added: `tests/test_agent_tool_grant_consistency.py`.** It fails if a subagent without
+  `Write`/`Bash` is told to create a file, or if a subagent definition or `SECURITY.md` names
+  the retired hook path.
+- **Filed:** items 148 (the C-7/C-10 guards read the dossier from the main checkout, not
+  the edited file's worktree), 149 (`block-merge-to-main` misses `git -C`/`git -c` merges),
+  150 (the git-native `.githooks` are off on the owner's clone, and the gate never checks),
+  151 (the gate should write its own result file) and 152 (Python-direct hooks, owner
+  decision 2026-10-04).
+
 ### Flake-rate store: skip lists by digest, held shard committed (`chore/flake-shard-slim`, item 144)
 
 - **Changed: `scripts/flake_rates.py` parser v2.** A session's skipped set is stored as a

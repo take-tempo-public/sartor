@@ -268,7 +268,8 @@ Path traversal is prevented in all file-serving routes via:
   existence before any filesystem operation
 
 Enforcement is mechanical: the `route-security-lint` PreToolUse
-hook in `.claude-plugin/hooks/` blocks Edit/Write operations on
+guard (`scripts/enforcement/guards/route_security_lint.py`, run by
+`hooks/edit-write-dispatcher.sh`) blocks Edit/Write operations on
 `app.py` and the route-bearing blueprint modules under
 `blueprints/` that touch the filesystem without `_safe_username()`
 and `_within()` calls. (The read-only `dashboard/` diagnostics
