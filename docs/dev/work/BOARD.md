@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 40 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 44
+**Open 39 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 45
 
 ## Open
 
@@ -40,7 +40,6 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **141** -- wiki-scribe is told to create new pages but its tool grant has no Write (`agent`) -- Scribe step 5 says create a page for a new concept; tools are Read/Grep/Glob/Edit, so it returns the text instead.
 - **142** -- Recurrence: backslash escapes in a heredoc'd python script corrupt the file it writes (`agent`) -- Heredoc python scripts with backslash escapes wrote a backspace char and a broken file; a Bash guard could refuse them.
 - **143** -- A witness-paused plan Write batched with ExitPlanMode gets the STALE plan approved (`agent`) -- Witness paused the plan Write; ExitPlanMode in the same batch still ran, so the owner approved the old plan text.
-- **144** -- flake_rates store: skipped_nodeids from the UX-skip leg is 63% of every shard (`agent`) -- 8 MB shard from 123 runs: 5.0 MB is skipped_nodeids (full UX list per skip-only session); README says always small.
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
@@ -157,7 +156,7 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 
 - **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
-## Closed (44)
+## Closed (45)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
@@ -203,3 +202,4 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 - 125 -- Merged epics 37 and 38 still read status = "blocked" (Owner decided 2026-10-02: an epic closes on its merge PR plus that PR's green CI run. Applied to epics 37, 38 and 39 the same day.)
 - 126 -- A stale local docs-site projection reads as authoritative (Fixed on feat/docs-assets-enforcement (Epic D D4, 2026-10-01). Every projected page now carries the commit it came from: sourceCommit in its frontmatter, plus a visible banner comment. +uncommitted marks a projection made from local source edits. scripts/check_docs_projection_fresh.py compares the stamps to HEAD. On the July-era local copy it reported STALE (36 unstamped pages); after re-projection it reported OK. Stated limit (C-0): nothing forces the check to run before someone reads the files; the stamp in every page is the always-visible half.)
 - 127 -- Live docs contradict AGENTS.md: local --no-ff merge, "latent" CI, four-step gate (Fixed on feat/dev-docs (Epic D D3 dev half, 2026-09-30). CONTRIBUTING and agents/git-flow.md now say PR-only landing with a merge commit; git-flow's hook claim is narrowed to what block_merge_to_main matches (a local merge/push targeting main; gh pr merge is not hooked) and its retired .claude-plugin/hooks/ path is gone; the .githooks/README hatch example drops --no-ff and names the PR path. 'Latent' CI wording removed from CONTRIBUTING, ci.yml, ci_backstop.py, dependabot.yml, docs-deploy.yml and scorecard.yml (gh run list shows docs-deploy and scorecard running on main 2026-09-28/29). AGENTS.md, CONTRIBUTING and ci.yml now cite scripts/gate.py for the step list instead of restating it. Stated limit: the verifier is a re-runnable scan, not a gate; D4's enumeration-drift lint (docs-ia-design section 5.5) is the planned mechanism against recurrence.)
+- 144 -- flake_rates store: skipped_nodeids from the UX-skip leg is 63% of every shard (Done on chore/flake-shard-slim (2026-10-03). Parser v2 stores skip sets by digest as roster records and de-duplicates rosters per shard (v1 did it per run, the 1.96 MB roster share). The held shard 985e9282 was rewritten offline with the new slim subcommand, 8,063,786 -> 1,236,557 bytes, and committed; report --json output was byte-identical before and after, and a check against a pre-slim copy recovered every session's skip list.)

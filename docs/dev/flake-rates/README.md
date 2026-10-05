@@ -63,15 +63,18 @@ see the module docstring's O-8).
 | `complete`, `reconciled` | `bool` | `complete`: a summary line was found. `reconciled`: the executed-roster count agrees with the summary's declared passed+failed+error+xfailed+xpassed. **Unreconciled sessions are excluded from rate computation** — this is the load-bearing guard against a silently broken parser |
 | `summary_raw`, `duration_s`, `counts` | `str`, `float\|null`, `dict` | verbatim summary text (the falsifiability anchor) + its parsed counts |
 | `roster_digest`, `roster_size` | `str`, `int` | joins to a `roster` record |
-| `skipped_nodeids`, `failed_nodeids`, `error_nodeids`, `xpassed_nodeids` | `list[str]` | always small, always stored inline regardless of tier |
+| `skipped_digest`, `skipped_size` | `str`, `int` | parser v2+: the skipped set, joined to a `roster` record by digest (`""` when nothing was skipped). Not small: the `quality-ux-skip` leg skips the whole UX tier — inline, it was 63% of an 8 MB shard (item 144). Parser-v1 shards carry `skipped_nodeids` (`list[str]`) inline instead |
+| `failed_nodeids`, `error_nodeids`, `xpassed_nodeids` | `list[str]` | always small, always stored inline regardless of tier |
 | `rerun_attempts` | `list[[nodeid, count]]` | **primary** rerun signal, from `[ux] RERUN` marker lines |
 | `alarm_declared`, `alarm_detail` | — | cross-check via `ci_wait.scan_reruns`, never reconciled away — a disagreement is reported, not resolved by picking one |
 | `unparsed_lines`, `swallowed_traceback_lines`, `anomalies` | `int`, `int`, `list[str]` | `unparsed_lines > 0` also excludes the session; `swallowed_traceback_lines` is a rerun's own captured failure body (expected, not an anomaly) |
 
 ### `kind: "roster"`
 
-Content-addressed: `{digest, size, nodeids}`, written once per distinct digest across
-the **whole store**. Positional forward-carry was considered and rejected — rosters
+Content-addressed: `{digest, size, nodeids}`, written once per distinct digest **per
+shard** (parser v2+; v1 wrote one per *run*, so the same UX roster repeated in every run of
+a shard), which keeps each shard self-contained. Skipped sets use the same record kind.
+Positional forward-carry was considered and rejected — rosters
 oscillate as branches with different test sets interleave in CI history, so a
 positional carry would silently mis-attribute one branch's roster to another's session.
 
@@ -100,7 +103,13 @@ never gets stuck: it either eventually succeeds or keeps costing one cheap `gh` 
 python -m scripts.flake_rates collect --limit 30      # fetch new runs into the store
 python -m scripts.flake_rates report                  # ranked table, all tiers
 python -m scripts.flake_rates report --tier ux --json  # machine-readable, one tier
+python -m scripts.flake_rates slim runs/<uuid>.jsonl   # rewrite a parser-v1 shard as v2, offline
 ```
+
+`slim` exists because a shard cannot be re-collected once its CI logs expire. It refuses
+a shard with a malformed line rather than dropping it. Shard `985e9282` was slimmed this
+way (8,063,786 → 1,236,557 bytes; `report --json` output byte-identical before and after;
+every session's skip list recovered from its digest against a pre-slim copy — item 144).
 
 Ranking is by **Wilson 95% lower bound** on the failure rate, not the raw rate — a test
 at 1/1 must not outrank one at 12/300. Anything below `--min-attempts` (default 20)
