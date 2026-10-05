@@ -172,6 +172,18 @@ class TestRequireConsumerEnumerationGuard:
         (versions / "0012_x.py").write_text("x = 1\n", encoding="utf-8")
         assert _blocked(gated_repo, "db/migrations/versions/0012_x.py")
 
+    def test_reads_the_dossier_from_the_edited_files_worktree(
+        self, gated_repo: Path, tmp_path_factory: pytest.TempPathFactory
+    ) -> None:
+        """Item 148: `CLAUDE_PROJECT_DIR` is the session's main checkout. An edit inside a
+        separate worktree must be judged by THAT worktree's dossier, both ways."""
+        other_checkout = tmp_path_factory.mktemp("main_checkout")
+        env = {"CLAUDE_PROJECT_DIR": str(other_checkout)}
+        target = str(gated_repo / "db" / "models.py")
+        assert guard.decide(target, env).blocked  # no dossier in the edited worktree
+        _write_dossier(gated_repo, _REAL_ROW)
+        assert not guard.decide(target, env).blocked
+
     def test_never_wedges_outside_a_git_repo(self, tmp_path: Path) -> None:
         env = {"CLAUDE_PROJECT_DIR": str(tmp_path)}
         assert not guard.decide(str(tmp_path / "db" / "models.py"), env).blocked

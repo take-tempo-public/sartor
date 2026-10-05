@@ -149,6 +149,37 @@ class TestRequireEvidenceBeforeFixGuard:
         """The guard must never forbid its own remedy — that would be a wedge, not a gate."""
         assert not _decide(fix_repo, relative)
 
+    def test_reads_the_dossier_from_the_edited_files_worktree(
+        self, fix_repo: Path, tmp_path_factory: pytest.TempPathFactory
+    ) -> None:
+        """Item 148: `CLAUDE_PROJECT_DIR` is the session's main checkout. An edit inside a
+        separate worktree on a `fix/*` branch must be judged by THAT worktree's dossier."""
+        other_checkout = tmp_path_factory.mktemp("main_checkout")
+        env = {"CLAUDE_PROJECT_DIR": str(other_checkout)}
+        target = str(fix_repo / "blueprints" / "applications.py")
+        assert guard.decide(target, env).blocked  # no dossier in the edited worktree
+        (fix_repo / "docs/dev/diagnosis/some-bug.md").write_text(
+            _TEMPLATE.read_text(encoding="utf-8").replace(_PLACEHOLDER, _REAL_EVIDENCE),
+            encoding="utf-8",
+        )
+        assert not guard.decide(target, env).blocked
+
+    def test_a_main_checkout_dossier_does_not_cover_a_worktree_edit(
+        self, fix_repo: Path, tmp_path_factory: pytest.TempPathFactory
+    ) -> None:
+        """The other direction: evidence for the same slug in the main checkout must not
+        license an edit in a worktree that has none."""
+        other_checkout = tmp_path_factory.mktemp("main_checkout")
+        diagnosis = other_checkout / "docs" / "dev" / "diagnosis"
+        diagnosis.mkdir(parents=True)
+        (diagnosis / "some-bug.md").write_text(
+            _TEMPLATE.read_text(encoding="utf-8").replace(_PLACEHOLDER, _REAL_EVIDENCE),
+            encoding="utf-8",
+        )
+        shutil.copy(_TEMPLATE, diagnosis / "TEMPLATE.md")
+        env = {"CLAUDE_PROJECT_DIR": str(other_checkout)}
+        assert guard.decide(str(fix_repo / "blueprints" / "applications.py"), env).blocked
+
     def test_allows_on_a_non_fix_branch(self, fix_repo: Path) -> None:
         _git(fix_repo, "checkout", "-q", "-b", "chore/deps")
         assert not _decide(fix_repo, "blueprints/applications.py")
