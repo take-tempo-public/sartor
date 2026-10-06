@@ -76,3 +76,12 @@ A subagent hand-back re-armed the witness, which then paused a `Write` of a new 
 without it (`OK (152 files)`, board unchanged). Harmless this time, since the board was
 simply regenerated as it was. It still shows the prose rule ("never batch a reader with the
 Write that creates its input") failing under ordinary momentum. Still no mechanism.
+
+### 2026-10-06 — sixth instance, `fix/console-run-lock-hardening`
+
+After a usage-limit resume prompt, the witness paused a `Write` of a scratchpad lint script
+while the `python <that script>` Bash call in the same batch ran without it
+(`can't open file … wiki_lint.py: [Errno 2] No such file or directory`). Harmless: the call
+failed loudly, and the Write was re-run alone and the script run after it. This is the same
+batching of a reader with the Write that creates its input. Still no mechanism; surfaced to
+the owner at this branch's close-out.
