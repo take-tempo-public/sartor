@@ -3,12 +3,18 @@ schema = 1
 id = 121
 kind = "item"
 title = "run_detail reads all of llm_calls.jsonl per modal open; a non-object JSON line raises 500"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "fix/console-run-lock-hardening"]
 refs = [
   "dashboard/routes.py:57-71",
   "dashboard/routes.py:1082-1110",
+]
+resolution = "2026-10-06, fix/console-run-lock-hardening: dashboard/routes.py: new _iter_jsonl streams object lines only (non-object JSON lines dropped; _read_jsonl wraps it). run_detail prefilters on the JSON-quoted run id (json.dumps(run_id), plus the ensure_ascii=False form), so other runs' lines are never json.loads-ed and a bare 'r1' can't match 'other1'."
+verified_by = [
+  "tests/test_dashboard_routes.py::TestReadJsonlSkipsNonObjects",
+  "tests/test_dashboard_routes.py::TestRunDetailRoute::test_non_object_line_in_log_is_not_a_500",
+  "tests/test_dashboard_routes.py::TestRunDetailRoute::test_only_this_runs_lines_are_parsed",
 ]
 summary = "GET /api/run/<id> materializes the whole log to find one run; _read_jsonl keeps non-dict lines -> AttributeError."
 ```
@@ -28,3 +34,7 @@ and have `_read_jsonl` skip non-dict values; a route test with a `[]` line asser
 ## Updates
 
 ### 2026-09-26 — filed at Epic C close (epic-close fixer, `feat/dashboard-copy-discovery`, from the three-refuter epic review)
+
+### 2026-10-06 — closed on `fix/console-run-lock-hardening`
+
+dashboard/routes.py: new _iter_jsonl streams object lines only (non-object JSON lines dropped; _read_jsonl wraps it). run_detail prefilters on the JSON-quoted run id (json.dumps(run_id), plus the ensure_ascii=False form), so other runs' lines are never json.loads-ed and a bare 'r1' can't match 'other1'.

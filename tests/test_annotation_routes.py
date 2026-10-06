@@ -1075,6 +1075,64 @@ class TestEvalRunRoute:
         assert captured["seed_data"] is None
         assert captured["fixture_name"] is None
 
+    def test_second_concurrent_run_is_refused_409_and_never_starts(self, ann_app, monkeypatch):
+        """Item 117: the run lock was per browser tab. A second tab, a reload, or a
+        direct POST started a second paid run while the first was live."""
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        started = threading.Event()
+        release = threading.Event()
+        calls: list[int] = []
+
+        def blocking_run_suite(**kwargs):
+            calls.append(1)
+            started.set()
+            release.wait(timeout=10)
+            return EvalRunResult(
+                exit_code=0, out_path=None, n_pass=0, n_fail=0, regressions=[], improvements=[]
+            )
+
+        monkeypatch.setattr(runner, "run_suite", blocking_run_suite)
+        first_body: dict = {}
+
+        def first() -> None:
+            resp = ann_app.app.test_client().post("/api/eval/run", json={"suite": "synthetic"})
+            first_body["status"] = resp.status_code
+            first_body["text"] = resp.get_data(as_text=True)
+
+        t = threading.Thread(target=first)
+        t.start()
+        try:
+            assert started.wait(timeout=10), "first run's worker never started"
+            third = ann_app.app.test_client().post("/api/eval/run", json={"suite": "synthetic"})
+        finally:
+            release.set()
+            t.join(timeout=10)
+        assert first_body["status"] == 200
+        assert "event: done" in first_body["text"]
+        assert third.status_code == 409, third.get_data(as_text=True)
+        assert "already in progress" in third.get_json()["error"]
+        assert len(calls) == 1  # the refused run never reached the worker
+
+        # The slot frees with the worker: a later run starts normally.
+        after = ann_app.app.test_client().post("/api/eval/run", json={"suite": "synthetic"})
+        assert after.status_code == 200
+        after.get_data()
+
+    def test_undrained_response_does_not_hold_the_slot(self, ann_app, monkeypatch):
+        """A response closed before its stream ever ran never started a worker, so it
+        must not keep the single-flight slot (else one aborted POST locks the console)."""
+        captured: dict = {}
+        self._stub_run_suite(monkeypatch, captured)
+        client = ann_app.app.test_client()
+        resp = client.post("/api/eval/run", json={"suite": "synthetic"})
+        assert resp.status_code == 200
+        resp.close()
+        again = client.post("/api/eval/run", json={"suite": "synthetic"})
+        assert again.status_code == 200
+        assert "event: done" in again.get_data(as_text=True)
+
     def test_localhost_guard_blocks_remote_host(self, ann_app):
         client = ann_app.app.test_client()
         resp = client.post(

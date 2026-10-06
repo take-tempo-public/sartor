@@ -3,13 +3,18 @@ schema = 1
 id = 118
 kind = "item"
 title = "error_message redaction misses quoted-key header forms and Basic auth credentials"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "fix/console-run-lock-hardening"]
 refs = [
   "analyzer.py:598-624",
   "tests/test_llm_call_error_capture.py",
   "SECURITY.md",
+]
+resolution = "2026-10-06, fix/console-run-lock-hardening: analyzer._HEADER_VALUE_PATTERN allows an optional quote after the key and before the value, and consumes a Bearer/Basic scheme word together with the credential (masked as '<key>: ***', keeping the pinned 'Authorization: ***' contract). No prompt change; PROMPT_VERSION untouched."
+verified_by = [
+  "tests/test_llm_call_error_capture.py::TestRedactErrorMessage::test_masks_quoted_key_and_basic_auth_forms",
+  "tests/test_llm_call_error_capture.py::TestRedactErrorMessage::test_masks_header_values_case_insensitively",
 ]
 summary = "_HEADER_VALUE_PATTERN skips {'x-api-key': ...} / {\"authorization\": ...} and masks only the word 'Basic'."
 ```
@@ -37,3 +42,7 @@ test per form in `TestRedactErrorMessage`.
 ## Updates
 
 ### 2026-09-26 — filed at Epic C close (epic-close fixer, `feat/dashboard-copy-discovery`, from the three-refuter epic review)
+
+### 2026-10-06 — closed on `fix/console-run-lock-hardening`
+
+analyzer._HEADER_VALUE_PATTERN allows an optional quote after the key and before the value, and consumes a Bearer/Basic scheme word together with the credential (masked as '<key>: ***', keeping the pinned 'Authorization: ***' contract). No prompt change; PROMPT_VERSION untouched.

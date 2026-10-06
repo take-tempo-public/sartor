@@ -2521,3 +2521,38 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   context) found 7/7 claims SUPPORTED, and its line citations were spot-checked against
   `scripts/gate.py`.
 - **No scribe run, no checkpoint advance** (scoped passes never advance it).
+
+## 2026-10-06 — scoped wiki-self-update, one page edited (`fix/console-run-lock-hardening`)
+
+- **Mode:** scoped to this branch's own diff (`main...HEAD`). **No checkpoint advance**:
+  scoped passes never advance it.
+- **Wiki-relevant sources touched (4):**
+  - `analyzer.py`: `_HEADER_VALUE_PATTERN`.
+  - `blueprints/diagnostics.py`: `_RUN_SLOT`, `_single_flight_sse`, and a 409 on the four SSE
+    run routes.
+  - `dashboard/routes.py`: `_iter_jsonl`, `_parse_date` in aware UTC, and the `run_detail`
+    run-id prefilter.
+  - `dashboard/templates/dashboard.html`: the owner-token `sartorRunLock` and the
+    `dashFilters` copy.
+- **Edited (1 page):**
+  - `diagnostics-console`: two passages said the lock was client-only with "no server-side
+    lock (work item 117)". `wiki-scribe` (Haiku) rewrote them.
+  - `index.md`: the orchestrator rewrote the one-liner ("per-tab run lock").
+- **Verified no-edit:**
+  - `llm-call-catalog` and `deterministic-llm-boundary`: the redaction descriptions still
+    hold.
+  - `code-module-map` and `route-surface`: no affected claim.
+  - Every wiki cite into the four files is symbol-anchored, so this branch's line shifts break
+    none.
+- **Audit (`wiki-grounding-auditor`, separate context):** 27 SUPPORTED, 0 DRIFTED, 1
+  UNSUPPORTED.
+  - The UNSUPPORTED claim was "Paid-run buttons (… grounding-score …)". Grounding-score is
+    CPU-only, per the `annotation_score_grounding` docstring.
+  - The phrase predates this branch; the scribe kept it.
+  - The owner chose to reword it to "Long-running-run buttons … all paid except
+    grounding-score".
+  - **Catch-rate:** 1 of 1 page audited.
+- **Structural check:** 42 pages and 0 real ERROR. Two checker hits (`dashboard.html:135–137`
+  as link text, and `[[wikilink]]` inside backticks) are identical on `main` and are artifacts,
+  not defects. No orphans. 85 sources have changed since checkpoint `3798e2d` (expected).
+  **Gate verdict: PASS.**

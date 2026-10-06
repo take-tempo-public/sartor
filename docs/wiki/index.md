@@ -81,7 +81,8 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
   and annotation-pin integrity.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
   `/_dashboard` console + the SSE eval/tune/annotation loop; disconnect-as-cancel run
-  cancellation; the per-tab run lock, run-detail modal, and per-tile help.
+  cancellation; the run lock (server single-flight slot + owned client lock), run-detail
+  modal, and per-tile help.
 
 The v1.0.9 pre-merge refresh (`chore/wiki-refresh-v109`) added the spectree
 OpenAPI Layer B page (same `audience: dev` code-cold-ingest family):

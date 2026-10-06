@@ -268,16 +268,21 @@ posting when a bootstrap covers more than one, rendering a count + names instead
 there is no single "the" identity until an anchor is resolved at collate time
 `[synthesis]`.
 
-**Paid-run single-flight lock:** A global client-side `window.sartorRunLock`
-([`dashboard.html`](../../../dashboard/templates/dashboard.html)) prevents
-concurrent execution of the six long-running-run buttons in `LOCK_BTN_IDS` (eval /
-tune / bootstrap / grounding-score / collate-run / the static Collate button; all paid
-except grounding-score, which scores locally on CPU) within one browser tab — there is
-no server-side lock (work item 117). While any one is in flight, the others are disabled
-and a prominent `#runLockBanner` warns the user not to close the tab `[synthesis]`. The
-lock is not enforced server-side; `seed_export` (the deterministic corpus snapshot
-feature in the Annotate tab) deliberately does not acquire it and may run in
-parallel with paid runs `[synthesis]`.
+**Paid-run single-flight lock:** Concurrent paid runs are blocked at two layers. A
+global client-side `window.sartorRunLock` ([`dashboard.html`](../../../dashboard/templates/dashboard.html))
+gates the six long-running-run buttons in `LOCK_BTN_IDS` (eval / tune / bootstrap /
+grounding-score / collate-run / the static Collate button; all paid except grounding-score,
+which scores locally on CPU) within one browser tab; `acquire()` returns an owner token (numeric)
+or null, and `release(token)` is a no-op unless that token owns the lock (item 119). A server-side
+process-wide run slot ([`blueprints/diagnostics.py:_RUN_SLOT`](../../../blueprints/diagnostics.py),
+a `threading.Lock`) is taken by the four SSE run routes via
+[`blueprints/diagnostics.py:_single_flight_sse`](../../../blueprints/diagnostics.py) after their
+eager validation, answering HTTP 409 with error "A diagnostics run is already in progress." if
+held (item 117). The slot lives as long as the work, not the connection — a disconnect only asks the worker
+to stop at its next checkpoint, so the worker frees it in its `finally`. While any one run is in flight,
+the tab buttons are disabled and a prominent `#runLockBanner` warns the user not to close the tab
+`[synthesis]`. `seed_export` (the deterministic corpus snapshot feature in the Annotate tab) deliberately
+does not acquire the lock and may run in parallel with paid runs `[synthesis]`.
 
 **Run cancellation (disconnect-as-cancel):** Each SSE route polls its result queue
 with a [`blueprints/diagnostics.py:_HEARTBEAT_INTERVAL_S`](../../../blueprints/diagnostics.py)
@@ -347,15 +352,17 @@ fields, never empty strings or fabricated defaults.
 
 ## Run-lock gating and UI feedback (Epic C C1b, C3)
 
-Paid-run buttons (eval / tune / bootstrap / grounding-score / collate-fixture) are gated
-by a global client-side `window.sartorRunLock` preventing concurrent execution
-([`dashboard.html`](../../../dashboard/templates/dashboard.html)) `[synthesis]`. While
-any one run is in flight, the others are disabled and a prominent opaque `#runLockBanner`
-(sticky, positioned under the sticky tabs) warns the user not to close the tab
-`[synthesis]`. The lock is client-side only; deterministic runs like seed-export do not
-acquire it and may run in parallel. The banner stacks under the sticky tab bar via CSS
-`:has()` selector ([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
-line 73) `[synthesis]`.
+Long-running-run buttons (eval / tune / bootstrap / grounding-score / collate-fixture;
+all paid except grounding-score, which scores locally on CPU) are gated by both a client-side lock in `window.sartorRunLock` and a server-side run slot — see
+"Paid-run single-flight lock" above for the dual-layer design `[synthesis]`. The client lock's
+`acquire()` returns an owner token (or null), and `release(token)` only succeeds when the token
+matches, making the lock idempotent and safe against declined or already-finished callers
+(item 119). While any one run is in flight, the other buttons are disabled and a prominent opaque
+`#runLockBanner` (sticky, positioned under the sticky tabs) warns the user not to close the tab
+`[synthesis]`. Deterministic runs like seed-export do not acquire the lock and may run in parallel.
+The banner stacks under the sticky tab bar via CSS `:has()` selector
+([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html), line 73)
+`[synthesis]`.
 
 Tabs are themselves sticky ([`dashboard/templates/dashboard.html`](../../../dashboard/templates/dashboard.html),
 `.dash-tabs`) so users don't lose their place on long scrolling panes (Annotate, Tuning).

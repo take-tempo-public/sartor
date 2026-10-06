@@ -3,15 +3,20 @@ schema = 1
 id = 117
 kind = "item"
 title = "Paid diagnostics runs have no server-side single-flight lock; the run lock is per browser tab"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "fix/console-run-lock-hardening"]
 refs = [
   "dashboard/templates/dashboard.html",
   "blueprints/diagnostics.py:989",
   "blueprints/diagnostics.py:1159",
   "blueprints/diagnostics.py:745",
   "docs/dev/diagnosis/dashboard-run-lock-gaps.md",
+]
+resolution = "2026-10-06, fix/console-run-lock-hardening: blueprints/diagnostics.py: a process-wide single-flight slot (_RUN_SLOT, _single_flight_sse) wraps the 4 SSE run routes (score, bootstrap, eval, tune); taken after eager validation, 409 'A diagnostics run is already in progress.' while held. The worker frees it in its finally before the sentinel; call_on_close frees it only when the stream never started. tests/conftest.py's autouse _drain_diagnostics_run_slot waits (bounded) for the slot after every test and fails naming the leaker -- never resets it."
+verified_by = [
+  "tests/test_annotation_routes.py::TestEvalRunRoute::test_second_concurrent_run_is_refused_409_and_never_starts",
+  "tests/test_annotation_routes.py::TestEvalRunRoute::test_undrained_response_does_not_hold_the_slot",
 ]
 summary = "Two tabs (or curl) can start two paid runs at once: LOCK_BTN_IDS/acquire() are client-only, no server lock."
 ```
@@ -37,3 +42,7 @@ and asserts the second gets 409 and no second worker starts.
 ## Updates
 
 ### 2026-09-26 — filed at Epic C close (epic-close fixer, `feat/dashboard-copy-discovery`, from the three-refuter epic review)
+
+### 2026-10-06 — closed on `fix/console-run-lock-hardening`
+
+blueprints/diagnostics.py: a process-wide single-flight slot (_RUN_SLOT, _single_flight_sse) wraps the 4 SSE run routes (score, bootstrap, eval, tune); taken after eager validation, 409 'A diagnostics run is already in progress.' while held. The worker frees it in its finally before the sentinel; call_on_close frees it only when the stream never started. tests/conftest.py's autouse _drain_diagnostics_run_slot waits (bounded) for the slot after every test and fails naming the leaker -- never resets it.
