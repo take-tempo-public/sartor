@@ -2183,26 +2183,36 @@
   // button enabled. See docs/dev/diagnosis/dashboard-run-lock-gaps.md.
   var LOCK_BTN_IDS = ['evalRunBtn', 'tuneRunBtn', 'bsRun', 'annScore', 'annCollateRunBtn', 'annCollate'];
   var locked = false;
+  // Item 119: the lock has an OWNER. acquire() hands back a token; only that token's
+  // release() frees it, so a stale or declined caller's cleanup can't free a live run.
+  var owner = null;
+  var nextToken = 1;
   function warnBeforeUnload(e) {
     e.preventDefault();
     e.returnValue = 'A diagnostics run is still in progress.';
     return e.returnValue;
   }
-  // Returns true when this call actually acquired the lock, false when a run was
-  // already live — callers must check this (not just call acquire() and continue)
-  // or a second run can start silently. See docs/dev/diagnosis/dashboard-run-lock-gaps.md.
+  // Returns an owner token (a number) when this call acquired the lock, or null when
+  // a run was already live. Callers must check it BEFORE doing anything visible (not
+  // call acquire() and continue) or a second run can start silently, and must keep it
+  // to pass to release(). See docs/dev/diagnosis/dashboard-run-lock-gaps.md and
+  // docs/dev/diagnosis/console-run-lock-hardening.md.
   function acquireRunLock() {
-    if (locked) return false;
+    if (locked) return null;
     locked = true;
+    owner = nextToken++;
     LOCK_BTN_IDS.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = true; });
     var banner = document.getElementById('runLockBanner');
     if (banner) banner.hidden = false;
     window.addEventListener('beforeunload', warnBeforeUnload);
-    return true;
+    return owner;
   }
-  function releaseRunLock() {
-    if (!locked) return;
+  // A no-op unless `token` owns the lock: idempotent, and harmless from a declined or
+  // already-finished caller.
+  function releaseRunLock(token) {
+    if (!locked || token == null || token !== owner) return;
     locked = false;
+    owner = null;
     LOCK_BTN_IDS.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = false; });
     var banner = document.getElementById('runLockBanner');
     if (banner) banner.hidden = true;
@@ -2337,21 +2347,25 @@
   // 'done'. barEl (optional) is a <progress> element updated from index/total events.
   // cancelBtnEl (optional) gets Cancel wiring for the duration of the run.
   function run(params, progEl, btnEl, onDone, barEl, cancelBtnEl) {
-    if (btnEl) setBtnPending(btnEl);
-    // Defense in depth (docs/dev/diagnosis/dashboard-run-lock-gaps.md): acquire()
-    // returning false means a run is ALREADY live — do not start a second one, even
-    // if btnEl itself was somehow still enabled (e.g. a stray un-disabled button).
-    if (window.sartorRunLock && !window.sartorRunLock.acquire()) {
+    // Defense in depth (docs/dev/diagnosis/dashboard-run-lock-gaps.md): a null token
+    // means a run is ALREADY live — do not start a second one, even if btnEl itself
+    // was somehow still enabled (e.g. a stray un-disabled button). Acquire BEFORE
+    // marking btnEl pending, so a declined start leaves no pulsing button (item 120).
+    var rl = window.sartorRunLock;
+    var lockToken = rl ? rl.acquire() : null;
+    if (rl && lockToken == null) {
       if (progEl) progEl.textContent = 'A diagnostics run is already in progress.';
       return { abort: function () {} };
     }
+    function releaseLock() { if (rl) rl.release(lockToken); }
+    if (btnEl) setBtnPending(btnEl);
     if (progEl) progEl.textContent = 'Starting… (paid Sonnet/Haiku calls)';
     if (barEl) { barEl.hidden = false; barEl.value = 0; }
     var onCancelClick;
     var handle = stream('/api/eval/run', params, function (ev, p) {
       _updateBar(barEl, p);
-      if (ev === '_closed') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
-      if (ev === '_aborted') { if (btnEl) clearBtnPending(btnEl); if (window.sartorRunLock) window.sartorRunLock.release(); if (barEl) barEl.hidden = true; if (progEl) progEl.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
+      if (ev === '_closed') { if (btnEl) clearBtnPending(btnEl); releaseLock(); if (barEl) barEl.hidden = true; hideCancel(cancelBtnEl, onCancelClick); return; }
+      if (ev === '_aborted') { if (btnEl) clearBtnPending(btnEl); releaseLock(); if (barEl) barEl.hidden = true; if (progEl) progEl.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
       if (ev === 'done') {
         if (progEl) progEl.textContent = 'Done — ' + p.n_pass + ' pass / ' + p.n_fail + ' fail'
           + (p.regressions ? ', ' + p.regressions + ' regression(s)' : '') + ' → ' + (p.out_file || 'results') + '.';
@@ -2361,7 +2375,7 @@
       } else if (ev === 'error') {
         if (progEl) progEl.textContent = 'Error: ' + (p.error || 'eval failed') + (p.detail ? ' — ' + p.detail : '');
         if (btnEl) clearBtnPending(btnEl);
-        if (window.sartorRunLock) window.sartorRunLock.release();
+        releaseLock();
         if (barEl) barEl.hidden = true;
         hideCancel(cancelBtnEl, onCancelClick);
       } else {
@@ -2476,8 +2490,12 @@
     var est = subsetSel.value === 'smoke' ? '~$0.20' : '~$0.60';
     var scope = slug ? 'real / seed:' + slug : params.suite + ' / ' + params.subset;
     if (!window.confirm('Run a candidate-vs-baseline A/B on ' + scope + ' now?\n\nThis runs TWO eval suites (baseline + candidate) — paid Sonnet + Haiku (' + est + ') and takes several minutes.')) return;
+    // Item 119: a null token means a run is already live — start nothing.
+    var rl = window.sartorRunLock;
+    var lockToken = rl ? rl.acquire() : null;
+    if (rl && lockToken == null) { prog.textContent = 'A diagnostics run is already in progress.'; return; }
+    function releaseLock() { if (rl) rl.release(lockToken); }
     window.sartorEval.setBtnPending(btn);
-    if (window.sartorRunLock) window.sartorRunLock.acquire();
     deltaEl.hidden = true; promote.hidden = true;
     prog.textContent = 'Starting A/B — baseline then candidate… (paid Sonnet/Haiku)';
     if (bar) { bar.hidden = false; bar.value = 0; }
@@ -2486,8 +2504,8 @@
       if (bar && typeof p.total === 'number' && typeof p.index === 'number') {
         bar.hidden = false; bar.max = p.total; bar.value = Math.min(p.index + 1, p.total);
       }
-      if (ev === '_closed') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
-      if (ev === '_aborted') { window.sartorEval.clearBtnPending(btn); if (window.sartorRunLock) window.sartorRunLock.release(); if (bar) bar.hidden = true; prog.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
+      if (ev === '_closed') { window.sartorEval.clearBtnPending(btn); releaseLock(); if (bar) bar.hidden = true; window.sartorEval.hideCancel(cancelBtn, onCancelClick); return; }
+      if (ev === '_aborted') { window.sartorEval.clearBtnPending(btn); releaseLock(); if (bar) bar.hidden = true; prog.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.'; return; }
       if (ev === 'delta') {
         deltaEl.hidden = false; deltaEl.textContent = p.table || '(no delta)';
         promote.hidden = false;
@@ -2502,7 +2520,7 @@
       } else if (ev === 'error') {
         prog.textContent = 'Error: ' + (p.error || 'A/B failed') + (p.detail ? ' — ' + p.detail : '');
         window.sartorEval.clearBtnPending(btn);
-        if (window.sartorRunLock) window.sartorRunLock.release();
+        releaseLock();
         if (bar) bar.hidden = true;
         window.sartorEval.hideCancel(cancelBtn, onCancelClick);
       } else {
@@ -2880,8 +2898,12 @@
     var bar = $('bsProgressBar'); var cancelBtn = $('bsCancelBtn');
     if (!user) { prog.textContent = 'Enter a candidate username.'; return; }
     if (!jds.length) { prog.textContent = 'Add at least one JD (name + text).'; return; }
+    // Item 119: a null token means a run is already live — start nothing.
+    var rl = window.sartorRunLock;
+    var lockToken = rl ? rl.acquire() : null;
+    if (rl && lockToken == null) { prog.textContent = 'A diagnostics run is already in progress.'; return; }
+    function releaseLock() { if (rl) rl.release(lockToken); }
     window.sartorEval.setBtnPending($('bsRun'));
-    if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting… (paid Sonnet/Haiku calls, ~70s per JD)';
     if (bar) { bar.hidden = false; bar.value = 0; }
     var onCancelClick;
@@ -2896,7 +2918,7 @@
         }
         if (ev === '_closed' || ev === '_aborted') {
           window.sartorEval.clearBtnPending($('bsRun'));
-          if (window.sartorRunLock) window.sartorRunLock.release();
+          releaseLock();
           if (bar) bar.hidden = true;
           if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick);
           else prog.textContent = 'Cancelled — the server stops at its next checkpoint; a call already in flight still finishes.';
@@ -2915,12 +2937,12 @@
           // A pre-stream non-OK response (e.g. 400/403/409) never reaches
           // '_closed' — this stream ends right here, so this branch does the
           // same terminal cleanup '_closed' does for the mid-stream case
-          // (harmless to repeat: sartorRunLock.release()/hideCancel are both
-          // idempotent, so a later '_closed' after a mid-stream error is safe).
+          // (harmless to repeat: release(token)/hideCancel are both idempotent,
+          // so a later '_closed' after a mid-stream error is safe).
           prog.textContent = 'Error: ' + (p.error || 'bootstrap failed') + (p.detail ? ' — ' + p.detail : '');
           if (bar) bar.hidden = true;
           window.sartorEval.clearBtnPending($('bsRun'));
-          if (window.sartorRunLock) window.sartorRunLock.release();
+          releaseLock();
           window.sartorEval.hideCancel(cancelBtn, onCancelClick);
         }
       }
@@ -2953,8 +2975,12 @@
     // bootstrap runs), so the bar stays INDETERMINATE (no [value]) — just a
     // more-visible "busy" signal than the text line alone, nothing granular.
     var bar = $('annScoreProgressBar'); var cancelBtn = $('annScoreCancelBtn');
+    // Item 119: a null token means a run is already live — start nothing.
+    var rl = window.sartorRunLock;
+    var lockToken = rl ? rl.acquire() : null;
+    if (rl && lockToken == null) { prog.textContent = 'A diagnostics run is already in progress.'; return; }
+    function releaseLock() { if (rl) rl.release(lockToken); }
     window.sartorEval.setBtnPending($('annScore'));
-    if (window.sartorRunLock) window.sartorRunLock.acquire();
     prog.textContent = 'Starting grounding scorers… (CPU-bound; no paid LLM calls)';
     if (bar) { bar.hidden = false; bar.removeAttribute('value'); }
     var onCancelClick;
@@ -2964,7 +2990,7 @@
       function (ev, p) {
         if (ev === '_closed' || ev === '_aborted') {
           window.sartorEval.clearBtnPending($('annScore'));
-          if (window.sartorRunLock) window.sartorRunLock.release();
+          releaseLock();
           if (bar) bar.hidden = true;
           if (ev === '_closed') window.sartorEval.hideCancel(cancelBtn, onCancelClick);
           else prog.textContent = 'Cancelled — scoring stopped.';
@@ -2987,7 +3013,7 @@
           prog.textContent = 'Error: ' + (p.error || 'scoring failed') + (p.detail ? ' — ' + p.detail : '');
           if (bar) bar.hidden = true;
           window.sartorEval.clearBtnPending($('annScore'));
-          if (window.sartorRunLock) window.sartorRunLock.release();
+          releaseLock();
           window.sartorEval.hideCancel(cancelBtn, onCancelClick);
         }
       }

@@ -97,6 +97,19 @@ Free RAM was 1.05 GB at the start of the run (`Win32_OperatingSystem.FreePhysica
     One UX test taking ~5 min is itself abnormal. The cause is not investigated: it is outside
     items 112/117–121, and the timing is noted only.
 
+### After the fix (same tip + fix, 2026-10-06)
+
+Both runs used `-p no:rerunfailures`, so no test was retried.
+- **Python:** `python -m pytest tests/test_dashboard_routes.py tests/test_annotation_routes.py tests/test_llm_call_error_capture.py -p no:rerunfailures -q`
+  gave `162 passed in 152.94s`. That covers all 12 previously failing node ids, the existing
+  `TestRunCancelDisconnect` and `test_undrained_response_does_not_hold_the_slot`, with the new
+  conftest drain active. Free RAM was 0.71 GB.
+- **UX:** `python -m pytest -m ux` over `test_20261003_run_lock_ownership.py`,
+  `test_20260709_diagnostics_run_lock.py`, `test_20260720_diagnostics_run_cancel.py` and
+  `test_20260923_annotate_collate_run_lock.py` gave `9 passed in 114.37s` (`pytest_exit=0`,
+  `--durations=0`). The slowest phase was the first test's setup, at 38.67s (browser start); no
+  call took more than 7.65s.
+
 ---
 
 ## Falsified
@@ -133,11 +146,22 @@ is accepted only when the same tests pass unchanged.
   response closed before its stream ever started frees it via `call_on_close`.
 - **118:** the header pattern allows a quote around the key and the value, and treats
   `Bearer`/`Basic` as a scheme word kept before the masked credential.
+  - **As built (2026-10-06), the scheme word is masked WITH the credential, not kept.**
+    `tests/test_llm_call_error_capture.py:236-238` pins `"Authorization: ***"` for
+    `Authorization=Bearer deadbeef123`, and keeping `Bearer` would break that pinned contract.
+    Every old and new assertion holds unchanged (blast-radius dossier, row 19).
 - **119:** `acquire()` returns a numeric owner token or `null`; `release(token)` is a no-op
   unless the token owns the lock. Every caller keeps its token and bails on `null`.
 - **120:** `run()` acquires first, then sets its button pending.
 - **121:** `_iter_jsonl` yields object lines only; `run_detail` passes the run id as a substring
   pre-filter so lines of other runs are never parsed.
+  - **As built:** the pre-filter token is the JSON-quoted id (`json.dumps(run_id)`), not the
+    bare id. A bare `"r1"` also matches `other1` and `other10`–`other19`, which
+    `test_only_this_runs_lines_are_parsed` would catch.
+- **117, as built:** a process-wide slot like this is a flake by construction for any test that
+  returns while its worker is still unwinding (`TestRunCancelDisconnect`). The autouse
+  `_drain_diagnostics_run_slot` in `tests/conftest.py` waits, with a bound, for the real worker
+  after every test. It fails naming the leaking test, and never resets the slot.
 
 ---
 

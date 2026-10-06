@@ -26,7 +26,8 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Iterator
+import threading
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -49,6 +50,60 @@ diagnostics_bp = Blueprint("diagnostics", __name__)
 # delivers GeneratorExit into the generator. Without periodic yields, a
 # closed tab is invisible until the blocking worker call finally returns.
 _HEARTBEAT_INTERVAL_S = 5.0
+
+# Item 117: the console's run lock was client-only (one per browser tab), so a second
+# tab, a reload, or a direct POST could start a second paid run while one was live.
+# This process-wide single-flight slot is the server half: the 4 SSE run routes take
+# it after their eager validation and answer 409 while it is held. The slot lives as
+# long as the WORK, not the connection — a disconnect only asks the worker to stop at
+# its next checkpoint, so the worker frees it in its own `finally`.
+_RUN_SLOT = threading.Lock()
+_RUN_IN_PROGRESS_ERROR = "A diagnostics run is already in progress."
+
+
+def _take_run_slot() -> Callable[[], None] | None:
+    """Take the run slot; return an idempotent ``free`` callable, or None when held."""
+    if not _RUN_SLOT.acquire(blocking=False):
+        return None
+    freed = threading.Lock()
+
+    def free() -> None:
+        if freed.acquire(blocking=False):
+            _RUN_SLOT.release()
+
+    return free
+
+
+def _single_flight_sse(
+    stream: Callable[[Callable[[], None]], Iterator[str]],
+) -> ResponseReturnValue:
+    """Wrap a run route's SSE generator in the run slot (409 when another run holds it).
+
+    ``stream(free_slot)`` must start its worker before its first yield and call
+    ``free_slot()`` in the worker's ``finally``. A response closed before its body ever
+    ran started no worker, so ``call_on_close`` frees the slot in that case only.
+    """
+    free_slot = _take_run_slot()
+    if free_slot is None:
+        return jsonify({"error": _RUN_IN_PROGRESS_ERROR}), 409
+    started = False
+
+    def body() -> Iterator[str]:
+        nonlocal started
+        started = True
+        yield from stream(free_slot)
+
+    def free_if_never_started() -> None:
+        if not started:
+            free_slot()
+
+    response = Response(
+        body(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+    response.call_on_close(free_if_never_started)
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -547,7 +602,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
     reps_md = "\n".join(f"- {c.get('representative', '')}" for c in clusters)
     ann_path = fixture_dir / "annotations.json"
 
-    def stream() -> Iterator[str]:
+    def stream(free_slot: Callable[[], None]) -> Iterator[str]:
         """SSE generator: stream grounding-signal scoring progress, then the terminal result/error event."""
         import queue as _queue
         import threading
@@ -568,6 +623,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
             except Exception as exc:
                 result["error"] = exc
             finally:
+                free_slot()  # before the sentinel: the slot outlives no work (item 117)
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -661,11 +717,7 @@ def annotation_score_grounding(username: str, slug: str) -> ResponseReturnValue:
             )
             raise
 
-    return Response(
-        stream(),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _single_flight_sse(stream)
 
 
 @diagnostics_bp.route("/api/annotation/seed/export", methods=["POST"])
@@ -801,7 +853,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
 
     client = _get_client()
 
-    def stream() -> Iterator[str]:
+    def stream(free_slot: Callable[[], None]) -> Iterator[str]:
         """SSE generator: stream the annotation-bootstrap pipeline's progress, then the terminal event."""
         import queue as _queue
         import threading
@@ -845,6 +897,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
             except Exception as exc:
                 result["error"] = exc
             finally:
+                free_slot()  # before the sentinel: the slot outlives no work (item 117)
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -979,11 +1032,7 @@ def annotation_bootstrap_stream() -> ResponseReturnValue:
             )
             raise
 
-    return Response(
-        stream(),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _single_flight_sse(stream)
 
 
 @diagnostics_bp.route("/api/eval/run", methods=["POST"])
@@ -1053,7 +1102,7 @@ def eval_run_stream() -> ResponseReturnValue:
 
     from evals.runner import run_suite
 
-    def stream() -> Iterator[str]:
+    def stream(free_slot: Callable[[], None]) -> Iterator[str]:
         """SSE generator: stream the eval-suite run's progress, then the terminal result/error event."""
         import queue as _queue
         import threading
@@ -1078,6 +1127,7 @@ def eval_run_stream() -> ResponseReturnValue:
             except Exception as exc:
                 result["error"] = exc
             finally:
+                free_slot()  # before the sentinel: the slot outlives no work (item 117)
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -1149,11 +1199,7 @@ def eval_run_stream() -> ResponseReturnValue:
             )
             raise
 
-    return Response(
-        stream(),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _single_flight_sse(stream)
 
 
 @diagnostics_bp.route("/api/tune/run", methods=["POST"])
@@ -1243,7 +1289,7 @@ def tune_run_stream() -> ResponseReturnValue:
     from evals.runner import EvalRunResult, run_suite
     from evals.tune import build_delta_table, format_delta_table, load_scores
 
-    def stream() -> Iterator[str]:
+    def stream(free_slot: Callable[[], None]) -> Iterator[str]:
         """SSE generator: stream the baseline-then-candidate tuning run's progress, then the terminal event."""
         import queue as _queue
         import threading
@@ -1281,6 +1327,7 @@ def tune_run_stream() -> ResponseReturnValue:
             except Exception as exc:
                 result["error"] = exc
             finally:
+                free_slot()  # before the sentinel: the slot outlives no work (item 117)
                 events.put(sentinel)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -1363,8 +1410,4 @@ def tune_run_stream() -> ResponseReturnValue:
             )
             raise
 
-    return Response(
-        stream(),
-        mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _single_flight_sse(stream)

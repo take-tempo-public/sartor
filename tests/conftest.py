@@ -66,6 +66,33 @@ def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path / "witness-state"))
 
 
+_RUN_SLOT_DRAIN_TIMEOUT_S = 15.0
+
+
+@pytest.fixture(autouse=True)
+def _drain_diagnostics_run_slot() -> Iterator[None]:
+    """After every test, wait for the diagnostics console's run slot to be free (item 117).
+
+    `blueprints/diagnostics.py` holds one process-wide single-flight slot that a run's
+    worker frees in its own `finally`. A test that returns while its worker is still
+    unwinding (`TestRunCancelDisconnect` does, by design) would otherwise hand the next
+    test a held slot, and its POST a 409: a flake made by construction. This WAITS for the
+    real worker; it never resets the slot. A slot still held after the bound fails here,
+    naming the test that leaked it, rather than in whichever test runs next.
+    """
+    yield
+    diagnostics = sys.modules.get("blueprints.diagnostics")
+    if diagnostics is None:
+        return
+    slot = diagnostics._RUN_SLOT
+    if not slot.acquire(timeout=_RUN_SLOT_DRAIN_TIMEOUT_S):
+        pytest.fail(
+            f"diagnostics run slot still held {_RUN_SLOT_DRAIN_TIMEOUT_S:.0f}s after this test: "
+            "a run worker never reached its finally (item 117)"
+        )
+    slot.release()
+
+
 @pytest.fixture(scope="session")
 def _migrated_template_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A file-backed SQLite migrated to alembic head, built exactly ONCE per session.

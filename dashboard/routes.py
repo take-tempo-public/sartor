@@ -21,7 +21,8 @@ import itertools
 import json
 import logging
 from collections import Counter, defaultdict
-from datetime import datetime
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -54,21 +55,31 @@ LLM_LOG = PROJECT_ROOT / "logs" / "llm_calls.jsonl"
 EVAL_RESULTS_DIR = PROJECT_ROOT / "evals" / "results"
 
 
-def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    """Read a JSONL file. Returns [] if the file is missing. Skips malformed lines."""
+def _iter_jsonl(path: Path, contains: tuple[str, ...] = ()) -> Iterator[dict[str, Any]]:
+    """Yield the JSON-object lines of a JSONL file, streaming. Nothing if it is missing.
+
+    Skips malformed lines and valid-JSON non-objects (`[1]`, `"s"`, `3`, `null`) —
+    every caller does `.get` on what it reads (item 121). ``contains`` is a substring
+    pre-filter: when given, a line holding none of its strings is never ``json.loads``-ed.
+    """
     if not path.exists():
-        return []
-    records: list[dict[str, Any]] = []
+        return
     with path.open(encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line:
+            if not line or (contains and not any(c in line for c in contains)):
                 continue
             try:
-                records.append(json.loads(line))
+                record = json.loads(line)
             except json.JSONDecodeError:
                 continue
-    return records
+            if isinstance(record, dict):
+                yield record
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read a JSONL file's object lines. Returns [] if the file is missing."""
+    return list(_iter_jsonl(path))
 
 
 def _normalize_eval_record(r: dict[str, Any]) -> dict[str, Any]:
@@ -110,14 +121,21 @@ def _read_eval_results() -> list[dict[str, Any]]:
 
 
 def _parse_date(s: str) -> datetime | None:
-    """Parse YYYY-MM-DD or full ISO. Return None on failure."""
+    """Parse YYYY-MM-DD or full ISO to an aware UTC datetime. Return None on failure.
+
+    Naive input is read as UTC (what the telemetry writer emits), so a date-only
+    Since floor and a `+00:00` timestamp always compare (item 112).
+    """
     s = (s or "").strip()
     if not s:
         return None
     try:
-        return datetime.fromisoformat(s)
+        parsed = datetime.fromisoformat(s)
     except ValueError:
         return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _filter_calls(
@@ -1102,8 +1120,14 @@ def run_detail(run_id: str) -> ResponseReturnValue:
     ``None`` here -- never fabricated, never an empty string standing in for
     "no message logged".
     """
-    calls = _read_jsonl(LLM_LOG)
-    run_calls = [r for r in calls if (r.get("run_id") or "") == run_id]
+    # Item 121: only lines carrying this run id as a JSON string token are parsed.
+    # The quoted token (not bare `run_id`) keeps "r1" from matching "other1"; the
+    # writer is analyzer._emit_call_log's json.dumps(record) (ensure_ascii=True),
+    # and the ensure_ascii=False form is accepted too for hand-written lines.
+    tokens = tuple({json.dumps(run_id), json.dumps(run_id, ensure_ascii=False)})
+    run_calls = [
+        r for r in _iter_jsonl(LLM_LOG, contains=tokens) if (r.get("run_id") or "") == run_id
+    ]
     if not run_calls:
         return jsonify({"found": False, "run_id": run_id}), 404
 

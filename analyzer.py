@@ -598,7 +598,13 @@ def _emit_call_log(record: dict[str, Any]) -> None:
 # not make this helper start leaking request content — it would just mean the
 # *source* text this helper redacts could, in principle, contain more.
 _API_KEY_PATTERN = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
-_HEADER_VALUE_PATTERN = re.compile(r"(?i)\b(x-api-key|authorization)\s*[:=]\s*(?:bearer\s+)?\S+")
+# Item 118: a dict/JSON repr quotes the key (`'x-api-key': '…'`), so an optional
+# quote may sit between key and separator and before the value; an auth scheme word
+# (Bearer/Basic) is consumed WITH its credential, so `Basic <b64>` can't leave the
+# credential behind as the "value" after a masked scheme word.
+_HEADER_VALUE_PATTERN = re.compile(
+    r"""(?i)\b(x-api-key|authorization)["']?\s*[:=]\s*["']?(?:(?:bearer|basic)\s+)?[^\s"']+"""
+)
 _ERROR_MESSAGE_MAX_CHARS = 500
 _ERROR_MESSAGE_TRUNCATION_MARKER = "…[truncated]"
 
