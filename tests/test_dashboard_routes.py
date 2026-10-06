@@ -1053,8 +1053,98 @@ class TestBaselineHealth:
         assert out["rows"][0]["status"] == "ok"
 
 
+class TestFilterCallsSinceDate:
+    """Item 112: a date-only Since floor parses naive; telemetry timestamps are
+    offset-aware (`+00:00`) or `Z`-suffixed. Comparing the two raised TypeError."""
+
+    _RECORDS: ClassVar[list[dict[str, str]]] = [
+        {"timestamp": "2026-08-31T23:59:59+00:00", "username": "u", "model": "m"},
+        {"timestamp": "2026-09-01T00:00:01+00:00", "username": "u", "model": "m"},
+        {"timestamp": "2026-09-02T10:00:00Z", "username": "u", "model": "m"},
+        {"timestamp": "2026-08-01T10:00:00", "username": "u", "model": "m"},  # naive row
+    ]
+
+    def test_date_only_floor_against_aware_timestamps(self):
+        from dashboard.routes import _filter_calls
+
+        out = _filter_calls(list(self._RECORDS), "2026-09-01", "", "")
+        assert [r["timestamp"] for r in out] == [
+            "2026-09-01T00:00:01+00:00",
+            "2026-09-02T10:00:00Z",
+        ]
+
+    def test_aware_floor_against_naive_and_aware_timestamps(self):
+        from dashboard.routes import _filter_calls
+
+        out = _filter_calls(list(self._RECORDS), "2026-09-02T00:00:00+00:00", "", "")
+        assert [r["timestamp"] for r in out] == ["2026-09-02T10:00:00Z"]
+
+    def test_index_route_with_since_renders(self, dash_client, monkeypatch, tmp_path):
+        from dashboard import routes as dashboard_routes
+
+        client, _results_dir = dash_client
+        log_path = tmp_path / "calls.jsonl"
+        log_path.write_text(
+            "\n".join(json.dumps(r) for r in self._RECORDS) + "\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", log_path)
+        resp = client.get("/dashboard/?since=2026-09-01", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+
+
+class TestReadJsonlSkipsNonObjects:
+    """Item 121: `json.loads` accepts `[1]`, `"s"` and `3`; every caller calls `.get`."""
+
+    def test_non_object_lines_are_skipped(self, tmp_path):
+        from dashboard.routes import _read_jsonl
+
+        path = tmp_path / "x.jsonl"
+        path.write_text('{"a": 1}\n[1, 2]\n"str"\n42\nnull\n{"b": 2}\n', encoding="utf-8")
+        assert _read_jsonl(path) == [{"a": 1}, {"b": 2}]
+
+
 class TestRunDetailRoute:
     """GET /api/run/<run_id> — Epic C C2, UX-7/UX-8's composite endpoint."""
+
+    def test_non_object_line_in_log_is_not_a_500(self, dash_client, monkeypatch, tmp_path):
+        """Item 121: one non-object JSON line used to raise AttributeError -> 500."""
+        from dashboard import routes as dashboard_routes
+
+        client, _results_dir = dash_client
+        log_path = tmp_path / "calls.jsonl"
+        row = {"run_id": "r1", "call": "analyze", "model": "m", "status": "ok"}
+        log_path.write_text(
+            json.dumps(row) + '\n["r1"]\n"r1"\n' + json.dumps(row) + "\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", log_path)
+        resp = client.get("/dashboard/api/run/r1", headers={"Host": "127.0.0.1"})
+        assert resp.status_code == 200
+        assert resp.get_json()["reliability"]["total"] == 2
+
+    def test_only_this_runs_lines_are_parsed(self, dash_client, monkeypatch, tmp_path):
+        """Item 121: the modal used to json-parse the whole log to find one run. Lines
+        that cannot belong to the run are now rejected by a substring check first."""
+        from dashboard import routes as dashboard_routes
+
+        client, _results_dir = dash_client
+        log_path = tmp_path / "calls.jsonl"
+        lines = [json.dumps({"run_id": f"other{i}", "call": "x"}) for i in range(50)]
+        lines.append(json.dumps({"run_id": "r1", "call": "analyze", "status": "ok"}))
+        log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        monkeypatch.setattr(dashboard_routes, "LLM_LOG", log_path)
+
+        parsed: list[str] = []
+        real_loads = json.loads
+
+        def counting_loads(s, *a, **kw):
+            parsed.append(s)
+            return real_loads(s, *a, **kw)
+
+        monkeypatch.setattr(dashboard_routes.json, "loads", counting_loads)
+        resp = client.get("/dashboard/api/run/r1", headers={"Host": "127.0.0.1"})
+        monkeypatch.setattr(dashboard_routes.json, "loads", real_loads)
+        assert resp.status_code == 200
+        assert len([s for s in parsed if "other" in s]) == 0
 
     def test_non_localhost_request_gets_403(self, dash_client):
         client, _results_dir = dash_client

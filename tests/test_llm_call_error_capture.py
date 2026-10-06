@@ -261,6 +261,24 @@ class TestRedactErrorMessage:
         out = _redact_error_message("sk-ant-" + "A" * 600)
         assert out == "sk-ant-***"
 
+    @pytest.mark.parametrize(
+        ("message", "secret"),
+        [
+            # Item 118: a dict/JSON repr of request headers quotes the key, so the old
+            # `\bx-api-key\s*[:=]` never matched `'x-api-key': '...'`.
+            ("headers={'x-api-key': 'sk-live-abc123', 'a': 'b'}", "sk-live-abc123"),
+            ('{"authorization": "Bearer deadbeef123"}', "deadbeef123"),
+            ('{"X-Api-Key":"sk-live-q9"}', "sk-live-q9"),
+            # Basic auth: the old pattern masked only the word "Basic".
+            ("Authorization: Basic dXNlcjpwYXNzd29yZA==", "dXNlcjpwYXNzd29yZA=="),
+            ("{'authorization': 'Basic dXNlcjpwYXNz'}", "dXNlcjpwYXNz"),
+        ],
+    )
+    def test_masks_quoted_key_and_basic_auth_forms(self, message: str, secret: str) -> None:
+        out = _redact_error_message(message)
+        assert secret not in out, out
+        assert "***" in out
+
     def test_a_key_straddling_the_cut_is_masked_whole(self) -> None:
         out = _redact_error_message("x" * 485 + "sk-ant-" + "B" * 100)
         assert out == "x" * 485 + "sk-ant-***"
