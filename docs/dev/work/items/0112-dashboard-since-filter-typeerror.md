@@ -3,12 +3,16 @@ schema = 1
 id = 112
 kind = "item"
 title = "The diagnostics console's Since filter raises TypeError on any date: naive date floor compared against offset-aware telemetry timestamps"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/epic-c-kickoff"]
+branches = ["docs/epic-c-kickoff", "fix/console-run-lock-hardening"]
 refs = [
   "dashboard/routes.py:112-133",
   "docs/dev/reviews/epic-c-console-ux-audit.md",
+]
+resolution = "2026-10-06, fix/console-run-lock-hardening: dashboard/routes.py _parse_date returns an aware UTC datetime (naive input read as UTC, what the telemetry writer emits), so a date-only Since floor and +00:00 / Z timestamps always compare."
+verified_by = [
+  "tests/test_dashboard_routes.py::TestFilterCallsSinceDate",
 ]
 summary = "Any Since date crashes the console: _filter_calls compares a naive floor to offset-aware (+00:00) timestamps."
 ```
@@ -30,3 +34,9 @@ only "filter-scoping explainers" copy (C3). Fixing it is its own `fix/*` branch.
 the reproduction above is the Observed; the first commit is a failing test with an aware
 timestamp. The invoker may raise it with the owner as a candidate addition to C1. It is
 not folded in silently.
+
+## Updates
+
+### 2026-10-06 — closed on `fix/console-run-lock-hardening`
+
+dashboard/routes.py _parse_date returns an aware UTC datetime (naive input read as UTC, what the telemetry writer emits), so a date-only Since floor and +00:00 / Z timestamps always compare.

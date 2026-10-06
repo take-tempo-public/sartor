@@ -1490,9 +1490,8 @@
         + 'always use every eval result on disk, because their trends need the '
         + 'full history. Leave a box on “All” to include everything; “clear” '
         + 'resets all three. Eval runs log their calls under users named '
-        + 'eval:<fixture>, so pick one of those to see only eval traffic. Known '
-        + 'issue: the Since filter is currently broken — applying a date errors '
-        + 'instead of filtering (tracked as work item 112); User and Model work.',
+        + 'eval:<fixture>, so pick one of those to see only eval traffic. A '
+        + 'Since date with no time or zone is read as midnight UTC.',
     },
     dashPercentiles: {
       title: 'p50, p95, median and mean',

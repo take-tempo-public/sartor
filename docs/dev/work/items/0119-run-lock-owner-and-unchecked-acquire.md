@@ -3,12 +3,17 @@ schema = 1
 id = 119
 kind = "item"
 title = "Run lock has no owner; tune, bootstrap and annScore ignore acquire()'s return value"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "fix/console-run-lock-hardening"]
 refs = [
   "dashboard/templates/dashboard.html",
   "docs/dev/diagnosis/dashboard-run-lock-gaps.md",
+]
+resolution = "2026-10-06, fix/console-run-lock-hardening: dashboard.html window.sartorRunLock: acquire() returns a numeric owner token or null; release(token) is a no-op unless that token owns the lock. All 4 acquire sites (run(), tune, bootstrap, score-grounding) keep the token and bail on null before any pending state or POST; all 10 release sites pass it."
+verified_by = [
+  "tests/ux/regression/test_20261003_run_lock_ownership.py::test_stale_release_does_not_free_a_live_run",
+  "tests/ux/regression/test_20261003_run_lock_ownership.py::test_bootstrap_click_while_locked_issues_no_post",
 ]
 summary = "Any release() frees the lock, and three inline acquire() sites start a run even when acquire() returned false."
 ```
@@ -31,3 +36,7 @@ second handler's click while locked and asserts no second POST is issued.
 ## Updates
 
 ### 2026-09-26 — filed at Epic C close (epic-close fixer, `feat/dashboard-copy-discovery`, from the three-refuter epic review)
+
+### 2026-10-06 — closed on `fix/console-run-lock-hardening`
+
+dashboard.html window.sartorRunLock: acquire() returns a numeric owner token or null; release(token) is a no-op unless that token owns the lock. All 4 acquire sites (run(), tune, bootstrap, score-grounding) keep the token and bail on null before any pending state or POST; all 10 release sites pass it.
