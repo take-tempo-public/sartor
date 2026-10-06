@@ -3,12 +3,16 @@ schema = 1
 id = 151
 kind = "item"
 title = "Recurrence: background-task notifications report exit 0 for a gate whose log says exit 1; the gate should write its own result file"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["fix/hook-guard-false-blocks"]
 refs = [
   "scripts/gate.py",
   "scripts/ci_wait.py",
+]
+resolution = "2026-10-05, fix/hook-guard-false-blocks: scripts/gate.py writes gate-result.json in the git dir on every terminal path (refusal, failure, pass, interrupt) with exit, failing step, times, HEAD and a tree digest; `python -m scripts.gate --result` exits 0 only when the last run passed on this exact tree. tests/conftest.py redirects it for every test."
+verified_by = [
+  "tests/test_gate_result_and_hooks_path.py::TestResultFile",
 ]
 summary = "A background gate run is reported 'exit 0' while its log ends 'exit=1'. Third time; needs a result file + checker."
 ```
@@ -36,3 +40,7 @@ notification. The harness-side part is reported to Anthropic separately.
 ## Updates
 
 ### 2026-10-03 — filed on `chore/agent-doc-drift`
+
+### 2026-10-05 — closed on `fix/hook-guard-false-blocks`
+
+scripts/gate.py writes gate-result.json in the git dir on every terminal path (refusal, failure, pass, interrupt) with exit, failing step, times, HEAD and a tree digest; `python -m scripts.gate --result` exits 0 only when the last run passed on this exact tree. tests/conftest.py redirects it for every test.

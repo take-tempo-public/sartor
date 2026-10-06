@@ -8,6 +8,32 @@ git_grep_source.py` pattern.
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Mapping
+from pathlib import Path
+
+
+def repo_root(start: str | Path, env: Mapping[str, str], default: str | Path = ".") -> Path:
+    """The checkout that holds `start` (a file or directory, existing or not).
+
+    Walks up from the nearest existing directory to the first one containing `.git` — a
+    directory in a main checkout, a *file* in a `git worktree` — so a guard judging an edit
+    reads the dossier of the worktree being edited, not the session's main checkout (item
+    148). For a path in no repo at all: `CLAUDE_PROJECT_DIR` if set, else `default`. A caller
+    whose `start` is a payload `cwd` passes that `cwd` as `default`, so a non-repo directory
+    never resolves to the hook process's own cwd (the real repo, where a ledger write lands
+    in a tracked shard).
+
+    This is the one place a guard or context hook may read `CLAUDE_PROJECT_DIR` for a repo
+    root; `tests/test_enforcement_core.py` fails if another one starts to. No subprocess: a
+    stat per ancestor, run once per hook call.
+    """
+    path = Path(start).absolute()
+    while not path.is_dir() and path.parent != path:
+        path = path.parent
+    for candidate in (path, *path.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return Path(env.get("CLAUDE_PROJECT_DIR") or default)
 
 
 def _run(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess[str]:

@@ -51,17 +51,36 @@ passes. On a platform (or in an environment) where free memory cannot be
 read at all, the preflight fails OPEN — proceeds without checking — rather
 than blocking a run it has no evidence against.
 
+Also before any step runs, a **hooksPath preflight** (item 150) fails the gate when
+`core.hooksPath` is not `.githooks`. Without it the native `pre-merge-commit` / `pre-push`
+hooks never run, and nothing else notices: on the owner's clone it was unset. It is skipped
+when `CI` is set (CI never merges or pushes locally), and the log says so.
+
+Every run writes a **result file** (item 151) on every terminal path, including a refusal and
+an interrupt: `gate-result.json` in this checkout's git dir (`git rev-parse --git-dir`, so per
+worktree and never committed). It records the exit code, the failing step, the times, `HEAD` and
+a digest of the working tree as it was when the run started. `python -m scripts.gate --result`
+is the one check of "the last local gate passed on this exact tree": exit 0 only if that run
+passed and `HEAD` and the tree digest still match. Cite it, not a background-task notification,
+which has reported `exit 0` for a gate whose log ended `exit=1` (item 151, three times).
+
 Usage:
-    python -m scripts.gate
+    python -m scripts.gate            # run the gate
+    python -m scripts.gate --result   # check the last run against this tree
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import platform
 import re
 import subprocess
 import sys
-from collections.abc import Sequence
+import time
+from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any, cast
 
 # Invoked as `sys.executable -m <tool>` rather than the bare console-script name
@@ -338,6 +357,109 @@ def _check_memory_preflight() -> int:
     return 1
 
 
+_HOOKS_PATH = ".githooks"
+_RESULT_NAME = "gate-result.json"
+
+
+def _git_out(*args: str) -> str | None:
+    """stdout of a fixed git command, stripped; None if git fails or is missing."""
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell, local git only
+            ["git", *args],  # noqa: S607 - `git` intentionally resolved from PATH
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except OSError:
+        return None
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _check_hooks_path(env: Mapping[str, str] | None = None) -> int:
+    """Fail unless `core.hooksPath` is `.githooks` (item 150). Skipped under CI."""
+    if env is None:
+        env = os.environ
+    print("\n=== gate: hooksPath preflight ===", flush=True)
+    if env.get("CI"):
+        print(
+            "gate: hooksPath check skipped (CI is set): CI never merges or pushes locally, "
+            "so the native git hooks have nothing to guard there.",
+            flush=True,
+        )
+        return 0
+    value = _git_out("config", "--get", "core.hooksPath")
+    if value == _HOOKS_PATH:
+        print(f"gate: core.hooksPath = {_HOOKS_PATH} -- the native git hooks run.", flush=True)
+        return 0
+    print(
+        f"gate: REFUSED -- core.hooksPath is {value or 'unset'}, not {_HOOKS_PATH}, so "
+        "pre-merge-commit and pre-push never run.\n"
+        f"gate: fix it once per clone: git config core.hooksPath {_HOOKS_PATH}",
+        file=sys.stderr,
+        flush=True,
+    )
+    return 1
+
+
+def _tree_fingerprint() -> tuple[str | None, str | None]:
+    """`(HEAD, digest of uncommitted changes + untracked names)`; None parts if unreadable."""
+    head = _git_out("rev-parse", "HEAD")
+    diff = _git_out("diff", "HEAD", "--no-ext-diff", "--binary")
+    untracked = _git_out("ls-files", "--others", "--exclude-standard")
+    if diff is None or untracked is None:
+        return head, None
+    digest = hashlib.sha256(f"{diff}\0{untracked}".encode()).hexdigest()
+    return head, digest
+
+
+def _result_path() -> Path | None:
+    git_dir = _git_out("rev-parse", "--git-dir")
+    return Path(git_dir) / _RESULT_NAME if git_dir else None
+
+
+def _write_result(record: dict[str, Any]) -> None:
+    """Best effort: a failure to record must never change the gate's own exit code."""
+    path = _result_path()
+    if path is None:
+        return
+    try:
+        path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        print(f"gate: could not write {path}: {exc}", file=sys.stderr, flush=True)
+
+
+def check_result() -> int:
+    """`--result`: 0 only if the last recorded run passed on exactly this tree."""
+    path = _result_path()
+    if path is None or not path.is_file():
+        print("gate --result: no recorded gate run in this checkout.", file=sys.stderr)
+        return 1
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"gate --result: unreadable {path}: {exc}", file=sys.stderr)
+        return 1
+    head, digest = _tree_fingerprint()
+    summary = (
+        f"exit {record.get('exit')}, failed step {record.get('failed_step')!r}, "
+        f"finished {record.get('finished_at')}, HEAD {str(record.get('head'))[:7]}"
+    )
+    if record.get("exit") != 0:
+        print(f"gate --result: FAILED -- last run: {summary}", file=sys.stderr)
+        return 1
+    if digest is None or record.get("head") != head or record.get("tree_digest") != digest:
+        print(
+            f"gate --result: STALE -- the last run passed ({summary}), but HEAD or the "
+            "working tree has changed since it started. Re-run the gate.",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"gate --result: PASSED on this tree -- {summary}")
+    return 0
+
+
 def _run_step(name: str, cmd: list[str]) -> int:
     print(f"\n=== gate: {name} ===", flush=True)
     result = subprocess.run(cmd, check=False)  # noqa: S603 - fixed argv, no shell, no untrusted input
@@ -345,8 +467,42 @@ def _run_step(name: str, cmd: list[str]) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the quality-gate steps in CI order; stop at the first failure."""
-    del argv  # no flags today — the wrapper takes no arguments, by design (single definition)
+    """Run the quality-gate steps in CI order; stop at the first failure.
+
+    `--result` (the only flag) checks the last run instead of starting one. The step list
+    itself takes no arguments, by design (single definition).
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args == ["--result"]:
+        return check_result()
+    if args:
+        print(f"usage: python -m scripts.gate [--result]  (got {args})", file=sys.stderr)
+        return 2
+    head, digest = _tree_fingerprint()
+    record: dict[str, Any] = {
+        "exit": None,
+        "failed_step": "interrupted",
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "finished_at": None,
+        "head": head,
+        "tree_digest": digest,
+    }
+    try:
+        code, failed = _run_all()
+        record["exit"], record["failed_step"] = code, failed
+        return code
+    finally:
+        # Every terminal path, an interrupt included (`exit` then stays None).
+        record["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        _write_result(record)
+
+
+def _run_all() -> tuple[int, str | None]:
+    """`(exit_code, failing_step_or_None)`; prints the terminal-line contract."""
+    hooks_code = _check_hooks_path()
+    if hooks_code != 0:
+        print(f"\ngate: FAILED at `hooksPath preflight` (exit {hooks_code})", file=sys.stderr)
+        return hooks_code, "hooksPath preflight"
     preflight_code = _check_memory_preflight()
     if preflight_code != 0:
         # The terminal-line contract: every run ends with exactly one of
@@ -358,14 +514,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
             flush=True,
         )
-        return preflight_code
+        return preflight_code, "memory preflight"
     for name, cmd in _STEPS:
         code = _run_step(name, cmd)
         if code != 0:
             print(f"\ngate: FAILED at `{name}` (exit {code})", file=sys.stderr)
-            return code
+            return code, name
     print("\ngate: all steps passed.")
-    return 0
+    return 0, None
 
 
 if __name__ == "__main__":

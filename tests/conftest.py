@@ -34,6 +34,21 @@ def _default_llm_log_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.fixture(autouse=True)
+def _default_gate_result_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redirect `scripts.gate`'s result file to a per-test tmp file, for every test (item
+    151; same shape as `_default_llm_log_path` above).
+
+    `gate.main()` records every run in the checkout's real git dir, and `python -m scripts.gate
+    --result` trusts that record. A test that calls `main()` would otherwise overwrite the
+    developer's real record with a stubbed run (observed on `fix/hook-guard-false-blocks`:
+    `test_gate_memory_preflight.py` wrote a `hooksPath preflight` failure into `.git/`).
+    """
+    from scripts import gate
+
+    monkeypatch.setattr(gate, "_result_path", lambda: tmp_path / "gate-result.json")
+
+
+@pytest.fixture(autouse=True)
 def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Point the interrogative-witness state dir at a per-test tmp dir, for every
     test in the suite (work item 87; same shape as `_default_llm_log_path` above).

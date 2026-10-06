@@ -300,6 +300,55 @@ class TestBlockMergeToMainUnit:
         result = block_merge_to_main.decide("git status", str(tmp_path))
         assert not result.blocked
 
+    # --- item 136: merge text that is not a merge --------------------------
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "grep -E 'git merge --no-ff|main' docs/dev/work/BOARD.md",
+            'rg -n "git merge main" docs/',
+            "echo 'never git merge main locally' >> notes.md",
+            "git log --oneline --grep 'git merge main' -5",
+            # The observed shape: a python heredoc plus a grep holding the phrase.
+            "python - <<'EOF'\nprint('edit an item file')\nEOF\n"
+            "grep -n 'git merge --no-ff' docs/dev/maintainer-lane.md | grep main",
+        ],
+    )
+    def test_merge_text_in_arguments_is_not_a_merge(self, tmp_path: Path, command: str) -> None:
+        repo = _make_repo(tmp_path, "merge_text", "main")  # cwd on main: the strictest case
+        result = block_merge_to_main.decide(command, str(repo))
+        assert not result.blocked, command
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "git merge main",
+            "git status && git merge --no-ff main",
+            "git -C . merge main",
+            "git -c core.editor=true merge main",
+            "FOO=1 git merge main",
+            "bash -c 'git merge main'",
+            'sh -c "git merge --no-ff master"',
+            "eval 'git merge main'",
+            "bash <<'EOF'\ngit merge main\nEOF",
+            "python - <<'EOF'\nimport os; os.system('git merge main')\nEOF",
+            "git commit -m \"$(cat <<'EOF'\nx\nEOF\n)\" && git merge main",
+            "git push origin main",
+            "git push -u origin main",
+            "xargs git merge < branches.txt; git merge main",
+        ],
+    )
+    def test_real_merges_still_block(self, tmp_path: Path, command: str) -> None:
+        """The fix for 136 must not loosen: every real (or possibly-real) merge or push
+        to main stays blocked, including through an interpreter or a heredoc body."""
+        repo = _make_repo(tmp_path, "real_merge", "feat/x")
+        result = block_merge_to_main.decide(command, str(repo))
+        assert result.blocked, command
+
+    def test_merge_on_main_cwd_without_target_still_blocks(self, tmp_path: Path) -> None:
+        repo = _make_repo(tmp_path, "cwd_main", "main")
+        assert block_merge_to_main.decide("git merge feature-x", str(repo)).blocked
+        assert block_merge_to_main.decide("bash -c 'git merge feature-x'", str(repo)).blocked
+
     # --- defect (i): merge-base / merge-tree false positive -----------------
     def test_defect_i_merge_base_is_not_a_merge(self, tmp_path: Path) -> None:
         repo = _make_repo(tmp_path, "merge_base_main", "main")
@@ -505,6 +554,40 @@ class TestVerifyBinaryOnPathUnit:
     def test_allow_real_binary(self) -> None:
         result = verify_binary_on_path.decide("python --version")
         assert not result.blocked
+
+    def test_brace_group_braces_are_not_binaries(self) -> None:
+        """Item 123: `{` and `}` are reserved words. Blocked an epic refuter as
+        "'{', '}' not found on PATH"."""
+        result = verify_binary_on_path.decide("{ python -V; python --version; } | python -V")
+        assert not result.blocked, result.messages
+
+    def test_brace_group_first_command_is_still_checked(self) -> None:
+        result = verify_binary_on_path.decide("{ definitely_missing_tool_xyz; python -V; }")
+        assert result.blocked
+        assert "'definitely_missing_tool_xyz'" in result.messages[0]
+        assert "'{'" not in result.messages[0] and "'}'" not in result.messages[0]
+
+    def test_missing_python_tool_message_names_python_dash_m(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Item 124: a bare `ruff` (not on PATH here) stopped a pipeline implementer, and
+        every agent rediscovered `python -m ruff`. When the missing name is importable as a
+        module by this interpreter, the block says the exact replacement."""
+        real_which = shutil.which
+        monkeypatch.setattr(
+            shutil,  # the same module object the guard calls `shutil.which` on
+            "which",
+            lambda name: None if name in ("ruff", "pytest") else real_which(name),
+        )
+        result = verify_binary_on_path.decide("ruff check . && pytest -q")
+        assert result.blocked
+        text = "\n".join(result.messages)
+        assert "python -m ruff" in text
+        assert "python -m pytest" in text
+
+    def test_missing_non_module_tool_gets_no_python_hint(self) -> None:
+        result = verify_binary_on_path.decide("definitely_missing_tool_xyz --flag")
+        assert "python -m" not in "\n".join(result.messages)
 
     def test_block_missing_binary(self) -> None:
         result = verify_binary_on_path.decide("definitely_missing_tool_xyz --flag")

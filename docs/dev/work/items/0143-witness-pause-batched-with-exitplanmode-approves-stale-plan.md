@@ -69,3 +69,10 @@ The same shape again, with no plan file involved:
   is a hook change. The working rule that avoided harm in both cases: never batch a call that
   reads a file with the Write that creates it. That rule is prose and **unenforced**. Surfaced to
   the owner in the `chore-agent-doc-drift` handoff.
+### 2026-10-05 — fifth instance, `fix/hook-guard-false-blocks`
+
+A subagent hand-back re-armed the witness, which then paused a `Write` of a new item file
+(`0153-...md`) while the `work_items board --write` / `check` Bash call in the same batch ran
+without it (`OK (152 files)`, board unchanged). Harmless this time, since the board was
+simply regenerated as it was. It still shows the prose rule ("never batch a reader with the
+Write that creates its input") failing under ordinary momentum. Still no mechanism.
