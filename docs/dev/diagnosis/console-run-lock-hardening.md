@@ -72,6 +72,31 @@ Windows 11, Python 3.13.14, pytest 9.1.1, Playwright Chromium.
   were `json.loads`-ed to answer one run (`dashboard/routes.py:1105`, `_read_jsonl(LLM_LOG)`).
   `TestReadJsonlSkipsNonObjects` showed `_read_jsonl` returns `[1, 2]`, `'str'`, `42`, `None`.
 
+### Re-run on rebased tip (`main` 4f6f34a + instrument commit), 2026-10-06
+
+Free RAM was 1.05 GB at the start of the run (`Win32_OperatingSystem.FreePhysicalMemory`).
+- `python -m pytest tests/test_dashboard_routes.py tests/test_annotation_routes.py tests/test_llm_call_error_capture.py -p no:rerunfailures -q`
+  gave `12 failed, 150 passed in 247.26s`. The 12 node ids are 8 test functions: 112 ×3, 121 ×3,
+  117 ×1, and 118 ×1 parametrized 5 ways. **This differs from the "11 Python tests" in the
+  acceptance bar below.**
+  - `TestFilterCallsSinceDate::test_aware_floor_against_naive_and_aware_timestamps` is in that
+    set but is not quoted above.
+  - The source of the 11 is not verified. The bar now reads as "every failing node id here
+    passes".
+- `python -m pytest -m ux tests/ux/regression/test_20261003_run_lock_ownership.py -p no:rerunfailures -q`
+  gave `3 failed in 122.24s`.
+  - `test_declined_run_does_not_leave_its_button_pulsing` and
+    `test_bootstrap_click_while_locked_issues_no_post` failed as quoted above.
+  - **`test_stale_release_does_not_free_a_live_run` failed differently.** It raised
+    `playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded` navigating to
+    `/_dashboard/`. It never reached its assertion. The cause is not verified (low free RAM is a
+    candidate, not a finding).
+  - Re-run alone (`...::test_stale_release_does_not_free_a_live_run`, same flags), it
+    **reproduced the quoted assertion**: `{'second': False} != {'second': None}` and
+    `{'stillLocked': False} != {'stillLocked': True}`. The result was `1 failed in 301.49s`.
+    One UX test taking ~5 min is itself abnormal. The cause is not investigated: it is outside
+    items 112/117–121, and the timing is noted only.
+
 ---
 
 ## Falsified
