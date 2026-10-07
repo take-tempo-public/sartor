@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=b6966e40-1ca3-47ed-a23e-a53d1858944f branch=fix/wiki-relevance-cited-scripts commit=dad9101 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-10-06 -->
+<!-- provenance: schema=1 session=b6966e40-1ca3-47ed-a23e-a53d1858944f branch=fix/wiki-relevance-cited-scripts commit=f374b66 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-10-06 -->
 
 # Agent handoff — wiki relevance (`fix/wiki-relevance-cited-scripts`) → hook group (items 152, 111, 154, 143)
 
@@ -95,17 +95,22 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/wiki
 - **Gate:** ruff, format and mypy steps green inside `python -m scripts.gate`; pytest step killed
   by this session's own `timeout 120` (exit 143), so **the full local gate has not passed**. CI on
   the PR is the gate: `python -m scripts.ci_wait <n>`; a result of 3 means stop, not merge.
+- **PR #159's first CI run exited 3 (green with reruns).** Every required check passed, but
+  `test_20260611_prior_app_resume_robustness.py::test_card_company_editable_and_persists` failed
+  1 of 3 attempts (run 37569283583): the toast read `Notes saved` where the test waits for
+  `Company saved`. This PR's diff cannot reach that path. It was untracked, so it was filed as
+  **item 155** on this branch before merging, and CI was re-run on the new tip.
 
 ---
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 31 / 10 ceiling -- OVER"**
-(this branch's tip; it was 32 at this branch's start — item 153 closed). The owner's drawdown
+The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 32 / 10 ceiling -- OVER"**
+(this branch's tip; it was 32 at this branch's start — item 153 closed, item 155 filed). The owner's drawdown
 direction stands: down to 0 if possible, before alpha staging. Well past the ~8–10
 reduction-sprint threshold.
 
-`## Open` (29 items; the header also counts open epics). Generated from the board;
+`## Open` (30 items; the header also counts open epics). Generated from the board;
 owner-decision items are marked *(owner)*:
 - **50** *(owner)*: C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **98**: Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
@@ -136,6 +141,7 @@ owner-decision items are marked *(owner)*:
 - **147**: Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **152**: A Bash with no grep/sleep made a Monitor spin. Owner chose Python-direct hooks (no .sh wrappers) + a shell probe.
 - **154**: Approved on main, then checkout+rebase; next Edit hit NO EDIT APPROVAL. Item 110's class; cause unverified.
+- **155**: A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
 
 `## Blocked` (4): **3**, **5**, **8**, **97**.
 
@@ -181,7 +187,11 @@ session** unless stated):
    `git commit` ran. Commit `6238fe8` cited evidence its tree did not hold; `dad9101` fixed it.
    - **No mechanism on this branch** (outside item 153's scope). **Surfaced to the owner**, who
      put item 143 into the next branch's group. Recorded on item 143.
-4. **Subagent / tool reports carrying facts:** none used this session (no subagents dispatched).
+4. **A UX test needed a CI retry** (a first sighting of this test, but a member of the known
+   UX-flake class, epic 19). **Mechanism, fails closed, already existed and worked:**
+   `scripts/ci_wait.py` exit 3 stopped the merge. The flake itself is filed as item 155 with its
+   observed artifact; no fix on this branch (out of scope).
+5. **Subagent / tool reports carrying facts:** none used this session (no subagents dispatched).
 
 ---
 

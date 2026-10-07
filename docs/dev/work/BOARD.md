@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 31 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 61
+**Open 32 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 61
 
 ## Open
 
@@ -35,6 +35,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **152** -- Agent shell environment varies by session: a Bash tool with no coreutils made a Monitor busy-loop; invoke hooks as Python directly (`agent`) -- A Bash with no grep/sleep made a Monitor spin. Owner chose Python-direct hooks (no .sh wrappers) + a shell probe.
 - **154** -- Recurrence of item 110: a plan approved on main was retired mid-branch after checkout + rebase; the next Edit hit NO EDIT APPROVAL (`agent`) -- Approved on main, then checkout+rebase; next Edit hit NO EDIT APPROVAL. Item 110's class; cause unverified.
+- **155** -- UX flake: test_card_company_editable_and_persists saw 'Notes saved' where it waits for 'Company saved' (`agent`) -- A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
 
 ## Blocked
 
