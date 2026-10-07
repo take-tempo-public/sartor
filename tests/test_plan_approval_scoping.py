@@ -1082,3 +1082,166 @@ class TestStaleStampAndKilledRetire:
             f"pruning the sprint branch is expected to retire the approval "
             f"(stdout={r.stdout!r} stderr={r.stderr!r})"
         )
+
+
+# --------------------------------------------------------------------------- #
+# Items 154 / 111 -- approvals retired mid-branch by hooks the harness killed.
+# Evidence: docs/dev/diagnosis/python-direct-hooks-plan-gate.md (O1, O2).
+# --------------------------------------------------------------------------- #
+
+
+def _post_bash_commands() -> list[str]:
+    """Every PostToolUse hook command wired on the Bash matcher, as settings.json
+    has it -- so this test follows the wiring rather than one script name."""
+    settings = json.loads((REPO_ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    return [
+        hook["command"]
+        for entry in settings["hooks"].get("PostToolUse", [])
+        if entry.get("matcher") == "Bash"
+        for hook in entry["hooks"]
+    ]
+
+
+class TestKilledHookRetirements:
+    def test_merge_phrases_in_tool_output_never_retire_on_a_pr_merge_head(
+        self, tmp_path: Path
+    ) -> None:
+        """O2: a read-only `cat` printed cleanup-plan-on-merge.sh's own source.
+        After a PR pull, HEAD on main IS a merge commit, so the structural check
+        passed and the hook archived a live plan. No PostToolUse Bash hook may
+        retire anything because of what a command PRINTED."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_merge_repo(tmp_path, "repo")  # main after a PR pull
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+
+        payload = _payload_bash(
+            "cat hooks/some-hook.sh",
+            output=f"# pre-filter phrases: {MERGE_TEXT_TRIGGER} / {MERGE_OUTPUT_TRIGGER}\n",
+        )
+        env = dict(os.environ)
+        env["HOME"] = str(home)
+        env["CLAUDE_PROJECT_DIR"] = str(repo)
+        for command in _post_bash_commands():
+            resolved = command.replace("${CLAUDE_PROJECT_DIR}", REPO_ROOT.as_posix())
+            subprocess.run(  # noqa: S603 - the committed settings.json command, test payload
+                ["bash", "-c", resolved],
+                input=payload,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+                cwd=repo,
+                check=False,
+            )
+
+        key = _project_key(str(repo))
+        assert plan.exists(), "printed merge phrases archived a live plan (O2)"
+        assert (home / ".claude" / "plans" / f".approved-{key}").exists()
+
+    def test_newer_unapproved_plan_blocks_edits_under_the_old_approval(
+        self, tmp_path: Path
+    ) -> None:
+        """O1: the plan Write landed, ExitPlanMode was approved, and the
+        PostToolUse `mark` hook was killed before it wrote anything. Edits then
+        ran under the PREVIOUS approval (its plan is what got archived later).
+        A plan written after the live approval, and not the approved one, means
+        the approval no longer describes the work: the next edit must block."""
+        home = tmp_path / "home"
+        plans = home / ".claude" / "plans"
+        plans.mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan_a = plans / "plan-a.md"
+        _approve_plan(home, str(repo), plan_a)
+        key = _project_key(str(repo))
+        past = time.time() - 60
+        os.utime(plans / f".approved-{key}", (past, past))
+        os.utime(plan_a, (past - 1, past - 1))
+
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        plan_b = plans / "plan-b.md"
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(str(plan_b)))
+        assert r.returncode == 0
+        plan_b.write_text("# plan B\n", encoding="utf-8")
+        # ExitPlanMode approved; `mark` killed before its first write.
+
+        r = _run(
+            CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(_edit_file(repo))
+        )
+        assert r.returncode == 2, (
+            f"edits must not proceed under an approval older than the plan being "
+            f"written (stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+
+    @pytest.mark.skipif(os.name != "nt" and shutil.which("rm") is None, reason="needs rm")
+    def test_mark_killed_between_marker_and_stamp_never_retires_the_fresh_plan(
+        self, tmp_path: Path
+    ) -> None:
+        """O1's other kill point: `mark` wrote the fresh marker, then was killed
+        before removing the previous branch's stamp. The next edit on the new
+        branch reconciled that merged stamp and archived the FRESH plan."""
+        home = tmp_path / "home"
+        plans = home / ".claude" / "plans"
+        plans.mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        _approve_plan(home, str(repo), plans / "plan-a.md")
+        _git(["checkout", "-q", "-b", "fix/task-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "task A"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "main"], cwd=repo)
+        _git(["merge", "-q", "--no-ff", "-m", "Merge pull request #1", "fix/task-a"], cwd=repo)
+
+        plan_b = plans / "plan-b.md"
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(str(plan_b))
+            ).returncode
+            == 0
+        )
+        plan_b.write_text("# plan B\n", encoding="utf-8")
+
+        # Run `mark` with an `rm` that stalls, and kill it there -- the harness's
+        # timeout landing between the marker write and the stamp removal.
+        shim_dir = tmp_path / "shim"
+        shim_dir.mkdir()
+        reached = tmp_path / "reached-rm"
+        (shim_dir / "rm").write_text(
+            f'#!/usr/bin/env bash\n: > "{reached.as_posix()}"\nwhile :; do sleep 0.1; done\n',
+            encoding="utf-8",
+            newline="\n",
+        )
+        (shim_dir / "rm").chmod(0o755)
+        env = dict(os.environ)
+        env["HOME"] = str(home)
+        env["CLAUDE_PROJECT_DIR"] = str(repo)
+        env["PATH"] = str(shim_dir) + os.pathsep + env.get("PATH", "")
+        proc = subprocess.Popen(  # noqa: S603 - fixed argv, test-authored input
+            ["bash", str(MARK)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        try:
+            for _ in range(600):
+                if reached.exists() or proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+        finally:
+            proc.kill()
+            proc.wait(timeout=30)
+
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited))
+        assert "PLAN RETIRED" not in r.stderr and plan_b.exists(), (
+            f"a mark killed mid-write left a stale stamp that retired the fresh "
+            f"plan (stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
