@@ -81,7 +81,9 @@ def _no_live_session_id(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _isolated_plan_gate_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def _isolated_plan_gate_state(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Point the plan gate's state dir at a per-test tmp dir, pre-approved for THIS repo
     only (`fix/python-direct-hooks-plan-gate`; same shape as `_isolated_witness_state`).
 
@@ -94,8 +96,9 @@ def _isolated_plan_gate_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     """
     from scripts.enforcement import plan_gate
 
-    plans = tmp_path / "plan-gate-state"
-    plans.mkdir()
+    # Its own directory, never inside the test's `tmp_path`: tests assert on `tmp_path`'s
+    # exact contents (test_hardening.py::TestContextTransaction failed in CI on PR #160).
+    plans = tmp_path_factory.mktemp("plan-gate-state")
     (plans / f".approved-{plan_gate.project_key(str(PROJECT_ROOT))}").write_text(
         "", encoding="utf-8"
     )

@@ -111,12 +111,12 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 28 / 10 ceiling -- OVER"**
-(it was 32 at this branch's start: items 111, 143, 152 and 154 closed). The owner's drawdown
+The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 29 / 10 ceiling -- OVER"**
+(it was 32 at this branch's start: items 111, 143, 152 and 154 closed, item 156 filed). The owner's drawdown
 direction stands: down to 0 if possible, before alpha staging. Well past the ~8–10
 reduction-sprint threshold.
 
-`## Open` (26 items; the header also counts open epics). Generated from the board;
+`## Open` (27 items; the header also counts open epics). Generated from the board;
 owner-decision items are marked *(owner)*:
 - **50** *(owner)*: C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **98**: Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
@@ -144,6 +144,7 @@ owner-decision items are marked *(owner)*:
 - **146**: A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147**: Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **155**: A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
+- **156** (new, this branch): On Windows a writer thread's own pre-read hit PermissionError mid-replace; its delta was lost. Test or code: unverified.
 
 `## Blocked` (4): **3**, **5**, **8**, **97**.
 
@@ -171,9 +172,6 @@ session** unless stated):
 - **New: `tests/test_plan_approval_scoping.py` takes about 6 minutes locally** (37 tests, each
   starting a Python process and running git). One file run with a 590 s `timeout` wrapper was
   killed by it. Split by `-k` class when running locally.
-- **New: `scripts/wiki_relevance.py:65` still lists `hooks/`** as an irrelevant prefix. With the
-  directory gone it matches nothing; it was kept so as not to touch a gated classifier for no
-  behaviour change (blast-radius dossier `## Deferred`).
 
 ---
 
@@ -214,11 +212,22 @@ session** unless stated):
      (`reference-pytest-exit-through-pipe`). Prose only, **unenforced**.
    - **Candidate for a later branch:** a `bash-dispatcher` guard refusing `pytest … | ` with no
      `PIPESTATUS`/redirect.
-7. **The C-10 enumeration missed a consumer** (`test_enforcement_core.py:1080` pinned
-   `_GUARD_ORDER`; the grep searched names, not that symbol). The same class as the
-   `loadComposition()` case AGENTS.md cites.
-   - **No new mechanism:** caught by the targeted test run, and recorded as row 41 "found late"
-     in the blast-radius dossier.
+7. **The C-10 enumeration missed consumers, three times** (the same class as the
+   `loadComposition()` case AGENTS.md cites):
+   - `test_enforcement_core.py:1080` pinned `_GUARD_ORDER` (the grep searched names, not that
+     symbol), caught by a local run.
+   - On PR #160's first CI run (37666513318), four failures in suites not run locally:
+     - `test_wiki_relevance_classification` enforces the opposite of a written deferral
+       (`hooks/` prefix), and its derived-set test caught the two adapters the branch's own
+       wiki edit newly cited;
+     - `test_hardening` ×2 asserts on `tmp_path`'s exact contents, which the new conftest
+       fixture had written into.
+   - **Mechanism: the existing gates caught all three.** The derived-set test and
+     `ci_wait`'s required checks failed closed before merge, which is their job. No new one
+     was authored.
+   - **Lesson for the next branch:** for a change to `tests/conftest.py` or a shared
+     classifier, run the whole non-UX suite (split by file if memory is short), not only the
+     suites the grep found. The dossier records each miss (rows 12 and 41).
 8. **Subagent and tool reports carrying facts:** `wiki-scribe` and `wiki-grounding-auditor`
    reports. The scribe's edit was checked against `git diff` before the auditor ran, and the
    auditor's key claims match code read directly this session.

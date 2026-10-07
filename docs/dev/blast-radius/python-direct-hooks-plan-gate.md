@@ -67,7 +67,7 @@ Negative results:
 | 9 | `scripts/enforcement/evidence.py:102` | check, then update the wording if it names the `.sh` | prose mention of check-plan-approved |
 | 10 | `scripts/enforcement/guards/block_merge_to_main.py:48` | update comment | names `wiki-freshness-reminder.sh` |
 | 11 | `scripts/wiki_freshness.py:10,14,36` | update docstring | names the `.sh` reminder and its `THRESHOLD` |
-| 12 | `scripts/wiki_relevance.py:6,65` (**gated**) | no change | `:6` is past-tense history. `:65`'s `hooks/` prefix: see Deferred |
+| 12 | `scripts/wiki_relevance.py:6,65` + `RELEVANT_OVERRIDES` (**gated**) | update (**decision reversed by CI**, PR #160 run 37666513318) | `:6` is past-tense history and stays. First decided "no change". CI then failed two tests that enforce the opposite. `test_no_stale_classification_entries` gave `Classified directories no longer exist: ['hooks/']`, so the `:65` prefix is removed. `test_relevant_overrides_equal_wiki_cited_mixed_files` reported MISSING `scripts/enforcement/adapters/claude_dispatcher.py` and `hook.py`, both newly cited by this branch's `route-surface` wiki edit, so both are added. Neither suite was in the local targeted runs |
 | 13 | `scripts/doc_lints.py:468` `tooling_tree()` | update | `Path(command.split()[0]).name` would name every new hook `python3`. Name a hook by its `hook.py` argument instead |
 | 14 | `tests/test_plan_approval_scoping.py` | update | re-target `_run` from `bash hooks/*.sh` to `python3 …/hook.py <name>`. Drop the `cleanup-plan-on-merge` tests and re-target the local-`--no-ff` ones to the reconciler. `TestLibHelperExemption` is removed (its subject is gone). `test_killed_retire_never_leaves_a_live_marker` (python3 shim) becomes an in-process fault-injection test |
 | 15 | `tests/test_governance_hooks_gate.py` | update | hook identity from the `hook.py` argument, not `hooks/*.sh` stems. Textual `exit 2` checks become behavioral. `check-plan-approved` leaves `BLOCKER_HOOKS` (it is now inside `edit-write-dispatcher`) but stays a RULE. New rule and hook `plan-write-landed`. Witnesses go from 3 to 2 |
@@ -126,10 +126,9 @@ Negative results:
   - Re-run: `check_doc_links: OK — 613 tracked markdown files`.
 - **`.githooks/*`** is unchanged. Git requires an executable hook file, and each one is already
   a one-line `exec python3 …/git_hook.py`. Item 152's rule covers `.claude/settings.json` only.
-- **`scripts/wiki_relevance.py:65` (`"hooks/"` in the irrelevant prefixes)** stays. With the
-  directory deleted, the entry matches nothing. Removing it changes no classification, and it
-  would touch a merge-blocking gated classifier for zero behaviour change. If a `hooks/`
-  directory ever returns, the entry still describes it correctly.
+- ~~`scripts/wiki_relevance.py:65` (`"hooks/"` in the irrelevant prefixes) stays.~~
+  **Withdrawn:** this deferral was wrong. `tests/test_wiki_relevance_classification.py::test_no_stale_classification_entries`
+  fails on a classified directory that no longer exists. See row 12.
 - **`docs/dev/prov/SPEC.md`** (gated): `plan-archived` is still undocumented there. That is
   item 55, out of scope; the receipt is unchanged.
 

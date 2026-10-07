@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 28 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 65
+**Open 29 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 65
 
 ## Open
 
@@ -32,6 +32,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **155** -- UX flake: test_card_company_editable_and_persists saw 'Notes saved' where it waits for 'Company saved' (`agent`) -- A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
+- **156** -- test_concurrent_writers_do_not_erase_each_other: on Windows a writer thread's own unguarded pre-read can hit PermissionError and drop its delta (`agent`) -- On Windows a writer thread's own pre-read hit PermissionError mid-replace; its delta was lost. Test or code: unverified.
 
 ## Blocked
 

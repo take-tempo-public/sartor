@@ -62,7 +62,6 @@ IRRELEVANT_PREFIXES = frozenset(
         ".claude-plugin/",  # the sartor plugin manifest
         ".githooks/",
         ".github/",
-        "hooks/",  # PreToolUse/PostToolUse guard scripts (agent tooling, not product)
         "commands/",  # plugin slash-command definitions
         "agents/",  # plugin subagent definitions
         "skills/",  # plugin skill definitions
@@ -131,7 +130,9 @@ RELEVANT_OVERRIDES = frozenset(
         "scripts/doc_lints.py",
         "scripts/doc_registry.py",
         "scripts/docs_move.py",
+        "scripts/enforcement/adapters/claude_dispatcher.py",
         "scripts/enforcement/adapters/git_hook.py",
+        "scripts/enforcement/adapters/hook.py",
         "scripts/enforcement/ci_backstop.py",
         "scripts/enforcement/guards/block_subagent_git_stash.py",
         "scripts/enforcement/guards/route_security_lint.py",
