@@ -87,6 +87,22 @@ All on `main` 542da4a or this branch's instrument commit, 2026-10-06.
     against 155 ms then 114 ms for the original. That is no demonstrable win, so it was
     reverted.
 
+- **After the fix (this branch).**
+  - **Targeted suites, no reruns.** `python -m pytest tests/test_wiki_relevance_classification.py tests/test_wiki_freshness_gate.py tests/test_enforcement_core.py tests/test_blast_radius_classification.py tests/test_consumer_enumeration_gate.py -p no:rerunfailures -q`
+    gives `198 passed in 781.46s`, pytest exit 0. Free RAM was about 0.5 GB, hence the 13 minutes.
+  - **Spot check.** `is_wiki_relevant('scripts/gate.py'), is_wiki_relevant('scripts/perf_baseline.py')`
+    gives `True False`.
+  - **Drift.** `python -m scripts.wiki_freshness` gives `OK — 9 file(s) changed since the
+    last ingest (< 75-file block threshold)`.
+  - **Mutation check.** `RELEVANT_OVERRIDES` was swapped in-process and the test called
+    directly. With the baseline it passes. Removing `scripts/gate.py` fails it on
+    `MISSING … {'scripts/gate.py': …}`. Adding the uncited `scripts/perf_baseline.py` fails it
+    on `STALE … ['scripts/perf_baseline.py']`.
+- **Item 143 recurred, seventh instance.** The background-test notification re-armed the
+  interrogative witness. Its PAUSE refused the Edit that added the bullet above, while the
+  `git commit` batched in the same message ran. So commit `6238fe8` cites this evidence
+  before the file held it. This follow-up commit adds the evidence.
+
 ---
 
 ## Falsified
