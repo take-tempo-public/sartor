@@ -5,7 +5,7 @@ kind = "item"
 title = "A witness-paused plan Write batched with ExitPlanMode gets the STALE plan approved"
 status = "open"
 decision_owner = "agent"
-branches = ["chore/release-v1.1.0"]
+branches = ["chore/release-v1.1.0", "fix/wiki-relevance-cited-scripts"]
 refs = ["hooks/edit-write-dispatcher.sh", "hooks/check-plan-approved.sh", "docs/dev/work/items/0087-*.md"]
 summary = "Witness paused the plan Write; ExitPlanMode in the same batch still ran, so the owner approved the old plan text."
 ```
@@ -85,3 +85,16 @@ while the `python <that script>` Bash call in the same batch ran without it
 failed loudly, and the Write was re-run alone and the script run after it. This is the same
 batching of a reader with the Write that creates its input. Still no mechanism; surfaced to
 the owner at this branch's close-out.
+
+### 2026-10-06 — seventh instance, `fix/wiki-relevance-cited-scripts`
+
+A background-task notification (the targeted pytest run finishing) re-armed the witness as a
+new prompt turn. Its PAUSE refused an `Edit` that added post-fix evidence to
+`docs/dev/diagnosis/wiki-relevance-cited-scripts.md` `## Observed`, while the `git add` +
+`git commit` in the same batch ran. Commit `6238fe8` therefore says its evidence is in
+`## Observed` when that file did not yet hold it. **Not harmless this time:** a commit's
+cited evidence was missing from the tree it committed. Fixed on the same branch by re-running
+the Edit and a follow-up commit. New trigger shape: a **task notification**, not a user or
+resume prompt, re-arms the witness. Same class: a reader batched with the Write it depends
+on. Still no mechanism (out of item 153's scope); surfaced to the owner.
+

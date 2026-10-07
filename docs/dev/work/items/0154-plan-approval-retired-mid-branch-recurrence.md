@@ -48,3 +48,13 @@ the owner at that branch's close-out.
 ## Updates
 
 ### 2026-10-06 — filed on `fix/console-run-lock-hardening`
+
+### 2026-10-06 — did not recur on `fix/wiki-relevance-cited-scripts` (a control data point)
+
+Session `b6966e40`: the plan was approved via `ExitPlanMode` while on `main` (542da4a), then
+`git checkout -b fix/wiki-relevance-cited-scripts` ran with **no rebase**, and the next `Edit`
+(to `tests/test_wiki_relevance_classification.py`) succeeded — no NO EDIT APPROVAL. So
+"approve on main → `checkout -b` → Edit" alone does not reproduce it; the filed sequence also
+had a **rebase**, which this run lacked. A single run, not a rate — it narrows the instrument's
+first arm to the rebase step but proves nothing about it.
+

@@ -25,9 +25,10 @@ this module doesn't already know about.
 **Classification is not exhaustive to the individual-file level everywhere** — most of
 the repo falls under a directory-prefix rule. Two directories are known MIXED (mostly
 irrelevant, but containing specific files a wiki page genuinely cites): `scripts/`
-(dev tooling, but `generate_openapi_spec.py` / `route_security_lint.py` /
-`perf_baseline.py` / `export_corpus_seed.py` are cited) and `docs/dev/perf/` (one-off
-performance investigations, but `PERFORMANCE_HISTORY.md` is cited). Everything not
+(dev tooling, but the wiki cites the gate, the docs toolchain and some guards) and
+`docs/dev/perf/` (one-off performance investigations, but `PERFORMANCE_HISTORY.md` is
+cited). Which files those are is not restated here: `RELEVANT_OVERRIDES` lists them, and a
+test derives the same set from the wiki and fails when the two disagree. Everything not
 explicitly classified as irrelevant or mixed defaults to relevant — production code
 and canonical docs are the common case, not the exception.
 """
@@ -105,14 +106,41 @@ IRRELEVANT_FILES = frozenset(
 # RELEVANT_OVERRIDES entries below are the exception.
 MIXED_PREFIXES = frozenset({"scripts/", "docs/dev/perf/"})
 
-# Files inside a MIXED_PREFIXES directory that DO count toward drift.
+# Files inside a MIXED_PREFIXES directory that DO count toward drift: exactly the ones a
+# wiki page cites. `test_relevant_overrides_equal_wiki_cited_mixed_files` derives that set
+# from docs/wiki/ and fails, in both directions, the moment this list disagrees with it —
+# so a new wiki cite of a scripts/ file is a gate failure here, not silent under-counting.
+#
+# Explicit on purpose, not derived at call time (item 153, owner's choice 2026-10-06):
+# deriving would read every wiki page in each process that classifies a scripts/ path —
+# measured 85-200 ms warm against a 7 ms import of this module — and the post-commit
+# reminder hook classifies on every `git commit`. The test pays that cost once, in the
+# gate, instead. docs/dev/diagnosis/wiki-relevance-cited-scripts.md has the measurements.
 RELEVANT_OVERRIDES = frozenset(
     {
-        "scripts/generate_openapi_spec.py",
-        "scripts/enforcement/guards/route_security_lint.py",
-        "scripts/perf_baseline.py",
-        "scripts/export_corpus_seed.py",
         "docs/dev/perf/PERFORMANCE_HISTORY.md",
+        "scripts/build_vector_index.py",
+        "scripts/capture_screenshots.py",
+        "scripts/check_doc_frontmatter.py",
+        "scripts/check_doc_links.py",
+        "scripts/check_doc_single_home.py",
+        "scripts/check_docs_projection_fresh.py",
+        "scripts/check_docs_site_mermaid.py",
+        "scripts/ci_wait.py",
+        "scripts/doc_corpus.py",
+        "scripts/doc_lints.py",
+        "scripts/doc_registry.py",
+        "scripts/docs_move.py",
+        "scripts/enforcement/adapters/git_hook.py",
+        "scripts/enforcement/ci_backstop.py",
+        "scripts/enforcement/guards/block_subagent_git_stash.py",
+        "scripts/enforcement/guards/route_security_lint.py",
+        "scripts/gate.py",
+        "scripts/generate_openapi_spec.py",
+        "scripts/project_docs_to_mdx.py",
+        "scripts/release_version.py",
+        "scripts/verify_doc_template.py",
+        "scripts/work_items.py",
     }
 )
 

@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 32 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 60
+**Open 32 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 61
 
 ## Open
 
@@ -34,8 +34,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **152** -- Agent shell environment varies by session: a Bash tool with no coreutils made a Monitor busy-loop; invoke hooks as Python directly (`agent`) -- A Bash with no grep/sleep made a Monitor spin. Owner chose Python-direct hooks (no .sh wrappers) + a shell probe.
-- **153** -- wiki_relevance classifies scripts/gate.py and 8 other wiki-cited scripts as irrelevant (`agent`) -- RELEVANT_OVERRIDES lists 4 scripts; wiki pages cite 13. gate.py (26 cites) changed and the relevance check missed it.
 - **154** -- Recurrence of item 110: a plan approved on main was retired mid-branch after checkout + rebase; the next Edit hit NO EDIT APPROVAL (`agent`) -- Approved on main, then checkout+rebase; next Edit hit NO EDIT APPROVAL. Item 110's class; cause unverified.
+- **155** -- UX flake: test_card_company_editable_and_persists saw 'Notes saved' where it waits for 'Company saved' (`agent`) -- A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
 
 ## Blocked
 
@@ -148,7 +148,7 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 
 - **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
-## Closed (60)
+## Closed (61)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
@@ -210,3 +210,4 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 - 149 -- block-merge-to-main lets `git -C <dir> merge main` and `git -c k=v merge main` through (2026-10-05, fix/hook-guard-false-blocks: a git segment is read past its global options (-C, -c, --git-dir, ...) to the subcommand, and the raw-text fallback regexes allow up to six words between `git` and `merge`/`push`.)
 - 150 -- The git-native .githooks guards are opt-in, and off on the owner's own clone; the gate never checks (2026-10-05, fix/hook-guard-false-blocks: scripts/gate.py runs a hooksPath preflight that refuses unless core.hooksPath is .githooks and prints the one command that fixes it; skipped (with a log line) when CI is set.)
 - 151 -- Recurrence: background-task notifications report exit 0 for a gate whose log says exit 1; the gate should write its own result file (2026-10-05, fix/hook-guard-false-blocks: scripts/gate.py writes gate-result.json in the git dir on every terminal path (refusal, failure, pass, interrupt) with exit, failing step, times, HEAD and a tree digest; `python -m scripts.gate --result` exits 0 only when the last run passed on this exact tree. tests/conftest.py redirects it for every test.)
+- 153 -- wiki_relevance classifies scripts/gate.py and 8 other wiki-cited scripts as irrelevant (2026-10-06, fix/wiki-relevance-cited-scripts: RELEVANT_OVERRIDES set to exactly the 23 MIXED_PREFIXES files the wiki cites (20 added, incl. bare-name and dotted cites; perf_baseline.py and export_corpus_seed.py dropped, never cited). Kept explicit (owner's choice: a runtime wiki scan measured 85-200 ms/process vs a 7 ms import); a new test derives the cited set from docs/wiki and asserts equality both ways, so the list cannot drift silently again.)
