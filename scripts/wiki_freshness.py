@@ -6,12 +6,12 @@ lists "wiki-freshness: the wiki is staler than threshold vs HEAD" as a merge-blo
 with an explicit "freshness nuance": CI *checks* `docs/wiki/.last_ingest_sha` vs HEAD and
 warns/blocks past a threshold — it does **not** run the LLM `/wiki-ingest` (cost + manual by
 `docs/wiki/SCHEMA.md`). This script is that check, deterministic and LLM-free (no
-`anthropic` import, no network) — the same drift computation
-`.claude-plugin/hooks/wiki-freshness-reminder.sh` already does for its non-blocking
-post-commit nudge, reused here as the actual gate.
+`anthropic` import, no network) — the same drift computation the
+`wiki-freshness-reminder` hook (`scripts/enforcement/adapters/wiki_reminder_hook.py`)
+uses for its non-blocking post-commit nudge, through `drift_count()` here.
 
 **Two thresholds, two jobs, deliberately distinct:**
-  - `wiki-freshness-reminder.sh`'s `THRESHOLD=10` is a soft, non-blocking nudge fired after
+  - `wiki_reminder_hook.THRESHOLD` (10) is a soft, non-blocking nudge fired after
     every `git commit` — cheap to trip often, meant to keep drift visible.
   - `BLOCK_THRESHOLD` here is a hard, merge-blocking gate — calibrated well above the nudge
     threshold (2026-07 efficiency review F-doc-08: a nudge threshold of 10 alarm-fatigued on
@@ -33,7 +33,7 @@ post-commit nudge, reused here as the actual gate.
      to genuinely advance the checkpoint, matching the `DOC-STATUS` gate's no-escape-hatch
      design.
 
-**Silent-by-design cases** (mirrors `wiki-freshness-reminder.sh`): no `.last_ingest_sha` file,
+**Silent-by-design cases** (shared with the `wiki-freshness-reminder` hook): no `.last_ingest_sha` file,
 or it holds the sentinel (no 40-char SHA) — "not yet ingested" is a known state, not staleness.
 """
 

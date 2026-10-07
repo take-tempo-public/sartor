@@ -7,35 +7,26 @@ exit-code contract (0 = allow, 2 = block with a stderr message) —
 byte-identical to the pre-migration standalone `.claude-plugin/hooks/*.sh`
 scripts (see `tests/test_enforcement_core.py`).
 
-Invoked by a thin wrapper in root `hooks/` naming its own guard (so
-`.claude/settings.json` wiring stays valid):
+Every hook is launched by ``scripts/enforcement/adapters/hook.py`` (item 152: no shell
+wrapper in between). The Edit|Write rules run through ``claude_dispatcher.py``'s
+``edit-write-dispatcher`` hook: ``check-plan-approved`` (``scripts/enforcement/plan_gate.py``,
+since ``fix/python-direct-hooks-plan-gate``) plus the seven guards (PX-37 and item 87). The
+Bash rules run through ``bash_dispatcher.py``'s ``bash-dispatcher`` hook. Both route through
+``dispatch()``. ``block-secrets`` is dispatched by BOTH: its ``decide()`` inspects the Bash
+``command`` field and the Edit/Write ``file_path``/``new_string``/``content`` fields.
+This module's per-guard CLI (``main()``, below) has no hook of its own. It stays in place for
+direct use and tests.
 
-    exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_hook.py" <guard-name>
-
-Since PX-37 (`chore/hook-dispatcher`), the seven Edit|Write guards
-(`require-feature-branch`, `require-evidence-before-fix`,
-`require-consumer-enumeration`, `block-secrets`, `validate-context`,
-`route-security-lint`, and — since work item 87 — `interrogative-witness`)
-run via `dispatch()`, called from
-`claude_dispatcher.py`'s single `hooks/edit-write-dispatcher.sh` entry. Since
-`feat/verify-dont-assume-guard`, the Bash guards (`block-secrets`,
-`block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`, and — since
-Epic C C1c — `block-subagent-git-stash`) run the same
-way via `bash_dispatcher.py`'s single `hooks/bash-dispatcher.sh` entry —
-neither of those three previously-standalone Bash wrappers
-(`hooks/block-merge-to-main.sh`, `hooks/block-secrets.sh`,
-`hooks/ruff-changed.sh`) ships anymore. `block-secrets` is dispatched by
-BOTH `claude_dispatcher.py` and `bash_dispatcher.py` (its own `decide()`
-inspects both the Bash `command` field and the Edit/Write `file_path`/
-`new_string`/`content` fields), needing no standalone file for either
-matcher now. This module's per-guard CLI (`main()`, below) has no remaining
-`.sh` caller of its own; it stays in place because both dispatchers route
-through its `dispatch()`, and because `git_hook.py`/`ci_backstop.py` import
-the guard modules it also imports.
+Guard modules are imported on first dispatch, not at load. A hook process pays only for the
+guards its matcher runs: importing every guard measured a median of 2974 ms against 1635 ms
+for a bare ``python3`` start-up under memory pressure, and a slow PreToolUse hook gets
+cancelled by the harness, which leaves it open
+(``docs/dev/diagnosis/python-direct-hooks-plan-gate.md``).
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import sys
@@ -43,39 +34,29 @@ from pathlib import Path
 from typing import Any
 
 # Make `scripts.enforcement.*` importable regardless of how this file is
-# invoked (a direct script path, as the wrapper `.sh` files do — not `-m`).
+# invoked (a direct script path, as `hook.py` and the tests do — not `-m`).
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.enforcement.guards import (  # noqa: E402
-    block_merge_to_main,
-    block_secrets,
-    block_subagent_git_stash,
-    interrogative_witness,
-    require_consumer_enumeration,
-    require_evidence_before_fix,
-    require_feature_branch,
-    route_security_lint,
-    ruff_changed,
-    validate_context,
-    verify_binary_on_path,
-)
 from scripts.enforcement.guards.result import GuardResult  # noqa: E402
 
-_GUARD_NAMES = (
-    "require-feature-branch",
-    "require-evidence-before-fix",
-    "require-consumer-enumeration",
-    "block-merge-to-main",
-    "block-secrets",
-    "route-security-lint",
-    "ruff-changed",
-    "validate-context",
-    "verify-binary-on-path",
-    "interrogative-witness",
-    "block-subagent-git-stash",
-)
+#: Guard name -> the module whose ``claude_check(payload)`` decides it.
+_GUARD_MODULES: dict[str, str] = {
+    "check-plan-approved": "scripts.enforcement.plan_gate",
+    "require-feature-branch": "scripts.enforcement.guards.require_feature_branch",
+    "require-evidence-before-fix": "scripts.enforcement.guards.require_evidence_before_fix",
+    "require-consumer-enumeration": "scripts.enforcement.guards.require_consumer_enumeration",
+    "block-merge-to-main": "scripts.enforcement.guards.block_merge_to_main",
+    "block-secrets": "scripts.enforcement.guards.block_secrets",
+    "route-security-lint": "scripts.enforcement.guards.route_security_lint",
+    "ruff-changed": "scripts.enforcement.guards.ruff_changed",
+    "validate-context": "scripts.enforcement.guards.validate_context",
+    "verify-binary-on-path": "scripts.enforcement.guards.verify_binary_on_path",
+    "interrogative-witness": "scripts.enforcement.guards.interrogative_witness",
+    "block-subagent-git-stash": "scripts.enforcement.guards.block_subagent_git_stash",
+}
+_GUARD_NAMES = tuple(_GUARD_MODULES)
 
 
 def load_payload() -> dict[str, Any]:
@@ -88,30 +69,16 @@ def load_payload() -> dict[str, Any]:
 
 def dispatch(name: str, payload: dict[str, Any]) -> GuardResult:
     """Route `name` (one of `_GUARD_NAMES`) to its guard's `claude_check`."""
-    if name == "require-feature-branch":
-        return require_feature_branch.claude_check(payload)
-    if name == "require-evidence-before-fix":
-        return require_evidence_before_fix.claude_check(payload)
-    if name == "require-consumer-enumeration":
-        return require_consumer_enumeration.claude_check(payload)
-    if name == "block-merge-to-main":
-        return block_merge_to_main.claude_check(payload)
-    if name == "block-secrets":
-        return block_secrets.claude_check(payload)
-    if name == "route-security-lint":
-        return route_security_lint.claude_check(payload)
-    if name == "ruff-changed":
-        return ruff_changed.claude_check(payload)
+    module_name = _GUARD_MODULES.get(name)
+    if module_name is None:
+        raise SystemExit(f"claude_hook.py: unknown guard '{name}' (expected one of {_GUARD_NAMES})")
+    module = importlib.import_module(module_name)
     if name == "validate-context":
         repo_root = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
-        return validate_context.claude_check(payload, repo_root)
-    if name == "verify-binary-on-path":
-        return verify_binary_on_path.claude_check(payload)
-    if name == "interrogative-witness":
-        return interrogative_witness.claude_check(payload)
-    if name == "block-subagent-git-stash":
-        return block_subagent_git_stash.claude_check(payload)
-    raise SystemExit(f"claude_hook.py: unknown guard '{name}' (expected one of {_GUARD_NAMES})")
+        result: GuardResult = module.claude_check(payload, repo_root)
+        return result
+    result = module.claude_check(payload)
+    return result
 
 
 def main(argv: list[str]) -> int:

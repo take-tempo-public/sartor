@@ -26,6 +26,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -44,6 +45,7 @@ from scripts.enforcement.guards import require_evidence_before_fix as guard
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _TEMPLATE = _REPO_ROOT / "docs" / "dev" / "diagnosis" / "TEMPLATE.md"
+_HOOK_PY = _REPO_ROOT / "scripts" / "enforcement" / "adapters" / "hook.py"
 
 #: The dossier's `## Observed` placeholder, replaced to simulate "an agent actually looked".
 _PLACEHOLDER = (
@@ -235,41 +237,51 @@ class TestEnforcementIsWired:
         assert "require-evidence-before-fix" in _GUARD_NAMES
 
     @pytest.mark.parametrize(
-        ("event", "script"),
+        ("event", "name"),
         [
-            ("SessionStart", "restore-evidence.sh"),
-            ("PreCompact", "capture-before-compact.sh"),
+            ("SessionStart", "restore-evidence"),
+            ("PreCompact", "capture-before-compact"),
         ],
     )
-    def test_hook_is_wired_in_settings_and_exists_on_disk(self, event: str, script: str) -> None:
+    def test_hook_is_wired_in_settings_and_registered(self, event: str, name: str) -> None:
+        from scripts.enforcement.adapters import hook
+
         settings = json.loads((_REPO_ROOT / ".claude" / "settings.json").read_text("utf-8"))
-        wired = json.dumps(settings["hooks"][event])
-        assert script in wired, f"{script} is not wired under {event} in .claude/settings.json"
-        assert (_REPO_ROOT / "hooks" / script).is_file()
+        commands = [h["command"] for e in settings["hooks"][event] for h in e["hooks"]]
+        assert any(c.endswith(f'hook.py" {name}') for c in commands), (
+            f"{name} is not wired under {event} in .claude/settings.json"
+        )
+        assert hook.HOOKS[name] == (claude_context_hook.__name__, (name,))
 
     def test_require_evidence_before_fix_is_dispatched_on_edit_write(self) -> None:
-        """require-evidence-before-fix no longer ships its own standalone .sh —
-        since PX-37 (`chore/hook-dispatcher`) it runs inside
-        `edit-write-dispatcher.sh`. Assert the wiring + the dispatcher's
-        internal guard list instead of a same-named standalone file."""
+        """require-evidence-before-fix runs inside the `edit-write-dispatcher` hook
+        (PX-37). Assert the wiring + the dispatcher's internal guard list."""
         settings = json.loads((_REPO_ROOT / ".claude" / "settings.json").read_text("utf-8"))
         wired = json.dumps(settings["hooks"]["PreToolUse"])
-        assert "edit-write-dispatcher.sh" in wired
-        assert (_REPO_ROOT / "hooks" / "edit-write-dispatcher.sh").is_file()
+        assert 'hook.py\\" edit-write-dispatcher' in wired
 
         from scripts.enforcement.adapters import claude_dispatcher
 
         assert "require-evidence-before-fix" in claude_dispatcher._GUARD_ORDER
 
-    def test_every_hook_script_is_executable_in_the_index(self) -> None:
+    def test_every_git_hook_is_executable_in_the_index(self) -> None:
         """Mode `100644` means the hook silently does not run on Linux — i.e. in CI.
 
-        All three new hooks were committed non-executable, and `is_file()` above happily
-        passed anyway. Assert the *git index* mode rather than `os.access(X_OK)`: the index
-        is what CI checks out, and Windows would report the local bit meaninglessly.
+        Three Claude hook scripts were once committed non-executable, and `is_file()`
+        happily passed anyway. The Claude hooks are no longer files that need the bit (each
+        runs as `python3 hook.py <name>`, item 152), but git still execs `.githooks/*`
+        directly. Assert the *git index* mode rather than `os.access(X_OK)`: the index is
+        what CI checks out, and Windows would report the local bit meaninglessly.
         """
         out = subprocess.run(
-            ["git", "ls-files", "-s", "hooks/"],
+            [
+                "git",
+                "ls-files",
+                "-s",
+                ".githooks/pre-commit",
+                ".githooks/pre-push",
+                ".githooks/pre-merge-commit",
+            ],
             cwd=_REPO_ROOT,
             capture_output=True,
             text=True,
@@ -301,9 +313,9 @@ class TestRepoRootFollowsTheWorktree:
     )
 
     def test_only_gitutil_reads_claude_project_dir_as_a_root(self) -> None:
-        """A new direct reader re-opens item 148. `claude_hook.py` is the one recorded
-        exception (validate-context; see docs/dev/blast-radius/hook-guard-false-blocks.md
-        `## Deferred`)."""
+        """A new direct reader re-opens item 148. Two recorded exceptions: `claude_hook.py`
+        (validate-context; see docs/dev/blast-radius/hook-guard-false-blocks.md
+        `## Deferred`) and `plan_gate.py` (a key, not a root)."""
         readers = {
             path.relative_to(_REPO_ROOT).as_posix()
             for path in (_REPO_ROOT / "scripts" / "enforcement").rglob("*.py")
@@ -312,6 +324,9 @@ class TestRepoRootFollowsTheWorktree:
         assert readers == {
             "scripts/enforcement/gitutil.py",
             "scripts/enforcement/adapters/claude_hook.py",
+            # Reads it as the per-project KEY of the session's plan approval, never as a
+            # dossier root (docs/dev/blast-radius/python-direct-hooks-plan-gate.md row 16).
+            "scripts/enforcement/plan_gate.py",
         }
 
     def test_a_non_repo_cwd_stays_put(
@@ -353,8 +368,8 @@ class TestRepoRootFollowsTheWorktree:
                 if k not in ("CLAUDE_ALLOW_MAIN_EDITS", "CLAUDE_CONFIRM_MERGE")
             }
             env["CLAUDE_PROJECT_DIR"] = str(_REPO_ROOT)
-            return subprocess.run(  # noqa: S603 - fixed argv (bash + a known script path)
-                ["bash", str(_REPO_ROOT / "hooks" / "edit-write-dispatcher.sh")],
+            return subprocess.run(  # noqa: S603 - fixed argv (this interpreter + hook.py)
+                [sys.executable, str(_HOOK_PY), "edit-write-dispatcher"],
                 input=json.dumps(payload),
                 cwd=str(worktree),
                 capture_output=True,

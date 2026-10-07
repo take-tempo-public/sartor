@@ -110,38 +110,56 @@ issued by a subagent (the payload carries ``agent_id``) that runs a state-changi
 ``wf_9f0c8afe-bf9``'s refuter stashed and popped the shared tree mid-review. It runs
 inside ``bash-dispatcher.sh``, so ``BASH_DISPATCHED_GUARD_NAMES`` grows with it, and
 ``BLOCKER_HOOKS`` is unchanged (there is no new on-disk file). The count goes 10 → 11.
+
+**Amended 2026-10-07** (``fix/python-direct-hooks-plan-gate``, items 152/111/154/143;
+owner-chosen group). Three changes, all deliberate:
+
+- **There are no hook files any more.** Every settings.json hook is
+  ``python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>``, so a
+  hook's identity is its ``<name>`` (``hook.HOOKS``), not a ``hooks/*.sh`` stem. The
+  "script text contains ``exit 2``" checks became behavioral checks on the handler.
+  ``check-plan-approved`` now runs inside ``edit-write-dispatcher``
+  (``DISPATCHED_GUARD_NAMES`` grows; ``BLOCKER_HOOKS`` loses it). The rule itself stays.
+- **``plan-write-landed`` is a TWELFTH enforced blocker RULE** and a blocker hook (PreToolUse
+  ExitPlanMode, item 143). It refuses approval while the plan file's last Write/Edit has
+  not landed. The count goes 11 → 12.
+- **``cleanup-plan-on-merge`` is retired** (owner decision, 2026-10-06): its output-grep
+  archived a live plan (diagnosis O2), and the edit-time reconciler covers every merge
+  channel. F-gov-04's three witnesses are now two. **``shell-probe``** (SessionStart,
+  item 152) joins the context hooks: it warns, never gates.
 """
 
 from __future__ import annotations
 
 import io
 import json
+import re
+import time
 from pathlib import Path
 
 import pytest
 
+from scripts.enforcement import plan_gate
 from scripts.enforcement.adapters import (
     bash_dispatcher,
     claude_context_hook,
     claude_dispatcher,
     claude_hook,
+    hook,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / "hooks"
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 
-# The ten enforced RULES (governance invariant — grew by one on
-# feat/verify-dont-assume-guard, and again on feat/interrogative-prompt-witness:
-# interrogative-witness is mechanically a blocker — its one-shot, self-clearing
-# refusal reaches exit 2 — even though item 87 frames it as a momentum witness;
-# see the 2026-08-12 docstring amendment above).
+# The twelve enforced RULES (governance invariant). See the amendments above for each
+# deliberate change in the count.
 BLOCKER_RULE_NAMES = frozenset(
     {
         "block-merge-to-main",
         "block-secrets",
         "check-plan-approved",
         "interrogative-witness",
+        "plan-write-landed",
         "require-evidence-before-fix",
         "require-feature-branch",
         "route-security-lint",
@@ -152,31 +170,22 @@ BLOCKER_RULE_NAMES = frozenset(
     }
 )
 
-# The on-disk blocker .sh stems (what test_every_hook_is_classified globs
-# against, and what test_wiring_matches_witness_blocker_split pins).
-# require-feature-branch/require-evidence-before-fix/require-consumer-
-# enumeration/block-secrets/validate-context/route-security-lint collapsed
-# into edit-write-dispatcher (PX-37); block-merge-to-main/block-secrets/
-# ruff-changed/verify-binary-on-path collapsed into bash-dispatcher
-# (feat/verify-dont-assume-guard) — block-secrets is dispatched by BOTH.
-# check-plan-approved is the sole rule still shipping its own standalone file.
+# The blocker HOOKS: wired PreToolUse entries that can reach exit 2. Two dispatchers
+# run most rules in one process each; plan-write-landed is its own ExitPlanMode entry.
 BLOCKER_HOOKS = frozenset(
     {
-        "check-plan-approved",
         "edit-write-dispatcher",
         "bash-dispatcher",
+        "plan-write-landed",
     }
 )
 
-# The Edit|Write rules that run INSIDE edit-write-dispatcher.sh rather than
-# shipping their own standalone file. block-secrets is here AND in
-# BASH_DISPATCHED_GUARD_NAMES below — its decide() inspects both the Bash
-# `command` field and the Edit/Write `file_path`/`new_string`/`content`
-# fields, and (since feat/verify-dont-assume-guard) it needs no standalone
-# file for either matcher anymore; verified directly against each
-# dispatcher's own guard list below rather than assumed via .sh-file-globbing.
+# The Edit|Write rules that run INSIDE edit-write-dispatcher. block-secrets is here AND
+# in BASH_DISPATCHED_GUARD_NAMES below: its decide() inspects both the Bash `command`
+# field and the Edit/Write `file_path`/`new_string`/`content` fields.
 DISPATCHED_GUARD_NAMES = frozenset(
     {
+        "check-plan-approved",
         "require-feature-branch",
         "require-evidence-before-fix",
         "require-consumer-enumeration",
@@ -187,10 +196,7 @@ DISPATCHED_GUARD_NAMES = frozenset(
     }
 )
 
-# The Bash rules that run INSIDE bash-dispatcher.sh (feat/verify-dont-assume-
-# guard) rather than shipping their own standalone file — the Bash-matcher
-# mirror of DISPATCHED_GUARD_NAMES above. See that constant's docstring for
-# why block-secrets is a member of both.
+# The Bash rules that run INSIDE bash-dispatcher.
 BASH_DISPATCHED_GUARD_NAMES = frozenset(
     {
         "block-secrets",
@@ -201,89 +207,71 @@ BASH_DISPATCHED_GUARD_NAMES = frozenset(
     }
 )
 
-# The three witnesses — always `exit 0`; they emit a nudge, never block.
+# The witnesses: PostToolUse, always exit 0; they nudge or record, never block.
 WITNESS_HOOKS = frozenset(
     {
-        "cleanup-plan-on-merge",
         "mark-plan-approved",
         "wiki-freshness-reminder",
     }
 )
 
-# The prompt witness (work item 87) — fires on UserPromptSubmit, before any
-# tool runs, so it is neither a PreToolUse gate nor a PostToolUse nudge; always
-# exit 0. Its stdout is injected into context (the UserPromptSubmit channel),
-# which is the whole mechanism: a non-blocking "the deliverable is the ANSWER"
-# reminder when the prompt classifies as a question. Its Edit|Write pause
-# sibling is the `interrogative-witness` RULE above, not a file here.
-PROMPT_WITNESS_HOOKS = frozenset(
-    {
-        "interrogative-prompt-witness",
-    }
-)
-
+# The prompt witness (work item 87): UserPromptSubmit, always exit 0. Its stdout is
+# injected into context. Its Edit|Write pause sibling is the `interrogative-witness`
+# RULE above, not a hook here.
+PROMPT_WITNESS_HOOKS = frozenset({"interrogative-prompt-witness"})
 PROMPT_WITNESS_EVENT = "UserPromptSubmit"
 
-# The two context hooks (charter C-8) — they gate nothing. They carry evidence ACROSS
-# a context boundary: `restore-evidence` replays the dossier into a fresh (or
-# post-compaction) window; `capture-before-compact` warns the USER before a window is
-# discarded with nothing written down. Neither is a PreToolUse gate nor a PostToolUse
-# nudge, so neither belongs in the two sets above.
-CONTEXT_HOOKS = frozenset(
-    {
-        "capture-before-compact",
-        "restore-evidence",
-    }
-)
+# Context hooks: they gate nothing. `restore-evidence` and `capture-before-compact` carry
+# evidence across a context boundary (charter C-8); `shell-probe` (item 152) says which
+# shells lack basic tools. None is a PreToolUse gate or a PostToolUse nudge.
+CONTEXT_HOOKS = frozenset({"capture-before-compact", "restore-evidence", "shell-probe"})
 
-# Which settings.json event each category must be wired on.
 BLOCKER_EVENT = "PreToolUse"
 WITNESS_EVENT = "PostToolUse"
-CONTEXT_EVENTS = {"restore-evidence": "SessionStart", "capture-before-compact": "PreCompact"}
+CONTEXT_EVENTS = {
+    "restore-evidence": "SessionStart",
+    "shell-probe": "SessionStart",
+    "capture-before-compact": "PreCompact",
+}
 
-
-def _hook_stems() -> set[str]:
-    """Names (without .sh) of every hook script in the hooks dir."""
-    return {p.stem for p in HOOKS_DIR.glob("*.sh")}
-
-
-def _hook_text(stem: str) -> str:
-    return (HOOKS_DIR / f"{stem}.sh").read_text(encoding="utf-8")
+_NAME = re.compile(r"/scripts/enforcement/adapters/hook\.py\" (?P<name>[a-z-]+)$")
 
 
 def _wired_by_event() -> dict[str, set[str]]:
-    """PreToolUse / PostToolUse -> set of wired hook stems (from settings.json)."""
+    """Event -> set of wired hook names (the `hook.py` argument), from settings.json."""
     settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
     out: dict[str, set[str]] = {}
     for event, groups in settings.get("hooks", {}).items():
-        stems: set[str] = set()
+        names: set[str] = set()
         for group in groups:
-            for hook in group.get("hooks", []):
-                command = hook.get("command", "")
-                name = command.rsplit("/", 1)[-1]  # forward-slash commands
-                if name.endswith(".sh"):
-                    stems.add(name[:-3])
-        out[event] = stems
+            for h in group.get("hooks", []):
+                m = _NAME.search(h.get("command", ""))
+                if m:
+                    names.add(m["name"])
+        out[event] = names
     return out
 
 
+def _handler(name: str) -> tuple[str, tuple[str, ...]]:
+    return hook.HOOKS[name]
+
+
 # --------------------------------------------------------------------------- #
-# 1. Every hook script is classified (no unclassified hook can sneak in).
+# 1. Every hook is classified (no unclassified hook can sneak in).
 # --------------------------------------------------------------------------- #
 def test_every_hook_is_classified() -> None:
-    """The set of hook scripts equals BLOCKER ∪ WITNESS ∪ PROMPT-WITNESS ∪ CONTEXT — a
-    new hook (or a deletion) fails until it is deliberately classified here."""
-    on_disk = _hook_stems()
+    """The registered hooks equal BLOCKER ∪ WITNESS ∪ PROMPT-WITNESS ∪ CONTEXT. A new hook
+    (or a removal) fails until it is deliberately classified here."""
+    registered = set(hook.HOOKS)
     classified = BLOCKER_HOOKS | WITNESS_HOOKS | PROMPT_WITNESS_HOOKS | CONTEXT_HOOKS
-    unclassified = sorted(on_disk - classified)
-    missing = sorted(classified - on_disk)
+    unclassified = sorted(registered - classified)
+    missing = sorted(classified - registered)
     assert not unclassified, (
-        f"Unclassified hook script(s): {unclassified}. Add each to BLOCKER_HOOKS "
-        "(reaches exit 2), WITNESS_HOOKS (always exit 0, PostToolUse nudge), "
-        "PROMPT_WITNESS_HOOKS (always exit 0, UserPromptSubmit context injection), or "
-        "CONTEXT_HOOKS (session-lifecycle; carries evidence across a context boundary)."
+        f"Unclassified hook(s): {unclassified}. Add each to BLOCKER_HOOKS (reaches exit 2), "
+        "WITNESS_HOOKS (always exit 0, PostToolUse), PROMPT_WITNESS_HOOKS (always exit 0, "
+        "UserPromptSubmit), or CONTEXT_HOOKS (session lifecycle, never gates)."
     )
-    assert not missing, f"Classified hook(s) missing from disk: {missing}."
+    assert not missing, f"Classified hook(s) missing from hook.HOOKS: {missing}."
 
 
 def test_the_four_categories_are_disjoint() -> None:
@@ -295,141 +283,123 @@ def test_the_four_categories_are_disjoint() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 2. The nine blockers each reach exit 2.
+# 2. The blockers each reach exit 2.
 # --------------------------------------------------------------------------- #
-def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Every enforced blocker has a reachable `exit 2`.
+def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Every enforced blocker has a reachable exit 2, proven behaviorally.
 
-    Standalone scripts prove it textually (a literal ``exit 2``); dispatched
-    guards (all nine now, since feat/verify-dont-assume-guard collapsed the
-    last three core-delegated standalone files into bash-dispatcher.sh) prove
-    it via their dispatcher's own guard list + a behavioral check that the
-    shared adapter's ``main`` returns 2 for a blocked payload — the exact exit
-    code the dispatcher's own ``exec`` propagates. Per-guard block/allow
-    coverage through the real wrappers: ``tests/test_enforcement_core.py``.
+    The dispatched rules route through `claude_hook.dispatch`, and the shared adapter must
+    turn a blocked guard into exit 2 (the per-guard matrix through the real hook entry is
+    `tests/test_enforcement_core.py`). `plan-write-landed` is proven on its own handler.
     """
-    assert len(BLOCKER_RULE_NAMES) == 11, (
-        "Eleven enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
-        "(charter C-7), verify-binary-on-path (feat/verify-dont-assume-guard), "
-        "interrogative-witness (work item 87 — a one-shot, self-clearing pause, but it "
-        "reaches exit 2 and this count is mechanical), and block-subagent-git-stash "
-        "(Epic C C1c, C-11). Changing this count is a governance change — make it "
-        "deliberately."
+    assert len(BLOCKER_RULE_NAMES) == 12, (
+        "Twelve enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
+        "(C-7), verify-binary-on-path, interrogative-witness (item 87), "
+        "block-subagent-git-stash (Epic C C1c) and plan-write-landed (item 143). Changing "
+        "this count is a governance change — make it deliberately."
     )
+    dispatched = DISPATCHED_GUARD_NAMES | BASH_DISPATCHED_GUARD_NAMES
+    assert BLOCKER_RULE_NAMES - {"plan-write-landed"} <= dispatched | {
+        "require-consumer-enumeration"
+    }
+    assert set(claude_hook._GUARD_NAMES) >= dispatched
 
-    # Standalone blockers: the script text itself must reach exit 2. Both
-    # dispatcher .sh files just `exec` a Python module (no literal `exit 2`
-    # of their own — their exit-2 path is proven behaviorally below instead).
-    standalone = BLOCKER_HOOKS - {"edit-write-dispatcher", "bash-dispatcher"}
-    toothless = sorted(s for s in standalone if "exit 2" not in _hook_text(s))
-    assert not toothless, (
-        f"Standalone blocker hook(s) with no reachable `exit 2`: {toothless}. A blocker "
-        "that cannot exit 2 does not block — fix it or reclassify it as a witness."
-    )
-
-    # ...and the shared adapter really turns a blocked guard into exit code 2.
-    # This is the generic proof every dispatched guard's teeth route through,
-    # whichever dispatcher (edit-write or bash) actually calls it.
     payload = {"tool_name": "Bash", "tool_input": {"command": "echo sk-ant-" + "a" * 30}}
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
     assert claude_hook.main(["claude_hook.py", "block-secrets"]) == 2, (
-        "The shared Claude adapter must exit 2 on a blocked guard — the delegated "
+        "The shared Claude adapter must exit 2 on a blocked guard — the dispatched "
         "blockers' teeth all route through this path."
     )
 
+    # plan-write-landed: an attempt recorded after the plan file's mtime is refused.
+    plans = tmp_path / ".claude" / "plans"
+    plans.mkdir(parents=True)
+    plan = plans / "p.md"
+    plan.write_text("# old\n", encoding="utf-8")
+    key = plan_gate.project_key(str(tmp_path / "proj"))
+    (plans / f".plan-attempt-{key}").write_text(
+        f"{time.time_ns() + 10**10}\t{plan.as_posix()}\n", encoding="utf-8"
+    )
+    monkeypatch.delenv(plan_gate.PLANS_DIR_ENV, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "proj"))
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    module_name, tail = _handler("plan-write-landed")
+    assert module_name == "scripts.enforcement.plan_gate"
+    assert plan_gate.main([module_name, *tail]) == 2
 
-def test_dispatcher_delegates_to_claude_dispatcher() -> None:
-    """`edit-write-dispatcher.sh` must exec the new dispatcher module — the file
-    that actually owns the five dispatched guards' exit-2 path."""
-    text = _hook_text("edit-write-dispatcher")
-    assert "scripts/enforcement/adapters/claude_dispatcher.py" in text
 
-
-def test_bash_dispatcher_delegates_to_bash_dispatcher_module() -> None:
-    """`bash-dispatcher.sh` must exec the new dispatcher module — the Bash-matcher
-    mirror of `test_dispatcher_delegates_to_claude_dispatcher` above
-    (feat/verify-dont-assume-guard)."""
-    text = _hook_text("bash-dispatcher")
-    assert "scripts/enforcement/adapters/bash_dispatcher.py" in text
+def test_dispatchers_are_the_registered_handlers() -> None:
+    """`edit-write-dispatcher` and `bash-dispatcher` launch the modules that own the
+    dispatched guards' exit-2 path."""
+    assert _handler("edit-write-dispatcher")[0] == claude_dispatcher.__name__
+    assert _handler("bash-dispatcher")[0] == bash_dispatcher.__name__
 
 
 def test_bash_dispatcher_guard_list_matches_the_dispatched_names() -> None:
-    """The Bash dispatcher's internal guard list is this file's other source of
-    truth for the rules feat/verify-dont-assume-guard folded out of their own
-    standalone .sh files (or, for verify-binary-on-path, never gave one)."""
     assert set(bash_dispatcher._GUARD_ORDER) == BASH_DISPATCHED_GUARD_NAMES
 
 
 def test_dispatcher_guard_list_matches_the_dispatched_names() -> None:
-    """The dispatcher's internal guard list is this file's other source of truth
-    for the rules PX-37 folded out of their own standalone .sh files."""
     assert set(claude_dispatcher._GUARD_ORDER) == DISPATCHED_GUARD_NAMES
 
 
+def test_the_plan_gate_runs_first_in_the_edit_write_dispatcher() -> None:
+    """It records a plan-file write attempt before any later guard (the interrogative
+    witness) can pause that write — item 143's mechanism depends on the order."""
+    assert claude_dispatcher._GUARD_ORDER[0] == "check-plan-approved"
+
+
 # --------------------------------------------------------------------------- #
-# 3. The three witnesses never exit 2.
+# 3. The witnesses never exit 2.
 # --------------------------------------------------------------------------- #
-def test_three_witnesses_never_block() -> None:
-    """F-gov-04: exactly three witnesses, none of which can `exit 2` (witness, not
-    approver). Keeps the honest 'observe, never gate' posture from regressing."""
-    assert len(WITNESS_HOOKS) == 3, "F-gov-04 affirms exactly three witnesses."
-    blockers = sorted(s for s in WITNESS_HOOKS if "exit 2" in _hook_text(s))
-    assert not blockers, (
-        f"Witness hook(s) that can `exit 2`: {blockers}. A witness must never block "
-        "(charter 'witness, not approver') — remove the exit 2 or reclassify it."
-    )
+def test_witnesses_never_block(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """F-gov-04's witnesses, now two (cleanup-plan-on-merge retired 2026-10-06): neither
+    can block, on a real payload or on garbage stdin."""
+    assert len(WITNESS_HOOKS) == 2
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "proj"))
+    for name in sorted(WITNESS_HOOKS):
+        module_name, tail = _handler(name)
+        module = __import__(module_name, fromlist=["main"])
+        for stdin in (
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}),
+            "{never json",
+        ):
+            monkeypatch.setattr("sys.stdin", io.StringIO(stdin))
+            assert module.main([module_name, *tail]) == 0, f"{name} returned non-zero"
 
 
 # --------------------------------------------------------------------------- #
 # 4. The wiring matches the split (blockers pre-gate, witnesses post-observe).
 # --------------------------------------------------------------------------- #
 def test_wiring_matches_witness_blocker_split() -> None:
-    """settings.json wires every blocker as a PreToolUse pre-gate and every witness
-    as a PostToolUse observer — and nothing else. Pins the wiring so a hook can't be
-    silently unwired, nor a witness promoted into the gate path."""
+    """settings.json wires every blocker as a PreToolUse pre-gate and every witness as a
+    PostToolUse observer — and nothing else."""
     wired = _wired_by_event()
     assert wired.get(BLOCKER_EVENT, set()) == BLOCKER_HOOKS, (
         f"{BLOCKER_EVENT} hooks {sorted(wired.get(BLOCKER_EVENT, set()))} != the "
         f"blockers {sorted(BLOCKER_HOOKS)}. Blockers gate before the tool runs."
     )
     assert wired.get(WITNESS_EVENT, set()) == WITNESS_HOOKS, (
-        f"{WITNESS_EVENT} hooks {sorted(wired.get(WITNESS_EVENT, set()))} != the three "
+        f"{WITNESS_EVENT} hooks {sorted(wired.get(WITNESS_EVENT, set()))} != the "
         f"witnesses {sorted(WITNESS_HOOKS)}. Witnesses observe after the tool runs."
     )
 
 
 def test_prompt_witness_is_wired_on_user_prompt_submit() -> None:
-    """The prompt witness only strips momentum if it fires when the prompt arrives.
-
-    Wired anywhere else it is silently useless (its stdout-injection channel is
-    UserPromptSubmit-specific), and nothing else may ride that event without a
-    deliberate edit here.
-    """
     wired = _wired_by_event()
-    assert wired.get(PROMPT_WITNESS_EVENT, set()) == PROMPT_WITNESS_HOOKS, (
-        f"{PROMPT_WITNESS_EVENT} must wire exactly {sorted(PROMPT_WITNESS_HOOKS)}, "
-        f"found {sorted(wired.get(PROMPT_WITNESS_EVENT, set()))}."
-    )
+    assert wired.get(PROMPT_WITNESS_EVENT, set()) == PROMPT_WITNESS_HOOKS
 
 
 def test_prompt_witness_never_gates(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """The UserPromptSubmit half is fail-open by design (work item 87): always exit 0.
-
-    Textually the shim carries no `exit 2`, and behaviorally the adapter returns 0
-    on a real payload AND on garbage stdin — a prompt hook that can wedge prompt
-    submission would be a worse defect than the momentum failure it mitigates.
-    (Its Edit|Write sibling is deliberately NOT here: that half reaches exit 2
-    once per prompt and is counted in BLOCKER_RULE_NAMES above.)
-    """
+    """The UserPromptSubmit half is fail-open by design (item 87): always exit 0, on a real
+    payload AND on garbage stdin."""
     from scripts.enforcement.adapters import prompt_witness_hook
     from scripts.enforcement.guards import interrogative_witness
 
-    for stem in sorted(PROMPT_WITNESS_HOOKS):
-        text = _hook_text(stem)
-        assert "prompt_witness_hook.py" in text, (
-            f"{stem}.sh must delegate to the prompt-witness adapter."
-        )
-        assert "exit 2" not in text, f"{stem}.sh is a prompt witness — it must never gate."
+    for name in sorted(PROMPT_WITNESS_HOOKS):
+        assert _handler(name)[0] == prompt_witness_hook.__name__
 
     monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path))
     payload = {"session_id": "gate-test", "prompt": "is this hook fail-open?"}
@@ -440,40 +410,26 @@ def test_prompt_witness_never_gates(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 
 
 def test_context_hooks_are_wired_on_their_lifecycle_events() -> None:
-    """A context hook wired on the wrong event is silently useless.
-
-    `restore-evidence` only replays evidence if it fires on SessionStart (which
-    includes `compact` — the window rebuild that C-8 exists for), and
-    `capture-before-compact` only warns in time if it fires on PreCompact.
-    """
+    """A context hook wired on the wrong event is silently useless."""
     wired = _wired_by_event()
-    for stem, event in CONTEXT_EVENTS.items():
-        assert wired.get(event, set()) == {stem}, (
-            f"{event} must wire exactly {{{stem!r}}}, found {sorted(wired.get(event, set()))}."
+    for event in set(CONTEXT_EVENTS.values()):
+        expected = {name for name, ev in CONTEXT_EVENTS.items() if ev == event}
+        assert wired.get(event, set()) == expected, (
+            f"{event} must wire exactly {sorted(expected)}, found {sorted(wired.get(event, set()))}."
         )
-    assert set(CONTEXT_EVENTS) == set(CONTEXT_HOOKS), (
-        "Every context hook needs a declared lifecycle event (and vice versa)."
-    )
+    assert set(CONTEXT_EVENTS) == set(CONTEXT_HOOKS)
 
 
 def test_context_hooks_never_gate(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The C-8 hooks carry evidence; they do not block. Asserted, not assumed.
-
-    `claude_context_hook.main` does contain a `return 2` — but it is a CLI-misuse
-    guard on a bad ``argv``, not a policy decision. On a real payload, both hooks
-    return 0 whatever they find, so neither can ever stop a tool call or wedge a
-    compaction. (`capture-before-compact` deliberately does not block: a blocked
-    auto-compact can wedge a session, and that cure is worse than the disease.)
-    """
-    for stem in sorted(CONTEXT_HOOKS):
-        text = _hook_text(stem)
-        assert "claude_context_hook.py" in text and stem in text, (
-            f"{stem}.sh must delegate to the context adapter naming its own hook."
-        )
-        assert "exit 2" not in text, f"{stem}.sh is a context hook — it must never gate."
-
-    for stem in sorted(CONTEXT_HOOKS):
+    """The context hooks carry evidence or warnings; they do not block. Asserted, not
+    assumed. (`claude_context_hook.main`'s `return 2` is a CLI-misuse guard on a bad argv,
+    never a policy decision.)"""
+    for name in sorted(CONTEXT_HOOKS):
+        module_name, tail = _handler(name)
+        if module_name == claude_context_hook.__name__:
+            assert tail == (name,), f"{name} must name its own hook to the context adapter"
         monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(REPO_ROOT)})))
-        assert claude_context_hook.main(["claude_context_hook.py", stem]) == 0, (
-            f"{stem} returned non-zero on a real payload — a context hook must never gate."
+        module = __import__(module_name, fromlist=["main"])
+        assert module.main([module_name, *tail]) == 0, (
+            f"{name} returned non-zero on a real payload — a context hook must never gate."
         )

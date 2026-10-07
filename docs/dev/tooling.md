@@ -12,9 +12,9 @@
 > the agent-facing behavior notes live in [`CLAUDE.md`](../../CLAUDE.md) "Plugin commands +
 > agents + hooks".
 
-The roster is derived, not remembered. It reflects `feat/dev-docs` (2026-09-30), re-derived
+The roster is derived, not remembered. It reflects `fix/python-direct-hooks-plan-gate` (2026-10-07), re-derived
 from:
-- `.claude/settings.json` (`hooks`) and the `hooks/` directory;
+- `.claude/settings.json` (`hooks`) and [`hook.py`](../../scripts/enforcement/adapters/hook.py)'s `HOOKS`;
 - the two dispatchers' `_GUARD_ORDER`
   ([`bash_dispatcher.py`](../../scripts/enforcement/adapters/bash_dispatcher.py),
   [`claude_dispatcher.py`](../../scripts/enforcement/adapters/claude_dispatcher.py));
@@ -34,22 +34,24 @@ missing from a table, or a row whose file is gone, fails the gate.
 
 ## Claude Code hooks
 
-All nine are wired in `.claude/settings.json`, not in the plugin manifest. Each lives in
-[`hooks/`](../../hooks/).
+All nine are wired in `.claude/settings.json`, not in the plugin manifest. Each is exactly
+`python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`, with no
+shell wrapper in between. [`hook.py`](../../scripts/enforcement/adapters/hook.py) maps the
+name to its handler module and imports only that one
+([`tests/test_settings_hooks_python_direct.py`](../../tests/test_settings_hooks_python_direct.py)
+fails on any other shape). The hook's name is the last word of its command.
 
 | Hook | Event (matcher) | Kind | What it does | Escape hatch |
 |---|---|---|---|---|
-| `check-plan-approved.sh` | PreToolUse (`Edit\|Write`) | **blocks** | No edit outside `~/.claude/plans/` without an approved plan. It also retires an approval once its branch has merged, through `hooks/lib/retire-approved-plan.sh` | none; only `ExitPlanMode` creates the marker |
-| `edit-write-dispatcher.sh` | PreToolUse (`Edit\|Write`) | **blocks** | Runs the seven Edit/Write guards below in one process | per guard |
-| `bash-dispatcher.sh` | PreToolUse (`Bash`) | **blocks** | Runs the five Bash guards below in one process | per guard |
-| `mark-plan-approved.sh` | PostToolUse (`ExitPlanMode`) | lifecycle | Writes the per-project approval marker for the plan just approved | — |
-| `cleanup-plan-on-merge.sh` | PostToolUse (`Bash`) | lifecycle | After a local `--no-ff` merge command, archives the plan and clears its approval. Every other merge channel is caught on the next edit by `check-plan-approved.sh` | — |
-| `wiki-freshness-reminder.sh` | PostToolUse (`Bash`) | witness | After a commit, says when `docs/wiki/` may be stale. Always exits 0 | — |
-| `interrogative-prompt-witness.sh` | UserPromptSubmit | witness | Reminds that a question's deliverable is the answer. Always exits 0 | — |
-| `restore-evidence.sh` | SessionStart (`startup\|resume\|compact`) | context | Replays a `fix/*` branch's `## Observed` + `## Falsified` into the new context (charter C-8) | — |
-| `capture-before-compact.sh` | PreCompact (`auto\|manual`) | witness (to the user) | Warns before compaction when a `fix/*` branch has no captured evidence | — |
-
-`hooks/lib/retire-approved-plan.sh` is a helper that the two plan hooks source, not a hook.
+| `edit-write-dispatcher` | PreToolUse (`Edit\|Write`) | **blocks** | Runs the plan gate (`check-plan-approved`) and then the seven Edit/Write guards below, in one process. The plan gate blocks edits outside `~/.claude/plans/` without an approved plan, or after a newer unapproved plan, and retires an approval once its branch has merged or is gone ([`plan_gate.py`](../../scripts/enforcement/plan_gate.py)) | per guard; the plan gate has none, only `ExitPlanMode` creates its marker |
+| `bash-dispatcher` | PreToolUse (`Bash`) | **blocks** | Runs the five Bash guards below in one process | per guard |
+| `plan-write-landed` | PreToolUse (`ExitPlanMode`) | **blocks** | Refuses approval while the plan file's last Write/Edit has not landed, so the dialog would show the old text (item 143) | none; re-run the Write |
+| `mark-plan-approved` | PostToolUse (`ExitPlanMode`) | lifecycle | Writes the per-project approval marker for the plan just approved | — |
+| `wiki-freshness-reminder` | PostToolUse (`Bash`) | witness | After a commit, says when `docs/wiki/` may be stale. Always exits 0 | — |
+| `interrogative-prompt-witness` | UserPromptSubmit | witness | Reminds that a question's deliverable is the answer. Always exits 0 | — |
+| `restore-evidence` | SessionStart (`startup\|resume\|compact`) | context | Replays a `fix/*` branch's `## Observed` + `## Falsified` into the new context (charter C-8) | — |
+| `shell-probe` | SessionStart (`startup\|resume`) | context | Says which of this machine's shells cannot find `python3`, `sleep` or `grep` (item 152). Silent when all can. Always exits 0 | — |
+| `capture-before-compact` | PreCompact (`auto\|manual`) | witness (to the user) | Warns before compaction when a `fix/*` branch has no captured evidence | — |
 
 ## Enforcement guards
 
@@ -72,7 +74,9 @@ under several adapters: the Claude dispatchers above, the opt-in git hooks in
 | `verify-binary-on-path` | Bash | — | — | a command whose leading binary isn't on `PATH` | none (fail-open on anything it can't parse) |
 | `block-subagent-git-stash` | Bash | — | — | a state-changing `git stash` from a subagent | none |
 
-Plan approval (`check-plan-approved.sh`) is a hook, not a guard, so it has no row here.
+Plan approval (`check-plan-approved`) runs inside the Edit/Write dispatcher, but it is not a
+`guards/` module ([`plan_gate.py`](../../scripts/enforcement/plan_gate.py) is Claude-only:
+plan mode has no git-hook or CI equivalent), so it has no row here.
 
 ## Slash commands
 

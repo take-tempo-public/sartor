@@ -52,7 +52,7 @@ if a hook blocks you, surface the hook name and its message, and STOP — return
 a flag of kind "hook_block" with the hook's own message in your verbatim field.
 NEVER bypass a hook, never hand-create a file a hook checks for, and never
 create or touch the plan-approval marker: a "NO EDIT APPROVAL" block from
-check-plan-approved.sh is an immediate structured return, not a problem to solve.
+the check-plan-approved gate is an immediate structured return, not a problem to solve.
 
 NEVER run "python -m scripts.gate" — the gate belongs to the invoking session
 (§11.9: a subagent's gate dies with the agent). Never pipe a long-running

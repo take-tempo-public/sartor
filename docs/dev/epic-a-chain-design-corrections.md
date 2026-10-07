@@ -64,7 +64,7 @@ tip 96f3a4d: ancestor of main = YES   ancestor of base = NO (rc=1)
 That drives `_should_archive` (`hooks/check-plan-approved.sh:132-160`) true, so the next
 production edit fires `retire_approved_plan` and `exit 2`. Because the handoff's "First
 move" orders the ceremony *before* the first edit, the marker at that moment points at
-the **brand-new Epic A plan** — and `hooks/lib/retire-approved-plan.sh:84` does `mv -f`,
+the **brand-new Epic A plan** — and [hooks/lib/retire-approved-plan.sh:84](https://github.com/take-tempo-public/sartor/blob/fced8e9f726281c685fda3dbc5cef3de1dbb32c9/hooks/lib/retire-approved-plan.sh#L84) does `mv -f`,
 physically relocating it into `archive/`. The result is a second full ceremony and a plan
 that has to be rewritten.
 
@@ -226,7 +226,7 @@ Found while *executing* finding 1's correction, not by the original review.
 **[VERIFIED] — observed:** attempting the flush `Write` while still on `main` created
 `~/.claude/plans/archive/20260808T153444Z-142537ca4cdd` **empty**, while
 `.approved-C--Dev-sartor`, `.current-C--Dev-sartor`, `.approved-branch-C--Dev-sartor` and
-the plan file itself all survived. Since `hooks/lib/retire-approved-plan.sh:161` removes
+the plan file itself all survived. Since [hooks/lib/retire-approved-plan.sh:161](https://github.com/take-tempo-public/sartor/blob/fced8e9f726281c685fda3dbc5cef3de1dbb32c9/hooks/lib/retire-approved-plan.sh#L161) removes
 all three pointer files unconditionally, the function was killed between the `mkdir` on
 `:84` and that `rm`. The only block message reported was `require-feature-branch`.
 

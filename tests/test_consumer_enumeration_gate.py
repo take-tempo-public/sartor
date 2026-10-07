@@ -226,7 +226,7 @@ class TestWiring:
             if entry["matcher"] == "Edit|Write"
             for hook in entry["hooks"]
         ]
-        assert any("edit-write-dispatcher.sh" in command for command in commands)
+        assert any(command.endswith('hook.py" edit-write-dispatcher') for command in commands)
 
     def test_template_exists_where_the_block_message_says_it_does(self) -> None:
         assert _TEMPLATE.is_file()

@@ -51,32 +51,28 @@ from scripts.enforcement.guards import (
 from scripts.wiki_freshness import BLOCK_THRESHOLD as WIKI_BLOCK_THRESHOLD
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / "hooks"
+# Every Claude hook is `python3 hook.py <name>` (item 152); the NEW side runs that entry.
+HOOK_PY = REPO_ROOT / "scripts" / "enforcement" / "adapters" / "hook.py"
 # The merge-train-4 base this branch forked from (env block: "isolated git
 # worktree of this repo at main b2c83d2") — the last commit before this
 # migration, so `git show OLD_SHA:<path>` is the pre-migration standalone hook.
 OLD_SHA = "b2c83d2"
 
-# NEW-side file each guard's equivalence test runs against. Since PX-37
-# (`chore/hook-dispatcher`), require-feature-branch/route-security-lint/
-# validate-context no longer ship their own standalone .sh — they run inside
-# edit-write-dispatcher.sh (no short-circuit: the other four guards also run
-# on these payloads, but none of the existing fixtures below incidentally
-# trip a second guard — verified when this branch landed). Since
-# `feat/verify-dont-assume-guard`, block-merge-to-main and ruff-changed no
-# longer ship their own standalone .sh either — they run inside
-# bash-dispatcher.sh. block-secrets's default here is bash-dispatcher.sh (the
-# real path a Bash-shaped payload takes in production); its own equivalence
-# tests below override to edit-write-dispatcher.sh for the Edit/Write-shaped
-# payloads, which is the real path THOSE take — block-secrets no longer has
-# a standalone file backing either matcher.
+# NEW-side hook each guard's equivalence test runs against: the dispatcher that runs it
+# in production (PX-37 for Edit|Write, `feat/verify-dont-assume-guard` for Bash), launched
+# as `hook.py <name>` since item 152. No short-circuit: the dispatcher's other guards also
+# run on these payloads, but none of the fixtures below incidentally trips a second one.
+# The plan gate also runs first in `edit-write-dispatcher`; `tests/conftest.py`
+# pre-approves this repo in a per-test state dir, so it allows here. block-secrets's
+# default is `bash-dispatcher` (the real path of a Bash-shaped payload); its Edit/Write
+# equivalence tests override to `edit-write-dispatcher`, the real path of those.
 GUARD_FILES = {
-    "require-feature-branch": "edit-write-dispatcher.sh",
-    "block-merge-to-main": "bash-dispatcher.sh",
-    "block-secrets": "bash-dispatcher.sh",
-    "route-security-lint": "edit-write-dispatcher.sh",
-    "ruff-changed": "bash-dispatcher.sh",
-    "validate-context": "edit-write-dispatcher.sh",
+    "require-feature-branch": "edit-write-dispatcher",
+    "block-merge-to-main": "bash-dispatcher",
+    "block-secrets": "bash-dispatcher",
+    "route-security-lint": "edit-write-dispatcher",
+    "ruff-changed": "bash-dispatcher",
+    "validate-context": "edit-write-dispatcher",
 }
 
 # OLD_SHA-side filename per guard (unchanged — the pre-migration standalone
@@ -168,13 +164,16 @@ def old_hooks(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
 
 
 def _run_hook(
-    script_path: Path,
+    script_path: Path | str,
     payload: dict,
     *,
     subprocess_cwd: Path,
     extra_env: dict[str, str] | None = None,
 ) -> tuple[int, str]:
-    """Run one hook script (old or new) against a PreToolUse-shaped payload.
+    """Run one hook (old or new) against a PreToolUse-shaped payload.
+
+    A `Path` is a pre-migration standalone `.sh` (the OLD side, run with bash); a `str` is
+    a hook name, run the way settings.json runs it: `hook.py <name>` on this interpreter.
 
     `subprocess_cwd` is the hook PROCESS's own ambient cwd — this is
     deliberately a separate knob from `payload["cwd"]` (the PreToolUse
@@ -190,8 +189,13 @@ def _run_hook(
     env["CLAUDE_PROJECT_DIR"] = str(REPO_ROOT)
     if extra_env:
         env.update(extra_env)
-    result = subprocess.run(  # noqa: S603 - fixed argv (bash + a known script path), test-authored input
-        ["bash", str(script_path)],
+    argv = (
+        ["bash", str(script_path)]
+        if isinstance(script_path, Path)
+        else [sys.executable, str(HOOK_PY), script_path]
+    )
+    result = subprocess.run(  # noqa: S603 - fixed argv (bash + an old script, or hook.py + a name)
+        argv,
         input=json.dumps(payload),
         cwd=str(subprocess_cwd),
         capture_output=True,
@@ -211,10 +215,9 @@ def _run_old(old_hooks: dict[str, Path], name: str, payload: dict, **kwargs) -> 
 def _run_new(name: str, payload: dict, *, file: str | None = None, **kwargs) -> tuple[int, str]:
     """`file` overrides the `GUARD_FILES[name]` default — needed for
     block-secrets, whose real production route depends on the payload's
-    `tool_name` (Bash -> bash-dispatcher.sh, Edit/Write -> edit-write-
-    dispatcher.sh), not on the guard name alone."""
-    script = file or GUARD_FILES[name]
-    return _run_hook(HOOKS_DIR / script, payload, **kwargs)
+    `tool_name` (Bash -> bash-dispatcher, Edit/Write -> edit-write-dispatcher), not on
+    the guard name alone."""
+    return _run_hook(file or GUARD_FILES[name], payload, **kwargs)
 
 
 def _assert_equivalent(
@@ -864,8 +867,8 @@ class TestBlockSecretsEquivalence:
         assert old[0] == 2
 
     def test_clear_allow_ordinary_edit(self, old_hooks: dict[str, Path], tmp_path: Path) -> None:
-        # Edit's real production route is edit-write-dispatcher.sh, not the
-        # GUARD_FILES default (bash-dispatcher.sh, for the Bash-shaped case
+        # Edit's real production route is edit-write-dispatcher, not the
+        # GUARD_FILES default (bash-dispatcher, for the Bash-shaped case
         # above) — override to the file this payload shape actually takes.
         payload = {
             "tool_name": "Edit",
@@ -873,18 +876,18 @@ class TestBlockSecretsEquivalence:
         }
         old = _run_old(old_hooks, "block-secrets", payload, subprocess_cwd=tmp_path)
         new = _run_new(
-            "block-secrets", payload, file="edit-write-dispatcher.sh", subprocess_cwd=tmp_path
+            "block-secrets", payload, file="edit-write-dispatcher", subprocess_cwd=tmp_path
         )
         _assert_equivalent(old, new)
         assert old[0] == 0
 
     def test_edge_block_secret_file_write(self, old_hooks: dict[str, Path], tmp_path: Path) -> None:
         # Same override rationale as test_clear_allow_ordinary_edit above:
-        # Write's real route is edit-write-dispatcher.sh.
+        # Write's real route is edit-write-dispatcher.
         payload = {"tool_name": "Write", "tool_input": {"file_path": ".api_key", "content": "sk-x"}}
         old = _run_old(old_hooks, "block-secrets", payload, subprocess_cwd=tmp_path)
         new = _run_new(
-            "block-secrets", payload, file="edit-write-dispatcher.sh", subprocess_cwd=tmp_path
+            "block-secrets", payload, file="edit-write-dispatcher", subprocess_cwd=tmp_path
         )
         _assert_equivalent(old, new, message_substrings=("secret file",))
         assert old[0] == 2
@@ -1061,7 +1064,7 @@ class TestGitHookAdapter:
 # --------------------------------------------------------------------------- #
 # 4. Edit|Write dispatcher (PX-37) — one process, all five guards, no
 #    short-circuit (no OLD equivalent — new surface). Exercises the real
-#    hooks/edit-write-dispatcher.sh wrapper via the same _run_hook helper the
+#    edit-write-dispatcher hook via the same _run_hook helper the
 #    OLD-vs-NEW equivalence classes above use.
 # --------------------------------------------------------------------------- #
 
@@ -1074,7 +1077,10 @@ class TestEditWriteDispatcher:
     no short-circuit."""
 
     def test_guard_order_is_exactly_the_edit_write_guards(self) -> None:
+        # The plan gate leads (fix/python-direct-hooks-plan-gate): it was its own hook.
+        assert claude_dispatcher._GUARD_ORDER[0] == "check-plan-approved"
         assert set(claude_dispatcher._GUARD_ORDER) == {
+            "check-plan-approved",
             "require-feature-branch",
             "require-evidence-before-fix",
             "require-consumer-enumeration",
@@ -1090,7 +1096,7 @@ class TestEditWriteDispatcher:
             "tool_name": "Edit",
             "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
         }
-        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        code, err = _run_hook("edit-write-dispatcher", payload, subprocess_cwd=repo)
         assert code == 0, err
 
     def test_block_on_main_single_guard(self, tmp_path: Path) -> None:
@@ -1099,7 +1105,7 @@ class TestEditWriteDispatcher:
             "tool_name": "Edit",
             "tool_input": {"file_path": str(repo / "app.py"), "new_string": "x = 1\n"},
         }
-        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        code, err = _run_hook("edit-write-dispatcher", payload, subprocess_cwd=repo)
         assert code == 2
         assert "require-feature-branch" in err
 
@@ -1114,7 +1120,7 @@ class TestEditWriteDispatcher:
                 "content": "KEY = 'sk-ant-" + "a" * 30 + "'\n",
             },
         }
-        code, err = _run_hook(HOOKS_DIR / "edit-write-dispatcher.sh", payload, subprocess_cwd=repo)
+        code, err = _run_hook("edit-write-dispatcher", payload, subprocess_cwd=repo)
         assert code == 2
         assert "require-feature-branch" in err
         assert "block-secrets" in err
@@ -1125,7 +1131,7 @@ class TestEditWriteDispatcher:
 #    guards, no short-circuit (no OLD equivalent for verify-binary-on-path;
 #    the other three had standalone files, hand-tested byte-identical against
 #    this dispatcher during authoring — see this branch's design note).
-#    Exercises the real hooks/bash-dispatcher.sh wrapper via the same
+#    Exercises the real bash-dispatcher hook via the same
 #    _run_hook helper the OLD-vs-NEW equivalence classes above use.
 # --------------------------------------------------------------------------- #
 
@@ -1204,28 +1210,28 @@ class TestBashDispatcher:
 
     def test_subagent_git_stash_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:
         """Epic C C1c: the exact command run wf_9f0c8afe-bf9's refuter ran, from a
-        subagent payload (`agent_id` present), exits 2 through bash-dispatcher.sh."""
+        subagent payload (`agent_id` present), exits 2 through bash-dispatcher."""
         payload = {
             "tool_name": "Bash",
             "agent_id": "a1b2c3",
             "tool_input": {"command": "git stash -u && git diff --stat && git stash pop"},
         }
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 2
         assert "block-subagent-git-stash" in err
 
     def test_main_agent_git_stash_is_not_gated(self, tmp_path: Path) -> None:
         """The same command with no `agent_id` (the main agent) is allowed."""
         payload = {"tool_name": "Bash", "tool_input": {"command": "git stash list"}}
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 0, err
         payload = {"tool_name": "Bash", "tool_input": {"command": "git stash -u"}}
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert "block-subagent-git-stash" not in err
 
     def test_allow_when_all_four_allow(self, tmp_path: Path) -> None:
         payload = {"tool_name": "Bash", "tool_input": {"command": "python --version"}}
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 0, err
 
     def test_block_missing_binary_single_guard(self, tmp_path: Path) -> None:
@@ -1233,7 +1239,7 @@ class TestBashDispatcher:
             "tool_name": "Bash",
             "tool_input": {"command": "definitely_missing_tool_xyz --flag"},
         }
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 2
         assert "verify-binary-on-path" in err
 
@@ -1243,7 +1249,7 @@ class TestBashDispatcher:
         no short-circuit."""
         command = "definitely_missing_tool_xyz " + "sk-ant-" + "b" * 30
         payload = {"tool_name": "Bash", "tool_input": {"command": command}}
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 2
         assert "verify-binary-on-path" in err
         assert "block-secrets" in err
@@ -1255,5 +1261,5 @@ class TestBashDispatcher:
             "tool_name": "Bash",
             "tool_input": {"command": "echo $(definitely_missing_tool_xyz)"},
         }
-        code, err = _run_hook(HOOKS_DIR / "bash-dispatcher.sh", payload, subprocess_cwd=tmp_path)
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
         assert code == 0, err

@@ -262,3 +262,30 @@ per-Edit/Write process spawns with one. No guard decision logic changed; see
 `tests/test_governance_hooks_gate.py`'s 2026-07-20 amendment note for the
 resulting split between the 8-rule governance invariant and the 5-file on-disk
 classification.
+
+**`fix/python-direct-hooks-plan-gate` (items 152/111/154/143, 2026-10-07)**: every
+`hooks/*.sh` file is gone. Each `.claude/settings.json` hook is exactly
+`python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`, which
+`tests/test_settings_hooks_python_direct.py` enforces. The plan gate's shell scripts became
+`scripts/enforcement/plan_gate.py`, run inside the Edit/Write dispatcher.
+`cleanup-plan-on-merge` was removed (owner decision): its output-grep archived a live plan,
+and the edit-time reconciler covers every merge channel. Two new hooks: `plan-write-landed`
+(PreToolUse ExitPlanMode, item 143) and `shell-probe` (SessionStart, item 152).
+
+The reason is that a slow hook is an open gate. The harness cancels a hook that outruns
+its timeout, and a cancelled PreToolUse hook does not block. On this machine, under memory
+pressure, the shell plan gate measured 28–35 s against 20 s and every Edit|Write guard was
+skipped (`docs/dev/diagnosis/python-direct-hooks-plan-gate.md` O1).
+
+**Known limits, stated (C-0):**
+- *A missing `python3` fails open.* A machine whose `python3` is not on PATH (a python.org
+  Windows install ships `python` and `py` only) cannot start any hook. The harness treats
+  that as a non-blocking error, so no gate runs. The `shell-probe` hook cannot report it,
+  because it runs on `python3` too. Every retired wrapper `exec`-ed `python3` as well, so
+  this is not a new dependency, but it is now the only one.
+- *Timeouts.* Faster is not instant: a hook can still be cancelled on a machine slow
+  enough, and a cancelled gate is open. The before/after timings are in the diagnosis
+  dossier.
+- *Batched calls (item 143).* `plan-write-landed` covers the plan file only. Any other call
+  batched after a paused Write still runs on stale input, because a per-call hook cannot
+  cancel the rest of a batch. No mechanism exists for that half.

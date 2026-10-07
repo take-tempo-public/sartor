@@ -27,9 +27,8 @@ The real enforcement of C-8 on a `fix/*` branch is therefore structural, not adv
 dossier exists — so by the time any compaction happens, there is always something for
 `restore-evidence` to replay.
 
-Invoked by the thin wrappers in root `hooks/`:
-
-    exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/claude_context_hook.py" <name>
+Launched by `scripts/enforcement/adapters/hook.py` as the `restore-evidence` and
+`capture-before-compact` hooks (item 152: no shell wrapper).
 """
 
 from __future__ import annotations

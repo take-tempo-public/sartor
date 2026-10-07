@@ -1,6 +1,6 @@
 # skills/
 
-Mirrors the `commands/`/`agents/`/`hooks/` root-level convention (kit-adoption
+Mirrors the `commands/`/`agents/` root-level convention (kit-adoption
 commitment 3, `KIT-5`). No plugin-manifest entry is needed — this family
 auto-discovers from the root dir the same way `commands/`/`agents/` do.
 

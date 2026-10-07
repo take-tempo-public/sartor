@@ -2556,3 +2556,31 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   as link text, and `[[wikilink]]` inside backticks) are identical on `main` and are artifacts,
   not defects. No orphans. 85 sources have changed since checkpoint `3798e2d` (expected).
   **Gate verdict: PASS.**
+
+## 2026-10-07 — scoped wiki-self-update, one page edited (`fix/python-direct-hooks-plan-gate`)
+
+- **Mode:** a scoped branch pass over `b5c9ddf...HEAD`. The checkpoint is **not** advanced
+  (`.last_ingest_sha` stays `3798e2d1`). The owner authorized about 2 Haiku calls.
+- **Wiki-relevant changes in the diff (7):** `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`,
+  `SECURITY.md`, `docs/dev/tooling.md`, `docs/governance/enforcement.md`, `scripts/doc_lints.py`.
+  All `hooks/*.sh` were deleted. Every settings.json hook is now `python3 … hook.py <name>`.
+- **Edited (1 page):**
+  - `route-surface` (line 66): it said `route_security_lint.py` runs "via
+    `hooks/edit-write-dispatcher.sh`", a deleted file. `wiki-scribe` (Haiku) re-pointed it to
+    the `edit-write-dispatcher` hook (`scripts/enforcement/adapters/hook.py` →
+    `claude_dispatcher.py`). The orchestrator checked the diff: one line, links in the page's
+    `../../../` style.
+- **Verified no-edit:**
+  - `consistency-tracks-enforcement`: the enforcement-reach passage still holds (the plan gate
+    is Claude-only, as before), and it cites `enforcement.md` §"Enforcement reach", which this
+    branch did not change.
+  - `docs-information-architecture`: the 5.5 roster-lint line is generic and still accurate.
+  - `code-module-map`: the `doc_lints.py` row is unaffected by the one-line hook-name
+    derivation change, and the page does not enumerate `scripts/enforcement/` modules.
+  - Every other cite into the four root docs is a D5 pointer to a section this branch did not
+    touch.
+- **Audit (`wiki-grounding-auditor`, separate context):** 15 SUPPORTED, 0 DRIFTED, 0
+  UNSUPPORTED. **Catch-rate:** 0 of 1 page audited.
+- **Structural check:** `scripts/check_doc_links.py` reports 613 tracked markdown files with no
+  broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
+  is no orphan or index change. **Gate verdict: PASS.**

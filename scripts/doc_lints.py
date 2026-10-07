@@ -466,8 +466,9 @@ _FIRST_CELL_RE = re.compile(r"^\|\s*`([^`]+)`\s*\|")
 def tooling_tree(root: Path) -> dict[str, set[str]]:
     """What the tree says each tooling.md section must list."""
     settings = json.loads((root / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    # Every hook is `python3 "<…>/hook.py" <name>` (item 152); the name is the last word.
     hooks = {
-        Path(h["command"].split()[0]).name
+        h["command"].split()[-1]
         for matchers in settings.get("hooks", {}).values()
         for m in matchers
         for h in m.get("hooks", [])

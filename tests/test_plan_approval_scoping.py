@@ -1,24 +1,22 @@
-"""Per-project scoping regression suite for the plan-approval hook trio
-(`fix/plan-approval-hook-scope`, 2026-07-17).
+"""Regression suite for the plan-approval gate (`scripts/enforcement/plan_gate.py`).
 
-Two confirmed, live-reproduced defects in `check-plan-approved.sh` /
-`mark-plan-approved.sh` / `cleanup-plan-on-merge.sh` (full evidence:
-`docs/dev/diagnosis/plan-approval-hook-scope.md`), both fixed by keying state off
-`CLAUDE_PROJECT_DIR` instead of one global `$HOME/.claude/plans/.approved`:
+History: born as the per-project scoping suite for the shell hook trio
+(`fix/plan-approval-hook-scope`, 2026-07-17; evidence
+`docs/dev/diagnosis/plan-approval-hook-scope.md`). State is keyed off
+`CLAUDE_PROJECT_DIR`, so a concurrent, unrelated project's plan file can never
+false-block or wipe THIS project's approval. Since `fix/python-direct-hooks-plan-gate`
+the gate is Python, and this suite is the port's equivalence spec: every behavioral
+test below ran against the `.sh` hooks first and still holds.
 
-1. **Cross-project false block / false wipe** — a concurrent, unrelated project's
-   plan file (or merge close-out) could false-block or wipe THIS project's already-
-   approved edits, because the marker and the "newest plan file" scan were global.
-2. **Unstructured merge-detection false trigger** — `cleanup-plan-on-merge.sh`'s
-   `grep -q` over the whole raw stdin JSON could fire from a Bash command whose
-   TEXT merely *mentioned* the trigger phrases (e.g. echoed test data), with no
-   check that a merge actually happened. Reproduced live and self-inflicted during
-   this branch's own investigation (see the dossier's `## Observed` step 5) — it
-   deleted a real, just-approved plan.
+The retired `cleanup-plan-on-merge` hook (a PostToolUse Bash merge witness) is gone,
+by owner decision on 2026-10-06. Its output-grep false-fired live (diagnosis O2), and the
+edit-time reconciler already retires a merged branch's approval through any channel.
+`TestKilledHookRetirements` asserts that no PostToolUse Bash hook retires anything.
 
-These tests invoke the real `hooks/*.sh` scripts as subprocesses
-against a temp `HOME`, following the byte-correct-JSON-via-`json.dumps` convention
-established in `tests/test_enforcement_core.py` (never echo/heredoc).
+The gate runs as a real subprocess (`plan_gate.py <name>`) against a temp `HOME`, with
+byte-correct JSON via `json.dumps` (never echo/heredoc). A few kill-point tests drive it
+in-process with an injected interruption, because a pure-Python step cannot be stalled
+by a PATH shim.
 """
 
 from __future__ import annotations
@@ -28,22 +26,20 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 import pytest
 
+from scripts.enforcement import plan_gate
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOKS_DIR = REPO_ROOT / "hooks"
+PLAN_GATE = REPO_ROOT / "scripts" / "enforcement" / "plan_gate.py"
 
-CHECK = HOOKS_DIR / "check-plan-approved.sh"
-MARK = HOOKS_DIR / "mark-plan-approved.sh"
-CLEANUP = HOOKS_DIR / "cleanup-plan-on-merge.sh"
-LIB_HELPER = HOOKS_DIR / "lib" / "retire-approved-plan.sh"
-
-pytestmark = pytest.mark.skipif(
-    shutil.which("bash") is None, reason="the hook scripts are bash; skip where bash is absent"
-)
+CHECK = "check-plan-approved"
+MARK = "mark-plan-approved"
+LANDED = "plan-write-landed"
 
 
 def _project_key(project_dir: str) -> str:
@@ -87,7 +83,7 @@ def _make_merge_repo(tmp_path: Path, name: str) -> Path:
 
 
 def _run(
-    script: Path,
+    name: str,
     *,
     home: Path,
     project_dir: str,
@@ -95,12 +91,13 @@ def _run(
     extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
+    env.pop(plan_gate.PLANS_DIR_ENV, None)  # this suite builds its state under HOME
     env["HOME"] = str(home)
     env["CLAUDE_PROJECT_DIR"] = project_dir
     if extra_env:
         env.update(extra_env)
-    return subprocess.run(  # noqa: S603 - fixed argv (bash + known script path), test-authored input
-        ["bash", str(script)],
+    return subprocess.run(  # noqa: S603 - fixed argv (this interpreter + the gate), test input
+        [sys.executable, str(PLAN_GATE), name],
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -111,8 +108,8 @@ def _run(
     )
 
 
-#: The small set of external binaries `check-plan-approved.sh` itself needs on a
-#: payload that reaches the branch-merge reconciler with git hidden. Preserving
+#: The small set of external binaries kept resolvable while `git` is hidden (the gate
+#: itself runs on `sys.executable`; these keep the shared shim helper general). Preserving
 #: exactly these (via a per-binary shim) rather than every entry in a directory
 #: that happens to also hold `git` is what makes `_path_without_git` safe on a
 #: platform where `git` and `bash` share one bin dir (e.g. `/usr/bin` on Linux
@@ -243,101 +240,8 @@ class TestCrossProjectIsolation:
         assert r.returncode == 2, "editing the plan after approval must re-block until re-approved"
 
 
-class TestMergeCleanupScoping:
-    def test_unrelated_project_merge_never_wipes_this_project(self, tmp_path: Path) -> None:
-        home = tmp_path / "home"
-        (home / ".claude" / "plans").mkdir(parents=True)
-        project_a = str(tmp_path / "project-a")
-        plan_a = home / ".claude" / "plans" / "plan-a.md"
-        _approve_plan(home, project_a, plan_a)
-
-        # Project B has its OWN repo, genuinely merges (--no-ff), and its
-        # own cleanup fires for real.
-        repo_b = _make_merge_repo(tmp_path, "project-b-repo")
-        r = _run(
-            CLEANUP,
-            home=home,
-            project_dir=str(repo_b),
-            stdin_text=_payload_bash(MERGE_TEXT_TRIGGER, MERGE_OUTPUT_TRIGGER),
-        )
-        assert r.returncode == 0
-
-        # Project A's approval must be untouched.
-        assert plan_a.exists()
-        key_a = _project_key(project_a)
-        assert (home / ".claude" / "plans" / f".approved-{key_a}").exists()
-
-    def test_real_merge_still_cleans_up_its_own_project(self, tmp_path: Path) -> None:
-        home = tmp_path / "home"
-        (home / ".claude" / "plans").mkdir(parents=True)
-        repo = _make_merge_repo(tmp_path, "project-repo")
-        plan = home / ".claude" / "plans" / "plan.md"
-        _approve_plan(home, str(repo), plan)
-
-        r = _run(
-            CLEANUP,
-            home=home,
-            project_dir=str(repo),
-            stdin_text=_payload_bash(MERGE_TEXT_TRIGGER, MERGE_OUTPUT_TRIGGER),
-        )
-        assert r.returncode == 0
-
-        key = _project_key(str(repo))
-        assert not plan.exists(), "a genuine merge must still clean up its own project's plan"
-        assert not (home / ".claude" / "plans" / f".approved-{key}").exists()
-
-
-class TestMergeDetectionHardening:
-    def test_text_only_mention_does_not_delete_without_a_real_merge_commit(
-        self, tmp_path: Path
-    ) -> None:
-        """Regression for the live, self-inflicted incident in the diagnosis dossier:
-        a Bash command whose TEXT merely contains the trigger phrases (as echoed test
-        data, not a real merge) must not delete anything when HEAD is not a merge
-        commit."""
-        home = tmp_path / "home"
-        (home / ".claude" / "plans").mkdir(parents=True)
-        repo = _make_repo(tmp_path, "ordinary-repo")  # HEAD is NOT a merge commit
-        plan = home / ".claude" / "plans" / "plan.md"
-        _approve_plan(home, str(repo), plan)
-
-        diagnostic_command = (
-            f"echo 'test payload containing {MERGE_TEXT_TRIGGER} and "
-            f"{MERGE_OUTPUT_TRIGGER} as data, not a real merge'"
-        )
-        r = _run(
-            CLEANUP,
-            home=home,
-            project_dir=str(repo),
-            stdin_text=_payload_bash(diagnostic_command),
-        )
-        assert r.returncode == 0
-
-        assert plan.exists(), "text-only false trigger must not delete the plan file"
-        key = _project_key(str(repo))
-        assert (home / ".claude" / "plans" / f".approved-{key}").exists(), (
-            "text-only false trigger must not delete the approval marker"
-        )
-
-    def test_missing_project_dir_is_a_no_op(self, tmp_path: Path) -> None:
-        home = tmp_path / "home"
-        (home / ".claude" / "plans").mkdir(parents=True)
-        repo = _make_repo(tmp_path, "ordinary-repo")
-        plan = home / ".claude" / "plans" / "plan.md"
-        _approve_plan(home, str(repo), plan)
-
-        r = _run(
-            CLEANUP,
-            home=home,
-            project_dir="",
-            stdin_text=_payload_bash(MERGE_TEXT_TRIGGER, MERGE_OUTPUT_TRIGGER),
-        )
-        assert r.returncode == 0
-        assert plan.exists()
-
-
 # --------------------------------------------------------------------------- #
-# Item 45 / D3(c) — branch-merge reconciliation inside check-plan-approved.sh
+# Item 45 / D3(c) — branch-merge reconciliation inside the plan gate (`_reconcile`)
 # (2026-08-07). Full evidence + design:
 # docs/dev/diagnosis/plan-approval-marker-pr-merge.md "D3(b) refuted" /
 # "The pivot — D3(c)".
@@ -802,39 +706,11 @@ class TestArchiveAndReceipt:
         ledger_dir = repo / "docs" / "dev" / "ledger"
         assert not ledger_dir.exists() or not any(ledger_dir.glob("*.jsonl"))
 
-    def test_cleanup_on_merge_archives_instead_of_deleting(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "sess-test-16")
-        home = tmp_path / "home"
-        (home / ".claude" / "plans").mkdir(parents=True)
-        repo = _make_merge_repo(tmp_path, "repo")
-        plan = home / ".claude" / "plans" / "plan.md"
-        _approve_plan(home, str(repo), plan)
-
-        r = _run(
-            CLEANUP,
-            home=home,
-            project_dir=str(repo),
-            stdin_text=_payload_bash(MERGE_TEXT_TRIGGER, MERGE_OUTPUT_TRIGGER),
-        )
-        assert r.returncode == 0
-
-        key = _project_key(str(repo))
-        assert not plan.exists(), "a genuine merge must still clean up its own project's plan"
-        assert not (home / ".claude" / "plans" / f".approved-{key}").exists()
-
-        archive_root = home / ".claude" / "plans" / "archive"
-        assert archive_root.is_dir() and any(archive_root.iterdir())
-        archived_dirs = list(archive_root.iterdir())
-        assert any((d / "plan.md").exists() for d in archived_dirs)
-
-        ledger_shard = repo / "docs" / "dev" / "ledger" / "sess-test-16.jsonl"
-        assert ledger_shard.exists()
-
 
 class TestEfficiency:
-    def test_no_git_subprocess_when_main_has_not_moved(self, tmp_path: Path) -> None:
+    def test_no_git_subprocess_when_main_has_not_moved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         home = tmp_path / "home"
         (home / ".claude" / "plans").mkdir(parents=True)
         repo = _make_repo(tmp_path, "repo")
@@ -844,8 +720,7 @@ class TestEfficiency:
         _git(["checkout", "-q", "-b", "fix/steady"], cwd=repo)
         _git(["commit", "-q", "--allow-empty", "-m", "work"], cwd=repo)
         edited = _edit_file(repo)
-
-        # First edit stamps the branch (ref-file reads only -- no git call).
+        # First edit stamps the branch (ref-file reads only).
         assert (
             _run(
                 CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
@@ -853,50 +728,59 @@ class TestEfficiency:
             == 0
         )
 
-        real_git = shutil.which("git")
-        assert real_git is not None, "git must be resolvable for this test to mean anything"
-        shim_dir = tmp_path / "shim"
-        shim_dir.mkdir()
-        log_path = tmp_path / "git-calls.log"
-        shim = shim_dir / "git"
-        shim.write_text(
-            "#!/usr/bin/env bash\n"
-            f'echo "$@" >> "{log_path.as_posix()}"\n'
-            f'exec "{Path(real_git).as_posix()}" "$@"\n',
-            encoding="utf-8",
-        )
-        shim.chmod(0o755)
-        extra_path = shim_dir.as_posix() + os.pathsep + os.environ.get("PATH", "")
+        calls: list[tuple[str, ...]] = []
+        real_git = plan_gate._git
 
-        # Steady state: nothing has changed since the stamp was written.
-        r = _run(
-            CHECK,
-            home=home,
-            project_dir=str(repo),
-            stdin_text=_payload_edit(edited),
-            extra_env={"PATH": extra_path},
+        def counting_git(project_dir: str, *args: str) -> subprocess.CompletedProcess[str] | None:
+            calls.append(args)
+            return real_git(project_dir, *args)
+
+        monkeypatch.setattr(plan_gate, "_git", counting_git)
+        monkeypatch.setattr(subprocess, "run", _forbidden_run)
+        env = {"HOME": str(home), "CLAUDE_PROJECT_DIR": str(repo)}
+        result = plan_gate.check(json.loads(_payload_edit(edited)), env)
+        assert not result.blocked, result.messages
+        assert not calls, f"expected zero git calls in the steady state, got: {calls!r}"
+
+    def test_a_packed_branch_ref_costs_no_git_call(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """After `git gc` packs refs the branch has no loose ref file. The shell gate read
+        that as "branch missing" and paid the git calls on every edit."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        _approve_plan(home, str(repo), home / ".claude" / "plans" / "plan.md")
+        _git(["checkout", "-q", "-b", "fix/packed"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "work"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
         )
-        assert r.returncode == 0, r.stderr
-        logged = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
-        assert not logged, (
-            f"expected zero git subprocess calls in the steady state, got: {logged!r}"
-        )
+        _git(["pack-refs", "--all"], cwd=repo)
+        assert not (repo / ".git" / "refs" / "heads" / "fix" / "packed").exists()
+        stamp = home / ".claude" / "plans" / f".approved-branch-{_project_key(str(repo))}"
+        past = time.time() + 5  # the stamp postdates the pack: nothing has moved since
+        os.utime(stamp, (past, past))
+
+        calls: list[tuple[str, ...]] = []
+        real_git = plan_gate._git
+
+        def counting_git(project_dir: str, *args: str) -> subprocess.CompletedProcess[str] | None:
+            calls.append(args)
+            return real_git(project_dir, *args)
+
+        monkeypatch.setattr(plan_gate, "_git", counting_git)
+        env = {"HOME": str(home), "CLAUDE_PROJECT_DIR": str(repo)}
+        assert not plan_gate.check(json.loads(_payload_edit(edited)), env).blocked
+        assert not calls, f"a packed, unmoved branch must cost no git call, got: {calls!r}"
 
 
-class TestLibHelperExemption:
-    def test_lib_helper_is_not_wired_or_classified(self) -> None:
-        """hooks/lib/ is a deliberate exemption from the governance-hooks
-        gate (test_governance_hooks_gate.py's `_hook_stems()` globs
-        `hooks/*.sh` non-recursively) -- asserted explicitly here rather than
-        left implicit, per the design dossier's own instruction."""
-        settings = json.loads((REPO_ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
-        wired_text = json.dumps(settings.get("hooks", {}))
-        assert "retire-approved-plan" not in wired_text, (
-            "hooks/lib/retire-approved-plan.sh is a sourced helper, never wired directly"
-        )
-        hook_stems = {p.stem for p in HOOKS_DIR.glob("*.sh")}
-        assert "retire-approved-plan" not in hook_stems
-        assert LIB_HELPER.is_file()
+def _forbidden_run(*args: object, **kwargs: object) -> object:
+    raise AssertionError(f"unexpected subprocess in the steady state: {args!r}")
 
 
 # --------------------------------------------------------------------------- #
@@ -939,34 +823,13 @@ class TestStaleStampAndKilledRetire:
         )
         assert plan_b.exists(), "the fresh plan must stay in place"
 
-    def test_killed_retire_never_leaves_a_live_marker(self, tmp_path: Path) -> None:
-        """The retire path measured 5.66-14.72 s against a 5 s hook timeout;
-        a killed hook is non-blocking, and before the fix it left the plan
-        moved but the marker live. Here a `python3` shim stalls the heredoc
-        step (`python3 -`) until released, and the hook is killed there."""
-        real_python = shutil.which("python3") or shutil.which("python")
-        assert real_python, "python3 must be resolvable for this test"
-        shim_dir = tmp_path / "shim"
-        shim_dir.mkdir()
-        reached = tmp_path / "reached-heredoc"
-        release = tmp_path / "release"
-        shim = shim_dir / "python3"
-        shim.write_text(
-            "#!/usr/bin/env bash\n"
-            'if [ "$1" = "-" ]; then\n'
-            f'  : > "{reached.as_posix()}"\n'
-            "  for _ in $(seq 1 300); do\n"
-            f'    [ -e "{release.as_posix()}" ] && exit 0\n'
-            "    sleep 0.1\n"
-            "  done\n"
-            "  exit 0\n"
-            "fi\n"
-            f'exec "{Path(real_python).as_posix()}" "$@"\n',
-            encoding="utf-8",
-            newline="\n",
-        )
-        shim.chmod(0o755)
-
+    def test_killed_retire_never_leaves_a_live_marker(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The retire path measured 5.66-14.72 s, and later 39 s median, against its hook
+        timeout. A killed hook is non-blocking. Before item 110 it left the plan moved but the
+        marker live. Here the process "dies" at the archive move: the pointers must already
+        be gone."""
         home = tmp_path / "home"
         (home / ".claude" / "plans").mkdir(parents=True)
         repo = _make_repo(tmp_path, "repo")
@@ -985,38 +848,16 @@ class TestStaleStampAndKilledRetire:
         _git(["merge", "-q", "--no-ff", "-m", "merge", "fix/task-a"], cwd=repo)
         _git(["checkout", "-q", "fix/task-a"], cwd=repo)
 
-        env = dict(os.environ)
-        env["HOME"] = str(home)
-        env["CLAUDE_PROJECT_DIR"] = str(repo)
-        env["CLAUDE_CODE_SESSION_ID"] = "sess-item-110"
-        env["PATH"] = str(shim_dir) + os.pathsep + env.get("PATH", "")
-        proc = subprocess.Popen(  # noqa: S603 - fixed argv, test-authored input
-            ["bash", str(CHECK)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=env,
-        )
-        try:
-            assert proc.stdin is not None
-            proc.stdin.write(_payload_edit(edited).encode("utf-8"))
-            proc.stdin.close()
-            for _ in range(600):
-                if reached.exists() or proc.poll() is not None:
-                    break
-                time.sleep(0.1)
-            assert reached.exists(), "the retire path never reached its python3 step"
-            proc.kill()  # the harness's timeout, at the slowest step
-            proc.wait(timeout=30)
-        finally:
-            release.touch()
-            if proc.poll() is None:
-                proc.kill()
-                proc.wait(timeout=30)
+        def killed(*args: object, **kwargs: object) -> None:
+            raise _Killed
+
+        monkeypatch.setattr(shutil, "move", killed)
+        env = {"HOME": str(home), "CLAUDE_PROJECT_DIR": str(repo)}
+        with pytest.raises(_Killed):
+            plan_gate.check(json.loads(_payload_edit(edited)), env)
 
         key = _project_key(str(repo))
         plans = home / ".claude" / "plans"
-        assert not plan.exists(), "the retire path had reached its archive step"
         assert not (plans / f".approved-{key}").exists(), (
             "a hook killed mid-retire must never leave a live marker behind"
         )
@@ -1082,3 +923,275 @@ class TestStaleStampAndKilledRetire:
             f"pruning the sprint branch is expected to retire the approval "
             f"(stdout={r.stdout!r} stderr={r.stderr!r})"
         )
+
+
+# --------------------------------------------------------------------------- #
+# Items 154 / 111 -- approvals retired mid-branch by hooks the harness killed.
+# Evidence: docs/dev/diagnosis/python-direct-hooks-plan-gate.md (O1, O2).
+# --------------------------------------------------------------------------- #
+
+
+def _post_bash_commands() -> list[str]:
+    """Every PostToolUse hook command wired on the Bash matcher, as settings.json
+    has it -- so this test follows the wiring rather than one script name."""
+    settings = json.loads((REPO_ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    return [
+        hook["command"]
+        for entry in settings["hooks"].get("PostToolUse", [])
+        if entry.get("matcher") == "Bash"
+        for hook in entry["hooks"]
+    ]
+
+
+class TestKilledHookRetirements:
+    @pytest.mark.skipif(shutil.which("bash") is None, reason="runs the settings commands via bash")
+    def test_merge_phrases_in_tool_output_never_retire_on_a_pr_merge_head(
+        self, tmp_path: Path
+    ) -> None:
+        """O2: a read-only `cat` printed cleanup-plan-on-merge.sh's own source.
+        After a PR pull, HEAD on main IS a merge commit, so the structural check
+        passed and the hook archived a live plan. No PostToolUse Bash hook may
+        retire anything because of what a command PRINTED."""
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        repo = _make_merge_repo(tmp_path, "repo")  # main after a PR pull
+        plan = home / ".claude" / "plans" / "plan.md"
+        _approve_plan(home, str(repo), plan)
+
+        payload = _payload_bash(
+            "cat hooks/some-hook.sh",
+            output=f"# pre-filter phrases: {MERGE_TEXT_TRIGGER} / {MERGE_OUTPUT_TRIGGER}\n",
+        )
+        env = dict(os.environ)
+        env["HOME"] = str(home)
+        env["CLAUDE_PROJECT_DIR"] = str(repo)
+        for command in _post_bash_commands():
+            resolved = command.replace("${CLAUDE_PROJECT_DIR}", REPO_ROOT.as_posix())
+            subprocess.run(  # noqa: S603 - the committed settings.json command, test payload
+                ["bash", "-c", resolved],
+                input=payload,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+                cwd=repo,
+                check=False,
+            )
+
+        key = _project_key(str(repo))
+        assert plan.exists(), "printed merge phrases archived a live plan (O2)"
+        assert (home / ".claude" / "plans" / f".approved-{key}").exists()
+
+    def test_newer_unapproved_plan_blocks_edits_under_the_old_approval(
+        self, tmp_path: Path
+    ) -> None:
+        """O1: the plan Write landed, ExitPlanMode was approved, and the
+        PostToolUse `mark` hook was killed before it wrote anything. Edits then
+        ran under the PREVIOUS approval (its plan is what got archived later).
+        A plan written after the live approval, and not the approved one, means
+        the approval no longer describes the work: the next edit must block."""
+        home = tmp_path / "home"
+        plans = home / ".claude" / "plans"
+        plans.mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        plan_a = plans / "plan-a.md"
+        _approve_plan(home, str(repo), plan_a)
+        key = _project_key(str(repo))
+        past = time.time() - 60
+        os.utime(plans / f".approved-{key}", (past, past))
+        os.utime(plan_a, (past - 1, past - 1))
+
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        plan_b = plans / "plan-b.md"
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(str(plan_b)))
+        assert r.returncode == 0
+        plan_b.write_text("# plan B\n", encoding="utf-8")
+        # ExitPlanMode approved; `mark` killed before its first write.
+
+        r = _run(
+            CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(_edit_file(repo))
+        )
+        assert r.returncode == 2, (
+            f"edits must not proceed under an approval older than the plan being "
+            f"written (stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+
+    @pytest.mark.parametrize("kill_at", ["between-unlinks", "before-replace"])
+    def test_mark_killed_at_any_step_never_retires_the_fresh_plan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kill_at: str
+    ) -> None:
+        """O1's other kill point. The shell `mark` wrote the fresh marker and was then
+        killed before removing the previous branch's stamp; the next edit on the new branch
+        reconciled that merged stamp and archived the FRESH plan. The Python `mark` drops
+        the old marker and the stamp before it writes, so an interruption at any step leaves
+        "no approval", never a fresh plan that a stale stamp can retire."""
+        home = tmp_path / "home"
+        plans = home / ".claude" / "plans"
+        plans.mkdir(parents=True)
+        repo = _make_repo(tmp_path, "repo")
+        _approve_plan(home, str(repo), plans / "plan-a.md")
+        _git(["checkout", "-q", "-b", "fix/task-a"], cwd=repo)
+        _git(["commit", "-q", "--allow-empty", "-m", "task A"], cwd=repo)
+        edited = _edit_file(repo)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited)
+            ).returncode
+            == 0
+        )
+        _git(["checkout", "-q", "main"], cwd=repo)
+        _git(["merge", "-q", "--no-ff", "-m", "Merge pull request #1", "fix/task-a"], cwd=repo)
+
+        plan_b = plans / "plan-b.md"
+        assert (
+            _run(
+                CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(str(plan_b))
+            ).returncode
+            == 0
+        )
+        plan_b.write_text("# plan B\n", encoding="utf-8")
+
+        env = {"HOME": str(home), "CLAUDE_PROJECT_DIR": str(repo)}
+        if kill_at == "between-unlinks":
+            real_unlink = plan_gate._unlink
+
+            def unlink_then_die(*paths: Path) -> None:
+                real_unlink(paths[0])
+                raise _Killed
+
+            monkeypatch.setattr(plan_gate, "_unlink", unlink_then_die)
+        else:
+
+            def replace_dies(*args: object, **kwargs: object) -> None:
+                raise _Killed
+
+            monkeypatch.setattr(os, "replace", replace_dies)
+        with pytest.raises(_Killed):
+            plan_gate.mark(env)
+        monkeypatch.undo()
+
+        _git(["checkout", "-q", "-b", "fix/task-b"], cwd=repo)
+        r = _run(CHECK, home=home, project_dir=str(repo), stdin_text=_payload_edit(edited))
+        assert "PLAN RETIRED" not in r.stderr and plan_b.exists(), (
+            f"a mark killed mid-write left a state that retired the fresh plan "
+            f"(stdout={r.stdout!r} stderr={r.stderr!r})"
+        )
+        assert r.returncode == 2 and "NO EDIT APPROVAL" in r.stderr, (
+            "an interrupted mark must fail closed: no approval until ExitPlanMode again"
+        )
+
+
+class _Killed(BaseException):
+    """Stands in for the harness killing the hook process mid-step (BaseException, so no
+    `except OSError` in the gate can swallow it)."""
+
+
+# --------------------------------------------------------------------------- #
+# Item 143 -- a witness-paused plan Write batched with ExitPlanMode approved the
+# STALE plan. plan-write-landed refuses ExitPlanMode until the write lands.
+# --------------------------------------------------------------------------- #
+
+
+class TestPlanWriteLanded:
+    def _setup(self, tmp_path: Path) -> tuple[Path, str, Path]:
+        home = tmp_path / "home"
+        (home / ".claude" / "plans").mkdir(parents=True)
+        project = str(tmp_path / "project")
+        plan = home / ".claude" / "plans" / "plan.md"
+        plan.write_text("# the OLD plan\n", encoding="utf-8")
+        past = time.time() - 60
+        os.utime(plan, (past, past))
+        return home, project, plan
+
+    def test_a_paused_write_refuses_exit_plan_mode(self, tmp_path: Path) -> None:
+        home, project, plan = self._setup(tmp_path)
+        # The plan Write is attempted (the gate records it) but a later guard pauses it,
+        # so the file keeps its old content and mtime.
+        assert (
+            _run(
+                CHECK, home=home, project_dir=project, stdin_text=_payload_edit(str(plan))
+            ).returncode
+            == 0
+        )
+        r = _run(LANDED, home=home, project_dir=project, stdin_text="{}")
+        assert r.returncode == 2, (r.stdout, r.stderr)
+        assert "PLAN NOT SAVED (plan-write-landed)" in r.stderr
+        assert "plan.md" in r.stderr
+
+    def test_a_landed_write_allows_exit_plan_mode(self, tmp_path: Path) -> None:
+        home, project, plan = self._setup(tmp_path)
+        assert (
+            _run(
+                CHECK, home=home, project_dir=project, stdin_text=_payload_edit(str(plan))
+            ).returncode
+            == 0
+        )
+        plan.write_text("# the NEW plan\n", encoding="utf-8")
+        r = _run(LANDED, home=home, project_dir=project, stdin_text="{}")
+        assert r.returncode == 0, r.stderr
+
+    def test_no_recorded_attempt_allows_exit_plan_mode(self, tmp_path: Path) -> None:
+        home, project, _ = self._setup(tmp_path)
+        r = _run(LANDED, home=home, project_dir=project, stdin_text="{}")
+        assert r.returncode == 0, r.stderr
+
+    def test_another_projects_attempt_never_refuses_this_one(self, tmp_path: Path) -> None:
+        home, project, plan = self._setup(tmp_path)
+        other = str(tmp_path / "other-project")
+        assert (
+            _run(
+                CHECK, home=home, project_dir=other, stdin_text=_payload_edit(str(plan))
+            ).returncode
+            == 0
+        )
+        r = _run(LANDED, home=home, project_dir=project, stdin_text="{}")
+        assert r.returncode == 0, r.stderr
+
+    def test_mark_still_records_the_attempted_plan(self, tmp_path: Path) -> None:
+        """The attempt record is separate from `.current`: mark keeps approving the plan the
+        project was writing, exactly as before."""
+        home, project, plan = self._setup(tmp_path)
+        _approve_plan(home, project, plan)
+        marker = home / ".claude" / "plans" / f".approved-{_project_key(project)}"
+        assert marker.read_text(encoding="utf-8").strip() == str(plan).replace("\\", "/")
+
+
+class TestStateCompatibility:
+    def test_project_key_matches_the_shell_derivation_byte_for_byte(self) -> None:
+        """`tr -c 'A-Za-z0-9' '-'` maps every non-alphanumeric BYTE: a non-ASCII character
+        becomes one dash per UTF-8 byte. Pointers written by the shell hooks must keep
+        resolving after the switch."""
+        assert plan_gate.project_key("C:\\Dev\\sartor") == "C--Dev-sartor"
+        assert plan_gate.project_key("/home/u/proj-1") == "-home-u-proj-1"
+        assert plan_gate.project_key("/tmp/caf\u00e9") == "-tmp-caf--"
+
+    def test_an_msys_home_resolves_to_its_drive_on_windows(self) -> None:
+        native = plan_gate._native("/c/Users/x")
+        if os.name == "nt":
+            assert native == "C:/Users/x"
+        else:
+            assert native == "/c/Users/x"
+
+    def test_a_marker_written_by_the_shell_hook_is_honoured(self, tmp_path: Path) -> None:
+        """The exact bytes `mark-plan-approved.sh` wrote (`cp` of `.current`, which
+        `check-plan-approved.sh` wrote with `echo`) keep an edit allowed."""
+        home = tmp_path / "home"
+        plans = home / ".claude" / "plans"
+        plans.mkdir(parents=True)
+        project = str(tmp_path / "not-a-repo")
+        plan = plans / "plan.md"
+        plan.write_text("# plan\n", encoding="utf-8")
+        past = time.time() - 60
+        os.utime(plan, (past, past))
+        key = _project_key(project)
+        line = str(plan).replace("\\", "/") + "\n"
+        (plans / f".current-{key}").write_bytes(line.encode("utf-8"))
+        (plans / f".approved-{key}").write_bytes(line.encode("utf-8"))
+        r = _run(
+            CHECK,
+            home=home,
+            project_dir=project,
+            stdin_text=_payload_edit(str(tmp_path / "not-a-repo" / "x.py")),
+        )
+        assert r.returncode == 0, r.stderr

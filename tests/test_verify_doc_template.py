@@ -294,7 +294,7 @@ class TestLedgerWorkingTreeBytes:
 _LEDGER_APPEND_WRITERS = {
     "scripts/enforcement/adapters/claude_context_hook.py",
     "scripts/verify_doc_template.py",
-    "hooks/lib/retire-approved-plan.sh",
+    "scripts/enforcement/plan_gate.py",  # the plan-archived receipt (was a bash helper)
 }
 
 

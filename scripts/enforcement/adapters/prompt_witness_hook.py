@@ -14,9 +14,8 @@ submission would be a worse defect than the momentum failure it mitigates.
 The classification limits are stated in the guard module's docstring
 (charter C-0/C-11) — this adapter only translates stdin/stdout.
 
-Invoked by `hooks/interrogative-prompt-witness.sh`:
-
-    exec python3 "$CLAUDE_PROJECT_DIR/scripts/enforcement/adapters/prompt_witness_hook.py"
+Launched by `scripts/enforcement/adapters/hook.py` as the
+`interrogative-prompt-witness` hook (item 152: no shell wrapper).
 """
 
 from __future__ import annotations

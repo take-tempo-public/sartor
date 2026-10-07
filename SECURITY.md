@@ -269,7 +269,7 @@ Path traversal is prevented in all file-serving routes via:
 
 Enforcement is mechanical: the `route-security-lint` PreToolUse
 guard (`scripts/enforcement/guards/route_security_lint.py`, run by
-`hooks/edit-write-dispatcher.sh`) blocks Edit/Write operations on
+the `edit-write-dispatcher` hook) blocks Edit/Write operations on
 `app.py` and the route-bearing blueprint modules under
 `blueprints/` that touch the filesystem without `_safe_username()`
 and `_within()` calls. (The read-only `dashboard/` diagnostics

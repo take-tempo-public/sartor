@@ -26,3 +26,15 @@ candidate that fails closed: a `bash-dispatcher` guard that refuses a command ru
 `python -` (or `python3 -`) from a heredoc whose body contains a backslash, with the message
 "write the script with the Write tool and run it by path". False positives are cheap: the
 way through is always open. Stated to the owner at D4 close.
+
+### 2026-10-07 — recurred three times on `fix/python-direct-hooks-plan-gate` (no mechanism here: out of scope)
+
+- Bash heredocs collapsed backslash escapes three times this session: `\\n` to a newline, and
+  `\\|` to `\|`. Worst, a `\\b` became two literal **backspace bytes** in
+  `tests/test_agent_tool_grant_consistency.py`. A byte scan caught them before commit
+  (`docs/dev/diagnosis/python-direct-hooks-plan-gate.md` O5).
+- The working rule that held: write scripts with the Write tool, never a heredoc. That rule is
+  prose and **unenforced**.
+- The owner bounded this branch to items 152/111/154/143, so no guard was built; surfaced at
+  close-out.
+

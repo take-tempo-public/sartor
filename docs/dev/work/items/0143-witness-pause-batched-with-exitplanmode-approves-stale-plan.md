@@ -3,11 +3,15 @@ schema = 1
 id = 143
 kind = "item"
 title = "A witness-paused plan Write batched with ExitPlanMode gets the STALE plan approved"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["chore/release-v1.1.0", "fix/wiki-relevance-cited-scripts"]
+branches = ["chore/release-v1.1.0", "fix/wiki-relevance-cited-scripts", "fix/python-direct-hooks-plan-gate"]
 refs = ["hooks/edit-write-dispatcher.sh", "hooks/check-plan-approved.sh", "docs/dev/work/items/0087-*.md"]
 summary = "Witness paused the plan Write; ExitPlanMode in the same batch still ran, so the owner approved the old plan text."
+resolution = "2026-10-07, fix/python-direct-hooks-plan-gate: candidate 1 built. The plan gate records each Write/Edit attempt on a plan file (it runs first in the dispatcher, before the witness can pause), and a PreToolUse ExitPlanMode hook (plan-write-landed) refuses while that attempt is newer than the file. The general half (any reader batched after a paused Write) has NO mechanism: a per-call hook cannot cancel the rest of a batch. Declared in docs/governance/enforcement.md; the prose rule stays unenforced."
+verified_by = [
+  "tests/test_plan_approval_scoping.py::TestPlanWriteLanded",
+]
 ```
 
 **Observed (2026-10-02, session `1712f657`, `chore/release-v1.1.0`).**
@@ -98,3 +102,19 @@ the Edit and a follow-up commit. New trigger shape: a **task notification**, not
 resume prompt, re-arms the witness. Same class: a reader batched with the Write it depends
 on. Still no mechanism (out of item 153's scope); surfaced to the owner.
 
+### 2026-10-07 — eighth instance, then closed on `fix/python-direct-hooks-plan-gate`
+
+Eighth instance, this session: after the user's "continue", the witness (now launched by
+`hook.py`) paused an `Edit` to a test file while the batched second `Edit` to the blast-radius
+dossier ran. It was harmless, because the two were independent. The ExitPlanMode half is now
+fail-closed. The batched-reader half is declared impossible for a per-call hook, and was
+surfaced to the owner.
+
+### 2026-10-07 — ninth instance, after closure, same branch (the declared half)
+
+A subagent hand-back re-armed the witness. It paused a scratchpad `Write` (the wiki log
+script) while the batched `python <that script>` Bash ran and failed loudly (`can't open
+file … wiki_log.py`). It was harmless: the Write was re-run alone, then the script. This is
+the batched-reader half this item's closure declares no per-call hook can stop. The
+working rule (never batch a reader with the Write it depends on) is still prose, and it
+failed here under ordinary momentum.

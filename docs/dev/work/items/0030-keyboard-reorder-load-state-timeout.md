@@ -265,3 +265,20 @@ Raw-log check of `33805467341` (`gh run view 33805467341 --log`), not taken from
   0.967^47 ≈ 0.21. A clean streak this long is unremarkable if nothing changed.
 
 Status stays `watching`. No mechanism has been identified.
+
+### 2026-10-07 — recurred on PR #160 (`fix/python-direct-hooks-plan-gate`)
+
+- `python -m scripts.ci_wait 160` exited **3**: every required check passed, but
+  `tests/ux/regression/test_20260604_bullet_drag_reorder.py::test_keyboard_reorder_persists_and_reset_reverts`
+  failed 1 of 3 attempts (run 37669157358, job 112956085468, 2026-10-07T18:48:02Z).
+- The failed attempt's traceback: `:254 assert compose.has_custom_order()` →
+  `ui_pages/wizard_compose.py:247` → `:232 self._wait_settled()` →
+  `test_20260604_bullet_drag_reorder.py:163 _instrumented_wait_settled` →
+  `self.page.wait_for_load_state("networkidle")` → `TimeoutError: Timeout 30000ms exceeded.`
+- **Observed (code read):** the test's instrumented override calls
+  `wait_for_load_state("networkidle")` with **no timeout**, so Playwright's 30 s default applies.
+  The 2026-07-31 fix bounded the same wait to 5 s in `ui_pages/wizard_compose.py`.
+- **Inferred, unverified:** the instrument re-introduces the unbounded wait that fix removed, so
+  when the instrument is active, the timeout is the instrument's own.
+- The branch's diff touches no UI, JS or compose code. Nothing was changed for this item here (out
+  of scope).
