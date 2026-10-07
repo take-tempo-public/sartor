@@ -3,8 +3,9 @@ schema = 1
 id = 152
 kind = "item"
 title = "Agent shell environment varies by session: a Bash tool with no coreutils made a Monitor busy-loop; invoke hooks as Python directly"
-status = "open"
+status = "closed"
 decision_owner = "agent"
+branches = ["fix/python-direct-hooks-plan-gate"]
 refs = [
   "hooks/",
   ".claude/settings.json",
@@ -12,6 +13,11 @@ refs = [
   "docs/dev/work/items/0111-*.md",
 ]
 summary = "A Bash with no grep/sleep made a Monitor spin. Owner chose Python-direct hooks (no .sh wrappers) + a shell probe."
+resolution = "2026-10-07, fix/python-direct-hooks-plan-gate: every settings.json hook is `python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" <name>`, hooks/*.sh are deleted, and a gate test enforces the shape. The SessionStart shell-probe warns when a shell lacks python3/sleep/grep. Interpreter name: python3, the one every retired wrapper exec'd. Not checked on hypha or the homelab. A machine without python3 on PATH starts no hook and fails open: declared in docs/governance/enforcement.md."
+verified_by = [
+  "tests/test_settings_hooks_python_direct.py",
+  "tests/test_hook_witnesses.py::TestShellProbe",
+]
 ```
 
 **Observed (2026-10-03, session 3abb1df0).**
@@ -63,3 +69,12 @@ only has to launch `python -m …`.
 ### 2026-10-04 — owner decision: Python-direct hooks folded in
 Decision recorded above. `decision_owner` moved to `agent`: the open choice is made, and what
 remains is implementation.
+
+### 2026-10-07 — closed on `fix/python-direct-hooks-plan-gate`
+
+Verified live: Claude Code hot-reloaded the new `settings.json`. The next Edit's PAUSE was
+emitted by `python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py"
+edit-write-dispatcher`, and 29 tool calls after the switch had zero `hook_cancelled`
+(`docs/dev/diagnosis/python-direct-hooks-plan-gate.md` O6). **Not verified:** how `python3` resolves on hypha and the homelab (this
+item's "Before building" bullet). The choice is no regression, since every wrapper already
+`exec`-ed `python3`, but it has not been checked on those machines.

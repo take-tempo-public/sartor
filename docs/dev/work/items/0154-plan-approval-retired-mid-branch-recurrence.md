@@ -3,9 +3,9 @@ schema = 1
 id = 154
 kind = "item"
 title = "Recurrence of item 110: a plan approved on main was retired mid-branch after checkout + rebase; the next Edit hit NO EDIT APPROVAL"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/console-run-lock-hardening"]
+branches = ["fix/console-run-lock-hardening", "fix/python-direct-hooks-plan-gate"]
 refs = [
   "hooks/check-plan-approved.sh",
   "hooks/lib/retire-approved-plan.sh",
@@ -13,6 +13,11 @@ refs = [
   "docs/dev/handoffs/hook-guard-false-blocks.md",
 ]
 summary = "Approved on main, then checkout+rebase; next Edit hit NO EDIT APPROVAL. Item 110's class; cause unverified."
+resolution = "2026-10-07, fix/python-direct-hooks-plan-gate: cause OBSERVED, not the rebase. Transcript 2b79cef7 shows mark-plan-approved.sh cancelled after ExitPlanMode and check-plan-approved.sh cancelled on every Edit (28-36 s vs 20 s), the archive at 19:54:50Z with no manifest or receipt. A second path was reproduced live (the merge hook grepped tool output). Both paths reproduced by tests that failed on the .sh hooks. Fixed by the Python plan gate (fast, fail-closed mark, newer-plan block) and by removing cleanup-plan-on-merge."
+verified_by = [
+  "tests/test_plan_approval_scoping.py::TestKilledHookRetirements",
+  "tests/test_plan_approval_scoping.py::TestStaleStampAndKilledRetire::test_killed_retire_never_leaves_a_live_marker",
+]
 ```
 
 **Observed (reported, not reproduced).** The only source is the `fix/hook-guard-false-blocks`
@@ -58,3 +63,9 @@ Session `b6966e40`: the plan was approved via `ExitPlanMode` while on `main` (54
 had a **rebase**, which this run lacked. A single run, not a rate — it narrows the instrument's
 first arm to the rebase step but proves nothing about it.
 
+### 2026-10-07 — closed on `fix/python-direct-hooks-plan-gate`
+
+The mechanism is observed (dossier `docs/dev/diagnosis/python-direct-hooks-plan-gate.md` O1, O2). The rebase is not part of it: the
+retire came from a timeout-killed reconcile 47 minutes later, acting on a marker the killed
+`mark` never replaced. The three reproductions failed on the shell hooks at `5431b83` and pass
+on the port.

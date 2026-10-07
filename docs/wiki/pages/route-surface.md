@@ -63,7 +63,7 @@ is asserted never to import `app.py`, any blueprint, or `config.py`
 
 This is uniform **because a hook guards it**, and the hook's scope widened with
 the split (PX-21): [`route_security_lint.py`](../../../scripts/enforcement/guards/route_security_lint.py)
-(run via `hooks/edit-write-dispatcher.sh` since PX-37) now runs on an `Edit`/`Write` to
+(run via the `edit-write-dispatcher` hook; see [`scripts/enforcement/adapters/hook.py`](../../../scripts/enforcement/adapters/hook.py) and [`claude_dispatcher.py`](../../../scripts/enforcement/adapters/claude_dispatcher.py) since PX-37 / item 152) now runs on an `Edit`/`Write` to
 **`app.py` OR any `blueprints/**.py`** module
 that adds or modifies a route touching the filesystem (detected by
 `open(`/`send_file(`/`Path(`/`OUTPUT_DIR`/etc.) unless **both** `_safe_username`
