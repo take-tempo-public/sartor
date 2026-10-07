@@ -108,7 +108,7 @@ subagent's gate dies with the agent (§11.9, learned twice on A2). The script
 therefore runs in two stages bracketing the main-loop gate:
 
 0. **Preconditions.** A live plan-approval marker for this project exists
-   (`hooks/check-plan-approved.sh` blocks every subagent `Edit`/`Write`
+   (the `check-plan-approved` gate blocks every subagent `Edit`/`Write`
    without one; the pipeline then stops correctly rather than proceeding —
    never create or touch the marker to unblock it). The feature branch exists
    and is checked out. The sprint brief and epic design brief exist as files.

@@ -69,7 +69,8 @@ When the harness says **"Plan mode is active"**, Claude Code must:
 4. Call `ExitPlanMode` ONLY after the plan file is complete
    and ready for user review.
 
-The PreToolUse hook at `hooks/check-plan-approved.sh`
+The plan gate (`check-plan-approved`, in
+`scripts/enforcement/plan_gate.py`, run by the Edit|Write dispatcher)
 enforces rules 2 and 4.
 
 ### Plugin commands + agents + hooks
@@ -90,11 +91,15 @@ the guard logic lives once in the tool-agnostic `scripts/enforcement/`
 core, which the Claude hooks, the opt-in `.githooks/` and CI all call.
 Important hooks for any agent writing code here:
 
-- `check-plan-approved` / `mark-plan-approved` / `cleanup-plan-on-merge`
-  — the plan gate. No `Edit`/`Write` outside `~/.claude/plans/` until
-  `ExitPlanMode` approves a plan. The approval is retired once that
-  plan's branch has merged. Only `ExitPlanMode` creates the marker;
-  never create it by hand.
+- `check-plan-approved` / `mark-plan-approved` / `plan-write-landed`
+  — the plan gate (`scripts/enforcement/plan_gate.py`). No `Edit`/`Write`
+  outside `~/.claude/plans/` until `ExitPlanMode` approves a plan, and a
+  plan written after the live approval blocks edits until it is approved
+  in turn. The approval is retired (archived) once that plan's branch has
+  merged or is gone. `ExitPlanMode` is refused while the plan file's
+  last Write/Edit has not landed (item 143). Write the plan and call
+  `ExitPlanMode` in separate messages. Only `ExitPlanMode` creates the
+  marker; never create it by hand.
 - `require-feature-branch` — blocks `Edit`/`Write` while on
   `main`/`master`. The hatch, `CLAUDE_ALLOW_MAIN_EDITS=1`, is used only
   when the user directs it.
@@ -164,15 +169,18 @@ Important hooks for any agent writing code here:
   (C-0: intent classification is not deterministic); every failure
   path fails open.
 
-**Wiring note (`feat/verify-dont-assume-guard`):** the five Bash-matcher
-guards (`block-secrets`, `block-merge-to-main`, `ruff-changed`,
-`verify-binary-on-path`, `block-subagent-git-stash`) run through one dispatcher
-(`hooks/bash-dispatcher.sh` → `scripts/enforcement/adapters/bash_dispatcher.py`),
-and the seven Edit|Write guards through another
-(`hooks/edit-write-dispatcher.sh`, PX-37) — one settings.json entry and one
-process per matcher, no-short-circuit aggregation, guard logic unchanged.
-The UserPromptSubmit witness is its own settings.json entry (a different
-event; nothing else rides it).
+**Wiring note (`fix/python-direct-hooks-plan-gate`, item 152):** every
+settings.json hook is exactly
+`python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`.
+No shell wrapper sits in between, and `tests/test_settings_hooks_python_direct.py`
+fails on any other shape. The five Bash-matcher guards (`block-secrets`,
+`block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`,
+`block-subagent-git-stash`) run in the `bash-dispatcher` process. The plan gate and
+the seven Edit|Write guards run in the `edit-write-dispatcher` process (PX-37). That
+is one process per matcher, with no-short-circuit aggregation. A hook that outruns its
+timeout is cancelled by the harness, and a cancelled PreToolUse hook does **not**
+block: on this machine a slow gate is an open gate
+(`docs/dev/diagnosis/python-direct-hooks-plan-gate.md`).
 
 ### Skill + subagent catalog
 

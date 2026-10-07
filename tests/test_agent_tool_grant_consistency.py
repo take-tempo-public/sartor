@@ -48,10 +48,12 @@ def test_no_create_instruction_without_a_creating_tool(path: Path) -> None:
     "path", [*_agent_files(), _AGENTS_DIR.parent / "SECURITY.md"], ids=lambda p: p.stem
 )
 def test_no_retired_plugin_hook_path(path: Path) -> None:
-    """Item 54: hooks moved from `.claude-plugin/hooks/` to root `hooks/` (and the guards
-    now run through the two dispatchers). A live doc naming the old path sends a reader to
-    a directory that does not exist."""
-    assert ".claude-plugin/hooks" not in path.read_text(encoding="utf-8"), path.name
+    """Item 54: hooks moved from `.claude-plugin/hooks/` to root `hooks/`, and since item 152
+    there are no hook scripts at all (each hook is `python3 hook.py <name>`). A live doc
+    naming either old path sends a reader to a file that does not exist."""
+    text = path.read_text(encoding="utf-8")
+    assert ".claude-plugin/hooks" not in text, path.name
+    assert not re.search(r"\bhooks/[\w/-]+\.sh\b", text), path.name
     assert not (_AGENTS_DIR.parent / ".claude-plugin" / "hooks").exists()
 
 

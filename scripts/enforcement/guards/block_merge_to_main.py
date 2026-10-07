@@ -45,7 +45,7 @@ not doc freshness; the only way through is running `/wiki-self-update` (or
 `/wiki-ingest`) to genuinely advance the checkpoint, mirroring the
 `DOC-STATUS` gate's no-escape-hatch design. Silent (allows) when there is no
 real ingest baseline yet — same "sentinel = not an error" rule
-`wiki-freshness-reminder.sh` already uses.
+the `wiki-freshness-reminder` hook already uses.
 
 **Wiki-freshness re-scope to push-only (`chore/merge-channel-alignment`,
 2026-07-19).** The arm above was wired to *both* merge and push. That made a

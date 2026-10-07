@@ -96,6 +96,7 @@ Negative results:
 | 38 | `docs/dev/work/BOARD.md` | regenerate | generated from items |
 | 39 | State files `.approved-*`, `.current-*`, `.approved-branch-*` | no format change | byte-compatible; live pointers from before the switch keep working. Asserted by a test that writes them with the old key derivation |
 | 40 | `plan-archived` receipt fields | no change | same `event`, `session`, `branch`, `archive_id`, `plan`, `ts`; same `newline="\n"` |
+| 41 | `tests/test_enforcement_core.py:1080` `test_guard_order_is_exactly_the_edit_write_guards` | update (**found late**) | pins `claude_dispatcher._GUARD_ORDER` exactly. **Missed by the enumeration**: it searched hook and file names, not the `_GUARD_ORDER` symbol this branch also changed. Surfaced by the targeted pytest run (`1 failed, 117 passed`), then fixed. A follow-up `git grep -n _GUARD_ORDER` found 9 sites; the other readers check membership only (unaffected). `claude_hook`'s removed guard-module attributes: `git grep 'claude_hook import'` shows only `_GUARD_NAMES`, which remains |
 
 ---
 
@@ -107,8 +108,22 @@ Negative results:
   `CHANGELOG.md` history, `docs/wiki/log.md`, `docs/governance/compliance-log.md`,
   `docs/dev/RELEASE_ARC.md`, `docs/dev/RELEASE_CHECKLIST.md` history rows,
   `docs/dev/epic-a-chain-design-corrections.md`, `docs/dev/handoff-integrity-design.md:270` and
-  `docs/dev/keep-ledger.md:119`. They record what was true when written. Their `path:line` cites
-  into `hooks/` stay resolvable through git history.
+  `docs/dev/keep-ledger.md:119`. They record what was true when written, and their prose is
+  not rewritten.
+  - **Correction (found by the link gate):** the claim first written here, "their
+    `path:line` cites into `hooks/` stay resolvable through git history", was **false** for
+    six sites. `scripts/check_doc_links.py` requires the target to exist, and it failed with
+    `6 broken link(s)/cite(s)`.
+  - Those six were re-pointed, text unchanged, to GitHub permalinks pinned at a commit where
+    the file exists: `CHANGELOG.md:6923` and three in
+    `docs/dev/archive/self-documenting-loop-design.md` (at `b5c9ddf`), and two `path:line`
+    cites in `docs/dev/epic-a-chain-design-corrections.md:67,229`.
+  - The last two are pinned at `fced8e9`, the commit that record was written at. A
+    `git show fced8e9:hooks/lib/retire-approved-plan.sh` confirms lines 84 (`mv -f`) and 161
+    (`rm -f` pointers) are what the record describes.
+  - The `moved-paths.json` map was not used: it is for docs that moved, and pointing it at
+    ported code would send line cites to unrelated lines.
+  - Re-run: `check_doc_links: OK — 613 tracked markdown files`.
 - **`.githooks/*`** is unchanged. Git requires an executable hook file, and each one is already
   a one-line `exec python3 …/git_hook.py`. Item 152's rule covers `.claude/settings.json` only.
 - **`scripts/wiki_relevance.py:65` (`"hooks/"` in the irrelevant prefixes)** stays. With the

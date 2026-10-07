@@ -13,6 +13,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Python-direct hooks and a faster plan gate (`fix/python-direct-hooks-plan-gate`, items 152, 111, 154, 143)
+
+- **Changed: every Claude Code hook is Python, launched directly (item 152).** Each
+  `.claude/settings.json` hook is now `python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`.
+  The `hooks/*.sh` wrappers are gone. `hook.py` imports only the handler for the hook it runs.
+  `tests/test_settings_hooks_python_direct.py` fails on a `.sh` file, a shell interpreter, or
+  an unregistered name.
+- **Changed: the plan gate is `scripts/enforcement/plan_gate.py` (item 111).** It is a port of
+  `check-plan-approved.sh`, `mark-plan-approved.sh` and `retire-approved-plan.sh`, with the
+  same state files and the same per-project key. It runs first inside the Edit|Write
+  dispatcher instead of as a second hook. On the steady path it forks nothing (the shell
+  version forked `python3`, `tr`, `grep`, and on retire `git` and four `cygpath` calls).
+- **Fixed: approvals retired, or edits run unguarded, when a slow hook was cancelled
+  (item 154).** The harness cancels a hook that outruns its timeout, and a cancelled
+  PreToolUse hook does not block. Under memory pressure the shell plan gate measured
+  28–36 s against 20 s, and in one session 31 of 40 edits ran with no Edit|Write guard.
+  `mark` now drops the old marker and the stamp before it writes the new marker, so an
+  interruption leaves no approval rather than a stale one. A plan written after the live
+  approval now blocks edits until it is approved.
+- **Removed: `cleanup-plan-on-merge`** (owner decision). Its pre-filter grepped the tool
+  output, so printing its own source while `HEAD` was a PR merge commit archived a live plan.
+  The edit-time reconciler already covers every merge channel.
+- **Added: `plan-write-landed` (item 143).** A PreToolUse `ExitPlanMode` hook refuses
+  approval while the plan file's last Write/Edit has not landed, so the dialog would show the
+  old text. A call batched after a paused Write still runs on stale input: no per-call hook
+  can stop that, and `docs/governance/enforcement.md` says so.
+- **Added: `shell-probe` (item 152).** A SessionStart note naming any shell that cannot find
+  `python3`, `sleep` or `grep`. It is silent when all of them resolve.
+- **Known limit:** a machine without `python3` on PATH starts no hook at all, and the gates
+  fail open. Every retired wrapper `exec`-ed `python3` too.
+- Evidence: `docs/dev/diagnosis/python-direct-hooks-plan-gate.md`. Consumers:
+  `docs/dev/blast-radius/python-direct-hooks-plan-gate.md`.
+
 ### Subagent docs match their tool grants (`chore/agent-doc-drift`, items 54, 141)
 
 - **Fixed: `wiki-scribe` no longer told to create a file it can't create (item 141).** Its
@@ -6887,7 +6920,7 @@ product code/route/LLM-call/dep; `PROMPT_VERSION` unchanged at `2026-06-13.1`; n
   read-only `Read`/`Grep`/`Glob`) — adversarial quote-match of each cite/`[synthesis]` claim
   against source at HEAD → SUPPORTED / DRIFTED / UNSUPPORTED; the read-only tool grant *is* the
   "never silently rewrite committed history" enforcement.
-- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](hooks/wiki-freshness-reminder.sh)
+- **Freshness hook escalation** — [`wiki-freshness-reminder.sh`](https://github.com/take-tempo-public/sartor/blob/b5c9ddf41156c7dad900b759723556df71f6e60c/hooks/wiki-freshness-reminder.sh)
   now escalates its message to `/wiki-self-update` past a 10-file drift threshold (below it, the
   existing `/wiki-ingest` nudge). It **stays a witness** (always exit 0, silent under the
   sentinel and when nothing changed) — only the wording tiers.

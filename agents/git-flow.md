@@ -20,7 +20,7 @@ You are the git-workflow agent for sartor. You execute git tasks the way the pro
 
 ## What you ALWAYS confirm before doing
 
-The `block-merge-to-main` guard (run by `hooks/bash-dispatcher.sh`) rejects a local `git merge` or `git push` that targets `main`/`master` unless the human explicitly opts in via a `CLAUDE_CONFIRM_MERGE=1` prefix on the command. No hook gates the other actions below; the rule is to ASK FIRST in chat for every one of them:
+The `block-merge-to-main` guard (run by the `bash-dispatcher` hook) rejects a local `git merge` or `git push` that targets `main`/`master` unless the human explicitly opts in via a `CLAUDE_CONFIRM_MERGE=1` prefix on the command. No hook gates the other actions below; the rule is to ASK FIRST in chat for every one of them:
 
 - `git push` of any branch (visible to others on the remote)
 - `gh pr create` (notifies reviewers, lands in the PR queue)

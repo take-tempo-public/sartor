@@ -30,13 +30,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/check-plan-approved.sh",
-            "timeout": 20
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/edit-write-dispatcher.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" edit-write-dispatcher",
+            "timeout": 30
           }
         ]
       },
@@ -45,8 +40,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/bash-dispatcher.sh",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" bash-dispatcher",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" plan-write-landed",
+            "timeout": 15
           }
         ]
       }
@@ -57,8 +62,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/mark-plan-approved.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" mark-plan-approved",
+            "timeout": 15
           }
         ]
       },
@@ -67,13 +72,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/cleanup-plan-on-merge.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/wiki-freshness-reminder.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" wiki-freshness-reminder",
+            "timeout": 15
           }
         ]
       }
@@ -83,8 +83,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/interrogative-prompt-witness.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" interrogative-prompt-witness",
+            "timeout": 10
           }
         ]
       }
@@ -95,8 +95,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/restore-evidence.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" restore-evidence",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" shell-probe",
+            "timeout": 15
           }
         ]
       }
@@ -107,8 +117,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/hooks/capture-before-compact.sh",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py\" capture-before-compact",
+            "timeout": 10
           }
         ]
       }

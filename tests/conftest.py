@@ -53,7 +53,7 @@ def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     """Point the interrogative-witness state dir at a per-test tmp dir, for every
     test in the suite (work item 87; same shape as `_default_llm_log_path` above).
 
-    Without this, the tests that run `hooks/edit-write-dispatcher.sh` as a real
+    Without this, the tests that run the `edit-write-dispatcher` hook as a real
     subprocess (`test_enforcement_core.py`) would read whatever witness state a
     live Claude session last left under the developer's OS temp dir — a
     `witnessed: false` leftover there would make the dispatcher's pause fire
@@ -64,6 +64,42 @@ def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     from scripts.enforcement.guards import interrogative_witness
 
     monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path / "witness-state"))
+
+
+@pytest.fixture(autouse=True)
+def _no_live_session_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never let a test inherit the live Claude session's `CLAUDE_CODE_SESSION_ID`.
+
+    The ledger writers (`claude_context_hook.record_compaction`, the plan gate's
+    `plan-archived` receipt) name their shard after it. Run inside a Claude session, a test
+    that reaches one with this repo as its project appended a **fake** `compacted` event to
+    the live session's tracked shard: twice on `fix/python-direct-hooks-plan-gate`, from
+    `test_context_hooks_never_gate` (`docs/dev/diagnosis/python-direct-hooks-plan-gate.md`
+    O7). A test that needs a session sets one explicitly.
+    """
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_plan_gate_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the plan gate's state dir at a per-test tmp dir, pre-approved for THIS repo
+    only (`fix/python-direct-hooks-plan-gate`; same shape as `_isolated_witness_state`).
+
+    The `edit-write-dispatcher` hook runs the plan gate first. Without this, a test that runs
+    the dispatcher with `CLAUDE_PROJECT_DIR` naming this repo would read, and could
+    reconcile, the developer's live approval under `~/.claude/plans` (and on CI, where there
+    is none, every allow case would hit NO EDIT APPROVAL). The empty marker approves edits
+    for this repo's key, so guard tests see only the guard under test. Tests of the plan gate
+    itself build their own state and drop this variable (`tests/test_plan_approval_scoping.py`).
+    """
+    from scripts.enforcement import plan_gate
+
+    plans = tmp_path / "plan-gate-state"
+    plans.mkdir()
+    (plans / f".approved-{plan_gate.project_key(str(PROJECT_ROOT))}").write_text(
+        "", encoding="utf-8"
+    )
+    monkeypatch.setenv(plan_gate.PLANS_DIR_ENV, str(plans))
 
 
 _RUN_SLOT_DRAIN_TIMEOUT_S = 15.0
