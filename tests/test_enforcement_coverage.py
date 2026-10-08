@@ -56,6 +56,8 @@ _BINDS_NON_CLAUDE_AGENTS: dict[str, bool] = {
     # equivalent at all, so unlike C-7/C-10 there is no clause here for another tool to enforce
     "block_subagent_git_stash": False,  # Epic C C1c — Claude Code only BY NATURE: "issued by a
     # subagent" is the PreToolUse `agent_id` field; a git hook cannot tell who ran `git stash`
+    "block_doubled_backslash": False,  # item 142 — Claude Code only BY NATURE: the collapse is
+    # in how the Bash tool starts bash, and no git hook ever sees a Bash-tool command string
 }
 
 #: Guards whose clause has **no** tool-agnostic enforcement at all. Kept as its own constant
@@ -121,6 +123,7 @@ class TestTheExtractionGapIsPinned:
         point: that is a governance-coverage change and it should not land silently.
         """
         assert sorted(EXTRACTION_GAP) == [
+            "block_doubled_backslash",
             "block_subagent_git_stash",
             "interrogative_witness",
             "require_consumer_enumeration",

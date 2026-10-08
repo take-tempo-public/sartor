@@ -3,11 +3,23 @@ schema = 1
 id = 142
 kind = "item"
 title = "Recurrence: backslash escapes in a heredoc'd python script corrupt the file it writes"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement"]
-refs = ["scripts/enforcement/guards/", "hooks/bash-dispatcher.sh"]
+branches = ["feat/docs-assets-enforcement", "fix/heredoc-escape-guard"]
+refs = [
+  "scripts/enforcement/guards/block_doubled_backslash.py",
+  "scripts/enforcement/adapters/bash_dispatcher.py",
+  "docs/dev/diagnosis/heredoc-escape-guard.md",
+  "docs/dev/blast-radius/heredoc-escape-guard.md",
+]
 summary = "Heredoc python scripts with backslash escapes wrote a backspace char and a broken file; a Bash guard could refuse them."
+resolution = "2026-10-07, fix/heredoc-escape-guard: the instrument showed the defect is not heredoc-specific. On Windows, Git Bash halves every doubled backslash while rebuilding its argv from the command line, before bash parses (diagnosis O1-O5). The block-doubled-backslash Bash guard refuses any Bash-tool command containing two consecutive backslashes on win32, and allows everything elsewhere (owner decision). The root-cause candidate, MSYS=noglob, is filed as its own item."
+verified_by = [
+  "tests/test_enforcement_core.py::TestBlockDoubledBackslashUnit",
+  "tests/test_enforcement_core.py::TestBashDispatcher::test_doubled_backslash_blocks_through_the_real_dispatcher",
+  "tests/test_bash_backslash_collapse.py",
+  "docs/dev/diagnosis/heredoc-escape-guard.md (The fix: live BLOCKED in session 17250fd2)",
+]
 ```
 
 **Observed (2026-10-01, `feat/docs-assets-enforcement`), three times in one session.**
@@ -37,4 +49,23 @@ way through is always open. Stated to the owner at D4 close.
   prose and **unenforced**.
 - The owner bounded this branch to items 152/111/154/143, so no guard was built; surfaced at
   close-out.
+
+### 2026-10-07 — closed on `fix/heredoc-escape-guard`: the mechanism is before bash, not in heredocs
+
+- **Observed** (`docs/dev/diagnosis/heredoc-escape-guard.md`):
+  - Through the Bash tool, a single-quoted `'A\\b'` prints `A\b`, and bash's own argv already
+    holds one backslash where two were sent.
+  - The PowerShell tool keeps both.
+  - Outside Claude Code, native Python starting `bash.exe -c` halves every doubled run. The
+    same text on stdin, or with `MSYS=noglob`, arrives intact.
+- **All ten recorded incidents' decoded commands held the intended two backslashes.** Three of
+  them had no heredoc at all (`grep`, `sed`). So this item's filed candidate ("refuse
+  `python -` heredocs with a backslash") would have missed them.
+- **The mechanism built:** `block-doubled-backslash`, which refuses any doubled backslash in a
+  Bash-tool command on Windows (owner decision: Windows only). It was verified live in the
+  closing session.
+- **Filed alongside:**
+  - item 157, `MSYS=noglob` as the root-cause fix, which the owner chose to keep separate;
+  - item 158, bash refusing whole commands with `unexpected EOF while looking for matching '`,
+    which this mechanism does not explain.
 

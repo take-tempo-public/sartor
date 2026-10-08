@@ -148,7 +148,7 @@ The load-bearing fact: **a clause enforced only by a Claude Code hook does not t
 into another project tomorrow. Guards route through three adapters with very different
 coverage (per [`enforcement.md` §"Enforcement reach"](../../governance/enforcement.md) — a tool-agnostic opt-in git-hook path; a CI/`gate.py` path that binds everyone;
 and a Claude-Code-only PreToolUse path). C-7's `require_evidence_before_fix`, C-10's
-`require_consumer_enumeration`, `interrogative_witness`, the C-8/C-12 context hooks, `verify_binary_on_path`, and `block_subagent_git_stash` (`scripts/enforcement/guards/block_subagent_git_stash.py:claude_check`)
+`require_consumer_enumeration`, `interrogative_witness`, the C-8/C-12 context hooks, `verify_binary_on_path`, `block_subagent_git_stash` (`scripts/enforcement/guards/block_subagent_git_stash.py:claude_check`), and `block_doubled_backslash`
 are all on the third. `verify_binary_on_path` has **no planned git-native
 path** — it parses a Bash command string, a shape a `pre-commit` hook never sees, so
 there is no equivalent input to route it from. `interrogative_witness`, by contrast, is Claude Code only **by nature, not by gap** `[synthesis]` — it enforces a pause based on whether the user prompt is a question or directive, a property of Claude *sessions* that git hooks do not have, so extraction closes nothing here.

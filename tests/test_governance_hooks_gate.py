@@ -127,6 +127,14 @@ owner-chosen group). Three changes, all deliberate:
   archived a live plan (diagnosis O2), and the edit-time reconciler covers every merge
   channel. F-gov-04's three witnesses are now two. **``shell-probe``** (SessionStart,
   item 152) joins the context hooks: it warns, never gates.
+
+**Amended 2026-10-07** (``fix/heredoc-escape-guard``, item 142; owner-directed):
+**``block-doubled-backslash`` is a THIRTEENTH enforced blocker RULE.** On Windows, a Bash
+command containing two consecutive backslashes is refused, because the Bash tool halves
+every doubled backslash before bash parses (``docs/dev/diagnosis/heredoc-escape-guard.md``).
+It is the C-11 guard for a recurrence of at least nine corrupted files and patterns. It runs
+inside ``bash-dispatcher``, so ``BASH_DISPATCHED_GUARD_NAMES`` grows with it, and
+``BLOCKER_HOOKS`` is unchanged. The count goes 12 → 13.
 """
 
 from __future__ import annotations
@@ -151,7 +159,7 @@ from scripts.enforcement.adapters import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 
-# The twelve enforced RULES (governance invariant). See the amendments above for each
+# The thirteen enforced RULES (governance invariant). See the amendments above for each
 # deliberate change in the count.
 BLOCKER_RULE_NAMES = frozenset(
     {
@@ -167,6 +175,7 @@ BLOCKER_RULE_NAMES = frozenset(
         "validate-context",
         "verify-binary-on-path",
         "block-subagent-git-stash",
+        "block-doubled-backslash",
     }
 )
 
@@ -204,6 +213,7 @@ BASH_DISPATCHED_GUARD_NAMES = frozenset(
         "ruff-changed",
         "verify-binary-on-path",
         "block-subagent-git-stash",
+        "block-doubled-backslash",
     }
 )
 
@@ -292,11 +302,12 @@ def test_blockers_reach_exit_2(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
     turn a blocked guard into exit 2 (the per-guard matrix through the real hook entry is
     `tests/test_enforcement_core.py`). `plan-write-landed` is proven on its own handler.
     """
-    assert len(BLOCKER_RULE_NAMES) == 12, (
-        "Twelve enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
+    assert len(BLOCKER_RULE_NAMES) == 13, (
+        "Thirteen enforced blocker RULES: F-gov-04's seven, plus require-evidence-before-fix "
         "(C-7), verify-binary-on-path, interrogative-witness (item 87), "
-        "block-subagent-git-stash (Epic C C1c) and plan-write-landed (item 143). Changing "
-        "this count is a governance change — make it deliberately."
+        "block-subagent-git-stash (Epic C C1c), plan-write-landed (item 143) and "
+        "block-doubled-backslash (item 142). Changing this count is a governance change — "
+        "make it deliberately."
     )
     dispatched = DISPATCHED_GUARD_NAMES | BASH_DISPATCHED_GUARD_NAMES
     assert BLOCKER_RULE_NAMES - {"plan-write-landed"} <= dispatched | {

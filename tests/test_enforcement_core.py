@@ -39,6 +39,7 @@ import pytest
 
 from scripts.enforcement.adapters import bash_dispatcher, claude_dispatcher
 from scripts.enforcement.guards import (
+    block_doubled_backslash,
     block_merge_to_main,
     block_secrets,
     block_subagent_git_stash,
@@ -1194,6 +1195,68 @@ class TestBlockSubagentGitStashUnit:
         assert not block_subagent_git_stash.claude_check(blank_payload).blocked
 
 
+# Two backslash characters, built rather than typed: the defect this guard exists for
+# is one layer silently halving a typed `\\`.
+_B2 = "\\" * 2
+
+
+class TestBlockDoubledBackslashUnit:
+    """Item 142 (owner-directed 2026-10-07; C-11 recurrence): on Windows the Bash tool
+    halves every doubled backslash before bash parses, so any command holding one is
+    refused there. Other platforms are never gated
+    (`docs/dev/diagnosis/heredoc-escape-guard.md`)."""
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "python - <<'EOF'\nprint(\"a" + _B2 + 'nb")\nEOF',
+            "cat > f.py <<'PYEOF'\nre.search(r\"" + _B2 + 'bword", t)\nPYEOF',
+            "printf '%s' 'A" + _B2 + "b'",
+            "grep -n 'Edit" + _B2 + "|Write' docs/dev/tooling.md",
+            "sed -i 's/x/" + _B2 + "b/g' f.py",
+            "ls C:" + _B2 + "Users",
+            'echo "' + _B2 * 2 + '"',
+        ],
+    )
+    def test_doubled_backslash_blocks_on_windows(self, command: str) -> None:
+        result = block_doubled_backslash.decide(command, platform="win32")
+        assert result.blocked, command
+        assert result.messages[0].startswith("BLOCKED (block-doubled-backslash)")
+        assert any("Write tool" in line for line in result.messages)
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "printf '%s' 'A\\b'",
+            "grep -n 'Edit\\|Write' docs/dev/tooling.md",
+            "python - <<'EOF'\nprint(1)\nEOF",
+            "echo hi",
+            "",
+        ],
+    )
+    def test_single_or_no_backslash_allows_on_windows(self, command: str) -> None:
+        assert not block_doubled_backslash.decide(command, platform="win32").blocked, command
+
+    @pytest.mark.parametrize("platform", ["linux", "darwin"])
+    def test_other_platforms_are_never_gated(self, platform: str) -> None:
+        command = "printf '%s' 'A" + _B2 + "b'"
+        assert not block_doubled_backslash.decide(command, platform=platform).blocked
+
+    def test_the_message_quotes_the_first_match(self) -> None:
+        command = "echo start && grep 'x" + _B2 + "y' f"
+        result = block_doubled_backslash.decide(command, platform="win32")
+        assert result.messages[-1] == f"First match: {command!r}"
+
+    def test_claude_check_follows_the_running_platform_and_gates_subagents(self) -> None:
+        command = "printf '%s' 'A" + _B2 + "b'"
+        main_payload = {"tool_input": {"command": command}}
+        sub_payload = {"agent_id": "x", "tool_input": {"command": command}}
+        expected = sys.platform == "win32"
+        assert block_doubled_backslash.claude_check(main_payload).blocked is expected
+        assert block_doubled_backslash.claude_check(sub_payload).blocked is expected
+        assert not block_doubled_backslash.claude_check({}).blocked
+
+
 class TestBashDispatcher:
     """feat/verify-dont-assume-guard: block-secrets, block-merge-to-main,
     ruff-changed, and verify-binary-on-path all run in one process, and every
@@ -1206,7 +1269,29 @@ class TestBashDispatcher:
             "ruff-changed",
             "verify-binary-on-path",
             "block-subagent-git-stash",
+            "block-doubled-backslash",
         }
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="the guard gates Windows only")
+    def test_doubled_backslash_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:
+        """Item 142: the payload arrives as JSON on stdin, so the hook still sees both
+        backslashes, and blocks, for the main agent and for a subagent alike."""
+        command = "printf '%s' 'A" + _B2 + "b'"
+        for extra in ({}, {"agent_id": "a1b2c3"}):
+            payload = {"tool_name": "Bash", **extra, "tool_input": {"command": command}}
+            code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
+            assert code == 2, extra
+            assert "block-doubled-backslash" in err
+
+    @pytest.mark.skipif(sys.platform == "win32", reason="off Windows the guard allows")
+    def test_doubled_backslash_allowed_off_windows(self, tmp_path: Path) -> None:
+        payload = {
+            "tool_name": "Bash",
+            "tool_input": {"command": "python --version 'A" + _B2 + "b'"},
+        }
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
+        assert code == 0, err
+        assert "block-doubled-backslash" not in err
 
     def test_subagent_git_stash_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:
         """Epic C C1c: the exact command run wf_9f0c8afe-bf9's refuter ran, from a

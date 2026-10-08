@@ -2584,3 +2584,34 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Structural check:** `scripts/check_doc_links.py` reports 613 tracked markdown files with no
   broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
   is no orphan or index change. **Gate verdict: PASS.**
+
+## 2026-10-08 — scoped wiki-self-update, two pages edited (`fix/heredoc-escape-guard`)
+
+- **Mode:** a scoped branch pass over `main...HEAD`. The checkpoint is **not** advanced
+  (`.last_ingest_sha` stays `3798e2d1`). The owner authorized about 4 Haiku calls.
+- **Wiki-relevant changes in the diff (3):** `CLAUDE.md`, `docs/dev/tooling.md`,
+  `docs/governance/enforcement.md`. A new Claude-Code-only Bash guard,
+  `block-doubled-backslash` (item 142), takes the Bash dispatcher from five guards to six and
+  the enforced blocker rules from 12 to 13.
+- **Edited (2 pages)** by `wiki-scribe` (Haiku). Each adds `block_doubled_backslash` by bare
+  name to the page's enumeration of Claude-Code-only guards:
+  - `consistency-tracks-enforcement` (line 139). **The scribe also removed the existing
+    `block_subagent_git_stash.py:claude_check` cite**, which was outside its brief. The
+    orchestrator restored that cite with a separate `Edit`, so the net change is the addition
+    only. That cite is one of the wiki citations `scripts/wiki_relevance.py` derives its
+    override list from.
+  - `governance-extraction` (line 151). One clause; the diff was checked.
+- **Bare name, not a path cite**, so `scripts/wiki_relevance.py` `RELEVANT_OVERRIDES` (a gated
+  surface) stays untouched.
+- **Verified no-edit:** `docs-information-architecture`. Its `tooling.md` and `enforcement.md`
+  mentions are generic, and still accurate.
+- **Audit (`wiki-grounding-auditor`, a separate context per page):**
+  - `consistency-tracks-enforcement`: 8 SUPPORTED, 0 DRIFTED, 0 UNSUPPORTED.
+  - `governance-extraction`: 5 SUPPORTED, 1 DRIFTED, 0 UNSUPPORTED. The drift flag (line 96,
+    "Follow-on (2026-09-30 …)" against `maintainer-lane.md`'s "2026-09-28") was checked by the
+    orchestrator and is a **false positive**: 2026-09-28 is the date of owner decision O-2,
+    and 2026-09-30 is when the move landed (`9e41c70`, per `git log`). Left unchanged.
+  - **Catch-rate:** 1 flagged, 0 confirmed, over 2 pages audited.
+- **Structural check:** `scripts/check_doc_links.py` reports 619 tracked markdown files with no
+  broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
+  is no orphan or index change. **Gate verdict: PASS.**
