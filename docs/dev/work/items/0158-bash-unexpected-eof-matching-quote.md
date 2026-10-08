@@ -3,14 +3,24 @@ schema = 1
 id = 158
 kind = "item"
 title = "Bash tool sometimes refuses a whole command with \"unexpected EOF while looking for matching '\"; cause unknown"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/heredoc-escape-guard"]
+branches = ["fix/heredoc-escape-guard", "fix/bash-tool-transport"]
 refs = [
   "docs/dev/diagnosis/heredoc-escape-guard.md",
+  "docs/dev/diagnosis/bash-tool-transport.md",
+  "docs/dev/blast-radius/bash-tool-transport.md",
+  "scripts/enforcement/guards/block_long_bash_command.py",
   "~/.claude/projects/C--Dev-sartor/*.jsonl",
 ]
 summary = "Bash refused whole commands with 'unexpected EOF while looking for matching' in about 6 sessions; cause unknown."
+resolution = "2026-10-08, fix/bash-tool-transport: six of the seven recorded refusals were Git Bash silently cutting the Bash tool's command line at 8,186 characters (diagnosis O4-O7). The block-long-bash-command Bash guard refuses an over-budget command on win32 and allows everything elsewhere (owner decision: a new, separate guard). The seventh was a command malformed as written (backticks inside double quotes), refused on stdin too: the model's error, loud, nothing ran, one instance; no mechanism for it."
+verified_by = [
+  "tests/test_enforcement_core.py::TestBlockLongBashCommandUnit",
+  "tests/test_enforcement_core.py::TestBashDispatcher::test_long_command_blocks_through_the_real_dispatcher",
+  "tests/test_bash_backslash_collapse.py::test_the_command_line_cuts_at_8186",
+  "docs/dev/diagnosis/bash-tool-transport.md (The fix: live BLOCKED in session 5f4fe262)",
+]
 ```
 
 **Observed (2026-10-07, session `17250fd2`).** The string
@@ -57,3 +67,16 @@ structure and length were. Reproduce one through the Bash tool and through a sta
   level. It is the model's error, loud, with nothing run, and one instance.
 
 The owner chose (2026-10-08) a new, separate guard, `block-long-bash-command`.
+
+### 2026-10-08 — fix/bash-tool-transport: closed
+
+- **The mechanism built:** `block-long-bash-command`, in the `bash-dispatcher`. On win32 it
+  refuses a command whose wrapped length (its length plus 4 per `'`) exceeds 8,186 − 1,024.
+  Live in session `5f4fe262`:
+  - an 8,340-character command was refused with `BLOCKED (block-long-bash-command)`;
+  - a short command ran;
+  - the `block-doubled-backslash` guard still fires.
+- **No mechanism for the backtick case (C-11, stated rather than left silent).** It has one
+  recorded instance. Bash refused it loudly and ran nothing. The only gate that could catch it
+  is a `bash -n` pre-parse, which would start a bash process on every Bash call (about 0.2 s
+  each on this machine). If it recurs, that is the place to start.

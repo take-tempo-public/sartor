@@ -3,16 +3,22 @@ schema = 1
 id = 157
 kind = "item"
 title = "Try MSYS=noglob in settings env as the root-cause fix for the Bash tool halving doubled backslashes on Windows"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/heredoc-escape-guard"]
+branches = ["fix/heredoc-escape-guard", "fix/bash-tool-transport"]
 refs = [
   "docs/dev/diagnosis/heredoc-escape-guard.md",
+  "docs/dev/diagnosis/bash-tool-transport.md",
   "scripts/enforcement/guards/block_doubled_backslash.py",
   "tests/test_bash_backslash_collapse.py",
   ".claude/settings.json",
 ]
 summary = "MSYS=noglob stopped Git Bash halving doubled backslashes in a standalone repro; untested inside Claude Code."
+resolution = "2026-10-08, fix/bash-tool-transport: falsified as a fix. The harness wraps each command as eval '<cmd>' and Windows holds every double quote on that line backslash-escaped; with MSYS=noglob, Git Bash no longer parses such a line, so every quoted command fails (diagnosis O1-O3). settings.json is unchanged and block-doubled-backslash stays. Closed on the standalone evidence, with no in-harness trial (owner decision)."
+verified_by = [
+  "tests/test_bash_backslash_collapse.py::test_msys_noglob_breaks_the_harness_quoting",
+  "docs/dev/diagnosis/bash-tool-transport.md (O3)",
+]
 ```
 
 **Observed (2026-10-07, session `17250fd2`, on `fix/heredoc-escape-guard`).** Native Windows
