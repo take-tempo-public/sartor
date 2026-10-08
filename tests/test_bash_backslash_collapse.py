@@ -32,6 +32,8 @@ from pathlib import Path
 
 import pytest
 
+from scripts.enforcement.guards import block_long_bash_command
+
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="the rebuild is Windows-only")
 
 BS, SQ, DQ = chr(92), chr(39), chr(34)
@@ -43,37 +45,13 @@ HALVED = "X" + BS + "b|Y" + BS + "b|Z" + BS * 2 + "b"
 # bash-tool-transport.md O3, exactly: printf '%s|' 'SQ' "DQ" 'A\\b' 'B\b'; echo, wrapped in
 # the harness's own form (O1: eval '<cmd>', each ' rewritten as '"'"'). list2cmdline then
 # escapes every " as \" on the command line, as the harness does (O2).
-HARNESS_CMD = (
-    "printf "
-    + SQ
-    + "%s|"
-    + SQ
-    + " "
-    + SQ
-    + "SQ"
-    + SQ
-    + " "
-    + DQ
-    + "DQ"
-    + DQ
-    + " "
-    + SQ
-    + "A"
-    + BS * 2
-    + "b"
-    + SQ
-    + " "
-    + SQ
-    + "B"
-    + BS
-    + "b"
-    + SQ
-    + "; echo"
-)
+HARNESS_CMD = f"printf {SQ}%s|{SQ} {SQ}SQ{SQ} {DQ}DQ{DQ} {SQ}A{BS * 2}b{SQ} {SQ}B{BS}b{SQ}; echo"
 HARNESS_SCRIPT = "eval " + SQ + HARNESS_CMD.replace(SQ, SQ + DQ + SQ + DQ + SQ) + SQ
 
-# The cut (bash-tool-transport.md O4). Each script reports the length bash received.
-CUT = 8186
+# The cut (bash-tool-transport.md O4), taken from the guard it justifies, so a guard whose
+# constant drifts from the measured runtime fails here. Each script reports the length bash
+# received.
+CUT = block_long_bash_command.CUT
 _LENGTH_HEAD = "echo ${#BASH_EXECUTION_STRING} #"
 
 

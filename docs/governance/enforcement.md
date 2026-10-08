@@ -139,7 +139,7 @@ Guards reach agents through three adapters with very different coverage:
 |---|---|---|
 | `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
 | `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
-| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, `block_subagent_git_stash`, `block_doubled_backslash`, the C-8/C-12 context hooks |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, `block_subagent_git_stash`, `block_doubled_backslash`, `block_long_bash_command`, the C-8/C-12 context hooks |
 
 ### The gap, named
 
@@ -189,6 +189,25 @@ nine times, a C-11 recurrence. Stated limits (C-0):
   decision). `tests/test_bash_backslash_collapse.py` pins the collapse.
 - It reads only the command string. A script file run by path is not inspected, and the
   Write tool writes those bytes exactly.
+- `MSYS=noglob` is no way round it: on the Bash tool's real command line it breaks every
+  quoted command (item 157,
+  [`../dev/diagnosis/bash-tool-transport.md`](../dev/diagnosis/bash-tool-transport.md) O3).
+
+**`block_long_bash_command` (item 158, 2026-10-08) is Claude Code only by NATURE**, for the
+same reason. On Windows it refuses a Bash-tool command whose wrapped length (its length, plus
+4 for every `'`, which the harness rewrites as `'"'"'`) exceeds 8,186 − 1,024 characters. Git
+Bash silently cuts its command line at 8,186 characters. The cut lands inside the harness's
+`eval '…'`, so bash refuses the whole command with
+`unexpected EOF while looking for matching`
+([`../dev/diagnosis/bash-tool-transport.md`](../dev/diagnosis/bash-tool-transport.md)). It
+exists because long heredoc'd scripts were refused six times, a C-11 recurrence. Stated limits
+(C-0):
+- The 1,024-character reserve estimates the harness's own wrapper, which the guard cannot see:
+  408 characters measured on the owner's machine. A much longer home or temp path, or a
+  harness release that adds setup text, could let a cut command through.
+- It counts Python characters. Characters outside the Basic Multilingual Plane may count as two
+  for the runtime (not measured).
+- `tests/test_bash_backslash_collapse.py` pins the 8,186 cut against the guard's constant.
 
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude
@@ -226,7 +245,7 @@ would itself violate the charter.
 > **Status 2026-09-30 (Epic D D3):** everything in the list below has shipped. That includes
 > items 1–2 and the four forward-sequenced gates in item 5; the ship-state columns of §A and
 > §B above are current. The dispatcher consolidation described at the end has since grown:
-> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs six. The live roster
+> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs seven. The live roster
 > is [`../dev/tooling.md`](../dev/tooling.md). The list and paragraphs below are kept as the
 > record of how the v1.0.7 slice was sequenced.
 

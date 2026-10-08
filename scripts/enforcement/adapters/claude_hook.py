@@ -56,6 +56,7 @@ _GUARD_MODULES: dict[str, str] = {
     "interrogative-witness": "scripts.enforcement.guards.interrogative_witness",
     "block-subagent-git-stash": "scripts.enforcement.guards.block_subagent_git_stash",
     "block-doubled-backslash": "scripts.enforcement.guards.block_doubled_backslash",
+    "block-long-bash-command": "scripts.enforcement.guards.block_long_bash_command",
 }
 _GUARD_NAMES = tuple(_GUARD_MODULES)
 

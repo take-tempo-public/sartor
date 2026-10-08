@@ -231,12 +231,36 @@ the guard below must be re-measured.**
 
 ## The fix
 
-*Planned, not yet built at the instrument commit.* A `bash-dispatcher` guard,
-`block-long-bash-command`. On Windows it refuses a Bash-tool command whose wrapped length
-(`len + 4 × '`) exceeds 8,186 minus a reserve for the harness wrapper. The reserve is 1,024: O6
-measured 408, and the rest is headroom for longer home and temp paths. The way through is to
-write the script with the Write tool and run it by path. It allows everything on other platforms.
-Item 157 is closed as falsified; `.claude/settings.json` does not change.
+A `bash-dispatcher` guard, `block-long-bash-command`
+(`scripts/enforcement/guards/block_long_bash_command.py`). The owner chose a new, separate
+guard on 2026-10-08.
+- On Windows it refuses a Bash-tool command whose wrapped length (`len + 4 × '`) exceeds
+  `BUDGET = CUT − RESERVE`, which is 8,186 − 1,024 = 7,162.
+- The reserve stands for the harness's own wrapper. O6 measured 408; the rest is headroom for
+  longer home and temp paths.
+- The way through is to write the script with the Write tool and run it by path.
+- It allows everything on other platforms.
+- The cost is O(n) `len` and `count` in the existing dispatcher process, with no subprocess.
+- `tests/test_bash_backslash_collapse.py` takes `CUT` from the guard, so a guard constant that
+  drifts from the measured runtime fails on Windows.
+
+Item 157 is closed as falsified, on the standalone evidence (owner decision, 2026-10-08).
+`.claude/settings.json` does not change. The `block_doubled_backslash.py` docstring, which said
+`noglob` would remove that guard's premise, now says it breaks quoting.
+
+**Live, in this session, right after the wiring landed (2026-10-08):**
+
+- **LIVE-1.** The same padding as probe B (O6) was refused before bash saw it:
+
+  ```
+  PreToolUse:Bash hook error: [python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" bash-dispatcher]: BLOCKED (block-long-bash-command): this command is 8,340 characters once the Bash tool wraps it (every ' counts as 5), over the 7,162 budget. …
+  ```
+
+- **LIVE-2.** `echo "LIVE-2 short command runs, T=${#BASH_EXECUTION_STRING}"` ran and printed
+  `LIVE-2 short command runs, T=469`. That command is 61 characters with no `'`, so the wrapper
+  added 469 − 61 = 408 characters. This confirms O6's figure from a second, independent command.
+- **LIVE-3.** `printf '%s\n' 'LIVE-3 A\\b'` is still refused by the other guard:
+  `BLOCKED (block-doubled-backslash): this command contains `\\`. …`
 
 ---
 

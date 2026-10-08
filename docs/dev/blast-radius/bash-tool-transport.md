@@ -159,3 +159,23 @@ list:
   correctly left alone.
 - **The prose counts** (rows 16, 18 and 21) have no test. They are checked by re-running search 3
   after the edit.
+
+**Ran, 2026-10-08, after the edits** (all `-p no:rerunfailures`, Windows, one file per run):
+- `test_bash_backslash_collapse.py`: 5 passed.
+- `test_governance_hooks_gate.py`: 13 passed.
+- `test_enforcement_coverage.py`: 5 passed.
+- `test_doc_lints.py`: 27 passed.
+- `test_settings_hooks_python_direct.py`: 6 passed.
+- `test_enforcement_core.py`, run in two halves:
+  - `-k "BlockLongBashCommand or BlockDoubledBackslash or BashDispatcher or BlockSubagentGitStash or VerifyBinaryOnPath"`:
+    92 passed, 2 skipped (the two off-Windows allow cases, which Linux CI runs);
+  - the rest: 92 passed (in 435 s, at about 1 GB free).
+- `test_evidence_gate.py`: 27 passed.
+- `test_consumer_enumeration_gate.py`: 22 passed.
+- `test_wiki_relevance_classification.py`: 6 passed.
+- `ruff check`, `ruff format --check` and `mypy` on the eight changed Python files: clean.
+- Search 3 re-run as
+  `(six|6) (Bash|bash)|six Bash-matcher|dispatcher runs six|[Tt]hirteen enforced|THIRTEENTH|== 13`,
+  with the same exclusions. It returned 2 hits, both expected:
+  - `test_governance_hooks_gate.py:132`, item 142's dated amendment, which is history;
+  - `static/vendor/paged.polyfill.js:4292`, unrelated.

@@ -27,8 +27,10 @@ with no command line to rebuild. Elsewhere the guard allows everything.
 
 **Known limits (C-0).**
 - It assumes every win32 Bash tool collapses. `tests/test_bash_backslash_collapse.py` pins
-  the collapse on this machine. If that test starts failing, or `MSYS=noglob` reaches the
-  harness, this guard has lost its premise.
+  the collapse on this machine. If that test starts failing, this guard has lost its premise.
+- `MSYS=noglob` is not a way round it. It keeps backslashes, but on the harness's real
+  command line (every `"` escaped as `\\"`) it breaks every quoted command
+  (`docs/dev/diagnosis/bash-tool-transport.md` O3, item 157).
 - It sees only the Bash tool's command string. A script file run by path is not inspected,
   and does not need to be: the Write tool writes its bytes exactly.
 """

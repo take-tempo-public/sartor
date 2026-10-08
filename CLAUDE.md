@@ -160,6 +160,14 @@ Important hooks for any agent writing code here:
   `docs/dev/diagnosis/heredoc-escape-guard.md`). The way through: write
   the script with the Write tool and run it by path, use Edit, or use
   the PowerShell tool. Allows everything off Windows.
+- `block-long-bash-command` — on Windows, blocks a Bash command too
+  long to reach bash whole. Git Bash silently cuts the Bash tool's
+  command line at 8,186 characters, and every `'` costs 5 of them, so
+  long heredoc'd scripts were refused with `unexpected EOF while
+  looking for matching` (item 158,
+  `docs/dev/diagnosis/bash-tool-transport.md`). The way through: write
+  the script with the Write tool and run it by path. `MSYS=noglob` is
+  no fix: it breaks quoting (item 157). Allows everything off Windows.
 - `wiki-freshness-reminder` — non-blocking nudge after
   `git commit` when `docs/wiki/` may be stale (silent until the
   first `/wiki-ingest` sets a baseline; never auto-ingests).
@@ -180,9 +188,10 @@ Important hooks for any agent writing code here:
 settings.json hook is exactly
 `python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`.
 No shell wrapper sits in between, and `tests/test_settings_hooks_python_direct.py`
-fails on any other shape. The six Bash-matcher guards (`block-secrets`,
+fails on any other shape. The seven Bash-matcher guards (`block-secrets`,
 `block-merge-to-main`, `ruff-changed`, `verify-binary-on-path`,
-`block-subagent-git-stash`, `block-doubled-backslash`) run in the `bash-dispatcher` process. The plan gate and
+`block-subagent-git-stash`, `block-doubled-backslash`,
+`block-long-bash-command`) run in the `bash-dispatcher` process. The plan gate and
 the seven Edit|Write guards run in the `edit-write-dispatcher` process (PX-37). That
 is one process per matcher, with no-short-circuit aggregation. A hook that outruns its
 timeout is cancelled by the harness, and a cancelled PreToolUse hook does **not**
