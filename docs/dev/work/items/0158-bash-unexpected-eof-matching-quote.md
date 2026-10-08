@@ -35,3 +35,25 @@ structure and length were. Reproduce one through the Bash tool and through a sta
 ## Updates
 
 ### 2026-10-07 — filed during fix/heredoc-escape-guard (seen while instrumenting item 142)
+
+### 2026-10-08 — fix/bash-tool-transport: two mechanisms, one of them transport (instrument)
+
+`docs/dev/diagnosis/bash-tool-transport.md` O4-O7.
+
+- **Seven real Bash-tool failures.** Twelve hits across the six listed transcripts, item 142's
+  session and its subagent, plus one workflow subagent the item did not list
+  (`e713dc79…/agent-a2fc7baa7f68397dd`). The other five hits quote the string in text.
+- **Six of the seven were cut by Git Bash.** Git Bash silently cuts a command-line argument to
+  8,186 characters, counted in characters, not bytes (O4, O5). The harness wraps each command in
+  408 more characters on this machine (O6). The six commands were 7,846-14,833 characters long,
+  and all parse as written via stdin. They fail only through the command line, at the outer
+  `-c:` level (O7). Three of the six contain no doubled backslash, so this is not item 142's
+  halving.
+- **Reproduced inside the harness (O6).** A padded command just past the cap was refused with
+  `-c: line 16: unexpected EOF while looking for matching '"'` and ran nothing. One under it ran
+  and printed its own length.
+- **The seventh was malformed as written:** `grep -n -i "python\|script\|check_\|```"` opens a
+  backtick substitution inside double quotes. Bash refuses it on stdin too, at the inner `eval:`
+  level. It is the model's error, loud, with nothing run, and one instance.
+
+The owner chose (2026-10-08) a new, separate guard, `block-long-bash-command`.

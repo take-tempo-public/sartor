@@ -38,3 +38,18 @@ Decide with the owner whether to retire it or key it on the measured behaviour, 
 ## Updates
 
 ### 2026-10-07 — filed during fix/heredoc-escape-guard (item 142's root-cause candidate)
+
+### 2026-10-08 — fix/bash-tool-transport: falsified as a fix (instrument)
+
+`MSYS=noglob` breaks every quoted command on the harness's real command line
+(`docs/dev/diagnosis/bash-tool-transport.md` O3).
+- The harness wraps each command as `eval '<cmd>'`, rewriting every `'` as `'"'"'` (O1).
+- Windows holds that line with every `"` escaped as `\"` (O2).
+- Replayed through Git Bash with `MSYS=noglob`, the command `printf '%s|' 'SQ' "DQ" …` fails
+  with rc 2 and `-c: line 1: unexpected EOF while looking for matching '`. Without it, the same
+  command parses (and halves `\\`).
+- The 2026-10-07 standalone success put no `"` on the command line.
+
+Set in `.claude/settings.json` `env`, `MSYS=noglob` would break nearly every Bash-tool call. The
+owner chose (2026-10-08) to close this on the standalone evidence, with no in-harness trial and
+no session restart. `block-doubled-backslash` stays.
