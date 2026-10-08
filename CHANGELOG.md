@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### The Bash tool's command line on Windows (`fix/bash-tool-transport`, items 157, 158)
+
+- **Added: the `block-long-bash-command` PreToolUse guard (Bash dispatcher, item 158).** Git
+  Bash silently cuts the Bash tool's command line at 8,186 characters, and the harness spends
+  about 400 more on its own wrapper and 4 more on every `'`. So a long heredoc'd script arrived
+  cut, and bash refused the whole command with `unexpected EOF while looking for matching`. That
+  happened six times in the recorded sessions. On Windows the guard now refuses a command whose
+  wrapped length exceeds 7,162 characters. The way through is to write the script with the
+  Write tool and run it by path. It allows everything off Windows.
+- **Not changed: `MSYS=noglob` (item 157).** It was proposed as the root-cause fix for item
+  142's halved backslashes. On the harness's real command line it breaks every quoted command,
+  so `.claude/settings.json` is unchanged and `block-doubled-backslash` stays.
+- `tests/test_bash_backslash_collapse.py` now also pins the 8,186 cut against the guard's
+  constant, and `noglob`'s quoting failure. Its Git Bash runs start concurrently.
+- Evidence: `docs/dev/diagnosis/bash-tool-transport.md`. Consumers:
+  `docs/dev/blast-radius/bash-tool-transport.md`.
+
 ### Python-direct hooks and a faster plan gate (`fix/python-direct-hooks-plan-gate`, items 152, 111, 154, 143)
 
 - **Changed: every Claude Code hook is Python, launched directly (item 152).** Each

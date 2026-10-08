@@ -58,6 +58,8 @@ _BINDS_NON_CLAUDE_AGENTS: dict[str, bool] = {
     # subagent" is the PreToolUse `agent_id` field; a git hook cannot tell who ran `git stash`
     "block_doubled_backslash": False,  # item 142 — Claude Code only BY NATURE: the collapse is
     # in how the Bash tool starts bash, and no git hook ever sees a Bash-tool command string
+    "block_long_bash_command": False,  # item 158 — Claude Code only BY NATURE, as above: the
+    # 8,186-character cut is in how the Bash tool starts bash, which no git hook sees
 }
 
 #: Guards whose clause has **no** tool-agnostic enforcement at all. Kept as its own constant
@@ -124,6 +126,7 @@ class TestTheExtractionGapIsPinned:
         """
         assert sorted(EXTRACTION_GAP) == [
             "block_doubled_backslash",
+            "block_long_bash_command",
             "block_subagent_git_stash",
             "interrogative_witness",
             "require_consumer_enumeration",

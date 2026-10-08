@@ -140,7 +140,9 @@ below are 1-based file lines. The explorer that found them cited them 0-based.
   rebuild. What would make it known: the runtime's source, or the runtime's own changelog.
 - **`MSYS=noglob` as a root-cause fix inside Claude Code** (settings `env`). It worked in O4 but
   was not tested in the harness, and verifying it needs a restarted session. It is filed as its
-  own item, not built here (owner decision, 2026-10-07).
+  own item, not built here (owner decision, 2026-10-07). **Later falsified (2026-10-08):** on
+  the harness's real command line, which escapes every `"` as `\"`, `MSYS=noglob` breaks every
+  quoted command ([`bash-tool-transport.md`](bash-tool-transport.md) O3, item 157).
 - **Hosts other than this one.** Linux and macOS hand bash its argv directly through `execve`,
   with no Windows command line to rebuild, so no collapse is expected there. That has not been
   observed on hypha or the homelab.

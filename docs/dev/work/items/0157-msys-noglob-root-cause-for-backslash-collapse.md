@@ -3,16 +3,22 @@ schema = 1
 id = 157
 kind = "item"
 title = "Try MSYS=noglob in settings env as the root-cause fix for the Bash tool halving doubled backslashes on Windows"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/heredoc-escape-guard"]
+branches = ["fix/heredoc-escape-guard", "fix/bash-tool-transport"]
 refs = [
   "docs/dev/diagnosis/heredoc-escape-guard.md",
+  "docs/dev/diagnosis/bash-tool-transport.md",
   "scripts/enforcement/guards/block_doubled_backslash.py",
   "tests/test_bash_backslash_collapse.py",
   ".claude/settings.json",
 ]
 summary = "MSYS=noglob stopped Git Bash halving doubled backslashes in a standalone repro; untested inside Claude Code."
+resolution = "2026-10-08, fix/bash-tool-transport: falsified as a fix. The harness wraps each command as eval '<cmd>' and Windows holds every double quote on that line backslash-escaped; with MSYS=noglob, Git Bash no longer parses such a line, so every quoted command fails (diagnosis O1-O3). settings.json is unchanged and block-doubled-backslash stays. Closed on the standalone evidence, with no in-harness trial (owner decision)."
+verified_by = [
+  "tests/test_bash_backslash_collapse.py::test_msys_noglob_breaks_the_harness_quoting",
+  "docs/dev/diagnosis/bash-tool-transport.md (O3)",
+]
 ```
 
 **Observed (2026-10-07, session `17250fd2`, on `fix/heredoc-escape-guard`).** Native Windows
@@ -38,3 +44,18 @@ Decide with the owner whether to retire it or key it on the measured behaviour, 
 ## Updates
 
 ### 2026-10-07 — filed during fix/heredoc-escape-guard (item 142's root-cause candidate)
+
+### 2026-10-08 — fix/bash-tool-transport: falsified as a fix (instrument)
+
+`MSYS=noglob` breaks every quoted command on the harness's real command line
+(`docs/dev/diagnosis/bash-tool-transport.md` O3).
+- The harness wraps each command as `eval '<cmd>'`, rewriting every `'` as `'"'"'` (O1).
+- Windows holds that line with every `"` escaped as `\"` (O2).
+- Replayed through Git Bash with `MSYS=noglob`, the command `printf '%s|' 'SQ' "DQ" …` fails
+  with rc 2 and `-c: line 1: unexpected EOF while looking for matching '`. Without it, the same
+  command parses (and halves `\\`).
+- The 2026-10-07 standalone success put no `"` on the command line.
+
+Set in `.claude/settings.json` `env`, `MSYS=noglob` would break nearly every Bash-tool call. The
+owner chose (2026-10-08) to close this on the standalone evidence, with no in-harness trial and
+no session restart. `block-doubled-backslash` stays.

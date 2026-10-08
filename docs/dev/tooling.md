@@ -12,7 +12,7 @@
 > the agent-facing behavior notes live in [`CLAUDE.md`](../../CLAUDE.md) "Plugin commands +
 > agents + hooks".
 
-The roster is derived, not remembered. It reflects `fix/heredoc-escape-guard` (2026-10-07), re-derived
+The roster is derived, not remembered. It reflects `fix/bash-tool-transport` (2026-10-08), re-derived
 from:
 - `.claude/settings.json` (`hooks`) and [`hook.py`](../../scripts/enforcement/adapters/hook.py)'s `HOOKS`;
 - the two dispatchers' `_GUARD_ORDER`
@@ -44,7 +44,7 @@ fails on any other shape). The hook's name is the last word of its command.
 | Hook | Event (matcher) | Kind | What it does | Escape hatch |
 |---|---|---|---|---|
 | `edit-write-dispatcher` | PreToolUse (`Edit\|Write`) | **blocks** | Runs the plan gate (`check-plan-approved`) and then the seven Edit/Write guards below, in one process. The plan gate blocks edits outside `~/.claude/plans/` without an approved plan, or after a newer unapproved plan, and retires an approval once its branch has merged or is gone ([`plan_gate.py`](../../scripts/enforcement/plan_gate.py)) | per guard; the plan gate has none, only `ExitPlanMode` creates its marker |
-| `bash-dispatcher` | PreToolUse (`Bash`) | **blocks** | Runs the six Bash guards below in one process | per guard |
+| `bash-dispatcher` | PreToolUse (`Bash`) | **blocks** | Runs the seven Bash guards below in one process | per guard |
 | `plan-write-landed` | PreToolUse (`ExitPlanMode`) | **blocks** | Refuses approval while the plan file's last Write/Edit has not landed, so the dialog would show the old text (item 143) | none; re-run the Write |
 | `mark-plan-approved` | PostToolUse (`ExitPlanMode`) | lifecycle | Writes the per-project approval marker for the plan just approved | — |
 | `wiki-freshness-reminder` | PostToolUse (`Bash`) | witness | After a commit, says when `docs/wiki/` may be stale. Always exits 0 | — |
@@ -74,6 +74,7 @@ under several adapters: the Claude dispatchers above, the opt-in git hooks in
 | `verify-binary-on-path` | Bash | — | — | a command whose leading binary isn't on `PATH` | none (fail-open on anything it can't parse) |
 | `block-subagent-git-stash` | Bash | — | — | a state-changing `git stash` from a subagent | none |
 | `block-doubled-backslash` | Bash | — | — | on Windows, a command containing two consecutive backslashes, which the Bash tool halves before bash parses (item 142) | none; write the script with the Write tool and run it by path, or use the PowerShell tool |
+| `block-long-bash-command` | Bash | — | — | on Windows, a command too long to reach bash whole: Git Bash cuts the Bash tool's command line at 8,186 characters (item 158) | none; write the script with the Write tool and run it by path, or split the command |
 
 Plan approval (`check-plan-approved`) runs inside the Edit/Write dispatcher, but it is not a
 `guards/` module ([`plan_gate.py`](../../scripts/enforcement/plan_gate.py) is Claude-only:

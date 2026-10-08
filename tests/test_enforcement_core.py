@@ -40,6 +40,7 @@ import pytest
 from scripts.enforcement.adapters import bash_dispatcher, claude_dispatcher
 from scripts.enforcement.guards import (
     block_doubled_backslash,
+    block_long_bash_command,
     block_merge_to_main,
     block_secrets,
     block_subagent_git_stash,
@@ -1257,6 +1258,74 @@ class TestBlockDoubledBackslashUnit:
         assert not block_doubled_backslash.claude_check({}).blocked
 
 
+# A command over the long-command budget: a heredoc'd script, the shape of all six
+# recorded cuts (`docs/dev/diagnosis/bash-tool-transport.md` O7).
+_LONG_SCRIPT = "python - <<'EOF'\n" + "print('padding')\n" * 600 + "EOF"
+
+
+class TestBlockLongBashCommandUnit:
+    """Item 158 (owner-directed 2026-10-08; C-11 recurrence): on Windows Git Bash cuts the
+    Bash tool's command line at 8,186 characters, so a command whose wrapped length passes
+    the budget is refused there. Other platforms are never gated
+    (`docs/dev/diagnosis/bash-tool-transport.md`)."""
+
+    def test_the_budget_leaves_room_for_the_measured_wrapper(self) -> None:
+        """O4 measured the cut, O6 the harness's 408-character wrapper on this machine."""
+        assert block_long_bash_command.CUT == 8186
+        assert block_long_bash_command.BUDGET == 8186 - block_long_bash_command.RESERVE
+        assert block_long_bash_command.BUDGET + 408 < block_long_bash_command.CUT
+
+    def test_at_the_budget_allows_on_windows(self) -> None:
+        command = "x" * block_long_bash_command.BUDGET
+        assert not block_long_bash_command.decide(command, platform="win32").blocked
+
+    def test_one_past_the_budget_blocks_on_windows(self) -> None:
+        command = "x" * (block_long_bash_command.BUDGET + 1)
+        result = block_long_bash_command.decide(command, platform="win32")
+        assert result.blocked
+        assert result.messages[0].startswith("BLOCKED (block-long-bash-command)")
+        assert any("Write tool" in line for line in result.messages)
+
+    def test_each_single_quote_costs_five(self) -> None:
+        """The harness rewrites each ' as '"'"' (O1), so quotes reach the cut five times
+        faster than other characters."""
+        fits = block_long_bash_command.BUDGET // 5
+        assert block_long_bash_command.wrapped_length("'" * fits) == 5 * fits
+        assert not block_long_bash_command.decide("'" * fits, platform="win32").blocked
+        assert block_long_bash_command.decide("'" * (fits + 1), platform="win32").blocked
+
+    def test_a_recorded_cut_blocks(self) -> None:
+        """O7 row 5, the shortest recorded cut: 7,846 characters with 58 single quotes."""
+        command = "'" * 58 + "x" * (7846 - 58)
+        assert block_long_bash_command.wrapped_length(command) == 8078
+        assert block_long_bash_command.decide(command, platform="win32").blocked
+
+    @pytest.mark.parametrize(
+        "command",
+        ["echo hi", "git status --short", "python - <<'EOF'\nprint(1)\nEOF", ""],
+    )
+    def test_ordinary_commands_allow_on_windows(self, command: str) -> None:
+        assert not block_long_bash_command.decide(command, platform="win32").blocked, command
+
+    @pytest.mark.parametrize("platform", ["linux", "darwin"])
+    def test_other_platforms_are_never_gated(self, platform: str) -> None:
+        assert not block_long_bash_command.decide(_LONG_SCRIPT, platform=platform).blocked
+
+    def test_the_message_states_the_size_and_the_cut(self) -> None:
+        result = block_long_bash_command.decide(_LONG_SCRIPT, platform="win32")
+        size = block_long_bash_command.wrapped_length(_LONG_SCRIPT)
+        assert f"{size:,} characters" in result.messages[0]
+        assert "8,186" in result.messages[0]
+
+    def test_claude_check_follows_the_running_platform_and_gates_subagents(self) -> None:
+        main_payload = {"tool_input": {"command": _LONG_SCRIPT}}
+        sub_payload = {"agent_id": "x", "tool_input": {"command": _LONG_SCRIPT}}
+        expected = sys.platform == "win32"
+        assert block_long_bash_command.claude_check(main_payload).blocked is expected
+        assert block_long_bash_command.claude_check(sub_payload).blocked is expected
+        assert not block_long_bash_command.claude_check({}).blocked
+
+
 class TestBashDispatcher:
     """feat/verify-dont-assume-guard: block-secrets, block-merge-to-main,
     ruff-changed, and verify-binary-on-path all run in one process, and every
@@ -1270,7 +1339,28 @@ class TestBashDispatcher:
             "verify-binary-on-path",
             "block-subagent-git-stash",
             "block-doubled-backslash",
+            "block-long-bash-command",
         }
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="the guard gates Windows only")
+    def test_long_command_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:
+        """Item 158: an over-budget heredoc'd script exits 2 through bash-dispatcher, for the
+        main agent and for a subagent alike."""
+        for extra in ({}, {"agent_id": "a1b2c3"}):
+            payload = {"tool_name": "Bash", **extra, "tool_input": {"command": _LONG_SCRIPT}}
+            code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
+            assert code == 2, extra
+            assert "block-long-bash-command" in err
+
+    @pytest.mark.skipif(sys.platform == "win32", reason="off Windows the guard allows")
+    def test_long_command_allowed_off_windows(self, tmp_path: Path) -> None:
+        payload = {
+            "tool_name": "Bash",
+            "tool_input": {"command": "python --version '" + "x" * 9000 + "'"},
+        }
+        code, err = _run_hook("bash-dispatcher", payload, subprocess_cwd=tmp_path)
+        assert code == 0, err
+        assert "block-long-bash-command" not in err
 
     @pytest.mark.skipif(sys.platform != "win32", reason="the guard gates Windows only")
     def test_doubled_backslash_blocks_through_the_real_dispatcher(self, tmp_path: Path) -> None:

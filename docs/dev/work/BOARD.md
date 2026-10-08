@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 30 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 66
+**Open 28 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 68
 
 ## Open
 
@@ -32,8 +32,6 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **155** -- UX flake: test_card_company_editable_and_persists saw 'Notes saved' where it waits for 'Company saved' (`agent`) -- A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified.
 - **156** -- test_concurrent_writers_do_not_erase_each_other: on Windows a writer thread's own unguarded pre-read can hit PermissionError and drop its delta (`agent`) -- On Windows a writer thread's own pre-read hit PermissionError mid-replace; its delta was lost. Test or code: unverified.
-- **157** -- Try MSYS=noglob in settings env as the root-cause fix for the Bash tool halving doubled backslashes on Windows (`agent`) -- MSYS=noglob stopped Git Bash halving doubled backslashes in a standalone repro; untested inside Claude Code.
-- **158** -- Bash tool sometimes refuses a whole command with "unexpected EOF while looking for matching '"; cause unknown (`agent`) -- Bash refused whole commands with 'unexpected EOF while looking for matching' in about 6 sessions; cause unknown.
 
 ## Blocked
 
@@ -146,7 +144,7 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 
 - **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
-## Closed (66)
+## Closed (68)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
@@ -214,3 +212,5 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 - 152 -- Agent shell environment varies by session: a Bash tool with no coreutils made a Monitor busy-loop; invoke hooks as Python directly (2026-10-07, fix/python-direct-hooks-plan-gate: every settings.json hook is `python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" <name>`, hooks/*.sh are deleted, and a gate test enforces the shape. The SessionStart shell-probe warns when a shell lacks python3/sleep/grep. Interpreter name: python3, the one every retired wrapper exec'd. Not checked on hypha or the homelab. A machine without python3 on PATH starts no hook and fails open: declared in docs/governance/enforcement.md.)
 - 153 -- wiki_relevance classifies scripts/gate.py and 8 other wiki-cited scripts as irrelevant (2026-10-06, fix/wiki-relevance-cited-scripts: RELEVANT_OVERRIDES set to exactly the 23 MIXED_PREFIXES files the wiki cites (20 added, incl. bare-name and dotted cites; perf_baseline.py and export_corpus_seed.py dropped, never cited). Kept explicit (owner's choice: a runtime wiki scan measured 85-200 ms/process vs a 7 ms import); a new test derives the cited set from docs/wiki and asserts equality both ways, so the list cannot drift silently again.)
 - 154 -- Recurrence of item 110: a plan approved on main was retired mid-branch after checkout + rebase; the next Edit hit NO EDIT APPROVAL (2026-10-07, fix/python-direct-hooks-plan-gate: cause OBSERVED, not the rebase. Transcript 2b79cef7 shows mark-plan-approved.sh cancelled after ExitPlanMode and check-plan-approved.sh cancelled on every Edit (28-36 s vs 20 s), the archive at 19:54:50Z with no manifest or receipt. A second path was reproduced live (the merge hook grepped tool output). Both paths reproduced by tests that failed on the .sh hooks. Fixed by the Python plan gate (fast, fail-closed mark, newer-plan block) and by removing cleanup-plan-on-merge.)
+- 157 -- Try MSYS=noglob in settings env as the root-cause fix for the Bash tool halving doubled backslashes on Windows (2026-10-08, fix/bash-tool-transport: falsified as a fix. The harness wraps each command as eval '<cmd>' and Windows holds every double quote on that line backslash-escaped; with MSYS=noglob, Git Bash no longer parses such a line, so every quoted command fails (diagnosis O1-O3). settings.json is unchanged and block-doubled-backslash stays. Closed on the standalone evidence, with no in-harness trial (owner decision).)
+- 158 -- Bash tool sometimes refuses a whole command with "unexpected EOF while looking for matching '"; cause unknown (2026-10-08, fix/bash-tool-transport: six of the seven recorded refusals were Git Bash silently cutting the Bash tool's command line at 8,186 characters (diagnosis O4-O7). The block-long-bash-command Bash guard refuses an over-budget command on win32 and allows everything elsewhere (owner decision: a new, separate guard). The seventh was a command malformed as written (backticks inside double quotes), refused on stdin too: the model's error, loud, nothing ran, one instance; no mechanism for it.)

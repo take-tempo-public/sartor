@@ -2615,3 +2615,32 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Structural check:** `scripts/check_doc_links.py` reports 619 tracked markdown files with no
   broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
   is no orphan or index change. **Gate verdict: PASS.**
+
+## 2026-10-08 — scoped wiki-self-update, two pages edited (`fix/bash-tool-transport`)
+
+- **Mode:** a scoped branch pass over `38cec69..HEAD` (`b0e9599`). The checkpoint is **not**
+  advanced (`.last_ingest_sha` stays `3798e2d1`). The owner authorized about 4 Haiku calls.
+- **Wiki-relevant changes in the diff (3):** `CLAUDE.md`, `docs/dev/tooling.md`,
+  `docs/governance/enforcement.md`. A new Claude-Code-only Bash guard,
+  `block-long-bash-command` (item 158), takes the Bash dispatcher from six guards to seven and
+  the enforced blocker rules from 13 to 14. Item 157 (`MSYS=noglob`) was falsified, with no
+  page impact.
+- **Edited (2 pages)** by `wiki-scribe` (Haiku). Each adds `block_long_bash_command` by bare name
+  to the page's enumeration of Claude-Code-only guards:
+  - `consistency-tracks-enforcement` (line 139);
+  - `governance-extraction` (line 151).
+
+  Both briefs said to keep the existing `block_subagent_git_stash.py:claude_check` cite. The
+  orchestrator checked both diffs word by word: the change is the addition only.
+- **Bare name, not a path cite**, so `scripts/wiki_relevance.py` `RELEVANT_OVERRIDES` (a gated
+  surface) stays untouched.
+- **Verified no-edit:** `docs-information-architecture`. Its `tooling.md` and `enforcement.md`
+  mentions are generic, and no wiki page carries a guard or rule count.
+- **Audit (`wiki-grounding-auditor`, a separate context per page):**
+  - `consistency-tracks-enforcement`: 31 SUPPORTED, 0 DRIFTED, 0 UNSUPPORTED.
+  - `governance-extraction`: 20 SUPPORTED, 0 DRIFTED, 0 UNSUPPORTED. Line 96's date pair, a
+    false positive last pass, was passed in as context and not re-flagged.
+  - **Catch-rate:** 0 flagged over 2 pages audited.
+- **Structural check:** `scripts/check_doc_links.py` reports 622 tracked markdown files with no
+  broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
+  is no orphan or index change. **Gate verdict: PASS.**

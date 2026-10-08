@@ -3,8 +3,9 @@
 assume-guard`, mirroring PX-37's `claude_dispatcher.py` for Edit|Write).
 
 Runs all the Bash-matcher guards — block-secrets, block-merge-to-main,
-ruff-changed, verify-binary-on-path, (Epic C C1c) block-subagent-git-stash, and
-(item 142) block-doubled-backslash — in one process against one stdin read,
+ruff-changed, verify-binary-on-path, (Epic C C1c) block-subagent-git-stash,
+(item 142) block-doubled-backslash, and (item 158) block-long-bash-command — in
+one process against one stdin read,
 replacing the separate settings.json hook entries that each execed
 `claude_hook.py <name>` on their own (`hooks/block-secrets.sh`,
 `hooks/block-merge-to-main.sh`, `hooks/ruff-changed.sh` — all three deleted by
@@ -55,6 +56,9 @@ _GUARD_ORDER: tuple[str, ...] = (
     # Item 142 (owner-directed 2026-10-07): on Windows the Bash tool halves every
     # doubled backslash before bash parses — C-11 recurrence, see the guard's docstring.
     "block-doubled-backslash",
+    # Item 158 (owner-directed 2026-10-08): on Windows Git Bash cuts the Bash tool's
+    # command line at 8,186 characters — C-11 recurrence, see the guard's docstring.
+    "block-long-bash-command",
 )
 
 
