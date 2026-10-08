@@ -139,7 +139,7 @@ Guards reach agents through three adapters with very different coverage:
 |---|---|---|
 | `adapters/git_hook.py` (opt-in `.githooks/`) | **tool-agnostic** — Codex, Cursor, Aider, a human on the CLI | `block_merge_to_main`, `block_secrets`, `require_feature_branch`, `route_security_lint`, `ruff_changed`, `validate_context` |
 | `ci_backstop.py` + [`../../scripts/gate.py`](../../scripts/gate.py) | **binds everyone**, even with no hooks installed | `block_secrets` (CI backstop); the C-11 closure bar in [`../../scripts/work_items.py`](../../scripts/work_items.py) |
-| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, `block_subagent_git_stash`, the C-8/C-12 context hooks |
+| `adapters/claude_hook.py` · `claude_dispatcher.py` · `bash_dispatcher.py` · `claude_context_hook.py` · `prompt_witness_hook.py` | **Claude Code only** | `require_evidence_before_fix`, `require_consumer_enumeration`, `verify_binary_on_path`, `interrogative_witness`, `block_subagent_git_stash`, `block_doubled_backslash`, the C-8/C-12 context hooks |
 
 ### The gap, named
 
@@ -177,6 +177,19 @@ mid-review, a C-11 recurrence of agent stash incidents. Stated limit (C-0): it r
 command *string*, so `git stash` reached indirectly (a script file, a `subprocess` call) is
 not caught.
 
+**`block_doubled_backslash` (item 142, 2026-10-07) is Claude Code only by NATURE.** On
+Windows it refuses a Bash-tool command that contains two consecutive backslashes. The Bash
+tool starts Git Bash as a native Windows program, and Git Bash halves every doubled
+backslash while it rebuilds its argv from the command line, before bash parses anything
+([`../dev/diagnosis/heredoc-escape-guard.md`](../dev/diagnosis/heredoc-escape-guard.md)). A
+git hook never sees a Bash-tool command, so there is nothing for another tool to route. It
+exists because heredoc'd scripts and `grep`/`sed` patterns were silently corrupted at least
+nine times, a C-11 recurrence. Stated limits (C-0):
+- It assumes every win32 Bash tool collapses, and allows everything elsewhere (owner
+  decision). `tests/test_bash_backslash_collapse.py` pins the collapse.
+- It reads only the command string. A script file run by path is not inspected, and the
+  Write tool writes those bytes exactly.
+
 Of the C-11/C-12 mechanisms added 2026-08-05, **only the closure bar binds every agent**
 (it rides `gate.py` + CI); the observed-citation floor and the compaction receipt are Claude
 Code hooks, and the handoff recurrence section is a script anyone *can* run but nothing
@@ -213,7 +226,7 @@ would itself violate the charter.
 > **Status 2026-09-30 (Epic D D3):** everything in the list below has shipped. That includes
 > items 1–2 and the four forward-sequenced gates in item 5; the ship-state columns of §A and
 > §B above are current. The dispatcher consolidation described at the end has since grown:
-> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs five. The live roster
+> the Edit/Write dispatcher runs seven guards and a Bash dispatcher runs six. The live roster
 > is [`../dev/tooling.md`](../dev/tooling.md). The list and paragraphs below are kept as the
 > record of how the v1.0.7 slice was sequenced.
 

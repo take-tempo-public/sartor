@@ -3,8 +3,8 @@
 assume-guard`, mirroring PX-37's `claude_dispatcher.py` for Edit|Write).
 
 Runs all the Bash-matcher guards — block-secrets, block-merge-to-main,
-ruff-changed, verify-binary-on-path, and (Epic C C1c) block-subagent-git-stash —
-in one process against one stdin read,
+ruff-changed, verify-binary-on-path, (Epic C C1c) block-subagent-git-stash, and
+(item 142) block-doubled-backslash — in one process against one stdin read,
 replacing the separate settings.json hook entries that each execed
 `claude_hook.py <name>` on their own (`hooks/block-secrets.sh`,
 `hooks/block-merge-to-main.sh`, `hooks/ruff-changed.sh` — all three deleted by
@@ -52,6 +52,9 @@ _GUARD_ORDER: tuple[str, ...] = (
     # Epic C C1c (owner-directed 2026-09-24): subagents may not run a
     # state-changing `git stash` — C-11 recurrence, see the guard's docstring.
     "block-subagent-git-stash",
+    # Item 142 (owner-directed 2026-10-07): on Windows the Bash tool halves every
+    # doubled backslash before bash parses — C-11 recurrence, see the guard's docstring.
+    "block-doubled-backslash",
 )
 
 

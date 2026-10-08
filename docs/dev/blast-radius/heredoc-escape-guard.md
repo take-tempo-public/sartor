@@ -142,3 +142,21 @@ bullet:
   split test in `test_governance_hooks_gate.py`, prove `settings.json` was correctly left alone.
 - **The prose counts** (rows 16, 18, 21) have no test. They are checked by re-running search 4
   after the edit.
+
+**Ran, 2026-10-07, after the edits** (all `-p no:rerunfailures`, Windows, one file per run):
+- `test_governance_hooks_gate.py`: 13 passed.
+- `test_enforcement_coverage.py`: 5 passed.
+- `test_doc_lints.py`: 27 passed.
+- `test_settings_hooks_python_direct.py`: 6 passed.
+- `test_enforcement_core.py`, run in two halves:
+  - `-k "BlockDoubledBackslash or BashDispatcher or BlockSubagentGitStash or VerifyBinaryOnPath"`:
+    78 passed, 1 skipped (the off-Windows allow case);
+  - the rest: 92 passed.
+- `test_evidence_gate.py`: 27 passed.
+- `test_consumer_enumeration_gate.py`: 22 passed.
+- `test_wiki_relevance_classification.py`: 6 passed.
+- `mypy .`: no issues in 409 files.
+- `ruff check` and `ruff format --check` on the changed files: clean.
+- Search 4 re-run as
+  `(five|5) (Bash|bash)|five Bash-matcher|dispatcher runs five|[Tt]welve enforced`, with the
+  same exclusions: **0 hits**.

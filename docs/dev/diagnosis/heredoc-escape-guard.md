@@ -170,6 +170,20 @@ tool, the PowerShell tool, or `chr(92)`. It allows everything on other platforms
 decision, 2026-10-07). The guard sees the intended text: hooks receive the tool input as JSON
 on stdin, not through a command line.
 
+**Live, in this session, right after the wiring landed (2026-10-07):**
+
+- The Bash tool command `printf '%s\n' 'live-probe A\\b'` was refused:
+
+  ```
+  PreToolUse:Bash hook error: [python3 "${CLAUDE_PROJECT_DIR}/scripts/enforcement/adapters/hook.py" bash-dispatcher]: BLOCKED (block-doubled-backslash): this command contains `\\`. On this machine the Bash tool halves every doubled backslash before bash parses the command, so `\\` would arrive as `\`. …
+  First match: "ntf '%s\\n' 'live-probe A\\\\b'"
+  ```
+
+- `printf '%s\n' 'live-probe single A\b'` ran and printed `live-probe single A\b`.
+
+So the payload the hook received still held the two backslashes, as expected: hooks read the
+tool input as JSON on stdin, and no command line sits in between.
+
 ---
 
 ## Acceptance bar
