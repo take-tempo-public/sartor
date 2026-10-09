@@ -30,7 +30,9 @@
 ## Observed
 
 Machine: Windows 11 Pro 10.0.26200, 8 logical cores, Python 3.13 (Windows Store). Session
-`810882f3`, 2026-10-08, on `fix/test-reliability` branched from `main` @ `1c528ed`.
+`810882f3`, 2026-10-08, on `fix/test-reliability` branched from `main` @ `1c528ed`. **In the
+artifacts below, the repository root is written as `<repo>` and the session scratchpad as
+`<scratch>`.**
 
 ### Carried in from the filed items (earlier sessions, not re-run)
 
@@ -58,7 +60,7 @@ Machine: Windows 11 Pro 10.0.26200, 8 logical cores, Python 3.13 (Windows Store)
   The writer thread's `PytestUnhandledThreadExceptionWarning`:
 
   ```
-  File "C:\Dev\sartor\tests\test_hardening.py", line 1171, in _transactional
+  File "<repo>\tests\test_hardening.py", line 1171, in _transactional
     json.loads(path.read_text(encoding="utf-8"))  # the optimistic pre-call read
   PermissionError: [Errno 13] Permission denied: '…\test_concurrent_writers_do_not0\txn.json'
   ```
@@ -69,7 +71,7 @@ Machine: Windows 11 Pro 10.0.26200, 8 logical cores, Python 3.13 (Windows Store)
 ### O1. Item 156: a plain read and a writer's replace can each raise `PermissionError` on Windows
 
 The capability probe `probe156.py` (source under `## Falsification`, P-156) was run as
-`python probe156.py /c/Dev/sartor <scratch>/probe156_work 3 200` on an idle machine:
+`python probe156.py <repo> <scratch>/probe156_work 3 200` on an idle machine:
 
 ```
 python 3.13.14 platform win32
@@ -110,7 +112,7 @@ Every failure has the same site, counted over the 300-run log:
 
 ```
       7 line 1166, in _naive
-E           File "C:\Dev\sartor\tests\test_hardening.py", line 1166, in _naive
+E           File "<repo>\tests\test_hardening.py", line 1166, in _naive
 E             ctx = json.loads(path.read_text(encoding="utf-8"))
 E         PermissionError: [Errno 13] Permission denied: '…\test_concurrent_writers_do_not6\naive.json'
 ```

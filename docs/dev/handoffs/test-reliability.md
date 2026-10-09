@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=810882f3-b7f9-4c1c-829c-5da2989ed61d branch=fix/test-reliability commit=60d1af4 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-10-09 -->
+<!-- provenance: schema=1 session=810882f3-b7f9-4c1c-829c-5da2989ed61d branch=fix/test-reliability commit=09c4f05 actor=amodal1 agent=anthropic/claude-opus-5-5 generated_at=2026-10-09 -->
 
 # Agent handoff — test reliability (`fix/test-reliability`, items 155 + 156) → assertion strength (items 115 + 116 + 122)
 
@@ -123,9 +123,12 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/test
     `pytest -m "not ux"` 3173 passed, 8 skipped. Then this session's own `timeout 1500` wrapper
     killed `pytest -m ux` at 36% (`gate: FAILED at pytest -m ux (exit 143)`). It was the
     wrapper, not a test.
-  - **Second run:** a full run on this handoff's commit. Its verdict is
-    `python -m scripts.gate --result` at this commit, and the PR description records it.
-  - **CI on the PR is the merge gate:** `python -m scripts.ci_wait <n>`, and exit 3 means stop.
+  - **Second run (at `09c4f05`):** refused at the memory preflight
+    (`gate: REFUSED -- 0.42 GB free, below the 1.00 GB floor`). Memory was held by the owner's
+    own applications. Since the first run, only docs changed: this handoff, the CHANGELOG entry,
+    the ledger, and a path redaction in the dossier.
+  - **So there is no local gate pass for this tree.** CI on the PR is the merge gate:
+    `python -m scripts.ci_wait <n>`, and exit 3 means stop.
 
 ---
 
@@ -193,11 +196,13 @@ session** unless stated):
   - `scripts/enforcement/blast_radius.py`'s `result.py` entry says "10 non-test importers"; the
     previous branch added one more.
 - **The interrogative-witness pause re-arms on events that aren't user prompts.**
-  - **Updated, observed this session:** it fired on the first `Edit` after an `AskUserQuestion`
-    answer and a background-task notification arrived together. Which one re-armed it can't be
-    told from that.
-  - `enforcement.md` names the subagent hand-back case. The task-notification case and the
-    `AskUserQuestion` case are still not named.
+  - **Updated, observed this session:**
+    - it fired on the first `Edit` after an `AskUserQuestion` answer and a background-task
+      notification arrived together;
+    - it fired again on the first `Edit` after a background-task notification alone (the
+      gate's), which **confirms the task-notification case**.
+  - `enforcement.md` names the subagent hand-back case. The task-notification case is still not
+    named, and neither is the possible `AskUserQuestion` case.
 - **Item 142's `block-doubled-backslash` has no `CHANGELOG.md` entry** (0 hits).
 - **`test_enforcement_core.py`'s non-Bash half took 435 s locally** at about 1 GB free.
 - **New: the threaded UX `live_server` may expose route reads on Windows.** A route's optimistic
