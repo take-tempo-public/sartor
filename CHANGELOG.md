@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Two test flakes: a shared-toast wait and a Windows pre-read (`fix/test-reliability`, items 155, 156)
+
+- **Changed: the application detail modal's notes field saves only a change (item 155).** The
+  modal opens with focus on the notes field, so moving to any other field used to save the
+  unchanged notes and show `Notes saved`. That toast could overwrite the company field's
+  `Company saved`. A changed note still saves on blur, like the title and company fields.
+- **Fixed: `test_card_company_editable_and_persists` waited on the shared toast** (item 155).
+  It now waits on the company save's own response and reads the company back from the reopen's
+  response. A new test forces the notes response to land after the company's. Under the same
+  CPU load, the test went from 3 failures in 30 to 0 in 30.
+- **Fixed: `test_concurrent_writers_do_not_erase_each_other` on Windows (item 156).** Its own
+  threads died in their pre-reads with `PermissionError` while another thread replaced the file,
+  and the test reported that as a lost update. Nothing in `hardening.py` changed: no failure in
+  700 runs was inside `context_transaction`. The pre-reads now retry, a crashed writer fails the
+  test by name, and the control counts only writers that finished. Under the same load, the
+  test went from 18 failures in 300 to 0 in 300.
+- Evidence: `docs/dev/diagnosis/test-reliability.md`. Consumers:
+  `docs/dev/blast-radius/test-reliability.md`.
+
 ### The Bash tool's command line on Windows (`fix/bash-tool-transport`, items 157, 158)
 
 - **Added: the `block-long-bash-command` PreToolUse guard (Bash dispatcher, item 158).** Git
