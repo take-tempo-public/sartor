@@ -8,6 +8,8 @@
 >   is answered after the company save, and its toast overwrites `Company saved` (O5, O6). The
 >   single CI failure fits the same shape, but it left no request log, so its own mechanism is
 >   inferred (`## Inferred`).
+> - **Both fixed on this branch** (`## The fix`). Under the same load, the real tests went from
+>   18/300 and 3/30 failing to 0/300 and 0/30 (`## Acceptance bar`).
 >
 > **Branch:** `fix/test-reliability`
 
@@ -303,9 +305,10 @@ each one got.
   - 9 polls saw it with `show` and 5 without, which matches `_toast`'s 2.4 s hide timer;
   - all three local captures of H1 look the same (O6).
 
-  That attempt left no request log, so H2–H4 can't be ruled out for it. To know, a CI failure
-  must print its timeline. The instrument now does that on failure, and the rerun-report hook in
-  `tests/ux/conftest.py` prints a failed attempt's captured output in the CI log.
+  That attempt left no request log, so H2–H4 can't be ruled out for it. The timeline instrument
+  that could have shown it was removed with the fix: the fixed test no longer reads the toast,
+  and it waits on the responses themselves (see `## The fix`). The question stays open for
+  that one attempt, and it can't recur in this test's current form.
 - **Why the notes response comes back after the meta one under load.** Probably thread
   scheduling in the threaded `live_server`: the two PUTs are served concurrently and don't wait
   on each other. The notes value is unchanged (`None` to `None`), so its route may issue no
@@ -519,10 +522,69 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 ## The fix
 
-_(Not yet.)_
+### Item 156: test only (`tests/test_hardening.py`)
+
+The evidence put every failure in the harness (O2, O3), so the plan's rule was a test-side fix,
+and `hardening.py` is untouched.
+
+- **The capture stays,** keyed by arm and writer. A `_transactional` writer that raises now
+  fails the test by name ("a context_transaction writer raised", with its traceback). It is never
+  reported as a lost delta again.
+- **The harness's optimistic reads retry `PermissionError`.** The retry uses the same bounded
+  budget `write_context_atomic` gives the writer's side of the collision (`_REPLACE_ATTEMPTS`,
+  `_REPLACE_BACKOFF_S`), imported, not copied. Production's server handles one request at a time,
+  so this is a harness accommodation, not a product change.
+- **The control counts only writers that finished.** A naive writer that raises (the 2 O3
+  exhaustions of `write_context_atomic`) proves nothing about a lost update, so it is excluded.
+  The control passes only if a writer that finished lost its key.
+
+### Item 155: app and test (owner's choice, 2026-10-08)
+
+- **App, `static/app.js` notes blur handler.** It now saves only a change: it compares the
+  trimmed text with `detail.notes`, and updates `detail.notes` after a successful save. That is
+  the shape the title and company handlers already had. Opening the modal and moving to another
+  field no longer sends a save or a `Notes saved` toast. C-10 dossier:
+  `docs/dev/blast-radius/test-reliability.md`, written before the edit.
+- **Test, `_company_round_trip`.** It waits on the PUT `/meta` response itself and asserts its
+  body's `company`, instead of waiting on the shared toast. It reads the company back from the
+  reopen's GET body. The modal never closes, so the input keeps the typed text either way, and
+  the old `to_have_value` check could pass without the GET having returned. It also asserts that
+  an unchanged notes field sent no PUT `/notes`, which guards the app half.
+- **The probe P-H1 becomes `test_company_save_survives_a_later_notes_response`.** The notes are
+  edited first, so a real notes save is in flight, and its response is still forced to land
+  after the company's. Its last line asserts the toast ended on `Notes saved`. That proves the
+  forced order really happened, so a pass can't mean the race never fired.
+- **The timeline instrument is removed.** Every remaining wait is on a response, so a failure
+  names the response that didn't come.
 
 ---
 
 ## Acceptance bar
 
-_(Not yet.)_
+Every result below was run on this branch, on the same machine as O1–O6, with
+`-p no:rerunfailures`.
+
+| Check | HEAD (`a4bef7d`, instruments only) | Fix |
+|---|---|---|
+| Item 156, real test, 300 runs under 6 loaders | 18 failed / 300 (O3) | **300 passed** / 300 (`300 passed in 378.97s`) |
+| Item 155, real test, 30 runs under 6 loaders | 3 failed / 30 (O6) | **30 passed** / 30 (`30 passed in 279.57s`) |
+| Item 155, forced order (P-H1 → the new test) | failed 5 / 5 (O5) | **3 passed** / 3, under load (`3 passed in 87.99s`) |
+
+The HEAD and fix arms ran on the same machine and day, with the same loader count. HEAD's
+155 arm still had the timeline instrument, which only records events; it doesn't change their
+order.
+
+**Mutation checks** (run once each; the scratchpad plugin `mutate156.py` patches the test
+module's globals):
+- **`MUTATE156=txn`:** the 4th `context_transaction` call raises. The test fails with
+  `AssertionError: a context_transaction writer raised: … RuntimeError: mutation: transaction
+  writer killed` (`1 failed in 14.05s`).
+- **`MUTATE156=naive`:** a naive writer's `write_context_atomic` raises. The writer is
+  excluded, and the test passes (`1 passed in 9.15s`).
+- **The app half removed:** with `static/app.js` swapped back to HEAD (working copy backed up,
+  md5 `3cbbeb25…` checked before and after the restore), the fixed real test fails with
+  `AssertionError: an unchanged notes blur still saved: ['http://127.0.0.1:64658/api/applications/1/notes']`
+  (`1 failed in 25.23s`).
+
+**Not yet run at the time of writing:** the whole files, the gate, and CI. They are recorded in
+the handoff, not here.

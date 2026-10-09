@@ -19,11 +19,10 @@ is deterministic + offline (no LLM).
 
 from __future__ import annotations
 
-import os
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import APIResponse, Page, Route, expect
+from playwright.sync_api import APIResponse, Page, Request, Route, expect
 
 from tests.ux.seeding import (
     seed_application,
@@ -115,100 +114,86 @@ def test_card_company_editable_and_persists(
     _company_round_trip(page, live_server, ux_app)
 
 
-# --- Item 156's sibling, item 155: instrument (`docs/dev/diagnosis/test-reliability.md`) ---
-#
-# One CI attempt of the test above waited 5 s for "Company saved" and saw only "Notes saved".
-# The attempt left no focus order and no request log, so the timeline below records both on
-# ONE clock (the page's): focus moves, every fetch's start and settle, and every change to the
-# shared toast. It prints on failure, and on every run when SARTOR_UX_TIMELINE=1.
-
-_TIMELINE_JS = """
-() => {
-  if (window.__t155) return;
-  const log = (window.__t155 = []);
-  const t0 = performance.now();
-  const rec = (kind, detail) => log.push([Math.round(performance.now() - t0), kind, detail]);
-  const name = (el) => (el && (el.id || el.tagName)) || String(el);
-  document.addEventListener('focusin', (e) => rec('focusin', name(e.target)), true);
-  document.addEventListener('focusout', (e) => rec('focusout', name(e.target)), true);
-  const realFetch = window.fetch;
-  window.fetch = function (input, init) {
-    const url = typeof input === 'string' ? input : input.url;
-    const what = `${(init && init.method) || 'GET'} ${url}`;
-    rec('fetch>', what);
-    return realFetch.apply(this, arguments).then(
-      (r) => { rec('fetch<', `${what} ${r.status}`); return r; },
-      (e) => { rec('fetch!', `${what} ${e}`); throw e; },
-    );
-  };
-  const watch = () => {
-    const t = document.getElementById('_corpusToast');
-    if (!t) return false;
-    rec('toast', `${t.className} | ${t.textContent}`);
-    new MutationObserver(() => rec('toast', `${t.className} | ${t.textContent}`)).observe(
-      t, { attributes: true, childList: true, characterData: true, subtree: true });
-    return true;
-  };
-  if (!watch()) {
-    const mo = new MutationObserver(() => { if (watch()) mo.disconnect(); });
-    mo.observe(document.body, { childList: true });
-  }
-}
-"""
+#: The notes textarea in the detail modal. It has no `PriorApps` selector; this module is its
+#: only Python reader.
+_NOTES_TEXTAREA = "#appDetailNotes"
 
 
-def _print_timeline(page: Page, why: str) -> None:
-    rows = page.evaluate("() => window.__t155 || []")
-    print(f"\n--- item-155 timeline ({why}): ms kind detail ---")
-    for ms, kind, detail in rows:
-        print(f"{ms:>7} {kind:<8} {detail}")
+def _company_round_trip(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    *,
+    notes: str | None = None,
+) -> None:
+    """Set the company in the detail modal and prove it persisted; shared with the probe below.
 
+    With `notes`, the notes textarea is edited first, so a genuine notes save runs alongside the
+    company save.
 
-def _company_round_trip(page: Page, live_server: str, ux_app: ModuleType) -> None:
-    """The body of `test_card_company_editable_and_persists`, shared with its probe."""
+    Waits on the company save's own response, never on the toast. Every save in this modal
+    writes the ONE shared `#_corpusToast`, so whichever response lands last owns its text. A
+    notes response landing after the company's turned "Company saved" into "Notes saved" before
+    a poll could see it (item 155, `docs/dev/diagnosis/test-reliability.md` O5-O6).
+    """
     cid = seed_user(ux_app, "alice")
     aid = seed_application(cid, title="Staff PM", company="", jd_text="Own the roadmap.")
+    app_url = f"/api/applications/{aid}"
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
-    page.evaluate(_TIMELINE_JS)
+    notes_puts: list[str] = []
+
+    def _count_notes_put(request: Request) -> None:
+        if request.method == "PUT" and request.url.endswith(f"{app_url}/notes"):
+            notes_puts.append(request.url)
+
+    page.on("request", _count_notes_put)
 
     prior = PriorAppsPage(page, live_server)
     prior.open_detail(aid)
-    prior.set_company("Acme Robotics")
-    # blur() triggers an async PUT; wait for its toast before re-reading, so
-    # the reopen below observes the SAVED value, not a race against the fetch.
-    try:
-        expect(page.locator("#_corpusToast")).to_have_text("Company saved")
-    except AssertionError:
-        _print_timeline(page, "toast wait failed")
-        raise
-    if os.environ.get("SARTOR_UX_TIMELINE") == "1":
-        _print_timeline(page, "passed")
-    prior.open_detail(aid)  # reopen fresh — proves it round-trips through GET
+    if notes is not None:
+        page.fill(_NOTES_TEXTAREA, notes)
+    with page.expect_response(
+        lambda r: r.request.method == "PUT" and r.url.endswith(f"{app_url}/meta")
+    ) as meta:
+        prior.set_company("Acme Robotics")
+    assert meta.value.ok, f"PUT /meta returned {meta.value.status}"
+    assert meta.value.json()["company"] == "Acme Robotics"
+
+    # Reopen, and read the server's answer from the GET itself. The modal never closed, so the
+    # input still holds the typed text whether or not the save landed; only the response body
+    # proves the value round-tripped.
+    with page.expect_response(
+        lambda r: r.request.method == "GET" and r.url.endswith(app_url)
+    ) as reopened:
+        prior.open_detail(aid)
+    detail = reopened.value.json()
+    assert detail["company"] == "Acme Robotics"
     expect(page.locator(PriorApps.COMPANY_INPUT)).to_have_value("Acme Robotics")
+
+    if notes is None:
+        # The app half of item 155's fix: leaving an UNCHANGED notes field saves nothing.
+        assert notes_puts == [], f"an unchanged notes blur still saved: {notes_puts}"
+    else:
+        assert len(notes_puts) == 1, f"expected one notes save, got {notes_puts}"
+        assert detail["notes"] == notes
 
 
 @pytest.mark.ux
 @pytest.mark.slow
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "item 155 capability probe P-H1: with the notes PUT's response delivered right after "
-        "the meta PUT's, the shared toast ends on 'Notes saved' and the 'Company saved' wait "
-        "fails (docs/dev/diagnosis/test-reliability.md)"
-    ),
-)
-def test_probe_notes_response_after_meta_response(
+def test_company_save_survives_a_later_notes_response(
     page: Page,
     live_server: str,
     ux_app: ModuleType,
 ) -> None:
-    """P-H1: CAN the notes response landing after the meta response alone fail the wait?
+    """Item 155's mechanism, forced: the notes save's response arrives AFTER the company's.
 
-    Holds each PUT /notes after fetching its real response, and delivers it only once the
-    PUT /meta response has been delivered. Proves the ordering is SUFFICIENT for the symptom,
-    not that it caused the CI failure.
+    That ordering alone reproduced the CI failure 5 of 5 against the old toast wait (probe P-H1,
+    `docs/dev/diagnosis/test-reliability.md` O5). Each PUT /notes is held after its real
+    response has been fetched, and is delivered only once the PUT /meta response has been.
+    The notes field is edited first, so a genuine notes save is in flight: an unchanged one
+    no longer saves at all.
     """
     held: list[tuple[Route, APIResponse]] = []
 
@@ -229,4 +214,5 @@ def test_probe_notes_response_after_meta_response(
 
     page.route("**/api/applications/*/notes", _hold_notes)
     page.route("**/api/applications/*/meta", _meta_then_notes)
-    _company_round_trip(page, live_server, ux_app)
+    _company_round_trip(page, live_server, ux_app, notes="Call back Friday")
+    expect(page.locator("#_corpusToast")).to_have_text("Notes saved")  # the ordering held

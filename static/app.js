@@ -6517,6 +6517,13 @@ async function _showApplicationDetail(applicationId) {
   notesEl.parentNode.replaceChild(newNotesEl, notesEl);
   newNotesEl.value = detail.notes || '';
   newNotesEl.addEventListener('blur', async () => {
+    // Save only a change, like the title/company handlers below. The modal opens with focus
+    // here, so the first move away saved and toasted "Notes saved" even when nothing changed,
+    // and that toast could overwrite the company save's (item 155,
+    // docs/dev/diagnosis/test-reliability.md O5-O6). The route stores the trimmed text, or
+    // null when blank, so compare trimmed.
+    const v = (newNotesEl.value || '').trim();
+    if (v === (detail.notes || '')) return;
     try {
       const r = await fetch(`/api/applications/${applicationId}/notes`, {
         method: 'PUT',
@@ -6524,6 +6531,7 @@ async function _showApplicationDetail(applicationId) {
         body: JSON.stringify({ notes: newNotesEl.value }),
       });
       if (r.ok) {
+        detail.notes = v || null;
         _toast('Notes saved');
       } else {
         _toast('Failed to save notes', true);
