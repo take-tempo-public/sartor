@@ -2644,3 +2644,19 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Structural check:** `scripts/check_doc_links.py` reports 622 tracked markdown files with no
   broken links or cites. No `[[backlink]]` changed and no page was added or removed, so there
   is no orphan or index change. **Gate verdict: PASS.**
+
+## 2026-10-09 — wiki-relevance check, verified no-edit (`fix/test-reliability`)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged).
+- **Wiki-relevant changes in the diff (1):** `static/app.js`, per `is_wiki_relevant()` over
+  `git diff --name-only main`. The notes textarea's blur handler in `_showApplicationDetail` now
+  saves only a change (item 155).
+- **Verified no-edit:**
+  - `grep -rniE "_showApplicationDetail|appDetail|save-on-blur|saved on blur|on blur|notes.*blur|blur.*notes|Notes saved" docs/wiki/pages`
+    finds one hit, `frontend-wizard.md:38`. It names `_showApplicationDetail` only as the modal
+    that a Pipeline card click opens.
+  - No page describes the notes save, its toast, or blur behavior.
+  - `route-surface.md:253` lists the `/notes` route, and the route is unchanged.
+- **Freshness gate:** `python scripts/wiki_freshness.py` gave
+  `OK (27 file(s) changed since the last ingest (< 75-file block threshold))`.

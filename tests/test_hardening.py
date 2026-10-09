@@ -7,12 +7,16 @@ import contextlib
 import json
 import threading
 import time
+import traceback
+from collections.abc import Callable
 from pathlib import Path
 from typing import ClassVar
 
 import pytest
 
 from hardening import (
+    _REPLACE_ATTEMPTS,
+    _REPLACE_BACKOFF_S,
     assemble_source_union,
     check_ats_format,
     compute_call_cost,
@@ -1161,26 +1165,67 @@ class TestContextTransaction:
         bug, and it is the one the two shipped-but-wrong fixes never touched.
         """
 
+        def _optimistic_read(path: Path) -> dict:
+            """A route's pre-call read, tolerant of Windows' sharing violation.
+
+            On Windows a plain open raises PermissionError while another thread
+            `os.replace`s the file (item 156, `docs/dev/diagnosis/test-reliability.md`
+            O1-O3). The production server handles one request at a time, so its reads never
+            meet a concurrent replace; this harness's threads do. Retried on the bounded
+            budget `write_context_atomic` gives the writer's side of the same collision.
+            """
+            for attempt in range(_REPLACE_ATTEMPTS):
+                try:
+                    return json.loads(path.read_text(encoding="utf-8"))
+                except PermissionError:
+                    if attempt == _REPLACE_ATTEMPTS - 1:
+                        raise
+                    time.sleep(_REPLACE_BACKOFF_S * (attempt + 1))
+            raise AssertionError("unreachable")
+
         def _naive(path: Path, i: int) -> None:
-            ctx = json.loads(path.read_text(encoding="utf-8"))
+            ctx = _optimistic_read(path)
             time.sleep(0.02)  # the LLM call: the window in which the copy goes stale
             ctx[f"k{i}"] = i
             write_context_atomic(path, ctx)  # atomic, and STILL a lost update
 
         def _transactional(path: Path, i: int) -> None:
-            json.loads(path.read_text(encoding="utf-8"))  # the optimistic pre-call read
+            _optimistic_read(path)
             time.sleep(0.02)  # the LLM call — deliberately OUTSIDE the lock
             with context_transaction(path) as fresh:
                 fresh[f"k{i}"] = i
 
-        naive = self._race(tmp_path / "naive.json", _naive)
-        txn = self._race(tmp_path / "txn.json", _transactional)
+        # A writer that RAISES never writes its key, which reads exactly like a lost update.
+        # Item 156: a `_transactional` thread that died in its own pre-read was reported as
+        # "context_transaction lost a delta", and a `_naive` thread that died let the control
+        # pass with no race at all (O2-O3). Capture every crash with its traceback.
+        crashes: dict[str, dict[int, str]] = {"_naive": {}, "_transactional": {}}
+
+        def _captured(body: Callable[[Path, int], None]) -> Callable[[Path, int], None]:
+            def run(path: Path, i: int) -> None:
+                try:
+                    body(path, i)
+                except BaseException:
+                    crashes[body.__name__][i] = traceback.format_exc()
+
+            return run
+
+        naive = self._race(tmp_path / "naive.json", _captured(_naive))
+        txn = self._race(tmp_path / "txn.json", _captured(_transactional))
 
         naive_keys = {k for k in naive if k.startswith("k")}
         txn_keys = {k for k in txn if k.startswith("k")}
 
-        assert len(naive_keys) < 8, (
+        # The control proves the race fired only through a writer that FINISHED and still
+        # lost its key. Eight unlocked writers can exhaust `write_context_atomic`'s retries
+        # on Windows (O3); such a writer is no evidence either way, so it is excluded.
+        naive_finished = {f"k{i}" for i in range(8) if i not in crashes["_naive"]}
+        assert not naive_finished <= naive_keys, (
             "harness never reproduced a lost update — the assertion below proves nothing"
+            f" ({len(crashes['_naive'])} naive writer(s) raised and were excluded)"
+        )
+        assert not crashes["_transactional"], "a context_transaction writer raised:\n" + "\n".join(
+            f"k{i}:\n{tb}" for i, tb in sorted(crashes["_transactional"].items())
         )
         assert txn_keys == {f"k{i}" for i in range(8)}, (
             f"context_transaction lost a delta: only {sorted(txn_keys)} survived"

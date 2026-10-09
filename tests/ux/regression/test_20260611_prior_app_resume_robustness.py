@@ -22,7 +22,7 @@ from __future__ import annotations
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import APIResponse, Page, Request, Route, expect
 
 from tests.ux.seeding import (
     seed_application,
@@ -111,17 +111,108 @@ def test_card_company_editable_and_persists(
     Deferred #3). The underlying `pending_proposals` VALUE stays covered at
     the route level (`tests/test_application_routes.py::test_pending_proposals_per_run`).
     """
+    _company_round_trip(page, live_server, ux_app)
+
+
+#: The notes textarea in the detail modal. It has no `PriorApps` selector; this module is its
+#: only Python reader.
+_NOTES_TEXTAREA = "#appDetailNotes"
+
+
+def _company_round_trip(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    *,
+    notes: str | None = None,
+) -> None:
+    """Set the company in the detail modal and prove it persisted; shared with the probe below.
+
+    With `notes`, the notes textarea is edited first, so a genuine notes save runs alongside the
+    company save.
+
+    Waits on the company save's own response, never on the toast. Every save in this modal
+    writes the ONE shared `#_corpusToast`, so whichever response lands last owns its text. A
+    notes response landing after the company's turned "Company saved" into "Notes saved" before
+    a poll could see it (item 155, `docs/dev/diagnosis/test-reliability.md` O5-O6).
+    """
     cid = seed_user(ux_app, "alice")
     aid = seed_application(cid, title="Staff PM", company="", jd_text="Own the roadmap.")
+    app_url = f"/api/applications/{aid}"
 
     BasePage(page, live_server).load()
     UserPickerPage(page, live_server).select("alice")
+    notes_puts: list[str] = []
+
+    def _count_notes_put(request: Request) -> None:
+        if request.method == "PUT" and request.url.endswith(f"{app_url}/notes"):
+            notes_puts.append(request.url)
+
+    page.on("request", _count_notes_put)
 
     prior = PriorAppsPage(page, live_server)
     prior.open_detail(aid)
-    prior.set_company("Acme Robotics")
-    # blur() triggers an async PUT; wait for its toast before re-reading, so
-    # the reopen below observes the SAVED value, not a race against the fetch.
-    expect(page.locator("#_corpusToast")).to_have_text("Company saved")
-    prior.open_detail(aid)  # reopen fresh — proves it round-trips through GET
+    if notes is not None:
+        page.fill(_NOTES_TEXTAREA, notes)
+    with page.expect_response(
+        lambda r: r.request.method == "PUT" and r.url.endswith(f"{app_url}/meta")
+    ) as meta:
+        prior.set_company("Acme Robotics")
+    assert meta.value.ok, f"PUT /meta returned {meta.value.status}"
+    assert meta.value.json()["company"] == "Acme Robotics"
+
+    # Reopen, and read the server's answer from the GET itself. The modal never closed, so the
+    # input still holds the typed text whether or not the save landed; only the response body
+    # proves the value round-tripped.
+    with page.expect_response(
+        lambda r: r.request.method == "GET" and r.url.endswith(app_url)
+    ) as reopened:
+        prior.open_detail(aid)
+    detail = reopened.value.json()
+    assert detail["company"] == "Acme Robotics"
     expect(page.locator(PriorApps.COMPANY_INPUT)).to_have_value("Acme Robotics")
+
+    if notes is None:
+        # The app half of item 155's fix: leaving an UNCHANGED notes field saves nothing.
+        assert notes_puts == [], f"an unchanged notes blur still saved: {notes_puts}"
+    else:
+        assert len(notes_puts) == 1, f"expected one notes save, got {notes_puts}"
+        assert detail["notes"] == notes
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_company_save_survives_a_later_notes_response(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+) -> None:
+    """Item 155's mechanism, forced: the notes save's response arrives AFTER the company's.
+
+    That ordering alone reproduced the CI failure 5 of 5 against the old toast wait (probe P-H1,
+    `docs/dev/diagnosis/test-reliability.md` O5). Each PUT /notes is held after its real
+    response has been fetched, and is delivered only once the PUT /meta response has been.
+    The notes field is edited first, so a genuine notes save is in flight: an unchanged one
+    no longer saves at all.
+    """
+    held: list[tuple[Route, APIResponse]] = []
+
+    def _hold_notes(route: Route) -> None:
+        if route.request.method != "PUT":
+            route.continue_()
+            return
+        held.append((route, route.fetch()))
+
+    def _meta_then_notes(route: Route) -> None:
+        if route.request.method != "PUT":
+            route.continue_()
+            return
+        route.fulfill(response=route.fetch())
+        while held:
+            notes_route, notes_response = held.pop(0)
+            notes_route.fulfill(response=notes_response)
+
+    page.route("**/api/applications/*/notes", _hold_notes)
+    page.route("**/api/applications/*/meta", _meta_then_notes)
+    _company_round_trip(page, live_server, ux_app, notes="Call back Friday")
+    expect(page.locator("#_corpusToast")).to_have_text("Notes saved")  # the ordering held
