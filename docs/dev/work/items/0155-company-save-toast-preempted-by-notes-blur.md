@@ -3,16 +3,24 @@ schema = 1
 id = 155
 kind = "item"
 title = "UX flake: test_card_company_editable_and_persists saw 'Notes saved' where it waits for 'Company saved'"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["fix/wiki-relevance-cited-scripts"]
+branches = ["fix/wiki-relevance-cited-scripts", "fix/test-reliability"]
 refs = [
   "tests/ux/regression/test_20260611_prior_app_resume_robustness.py:125",
   "static/app.js:6519-6534",
   "static/app.js:6571-6575",
   "ui_pages/prior_apps.py:54-62",
+  "docs/dev/diagnosis/test-reliability.md",
+  "docs/dev/blast-radius/test-reliability.md",
 ]
 summary = "A CI attempt saw 'Notes saved', never 'Company saved', for 5 s after the company blur. Retry passed; cause unverified."
+resolution = "2026-10-09, fix/test-reliability: the modal opens with focus on the notes textarea, so set_company's fill() blurred it and fired an unchanged-notes save; when that response landed after the company save's, 'Notes saved' overwrote 'Company saved' in the shared toast (observed locally: 3 of 30 runs under load, all with the meta response first; diagnosis O5-O6). Fixed on both sides (owner's choice): the notes blur saves only a change, and the test waits on the PUT /meta response and reads the company from the reopen's GET body. The CI attempt itself left no request log, so its own mechanism stays inferred."
+verified_by = [
+  "tests/ux/regression/test_20260611_prior_app_resume_robustness.py::test_card_company_editable_and_persists",
+  "tests/ux/regression/test_20260611_prior_app_resume_robustness.py::test_company_save_survives_a_later_notes_response",
+  "docs/dev/diagnosis/test-reliability.md (Acceptance bar: 3/30 -> 0/30 under the same load)",
+]
 ```
 
 **Observed (2026-10-07, PR #159, run 37569283583, job 112624033244, "UX / a11y / PDF (Playwright, py3.12)").**
@@ -50,3 +58,20 @@ blur; the toast being shared) and the test (waiting on a shared toast instead of
 ## Updates
 
 ### 2026-10-07 — filed on `fix/wiki-relevance-cited-scripts` (PR #159 close-out)
+
+### 2026-10-09 — fix/test-reliability: closed
+
+- **The mechanism, observed locally** (`docs/dev/diagnosis/test-reliability.md` O5–O6). The
+  modal opens with focus on the notes textarea. `set_company`'s `fill()` therefore blurred it,
+  which sent PUT `/notes` even though the notes hadn't changed. Under 6 CPU loaders, 3 of 30 runs
+  failed with the CI text. In all three the meta response arrived first: `Company saved` showed
+  for 5–112 ms, then `Notes saved` replaced it. All 27 passing runs had the notes response
+  first.
+- **The CI attempt's own mechanism stays inferred.** It fits the same shape, but it left no
+  request log.
+- **Fixed on both sides,** the owner's choice:
+  - the notes blur saves only a change, like the title and company handlers;
+  - the test waits on the PUT `/meta` response, reads the company back from the reopen's GET
+    body, and asserts an unchanged notes field sends no PUT.
+- **Same load, same machine:** 3/30 → 0/30. The forced-order test passed 3 of 3. With the app
+  half removed, the fixed test fails ("an unchanged notes blur still saved").
