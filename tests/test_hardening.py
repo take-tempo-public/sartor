@@ -7,6 +7,8 @@ import contextlib
 import json
 import threading
 import time
+import traceback
+from collections.abc import Callable
 from pathlib import Path
 from typing import ClassVar
 
@@ -1173,8 +1175,26 @@ class TestContextTransaction:
             with context_transaction(path) as fresh:
                 fresh[f"k{i}"] = i
 
-        naive = self._race(tmp_path / "naive.json", _naive)
-        txn = self._race(tmp_path / "txn.json", _transactional)
+        # A writer that RAISES never writes its key, which reads exactly like a lost update:
+        # a crashed `_transactional` thread blamed `context_transaction`, and a crashed
+        # `_naive` thread would let the control pass without any race. Capture every crash
+        # with its traceback, and fail on it by name (item 156,
+        # `docs/dev/diagnosis/test-reliability.md`).
+        crashes: list[str] = []
+
+        def _captured(body: Callable[[Path, int], None]) -> Callable[[Path, int], None]:
+            def run(path: Path, i: int) -> None:
+                try:
+                    body(path, i)
+                except BaseException:
+                    crashes.append(f"{body.__name__} writer k{i}:\n{traceback.format_exc()}")
+
+            return run
+
+        naive = self._race(tmp_path / "naive.json", _captured(_naive))
+        txn = self._race(tmp_path / "txn.json", _captured(_transactional))
+
+        assert not crashes, "a writer thread raised:\n" + "\n".join(crashes)
 
         naive_keys = {k for k in naive if k.startswith("k")}
         txn_keys = {k for k in txn if k.startswith("k")}
