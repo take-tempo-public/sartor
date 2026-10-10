@@ -86,6 +86,30 @@ the served page and `css-no-fail-hover` deletes `:55`; `no-dash-help-opener` del
 `window.sartorDashHelp = { open: openDashHelp };` and `wrong-help-key` makes the dynamic
 bubble open `dashCollate` instead of `dashCollateRun`. Nothing in the HEAD tests notices.
 
+### A3. Item 122, after: the strengthened tests kill all three mutants
+
+Same session, same command as A1 against this branch's `tests/test_dashboard_copy.py` and
+`tests/test_annotation_routes.py`:
+
+```
+PASSED ...test_help_icon_labels_match_registry_titles[none]
+PASSED ...test_quality_tiles_have_no_unglossed_raw_names[none]
+PASSED ...test_score_grounding_help_matches_server_behaviour[none]
+FAILED ...test_help_icon_labels_match_registry_titles[title-hole]
+FAILED ...test_quality_tiles_have_no_unglossed_raw_names[raw-names]
+FAILED ...test_score_grounding_help_matches_server_behaviour[error-claim]
+3 failed, 3 passed, 82 deselected in 16.17s
+```
+
+All three logged `applied`. Each failure is the assertion that names its regression:
+
+```
+[mut] title-hole: dropped dashPipeline's title; its bubble now names dashQuality's title
+tests\test_dashboard_copy.py:316: AssertionError: _DASH_HELP['dashPipeline'] has no title of its own
+AssertionError: ('failuremodes', ['cost_usd', 'fabricated_specifics_rate', 'llm_calls', 'llm_calls.jsonl'])
+tests\test_annotation_routes.py:895: assert 'a missing one stops it with an error' in "Score grounding — run the offline scorers here…
+```
+
 ### A0. Item 122.1, probe: what the Quality tiles render today
 
 A read-only render of the populated console (the `populated_page` fixture's data), run from

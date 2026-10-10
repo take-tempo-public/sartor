@@ -890,7 +890,9 @@ class TestScoreGrounding:
         entry = page[start : page.index("\n    },", start)]
         body = "".join(re.findall(r"'((?:[^'\\]|\\.)*)'", entry))
         assert "not an error" not in body
-        assert "error" in body  # says a missing prerequisite IS an error
+        # Says a missing prerequisite IS an error. The specific claim, not the bare word,
+        # which almost any wording contains (item 122).
+        assert "a missing one stops it with an error" in body
         assert remedy in body  # ...and gives the server's remedy verbatim
         # The extras branch too: the server streams "Grounding extras not
         # installed." with a pip remedy (see test_missing_extras_streams_install_message).
