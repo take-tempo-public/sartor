@@ -252,10 +252,12 @@ re-verified this session** unless stated:
      own history, it flags the original wait.
    - **Its two blind spots are declared:** a wait on toast text alone, and a runtime-built
      selector. Both are labelled unenforced in item 159.
-2. **A doubled backslash in a Bash command** (item 142's class): a Windows path in a
-   `git commit -F` argument.
-   - **Mechanism:** the existing `block-doubled-backslash` guard refused it before it ran. It was
-     rewritten with a `cygpath -m` forward-slash path. No new mechanism needed.
+2. **A doubled backslash in a Bash command, twice** (item 142's class).
+   - **The two instances:** a Windows path in a `git commit -F` argument, and a `grep` pattern
+     in the pre-push path scan.
+   - **Mechanism:** the existing `block-doubled-backslash` guard refused both before they ran.
+     They were rewritten with a `cygpath -m` path and with the PowerShell tool. No new mechanism
+     needed.
 3. **A bare tool name not on PATH** (`ruff`).
    - **Mechanism:** the existing `verify-binary-on-path` guard refused it and named
      `python -m ruff`. No new mechanism needed.
