@@ -110,6 +110,37 @@ AssertionError: ('failuremodes', ['cost_usd', 'fabricated_specifics_rate', 'llm_
 tests\test_annotation_routes.py:895: assert 'a missing one stops it with an error' in "Score grounding — run the offline scorers here…
 ```
 
+### A4. Items 115 and 116, after: the new assertions kill all four UX mutants
+
+Same session, 1.08 GB free at the start, against this branch's new
+`test_failing_error_count_keeps_danger_color_and_hover_affordance` and the extended
+`test_annotation_tab_save_and_collate`, mutations as in A2:
+
+```
+PASSED ...test_failing_error_count_keeps_danger_color_and_hover_affordance[none]
+PASSED ...test_annotation_tab_save_and_collate[none]
+FAILED ...test_failing_error_count_keeps_danger_color_and_hover_affordance[css-no-fail-rule]
+FAILED ...test_failing_error_count_keeps_danger_color_and_hover_affordance[css-no-fail-hover]
+FAILED ...test_annotation_tab_save_and_collate[no-dash-help-opener]
+FAILED ...test_annotation_tab_save_and_collate[wrong-help-key]
+4 failed, 2 passed in 65.50s (0:01:05)
+```
+
+All four logged `applied`. The failures, with the measured values from a `--tb=short` re-run
+of the two CSS mutants:
+
+```
+css-no-fail-rule:    test_20260924_run_detail_modal.py:215  expected 'rgb(248, 113, 113)'  Actual value: rgb(96, 165, 250)
+css-no-fail-hover:   test_20260924_run_detail_modal.py:217  expected 'rgb(232, 167, 84)'   Actual value: rgb(248, 113, 113)
+no-dash-help-opener: Page.wait_for_selector: Timeout 15000ms exceeded.   (the help modal never opens)
+wrong-help-key:      test_20260925_dashboard_copy_discovery.py:106: assert 'Collate — tu...o a test case' == 'Run this fix...ou just built'
+```
+
+The measured colors are the tokens in `static/style.css`: `--danger` `#f87171` = rgb(248, 113,
+113), `--info` `#60a5fa` = rgb(96, 165, 250), `--brand` `#e8a754` = rgb(232, 167, 84). So
+without `:54` the failing count renders in the info color (F3's original defect), and without
+`:55` hovering it shows danger instead of the brand hover color, both by measurement.
+
 ### A0. Item 122.1, probe: what the Quality tiles render today
 
 A read-only render of the populated console (the `populated_page` fixture's data), run from
