@@ -223,12 +223,44 @@ def _registry_keys(html: str) -> set[str]:
     return set(re.findall(r"^    (\w+): \{$", block, flags=re.MULTILINE))
 
 
+def _registry_entry(html: str, key: str) -> str:
+    """The source of one `_DASH_HELP[key]` entry, bounded by its own closing brace."""
+    start = html.index(f"    {key}: {{")
+    return html[start : html.index("\n    },", start)]
+
+
 def _registry_body(html: str, key: str) -> str:
     """Concatenate the JS string literals of one `_DASH_HELP[key]` entry."""
-    start = html.index(f"    {key}: {{")
-    end = html.index("\n    },", start)
-    lits = re.findall(r"'((?:[^'\\]|\\.)*)'", html[start:end])
+    lits = re.findall(r"'((?:[^'\\]|\\.)*)'", _registry_entry(html, key))
     return "".join(lit.replace("\\'", "'") for lit in lits)
+
+
+def _spaced_text(node: _Node) -> str:
+    """All text under a node with a space between text nodes.
+
+    `_Node.all_text()` glues neighbours ("mode" + "invented_metric" + "named"), which both
+    hides a token from a word-boundary pattern and invents one that is not on screen.
+    """
+    parts = [" ".join(node.text), *(_spaced_text(c) for c in node.children)]
+    return " ".join(p for p in parts if p)
+
+
+# Item 122: a raw name is matched by its SHAPE, not by a list of names already known, so one
+# added later fails here by construction. snake_case covers schema fields and metric ids;
+# the second pattern covers data files.
+_RAW_NAME_RES = (
+    re.compile(r"\b[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+\b"),
+    re.compile(r"[\w.-]+\.jsonl?\b"),
+)
+# Raw-shaped tokens a Quality tile may show, each with its reason. Every entry must still be
+# rendered, so the patterns carry a live positive control in every run.
+_QUALITY_RAW_NAME_ALLOWLIST = frozenset(
+    {
+        # The rubric rule id the failure-modes tile reports (the fixture's `failed_rules`):
+        # the data value the tile is about, glossed by its lay line. Not a file or field name.
+        "invented_metric",
+    }
+)
 
 
 # --------------------------------------------------------------------------- tests
@@ -273,14 +305,15 @@ class TestEveryTileHasLayLineAndBubble:
 
     def test_help_icon_labels_match_registry_titles(self, populated_page: str) -> None:
         """The UX consistency check (the (i)'s accessible name == the modal title)
-        holds for every static bubble, not just the five tab-level ones."""
+        holds for every static bubble, not just the five tab-level ones. The title is
+        read from the entry's OWN block, so an entry with no title fails here instead
+        of borrowing the next entry's (item 122)."""
         for n in _parse(populated_page).iter():
             key = n.attrs.get("data-help")
             if not key or "help-info" not in n.classes:
                 continue
-            start = populated_page.index(f"    {key}: {{")
-            m = re.search(r"title: '((?:[^'\\]|\\.)*)'", populated_page[start:])
-            assert m, key
+            m = re.search(r"title: '((?:[^'\\]|\\.)*)'", _registry_entry(populated_page, key))
+            assert m, f"_DASH_HELP[{key!r}] has no title of its own"
             assert n.attrs.get("aria-label") == "Help: " + m.group(1), key
 
 
@@ -332,23 +365,33 @@ class TestCopyContent:
         assert blanks == ["All users", "All models"]
 
     def test_quality_tiles_have_no_unglossed_raw_names(self, populated_page: str) -> None:
-        """UX-11 acceptance: no raw file or schema field name in a Quality tile."""
+        """UX-11 acceptance: no raw file or schema field name in a Quality tile.
+
+        Matched by shape (item 122): any snake_case or `*.json(l)` token fails unless
+        `_QUALITY_RAW_NAME_ALLOWLIST` names it with a reason. The five-string denylist
+        this replaces let `fabricated_specifics_rate from llm_calls.jsonl cost_usd`
+        through."""
         root = _parse(populated_page)
         pane = next(
             n for n in root.iter() if n.attrs.get("data-pane") == "quality" and n.tag == "section"
         )
         tiles = [n for n in pane.iter() if "tile" in n.classes]
         assert len(tiles) == 7
+        allowed_seen: set[str] = set()
         for tile in tiles:
-            text = tile.all_text()
-            for raw in (
-                "baseline_v1.json",
-                "failed_rules",
-                "prompt_version",
-                "eval_composite",
-                "≥2",
-            ):
-                assert raw not in text, (tile.attrs.get("data-detail"), raw)
+            name = tile.attrs.get("data-detail")
+            text = _spaced_text(tile)
+            assert "≥2" not in text, name  # notation, not a raw name: kept as a literal
+            tokens = {t for rx in _RAW_NAME_RES for t in rx.findall(text)}
+            allowed_seen |= tokens & _QUALITY_RAW_NAME_ALLOWLIST
+            assert not tokens - _QUALITY_RAW_NAME_ALLOWLIST, (
+                name,
+                sorted(tokens - _QUALITY_RAW_NAME_ALLOWLIST),
+            )
+        assert allowed_seen == _QUALITY_RAW_NAME_ALLOWLIST, (
+            "allowlisted raw names no longer rendered (remove them): "
+            f"{sorted(_QUALITY_RAW_NAME_ALLOWLIST - allowed_seen)}"
+        )
 
     def test_groundedness_copy_has_no_metric_internal_terms(self, populated_page: str) -> None:
         """UX-21: no 'grounding box', 'source union' or bare 'L0' jargon on the tab

@@ -2660,3 +2660,14 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   - `route-surface.md:253` lists the `/notes` route, and the route is unchanged.
 - **Freshness gate:** `python scripts/wiki_freshness.py` gave
   `OK (27 file(s) changed since the last ingest (< 75-file block threshold))`.
+
+## 2026-10-10 — wiki-relevance check, verified no-edit (`test/assertion-strength`)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged).
+- **Wiki-relevant changes in the diff (0):** `is_wiki_relevant()` returns `False` for all 14
+  paths in the branch's diff against `main`: five test modules (including the new
+  `tests/test_ux_toast_wait_gate.py`), `CHANGELOG.md`, the diagnosis dossier, the ledger
+  file, `BOARD.md`, four work items and this log. No product file changed.
+- **Freshness gate:** `python scripts/wiki_freshness.py` gave
+  `OK (27 file(s) changed since the last ingest (< 75-file block threshold))`.

@@ -178,6 +178,45 @@ def test_error_count_button_lists_that_call_kinds_errors_only(
     dash.close_run_modal()
 
 
+# Resolves a custom property the way the browser does for the anchor's own cascade scope:
+# a probe in the anchor's parent takes `color: var(<name>)` and reports its computed color.
+_RESOLVE_COLOR_VAR = """(el, name) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${name})`;
+    el.parentElement.appendChild(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+}"""
+
+
+@pytest.mark.ux
+def test_failing_error_count_keeps_danger_color_and_hover_affordance(
+    page: Page, live_server: str, ux_app: ModuleType, monkeypatch, tmp_path
+) -> None:
+    """Item 115 (UX-8's F3 fix): a failing call kind's error count renders in the
+    danger color, not the run-link info color, and hovering still shows the brand
+    color. Measured with getComputedStyle, because the fix was a specificity
+    contest (`td.fail button.err-link` over `button.err-link`) that reading the
+    rules cannot settle (memory: css-cascade-per-property-not-per-rule)."""
+    _seed(monkeypatch, tmp_path)
+    dash = DashboardConsolePage(page, live_server).load()
+    dash.open_tile("reliability")
+    expect(dash.detail_panel_open()).to_be_visible()
+    err_btn = dash.err_link("generate")  # status=error in _CALLS, so its <td> is .fail
+    expect(err_btn).to_be_visible()
+
+    danger, info, brand = (
+        err_btn.evaluate(_RESOLVE_COLOR_VAR, name) for name in ("--danger", "--info", "--brand")
+    )
+    # Precondition: three distinct colors, or the assertions below prove nothing.
+    assert len({danger, info, brand}) == 3, (danger, info, brand)
+
+    expect(err_btn).to_have_css("color", danger)  # not `info`: the cue the fix restored
+    err_btn.hover()
+    expect(err_btn).to_have_css("color", brand)  # the hover affordance the fix kept
+
+
 @pytest.mark.ux
 def test_error_with_no_captured_message_shows_no_message_logged(
     page: Page, live_server: str, ux_app: ModuleType, monkeypatch, tmp_path

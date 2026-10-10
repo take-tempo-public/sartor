@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Assertions that fail on the regression they name, and a shared-toast wait gate (`test/assertion-strength`, items 115, 116, 122, 159)
+
+Test-only; no product file changed. Each change was proven by a mutation that passed the old
+test and fails the new one.
+
+- **Added: `tests/test_ux_toast_wait_gate.py` (item 159).** Every save in the app writes the
+  one `#_corpusToast` element, so a UX test that waits on it can be satisfied or defeated by
+  another request, as item 155's was. The gate fails when any Python in the repo references
+  that toast outside an allowlisted test, at the allowlisted count. It runs in the gate and CI,
+  so it binds every agent. It doesn't catch a wait on the toast's text alone, or a selector
+  built at runtime.
+- **Added: the run-detail console test measures the failing error count's color (item 115).**
+  It checks the computed `color` is the danger color at rest and the brand color on hover, so
+  the F3 cascade fix is measured rather than read from the rules.
+- **Added: the annotation flow test opens the post-Collate "Run this fixture" help (item
+  116).** That (i) is built after a Collate, so no test had clicked it before.
+- **Changed: three console-copy assertions now fail on the mutants filed against them (item
+  122).**
+  - Quality tiles are checked for raw names by shape (snake_case, `*.json(l)`), with an
+    allowlist.
+  - Help titles are read from their own registry entry.
+  - The Score-grounding help test asserts its specific claim.
+- Evidence: `docs/dev/diagnosis/assertion-strength.md`.
+
 ### Two test flakes: a shared-toast wait and a Windows pre-read (`fix/test-reliability`, items 155, 156)
 
 - **Changed: the application detail modal's notes field saves only a change (item 155).** The

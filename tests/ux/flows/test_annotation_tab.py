@@ -16,6 +16,7 @@ from types import ModuleType
 import pytest
 from playwright.sync_api import Page, Route, expect
 
+from tests.ux.regression.test_20260925_dashboard_copy_discovery import _assert_help_opens
 from ui_pages import DashboardConsolePage
 from ui_pages.selectors import Dashboard
 
@@ -125,6 +126,15 @@ def test_annotation_tab_save_and_collate(page: Page, live_server: str, ux_app: M
     assert (fixture_dir / "improvement_brief.md").exists()
     assert (fixture_dir / "jd.txt").read_text(encoding="utf-8") == "Senior PM JD body."
     expect(page.locator("#annCollateResult")).to_contain_text("Senior PM · Acme Robotics")
+
+    # Item 116: the "Run this fixture" (i) exists only after a Collate, so the load-time
+    # `.help-info[data-help]` wiring never reaches it; it opens through
+    # window.sartorDashHelp. Click it and check the modal the same way every static tile's is.
+    run_help = page.locator("#annCollateResult").get_by_role(
+        "button", name="Help: Run this fixture"
+    )
+    expect(run_help).to_have_count(1)
+    _assert_help_opens(page, dash, run_help)
 
 
 @pytest.mark.ux
