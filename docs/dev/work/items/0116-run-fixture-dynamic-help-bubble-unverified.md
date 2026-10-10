@@ -3,15 +3,20 @@ schema = 1
 id = 116
 kind = "item"
 title = "Dynamically-created 'Run this fixture' help bubble (renderCollateResult) never verified to open in a browser"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["feat/dashboard-copy-discovery"]
+branches = ["feat/dashboard-copy-discovery", "test/assertion-strength"]
 refs = [
   "dashboard/templates/dashboard.html",
   "tests/ux/regression/test_20260925_dashboard_copy_discovery.py",
   "tests/test_annotation_routes.py",
 ]
 summary = "Post-Collate help circle is wired at runtime; C3's UX test never reaches it, only render-with-no-error is verified."
+resolution = "2026-10-10, test/assertion-strength: the annotation flow test, which already runs a real Collate, now finds the dynamically built 'Run this fixture' (i) by its accessible name and checks it with _assert_help_opens() (modal opens, title equals the icon's aria-label, body non-empty). Removing the window.sartorDashHelp opener, or pointing the bubble at dashCollate, passed the old test and fails the new one."
+verified_by = [
+  "tests/ux/flows/test_annotation_tab.py::test_annotation_tab_save_and_collate",
+  "docs/dev/diagnosis/assertion-strength.md (A2 before, A4 after: no-dash-help-opener, wrong-help-key)",
+]
 ```
 
 **Filed by the closer (C3, `feat/dashboard-copy-discovery`), from the implementer's own
@@ -47,3 +52,13 @@ has hit before (Observation 2b in the blast-radius dossier).
 ## Updates
 
 ### 2026-09-25 — filed during `feat/dashboard-copy-discovery` close-out (Epic C C3 closer)
+
+### 2026-10-10 — closed on `test/assertion-strength`
+
+Added to `tests/ux/flows/test_annotation_tab.py::test_annotation_tab_save_and_collate`, which
+already drives the real Collate, so no second bootstrap or browser setup was needed. The (i)
+is found by its accessible name inside `#annCollateResult` and checked with
+`_assert_help_opens()`, imported from the C3 regression module. Proven by mutation of the
+served page (`docs/dev/diagnosis/assertion-strength.md` A2, A4): deleting the
+`window.sartorDashHelp` opener, or pointing the bubble at `dashCollate`, passed the old test
+and fails the new one.

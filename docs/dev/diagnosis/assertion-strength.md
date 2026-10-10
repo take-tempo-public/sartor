@@ -1,8 +1,11 @@
 # Diagnosis — assertions that pass on the regression they name (items 115, 116, 122) and the shared-toast wait class (item 159)
 
-> **Status:** each item's gap is proven by a mutation that survives the HEAD test. After this
-> branch's change, each mutation must fail the strengthened test. Results are recorded below
-> as they are observed.
+> **Status: all four items verified by mutation.**
+> - Items 115, 116 and 122: seven mutations, one per named regression. Each survived the HEAD
+>   test (A1, A2) and now fails the strengthened test with the assertion that names it (A3,
+>   A4). Every `none` control arm passed.
+> - Item 159: the gate fails on all four ways its allowlist can drift (A5), and flags item
+>   155's original wait in its own history.
 > **Branch:** `test/assertion-strength` (a test branch, not a `fix/*`; this dossier is the
 > evidence home the items' `verified_by` cite).
 
@@ -506,7 +509,17 @@ def pytest_runtest_call(item: pytest.Item) -> Iterator[None]:
 
 ## The fix
 
-_(Recorded per item as it lands.)_
+Test-only. No production file changed on this branch.
+
+- **Item 115** (`7ee4d20`): new
+  `test_20260924_run_detail_modal.py::test_failing_error_count_keeps_danger_color_and_hover_affordance`.
+  It resolves `--danger`, `--info` and `--brand` in the button's own cascade scope, then
+  asserts computed `color` is danger at rest and brand on hover.
+- **Item 116** (`305a762`): `test_annotation_tab.py::test_annotation_tab_save_and_collate` clicks
+  the post-Collate "Run this fixture" (i) and reuses `_assert_help_opens()`.
+- **Item 122** (`d80f88d`): raw names matched by shape with a used allowlist; the registry title
+  bounded to its own entry; the Score-grounding help's specific claim asserted.
+- **Item 159** (`7fd088d`): `tests/test_ux_toast_wait_gate.py`.
 
 ---
 
@@ -514,3 +527,16 @@ _(Recorded per item as it lands.)_
 
 Every row: mutation applied (logged), HEAD test passes it, new test fails it with the
 assertion that names the regression, `none` arm passes. Run with `-p no:rerunfailures`.
+
+| Item | Mutation | HEAD test | New test |
+|---|---|---|---|
+| 115 | `css-no-fail-rule` | passed (A2) | failed, measured info color (A4) |
+| 115 | `css-no-fail-hover` | passed (A2) | failed, measured danger on hover (A4) |
+| 116 | `no-dash-help-opener` | passed (A2) | failed, modal never opens (A4) |
+| 116 | `wrong-help-key` | passed (A2) | failed, title mismatch (A4) |
+| 122.1 | `raw-names` | passed (A1) | failed, tokens named (A3) |
+| 122.2 | `title-hole` | passed (A1) | failed, "has no title of its own" (A3) |
+| 122.3 | `error-claim` | passed (A1) | failed, specific claim absent (A3) |
+| 159 | `guard-drop-allow`, `guard-stale-allow`, `guard-count`, `guard-new-site` | n/a (new) | all failed (A5) |
+
+Met.
