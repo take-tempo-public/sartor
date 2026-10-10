@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 70
+**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 70
 
 ## Open
 
@@ -30,6 +30,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
+- **159** -- UX tests can synchronize on the shared #_corpusToast (item 155's class); no class-wide guard (`agent`) -- Any UX test may wait on #_corpusToast, which every save writes (last writer wins); 155 was one. Guard the class.
 
 ## Blocked
 
