@@ -281,6 +281,13 @@ class Wizard:
     ITERATE_CLARIFY_QUESTIONS = "#iterateClarifyQuestions"
     ITERATE_CLARIFY_QUESTION_TEXTAREA = "#iterateClarifyQuestions textarea"
     ITERATE_CLARIFY_DIVIDER_LABEL = "#iterateClarifyArea .clarify-divider-label"
+    # fix/frozen-composition-staleness (item 132): its label depends on whether the
+    # composition is approved ("Save answers and revise in Compose" vs "Submit
+    # answers and regenerate"), so tests address it by id.
+    SUBMIT_ITERATE_CLARIFICATIONS = "#btnSubmitIterateClarifications"
+    # Step 4's "showing your last approved version" notice, shown while Compose has
+    # changed since Save and continue approved it.
+    TEMPLATE_STALE_NOTICE = "#templateStaleNotice"
 
     @staticmethod
     def step_button(step: int) -> str:
@@ -590,6 +597,11 @@ class Compose:
     # `is_pending_review` ones.
     BULLET_EDIT = ".compose-bullet-edit"
     BULLET_APPROVE = ".compose-bullet-approve"
+    # fix/frozen-composition-staleness — "Changes not approved yet" (outside
+    # #composeList, so re-renders keep it) and item 132's "Your answers are saved"
+    # banner (inside #composeList, rendered by loadComposition).
+    STALE_NOTICE = "#composeStaleNotice"
+    ANSWERS_BANNER = "#composeList .compose-answers-banner"
     # Settle signal: loadComposition() (static/app.js) clears this on #composeList
     # at entry (before its fetch) and sets it after the final synchronous append,
     # so a *stably present* marker proves the auto-recommend re-render cascade

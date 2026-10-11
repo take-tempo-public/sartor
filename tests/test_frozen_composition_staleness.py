@@ -1,7 +1,8 @@
 """Instrument — a frozen composition goes stale silently (items 106, 66, 132).
 
-`fix/frozen-composition-staleness`, commit 1 (charter C-7: the reproduction comes
-before any fix). Evidence record: `docs/dev/diagnosis/frozen-composition-staleness.md`.
+`fix/frozen-composition-staleness`. Landed as commit 1, the reproduction (charter
+C-7: it comes before any fix); kept as the regression suite once the fix landed.
+Evidence record: `docs/dev/diagnosis/frozen-composition-staleness.md`.
 
 Every test drives the REAL routes against a fresh DB with the analyzer stubbed (no
 LLM): seed a corpus -> `POST /api/analyze` -> Compose "Save and continue"
@@ -15,11 +16,11 @@ never-frozen and re-frozen controls, a Career-Corpus-panel edit that must NOT re
 an approved application, and every other kind of Compose edit, not just bullet text.
 
 Two kinds of test:
-- **Controls and design-kept facts** are plain tests. They hold today and must
-  still hold after the fix.
-- **Defect invariants** (D1, D3, D5, D6) are `xfail(strict=True)` and name no API
-  that does not exist yet, so the fix commit only deletes the markers. `strict`
-  turns an unexpected pass into a failure, so no marker can outlive its defect.
+- **Controls and design-kept facts** held before the fix and still hold after it.
+- **Defect invariants** (D1, D3, D5, D6) failed on the base tip (`--runxfail`, as
+  quoted in the diagnosis) and name no API of the fix's, so the fix commit only
+  deleted their `xfail(strict=True)` markers and the one Compose-signal line in
+  `_Rig.compose_corpus_edit`.
 
 "Compose's state" below is the document a freeze would capture right now:
 `build_json_resume_from_corpus` over the current context, which is what
@@ -336,7 +337,15 @@ class _Rig:
         return dict(r.get_json())
 
     def compose_corpus_edit(self, method: str, url: str, body: dict | None = None) -> Any:
-        """A corpus write issued from Compose — today exactly the request Compose sends."""
+        """A corpus write issued from Compose: the touch first, then the corpus route.
+
+        Mirrors `_composeCorpusFetch` in static/app.js. The touch is the only line the
+        fix added to the instrument (before it, Compose sent just the corpus request).
+        """
+        t = self.client.post(
+            f"/api/applications/{self.aid}/composition/touch", json={"context_path": self.cp}
+        )
+        assert t.status_code == 200, t.get_data(as_text=True)
         r = self.client.open(url, method=method, json=body or {})
         assert 200 <= r.status_code < 300, (url, r.get_data(as_text=True))
         return r.get_json()
@@ -534,8 +543,6 @@ CONTENT_ARMS = {
 # invisible to it by construction: R8 is not a D5 arm.
 DRAFTER_ARMS = sorted(set(CONTENT_ARMS) - {"R8_approve_pending_skill"})
 
-_STALE = "post-freeze Compose edit never reaches the frozen snapshot (items 106/66)"
-
 
 def _freeze(r: _Rig) -> dict[str, Any]:
     body = r.save(freeze=True)
@@ -588,7 +595,7 @@ def _public(rec: dict[str, Any]) -> dict[str, Any]:
 class TestControls:
     @pytest.mark.parametrize("arm", sorted(CONTENT_ARMS))
     def test_each_content_arm_changes_what_save_and_continue_would_approve(self, rig, arm):
-        """Arm validity, kept outside the xfail tests: every content arm really
+        """Arm validity, kept separate from the defect tests: every content arm really
         changes Compose's state, and (for the drafter arms) the drafter's block."""
         import analyzer
 
@@ -774,12 +781,11 @@ class TestDesignKeptFacts:
 
 
 # -------------------------------------------------------------------
-# Defect invariants — xfail(strict=True) today; the fix only deletes the markers
+# Defect invariants — failed on the base tip; pass with the fix
 # -------------------------------------------------------------------
 
 
 class TestDefects:
-    @pytest.mark.xfail(strict=True, reason=_STALE)
     @pytest.mark.parametrize("arm", sorted(CONTENT_ARMS))
     def test_d1_generate_never_serves_a_body_that_contradicts_compose(self, rig, arm):
         """D1: after a post-freeze Compose edit, neither generate route returns 200
@@ -794,7 +800,6 @@ class TestDefects:
             assert g["llm_calls"]["generate"] == 0, _public(rec)
             assert g["llm_calls"]["generate_streaming"] == 0, _public(rec)
 
-    @pytest.mark.xfail(strict=True, reason=_STALE)
     @pytest.mark.parametrize("arm", sorted(CONTENT_ARMS))
     def test_d3_the_server_reports_that_something_changed(self, rig, arm):
         """D3: some server-derived boolean the client reads (resume_state, an
@@ -808,7 +813,6 @@ class TestDefects:
         print(json.dumps({"arm": arm, "projection": [baseline, after]}, sort_keys=True))
         assert after != baseline, {"arm": arm, "baseline": baseline, "after": after}
 
-    @pytest.mark.xfail(strict=True, reason=_STALE)
     @pytest.mark.parametrize("arm", DRAFTER_ARMS)
     def test_d5_refinement_drafter_reads_what_compose_shows(self, rig, arm):
         """D5: the Step-6 refinement drafter's <current_resume> is Compose's state,
@@ -830,9 +834,6 @@ class TestDefects:
         print(json.dumps(rec, sort_keys=True))
         assert seen == expected, rec
 
-    @pytest.mark.xfail(
-        strict=True, reason="typed edits vanish from the preview on a frozen regenerate"
-    )
     def test_d6_typed_edits_and_preview_agree_after_a_regenerate(self, rig):
         """D6 (the typed-edits drop): after "Use edits as baseline" and a regenerate
         of an unchanged frozen composition, the résumé the app resumes with and the

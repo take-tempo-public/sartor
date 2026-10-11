@@ -315,10 +315,22 @@
           <span class="analysis-pending-dot" aria-hidden="true"></span>
           Composing your tailored résumé — picking bullets, positioning and skills…
         </div>
+        <!-- fix/frozen-composition-staleness (items 106/66): shown while Compose has
+             changed since Save and continue approved it (_renderCompositionStaleState).
+             Outside #composeList so a re-render never removes it. -->
+        <div class="compose-loopback-banner hidden" id="composeStaleNotice" role="status">
+          <div class="compose-loopback-title">Changes not approved yet</div>
+          <div class="compose-loopback-body">
+            Your résumé (preview, Generate and download) still uses the version you
+            approved. Click <strong>Save and continue</strong> to approve these changes.
+          </div>
+        </div>
         <div class="edit-hint">
           The AI picked the strongest bullets for this job. Pin to force-
           include, exclude to drop, or open <em>find more</em> to add
-          others from your corpus. Edits affect this application only.
+          others from your corpus. Pins, exclusions, order and the summary
+          apply to this application only; editing a bullet's text, or adding
+          a title or role intro, saves to your career corpus.
         </div>
         <div id="composeList" class="corpus-experience-list"></div>
 
@@ -336,6 +348,14 @@
         <span class="cb-step-title">Template</span>
       </div>
       <div class="panel-body">
+        <!-- fix/frozen-composition-staleness: same state as #composeStaleNotice. -->
+        <div class="compose-loopback-banner hidden" id="templateStaleNotice" role="status">
+          <div class="compose-loopback-title">Showing your last approved version</div>
+          <div class="compose-loopback-body">
+            You changed your composition after approving it. Go back to Compose and
+            click <strong>Save and continue</strong> to approve the changes.
+          </div>
+        </div>
         <p class="edit-hint" style="margin:0 0 10px 0">
           Pick a template — the preview shows the pages exactly as they'll
           download. Your résumé content stays the same; the template only
@@ -520,6 +540,17 @@
              and moves Changes behind an info-icon modal alongside the
              Download button. The drawer→preview live-reflection wiring
              lands in B2; B1 is UI shell only. -->
+        <!-- fix/frozen-composition-staleness (owner decision 4): a regenerate after
+             you re-approved a different composition can't keep edits typed over the
+             old one; _renderOutput shows this until the next generate. -->
+        <div class="compose-loopback-banner hidden" id="editsDiscardedNotice" role="status">
+          <div class="compose-loopback-title">Your typed edits weren't carried over</div>
+          <div class="compose-loopback-body">
+            You approved changes in Compose after typing edits into the previous version,
+            so this version starts from the newly approved content. Use
+            <strong>Edit before downloading</strong> to make them again.
+          </div>
+        </div>
         <div class="output-tabs" role="tablist" aria-label="Output sections">
           <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">Résumé</button>
           <button class="tab-btn" id="tabBtnCoverLetter" onclick="showTab('coverLetter', this)" role="tab" aria-controls="tabCoverLetter" aria-selected="false">Cover letter</button>
@@ -991,6 +1022,8 @@
       <p id="editModalBody" class="cb-modal-body">
         You typed changes into the preview below. <strong>Use edits as baseline</strong> keeps
         them as your new starting point (citable later, but nothing beyond them is added).
+        Once you've approved your composition, they stay on this version of your résumé;
+        approving changes in Compose starts a new version without them.
         <strong>Discard edits</strong> throws them away and goes back to the last generated
         text. <strong>Cancel</strong> stops here so you can decide later.
       </p>

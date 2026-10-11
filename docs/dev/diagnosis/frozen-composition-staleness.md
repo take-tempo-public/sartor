@@ -1,8 +1,9 @@
 # Diagnosis — a Compose edit made after "Save and continue" never reaches preview, generate or download
 
 > **Status:** root cause **PROVEN** at the server, by a deterministic HTTP-level instrument
-> run against this branch's base tip. The client half (the Step-5 rail stays open) is read
-> from code, not driven — see `## Inferred`.
+> run against this branch's base tip; **fixed** on this branch (`## The fix`). The client half
+> (the Step-5 rail stays open) was read from code, not driven — see `## Inferred`; its UX
+> regression test runs in CI, not locally (memory).
 > **Branch:** `fix/frozen-composition-staleness` (work items 106 + 132, folding in 66 and the
 > typed-edits drop, owner's pick 2026-10-10)
 
@@ -126,6 +127,31 @@ subclass), with overrides, an accepted gap-fill and a summary retype in place.
 For all eight arms, `marker_in_preview == marker_in_snapshot` (e.g.
 `{"arm": "R1_bullet_text_item106", "marker_in_preview": false, "marker_in_snapshot": false, "preview_status": 200}`).
 
+### O9. A second generate of the same run never reaches the DB (pre-existing; found while testing the fix)
+
+A probe (scratch `probe_typed.py`, run against this branch's fix, `-p tests.conftest`) wraps
+`blueprints.generation._persist_corpus_generation_to_db` to print success or the exception. One
+analyze, then generate, `/api/save-edits`, re-approve, generate again on the same application run:
+
+```
+PERSIST_OK 1
+PERSIST_RAISED ...
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: application_bullet.application_run_id, application_bullet.bullet_id
+[SQL: INSERT INTO application_bullet (application_run_id, bullet_id, position) VALUES (?, ?, ?)]
+[parameters: (1, 1, 0)]
+ITERLOGS [(1, 'generate', 'selected=1 bullets, titles=1, proposals=0b/0t')]
+RUNS(id, has_edit, gen_has_EDITED) [(1, False, 'False')]
+RS_md has EDITED False has B1 True has TYPED False
+```
+
+The second persist re-inserts the run's already-selected bullets, hits the unique constraint, and
+rolls back, so `ApplicationRun.generated_resume_md` keeps the **first** generation. The route
+catches the exception and only logs it (`blueprints/generation.py`, "Corpus generation persist
+failed"), and in this test harness the app loggers are silenced, so nothing surfaced. Effect:
+resuming an application (`resume_state.resume_md`) shows its first generated résumé, not the
+latest. This branch didn't cause it, and it is outside this branch's scope. Filed as its own work
+item; the typed-edits test asserts only what this fix owns (the discarded edit is cleared).
+
 ### O8. Controls
 
 - **C1 (frozen, no edit):** every surface equals the snapshot, and two `GET /composition` plus a
@@ -199,7 +225,44 @@ change.
 
 ## The fix
 
-_Phase 2 of this branch; written when it lands._
+Built against O1–O6 and the owner's five decisions (2026-10-10): a post-freeze edit made in
+this application's Compose marks the approval **stale** (Step 5 re-locks, re-approve with Save
+and continue); a Career Corpus panel edit never touches an approved application; item 132's
+button routes answers to Compose; item 66 and the typed-edits drop are folded in; typed edits
+are kept over an unchanged regenerate and discarded with a notice after a re-approval; Compose's
+arrival auto-fires don't run on an approved composition.
+
+- **Staleness is derived on read, not stored as a flag.** A freeze stamps
+  `meta.sartor.inputs_digest` (`corpus_to_json_resume.freeze_approved_composition`), a sha256
+  of the four context keys the builder reads (O6) plus a new `compose_corpus_edits` counter.
+  `hardening.composition_is_stale` compares it with the context as it stands. No list of writer
+  routes has to stay in step with it, and undoing a context-level edit makes the approval fresh
+  again. `tests/test_composition_staleness.py::TestDerivedInputSet` keeps the digest's inputs
+  equal to the builder's actual reads, both directions.
+- **Compose's corpus edits mark their own application** through
+  `POST /api/applications/<id>/composition/touch`, called first by the one client wrapper
+  `_composeCorpusFetch` / `_composeCorpusJson` (`static/app.js`). The corpus routes are
+  unchanged, so a Career Corpus panel edit (byte-identical request, Falsified above) can't stale
+  anything. `TestComposeCorpusCallsAreTouched` fails if a corpus call in Compose's section of
+  `app.js` bypasses the wrapper.
+- **Every reader answers from the same predicate:** `POST /composition` returns `stale`;
+  `GET /composition` and `resume_state` return `composition_stale`; both generate routes refuse
+  with a 409 (`composition_stale: true`, zero LLM calls, never the legacy `generate()`);
+  `/draft-refinement` drafts against Compose's live document while stale. The client takes the
+  answer through one funnel (`_applyCompositionState`), locks Step 5, and shows the notices.
+- **Item 132:** on an approved composition the follow-up submit reads "Save answers and revise
+  in Compose", saves the answers, and opens Compose with a banner pointing at the drafting
+  controls that read them. A not-yet-approved context keeps the legacy regenerate, where the
+  prompt does read the answers.
+- **Typed edits:** `save_iteration_context(..., carry_edits=True)` keeps them when the frozen
+  re-assemble equals the résumé they were typed over; otherwise the route clears
+  `ApplicationRun.edited_resume_text` and returns `edits_discarded`.
+
+Declared limits: a snapshot frozen before this branch (no digest) detects only Compose's corpus
+edits until it is approved again; a gap-fill retire or a drag back to the same position changes
+`composition_overrides` without changing the résumé, and still marks the approval stale.
+
+Out of scope, found here: O9 (a second generate of the same run never persists).
 
 ---
 

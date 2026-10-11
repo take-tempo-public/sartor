@@ -382,13 +382,21 @@ def freeze_approved_composition(
     Thin, deterministic wrapper: stamps `meta.sartor.frozen = True` so consumers
     can distinguish a frozen snapshot from a live corpus-direct render. Pure (no
     time / randomness) — the enclosing context file already carries the timestamp.
+
+    Also stamps `meta.sartor.inputs_digest` (fix/frozen-composition-staleness): the
+    digest of the context inputs this snapshot was resolved from, so
+    `hardening.composition_is_stale` can tell when a later Compose edit has moved
+    them. The context is read once here and handed down, so the builder and the
+    digest see the same dict.
     """
+    from hardening import composition_inputs_digest
+
+    ctx = context_data if context_data is not None else _read_context_file(context_path)
     doc = build_json_resume_from_corpus(
         session,
         candidate_id,
         application_id=application_id,
-        context_path=context_path,
-        context_data=context_data,
+        context_data=ctx,
     )
     meta = doc.setdefault("meta", {})
     if not isinstance(meta, dict):  # defensive; build_* always emits a dict
@@ -397,6 +405,7 @@ def freeze_approved_composition(
     sartor_meta = meta.setdefault("sartor", {})
     if isinstance(sartor_meta, dict):
         sartor_meta["frozen"] = True
+        sartor_meta["inputs_digest"] = composition_inputs_digest(ctx)
     return doc
 
 

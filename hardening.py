@@ -8,6 +8,7 @@ overlap, per-call cost).
 """
 
 import difflib
+import hashlib
 import json
 import logging
 import os
@@ -259,6 +260,12 @@ class ContextSet(_ContextSetRequired, total=False):
     # pre-freeze contexts (the corpus-direct render is the fallback). total=False
     # so older contexts round-trip unchanged.
     approved_composition: dict[str, Any]
+    # fix/frozen-composition-staleness (items 106/66): how many corpus edits this
+    # application's Compose has made (bullet text, approve, add title/intro, skill
+    # approve/deny). Bumped only by POST /composition/touch, which only Compose calls,
+    # so a Career Corpus panel edit never moves it. One of COMPOSITION_INPUT_KEYS: a
+    # bump after a freeze makes `composition_is_stale` true. Absent = 0.
+    compose_corpus_edits: int
     # Generation-experience re-architecture Phase 3: transient gap-fill proposals
     # authored at Compose (analyzer.draft_gap_fill_bullets, Sonnet). Each is
     # {key, experience_id, text, pattern_kind, requirement, evidence, rationale} —
@@ -1885,6 +1892,60 @@ def frozen_composition_doc(context_set: Mapping[str, Any]) -> dict[str, Any] | N
     return doc if has_content else None
 
 
+#: The context keys a freeze depends on: the four top-level keys
+#: ``corpus_to_json_resume.build_json_resume_from_corpus`` reads (observed in
+#: docs/dev/diagnosis/frozen-composition-staleness.md O6; kept equal to the builder's
+#: read set by tests/test_composition_staleness.py), plus ``compose_corpus_edits``,
+#: which stands in for the corpus rows Compose edited. Everything else the builder
+#: uses comes from the DB, and a DB change made outside Compose must not stale an
+#: approved application (owner decision, 2026-10-10).
+COMPOSITION_INPUT_KEYS: tuple[str, ...] = (
+    "composition_overrides",
+    "llm_recommendations",
+    "llm_skill_recommendations",
+    "llm_summary_recommendation",
+    "compose_corpus_edits",
+)
+
+
+def composition_inputs_digest(context_set: Mapping[str, Any]) -> str:
+    """Return a sha256 of the context's ``COMPOSITION_INPUT_KEYS`` values.
+
+    The JSON round-trip normalizes int dict keys to strings first, so the digest of a
+    dict loaded from disk equals the digest of the in-memory dict it was written from.
+    A few KB of JSON and one hash: cheap enough to compute on every read that asks.
+    """
+    payload = json.loads(json.dumps({k: context_set.get(k) for k in COMPOSITION_INPUT_KEYS}))
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def composition_is_stale(context_set: Mapping[str, Any]) -> bool:
+    """True when a frozen composition no longer matches what Compose would approve now.
+
+    fix/frozen-composition-staleness (items 106/66/132). A freeze stamps
+    ``meta.sartor.inputs_digest``; any later change to ``COMPOSITION_INPUT_KEYS`` made
+    by this application's Compose (an autosave, a gap-fill decision, a touch after a
+    corpus edit) makes the current digest differ. Derived on read rather than stored
+    as a flag, so no list of writer routes has to be kept in step with it, and undoing
+    a context-level edit makes the snapshot fresh again.
+
+    False whenever ``frozen_composition_doc`` is None: there is nothing approved to be
+    stale. A snapshot frozen before the digest existed is stale only once Compose has
+    made a corpus edit (``compose_corpus_edits``); its context-level edits are not
+    detectable until it is frozen again (a declared limit).
+    """
+    doc = frozen_composition_doc(context_set)
+    if doc is None:
+        return False
+    meta = doc.get("meta")
+    sartor = meta.get("sartor") if isinstance(meta, dict) else None
+    stamped = sartor.get("inputs_digest") if isinstance(sartor, dict) else None
+    if not isinstance(stamped, str):
+        return bool(context_set.get("compose_corpus_edits"))
+    return stamped != composition_inputs_digest(context_set)
+
+
 def summarize_recent_edits(context_set: ContextSet) -> str:
     """Compact text summary of what the candidate edited since last generation.
 
@@ -2044,6 +2105,7 @@ def save_iteration_context(
     base_dir: str = "output",
     action: str = "generate",
     summary: str = "",
+    carry_edits: bool = False,
 ) -> str:
     """Persist a new iteration context derived from a parent context.
 
@@ -2066,6 +2128,11 @@ def save_iteration_context(
       - Clears `edited_resume_text` / `edited_cover_letter_text` — those were
         consumed by generate() to build the prompt; carrying them forward
         would cause double-application on the next iteration.
+      - Unless `carry_edits` (fix/frozen-composition-staleness, owner decision 4):
+        the frozen path consumes no edits, so when it re-assembles the SAME résumé
+        the edits were typed over, the caller keeps them — `edited_*_text` and the
+        parent's `last_generated_json_resume` (the edit's render, written by
+        /api/save-edits) ride into the child, and the preview keeps showing them.
       - Appends an IterationNote so dashboards can reconstruct the path.
       - Writes to `context_{ts}_iter{N}.json` to keep the iteration count
         visible at the filename level. Pre-iteration files (`context_{ts}.json`,
@@ -2082,10 +2149,15 @@ def save_iteration_context(
     # markdown yields an empty skeleton, which the preview treats as "fall back
     # to the corpus-direct render".
     child["last_generated_json_resume"] = md_to_json_resume(last_generated_resume)
-    # Consume edits — they fed the prompt that produced this generation; they
-    # must not re-apply on the next iteration's generate() call.
-    child.pop("edited_resume_text", None)
-    child.pop("edited_cover_letter_text", None)
+    if carry_edits:
+        edited_json = parent_context.get("last_generated_json_resume")
+        if parent_context.get("edited_resume_text") and isinstance(edited_json, dict):
+            child["last_generated_json_resume"] = json.loads(json.dumps(edited_json))
+    else:
+        # Consume edits — they fed the prompt that produced this generation; they
+        # must not re-apply on the next iteration's generate() call.
+        child.pop("edited_resume_text", None)
+        child.pop("edited_cover_letter_text", None)
 
     notes: list[IterationNote] = list(child.get("iteration_notes") or [])
     notes.append(

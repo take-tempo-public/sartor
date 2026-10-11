@@ -522,6 +522,9 @@ function startNewTailoring() {
   lastCoverLetterPath = '';
   lastTemplatePath = '';
   _compositionFrozen = false;  // F-09: new run — no approved composition yet
+  _compositionStale = false;
+  _renderCompositionStaleState();
+  _composeAnswersLoopback = false;
   // 4. Clear the Step-6 preview editor so no stale document lingers (it is a
   //    contenteditable surface read via innerText — see _readEditorText).
   const preview = document.getElementById('resumePreview');
@@ -1096,6 +1099,8 @@ async function runAnalysis() {
     lastTemplatePath = finalData.template_path || '';
     _composeApplicationId = finalData.application_id ?? null;
     _compositionFrozen = false;  // F-09: fresh analysis — nothing frozen yet
+    _compositionStale = false;
+    _renderCompositionStaleState();
     _renderAnalysis(finalData);
     show('panelAnalysis');
     // Reveal the Continue/Skip actions now that the analysis has
@@ -1742,6 +1747,12 @@ async function runGeneration() {
     );
 
     if (httpError) {
+      // fix/frozen-composition-staleness — the server refused an approval Compose
+      // has changed since (409 composition_stale): lock Step 5 to match, then say
+      // why (the message points back to Save and continue).
+      if (httpError.body && httpError.body.composition_stale) {
+        _applyCompositionState(httpError.body);
+      }
       return reportError(
         'Generate',
         httpError.body.error || 'Generation failed',
@@ -2874,6 +2885,31 @@ async function _submitSurgicalRefinement(note) {
 // dismissing/deciding clears the flags. `data` is the GET /composition payload
 // loadComposition just fetched — used to look up the company name + any
 // superseded bullet's current text for the proposal card.
+// Item 132 — shown after "Save answers and revise in Compose": the answers are
+// saved, and these are the controls whose drafts read them. Same look as the
+// refinement loop-back banner; "Got it" clears _composeAnswersLoopback.
+function _renderComposeAnswersBanner() {
+  const banner = _el('div', { className: 'compose-loopback-banner compose-answers-banner' });
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-title',
+    textContent: 'Your answers are saved',
+  }));
+  banner.appendChild(_el('div', {
+    className: 'compose-loopback-body',
+    textContent:
+      'Your résumé is built from what you approve here, so your answers reach it '
+      + 'through a fresh draft: click Regenerate on the positioning summary, or '
+      + 'Regenerate suggestions for gap-fill bullets, review the result, then Save '
+      + 'and continue.',
+  }));
+  const dismiss = _el('button', {
+    className: 'btn-secondary btn-sm compose-loopback-dismiss', textContent: 'Got it',
+  });
+  dismiss.onclick = () => { _composeAnswersLoopback = false; banner.remove(); };
+  banner.appendChild(dismiss);
+  return banner;
+}
+
 function _renderComposeLoopbackBanner(data) {
   const banner = _el('div', { className: 'compose-loopback-banner' });
   const proposal = _composeRefinementProposal;
@@ -3069,6 +3105,18 @@ function _renderIterateClarifyQuestions(questions, reasoning) {
 
   container.textContent = '';
 
+  // fix/frozen-composition-staleness (item 132) — label the submit for what it
+  // will actually do. On an approved composition the résumé is assembled from what
+  // Compose approves (no AI rewrite), so the answers go to Compose, not to a
+  // regenerate that would return the same document. Hidden with nothing to submit.
+  const submit = document.getElementById('btnSubmitIterateClarifications');
+  if (submit) {
+    submit.textContent = _compositionFrozen
+      ? 'Save answers and revise in Compose'
+      : 'Submit answers and regenerate';
+    submit.classList.toggle('hidden', !questions.length);
+  }
+
   if (!questions.length) {
     const warn = document.createElement('div');
     warn.className = 'warning';
@@ -3176,9 +3224,21 @@ async function submitIterateClarificationsAndGenerate() {
   // KW7 / B.8: the route mirrored these answers into candidate memory —
   // sync the panel so the interview Q&A shows up without a manual refresh.
   refreshMemory();
-  // Run a fresh generation against the now-augmented context. The new
-  // iteration's <resume> block sees the typed edits AND the new clarifications.
   _resetIterateClarifyUI();
+  if (_compositionFrozen) {
+    // Item 132 (observed: docs/dev/diagnosis/frozen-composition-staleness.md O4) —
+    // a regenerate of an approved composition is byte-identical, so it would
+    // silently ignore these answers. They reach the résumé through Compose's
+    // drafting calls (positioning summary, gap-fill), which read the context's
+    // clarifications; Save and continue then approves the result.
+    if (btn) btn.disabled = false;
+    _composeAnswersLoopback = true;
+    wizardGoTo(3);
+    return;
+  }
+  // Not approved (a pre-freeze or legacy context): the LLM generate() prompt reads
+  // context.clarifications, so this regenerate does see the new answers (and any
+  // typed edits saved as the baseline).
   await runGeneration();
   if (btn) btn.disabled = false;
 }
@@ -3215,8 +3275,14 @@ function _renderRefinementHistory() {
 }
 
 function _renderOutput(data) {
-  document.getElementById('resumePreview').innerText = data.resume_preview || '';
+  // fix/frozen-composition-staleness (owner decision 4) — a regenerate that
+  // re-assembled the SAME approved résumé keeps the edits typed over it
+  // (`edited_resume_text`); one after a re-approval drops them and says so.
+  document.getElementById('resumePreview').innerText =
+    data.edited_resume_text || data.resume_preview || '';
   document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
+  document.getElementById('editsDiscardedNotice')
+    ?.classList.toggle('hidden', !data.edits_discarded);
 
   // B1 (2026-05-26): the Raw / Rendered toggle was removed; the raw
   // editor stays hidden in the tab body and surfaces inside the edit
@@ -6648,6 +6714,10 @@ function resumeApplicationIntoWizard(detail) {
   // false whenever the field is absent, which covers a degraded resume with no
   // live context file and every pre-freeze-era application.
   _compositionFrozen = !!(rs && rs.has_frozen_composition);
+  // fix/frozen-composition-staleness — Compose changed since that approval (the
+  // same server predicate the generate routes refuse on); Step 5 stays locked.
+  _compositionStale = !!(rs && rs.composition_stale);
+  _renderCompositionStaleState();
   const personaSel = document.getElementById('personaSelect');
   if (personaSel && rs.persona_template_id != null) {
     personaSel.value = String(rs.persona_template_id);
@@ -7117,7 +7187,12 @@ function _wizardReachable(step) {
   //
   // Step 6 stays gated on `lastResumePath` alone: a run that WAS generated must
   // remain downloadable even when its freeze state can't be recovered.
-  if (step === 5 && !_compositionFrozen) return false;
+  //
+  // fix/frozen-composition-staleness (items 106/66) — and NOT stale: a post-freeze
+  // Compose edit means the approved document no longer matches Compose, and the
+  // server refuses to generate from it, so the rail re-locks until Save and
+  // continue re-approves.
+  if (step === 5 && (!_compositionFrozen || _compositionStale)) return false;
   if (step >= 6 && !lastResumePath) return false;
   return true;
 }
@@ -7129,6 +7204,10 @@ function _wizardReachable(step) {
 // so it must not inherit the generic "Run ANALYZE first" text.
 function _wizardLockReason(step) {
   if (step >= 6) return 'Generate the documents first.';
+  if (step === 5 && lastContextPath && _compositionFrozen && _compositionStale) {
+    return 'You changed your composition after approving it — click Save and '
+      + 'continue in Compose (step 3) to approve the changes, then generate.';
+  }
   if (step === 5 && lastContextPath) {
     return 'Save your composition in Compose (step 3) first — Generate builds '
       + 'the documents from exactly what you approved there.';
@@ -7183,15 +7262,11 @@ function _renderGenerateStepCopy() {
 function wizardNext() { wizardGoTo(Math.min(6, _wizardStep + 1)); }
 function wizardBack() { wizardGoTo(Math.max(1, _wizardStep - 1)); }
 
-function _wizardRender(opts) {
-  // Show only the active step's panel(s); keep User/Config visible as
-  // ambient context (they aren't wizard steps). (A4, feat/prior-apps-
-  // pipeline: Applications used to be a third ambient panel here too —
-  // removed along with the panel itself.)
-  const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
-  Object.values(_WIZARD_PANELS).flat().forEach(pid => {
-    if (stepPanels.has(pid)) show(pid); else hide(pid);
-  });
+// The rail buttons' state (done/active/upcoming, reachable, lock-reason title, ✓
+// glyph). Split out of _wizardRender (fix/frozen-composition-staleness) so a
+// reachability change that isn't a step change — Compose going stale or being
+// re-approved — can refresh the lock without scrolling or firing the tour stop.
+function _renderWizardRail() {
   document.querySelectorAll('.wizard-step').forEach(btn => {
     const s = parseInt(btn.dataset.wstep, 10);
     const isDone     = s < _wizardStep;
@@ -7221,6 +7296,18 @@ function _wizardRender(opts) {
       else num.removeAttribute('aria-hidden');
     }
   });
+}
+
+function _wizardRender(opts) {
+  // Show only the active step's panel(s); keep User/Config visible as
+  // ambient context (they aren't wizard steps). (A4, feat/prior-apps-
+  // pipeline: Applications used to be a third ambient panel here too —
+  // removed along with the panel itself.)
+  const stepPanels = new Set(_WIZARD_PANELS[_wizardStep] || []);
+  Object.values(_WIZARD_PANELS).flat().forEach(pid => {
+    if (stepPanels.has(pid)) show(pid); else hide(pid);
+  });
+  _renderWizardRail();
   // Connector ink-trail: done = filled green, active-edge = the connector
   // leading INTO the active step (gradient + sheen sweep), else neutral.
   document.querySelectorAll('.wizard-connector').forEach(c => {
@@ -7299,10 +7386,20 @@ let _composeApplicationId = null;
 // false at each fresh analysis (a legacy/non-corpus context never freezes, so
 // it never claims the deterministic-assembly copy). See _renderGenerateStepCopy.
 let _compositionFrozen = false;
+// fix/frozen-composition-staleness (items 106/66/132) — the composition WAS approved
+// (frozen), but Compose has changed since: the server's `stale` /
+// `composition_stale` (hardening.composition_is_stale), taken only through
+// _applyCompositionState. While true, Step 5 is locked, both generate routes refuse
+// (409), and Compose + Template say the changes aren't approved yet. The next Save
+// and continue clears it.
+let _compositionStale = false;
 // Phase 4 — when a refinement loops the user back to Compose (corpus mode has no
 // résumé-body LLM to re-run), this holds their note so loadComposition can render
 // an explaining banner until dismissed. Null = no pending loop-back.
 let _composeLoopbackNote = null;
+// Item 132 — set by "Save answers and revise in Compose" (an approved composition)
+// so loadComposition shows where the saved answers take effect. Cleared on dismiss.
+let _composeAnswersLoopback = false;
 // Item (a) — the ONE scoped bullet/summary proposal /draft-refinement returned
 // for the pending loop-back note, or null when the model couldn't scope one
 // (the plain loop-back banner renders instead). Cleared together with
@@ -7544,11 +7641,21 @@ async function loadComposition() {
   // rather than whatever this session happened to accumulate.
   _retiredGapFillKeys = Array.isArray(data.retired_gap_fill_keys)
     ? data.retired_gap_fill_keys.slice() : [];
+  // fix/frozen-composition-staleness — take the server's "changed since the
+  // approval?" answer on every load (it also un-stales after an undo).
+  _applyCompositionState(data);
+  // Owner decision 5 (2026-10-10): once Save and continue has approved this
+  // composition, Compose opens on what was approved. The once-per-arrival
+  // background drafts/recommends below don't fire (their per-session latches reset
+  // on a reload, so they otherwise re-fire, spend API calls, and stale the
+  // approval with no edit from the user). Every Regenerate/Tailor button still runs.
+  const composeApproved = !!data.has_frozen_composition;
   _clearChildren(list);
   // Phase 4 — a refinement in corpus mode loops back here (no résumé-body LLM to
   // re-run); render an explaining banner from the flag so it survives the
   // auto-recommend re-render cascade until the user dismisses it.
   if (_composeLoopbackNote != null) list.appendChild(_renderComposeLoopbackBanner(data));
+  if (_composeAnswersLoopback) list.appendChild(_renderComposeAnswersBanner());
   // β.6c — Positioning card renders first, above the experience cards.
   // Shows the candidate's SummaryItem variants with the recommendation
   // (if any) flagged and the user's pin (if any) marking the chosen one.
@@ -7570,7 +7677,9 @@ async function loadComposition() {
   // never read-modify-write the same context file at once (the clobber that would
   // drop summary_text / recommendations).
   let bgDraftFiring = false;
-  if (!summary.has_draft && _draftSummaryFiredForApp !== _composeApplicationId) {
+  if (composeApproved) {
+    // Decision 5 — no arrival auto-fire on an approved composition.
+  } else if (!summary.has_draft && _draftSummaryFiredForApp !== _composeApplicationId) {
     // The once-per-application claim is taken INSIDE _fireDraftSummary, and
     // released again when the draft doesn't persist (see the note there).
     // Setting it here — before the fire, never releasing it — is what turned a
@@ -7588,7 +7697,7 @@ async function loadComposition() {
   const skills = data.skills || {};
   if ((skills.items || []).length > 0 || (skills.pending || []).length > 0) {
     list.appendChild(_renderSkillsCard(skills));
-    if (!skills.has_recommendation && (skills.items || []).length > 1) {
+    if (!composeApproved && !skills.has_recommendation && (skills.items || []).length > 1) {
       bgDraftFiring = true;
       _fireRecommendSkills();
     }
@@ -7630,7 +7739,8 @@ async function loadComposition() {
   // concurrently would clobber summary_text / recommendations. The convergence
   // cascade fires it a pass later; has_gap_fill (key presence) then flips true
   // (even with zero proposals) so it fires at most once and never re-loops.
-  if (!bgDraftFiring && !data.has_gap_fill && _gapFillFiredForApp !== _composeApplicationId) {
+  if (!composeApproved && !bgDraftFiring && !data.has_gap_fill
+      && _gapFillFiredForApp !== _composeApplicationId) {
     _gapFillFiredForApp = _composeApplicationId;
     _fireDraftGapFill();
   }
@@ -7640,7 +7750,9 @@ async function loadComposition() {
   // its original `anyRoleVariants` guard: it SELECTS among saved variants and
   // has nothing to do when there are none.
   _applyRoleIntros(_composeUseRoleIntros);
-  if (anyRoleVariants && _composeUseRoleIntros) _maybeFireRecommendExperienceSummaries();
+  if (!composeApproved && anyRoleVariants && _composeUseRoleIntros) {
+    _maybeFireRecommendExperienceSummaries();
+  }
   // Compose-step inline preview was removed in the 2026-05-25 punch list
   // — it competed for attention with the bullet-curation work and didn't
   // pay for its real estate. The preview lives in Step 4 (Template) and
@@ -8387,10 +8499,10 @@ async function _reviewPendingSkill(skillId, approve) {
   _markComposeBgReload(1);
   try {
     const res = approve
-      ? await fetch(`/api/skills/${skillId}`, {
+      ? await _composeCorpusFetch(`/api/skills/${skillId}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_pending_review: false }) })
-      : await fetch(`/api/skills/${skillId}`, { method: 'DELETE' });
+      : await _composeCorpusFetch(`/api/skills/${skillId}`, { method: 'DELETE' });
     if (res.ok) await loadComposition();
     else _toast('Could not update the suggested skill.', true);
   } catch {
@@ -8709,7 +8821,7 @@ async function _addComposeRoleIntro(expId) {
   if (!trimmed) { _toast('Intro text cannot be empty.', true); return; }
   _markComposeBgReload(1);
   try {
-    const res = await fetch(`/api/experiences/${expId}/summaries`, {
+    const res = await _composeCorpusFetch(`/api/experiences/${expId}/summaries`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ text: trimmed, label: (values.label || '').trim() || null }),
     });
@@ -9165,7 +9277,7 @@ async function _addComposeTitlePrompt(expId) {
         placeholder: 'e.g. Director, AI Research' },
     ],
     onSubmit: async (v) => {
-      await _postJson(`/api/experiences/${expId}/titles`, {
+      await _composeCorpusJson('POST', `/api/experiences/${expId}/titles`, {
         title: v.title.trim(),
         truthful_enough_to_use: true,
       });
@@ -9334,7 +9446,7 @@ function _renderBulletRow_compose(b, opts = {}) {
     approveBtn.type = 'button';
     approveBtn.onclick = async () => {
       try {
-        await _postJson(`/api/bullets/${b.id}/accept`, {});
+        await _composeCorpusJson('POST', `/api/bullets/${b.id}/accept`, {});
         b.is_pending_review = false;
         meta.querySelector('.corpus-row-flag.pending')?.remove();
         // A2 — Edit SURVIVES approval now that it is no longer pending-only;
@@ -9363,17 +9475,23 @@ function _renderBulletRow_compose(b, opts = {}) {
 async function _editComposeBullet(b, row) {
   const result = await openFormModal({
     title: 'Edit bullet',
-    subtitle: b.is_pending_review
+    // fix/frozen-composition-staleness (item 106) — say where the edit lands AND
+    // what it does to this application once approved: an approved résumé keeps its
+    // approved text until Save and continue re-approves it.
+    subtitle: (b.is_pending_review
       ? 'Edit this proposed bullet. Your change saves to your career corpus.'
-      : 'This edits the bullet in your career corpus, so it applies to future '
-        + 'applications too — not just this one.',
+      : 'This edits the bullet in your career corpus, so future applications get '
+        + 'it too. Applications you have already approved keep their approved text.')
+      + (_compositionFrozen
+        ? ' This application picks it up when you click Save and continue.'
+        : ''),
     submitLabel: 'Save',
     fields: [
       { name: 'text', label: 'Bullet', type: 'textarea', required: true,
         defaultValue: b.text },
     ],
     onSubmit: async (v) => {
-      await _putJson(`/api/bullets/${b.id}`, { text: v.text.trim() });
+      await _composeCorpusJson('PUT', `/api/bullets/${b.id}`, { text: v.text.trim() });
     },
   });
   if (!result) return;
@@ -9528,7 +9646,77 @@ async function _postComposition(state) {
   // same question, never the client's own guess at it. Non-freeze autosaves get
   // `frozen: false` and ignore the return.
   const body = await res.json().catch(() => ({}));
+  // fix/frozen-composition-staleness (item 66) — every save, freeze or not, also
+  // answers "has Compose changed since the approval?"; a freeze answers false.
+  _applyCompositionState(body);
   return body.frozen === true;
+}
+
+// fix/frozen-composition-staleness — the ONE place the client takes the server's
+// answer to "has Compose changed since Save and continue approved it?":
+// `stale` (POST /composition and /composition/touch) or `composition_stale`
+// (GET /composition, resume_state). Both are hardening.composition_is_stale, so
+// the rail lock, the notices and the generate routes' 409 can't disagree.
+function _applyCompositionState(body) {
+  if (!body) return;
+  let stale = null;
+  if (typeof body.stale === 'boolean') stale = body.stale;
+  else if (typeof body.composition_stale === 'boolean') stale = body.composition_stale;
+  if (stale === null) return;
+  _compositionStale = stale;
+  _renderCompositionStaleState();
+}
+
+// Show/hide the "changes not approved yet" notices (Compose + Template) and
+// refresh the rail lock — without a step change, scroll, or tour stop.
+function _renderCompositionStaleState() {
+  const showNotice = _compositionFrozen && _compositionStale;
+  for (const id of ['composeStaleNotice', 'templateStaleNotice']) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !showNotice);
+  }
+  _renderWizardRail();
+}
+
+// fix/frozen-composition-staleness (item 106) — the ONE way Compose writes a
+// corpus row (bullet text, approving a pending bullet or skill, adding a title or
+// role intro). Corpus routes take no application, and the Career Corpus panel
+// sends byte-identical requests, so Compose first tells ITS application that the
+// approved résumé is about to go stale (POST /composition/touch), then writes.
+// Touch first, and stop if it fails: a write can still fail after the touch (a
+// harmless "stale" the next Save and continue clears), but an edit can never land
+// unmarked. tests/test_composition_staleness.py fails if a corpus call in the
+// Compose section bypasses this.
+async function _composeCorpusFetch(url, options) {
+  if (_composeApplicationId != null && lastContextPath) {
+    const touch = await fetch(
+      `/api/applications/${_composeApplicationId}/composition/touch`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context_path: lastContextPath }),
+      },
+    );
+    const tb = await touch.json().catch(() => ({}));
+    if (!touch.ok) throw new Error(tb.error || `HTTP ${touch.status}`);
+    _applyCompositionState(tb);
+  }
+  return fetch(url, options);
+}
+
+// _putJson / _postJson's contract (throw on a non-OK status, else return the
+// JSON body) over _composeCorpusFetch.
+async function _composeCorpusJson(method, url, body) {
+  const res = await _composeCorpusFetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return await res.json();
 }
 
 // Debounced (~300ms) optimistic autosave. The DOM is already updated by the
