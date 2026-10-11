@@ -177,14 +177,14 @@ def rig(tmp_path, monkeypatch, _migrated_template_db):
         return {"target_kind": "none"}
 
     monkeypatch.setattr(banalysis, "analyze", _fake_analyze)
-    monkeypatch.setattr(banalysis, "_get_client", lambda: object())
-    monkeypatch.setattr(bapps, "_get_client", lambda: object())
+    monkeypatch.setattr(banalysis, "_get_client", object)
+    monkeypatch.setattr(bapps, "_get_client", object)
     monkeypatch.setattr(analyzer, "draft_surgical_refinement", _capture_refinement)
     monkeypatch.setattr(bgen, "generate", _tracked_generate)
     monkeypatch.setattr(bgen, "generate_streaming", _tracked_stream)
     monkeypatch.setattr(bgen, "generate_cover_letter_against_resume", _fake_cl)
     monkeypatch.setattr(bgen, "generate_cover_letter", _stub_letter_writer)
-    monkeypatch.setattr(bgen, "_get_client", lambda: object())
+    monkeypatch.setattr(bgen, "_get_client", object)
 
     r = _Rig(app.test_client(), cfg.output_dir, calls, captured)
     r.seed()

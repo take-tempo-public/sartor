@@ -109,22 +109,27 @@ class TestDigestAndPredicate:
 # -------------------------------------------------------------------
 
 
-class _Recording(dict):
-    def __init__(self, data: dict[str, Any], seen: set[str]) -> None:
-        super().__init__(data)
-        self._seen = seen
+def _recording(data: dict[str, Any], seen: set[str]) -> dict[str, Any]:
+    """A dict that records every top-level key read from it into `seen`.
 
-    def get(self, key, default=None):
-        self._seen.add(key)
-        return super().get(key, default)
+    The subclass closes over `seen` instead of storing it on the instance, so it adds
+    no state that equality would have to account for.
+    """
 
-    def __getitem__(self, key):
-        self._seen.add(key)
-        return super().__getitem__(key)
+    class _Recording(dict):
+        def get(self, key, default=None):
+            seen.add(key)
+            return super().get(key, default)
 
-    def __contains__(self, key):
-        self._seen.add(key)
-        return super().__contains__(key)
+        def __getitem__(self, key):
+            seen.add(key)
+            return super().__getitem__(key)
+
+        def __contains__(self, key):
+            seen.add(key)
+            return super().__contains__(key)
+
+    return _Recording(data)
 
 
 class TestDerivedInputSet:
@@ -145,7 +150,7 @@ class TestDerivedInputSet:
                     s,
                     rig.ids["candidate"],
                     application_id=rig.aid,
-                    context_data=_Recording(ctx, seen),
+                    context_data=_recording(ctx, seen),
                 )
         finally:
             s.close()

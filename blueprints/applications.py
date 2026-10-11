@@ -737,8 +737,13 @@ def _read_freeze_state(context_path: str) -> tuple[bool, bool]:
     """
     if not context_path:
         return False, False
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
+    # resolve_within (not Path + _within): its return value is the modeled CodeQL
+    # path-injection barrier (.github/codeql/extensions), so the read below is clean.
+    try:
+        cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+    except PathTraversalError:
+        return False, False
+    if not cp.exists():
         return False, False
     try:
         ctx = json.loads(cp.read_text(encoding="utf-8"))
