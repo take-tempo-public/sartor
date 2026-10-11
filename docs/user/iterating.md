@@ -39,10 +39,13 @@ reopen it from **Pipeline** (see [below](#finding-earlier-applications)).
 | Your templates and settings | **Résumé templates** tab, **⚙ Settings** | Unchanged. |
 | Your earlier applications | **Pipeline** tab | Kept, with every version you generated. |
 
-What does **not** carry over: the choices you make in Compose (pins, excludes, edits). Those
-belong to one application, because what fits one job rarely fits the next. To make a change
-permanent, make it on the **Career corpus** tab instead. Edits there apply to the next
-application, not to one already in progress.
+What does **not** carry over: the choices you make in Compose (pins, excludes, order, the
+positioning summary). Those belong to one application, because what fits one job rarely fits
+the next. To make a change permanent, make it on the **Career corpus** tab instead. Edits there
+apply to the next application, not to one already in progress. Editing a bullet's text in
+Compose is the exception: it saves to your career corpus too. Either way, an application
+you've already approved keeps its approved text until you click **Save and continue** in its
+Compose step again.
 
 ---
 
@@ -89,16 +92,24 @@ building on the answers you've already given.
 
 **How:** click **Get follow-up questions**. (This needs at least one generated résumé.) A
 **Follow-up clarification** section appears with the questions. Answer the ones that apply,
-then click **Submit answers and regenerate**, or **Skip and close**. If there's nothing worth
-asking, it says so: "No follow-up questions surfaced — the current draft looks healthy on the
-measured signals."
+then click **Save answers and revise in Compose**, or **Skip and close**. If there's nothing
+worth asking, it says so: "No follow-up questions surfaced — the current draft looks healthy on
+the measured signals."
 
 **What to expect:** your answers are saved to Candidate memory, where later applications can
-use them.
+use them. Because your résumé is built from what you approved in Compose, answers don't change
+it on their own: Sartor opens Compose with a **Your answers are saved** note. Click
+**Regenerate** on the positioning summary, or **Regenerate suggestions** for drafted bullets,
+to get a draft that uses them, then **Save and continue** to approve it. (On an older
+application that was never approved in Compose, the button reads **Submit answers and
+regenerate** and regenerates the résumé directly.)
 
 **If you edited the preview first:** asking for a refinement or follow-up questions while you
 have unsaved edits in **✎ Edit before downloading** opens **"Your edits aren't saved yet"**.
-Choose **Use edits as baseline** to keep them, **Discard edits**, or **Cancel**.
+Choose **Use edits as baseline** to keep them, **Discard edits**, or **Cancel**. Edits you keep
+stay on this version of your résumé when you generate it again. If you approve changes in
+Compose first, the next version starts from the newly approved content without them, and Step
+6 tells you so.
 
 ---
 

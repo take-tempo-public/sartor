@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### A Compose edit after Save and continue now has to be approved (`fix/frozen-composition-staleness`, items 106, 66, 132)
+
+Save and continue approves (freezes) a composition, and every output is built from that
+approved version. Before this change, a later edit in that application's Compose (a bullet's
+text, a pin, the summary, an accepted gap-fill bullet, a title) never reached the preview,
+Generate or the download, and nothing said so.
+
+- **Fixed: a post-approval Compose edit marks the approval stale (items 106, 66).** Compose
+  shows **Changes not approved yet**, Step 5 (Generate) locks, and both generate routes refuse
+  with a 409 until **Save and continue** approves the changes. Edits made on the Career corpus
+  tab still never change an application you've already approved.
+- **Fixed: "Submit answers and regenerate" no longer returns an identical résumé (item 132).**
+  On an approved composition the button reads **Save answers and revise in Compose**: it saves
+  the answers and opens Compose, where the summary and gap-fill drafts that read them can be
+  regenerated and approved.
+- **Fixed: typed edits ("Use edits as baseline") survive a regenerate of the same approved
+  résumé.** After a re-approval they're dropped, and Step 6 says so.
+- **Changed: re-entering an approved Compose no longer fires its arrival drafts** (summary,
+  skills, gap-fill, role intros). The Regenerate buttons still run on click.
+- **Added: `POST /api/applications/<id>/composition/touch`**, which Compose calls before each
+  corpus edit it makes.
+- Evidence: `docs/dev/diagnosis/frozen-composition-staleness.md`.
+
 ### Assertions that fail on the regression they name, and a shared-toast wait gate (`test/assertion-strength`, items 115, 116, 122, 159)
 
 Test-only; no product file changed. Each change was proven by a mutation that passed the old

@@ -295,6 +295,14 @@ Then click **Save and continue to Template →**. That saves (freezes)
 your composition: from here on, the résumé is built from exactly what
 you approved.
 
+If you come back to Compose later and change something, the change
+isn't in your résumé until you approve it: Compose shows **Changes not
+approved yet**, and Step 5 (Generate) stays locked until you click
+**Save and continue** again. Editing a bullet's text here also saves it
+to your career corpus, so later applications get it; an application
+you've already approved keeps its approved text until you approve it
+again.
+
 **Check before continuing:**
 
 - Is every bullet you want pinned or kept?

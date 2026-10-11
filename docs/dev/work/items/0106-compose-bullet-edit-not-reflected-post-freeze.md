@@ -3,9 +3,9 @@ schema = 1
 id = 106
 kind = "item"
 title = "Compose bullet-text edits don't reach an already-frozen application's preview, generate, or download"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/container-persistence-guidance"]
+branches = ["docs/container-persistence-guidance", "fix/frozen-composition-staleness"]
 refs = [
   "static/app.js:9318-9346",
   "blueprints/corpus/experiences.py:499-555",
@@ -16,6 +16,14 @@ refs = [
   "docs/dev/work/items/0066-composition-frozen-flag-goes-sticky-stale.md",
 ]
 summary = "Bullet-text edit in Compose never re-freezes; preview/generate/download keep serving the pre-edit snapshot."
+resolution = "2026-10-10, fix/frozen-composition-staleness: Compose's corpus writes go through one touch-first wrapper that bumps the application's compose_corpus_edits, so the approval reads as stale; Step 5 locks and generate refuses (409) until Save and continue re-approves. Career Corpus panel edits never stale an approved application. UX half verified in CI (not locally: memory)."
+verified_by = [
+  "tests/test_frozen_composition_staleness.py::TestDefects::test_d1_generate_never_serves_a_body_that_contradicts_compose[R1_bullet_text_item106]",
+  "tests/test_frozen_composition_staleness.py::TestControls::test_c3_career_corpus_panel_edit_never_reaches_an_approved_application",
+  "tests/test_composition_staleness.py::TestTouchRoute",
+  "tests/test_composition_staleness.py::TestComposeCorpusCallsAreTouched",
+  "tests/ux/regression/test_20261010_compose_edit_after_freeze.py::test_post_freeze_bullet_edit_locks_generate_until_reapproved",
+]
 ```
 
 **Reported by the owner** (2026-09-02): editing a bullet's text at the Compose step does not
@@ -94,3 +102,14 @@ Filed from the owner's description plus a read-code trace to the exact write/rea
 not yet reproduced against a running instance. Cross-referenced against item 66, the
 closest existing item, and confirmed the trigger (`PUT /api/bullets/<id>`) is not the one
 item 66 covers.
+
+### 2026-10-10 — reproduced and fixed on `fix/frozen-composition-staleness`
+
+Reproduced at `76f7a44` (docs/dev/diagnosis/frozen-composition-staleness.md O1): after a freeze, a Compose bullet-text edit was in
+Compose's view and in what a re-freeze would approve, and absent from the preview, both generate
+bodies and the downloaded file. This item's three open questions, answered by runs: a
+never-frozen application keeps the edit (C0, Falsified); a second Save and continue picks it up
+(C2); the Career Corpus panel sends a byte-identical request, so the route alone can't tell the
+two apart (Falsified). Owner decision (2026-10-10): mark the approval stale and re-approve.
+Compose's corpus writes now call `POST /api/applications/<id>/composition/touch` first; the
+modal and the Compose hint now agree.
