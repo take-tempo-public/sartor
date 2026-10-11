@@ -2671,3 +2671,40 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   file, `BOARD.md`, four work items and this log. No product file changed.
 - **Freshness gate:** `python scripts/wiki_freshness.py` gave
   `OK (27 file(s) changed since the last ingest (< 75-file block threshold))`.
+
+## 2026-10-11 — scoped self-update pass (`fix/frozen-composition-staleness`)
+
+- **Mode:** a branch close-out **scoped** pass over this branch's own diff (`main...HEAD`,
+  `76f7a44` → `7e778fa`), owner-authorized spend. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged; scoped passes never advance it).
+- **Wiki-relevant changes in the diff (9):** `blueprints/applications.py`,
+  `blueprints/generation.py`, `corpus_to_json_resume.py`, `hardening.py`, `static/app.js`,
+  `templates/index.html`, `docs/dev/architecture.md`, `docs/user/iterating.md`,
+  `docs/user/walkthrough.md` (per `is_wiki_relevant()`).
+- **Pages changed (5, none created):** `context-set-contract` (`compose_corpus_edits`,
+  `inputs_digest`, staleness, `carry_edits`), `corpus-to-output-reach` (staleness detection,
+  the touch route), `frontend-wizard` (stale rail lock, notices, the Step-6 follow-up button,
+  typed edits), `route-surface` (the touch route, the 409, new response fields),
+  `iteration-audit-chain` (typed edits carried or discarded). One `wiki-scribe` and one
+  `wiki-grounding-auditor` per page (author ≠ auditor). `index.md` unchanged: the five topic
+  lines still describe their pages.
+- **Auditor catch-rate: 4 caught on 5 pages** (2 DRIFTED + 2 UNSUPPORTED).
+  - DRIFTED, re-anchored: `context-set-contract` said `frozen_composition_doc` had three call
+    sites (six at HEAD, by grep); `corpus-to-output-reach`'s `(line 2783)` now names
+    `draft_application_experience_summaries`.
+  - UNSUPPORTED, corrected with owner approval: `iteration-audit-chain` said
+    `composition_is_stale` "walks the ancestry" (it compares digests on the current context);
+    `frontend-wizard` said typed edits come from the resume payload (they come from the
+    generate response's `edited_resume_text`).
+- **Missed by the auditor, caught in orchestrator review (3), corrected with owner approval:**
+  all on `frontend-wizard`. The scribe filed the follow-up questions under "Step 2 — Clarify"
+  (they are in Step 6's `#panelOutput`) with a wrong default label and an invented
+  accept/discard banner; "Staleness detection on submit" named `/api/generate` (it is
+  `/api/generate/stream`) and an invented template-edit 409 path; "Staleness guard" said
+  Career Corpus edits stale an approval, which is the opposite of the code and the owner's
+  decision. The auditor marked the Step-2 placement SUPPORTED. **Retune signal:** on a long
+  client-side page the auditor checked symbols exist, not what the scribe said they do.
+- **Gates:** scoped `/wiki-lint` ERROR checks (backlinks, links, `path:line` within file,
+  index presence) over the five pages: no ERROR. `scripts/check_doc_links.py`: 633 files, no
+  broken links or cites. `scripts/wiki_freshness.py`:
+  `OK (35 file(s) changed since the last ingest (< 75-file block threshold))`.

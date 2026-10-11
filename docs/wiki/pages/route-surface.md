@@ -116,11 +116,18 @@ sequence). Each gates on `_safe_username` at entry:
   `POST /api/generate-cover-letter`, `GET /api/download/<path:filepath>`
   (`download_file`), `POST /api/download-edited`. Both `/api/generate` entry
   points (the non-streaming `run_generation` and SSE `run_generation_stream`)
-  share a hard block at 422 via [`_month_block_response`](../../../blueprints/generation.py)
-  when an included experience role (work, not education) has year-only ISO dates;
-  the block names the roles, hints to add months, and sets
-  `needs_month_precision: true` + `month_needed_roles: []` in the response so the
-  UI surfaces them before any LLM spend `[synthesis]`. The month predicate
+  return a 409 via [`_stale_composition_response`](../../../blueprints/generation.py)
+  when Compose has changed since Save and continue froze the composition
+  (fix/frozen-composition-staleness, items 106/66); the 409 carries
+  `{error, composition_stale: true}` and both success responses gain
+  `edited_resume_text` and `edits_discarded`
+  ([`_typed_edits_disposition`](../../../blueprints/generation.py)) `[synthesis]`.
+  Both also share a hard block at 422 via
+  [`_month_block_response`](../../../blueprints/generation.py) when an included
+  experience role (work, not education) has year-only ISO dates; the block names
+  the roles, hints to add months, and sets `needs_month_precision: true` +
+  `month_needed_roles: []` in the response so the UI surfaces them before any LLM
+  spend `[synthesis]`. The month predicate
   ([`_month_imprecise_roles`](../../../blueprints/generation.py)) reads the
   frozen approved_composition's work entries when Compose froze one, else the
   career_corpus snapshot.
@@ -138,7 +145,10 @@ A GET/POST pair on the application's context file:
   (`GET /api/applications/<id>/composition`) — fit-ranks bullets + eligible titles
   via `score_corpus_bullet`, reading pin/exclude/added/summary/title overrides out
   of the context file named by the `context_path` query param (validated with
-  `_within(cp, current_app.config["OUTPUT_DIR"])`).
+  `_within(cp, current_app.config["OUTPUT_DIR"])`). Response includes
+  `has_frozen_composition` and `composition_stale`
+  ([`blueprints/applications.py:_read_freeze_state`](../../../blueprints/applications.py))
+  `[synthesis]` — see [[corpus-to-output-reach]].
 - [`blueprints/applications.py:save_application_composition`](../../../blueprints/applications.py)
   (`POST /api/applications/<id>/composition`) — persists `{context_path, pinned[],
   excluded[], added[], bullet_order, pinned_summary_id, pinned_title_ids}` back into
@@ -149,8 +159,18 @@ A GET/POST pair on the application's context file:
   response's `frozen` field is **not** an echo of the request's `freeze` flag: it
   is [`hardening.py:frozen_composition_doc`](../../../hardening.py) applied in-lock
   to the dict about to be written, so a freeze that resolved to a document
-  `/api/generate` would refuse to assemble answers `false` (Epic A item 20) — see
-  [[corpus-to-output-reach]].
+  `/api/generate` would refuse to assemble answers `false` (Epic A item 20); the
+  response also includes `stale`
+  ([`hardening.py:composition_is_stale`](../../../hardening.py)) to signal whether
+  Compose has changed since the freeze `[synthesis]` — see [[corpus-to-output-reach]].
+- [`blueprints/applications.py:touch_application_composition`](../../../blueprints/applications.py)
+  (`POST /api/applications/<id>/composition/touch`) — marks that the application's
+  Compose is about to edit a corpus row (fix/frozen-composition-staleness, item 106).
+  Body: `{context_path}`. Returns `{application_id, stale}`. Writes nothing when
+  the context holds no frozen composition; when it does, bumps `compose_corpus_edits`
+  (one of [`hardening.py:COMPOSITION_INPUT_KEYS`](../../../hardening.py)) in the
+  context so the frozen composition reads as stale until Save and continue
+  re-approves `[synthesis]`.
 
 ## Experiences CRUD — `blueprints/corpus/experiences.py`
 

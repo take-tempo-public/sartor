@@ -78,13 +78,19 @@ reflects *this* save) and writes the result into
 thin wrapper over `build_json_resume_from_corpus` — the same resolver the
 live preview calls — that additionally stamps `meta.sartor.frozen = True` so
 downstream consumers can tell a frozen snapshot from a live corpus-direct
-render `[synthesis]`. Because the value is captured once, at freeze time, a
-later edit to a corpus row cannot retroactively change an already-approved
-application; every downstream surface (preview, deterministic assemble,
-download) renders THIS snapshot without re-resolving. The debounced
-autosave (no `freeze` flag) still rebuilds `composition_overrides` on every
-save, same as before — only the explicit freeze also captures
-`approved_composition`.
+render `[synthesis]`. It also stamps `meta.sartor.inputs_digest`, a sha256
+of the five context keys the builder reads
+([`hardening.py:COMPOSITION_INPUT_KEYS`](../../../hardening.py) — 
+`composition_overrides`, `llm_recommendations`, `llm_skill_recommendations`,
+`llm_summary_recommendation`, `compose_corpus_edits`) plus a counter
+incremented when this application's Compose makes a corpus edit. This digest
+is used later to detect staleness (see "Staleness detection" below)
+`[synthesis]`. Because the value is captured once, at freeze time, the
+snapshot itself cannot retroactively change from later corpus-row edits; every
+downstream surface (preview, deterministic assemble, download) renders THIS
+snapshot without re-resolving. The debounced autosave (no `freeze` flag) still
+rebuilds `composition_overrides` on every save, same as before — only the
+explicit freeze also captures `approved_composition`.
 
 ## One predicate: "will this context assemble deterministically?"
 
@@ -126,6 +132,34 @@ short-circuiting on the first miss, returning the document by reference with no 
 and no traversal of `work` / `skills` past a truthiness test — which is why the
 design is "call it from all three seams" rather than "cache the answer"
 ([`hardening.py:frozen_composition_doc`](../../../hardening.py) docstring).
+
+## Staleness detection (fix/frozen-composition-staleness)
+
+A second predicate answers "Is this frozen composition still current?" — 
+[`hardening.py:composition_is_stale`](../../../hardening.py). A freeze stamps the
+digest of its five inputs (`COMPOSITION_INPUT_KEYS` above); a later change to *any*
+of those inputs makes the current digest differ. It is checked **immediately after
+the frozen-doc predicate** in both generate routes
+([`blueprints/generation.py`](../../../blueprints/generation.py)): if stale, both
+return **409** (via [`_stale_composition_response`](../../../blueprints/generation.py))
+with `composition_stale: true`, never falling through to the legacy LLM `generate()`
+`[synthesis]`.
+
+**How an application's Compose marks itself stale.** The client wrapper
+[`static/app.js:_composeCorpusFetch`](../../../static/app.js) guards every corpus edit
+(bullet text, pending-bullet approval, skill approval, title add) in Compose's section:
+before writing, it calls `POST /api/applications/<id>/composition/touch`
+([`blueprints/applications.py:touch_application_composition`](../../../blueprints/applications.py)),
+which increments the context's `compose_corpus_edits` counter for THIS application only.
+Later, `composition_is_stale` detects the counter's change. **A Career Corpus panel edit**
+(same byte-identical request, sent outside Compose) bypasses the wrapper, so does not
+call touch, and therefore does not stale any approved application — **intentionally**
+`[synthesis]`. The `/composition` GET returns `composition_stale`; the POST returns
+`stale`. The client applies both answers through one funnel (`_applyCompositionState`)
+to lock Step 5 `[synthesis]`.
+
+A snapshot frozen **before** this feature existed (no digest) detects only Compose's
+corpus edits until it is approved again — a declared limit `[synthesis]`.
 
 ## The `composition_overrides` shape
 
@@ -260,7 +294,8 @@ pipeline:
 
 3. [`blueprints/applications.py:_build_experience_summary_targets`](../../../blueprints/applications.py)
    — the per-role intro drafting call (A3 `draft_experience_summaries`) filters
-   roles by `active_exp_ids` passed from the caller (line 2783). Because the frozen
+   roles by `active_exp_ids` passed from the caller
+   (`blueprints/applications.py:draft_application_experience_summaries`). Because the frozen
    `career_corpus` snapshot persists after soft-retirement, this filter is necessary
    to prevent retired roles from being drafted (item 75) `[synthesis]`.
 
