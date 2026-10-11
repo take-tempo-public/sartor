@@ -52,8 +52,12 @@ boundary, charter C-6):
    Without a frozen composition the server still falls back to the
    legacy Sonnet `generate()` call, but the wizard rail no longer
    reaches that path: Step 5 opens only when the server reports a
-   frozen composition (item 20, `static/app.js:7094`, reasoning at `:7068-7083`). The
+   frozen composition (item 20, `_wizardReachable` in `static/app.js`). The
    fallback is reachable only by a direct `POST /api/generate` (item 67).
+   A Compose edit made after the freeze marks it **stale**
+   (`hardening.composition_is_stale`): Step 5 re-locks and both generate
+   routes refuse with a 409 until Save and continue re-approves (items 106/66,
+   `fix/frozen-composition-staleness`).
 5. **Surgical refinement** *(optional, corpus mode)* — Sonnet
    drafts a reworded bullet (`draft_surgical_refinement`, no new
    facts permitted); accepting loops back to Compose rather than

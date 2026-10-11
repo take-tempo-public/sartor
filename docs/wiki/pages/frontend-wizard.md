@@ -171,12 +171,12 @@ Step 1 spans two panels because the user reviews the analysis before advancing.
 [`app.js:_wizardRender`](../../../static/app.js) shows only the active step's panels and
 hides the rest, recomputes the rail's done/active/upcoming classes + connector ink-trail,
 mirrors `Step N of 6 · <label>` into the floating bottom statusbar, and — except when
-called with `{scroll:false}` — scrolls the active panel into view ([`app.js:_wizardRender`](../../../static/app.js))
-`[synthesis]`. The `scroll` option suppresses the scroll-to-active-panel behavior when a stale
+called with `{scroll:false}` — scrolls the active panel into view `[synthesis]`. The `scroll` option suppresses the scroll-to-active-panel behavior when a stale
 landing decision would otherwise move the viewport away from where the user has explicitly
-navigated ([`wizardInit`](../../../static/app.js) / [`_wizardRender`](../../../static/app.js) opts param). Forward motion is gated by
+navigated ([`wizardInit`](../../../static/app.js) / [`_wizardRender`](../../../static/app.js) opts param). The rail buttons themselves are rendered separately by
+[`app.js:_renderWizardRail`](../../../static/app.js) (split out from `_wizardRender` to re-render on staleness without a full wizard refresh). Forward motion is gated by
 [`app.js:_wizardReachable`](../../../static/app.js): step ≥ 2 needs a successful analysis
-(`lastContextPath`), **step 5 needs a frozen composition** (`_compositionFrozen`), step 6
+(`lastContextPath`), **step 5 needs a frozen composition that is not stale** (`_compositionFrozen && !_compositionStale`), step 6
 needs a generation (`lastResumePath`) `[synthesis]`.
 [`app.js:wizardGoTo`](../../../static/app.js) lazy-loads on entry — `loadComposition()` on
 step 3, `_loadTemplatePicker()` on step 4.
@@ -190,7 +190,17 @@ condition is now exactly "the server will assemble this deterministically" —
 `/api/generate` applies (see [[corpus-to-output-reach]]) — and **not** the weaker
 "Save-and-continue completed", which would still admit runs the server refuses. The
 client never re-derives it: `_compositionFrozen` carries the server's answer from both
-of its setters (below). A candidate whose analyze-time `career_corpus` snapshot is empty
+of its setters (below). **Staleness guard:** an edit made in *this application's* Compose
+after the freeze (an autosave, a gap-fill decision, or a corpus write that Compose routes
+through the touch-first [`app.js:_composeCorpusFetch`](../../../static/app.js)) makes the
+server's `hardening.composition_is_stale` true. A Career Corpus panel edit never does, because
+it never calls the touch route. [`app.js:_compositionStale`](../../../static/app.js) (declared
+alongside `_compositionFrozen`) is set only by
+[`app.js:_applyCompositionState`](../../../static/app.js), from the server's `stale` or
+`composition_stale` field, and by the resume path from `resume_state.composition_stale`. A
+stale composition locks Step 5 just as an unfrozen one does. The lock reason asks the user to
+re-approve, and the `#composeStaleNotice` / `#templateStaleNotice` banners in the Compose and
+Template panels say the changes aren't approved yet `[synthesis]`. A candidate whose analyze-time `career_corpus` snapshot is empty
 is locked out of Step 5 by design, and is not walled in — steps 1–4 stay reachable off
 `lastContextPath` alone, so Compose is one click away. Step 6 stays gated on
 `lastResumePath` alone so an already-generated run remains downloadable even when its
@@ -199,7 +209,7 @@ freeze state can't be recovered ([`app.js:_wizardReachable`](../../../static/app
 A locked step now says **why**. [`app.js:_wizardLockReason`](../../../static/app.js) is
 the single message source for both refusals a locked step can produce — the toast
 [`wizardGoTo`](../../../static/app.js) raises on an attempted navigation, and the `title`
-[`_wizardRender`](../../../static/app.js) sets on the greyed rail button (which
+[`_renderWizardRail`](../../../static/app.js) sets on the greyed rail button (which
 previously had its tooltip *removed*, leaving the lock unexplained). Step 5's reason
 names Compose specifically rather than inheriting the generic "Run ANALYZE first",
 because its lock is a flow requirement, not a missing analysis `[synthesis]`.
@@ -374,6 +384,16 @@ proposed change for accept/retire. A note the model can't scope to one item
 ("rewrite everything") falls back to plain "go adjust it yourself" copy. Legacy
 (file-based, non-corpus) applications keep the original LLM full-regenerate.
 
+**Staleness detection on submit.** If Generate is attempted on a stale composition, the
+server refuses before any LLM call: [`app.js:runGeneration`](../../../static/app.js) posts to
+`/api/generate/stream`, which answers 409 `{composition_stale: true}` as plain JSON before the
+stream opens. `runGeneration` passes that body to
+[`app.js:_applyCompositionState`](../../../static/app.js) and then reports the error.
+[`app.js:_renderCompositionStaleState`](../../../static/app.js) toggles `#composeStaleNotice`
+and `#templateStaleNotice` together (shown while `_compositionFrozen && _compositionStale`) and
+re-renders the rail, which re-locks Step 5 `[synthesis]`. In normal use the rail is already
+locked, so this is the floor under it.
+
 **WYSIWYG-as-source: the preview always matches what Download would produce.**
 Editing `#resumePreview` / `#coverPreviewFrame`'s companion editor debounces
 (300ms) into [`app.js:_refreshLiveEditPreview`](../../../static/app.js), which
@@ -397,6 +417,28 @@ upstream → a "Page N of M" chip; messages are routed by
 `ev.source === frame.contentWindow` so the three frames don't cross-talk `[synthesis]`. A
 load-time fallback, [`_updatePreviewPageCount`](../../../static/app.js), estimates the count
 from `scrollHeight` against an 11"×96-DPI Letter page until paged.js's real count arrives.
+
+## Step 6 — follow-up questions and typed edits on an approved composition
+
+**Follow-up questions.** The iteration interview lives in Step 6 (`#refinementArea` inside
+`#panelOutput`, `data-wstep-body="6"` in `templates/index.html`).
+[`app.js:_renderIterateClarifyQuestions`](../../../static/app.js) labels
+`#btnSubmitIterateClarifications` "Save answers and revise in Compose" when
+`_compositionFrozen`, else "Submit answers and regenerate", and hides it when no questions
+came back. [`app.js:submitIterateClarificationsAndGenerate`](../../../static/app.js) saves the
+answers either way. When frozen it does not call `runGeneration()` (a regenerate of an
+approved composition is byte-identical). Instead it sets
+[`app.js:_composeAnswersLoopback`](../../../static/app.js) and goes to Step 3, where
+[`app.js:_renderComposeAnswersBanner`](../../../static/app.js) shows "Your answers are saved",
+points at the positioning summary's **Regenerate** and gap-fill's **Regenerate
+suggestions**, and offers a **Got it** dismiss. When not frozen it regenerates as before.
+
+**Typed edits.** [`app.js:_renderOutput`](../../../static/app.js) fills the editor with the
+generate response's `edited_resume_text` when the server carried the user's typed edits over
+an unchanged regenerate, else with `resume_preview`. It shows `#editsDiscardedNotice` when the
+response's `edits_discarded` is true (a regenerate after a re-approval). A resumed application
+(`_resumeIntoStep6`) needs neither, since `resume_state.resume_md` already carries a saved edit
+`[synthesis]`.
 
 ## Config persistence
 

@@ -9,7 +9,7 @@ helpers (`_application_summary_dict`, `_build_resume_state`,
 `_find_context_path_for_run`, `_load_application_owned`,
 `_latest_analysis_essentials`, and the context-override readers).
 
-The list below is the CURRENT FULL SET — 22 routes as of Epic A sprint A3. (It
+The list below is the CURRENT FULL SET — 23 routes as of fix/frozen-composition-staleness. (It
 read "the thirteen routes" with a 15-line list for several sprints after it
 stopped being true; re-derive it with
 `grep -c "@applications_bp.route" blueprints/applications.py` rather than
@@ -24,6 +24,7 @@ trusting this sentence.)
     POST   /api/applications/<id>/restore                       restore_application
     GET    /api/applications/<id>/composition                   get_application_composition
     POST   /api/applications/<id>/composition                   save_application_composition
+    POST   /api/applications/<id>/composition/touch             touch_application_composition
     POST   /api/applications/<id>/recommend                     recommend_application_bullets
     POST   /api/applications/<id>/recommend-summary             recommend_application_summary
     POST   /api/applications/<id>/draft-summary                 draft_application_summary
@@ -65,7 +66,7 @@ from flask.typing import ResponseReturnValue
 from spectree import Response as OpenApiResponse
 
 from blueprints.corpus import _skill_to_dict, _tag_list
-from hardening import context_transaction, frozen_composition_doc
+from hardening import composition_is_stale, context_transaction, frozen_composition_doc
 from web_infra import (
     PathTraversalError,
     _error_detail_payload,
@@ -366,6 +367,9 @@ def _pre_generate_hydration(ctx_data: dict[str, Any]) -> dict[str, Any] | None:
             ctx_data.get("composition_overrides") or ctx_data.get("llm_recommendations")
         ),
         "has_frozen_composition": frozen_composition_doc(ctx_data) is not None,
+        # fix/frozen-composition-staleness — frozen, but Compose has changed since.
+        # The resumed wizard keeps Step 5 locked until Save and continue re-approves.
+        "composition_stale": composition_is_stale(ctx_data),
     }
     if ctx_data.get("clarifications") or ctx_data.get("clarification_questions"):
         hydration["clarification_questions"] = ctx_data.get("clarification_questions") or []
@@ -721,6 +725,31 @@ def _latest_analysis_essentials(app_row: Application) -> set[str]:
             out |= {w for w in re.split(r"[^a-z0-9]+", str(s).lower()) if len(w) > 2}
         return out
     return set()
+
+
+def _read_freeze_state(context_path: str) -> tuple[bool, bool]:
+    """Return (has_frozen_composition, composition_stale) for a context file validated under OUTPUT_DIR.
+
+    fix/frozen-composition-staleness: lets Compose show, on every load, whether the
+    approved résumé still matches what it shows. (False, False) when absent/invalid.
+    One more parse of the file on top of the GET's existing per-helper reads; the
+    consolidation of those is filed separately rather than widened into this fix.
+    """
+    if not context_path:
+        return False, False
+    # resolve_within (not Path + _within): its return value is the modeled CodeQL
+    # path-injection barrier (.github/codeql/extensions), so the read below is clean.
+    try:
+        cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+    except PathTraversalError:
+        return False, False
+    if not cp.exists():
+        return False, False
+    try:
+        ctx = json.loads(cp.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False, False
+    return frozen_composition_doc(ctx) is not None, composition_is_stale(ctx)
 
 
 def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
@@ -1144,6 +1173,7 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             skill_order,
             skill_rec_ids,
         ) = _read_skill_composition(ctx_path)
+        has_frozen_composition, composition_stale = _read_freeze_state(ctx_path)
 
         # PX-38: selectinload the three per-experience collections this loop
         # walks (bullets+tag_links, titles+tag_links, summary_items) so the
@@ -1471,6 +1501,10 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
                 # re-send it on every /composition save (the wholesale-rebuild
                 # clobber invariant).
                 "retired_gap_fill_keys": retired_gap_fill_keys,
+                # fix/frozen-composition-staleness — whether Save and continue has
+                # approved this composition, and whether Compose has changed since.
+                "has_frozen_composition": has_frozen_composition,
+                "composition_stale": composition_stale,
                 "summary": {
                     "variants": summary_variants,
                     "recommended_id": rec_id,
@@ -1903,6 +1937,12 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 # Computed in-lock, on the dict about to be written, so it describes
                 # the state the next reader sees.
                 frozen_assemblable = frozen_composition_doc(fresh) is not None
+            # fix/frozen-composition-staleness (item 66) — on EVERY save, freeze or
+            # not: does an approved snapshot exist that this save's overrides no
+            # longer match? `frozen` keeps its item-20 meaning (this save froze an
+            # assemblable doc); `stale` is what lets the client re-lock Step 5 after a
+            # post-freeze edit. Also in-lock, on the dict about to be written.
+            stale = composition_is_stale(fresh)
         return jsonify(
             {
                 "application_id": application_id,
@@ -1922,8 +1962,66 @@ def save_application_composition(application_id: int) -> ResponseReturnValue:
                 "accepted_generated_bullet_ids": accepted_generated_in,
                 "retired_gap_fill_keys": retired_gap_fill_in,
                 "frozen": frozen_assemblable,
+                "stale": stale,
             }
         )
+    finally:
+        session.close()
+
+
+@applications_bp.route("/api/applications/<int:application_id>/composition/touch", methods=["POST"])
+def touch_application_composition(application_id: int) -> ResponseReturnValue:
+    """Record that this application's Compose is about to edit a corpus row.
+
+    fix/frozen-composition-staleness (item 106). Compose's corpus edits (bullet text,
+    approving a pending bullet or skill, adding a title or role intro) go to corpus
+    routes that take no application, and the Career Corpus panel sends byte-identical
+    requests (docs/dev/diagnosis/frozen-composition-staleness.md, Falsified). So
+    Compose calls this first. It bumps `compose_corpus_edits`, one of
+    `hardening.COMPOSITION_INPUT_KEYS`, so a frozen composition reads as stale until
+    Save and continue re-approves it. Called BEFORE the corpus write: a write that then
+    fails leaves a harmless false "stale", never an edit that landed unmarked.
+
+    Writes nothing when the context holds no frozen composition (nothing approved yet).
+
+    Body: {context_path}. Returns {application_id, stale}. Filesystem + ownership:
+    _safe_username via _load_application_owned; resolve_within gates context_path.
+    """
+    from db.session import get_session, init_db
+
+    data = request.json or {}
+    context_path = (data.get("context_path") or "").strip()
+    if not context_path:
+        return jsonify({"error": "context_path required"}), 400
+
+    init_db()
+    session = get_session()
+    try:
+        app_row, candidate = _load_application_owned(session, application_id)
+        if app_row is None or not _safe_username(
+            candidate.username, configs_dir=current_app.config["CONFIGS_DIR"]
+        ):
+            return jsonify({"error": "Application not found"}), 404
+
+        try:
+            cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
+        except PathTraversalError:
+            return jsonify({"error": "Invalid context_path"}), 400
+        if not cp.exists():
+            return jsonify({"error": "Invalid context_path"}), 400
+        try:
+            ctx = json.loads(cp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return jsonify({"error": "Context file unreadable"}), 400
+        if ctx.get("application_id") not in (None, application_id):
+            return jsonify({"error": "context_path does not match application"}), 400
+        if frozen_composition_doc(ctx) is None:
+            return jsonify({"application_id": application_id, "stale": False})
+
+        with context_transaction(cp) as fresh:
+            fresh["compose_corpus_edits"] = int(fresh.get("compose_corpus_edits") or 0) + 1
+            stale = composition_is_stale(fresh)
+        return jsonify({"application_id": application_id, "stale": stale})
     finally:
         session.close()
 
@@ -3251,6 +3349,18 @@ def draft_application_refinement(application_id: int) -> ResponseReturnValue:
             return jsonify({"error": "Context file unreadable"}), 400
         if ctx.get("application_id") not in (None, application_id):
             return jsonify({"error": "context_path does not match application"}), 400
+
+        # fix/frozen-composition-staleness — when Compose has changed since the
+        # freeze, draft against what Compose shows, not the stale snapshot: a
+        # refinement drafted from stale text could silently revert the edit when
+        # accepted. In memory only (this route never writes ctx); the builder runs
+        # only in the stale case, so the common path costs nothing extra.
+        if composition_is_stale(ctx):
+            from corpus_to_json_resume import build_json_resume_from_corpus
+
+            ctx["approved_composition"] = build_json_resume_from_corpus(
+                session, candidate.id, application_id=application_id, context_data=ctx
+            )
 
         # Stage the note + JD transiently for the LLM call. This route never
         # writes ctx back to disk — the frozen composition already on ctx is the

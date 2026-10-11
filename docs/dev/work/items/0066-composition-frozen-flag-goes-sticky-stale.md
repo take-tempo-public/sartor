@@ -3,14 +3,22 @@ schema = 1
 id = 66
 kind = "item"
 title = "`_compositionFrozen` goes sticky-stale: a post-freeze Compose edit leaves the Step-5 rail open over a stale snapshot"
-status = "watching"
+status = "closed"
 decision_owner = "agent"
+branches = ["fix/frozen-composition-staleness"]
 refs = [
   "static/app.js",
   "blueprints/applications.py",
   "docs/dev/diagnosis/wizard-rail-frozen-composition-gate.md",
 ]
 summary = "Freeze, return to Compose, edit: the debounced autosave omits `freeze`, so the client flag stays true."
+resolution = "2026-10-10, fix/frozen-composition-staleness: a freeze stamps a digest of the composition inputs; any later Compose edit makes hardening.composition_is_stale true, POST /composition returns stale, the rail re-locks Step 5, and both generate routes refuse with a 409 until Save and continue re-approves. UX half verified in CI (not locally: memory)."
+verified_by = [
+  "tests/test_frozen_composition_staleness.py::TestDefects::test_d1_generate_never_serves_a_body_that_contradicts_compose",
+  "tests/test_frozen_composition_staleness.py::TestDefects::test_d3_the_server_reports_that_something_changed",
+  "tests/test_composition_staleness.py::TestCompositionResponses",
+  "tests/ux/regression/test_20261010_compose_edit_after_freeze.py::test_post_freeze_bullet_edit_locks_generate_until_reapproved",
+]
 ```
 
 **The sequence.** Save-and-continue freezes the composition and sets
@@ -58,3 +66,12 @@ Surfaced during the item-20 fix and deferred there deliberately; the sprint comm
 records it as "filed not fixed". No `epic` pointer set, matching the precedent of items
 63–65: attaching a `watching` item to epic 36 would block that epic's closure on an
 observation nobody has committed to resolving.
+
+### 2026-10-10 — closed on `fix/frozen-composition-staleness` (folded into items 106 + 132, owner's direction)
+
+Reproduced at `76f7a44` (docs/dev/diagnosis/frozen-composition-staleness.md O1/O2: pin, exclude and summary-retype autosaves after a
+freeze left both generate routes serving the pre-edit snapshot with 200, and no client-readable
+state changed). The product call this item left open was made by the owner (2026-10-10): a
+post-freeze Compose edit marks the approval **stale**, Step 5 re-locks, and Save and continue
+re-approves. Built as a digest-derived predicate (`hardening.composition_is_stale`), not a
+flag set by each writer.

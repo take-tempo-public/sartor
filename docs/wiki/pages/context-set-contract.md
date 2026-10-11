@@ -84,12 +84,23 @@ Everything past analyze is added on demand, so older context files round-trip un
   `blueprints/generation.py`, one in `blueprints/applications.py` — and disagreed;
   neither seam could host the shared one, since `applications` cannot import
   `generation` without closing the `generation` → `blueprints.templates` →
-  `applications` import cycle. It is called from **three** sites today
+  `applications` import cycle. It is called from **six** sites today
   (`generation.py:_frozen_composition`, `applications.py:_pre_generate_hydration`,
-  `applications.py:save_application_composition`). The Step-5 wizard rail is a
+  `applications.py:save_application_composition`, `applications.py:_read_freeze_state`,
+  `applications.py:touch_application_composition`, and `hardening.py:composition_is_stale`,
+  which builds on it rather than re-deriving it). The Step-5 wizard rail is a
   **consumer** of the answer, not a fourth implementation: it reads the server's flag
   and never computes the predicate (Epic A item 20; see [[corpus-to-output-reach]] and
-  [[frontend-wizard]]).
+  [[frontend-wizard]]). The frozen document's `meta.sartor.inputs_digest` (fix/frozen-composition-staleness,
+  stamped by [`corpus_to_json_resume.py:freeze_approved_composition`](../../../corpus_to_json_resume.py))
+  records the digest of the composition inputs at freeze time; [`hardening.py:composition_is_stale`](../../../hardening.py)
+  later detects staleness when Compose edits move the inputs, so a frozen composition is marked stale
+  when [`hardening.py:composition_inputs_digest`](../../../hardening.py) differs from the stamped value `[synthesis]`.
+- `compose_corpus_edits` — fix/frozen-composition-staleness (items 106/66): counter of how many
+  corpus edits this application's Compose has made (bullet text, approve, add title/intro, skill
+  approve/deny). Bumped only by `POST /composition/touch`, which only Compose calls. One of
+  [`hardening.py:COMPOSITION_INPUT_KEYS`](../../../hardening.py); a bump after a freeze makes
+  `composition_is_stale` true. Absent = 0 `[synthesis]`.
 
 ## Two builders, one shape
 
@@ -122,15 +133,34 @@ fabricated-specifics check, so the two can never score against divergent source 
 (and the D5 prior-clarifications widen specifically) is canonical in AGENTS.md "LLM
 prompts" — cited, not restated here (D5). See [[generation-and-grounding]].
 
+## Composition staleness detection
+
+[`hardening.py:COMPOSITION_INPUT_KEYS`](../../../hardening.py) names the five fields whose changes
+can make a frozen composition stale: `composition_overrides`, `llm_recommendations`,
+`llm_skill_recommendations`, `llm_summary_recommendation`, and `compose_corpus_edits`. On freeze,
+[`corpus_to_json_resume.py:freeze_approved_composition`](../../../corpus_to_json_resume.py) stamps
+`meta.sartor.inputs_digest` with [`hardening.py:composition_inputs_digest`](../../../hardening.py)
+— a sha256 of those five keys' JSON-normalized values. Later, [`hardening.py:composition_is_stale`](../../../hardening.py)
+compares the current digest to the stamped one to detect whether Compose has edited the composition
+since the freeze. A mismatch means the frozen snapshot no longer reflects what Compose would approve
+now, so the application must re-freeze to generate. Staleness is **not** stored as a flag — it is
+**derived on read** so undoing an edit (reverting a Compose change) makes the snapshot fresh again
+without special recovery logic `[synthesis]`.
+
 ## Persistence and the iteration chain
 
 `save_context_set` writes iteration 0 (`context_<ts>.json`).
 [`hardening.py:save_iteration_context`](../../../hardening.py) writes every subsequent
 iteration as a NEW immutable child file (`context_<ts>_iter<N>.json`) rather than
 mutating the parent: it deep-copies via a JSON round-trip, increments `iteration`, sets
-`parent_context_path` to the parent, caches the frozen generation snapshot, clears the
-consumed edit fields, and appends an [`IterationNote`](../../../hardening.py). The chain
-of `parent_context_path` pointers IS the audit trail — see [[iteration-audit-chain]].
+`parent_context_path` to the parent, caches the frozen generation snapshot, and appends
+an [`IterationNote`](../../../hardening.py). The chain of `parent_context_path` pointers
+IS the audit trail — see [[iteration-audit-chain]]. By default (`carry_edits=False`), it
+clears the consumed `edited_resume_text` / `edited_cover_letter_text` fields so they do
+not re-apply on the next iteration (the legacy path where `/api/generate` consumes them);
+with `carry_edits=True` (fix/frozen-composition-staleness, when the frozen path consumes no
+edits), it carries forward the edit fields and the parent's cached JSON Resume render so the
+preview continues showing them `[synthesis]`.
 
 All writes to context files are serialized for safety against two distinct hazards.
 [`hardening.py:write_context_atomic`](../../../hardening.py) closes **torn reads**: it

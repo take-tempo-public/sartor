@@ -33,7 +33,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -68,6 +68,7 @@ from generator import (
 )
 from hardening import (
     ContextSet,
+    composition_is_stale,
     compute_date_grounding,
     context_transaction,
     frozen_composition_doc,
@@ -834,6 +835,73 @@ def _month_block_response(month_needed: list[str]) -> ResponseReturnValue:
     ), 422
 
 
+def _stale_composition_response() -> ResponseReturnValue:
+    """The shared 409 both generate entry points return for a stale frozen composition.
+
+    fix/frozen-composition-staleness (items 106/66): Compose has changed since Save and
+    continue approved this composition, so assembling the snapshot would serve a résumé
+    that contradicts what Compose shows. Refuse instead, and never fall through to the
+    legacy LLM `generate()` (the item-20 floor). The client's Step-5 rail already
+    locks on the same predicate; this is the server floor under it.
+    """
+    return jsonify(
+        {
+            "error": (
+                "You've changed this résumé in Compose since you approved it. Go back to "
+                "Compose and click Save and continue to approve your changes, then generate."
+            ),
+            "composition_stale": True,
+        }
+    ), 409
+
+
+def _typed_edits_disposition(
+    context_set: Mapping[str, Any], frozen_doc: dict[str, Any] | None, resume_content: str
+) -> tuple[bool, bool]:
+    """Return (carry, discarded) for the typed edits on this generate's parent context.
+
+    fix/frozen-composition-staleness, owner decision 4. The frozen path reads no edits,
+    so on a deterministic re-assemble of the SAME résumé the edits were typed over,
+    carry them into the new iteration (the preview keeps showing them). When the
+    approved composition changed underneath them, discard them and say so. The legacy
+    LLM path consumes edits into its prompt, as before: neither flag.
+    """
+    if frozen_doc is None:
+        return False, False
+    if not (context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text")):
+        return False, False
+    if resume_content == context_set.get("last_generated_resume"):
+        return True, False
+    return False, True
+
+
+def _clear_run_edits(application_run_id: int) -> None:
+    """Clear a run's saved typed edits after a frozen regenerate discarded them.
+
+    `_persist_edited_text_to_db` treats None as "no change", so a discard needs its
+    own write; otherwise resuming the application would reload edits the preview no
+    longer shows. Best-effort, like its siblings.
+    """
+    from db.models import ApplicationRun
+    from db.session import get_session
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
+        if run is None:
+            return
+        run.edited_resume_text = None
+        run.edited_cover_letter_text = None
+        session.commit()
+    except Exception:
+        session.rollback()
+        logger.error(
+            "Clearing discarded edits failed (run_id=%s)", application_run_id, exc_info=True
+        )
+    finally:
+        session.close()
+
+
 def _frozen_composition(context_set: ContextSet) -> dict[str, Any] | None:
     """Return the frozen ``approved_composition`` doc for a corpus context, else None.
 
@@ -971,6 +1039,10 @@ def run_generation() -> ResponseReturnValue:
     # block below inspects the same source generation would actually consume:
     # the frozen approved_composition when Compose froze one, else the corpus.
     frozen_doc = _frozen_composition(context_set)
+    # fix/frozen-composition-staleness — Compose changed since the freeze: refuse
+    # rather than serve a snapshot that contradicts it (never the legacy LLM path).
+    if frozen_doc is not None and composition_is_stale(context_set):
+        return _stale_composition_response()
 
     # B2 ATS conformance: month hard block. An included role with a year-only
     # date renders a range no ATS can place — refuse BEFORE any LLM spend,
@@ -1182,6 +1254,12 @@ def run_generation() -> ResponseReturnValue:
         summary_parts.append("from edited baseline")
     summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
 
+    carry_edits, edits_discarded = _typed_edits_disposition(
+        context_set, frozen_doc, result["resume_content"]
+    )
+    if edits_discarded and app_run_id is not None:
+        _clear_run_edits(int(app_run_id))
+
     new_context_path = save_iteration_context(
         parent_context=context_set,
         parent_path=str(cp),
@@ -1191,6 +1269,7 @@ def run_generation() -> ResponseReturnValue:
         base_dir=str(output_dir),
         action="generate",
         summary=summary,
+        carry_edits=carry_edits,
     )
     new_iteration = int(context_set.get("iteration", 0) or 0) + 1
     logger.info(
@@ -1217,6 +1296,13 @@ def run_generation() -> ResponseReturnValue:
             # Workstream C: echo the persona used so the frontend can thread it
             # to /api/download-edited (so DOWNLOAD honors the chosen template).
             "persona_template_id": resolved_persona_id,
+            # fix/frozen-composition-staleness (decision 4): typed edits kept over
+            # an unchanged re-assemble go back into the editor; discarded ones are
+            # announced.
+            "edited_resume_text": (
+                (context_set.get("edited_resume_text") or "") if carry_edits else ""
+            ),
+            "edits_discarded": edits_discarded,
         }
     )
 
@@ -1279,6 +1365,10 @@ def run_generation_stream() -> ResponseReturnValue:
     # month block so the block inspects the source this run would consume) so
     # it is captured in the stream() closure below.
     frozen_doc = _frozen_composition(context_set)
+    # fix/frozen-composition-staleness — same refusal as /api/generate, as plain
+    # JSON before the stream opens (this route's pre-LLM validation contract).
+    if frozen_doc is not None and composition_is_stale(context_set):
+        return _stale_composition_response()
 
     # B2 ATS conformance: same month hard block as /api/generate — this SSE
     # route duplicates that preamble, and blocking only the non-streaming
@@ -1470,6 +1560,12 @@ def run_generation_stream() -> ResponseReturnValue:
                 summary_parts.append("from edited baseline")
             summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
 
+            carry_edits, edits_discarded = _typed_edits_disposition(
+                context_set, frozen_doc, result["resume_content"]
+            )
+            if edits_discarded and app_run_id is not None:
+                _clear_run_edits(int(app_run_id))
+
             new_context_path = save_iteration_context(
                 parent_context=context_set,
                 parent_path=str(cp),
@@ -1479,6 +1575,7 @@ def run_generation_stream() -> ResponseReturnValue:
                 base_dir=str(output_dir),
                 action="generate",
                 summary=summary,
+                carry_edits=carry_edits,
             )
             new_iteration = int(context_set.get("iteration", 0) or 0) + 1
             logger.info(
@@ -1504,6 +1601,11 @@ def run_generation_stream() -> ResponseReturnValue:
                     "ats_roundtrip": ats_findings,
                     "date_grounding": date_findings,
                     "persona_template_id": resolved_persona_id,
+                    # fix/frozen-composition-staleness (decision 4) — as /api/generate.
+                    "edited_resume_text": (
+                        (context_set.get("edited_resume_text") or "") if carry_edits else ""
+                    ),
+                    "edits_discarded": edits_discarded,
                 },
             )
         except anthropic.APIConnectionError as exc:
