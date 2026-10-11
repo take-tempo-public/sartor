@@ -90,7 +90,8 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 | `ca2a1f6` | **The fix.** `hardening`: `COMPOSITION_INPUT_KEYS`, `composition_inputs_digest`, `composition_is_stale`, `ContextSet.compose_corpus_edits`, `save_iteration_context(carry_edits=)`. The freeze stamps `meta.sartor.inputs_digest`. `POST /composition/touch` (new); `stale` / `composition_stale` on the composition and resume payloads; both generate routes 409 when stale; the refinement drafter reads the live doc when stale; typed edits carried or discarded. Client: one `_applyCompositionState` funnel, rail lock and reason, notices, touch-first `_composeCorpusFetch` / `_composeCorpusJson`, item 132's relabel, copy fixes. Four selectors (C-10 dossier first). Tests: the instrument's markers deleted (46 pass); `tests/test_composition_staleness.py` (21); `tests/ux/regression/test_20261010_compose_edit_after_freeze.py` (2, not run locally). |
 | `7e778fa` | Items 66, 106, 132 closed with `verified_by`; 160, 161 filed; board **Open 23** (two closed, two filed); user docs (`walkthrough.md`, `iterating.md`); `architecture.md`; `CHANGELOG.md`. |
 | `6dc58c3` | Scoped `/wiki-self-update` (owner-authorized): five pages; auditor catch-rate 4 on 5 pages, plus 3 misses caught in review (`docs/wiki/log.md`). |
-| this handoff's commit | |
+| `d7590a9` | This handoff. |
+| `8b0471b` | The six advisory CodeQL alerts this branch introduced on PR #165 (CI run 38174846179): `_read_freeze_state` now uses `resolve_within` (the modeled path-injection barrier) instead of `Path` + `_within`; two test-only shapes (`unnecessary-lambda`, `missing-equals`). Local re-run: 152 passed. |
 
 **Tests run locally** (all `-p no:rerunfailures`):
 - the instrument + regression module: 67 passed;
