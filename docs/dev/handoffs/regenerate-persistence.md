@@ -113,6 +113,12 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
   the 1.00 GB floor. No orphaned workers were left.
 - **The owner's fallback (2026-10-12): CI is the merge gate.**
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
+- **CI on PR #166 (run 38310545397): `ci_wait` exit 3.** All eight required checks passed, but
+  `test_keyboard_reorder_persists_and_reset_reverts` failed 1 of 3 attempts with the item-30
+  signature (an unbounded `networkidle` inside the test's own settle instrument). This branch's
+  client diff doesn't reach Compose's reorder path. The new evidence (no request open at the
+  timeout) is recorded in item 30's 2026-10-12 entry. The merge decision on exit 3 was the
+  owner's.
 
 ---
 

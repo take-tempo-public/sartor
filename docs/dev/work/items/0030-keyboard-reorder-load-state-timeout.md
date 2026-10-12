@@ -282,3 +282,27 @@ Status stays `watching`. No mechanism has been identified.
   when the instrument is active, the timeout is the instrument's own.
 - The branch's diff touches no UI, JS or compose code. Nothing was changed for this item here (out
   of scope).
+
+### 2026-10-12 — recurred on PR #166 (`fix/regenerate-persistence`)
+
+- `python -m scripts.ci_wait 166` exited **3**: all eight required checks passed, but the same test
+  failed 1 of 3 attempts (run 38310545397, job 115014916256, 2026-10-12T21:27:35Z). The traceback
+  is the same as the 2026-10-07 entry: `:254` → `_wait_settled` → the test's
+  `_instrumented_wait_settled` (`:163`) → `wait_for_load_state("networkidle")` →
+  `TimeoutError: Timeout 30000ms exceeded.`
+- **New observation, the instrument's record for the failing reach:**
+  ```
+  {'reach': 9, 'panel_visible_s': 0.004, 'exception': "TimeoutError('Timeout 30000ms exceeded.')", 'elapsed_total_s': 30.036, 'cascade_state': {'composeReady': True, 'bgPending': None, 'draftSummaryFiredForApp': 1, 'gapFillFiredForApp': 1, 'composeApplicationId': 1, 'previewFrameReadyState': 'complete'}, 'still_pending_requests': [], ...}
+  ```
+  Reaches 1–8 in the same test had `networkidle_s` of 0.001–0.643 s.
+  - At the timeout, the network census shows **no request still open**.
+  - The settle condition already held: `composeReady: True` and `bgPending: None`.
+  - The preview iframe reported `complete`.
+
+  So the 30 s was spent in `networkidle` with nothing in flight that the census tracks. It
+  wasn't a pending XHR or the iframe load the 2026-07-31 fix found.
+- **Still inferred, unverified:** the unbounded `networkidle` in the instrument is the timeout's
+  source (2026-10-07 entry). This record is consistent with it but doesn't prove why
+  `networkidle` never fired.
+- This branch's client diff is a Step 6 banner and its toggle in `_renderOutput`; nothing on
+  Compose's reorder path. Nothing was changed for this item here (out of scope).
