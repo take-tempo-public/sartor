@@ -435,3 +435,169 @@ class TestMalformedInput:
         db_session.refresh(run)
         assert run.generated_cover_letter_md == "Dear Hiring Manager,"
         assert run.generated_resume_md == "# Resume"  # NOT clobbered
+
+
+# ---------------------------------------------------------------------------
+# A regenerate on the same run (item 160, fix/regenerate-persistence)
+# ---------------------------------------------------------------------------
+
+
+def _selection(e: Experience, t: ExperienceTitle | None, *bullets: Bullet) -> dict:
+    entry: dict = {
+        "experience_id": f"e{e.id}",
+        "bullet_ids_in_order": [f"b{b.id}" for b in bullets],
+    }
+    if t is not None:
+        entry["chosen_title_id"] = f"t{t.id}"
+    return entry
+
+
+def _add_bullets(session, e: Experience, n: int) -> list[Bullet]:
+    rows = [
+        Bullet(experience_id=e.id, text=f"Extra {i}", display_order=i + 1, is_active=1, source="m")
+        for i in range(n)
+    ]
+    session.add_all(rows)
+    session.flush()
+    return rows
+
+
+class TestRegenerateSameRun:
+    def test_second_persist_replaces_the_selection(self, db_session):
+        c, e, b, t, run = _seed_minimal_candidate_with_run(db_session)
+        (b2,) = _add_bullets(db_session, e, 1)
+        alt = ExperienceTitle(experience_id=e.id, title="Group PM", is_official=0, source="m")
+        db_session.add(alt)
+        db_session.flush()
+
+        persist_corpus_generation(
+            db_session,
+            run,
+            {"resume_content": "# One", "selected_bullets": [_selection(e, t, b, b2)]},
+            c.id,
+        )
+        report = persist_corpus_generation(
+            db_session,
+            run,
+            {"resume_content": "# Two", "selected_bullets": [_selection(e, alt, b2)]},
+            c.id,
+        )
+        db_session.flush()
+
+        rows = db_session.query(ApplicationBullet).filter_by(application_run_id=run.id).all()
+        assert [(r.bullet_id, r.position) for r in rows] == [(b2.id, 0)]
+        titles = db_session.query(ApplicationRunTitle).filter_by(application_run_id=run.id).all()
+        assert [(r.experience_id, r.experience_title_id) for r in titles] == [(e.id, alt.id)]
+        assert run.generated_resume_md == "# Two"
+        assert report.application_bullets_created == 1
+        assert db_session.query(IterationLog).filter_by(application_run_id=run.id).count() == 2
+
+    def test_a_resume_only_result_keeps_the_stored_cover_letter(self, db_session):
+        c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
+        persist_cover_letter_md(db_session, run, "Dear Hiring Manager,")
+        persist_corpus_generation(
+            db_session, run, {"resume_content": "# R", "cover_letter_content": ""}, c.id
+        )
+        assert run.generated_cover_letter_md == "Dear Hiring Manager,"
+        persist_corpus_generation(
+            db_session, run, {"resume_content": "# R", "cover_letter_content": "New letter"}, c.id
+        )
+        assert run.generated_cover_letter_md == "New letter"
+
+    def test_a_first_resume_only_result_leaves_the_letter_unset(self, db_session):
+        # has_cover_letter (`is not None`) stays False until a real letter exists.
+        c, _e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)
+        persist_corpus_generation(
+            db_session, run, {"resume_content": "# R", "cover_letter_content": ""}, c.id
+        )
+        assert run.generated_cover_letter_md is None
+
+    def test_a_reproposed_or_existing_bullet_text_is_not_recreated(self, db_session):
+        c, e, b, _t, run = _seed_minimal_candidate_with_run(db_session)
+        proposal = {
+            "proposed_new_bullets": [
+                {"experience_id": f"e{e.id}", "text": "Shipped pricing."},
+                {"experience_id": f"e{e.id}", "text": "Shipped pricing."},  # same result
+                {"experience_id": f"e{e.id}", "text": b.text},  # already in the corpus
+            ]
+        }
+        first = persist_corpus_generation(db_session, run, proposal, c.id)
+        second = persist_corpus_generation(db_session, run, proposal, c.id)
+
+        assert first.proposed_bullets_created == 1
+        assert first.proposed_bullets_already_present == 2
+        assert second.proposed_bullets_created == 0
+        assert second.proposed_bullets_already_present == 3
+        assert db_session.query(Bullet).filter_by(text="Shipped pricing.").count() == 1
+        assert db_session.query(ProposalReview).filter_by(application_run_id=run.id).count() == 1
+
+    def test_new_proposals_take_successive_display_orders(self, db_session):
+        c, e, _b, _t, run = _seed_minimal_candidate_with_run(db_session)  # 1 bullet already
+        persist_corpus_generation(
+            db_session,
+            run,
+            {
+                "proposed_new_bullets": [
+                    {"experience_id": f"e{e.id}", "text": "P1"},
+                    {"experience_id": f"e{e.id}", "text": "P2"},
+                ]
+            },
+            c.id,
+        )
+        orders = {
+            r.text: r.display_order
+            for r in db_session.query(Bullet).filter(Bullet.text.in_(["P1", "P2"]))
+        }
+        assert orders == {"P1": 1, "P2": 2}
+
+    def test_duplicates_within_one_result_are_skipped(self, db_session):
+        c, e, b, t, run = _seed_minimal_candidate_with_run(db_session)
+        (b2,) = _add_bullets(db_session, e, 1)
+        report = persist_corpus_generation(
+            db_session,
+            run,
+            {"selected_bullets": [_selection(e, t, b, b), _selection(e, t, b2)]},
+            c.id,
+        )
+        db_session.flush()
+        rows = (
+            db_session.query(ApplicationBullet)
+            .filter_by(application_run_id=run.id)
+            .order_by(ApplicationBullet.position)
+            .all()
+        )
+        # The experience named twice continues its order rather than restarting at 0.
+        assert [(r.bullet_id, r.position) for r in rows] == [(b.id, 0), (b2.id, 1)]
+        assert report.application_run_titles_created == 1
+        assert report.duplicate_selections_skipped == 2  # the repeated bullet + title
+
+    def test_select_count_does_not_grow_with_the_selection(self, db_session):
+        """D2d: one IN query per kind, not one SELECT per experience/title/bullet."""
+        from sqlalchemy import event
+
+        c, e, b, t, run = _seed_minimal_candidate_with_run(db_session)
+        extra = _add_bullets(db_session, e, 19)
+        engine = db_session.get_bind()
+        selects: list[str] = []
+
+        def _count(_conn, _cursor, statement, *_rest):
+            if statement.lstrip().upper().startswith("SELECT"):
+                selects.append(statement)
+
+        def _persist_selects(*bullets: Bullet) -> int:
+            selects.clear()
+            event.listen(engine, "before_cursor_execute", _count)
+            try:
+                persist_corpus_generation(
+                    db_session, run, {"selected_bullets": [_selection(e, t, *bullets)]}, c.id
+                )
+            finally:
+                event.remove(engine, "before_cursor_execute", _count)
+            return len(selects)
+
+        one = _persist_selects(b)
+        twenty = _persist_selects(b, *extra)
+        assert one == twenty, (one, twenty)
+        assert (
+            db_session.query(ApplicationBullet).filter_by(application_run_id=run.id).count() == 20
+        )

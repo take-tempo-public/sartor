@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Reopening an application shows its latest résumé (`fix/regenerate-persistence`, item 160)
+
+Every Generate of an application records its résumé on the application's run. Before this
+change, only the first one was kept. A second Generate failed to save, the error was only
+logged, and reopening the application from the Pipeline showed the first résumé.
+
+- **Fixed: each Generate replaces the application's saved résumé and its record of the chosen
+  bullets and titles (item 160).** Before, it tried to add a second copy and was rolled back.
+- **Fixed: generating the résumé again no longer erases a cover letter** made separately with
+  **Generate cover letter**.
+- **Fixed: a bullet the model proposes again on a later Generate isn't added for review a
+  second time.**
+- **Added: Step 6 says when a Generate couldn't be saved to the application.** Both generate
+  routes return `persist_failed`.
+- **Changed: saving a Generate takes a fixed number of database queries.** Before, it took
+  one per selected bullet.
+- Evidence: `docs/dev/diagnosis/regenerate-persistence.md`.
+
 ### A Compose edit after Save and continue now has to be approved (`fix/frozen-composition-staleness`, items 106, 66, 132)
 
 Save and continue approves (freezes) a composition, and every output is built from that

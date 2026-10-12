@@ -438,7 +438,9 @@ generate response's `edited_resume_text` when the server carried the user's type
 an unchanged regenerate, else with `resume_preview`. It shows `#editsDiscardedNotice` when the
 response's `edits_discarded` is true (a regenerate after a re-approval). A resumed application
 (`_resumeIntoStep6`) needs neither, since `resume_state.resume_md` already carries a saved edit
-`[synthesis]`.
+`[synthesis]`. It also shows `#persistFailedNotice` when the response's `persist_failed` is
+true (the generate succeeded but its database record didn't save, so resuming the application
+later would show an earlier version).
 
 ## Config persistence
 

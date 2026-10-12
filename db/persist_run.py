@@ -16,6 +16,16 @@ arrays and write them to the audit chain:
   carry the output for the audit trail.
 - `iteration_log` records the action.
 
+Every generate of an application reuses ONE run (each iteration's context
+carries the same `application_run_id`), so this is called repeatedly on the same
+row. The run's `application_bullet` / `application_run_title` rows are therefore
+REPLACED by the latest selection, not appended (owner decision D1, item 160 —
+appending hit `uq_application_bullet` and rolled the whole persist back); the
+per-iteration history lives in the context-file chain. A result with no cover
+letter leaves a stored one alone, and a proposal whose text the experience
+already has is not re-created. Evidence:
+`docs/dev/diagnosis/regenerate-persistence.md`.
+
 ID parsing: the prompt schema uses string prefixes (`e1`, `t10`, `b100`) so
 the LLM's output stays self-documenting. This module strips the prefix and
 validates the integer maps to a real row that belongs to the right
@@ -61,6 +71,12 @@ class PersistReport:
     titles_referenced_but_missing: list[int] = field(default_factory=list)
     experiences_referenced_but_missing: list[int] = field(default_factory=list)
     skipped_due_to_malformed_payload: int = 0
+    # A bullet id repeated within one result, or a second title for an experience
+    # already titled in it (both would violate the run's unique keys).
+    duplicate_selections_skipped: int = 0
+    # A proposed bullet whose text its experience already has (e.g. re-proposed by a
+    # regenerate) — not re-created, so review never stacks duplicates.
+    proposed_bullets_already_present: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -91,9 +107,13 @@ def persist_corpus_generation(
     """
     report = PersistReport()
 
-    # Persist the markdown output onto the run row for the audit trail.
+    # Persist the markdown output onto the run row for the audit trail. A résumé-only
+    # generate returns "" for the letter; writing that would blank a letter the
+    # detached cover-letter route stored (diagnosis O4), so only a real one lands.
     application_run.generated_resume_md = generate_result.get("resume_content")
-    application_run.generated_cover_letter_md = generate_result.get("cover_letter_content")
+    cover_letter = generate_result.get("cover_letter_content")
+    if cover_letter:
+        application_run.generated_cover_letter_md = cover_letter
 
     selected = generate_result.get("selected_bullets") or []
     _persist_selected_bullets(
@@ -178,78 +198,105 @@ def _persist_selected_bullets(
     `selected` is typed `list[Any]`, not `list[dict[str, Any]]`, because each
     entry is untrusted LLM JSON — the `isinstance(entry, dict)` guard below is
     live defense against a malformed (non-dict) entry, not dead code.
+
+    The run's existing rows are deleted first (replace, not append — see the
+    module docstring); this runs inside the caller's one transaction, so a
+    failure rolls back to the previous selection rather than a half-written one.
+    Lookups are one `IN` query per kind (experiences, titles, bullets), so the
+    statement count doesn't grow with the selection's size. `position` counts
+    per experience, so an experience named in two entries continues its order.
     """
+    session.query(ApplicationBullet).filter_by(application_run_id=application_run.id).delete()
+    session.query(ApplicationRunTitle).filter_by(application_run_id=application_run.id).delete()
+
+    # Parse pass: (experience_id, chosen_title_id | None, [bullet_id, ...]).
+    parsed: list[tuple[int, int | None, list[int]]] = []
     for entry in selected:
         if not isinstance(entry, dict):
             report.skipped_due_to_malformed_payload += 1
             continue
-
         exp_id = _strip_id_prefix(entry.get("experience_id"), "e")
         if exp_id is None:
             report.skipped_due_to_malformed_payload += 1
             continue
-
-        # Verify experience belongs to this candidate
-        experience = (
-            session.query(Experience)
-            .filter_by(
-                id=exp_id,
-                candidate_id=candidate_id,
-            )
-            .first()
-        )
-        if experience is None:
-            report.experiences_referenced_but_missing.append(exp_id)
-            continue
-
-        # Chosen title — optional in the schema but the prompt requests it
-        chosen_title_id = _strip_id_prefix(entry.get("chosen_title_id"), "t")
-        if chosen_title_id is not None:
-            title_row = (
-                session.query(ExperienceTitle)
-                .filter_by(
-                    id=chosen_title_id,
-                    experience_id=experience.id,
-                )
-                .first()
-            )
-            if title_row is None:
-                report.titles_referenced_but_missing.append(chosen_title_id)
-            else:
-                session.add(
-                    ApplicationRunTitle(
-                        application_run_id=application_run.id,
-                        experience_id=experience.id,
-                        experience_title_id=title_row.id,
-                    )
-                )
-                report.application_run_titles_created += 1
-
-        # Bullets in order
-        bullet_ids = entry.get("bullet_ids_in_order") or []
-        for position, raw_bid in enumerate(bullet_ids):
+        bullet_ids: list[int] = []
+        for raw_bid in entry.get("bullet_ids_in_order") or []:
             bullet_id = _strip_id_prefix(raw_bid, "b")
             if bullet_id is None:
                 report.skipped_due_to_malformed_payload += 1
                 continue
-            bullet_row = (
-                session.query(Bullet)
-                .filter_by(
-                    id=bullet_id,
-                    experience_id=experience.id,
+            bullet_ids.append(bullet_id)
+        # Chosen title — optional in the schema but the prompt requests it
+        parsed.append((exp_id, _strip_id_prefix(entry.get("chosen_title_id"), "t"), bullet_ids))
+
+    owned = _owned_experience_ids(session, candidate_id, {p[0] for p in parsed})
+    wanted_titles = {t for e, t, _ in parsed if e in owned and t is not None}
+    title_exp: dict[int, int] = (
+        {
+            tid: eid
+            for tid, eid in session.query(ExperienceTitle.id, ExperienceTitle.experience_id)
+            .filter(ExperienceTitle.id.in_(wanted_titles))
+            .all()
+        }
+        if wanted_titles
+        else {}
+    )
+    wanted_bullets = {b for e, _, bids in parsed if e in owned for b in bids}
+    bullet_exp: dict[int, int] = (
+        {
+            bid: eid
+            for bid, eid in session.query(Bullet.id, Bullet.experience_id)
+            .filter(Bullet.id.in_(wanted_bullets))
+            .all()
+        }
+        if wanted_bullets
+        else {}
+    )
+
+    titled: set[int] = set()
+    placed: set[int] = set()
+    next_position: dict[int, int] = {}
+    for exp_id, chosen_title_id, bullet_ids in parsed:
+        # Verify experience belongs to this candidate
+        if exp_id not in owned:
+            report.experiences_referenced_but_missing.append(exp_id)
+            continue
+
+        if chosen_title_id is not None:
+            if title_exp.get(chosen_title_id) != exp_id:
+                report.titles_referenced_but_missing.append(chosen_title_id)
+            elif exp_id in titled:
+                report.duplicate_selections_skipped += 1
+            else:
+                session.add(
+                    ApplicationRunTitle(
+                        application_run_id=application_run.id,
+                        experience_id=exp_id,
+                        experience_title_id=chosen_title_id,
+                    )
                 )
-                .first()
-            )
-            if bullet_row is None:
+                titled.add(exp_id)
+                report.application_run_titles_created += 1
+
+        # Bullets in order; a bullet must belong to THIS experience (which also
+        # rejects another candidate's bullet).
+        for bullet_id in bullet_ids:
+            if bullet_exp.get(bullet_id) != exp_id:
                 report.bullets_referenced_but_missing.append(bullet_id)
                 continue
+            if bullet_id in placed:
+                report.duplicate_selections_skipped += 1
+                continue
+            position = next_position.get(exp_id, 0)
             session.add(
                 ApplicationBullet(
                     application_run_id=application_run.id,
-                    bullet_id=bullet_row.id,
+                    bullet_id=bullet_id,
                     position=position,
                 )
             )
+            next_position[exp_id] = position + 1
+            placed.add(bullet_id)
             report.application_bullets_created += 1
     session.flush()
 
@@ -271,9 +318,16 @@ def _persist_proposed_bullets(
     `proposals` is typed `list[Any]`, not `list[dict[str, Any]]`, because each
     entry is untrusted LLM JSON — the `isinstance(entry, dict)` guard below is
     live defense against a malformed (non-dict) entry, not dead code.
+
+    A proposal whose text its experience already has — active, retired, or an
+    earlier generate's still-pending proposal — is skipped, the way
+    `_persist_proposed_titles` skips a known title. One query loads the
+    referenced experiences' bullet texts (which also gives each one's
+    display_order base), and all new bullets flush once before their reviews.
     """
     source_value = f"llm_proposed:{application_run.run_id}"
 
+    parsed: list[tuple[int, str, str | None]] = []
     for entry in proposals:
         if not isinstance(entry, dict):
             report.skipped_due_to_malformed_payload += 1
@@ -284,52 +338,58 @@ def _persist_proposed_bullets(
             report.skipped_due_to_malformed_payload += 1
             continue
 
-        experience = (
-            session.query(Experience)
-            .filter_by(
-                id=exp_id,
-                candidate_id=candidate_id,
-            )
-            .first()
-        )
-        if experience is None:
-            report.experiences_referenced_but_missing.append(exp_id)
-            continue
-
-        pattern_kind = (entry.get("pattern_kind") or "").strip().lower()
+        pattern_kind: str | None = (entry.get("pattern_kind") or "").strip().lower()
         if pattern_kind not in _VALID_PATTERN_KINDS:
             # Common LLM variants → normalize, else null
-            normalized = pattern_kind.replace("-", "").replace("_", "")
+            normalized = (pattern_kind or "").replace("-", "").replace("_", "")
             pattern_kind = normalized if normalized in _VALID_PATTERN_KINDS else None
+        parsed.append((exp_id, text, pattern_kind))
 
-        # Use the last display_order in this experience + 1 (best effort)
-        last_order = (
-            session.query(Bullet)
-            .filter_by(
-                experience_id=experience.id,
-            )
-            .count()
-        )
+    owned = _owned_experience_ids(session, candidate_id, {p[0] for p in parsed})
+    texts: dict[int, set[str]] = {eid: set() for eid in owned}
+    counts: dict[int, int] = dict.fromkeys(owned, 0)
+    if owned:
+        for eid, existing_text in session.query(Bullet.experience_id, Bullet.text).filter(
+            Bullet.experience_id.in_(owned)
+        ):
+            texts[eid].add(existing_text)
+            counts[eid] += 1
+
+    new_bullets: list[Bullet] = []
+    for exp_id, text, pattern_kind in parsed:
+        if exp_id not in owned:
+            report.experiences_referenced_but_missing.append(exp_id)
+            continue
+        if text in texts[exp_id]:
+            report.proposed_bullets_already_present += 1
+            continue
+        texts[exp_id].add(text)
 
         new_bullet = Bullet(
-            experience_id=experience.id,
+            experience_id=exp_id,
             text=text,
-            display_order=last_order,
+            # Use the last display_order in this experience + 1 (best effort)
+            display_order=counts[exp_id],
             is_active=1,
             is_pending_review=1,
             source=source_value,
             pattern_kind=pattern_kind,
             has_outcome=0,  # user decides during review; deterministic check would override
         )
+        counts[exp_id] += 1
         session.add(new_bullet)
-        session.flush()  # need new_bullet.id for the proposal_review FK
+        new_bullets.append(new_bullet)
         report.proposed_bullets_created += 1
 
+    if not new_bullets:
+        return
+    session.flush()  # need each new_bullet.id for its proposal_review FK
+    for new_bullet in new_bullets:
         session.add(
             ProposalReview(
                 application_run_id=application_run.id,
                 bullet_id=new_bullet.id,
-                original_text=text,
+                original_text=new_bullet.text,
                 decision="pending",
                 llm_critique_json=None,
                 user_edited_text=None,
@@ -422,8 +482,20 @@ def _persist_proposed_titles(
 
 
 # ---------------------------------------------------------------------------
-# Helper: ID parsing
+# Helpers: ownership + ID parsing
 # ---------------------------------------------------------------------------
+
+
+def _owned_experience_ids(session: Session, candidate_id: int, exp_ids: set[int]) -> set[int]:
+    """The subset of `exp_ids` that belong to `candidate_id` — one query, not one per id."""
+    if not exp_ids:
+        return set()
+    return {
+        eid
+        for (eid,) in session.query(Experience.id)
+        .filter(Experience.candidate_id == candidate_id, Experience.id.in_(exp_ids))
+        .all()
+    }
 
 
 def _strip_id_prefix(raw: object, expected_prefix: str) -> int | None:

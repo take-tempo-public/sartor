@@ -551,6 +551,16 @@
             <strong>Edit before downloading</strong> to make them again.
           </div>
         </div>
+        <!-- fix/regenerate-persistence (item 160): the generate succeeded but its
+             record didn't save to the application, so resuming it later would open
+             an earlier version; _renderOutput shows this until the next generate. -->
+        <div class="compose-loopback-banner hidden" id="persistFailedNotice" role="status">
+          <div class="compose-loopback-title">This version wasn't saved to the application</div>
+          <div class="compose-loopback-body">
+            You can still download it now, but reopening this application later will show
+            an earlier version. Generating again retries the save.
+          </div>
+        </div>
         <div class="output-tabs" role="tablist" aria-label="Output sections">
           <button class="tab-btn active" id="tabBtnResume" onclick="showTab('resume', this)" role="tab" aria-controls="tabResume" aria-selected="true">Résumé</button>
           <button class="tab-btn" id="tabBtnCoverLetter" onclick="showTab('coverLetter', this)" role="tab" aria-controls="tabCoverLetter" aria-selected="false">Cover letter</button>

@@ -51,9 +51,14 @@ chain. Key columns:
 
 - `run_id` — a unique 12-hex correlation primitive (`unique=True`); the same
   token threaded through telemetry and the prompt cache.
-- `iteration` + `parent_run_id` (self-FK, `ondelete="SET NULL"`) — the
-  in-DB iteration lineage, mirroring the file chain's `parent_context_path`
-  `[synthesis]`.
+- `iteration` + `parent_run_id` (self-FK, `ondelete="SET NULL"`) — set once at
+  creation (`iteration=0, parent_run_id=None`, in
+  [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py))
+  and never updated: every generate of an application reuses that one
+  `ApplicationRun` row
+  ([`db/persist_run.py` module docstring](../../../db/persist_run.py)). The
+  per-iteration audit trail lives in the context-file chain instead
+  (`context_*.json` with `parent_context_path` pointers) `[synthesis]`.
 - `prompt_version` — stamped at creation from
   [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py) (imported into
   `build_context.py`), so a run's output is attributable to a prompt revision.
@@ -87,11 +92,20 @@ audit record can never dangle `[synthesis]`.
 `experience_title` framing each experience used for the run.
 
 Both are written by
-[`db/persist_run.py:_persist_selected_bullets`](../../../db/persist_run.py),
-which parses the LLM's prefixed IDs (`e3`, `t12`, `b41`) via `_strip_id_prefix`
-and validates each against the candidate's own rows before inserting —
-hallucinated or cross-candidate IDs are recorded in the `PersistReport` and
-skipped, never inserted `[synthesis]`.
+[`db/persist_run.py:_persist_selected_bullets`](../../../db/persist_run.py).
+It first deletes the run's existing `ApplicationBullet` and `ApplicationRunTitle`
+rows, then inserts the latest selection (replace, not append — owner decision D1,
+item 160), all within the caller's single transaction. The function parses the
+LLM's prefixed IDs (`e3`, `t12`, `b41`) via `_strip_id_prefix` and validates
+each against the candidate's own rows before inserting `[synthesis]`. A bullet ID
+repeated within one result or a second title for an already-titled experience
+would violate the run's unique keys and is skipped, counted in
+`PersistReport.duplicate_selections_skipped`. Hallucinated or cross-candidate IDs
+are also recorded in the `PersistReport` and skipped `[synthesis]`. Lookups use
+one `IN` query per kind (experiences, titles, bullets) via
+`_owned_experience_ids` so the statement count is constant, and `position` is
+counted per experience so multi-experience selections preserve their per-exp
+order `[synthesis]`.
 
 ## `ProposalReview` — what the LLM proposed changing
 
@@ -100,7 +114,11 @@ The LLM may also propose *new* bullets/titles.
 `_persist_proposed_titles` create the new `Bullet` / `ExperienceTitle` rows as
 `is_pending_review=1, source="llm_proposed:<run_id>"`, then anchor each with a
 [`db/models.py:ProposalReview`](../../../db/models.py) row at
-`decision="pending"`. A `ck_proposal_review_subject_xor` CHECK enforces exactly
+`decision="pending"`. A proposed bullet whose text the experience already has
+(whether active, retired, or an earlier generate's still-pending proposal) is
+skipped, counted in `PersistReport.proposed_bullets_already_present`, mirroring
+`_persist_proposed_titles`' existing text deduplication logic `[synthesis]`.
+A `ck_proposal_review_subject_xor` CHECK enforces exactly
 one of `bullet_id` / `experience_title_id`; `decision` is constrained to
 `pending | accept_original | accept_edit | reject`. The user's verdict is
 applied in the decide route
@@ -115,6 +133,7 @@ applied in the decide route
 ## Persist entry points + the cover-letter carve-out
 
 After the résumé step of [`blueprints/generation.py:run_generation`](../../../blueprints/generation.py)
+or [`blueprints/generation.py:run_generation_stream`](../../../blueprints/generation.py)
 completes — the LLM `generate()` call, OR (Phase 4) the zero-LLM deterministic
 frozen-composition assemble; both return the same result-dict shape (see
 [[corpus-to-output-reach]] / [[pipeline-stages]] Step 5) — 
@@ -122,8 +141,14 @@ frozen-composition assemble; both return the same result-dict shape (see
 looks up the run, re-validates `candidate_id`, calls
 [`db/persist_run.py:persist_corpus_generation`](../../../db/persist_run.py)
 (which writes the md, the bullet/title rows, the proposals, and one
-`IterationLog` "generate" row), and commits. The detached cover-letter route
-uses a separate write-back,
+`IterationLog` "generate" row), and commits `[synthesis]`. `persist_corpus_generation`
+writes `generated_resume_md` on every call, but only writes `generated_cover_letter_md`
+if the result carries a non-empty letter — a résumé-only regenerate leaves any
+previously-stored letter intact ([`db/persist_run.py` module docstring](../../../db/persist_run.py))
+`[synthesis]`. A persist failure is caught by both routes, logged at ERROR level,
+and reported in the response as `persist_failed: true` so the frontend knows the
+DB audit trail is out of sync and resuming would show an older résumé (item 160)
+`[synthesis]`. The detached cover-letter route uses a separate write-back,
 [`blueprints/generation.py:_persist_cover_letter_to_db`](../../../blueprints/generation.py) →
 [`db/persist_run.py:persist_cover_letter_md`](../../../db/persist_run.py),
 which writes **only** `generated_cover_letter_md` — routing it through the full
