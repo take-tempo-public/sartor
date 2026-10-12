@@ -120,8 +120,12 @@ sequence). Each gates on `_safe_username` at entry:
   when Compose has changed since Save and continue froze the composition
   (fix/frozen-composition-staleness, items 106/66); the 409 carries
   `{error, composition_stale: true}` and both success responses gain
-  `edited_resume_text` and `edits_discarded`
-  ([`_typed_edits_disposition`](../../../blueprints/generation.py)) `[synthesis]`.
+  `edited_resume_text`, `edits_discarded`, and `persist_failed` (true when corpus DB
+  write-back fails; item 160)
+  ([`_typed_edits_disposition`](../../../blueprints/generation.py);
+  `persist_failed` is set in the persist `except` of
+  [`run_generation`](../../../blueprints/generation.py) and
+  [`run_generation_stream`](../../../blueprints/generation.py)) `[synthesis]`.
   Both also share a hard block at 422 via
   [`_month_block_response`](../../../blueprints/generation.py) when an included
   experience role (work, not education) has year-only ISO dates; the block names

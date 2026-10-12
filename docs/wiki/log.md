@@ -2708,3 +2708,48 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   index presence) over the five pages: no ERROR. `scripts/check_doc_links.py`: 633 files, no
   broken links or cites. `scripts/wiki_freshness.py`:
   `OK (35 file(s) changed since the last ingest (< 75-file block threshold))`.
+
+## 2026-10-12 — scoped self-update pass (`fix/regenerate-persistence`)
+
+- **Mode:** a branch close-out **scoped** pass over this branch's own diff (`main...HEAD`,
+  `cfab8e0` → `5db5d75`), with owner-authorized spend. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged; scoped passes never advance it).
+- **Wiki-relevant changes in the diff (4):** `db/persist_run.py`, `blueprints/generation.py`,
+  `static/app.js`, `templates/index.html` (per `scripts/wiki_relevance.py`).
+- **Pages changed (3):**
+  - `application-audit-chain`:
+    - `iteration`/`parent_run_id` are set once and never updated;
+    - `_persist_selected_bullets` replaces the run's rows and skips duplicates within a result;
+    - proposed-bullet text dedupe;
+    - the cover letter is written only when the result has one;
+    - `persist_failed`.
+  - `route-surface`: `persist_failed` on both generate routes.
+  - `frontend-wizard`: `#persistFailedNotice`.
+
+  One `wiki-scribe` and one `wiki-grounding-auditor` ran per page (author ≠ auditor).
+  `index.md` is unchanged: the three topic lines still describe their pages.
+- **Verified no-edit:**
+  - `pipeline-stages` ("persisted … a no-op for file-only contexts" still holds);
+  - `iteration-audit-chain` (covers `carry_edits` only);
+  - `corpus-data-model` (the retire-not-delete rationale still holds);
+  - `generation-and-grounding` (describes the prompt, not the persist).
+- **Auditor catch-rate: 0 caught on 3 pages.**
+- **Caught in orchestrator review (3), none by the auditor:**
+  - `route-surface`: the scribe cited `generation.py:1232` and `:1546` by line number.
+    Re-anchored to the `run_generation` / `run_generation_stream` symbols before the audit,
+    since line cites rot.
+  - `frontend-wizard`: the new sentence split "A resumed application … needs neither" from
+    the two notices it referred to. Moved after it before the audit.
+  - `application-audit-chain`: the scribe wrote that the columns are "defined for future
+    expansion". No source states an intent. The auditor marked it SUPPORTED. Corrected with
+    owner approval to the observable fact (set once at creation in
+    `build_context_set_from_db`, never updated).
+- **Retune signal:** repeats the previous pass's. The auditor checked that symbols exist, not
+  whether the scribe's characterization (here, an intent) is sourced, even when told to flag
+  intent claims.
+- **Gates:**
+  - Scoped ERROR checks (backlinks resolve, `path:line` within file, index presence) over
+    the three pages: no ERROR.
+  - `scripts/check_doc_links.py`: 637 files, no broken links or cites.
+  - `scripts/wiki_freshness.py`: `OK (36 file(s) changed since the last ingest (< 75-file
+    block threshold))`.
