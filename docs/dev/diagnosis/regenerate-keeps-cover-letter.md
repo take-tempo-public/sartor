@@ -1,7 +1,7 @@
 # Diagnosis — a résumé-only regenerate blanks the cover letter in the context (item 162)
 
 > **Status:** the effect is OBSERVED on the routes, in the context file and in the browser
-> (O1–O7), and the mechanism is isolated to `save_iteration_context` (O9). Only the
+> (O1–O7, O9), and the mechanism is isolated to `save_iteration_context` (O11). Only the
 > edit-detect diff (I2) is still inferred, and the fix doesn't depend on it.
 > **Branch:** `fix/regenerate-keeps-cover-letter`
 
@@ -132,7 +132,44 @@ hits, all assignments (`static/app.js:27, 522, 1770, 1863, 2792, 6744, 6828`). D
 reads the editor text (O7), so the response's `cover_letter_path` being `""` (O1) has no
 reader. The fix doesn't need to make it usable.
 
-### O9. The helper alone does it (probe, run from the repo root)
+### O9. The discard branch drops the typed letter edit too (B8, `main` tree, 2026-10-12)
+
+Added after the consumer enumeration found decision 4's discard (`blueprints/generation.py:
+858-902`). Drive (frozen path): generate, detach a letter, `/api/save-edits` with BOTH a
+résumé edit and a letter edit, change a bullet in Compose, re-approve, regenerate. The
+controls held (`edits_discarded: true`, résumé edit gone from the context and the DB); the
+failure is the defect assertion on the letter edit:
+
+```
+$ python -m pytest tests/test_regenerate_cover_letter.py -k "b8 or c3" -p no:rerunfailures -p no:cacheprovider -q -rA --runxfail
+FAILED tests/test_regenerate_cover_letter.py::test_b8_a_typed_letter_edit_survives_a_discarded_resume_edit
+E   assert None == 'ZEBRA-TYPED-LETTER a hand edit the candidate saved over the letter'
+================= 1 failed, 1 passed, 8 deselected in 15.41s ==================
+```
+
+```
+{"arm": "B8", ..., "edits_discarded": true, "body_edited_resume_text": "", "body_edited_cover_letter_text": null, "body_cover_letter_preview": "", "child_edited_resume_text": null, "child_edited_cover_letter_text": null, "child_last_generated_cover_letter": "", "db_edited_resume_text": null, "db_edited_cover_letter_text": null}
+```
+
+The letter edit is gone from the context (popped) and the run row (nulled by
+`_clear_run_edits`), and the generated letter is `""` again. D4 reverses the first two.
+
+### O10. A with-letter generate leaves the DB edit shadowing the new letter (C3, pre-existing)
+
+Control C3 (generate, letter, save a typed letter edit, then a with-letter generate that
+returns a new letter) passes: the context consumes the edit and holds the new letter. Its
+record shows the DB side did not follow:
+
+```
+{"arm": "C3", ..., "run_cover_letter_md": "ZEBRA-REWRITTEN a second, regenerated cover letter", "resume_state_cover_letter_md": "ZEBRA-TYPED-LETTER a hand edit the candidate saved over the letter", "child_last_generated_cover_letter": "ZEBRA-REWRITTEN a second, regenerated cover letter", "child_edited_cover_letter_text": null}
+```
+
+`resume_state` reads `edited_cover_letter_text or generated_cover_letter_md`
+(`blueprints/applications.py:445`), so resuming from Pipeline shows the typed text while the
+wizard shows the new letter. This is not item 162's defect and not changed here; it is filed
+at close-out (see the blast-radius dossier's Deferred).
+
+### O11. The helper alone does it (probe, run from the repo root)
 
 `hardening.save_iteration_context` called directly, once with `""` and once with a new
 letter, from a parent holding `last_generated_cover_letter="PARENT LETTER"` and
@@ -198,7 +235,7 @@ to confirm. It is not an observed defect: O4 only shows the edit is dropped.
 
 ---
 
-## Owner decisions (2026-10-12, taken after the HTTP arms and the probe: O1–O6, O9)
+## Owner decisions (2026-10-12; D1-D3 taken after the HTTP arms and the probe, O1–O6 and O11; D4 after the consumer enumeration)
 
 - **D1, placement:** the rule lives in `hardening.save_iteration_context`, not in the two
   route callers. A generate that produced no letter keeps the parent's

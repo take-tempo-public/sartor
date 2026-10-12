@@ -42,7 +42,8 @@ import pytest
 import analyzer
 import blueprints.analysis as banalysis
 import blueprints.generation as bgen
-from tests.test_frozen_composition_staleness import USER, _parse_sse
+from tests.test_frozen_composition_staleness import B1, EDITED, USER, _freeze, _parse_sse
+from tests.test_frozen_composition_staleness import TYPED as TYPED_RESUME
 from tests.test_frozen_composition_staleness import rig as _rig_fixture
 from tests.test_regenerate_persistence import _follow, _observe
 from tests.test_regenerate_persistence import persists as _persists_fixture
@@ -202,9 +203,38 @@ class TestControls:
         assert second["cover_letter_preview"] == REWRITTEN, rec
         assert rec["run_cover_letter_md"] == REWRITTEN, rec
 
+    def test_c3_a_with_letter_generate_consumes_the_typed_edit(self, rig, persists, monkeypatch):
+        """The typed letter edit fed the prompt, so the new letter replaces it (not kept)."""
+        _generate_stub(
+            monkeypatch,
+            rig,
+            {"resume_content": "# FIRST"},
+            {"resume_content": "# SECOND", "cover_letter_content": REWRITTEN},
+        )
+        first = _post_generate(rig)
+        _follow(rig, first["context_path"])
+        _detach_letter(rig, monkeypatch)
+        saved = rig.client.post(
+            "/api/save-edits",
+            json={"username": USER, "context_path": rig.cp, "edited_cover_letter": TYPED},
+        )
+        assert saved.status_code == 200, saved.get_data(as_text=True)
+        second = _post_generate(rig, generate_cover_letter=True)
+        rec = _observe(
+            rig,
+            persists,
+            "C3",
+            **_ctx_letters(rig, second["context_path"]),
+            cover_letter_preview=second["cover_letter_preview"],
+            after_shows_typed=TYPED in _letter_preview(rig, second["context_path"]),
+        )
+        assert rec["child_last_generated_cover_letter"] == REWRITTEN, rec
+        assert rec["child_edited_cover_letter_text"] is None, rec
+        assert rec["after_shows_typed"] is False, rec
+
 
 # -------------------------------------------------------------------
-# Defect invariants (diagnosis B1-B6)
+# Defect invariants (diagnosis B1-B6, B8)
 # -------------------------------------------------------------------
 
 
@@ -334,3 +364,65 @@ def test_b6_the_next_with_letter_generate_is_handed_the_prior_letter(rig, persis
     _control(seen[-1]["with_cover_letter"] is True, rec)
     _control(seen[1]["draft"] == LETTER, rec)
     assert seen[-1]["draft"] == LETTER, rec
+
+
+@DEFECT
+def test_b8_a_typed_letter_edit_survives_a_discarded_resume_edit(rig, persists, monkeypatch):
+    """Owner decision D4: decision 4's discard drops the typed RÉSUMÉ edit, never the letter's.
+
+    Drive (the frozen path): generate, detach a letter, type edits into BOTH documents,
+    change a bullet in Compose and re-approve, regenerate. The résumé edit is discarded
+    and announced (`edits_discarded`, the DB column cleared) — decision 4, held as a
+    control. The typed letter edit must stay in the context AND on the run row.
+    """
+    from db.models import ApplicationRun
+    from db.session import get_session
+
+    _freeze(rig)
+    first = rig.generate()
+    _control(first["status"] == 200, first)
+    _follow(rig, first["child"])
+    _detach_letter(rig, monkeypatch)
+    saved = rig.client.post(
+        "/api/save-edits",
+        json={
+            "username": USER,
+            "context_path": rig.cp,
+            "edited_resume": first["resume_md"].replace(B1, TYPED_RESUME),
+            "edited_cover_letter": TYPED,
+        },
+    )
+    _control(saved.status_code == 200, saved.get_data(as_text=True))
+    rig.compose_corpus_edit("PUT", f"/api/bullets/{rig.ids['b1']}", {"text": EDITED})
+    _freeze(rig)
+    body = _post_generate(rig)
+
+    session = get_session()
+    try:
+        run = session.query(ApplicationRun).filter_by(id=rig.ctx()["application_run_id"]).one()
+        db_edited_resume, db_edited_letter = run.edited_resume_text, run.edited_cover_letter_text
+    finally:
+        session.close()
+    child = rig.ctx(body["context_path"])
+    rec = _observe(
+        rig,
+        persists,
+        "B8",
+        edits_discarded=body.get("edits_discarded"),
+        body_edited_resume_text=body.get("edited_resume_text"),
+        body_edited_cover_letter_text=body.get("edited_cover_letter_text"),
+        body_cover_letter_preview=body.get("cover_letter_preview"),
+        child_edited_resume_text=child.get("edited_resume_text"),
+        child_edited_cover_letter_text=child.get("edited_cover_letter_text"),
+        child_last_generated_cover_letter=child.get("last_generated_cover_letter"),
+        db_edited_resume_text=db_edited_resume,
+        db_edited_cover_letter_text=db_edited_letter,
+    )
+    # Controls: decision 4 still discards the typed résumé edit, announced and cleared.
+    _control(rec["edits_discarded"] is True, rec)
+    _control("edited_resume_text" not in child, rec)
+    _control(db_edited_resume is None, rec)
+    # The defect invariants (D4): the letter edit, and the letter, are kept.
+    assert child.get("edited_cover_letter_text") == TYPED, rec
+    assert db_edited_letter == TYPED, rec
+    assert child.get("last_generated_cover_letter") == LETTER, rec
