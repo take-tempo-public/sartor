@@ -1,9 +1,8 @@
 # Diagnosis — a résumé-only regenerate blanks the cover letter in the context (item 162)
 
-> **Status:** the effect is OBSERVED at the HTTP and context-file level on every surface the
-> arms reach (O1–O6), and the mechanism is isolated to `save_iteration_context` (O7). The
-> browser-level effect (the Download/Generate button swap and the blanked editor) is still
-> only inferred from code (I1).
+> **Status:** the effect is OBSERVED on the routes, in the context file and in the browser
+> (O1–O7), and the mechanism is isolated to `save_iteration_context` (O9). Only the
+> edit-detect diff (I2) is still inferred, and the fix doesn't depend on it.
 > **Branch:** `fix/regenerate-keeps-cover-letter`
 
 ---
@@ -103,7 +102,37 @@ C1: a first generate with no letter correctly has none. C2: a regenerate that do
 letter replaces it in the context, the response and the DB. So the defect is specific to a
 generate that produces no letter.
 
-### O7. The helper alone does it (probe, run from the repo root)
+### O7. The wizard shows it (B7, real browser)
+
+`tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py`, run on the same tree
+(2026-10-12). The drive is the real wizard with the LLM entry points stubbed: analyze →
+Compose → Template → Generate → "+ Generate cover letter" → rail Step 5 → Generate. The
+controls held first (`ControlFailed` was not raised); the failure is the defect assertion:
+
+```
+$ python -m pytest tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py -m ux -p no:rerunfailures -p no:cacheprovider -q -rA --runxfail
+FAILED tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py::test_b7_the_wizard_keeps_the_cover_letter_after_a_resume_regenerate
+======================== 1 failed in 91.55s (0:01:31) =========================
+E   AssertionError: {'editor_text': '', 'generate_visible': True, 'download_visible': False, 'download_would_send': ''}
+```
+
+```
+{"arm": "B7", "before_letter": {"editor_text": "", "generate_visible": true, "download_visible": false, "download_would_send": ""}, "with_letter": {"editor_text": "ZEBRA-LETTER first detached cover letter for the billing role", "generate_visible": false, "download_visible": true, "download_would_send": "ZEBRA-LETTER first detached cover letter for the billing role"}, "after_regenerate": {"editor_text": "", "generate_visible": true, "download_visible": false, "download_would_send": ""}}
+```
+
+After the regenerate the editor is empty, "+ Generate cover letter" is back and "Download
+cover letter" is hidden. `download_would_send` is what `downloadCoverLetter()` posts as
+`content` (`_readEditorText('coverLetterPreview')`, `static/app.js:3488`): it is `""`, so
+the user has lost the letter in the browser, not only in the context file.
+
+### O8. Nothing reads `lastCoverLetterPath` (grep, negative result)
+
+`rg lastCoverLetterPath` over `static/`, `templates/`, `ui_pages/` and `scripts/`: seven
+hits, all assignments (`static/app.js:27, 522, 1770, 1863, 2792, 6744, 6828`). Download
+reads the editor text (O7), so the response's `cover_letter_path` being `""` (O1) has no
+reader. The fix doesn't need to make it usable.
+
+### O9. The helper alone does it (probe, run from the repo root)
 
 `hardening.save_iteration_context` called directly, once with `""` and once with a new
 letter, from a parent holding `last_generated_cover_letter="PARENT LETTER"` and
@@ -145,22 +174,18 @@ the typed-edit key is popped whether or not that generate consumed it
 Nothing was falsified. Every filed or inferred effect that was instrumented reproduced. The
 plan's candidate list (client, styled preview, iteration interview, edit-detect, next
 with-letter generate, typed-edit sibling) was widened beyond item 162's filed text; the
-arms covered all of them except the client DOM (I1) and edit-detect (I2).
+arms covered all of them except edit-detect (I2).
 
 ---
 
 ## Inferred
 
-- **I1. The wizard's DOM shows the loss.** `_onGenerationComplete` sets
-  `lastGeneratedCoverLetter = data.cover_letter_preview || ''` (`static/app.js:1801`),
-  `_updateCoverLetterButtons` shows Generate instead of Download when it is empty
-  (`:1829-1831`), and `_renderOutput` blanks `#coverLetterPreview` (`:3283`). That follows
-  from O1's `cover_letter_preview: ""`, but no browser was driven. Seeing it needs a UX arm.
 - **I2. Edit-detect diffs a later letter edit against `""`.** `summarize_recent_edits`
   (`hardening.py:1959`) reads `last_generated_cover_letter`, which O1 shows is `""`. Not
-  run as its own arm.
-- **I3. Whether `cover_letter_path == ""` breaks Download.** O1 shows the response carries
-  `""`; what the Download button does with it was not observed.
+  run as its own arm. The fix doesn't depend on it: it restores the value the diff reads.
+
+The two earlier inferences about the browser (the DOM losing the letter; whether
+`cover_letter_path == ""` breaks Download) are now O7 and O8.
 
 ---
 
@@ -173,9 +198,25 @@ to confirm. It is not an observed defect: O4 only shows the edit is dropped.
 
 ---
 
+## Owner decisions (2026-10-12, taken after the HTTP arms and the probe: O1–O6, O9)
+
+- **D1, placement:** the rule lives in `hardening.save_iteration_context`, not in the two
+  route callers. A generate that produced no letter keeps the parent's
+  `last_generated_cover_letter`; one that produced a letter replaces it (C2 holds).
+- **D2, typed edit:** `edited_cover_letter_text` survives a generate that did not consume it
+  (a résumé-only one) and is popped only by a generate that produced a letter. This is a new
+  contract, decided by the owner; it was not an observed defect (see Falsification).
+- **D3, browser arm first:** B7 runs before the fix shape is final, so the DOM effect and
+  the Download path are observed rather than built on. Result: O7 and O8. The routes need
+  not return a usable `cover_letter_path`; the fix is the context value and the response's
+  `cover_letter_preview`.
+
+---
+
 ## The fix
 
-_Not yet. The shape is the owner's call after this dossier (plan Step 2)._
+_Not yet. The C-10 consumer dossier (`docs/dev/blast-radius/regenerate-keeps-cover-letter.md`)
+comes first, then the fix commit._
 
 ---
 
