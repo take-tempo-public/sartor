@@ -18,7 +18,9 @@ as well as the bullet rows, the cover letter, proposals, a duplicate within ONE
 result, and whether a persist failure reaches the user at all. Each A-arm isolates
 one mechanism (A4 and A5 select no bullets, so the bullet collision can't mask them).
 
-Defect invariants are `xfail(strict=True)`; controls must pass.
+The defect invariants were `xfail(strict=True)` on the base tip (quoted in the
+diagnosis, `--runxfail`); the fix commit deleted only those markers. Controls held
+throughout.
 """
 
 from __future__ import annotations
@@ -188,7 +190,7 @@ class TestControls:
 
 
 # -------------------------------------------------------------------
-# Defect invariants (xfail strict on the base tip)
+# Defect invariants (failed on the base tip; diagnosis O1-O7)
 # -------------------------------------------------------------------
 
 
@@ -208,7 +210,6 @@ def _regenerate_after_reapproval(rig, how: str) -> tuple[dict[str, Any], dict[st
     return first, second
 
 
-@pytest.mark.xfail(strict=True, reason="item 160: the second persist rolls back")
 @pytest.mark.parametrize("how", ["json", "stream"])
 def test_a1_a2_regenerate_reaches_the_run_and_resume_state(rig, persists, how):
     _first, second = _regenerate_after_reapproval(rig, how)
@@ -219,7 +220,6 @@ def test_a1_a2_regenerate_reaches_the_run_and_resume_state(rig, persists, how):
     assert rec["iteration_logs"] == 2, rec
 
 
-@pytest.mark.xfail(strict=True, reason="item 160: bullet + title rows re-inserted, not replaced")
 def test_a3_the_run_rows_are_the_latest_selection(rig, persists, monkeypatch):
     exp, b1, b2 = rig.ids["exp"], rig.ids["b1"], rig.ids["b2"]
     t_official, t_alt = _official_title_id(rig), _add_alt_title(rig)
@@ -260,7 +260,6 @@ def test_a3_the_run_rows_are_the_latest_selection(rig, persists, monkeypatch):
     assert rec["run_resume_md"] == second["resume_md"], rec
 
 
-@pytest.mark.xfail(strict=True, reason="a resume-only regenerate blanks the detached letter")
 def test_a4_a_resume_only_regenerate_keeps_the_detached_cover_letter(rig, persists, monkeypatch):
     import analyzer
 
@@ -293,7 +292,6 @@ def test_a4_a_resume_only_regenerate_keeps_the_detached_cover_letter(rig, persis
     assert rec["resume_state_cover_letter_md"] == LETTER, rec
 
 
-@pytest.mark.xfail(strict=True, reason="proposed bullets are re-created on every generate")
 def test_a5_the_same_proposal_twice_is_one_pending_bullet(rig, persists, monkeypatch):
     proposal = {
         "proposed_new_bullets": [
@@ -312,7 +310,6 @@ def test_a5_the_same_proposal_twice_is_one_pending_bullet(rig, persists, monkeyp
     assert rec["proposal_reviews"] == 1, rec
 
 
-@pytest.mark.xfail(strict=True, reason="a duplicate inside ONE result collides on first persist")
 def test_a6_a_duplicate_within_one_result_still_persists(rig, persists, monkeypatch):
     exp, b1, b2 = rig.ids["exp"], rig.ids["b1"], rig.ids["b2"]
     t_official = _official_title_id(rig)
@@ -344,7 +341,6 @@ def test_a6_a_duplicate_within_one_result_still_persists(rig, persists, monkeypa
     assert [bid for bid, _ in rec["bullets"]] == [b1, b2], rec
 
 
-@pytest.mark.xfail(strict=True, reason="a persist failure is only logged; the user is told nothing")
 @pytest.mark.parametrize("how", ["json", "stream"])
 def test_a7_a_persist_failure_reaches_the_response(rig, monkeypatch, how):
     import db.persist_run
@@ -372,3 +368,37 @@ def test_a7_a_persist_failure_reaches_the_response(rig, monkeypatch, how):
     record = {"arm": f"A7-{how}", "response_keys": sorted(body)}
     print(json.dumps(record))
     assert body.get("persist_failed") is True, record
+
+
+@pytest.mark.parametrize("how", ["json", "stream"])
+def test_a7_control_a_successful_persist_reports_no_failure(rig, how):
+    _freeze(rig)
+    if how == "json":
+        g = rig.client.post(
+            "/api/generate",
+            json={"username": USER, "context_path": rig.cp, "output_format": ".md"},
+        )
+        body = g.get_json()
+    else:
+        from tests.test_frozen_composition_staleness import _parse_sse
+
+        g = rig.client.post(
+            "/api/generate/stream",
+            json={"username": USER, "context_path": rig.cp, "output_format": ".md"},
+        )
+        body = next(p for ev, p in _parse_sse(g.get_data(as_text=True)) if ev == "done")
+    assert body["persist_failed"] is False, sorted(body)
+
+
+def test_the_client_shows_the_persist_failure():
+    """The banner exists, and `_renderOutput` toggles it from the payload field."""
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    html = (repo / "templates" / "index.html").read_text(encoding="utf-8")
+    js = (repo / "static" / "app.js").read_text(encoding="utf-8")
+    assert 'id="persistFailedNotice"' in html
+    start = js.index("function _renderOutput(data)")
+    body = js[start : js.index("\n}\n", start)]
+    assert "getElementById('persistFailedNotice')" in body
+    assert "!data.persist_failed" in body

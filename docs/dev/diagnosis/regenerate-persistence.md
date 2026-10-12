@@ -166,7 +166,39 @@ Per owner decisions D1 and D2 (2026-10-12; plan `nifty-frolicking-planet`):
   banner.
 - **D2d.** The per-row lookups are batched.
 
-Filled in at the fix commit.
+**What changed, by the mechanism each part addresses:**
+
+`db/persist_run.py`:
+- **O1–O3.** `_persist_selected_bullets` deletes the run's `application_bullet` and
+  `application_run_title` rows first, then inserts the latest selection. Both happen in the
+  caller's single transaction, so a failure restores the previous selection.
+- **O5.** Repeated bullet ids and repeated experience titles within one result are skipped and
+  counted in `PersistReport.duplicate_selections_skipped`. `position` counts per experience.
+- **D2d.** Experiences, titles and bullets are resolved with one `IN` query each, through a
+  new `_owned_experience_ids` helper. `test_select_count_does_not_grow_with_the_selection`
+  pins it: the SELECT count is equal for 1 and 20 selected bullets.
+- **O4.** `generated_cover_letter_md` is written only when the result carries a letter.
+- **O6.** `_persist_proposed_bullets` skips a text the experience already has (counted in
+  `proposed_bullets_already_present`). It loads the referenced experiences' texts in one query
+  and flushes once.
+
+`blueprints/generation.py`:
+- **O7.** Both routes return `persist_failed`.
+
+Client:
+- **O7.** `templates/index.html` gains `persistFailedNotice`, and `static/app.js`
+  `_renderOutput` toggles it.
+
+Results, all run with `-p no:rerunfailures`:
+- The instrument's markers are deleted: `tests/test_regenerate_persistence.py` plus
+  `test_persist_run.py`, `test_composition_staleness.py` (tightened) and
+  `test_frozen_composition_staleness.py` give `106 passed in 165.37s`.
+- The related suites (cover letter, application routes, merge/retire, OpenAPI, consumer gate,
+  deterministic generate, iteration, regenerate gap-fill, cover-letter formats) give
+  `191 passed in 247.62s`.
+
+Not fixed here (Deferred in `docs/dev/blast-radius/regenerate-persistence.md`): the
+context-file analogue in O4. The child context's `last_generated_cover_letter` is still `""`.
 
 ---
 

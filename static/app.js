@@ -3283,6 +3283,10 @@ function _renderOutput(data) {
   document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
   document.getElementById('editsDiscardedNotice')
     ?.classList.toggle('hidden', !data.edits_discarded);
+  // fix/regenerate-persistence (item 160): the generate's DB record failed to save,
+  // so resuming this application later would open an earlier version.
+  document.getElementById('persistFailedNotice')
+    ?.classList.toggle('hidden', !data.persist_failed);
 
   // B1 (2026-05-26): the Raw / Rendered toggle was removed; the raw
   // editor stays hidden in the tab body and surfaces inside the edit

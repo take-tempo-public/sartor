@@ -283,9 +283,9 @@ class TestTypedEdits:
         assert body["edits_discarded"] is True and body["edited_resume_text"] == ""
         assert "edited_resume_text" not in rig.ctx(body["context_path"])
         # The run row no longer carries the discarded edit, so resuming the
-        # application can't reload it. (Which generation `resume_md` then shows is a
-        # separate, pre-existing defect: a second generate of the same run never
-        # persists — diagnosis O9 — so it is not asserted here.)
+        # application can't reload it; it shows THIS generate (the re-approved
+        # composition), now that a second generate of the same run persists
+        # (item 160, fix/regenerate-persistence).
         from db.models import ApplicationRun
         from db.session import get_session
 
@@ -297,6 +297,8 @@ class TestTypedEdits:
             s.close()
         rs = rig.client.get(f"/api/applications/{rig.aid}").get_json()["resume_state"]
         assert TYPED not in rs["resume_md"]
+        assert rs["resume_md"] == body["resume_preview"]
+        assert EDITED in rs["resume_md"]
 
 
 # -------------------------------------------------------------------

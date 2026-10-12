@@ -1229,6 +1229,7 @@ def run_generation() -> ResponseReturnValue:
     # for any new bullets/titles the LLM proposed, etc. No-op for file-based
     # contexts (which don't have an application_run_id).
     app_run_id = context_set.get("application_run_id")
+    persist_failed = False
     if app_run_id is not None:
         try:
             if resolved_persona_id is not None:
@@ -1239,8 +1240,11 @@ def run_generation() -> ResponseReturnValue:
                 ats_findings=ats_findings,
             )
         except Exception as exc:
-            # Persistence failure must not break the user's generate flow —
-            # the markdown is already produced and saved to disk. Log loudly.
+            # A persist failure doesn't fail the generate — the markdown is already
+            # produced and saved to disk — but it is reported (`persist_failed`):
+            # resuming the application would otherwise silently show an older
+            # résumé (item 160). Log loudly too.
+            persist_failed = True
             logger.error(
                 "Corpus generation persist failed (run_id=%s): %s", app_run_id, exc, exc_info=True
             )
@@ -1303,6 +1307,9 @@ def run_generation() -> ResponseReturnValue:
                 (context_set.get("edited_resume_text") or "") if carry_edits else ""
             ),
             "edits_discarded": edits_discarded,
+            # fix/regenerate-persistence (item 160): the DB audit write failed, so
+            # resuming this application would show an older résumé; the client says so.
+            "persist_failed": persist_failed,
         }
     )
 
@@ -1536,6 +1543,7 @@ def run_generation_stream() -> ResponseReturnValue:
             date_findings = _check_date_grounding(context_set, result)
 
             app_run_id = context_set.get("application_run_id")
+            persist_failed = False
             if app_run_id is not None:
                 try:
                     if resolved_persona_id is not None:
@@ -1546,6 +1554,8 @@ def run_generation_stream() -> ResponseReturnValue:
                         ats_findings=ats_findings,
                     )
                 except Exception as exc:
+                    # Reported, not raised — mirror the non-streaming route.
+                    persist_failed = True
                     logger.error(
                         "Corpus generation persist failed (run_id=%s): %s",
                         app_run_id,
@@ -1606,6 +1616,8 @@ def run_generation_stream() -> ResponseReturnValue:
                         (context_set.get("edited_resume_text") or "") if carry_edits else ""
                     ),
                     "edits_discarded": edits_discarded,
+                    # fix/regenerate-persistence (item 160) — as /api/generate.
+                    "persist_failed": persist_failed,
                 },
             )
         except anthropic.APIConnectionError as exc:
