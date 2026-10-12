@@ -206,6 +206,15 @@ to confirm. It is not an observed defect: O4 only shows the edit is dropped.
 - **D2, typed edit:** `edited_cover_letter_text` survives a generate that did not consume it
   (a résumé-only one) and is popped only by a generate that produced a letter. This is a new
   contract, decided by the owner; it was not an observed defect (see Falsification).
+- **D4, the discard case (decided after the consumer enumeration):** decision 4 of
+  `fix/frozen-composition-staleness` discards both typed edits when a regenerate
+  re-assembles a different, newly approved résumé (the helper pops them,
+  `_clear_run_edits` nulls both DB columns, the notice says "Your typed edits weren't
+  carried over"). The owner chose to **keep the typed letter edit even then**. Consequences,
+  all in `docs/dev/blast-radius/regenerate-keeps-cover-letter.md`: `_clear_run_edits` leaves
+  the cover-letter column alone, `_typed_edits_disposition` looks at the résumé edit only,
+  and the notice copy is reworded to say it is the résumé edits, and that letter edits are
+  kept.
 - **D3, browser arm first:** B7 runs before the fix shape is final, so the DOM effect and
   the Download path are observed rather than built on. Result: O7 and O8. The routes need
   not return a usable `cover_letter_path`; the fix is the context value and the response's
