@@ -23,13 +23,13 @@ invariant (a saved typed edit survives a résumé regenerate) extends that promi
 `edited_cover_letter_text`; it is a proposal for the owner to confirm, not an observed
 defect, and the dossier says so.
 
-The defect invariants are `xfail(strict=True, raises=AssertionError)` on the base tip
-(quoted in the diagnosis, with `--runxfail`); the fix commit deletes only those markers.
-The controls hold throughout.
+The defect invariants were `xfail(strict=True, raises=AssertionError)` on the base tip
+(quoted in the diagnosis, with `--runxfail`); the fix commit deleted only those markers.
+The controls held throughout.
 
 A control inside a B-arm (the drive worked, the letter rendered before the regenerate)
-raises `ControlFailed`, never a bare `assert`: the marker accepts only `AssertionError`, so
-a broken setup FAILS the arm instead of reading as the expected defect. Only the defect
+raises `ControlFailed`, never a bare `assert`, so a broken setup fails the arm with a
+distinct error instead of being mistaken for the defect it exists to catch. Only the
 invariant itself is a plain `assert`.
 """
 
@@ -56,12 +56,6 @@ LETTER = "ZEBRA-LETTER first detached cover letter for the billing role"
 REWRITTEN = "ZEBRA-REWRITTEN a second, regenerated cover letter"
 TYPED = "ZEBRA-TYPED-LETTER a hand edit the candidate saved over the letter"
 PLACEHOLDER = "No cover letter yet"
-
-DEFECT = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="item 162: a résumé-only regenerate blanks the cover letter",
-)
 
 
 class ControlFailed(Exception):
@@ -238,7 +232,6 @@ class TestControls:
 # -------------------------------------------------------------------
 
 
-@DEFECT
 @pytest.mark.parametrize("how", ["json", "stream"])
 def test_b1_b2_a_resume_only_regenerate_keeps_the_letter_in_the_context(
     rig, persists, monkeypatch, how
@@ -262,7 +255,6 @@ def test_b1_b2_a_resume_only_regenerate_keeps_the_letter_in_the_context(
     assert second["cover_letter_preview"] == LETTER, rec
 
 
-@DEFECT
 def test_b3_the_styled_cover_letter_preview_survives_a_resume_regenerate(
     rig, persists, monkeypatch
 ):
@@ -285,7 +277,6 @@ def test_b3_the_styled_cover_letter_preview_survives_a_resume_regenerate(
     assert LETTER in after, rec
 
 
-@DEFECT
 def test_b4_the_iteration_interview_still_sees_the_letter(rig, persists, monkeypatch):
     _generate_stub(monkeypatch, rig, {"resume_content": "# FIRST"}, {"resume_content": "# SECOND"})
     captured: dict[str, Any] = {}
@@ -313,7 +304,6 @@ def test_b4_the_iteration_interview_still_sees_the_letter(rig, persists, monkeyp
     assert rec["current_cover_letter_text"] == LETTER, rec
 
 
-@DEFECT
 def test_b5_a_saved_typed_letter_edit_survives_a_resume_regenerate(rig, persists, monkeypatch):
     _generate_stub(monkeypatch, rig, {"resume_content": "# FIRST"}, {"resume_content": "# SECOND"})
     first = _post_generate(rig)
@@ -340,7 +330,6 @@ def test_b5_a_saved_typed_letter_edit_survives_a_resume_regenerate(rig, persists
     assert TYPED in after, rec
 
 
-@DEFECT
 def test_b6_the_next_with_letter_generate_is_handed_the_prior_letter(rig, persists, monkeypatch):
     seen = _generate_stub(
         monkeypatch,
@@ -366,7 +355,6 @@ def test_b6_the_next_with_letter_generate_is_handed_the_prior_letter(rig, persis
     assert seen[-1]["draft"] == LETTER, rec
 
 
-@DEFECT
 def test_b8_a_typed_letter_edit_survives_a_discarded_resume_edit(rig, persists, monkeypatch):
     """Owner decision D4: decision 4's discard drops the typed RÉSUMÉ edit, never the letter's.
 

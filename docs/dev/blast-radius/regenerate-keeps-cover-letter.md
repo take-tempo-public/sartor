@@ -1,7 +1,8 @@
 # Blast radius — regenerate-keeps-cover-letter
 
 > **Branch:** `fix/regenerate-keeps-cover-letter`
-> **Status:** enumeration complete, written before the first production edit (charter C-10).
+> **Status:** enumeration complete, written before the first production edit (charter C-10);
+> the fix landed against it, and the Deferred section was corrected after the final design.
 > `hardening.py` is *watched, not gated* in `scripts/enforcement/blast_radius.py`
 > (`ACKNOWLEDGED_NOT_GATED`), so no hook fires; the helper is still the context_set write
 > contract, so this dossier is the receipt. The owner's decisions are D1-D4 in
@@ -126,15 +127,19 @@ letter unless stated). Today vs after:
 
 ## Deferred
 
-- **`carry_edits=True` with a letter produced keeps the typed edit (existing).** Under
-  `carry_edits` the helper pops nothing, so a with-letter frozen regenerate leaves a typed
-  edit that now shadows the new letter in the preview (edited beats generated). Not observed
-  on this branch and not changed: the rule for that case is the owner's decision 4, and the
-  fix here does not depend on it.
+- **`carry_edits=True` with a letter produced keeps the typed edit (existing).** `carry` now
+  needs a typed *résumé* edit (row 3), so this is the frozen, same-résumé, with-letter case
+  where a résumé edit also exists: the helper pops nothing, so a typed letter edit shadows
+  the new letter in the preview (edited beats generated). Not observed on this branch and
+  not changed: the rule for that case is decision 4's, and the fix doesn't depend on it.
 - **I2, the edit-detect diff** (`hardening.py:1959`): unobserved. The fix restores the value
   it reads.
-- **Pre-existing:** the `edited_cover_letter_text` DB column is cleared by nothing but the
-  row-4 path; unchanged apart from row 4.
+- **The DB edit shadows a newly generated letter (observed, O10; pre-existing).** A
+  with-letter generate consumes the typed edit in the context but not on the `ApplicationRun`
+  row, and `resume_state` reads `edited_cover_letter_text or generated_cover_letter_md`
+  (`blueprints/applications.py:445`), so resuming from Pipeline shows the typed text, not the
+  new letter. Control C3 records it. Out of this item's scope (item 162 is the context file);
+  filed at close-out as its own item.
 
 ---
 

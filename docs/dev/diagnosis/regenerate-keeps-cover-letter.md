@@ -261,15 +261,57 @@ to confirm. It is not an observed defect: O4 only shows the edit is dropped.
 
 ## The fix
 
-_Not yet. The C-10 consumer dossier (`docs/dev/blast-radius/regenerate-keeps-cover-letter.md`)
-comes first, then the fix commit._
+Per owner decisions D1-D4, after the C-10 consumer dossier
+(`docs/dev/blast-radius/regenerate-keeps-cover-letter.md`). By the mechanism each part
+addresses:
+
+`hardening.py`:
+- **O1-O6, O9, O11.** New pure `resolve_cover_letter_after_generate(parent, generated,
+  carry_edits=)` returns `(letter, typed_edit)`. A generate that produced a letter replaces
+  the stored one and consumes the typed edit (kept under `carry_edits`, as before); one that
+  produced none leaves both alone. `save_iteration_context` applies it to the child file.
+  The résumé edit is still consumed unconditionally.
+
+`blueprints/generation.py`:
+- **O1.** Both routes return `cover_letter_preview` from the same resolver the file used, so
+  the response and the file agree, and gain `edited_cover_letter_text` (additive, mirroring
+  `edited_resume_text`).
+- **O9 (D4).** `_typed_edits_disposition` looks at the résumé edit only, and
+  `_clear_run_edits` nulls only `edited_resume_text`.
+- `_built_from_edited_baseline`: the iteration note says "from edited baseline" for a
+  letter edit only when that generate produced a letter.
+
+Client:
+- **O7.** `_renderOutput` prefers `data.edited_cover_letter_text` for the editor, as it does
+  for the résumé. The "edits weren't carried over" notice is reworded to the résumé edits
+  and says typed letter edits are kept.
+
+Tests: the instrument's markers are deleted; `tests/test_hardening_iteration.py` gains the
+resolver table (6 cases) and 4 helper tests; `tests/test_app_iteration.py::
+test_generate_consumes_edits_from_context` now asserts the letter edit stays (the one test
+that pinned the old contract).
+
+Results (all `-p no:rerunfailures`, 2026-10-12):
+- the instrument (10 arms) + `test_hardening_iteration.py` + `test_app_iteration.py` +
+  `test_composition_staleness.py`: `71 passed in 48.27s`;
+- the consumers named in the dossier (persistence, frozen staleness, persist-run,
+  detached cover letter, live preview, analyzer iteration, write races, deterministic
+  generate, application routes, gap fill, OpenAPI): `282 passed in 155.13s`;
+- UX: B7 + the wizard-flow-polish generate drive + the happy path: `4 passed in 78.63s`;
+- `python -m mypy hardening.py blueprints/generation.py`: no issues.
+
+Not fixed here (Deferred in the blast-radius dossier): O10, the DB edit shadowing a new
+letter in `resume_state`; and the stale typed edit under `carry_edits` with a produced
+letter.
 
 ---
 
 ## Acceptance bar
 
-- Every `xfail` marker in `tests/test_regenerate_cover_letter.py` is deleted, and all arms
-  and controls pass with `-p no:rerunfailures`.
-- C2 still passes: a regenerate that produces a letter replaces the old one everywhere.
+- Every `xfail` marker in `tests/test_regenerate_cover_letter.py` and in
+  `tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py` is deleted, and all
+  arms and controls pass with `-p no:rerunfailures`. (Met, see "The fix".)
+- C2 and C3 still pass: a regenerate that produces a letter replaces the old one and
+  consumes the typed edit.
 - CI: `python -m scripts.ci_wait <n>` exits 0 (exit 3 means a test needed a retry: stop and
   look).

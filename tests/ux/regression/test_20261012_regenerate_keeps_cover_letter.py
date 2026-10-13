@@ -19,9 +19,9 @@ Waits are on state, not on a toast: the iteration pill (`#iterationPill`) is wri
 `_onGenerationComplete` immediately before `_renderOutput` in the same synchronous block,
 so "iter N" visible means the output has been rendered.
 
-The defect invariant is `xfail(strict=True, raises=AssertionError)` on the base tip; a
-control that does not hold raises `ControlFailed`, so a broken drive FAILS rather than
-reading as the expected defect.
+The defect invariant was `xfail(strict=True, raises=AssertionError)` on the base tip (the
+fix commit deleted only that marker); a control that does not hold raises `ControlFailed`,
+so a broken drive fails with a distinct error rather than being mistaken for the defect.
 """
 
 from __future__ import annotations
@@ -90,11 +90,6 @@ def _cover_state(page: Page) -> dict[str, Any]:
 
 @pytest.mark.ux
 @pytest.mark.slow
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="item 162: a résumé-only regenerate blanks the cover letter",
-)
 def test_b7_the_wizard_keeps_the_cover_letter_after_a_resume_regenerate(
     page: Page,
     live_server: str,

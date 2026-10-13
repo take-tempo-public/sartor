@@ -3280,7 +3280,10 @@ function _renderOutput(data) {
   // (`edited_resume_text`); one after a re-approval drops them and says so.
   document.getElementById('resumePreview').innerText =
     data.edited_resume_text || data.resume_preview || '';
-  document.getElementById('coverLetterPreview').innerText = data.cover_letter_preview || '';
+  // fix/regenerate-keeps-cover-letter (item 162, D2/D4): a typed letter edit the
+  // generate did not consume goes back into the editor, as the résumé's does above.
+  document.getElementById('coverLetterPreview').innerText =
+    data.edited_cover_letter_text || data.cover_letter_preview || '';
   document.getElementById('editsDiscardedNotice')
     ?.classList.toggle('hidden', !data.edits_discarded);
   // fix/regenerate-persistence (item 160): the generate's DB record failed to save,
