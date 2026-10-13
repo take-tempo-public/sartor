@@ -8,7 +8,9 @@ parent_context_path link, last_generated_* snapshots, and consumed edits.
 import json
 from pathlib import Path
 
-from hardening import save_iteration_context
+import pytest
+
+from hardening import resolve_cover_letter_after_generate, save_iteration_context
 
 
 def _seed_parent(
@@ -281,3 +283,113 @@ def test_save_iteration_context_empty_resume_caches_empty_skeleton(tmp_path):
     assert cached["basics"] == {}
     assert cached["work"] == []
     assert cached["skills"] == []
+
+
+# ---------------------------------------------------------------------
+# Item 162 (fix/regenerate-keeps-cover-letter): the cover letter and the typed
+# letter edit across a generate. One test per row of the blast-radius table
+# (docs/dev/blast-radius/regenerate-keeps-cover-letter.md, "Consumers").
+# ---------------------------------------------------------------------
+
+_LETTER_PARENT = {
+    "last_generated_cover_letter": "PARENT LETTER",
+    "edited_cover_letter_text": "TYPED LETTER EDIT",
+}
+
+
+@pytest.mark.parametrize(
+    ("parent", "generated", "carry", "expected"),
+    [
+        # A résumé-only generate leaves both alone (the defect: it blanked the letter
+        # and popped the edit).
+        (_LETTER_PARENT, "", False, ("PARENT LETTER", "TYPED LETTER EDIT")),
+        (_LETTER_PARENT, "", True, ("PARENT LETTER", "TYPED LETTER EDIT")),
+        # A generate that produced a letter replaces it and consumes the edit...
+        (_LETTER_PARENT, "NEW LETTER", False, ("NEW LETTER", "")),
+        # ...except under carry_edits, where the frozen path keeps both edits as before.
+        (_LETTER_PARENT, "NEW LETTER", True, ("NEW LETTER", "TYPED LETTER EDIT")),
+        # No parent letter, nothing generated: stays empty (first generate).
+        ({}, "", False, ("", "")),
+        # Null values in a persisted context behave as absent.
+        (
+            {"last_generated_cover_letter": None, "edited_cover_letter_text": None},
+            "",
+            False,
+            ("", ""),
+        ),
+    ],
+)
+def test_resolve_cover_letter_after_generate(parent, generated, carry, expected):
+    got = resolve_cover_letter_after_generate(parent, generated, carry_edits=carry)
+    assert got == expected
+
+
+def test_save_iteration_context_keeps_the_letter_over_a_resume_only_generate(tmp_path):
+    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras=dict(_LETTER_PARENT))
+
+    new_path = save_iteration_context(
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="new gen",
+        last_generated_cover_letter="",
+        username="alice",
+        base_dir=str(tmp_path),
+    )
+
+    saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
+    assert saved["last_generated_cover_letter"] == "PARENT LETTER"
+    assert saved["edited_cover_letter_text"] == "TYPED LETTER EDIT"
+    # The résumé side is unchanged by this rule.
+    assert saved["last_generated_resume"] == "new gen"
+
+
+def test_save_iteration_context_a_new_letter_replaces_the_letter_and_consumes_the_edit(tmp_path):
+    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras=dict(_LETTER_PARENT))
+
+    new_path = save_iteration_context(
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="new gen",
+        last_generated_cover_letter="NEW LETTER",
+        username="alice",
+        base_dir=str(tmp_path),
+    )
+
+    saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
+    assert saved["last_generated_cover_letter"] == "NEW LETTER"
+    assert "edited_cover_letter_text" not in saved
+
+
+def test_save_iteration_context_still_consumes_the_resume_edit_without_a_letter(tmp_path):
+    """The résumé edit fed the prompt; only the letter edit is exempt."""
+    extras = {**_LETTER_PARENT, "edited_resume_text": "typed resume edit"}
+    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras=extras)
+
+    new_path = save_iteration_context(
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="new gen",
+        last_generated_cover_letter="",
+        username="alice",
+        base_dir=str(tmp_path),
+    )
+
+    saved = json.loads(Path(new_path).read_text(encoding="utf-8"))
+    assert "edited_resume_text" not in saved
+    assert saved["edited_cover_letter_text"] == "TYPED LETTER EDIT"
+
+
+def test_save_iteration_context_does_not_mutate_the_parent_letter_fields(tmp_path):
+    parent, parent_path = _seed_parent(tmp_path, iteration=1, extras=dict(_LETTER_PARENT))
+    before = dict(parent)
+
+    save_iteration_context(
+        parent_context=parent,
+        parent_path=parent_path,
+        last_generated_resume="r",
+        last_generated_cover_letter="",
+        username="alice",
+        base_dir=str(tmp_path),
+    )
+
+    assert parent == before

@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Generating the résumé again keeps your cover letter (`fix/regenerate-keeps-cover-letter`, item 162)
+
+After you make a cover letter with **Generate cover letter**, generating the résumé again
+(Step 5) emptied the cover letter in the wizard. The editor went blank, **+ Generate cover
+letter** came back in place of **Download cover letter**, and the preview showed "No cover
+letter yet". The saved copy on the application was kept, so the wizard and the saved
+application disagreed.
+
+- **Fixed: generating the résumé again keeps the cover letter.** A Generate that makes a new
+  cover letter replaces it, as before.
+- **Fixed: a cover letter edit you typed and saved is kept** when you generate the résumé
+  again, and goes back into the editor. A Generate that writes a new cover letter uses your
+  edit as its starting text and then replaces it.
+- **Changed: re-approving Compose discards only your typed résumé edits.** Your typed cover
+  letter edits are kept. The notice now reads "Your typed résumé edits weren't carried over"
+  and says so.
+- **Fixed: the follow-up questions and the next cover letter start from your cover letter**,
+  not from an empty draft.
+- **Added: both generate routes return `edited_cover_letter_text`**, next to
+  `edited_resume_text`.
+- Evidence: `docs/dev/diagnosis/regenerate-keeps-cover-letter.md`.
+
 ### Reopening an application shows its latest résumé (`fix/regenerate-persistence`, item 160)
 
 Every Generate of an application records its résumé on the application's run. Before this

@@ -2096,6 +2096,36 @@ def compute_iteration_signals(
     }
 
 
+def resolve_cover_letter_after_generate(
+    parent_context: ContextSet,
+    generated_letter: str,
+    *,
+    carry_edits: bool = False,
+) -> tuple[str, str]:
+    """Return ``(last_generated_cover_letter, edited_cover_letter_text)`` for a child context.
+
+    fix/regenerate-keeps-cover-letter (item 162). The client never asks a generate for a
+    cover letter (``generate_cover_letter`` defaults False), so a résumé regenerate after a
+    detached ``/api/generate-cover-letter`` produced none. It must not blank the stored one
+    (the route's own promise: refinements "preserve the cover letter"), nor drop a typed
+    letter edit that generate never read.
+
+    - A generate that produced a letter replaces the stored one. It also consumes the typed
+      letter edit (the edit was the draft it evolved), except under ``carry_edits``, where
+      the frozen path keeps both edits as it always has.
+    - A generate that produced none leaves the parent's letter and the typed edit alone.
+
+    Pure and I/O-free: ``save_iteration_context`` applies it to the child file and both
+    generate routes read it for the response, so the two cannot disagree. An absent value
+    is ``""``.
+    """
+    parent_letter = str(parent_context.get("last_generated_cover_letter") or "")
+    parent_edit = str(parent_context.get("edited_cover_letter_text") or "")
+    if generated_letter:
+        return generated_letter, parent_edit if carry_edits else ""
+    return parent_letter, parent_edit
+
+
 def save_iteration_context(
     parent_context: ContextSet,
     parent_path: str,
@@ -2119,15 +2149,19 @@ def save_iteration_context(
         keeps reading from it after this call returns).
       - Increments `iteration` by 1 (parent default 0 → child 1).
       - Sets `parent_context_path` to parent_path.
-      - Sets `last_generated_resume` / `last_generated_cover_letter` to the
-        freshly generated text (used by the frontend to diff against the live
-        preview for edit detection on the NEXT iteration).
+      - Sets `last_generated_resume` to the freshly generated text (used by the
+        frontend to diff against the live preview for edit detection on the NEXT
+        iteration). `last_generated_cover_letter` follows the same rule only when
+        the generate produced a letter; otherwise the parent's letter is kept
+        (`resolve_cover_letter_after_generate`, item 162).
       - Sets `last_generated_json_resume` to the deterministic
         `md_to_json_resume()` of `last_generated_resume` (WYSIWYG Option 1) so
         the preview route can render the exact future download. No LLM call.
-      - Clears `edited_resume_text` / `edited_cover_letter_text` — those were
-        consumed by generate() to build the prompt; carrying them forward
-        would cause double-application on the next iteration.
+      - Clears `edited_resume_text` — it was consumed by generate() to build the
+        prompt; carrying it forward would cause double-application on the next
+        iteration. `edited_cover_letter_text` is cleared only by a generate that
+        produced a letter (the one that read it); a résumé-only generate leaves
+        it (item 162, owner decisions D2 and D4).
       - Unless `carry_edits` (fix/frozen-composition-staleness, owner decision 4):
         the frozen path consumes no edits, so when it re-assembles the SAME résumé
         the edits were typed over, the caller keeps them — `edited_*_text` and the
@@ -2142,7 +2176,10 @@ def save_iteration_context(
     child["iteration"] = int(parent_context.get("iteration", 0)) + 1
     child["parent_context_path"] = parent_path
     child["last_generated_resume"] = last_generated_resume
-    child["last_generated_cover_letter"] = last_generated_cover_letter
+    letter, typed_letter_edit = resolve_cover_letter_after_generate(
+        parent_context, last_generated_cover_letter, carry_edits=carry_edits
+    )
+    child["last_generated_cover_letter"] = letter
     # WYSIWYG Option 1: cache the deterministic JSON Resume of the markdown the
     # LLM just wrote so the preview route can serve the exact future download.
     # Derived from last_generated_resume above (no LLM, no drift); empty
@@ -2154,9 +2191,14 @@ def save_iteration_context(
         if parent_context.get("edited_resume_text") and isinstance(edited_json, dict):
             child["last_generated_json_resume"] = json.loads(json.dumps(edited_json))
     else:
-        # Consume edits — they fed the prompt that produced this generation; they
-        # must not re-apply on the next iteration's generate() call.
+        # Consume the résumé edit — it fed the prompt that produced this generation;
+        # it must not re-apply on the next iteration's generate() call.
         child.pop("edited_resume_text", None)
+    # The letter edit is consumed only by a generate that produced a letter (it was
+    # that generate's draft); a résumé-only one never read it, so it stays.
+    if typed_letter_edit:
+        child["edited_cover_letter_text"] = typed_letter_edit
+    else:
         child.pop("edited_cover_letter_text", None)
 
     notes: list[IterationNote] = list(child.get("iteration_notes") or [])

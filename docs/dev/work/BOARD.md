@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 43 | Epics 6 | Closed 78
+**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 43 | Epics 6 | Closed 79
 
 ## Open
 
@@ -26,7 +26,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **161** -- GET /composition parses the same context file about eleven times per request (`agent`) -- Each _read_* helper re-reads and re-parses the context JSON; one parse could serve them all.
-- **162** -- A résumé-only regenerate writes an empty last_generated_cover_letter into the new iteration's context (`agent`) -- After a detached cover letter, a résumé-only regenerate's child context carries last_generated_cover_letter = ''.
+- **163** -- After a with-letter generate the run row's typed letter edit still shadows the new letter in resume_state (`agent`) -- A with-letter generate consumes the letter edit in the context but not on the run row; resume shows the typed text.
 
 ## Blocked
 
@@ -138,7 +138,7 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 
 - **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
 
-## Closed (78)
+## Closed (79)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
@@ -218,3 +218,4 @@ Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; 
 - 158 -- Bash tool sometimes refuses a whole command with "unexpected EOF while looking for matching '"; cause unknown (2026-10-08, fix/bash-tool-transport: six of the seven recorded refusals were Git Bash silently cutting the Bash tool's command line at 8,186 characters (diagnosis O4-O7). The block-long-bash-command Bash guard refuses an over-budget command on win32 and allows everything elsewhere (owner decision: a new, separate guard). The seventh was a command malformed as written (backticks inside double quotes), refused on stdin too: the model's error, loud, nothing ran, one instance; no mechanism for it.)
 - 159 -- UX tests can synchronize on the shared #_corpusToast (item 155's class); no class-wide guard (2026-10-10, test/assertion-strength: tests/test_ux_toast_wait_gate.py (outside the UX tier, so the gate and CI run it for every agent) finds every reference to the shared toast in the repo's Python (string constants, and loads of names bound to one), keyed by (path, enclosing qualname), and fails on any site not allowlisted at its exact count, or on a stale entry. The two existing reads are allowlisted with reasons (owner decision). Run on item 155's own history it flags the original wait as it ran in CI. Declared limits: a wait on toast text alone, and a selector built at runtime, are not caught.)
 - 160 -- A second generate of the same application run never persists: application_bullet's unique constraint rolls it back (2026-10-12, fix/regenerate-persistence (owner decisions D1+D2): persist_corpus_generation replaces the run's application_bullet/application_run_title rows with the latest selection inside one transaction; duplicates within one result are skipped; a result with no letter leaves a stored cover letter alone; an already-present proposal text isn't re-created; lookups are one IN query per kind; both generate routes report persist_failed and the client shows a banner.)
+- 162 -- A résumé-only regenerate writes an empty last_generated_cover_letter into the new iteration's context (2026-10-12, fix/regenerate-keeps-cover-letter (owner decisions D1-D4): hardening.resolve_cover_letter_after_generate is the one rule: a generate that produced a letter replaces the stored one and consumes the typed edit; one that produced none leaves both alone. save_iteration_context applies it and both generate routes read it, so the response (cover_letter_preview, new edited_cover_letter_text) and the file agree. Decision 4's discard is of the résumé edit only: _typed_edits_disposition and _clear_run_edits no longer touch the letter edit, and the notice copy says so.)

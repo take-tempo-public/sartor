@@ -542,13 +542,16 @@
              lands in B2; B1 is UI shell only. -->
         <!-- fix/frozen-composition-staleness (owner decision 4): a regenerate after
              you re-approved a different composition can't keep edits typed over the
-             old one; _renderOutput shows this until the next generate. -->
+             old one; _renderOutput shows this until the next generate. It is about the
+             RÉSUMÉ edit only: a typed cover-letter edit is kept (item 162, owner
+             decision D4). -->
         <div class="compose-loopback-banner hidden" id="editsDiscardedNotice" role="status">
-          <div class="compose-loopback-title">Your typed edits weren't carried over</div>
+          <div class="compose-loopback-title">Your typed résumé edits weren't carried over</div>
           <div class="compose-loopback-body">
             You approved changes in Compose after typing edits into the previous version,
             so this version starts from the newly approved content. Use
-            <strong>Edit before downloading</strong> to make them again.
+            <strong>Edit before downloading</strong> to make them again. Typed cover
+            letter edits are kept.
           </div>
         </div>
         <!-- fix/regenerate-persistence (item 160): the generate succeeded but its

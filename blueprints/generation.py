@@ -72,6 +72,7 @@ from hardening import (
     compute_date_grounding,
     context_transaction,
     frozen_composition_doc,
+    resolve_cover_letter_after_generate,
     save_iteration_context,
 )
 from web_infra import (
@@ -865,22 +866,40 @@ def _typed_edits_disposition(
     carry them into the new iteration (the preview keeps showing them). When the
     approved composition changed underneath them, discard them and say so. The legacy
     LLM path consumes edits into its prompt, as before: neither flag.
+
+    fix/regenerate-keeps-cover-letter (owner decision D4): only the RÉSUMÉ edit is
+    decided here. A typed cover-letter edit is independent of the composition (a letter
+    is not assembled from it), so it neither triggers a carry or a discard nor is
+    dropped by one; ``resolve_cover_letter_after_generate`` owns its lifecycle.
     """
     if frozen_doc is None:
         return False, False
-    if not (context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text")):
+    if not context_set.get("edited_resume_text"):
         return False, False
     if resume_content == context_set.get("last_generated_resume"):
         return True, False
     return False, True
 
 
+def _built_from_edited_baseline(context_set: Mapping[str, Any], result: Mapping[str, Any]) -> bool:
+    """True when this generate was built from typed edits (the iteration note's wording).
+
+    A typed letter edit counts only if this generate produced a letter, which is the
+    only generate that read it (item 162): otherwise every résumé-only regenerate would
+    say "from edited baseline" for as long as a letter edit lingers.
+    """
+    if context_set.get("edited_resume_text"):
+        return True
+    return bool(context_set.get("edited_cover_letter_text") and result.get("cover_letter_content"))
+
+
 def _clear_run_edits(application_run_id: int) -> None:
-    """Clear a run's saved typed edits after a frozen regenerate discarded them.
+    """Clear a run's saved typed RÉSUMÉ edit after a frozen regenerate discarded it.
 
     `_persist_edited_text_to_db` treats None as "no change", so a discard needs its
-    own write; otherwise resuming the application would reload edits the preview no
-    longer shows. Best-effort, like its siblings.
+    own write; otherwise resuming the application would reload an edit the preview no
+    longer shows. The cover-letter edit is left alone (item 162, owner decision D4: a
+    discard is of the résumé edit). Best-effort, like its siblings.
     """
     from db.models import ApplicationRun
     from db.session import get_session
@@ -891,7 +910,6 @@ def _clear_run_edits(application_run_id: int) -> None:
         if run is None:
             return
         run.edited_resume_text = None
-        run.edited_cover_letter_text = None
         session.commit()
     except Exception:
         session.rollback()
@@ -1254,7 +1272,7 @@ def run_generation() -> ResponseReturnValue:
     summary_parts = []
     if refinement_notes.strip():
         summary_parts.append("refinement")
-    if context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text"):
+    if _built_from_edited_baseline(context_set, result):
         summary_parts.append("from edited baseline")
     summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
 
@@ -1263,6 +1281,11 @@ def run_generation() -> ResponseReturnValue:
     )
     if edits_discarded and app_run_id is not None:
         _clear_run_edits(int(app_run_id))
+    # fix/regenerate-keeps-cover-letter (item 162): the letter (and typed letter edit)
+    # the child context will hold, by the one rule the helper applies to the file.
+    cover_letter, typed_letter_edit = resolve_cover_letter_after_generate(
+        context_set, result["cover_letter_content"], carry_edits=carry_edits
+    )
 
     new_context_path = save_iteration_context(
         parent_context=context_set,
@@ -1291,7 +1314,9 @@ def run_generation() -> ResponseReturnValue:
             "changes_made": result.get("changes_made", []),
             "proofread_notes": result.get("proofread_notes", []),
             "resume_preview": result["resume_content"],
-            "cover_letter_preview": result["cover_letter_content"],
+            # The letter now in the child context: this generate's, else the one a
+            # detached /api/generate-cover-letter already stored (item 162).
+            "cover_letter_preview": cover_letter,
             "context_path": new_context_path,
             "iteration": new_iteration,
             "parent_context_path": str(cp),
@@ -1307,6 +1332,9 @@ def run_generation() -> ResponseReturnValue:
                 (context_set.get("edited_resume_text") or "") if carry_edits else ""
             ),
             "edits_discarded": edits_discarded,
+            # fix/regenerate-keeps-cover-letter (item 162, D2/D4): the typed letter edit
+            # the child context carries goes back into the editor, as the résumé's does.
+            "edited_cover_letter_text": typed_letter_edit,
             # fix/regenerate-persistence (item 160): the DB audit write failed, so
             # resuming this application would show an older résumé; the client says so.
             "persist_failed": persist_failed,
@@ -1566,7 +1594,7 @@ def run_generation_stream() -> ResponseReturnValue:
             summary_parts = []
             if refinement_notes.strip():
                 summary_parts.append("refinement")
-            if context_set.get("edited_resume_text") or context_set.get("edited_cover_letter_text"):
+            if _built_from_edited_baseline(context_set, result):
                 summary_parts.append("from edited baseline")
             summary = " + ".join(summary_parts) if summary_parts else "fresh generation"
 
@@ -1575,6 +1603,10 @@ def run_generation_stream() -> ResponseReturnValue:
             )
             if edits_discarded and app_run_id is not None:
                 _clear_run_edits(int(app_run_id))
+            # Item 162 — as /api/generate: what the child context will hold.
+            cover_letter, typed_letter_edit = resolve_cover_letter_after_generate(
+                context_set, result["cover_letter_content"], carry_edits=carry_edits
+            )
 
             new_context_path = save_iteration_context(
                 parent_context=context_set,
@@ -1604,7 +1636,7 @@ def run_generation_stream() -> ResponseReturnValue:
                     "changes_made": result.get("changes_made", []),
                     "proofread_notes": result.get("proofread_notes", []),
                     "resume_preview": result["resume_content"],
-                    "cover_letter_preview": result.get("cover_letter_content", ""),
+                    "cover_letter_preview": cover_letter,
                     "context_path": new_context_path,
                     "iteration": new_iteration,
                     "parent_context_path": str(cp),
@@ -1616,6 +1648,8 @@ def run_generation_stream() -> ResponseReturnValue:
                         (context_set.get("edited_resume_text") or "") if carry_edits else ""
                     ),
                     "edits_discarded": edits_discarded,
+                    # fix/regenerate-keeps-cover-letter (item 162) — as /api/generate.
+                    "edited_cover_letter_text": typed_letter_edit,
                     # fix/regenerate-persistence (item 160) — as /api/generate.
                     "persist_failed": persist_failed,
                 },

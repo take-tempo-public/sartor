@@ -459,7 +459,12 @@ class TestGenerateRouteIteration:
 
     def test_generate_consumes_edits_from_context(self, app_client):
         """When save-edits stored edits on the parent context, generate must
-        consume them — the new iteration must NOT carry edited_* forward."""
+        consume the ones it read — the new iteration must NOT carry them forward.
+
+        Item 162 (owner decision D2): a résumé-only generate (no
+        `generate_cover_letter`) never reads the typed letter edit, so it is NOT
+        consumed; the résumé edit is. A generate that produces a letter consumes
+        the letter edit (tests/test_regenerate_cover_letter.py C3)."""
         client, context_path, _ = app_client
         # Save edits onto iteration 0
         client.post(
@@ -484,7 +489,10 @@ class TestGenerateRouteIteration:
         ).get_json()
         child = json.loads(Path(body["context_path"]).read_text(encoding="utf-8"))
         assert "edited_resume_text" not in child
-        assert "edited_cover_letter_text" not in child
+        # Item 162: this generate produced no cover letter, so it never read the
+        # typed letter edit; the edit stays (it was previously popped here).
+        assert child["edited_cover_letter_text"] == "USER LETTER"
+        assert body["edited_cover_letter_text"] == "USER LETTER"
 
     def test_path_outside_output_dir_rejected(self, app_client, tmp_path):
         client, _, _ = app_client
