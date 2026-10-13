@@ -433,14 +433,18 @@ approved composition is byte-identical). Instead it sets
 points at the positioning summary's **Regenerate** and gap-fill's **Regenerate
 suggestions**, and offers a **Got it** dismiss. When not frozen it regenerates as before.
 
-**Typed edits.** [`app.js:_renderOutput`](../../../static/app.js) fills the editor with the
-generate response's `edited_resume_text` when the server carried the user's typed edits over
-an unchanged regenerate, else with `resume_preview`. It shows `#editsDiscardedNotice` when the
-response's `edits_discarded` is true (a regenerate after a re-approval). A resumed application
-(`_resumeIntoStep6`) needs neither, since `resume_state.resume_md` already carries a saved edit
-`[synthesis]`. It also shows `#persistFailedNotice` when the response's `persist_failed` is
-true (the generate succeeded but its database record didn't save, so resuming the application
-later would show an earlier version).
+**Typed edits.** [`app.js:_renderOutput`](../../../static/app.js) fills the résumé editor
+with the generate response's `edited_resume_text` when the server carried the user's typed
+edits over an unchanged regenerate, else with `resume_preview`. It fills the cover-letter
+editor with the response's `edited_cover_letter_text` when that is non-empty, else with
+`cover_letter_preview` `[synthesis]`. It shows `#editsDiscardedNotice` when the response's
+`edits_discarded` is true (a regenerate after a re-approval); the notice is about the typed
+résumé edits, and says typed cover-letter edits are kept (`templates/index.html`)
+`[synthesis]`. A resumed application (`_resumeIntoStep6`) needs neither, since
+`resume_state.resume_md` already carries a saved edit `[synthesis]`. It also shows
+`#persistFailedNotice` when the response's `persist_failed` is true (the generate succeeded
+but its database record didn't save, so resuming the application later would show an
+earlier version).
 
 ## Config persistence
 

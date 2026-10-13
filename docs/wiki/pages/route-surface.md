@@ -120,12 +120,17 @@ sequence). Each gates on `_safe_username` at entry:
   when Compose has changed since Save and continue froze the composition
   (fix/frozen-composition-staleness, items 106/66); the 409 carries
   `{error, composition_stale: true}` and both success responses gain
-  `edited_resume_text`, `edits_discarded`, and `persist_failed` (true when corpus DB
-  write-back fails; item 160)
+  `edited_resume_text`, `edited_cover_letter_text`, `edits_discarded`, and
+  `persist_failed` (true when corpus DB write-back fails; item 160)
   ([`_typed_edits_disposition`](../../../blueprints/generation.py);
   `persist_failed` is set in the persist `except` of
   [`run_generation`](../../../blueprints/generation.py) and
-  [`run_generation_stream`](../../../blueprints/generation.py)) `[synthesis]`.
+  [`run_generation_stream`](../../../blueprints/generation.py)) `[synthesis]`. In both,
+  `cover_letter_preview` is the letter the new child context holds: the generate's own when
+  it produced one, otherwise the one already stored, and `edited_cover_letter_text` is the
+  typed letter edit the child context carries: empty when a generate that produced a letter
+  consumed it, or when there was none (item 162;
+  [`resolve_cover_letter_after_generate`](../../../hardening.py)) `[synthesis]`.
   Both also share a hard block at 422 via
   [`_month_block_response`](../../../blueprints/generation.py) when an included
   experience role (work, not education) has year-only ISO dates; the block names

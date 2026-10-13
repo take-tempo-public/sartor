@@ -3280,8 +3280,8 @@ function _renderOutput(data) {
   // (`edited_resume_text`); one after a re-approval drops them and says so.
   document.getElementById('resumePreview').innerText =
     data.edited_resume_text || data.resume_preview || '';
-  // fix/regenerate-keeps-cover-letter (item 162, D2/D4): a typed letter edit the
-  // generate did not consume goes back into the editor, as the résumé's does above.
+  // fix/regenerate-keeps-cover-letter (item 162, D2/D4): the typed letter edit the
+  // child context carries goes back into the editor, as the résumé's does above.
   document.getElementById('coverLetterPreview').innerText =
     data.edited_cover_letter_text || data.cover_letter_preview || '';
   document.getElementById('editsDiscardedNotice')

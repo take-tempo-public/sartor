@@ -49,11 +49,18 @@ Everything past analyze is added on demand, so older context files round-trip un
   free-form answers (treated as first-person ground truth by `generate()`).
 - `iteration` (0 = analyze-only; N = state after the Nth generation) and
   `parent_context_path` — the back-pointer that forms the audit chain.
-- `edited_resume_text` / `edited_cover_letter_text` — typed preview edits consumed by
-  the next `generate()`, then cleared.
+- `edited_resume_text` / `edited_cover_letter_text` — typed preview edits. By default the
+  next generate clears `edited_resume_text` (so it does not double-apply);
+  `edited_cover_letter_text` is cleared only by a generate that produced a letter, so a
+  résumé-only generate leaves a typed letter edit in place. Under `carry_edits=True` neither
+  is cleared (see "Persistence and the iteration chain";
+  [`hardening.py:resolve_cover_letter_after_generate`](../../../hardening.py), item 162).
 - `last_generated_resume` / `last_generated_cover_letter` / `last_generated_json_resume`
   — the frozen-at-generation snapshot the frontend diffs the live preview against; the
   cached `md_to_json_resume()` makes preview == download with no LLM call.
+  `last_generated_cover_letter` is replaced only when a generate produced a letter; a
+  résumé-only generate keeps the parent's letter
+  ([`hardening.py:resolve_cover_letter_after_generate`](../../../hardening.py), item 162).
 - `career_corpus` (list of [`CorpusExperience`](../../../hardening.py)),
   `application_id` / `application_run_id`, `composition_overrides`, and
   `llm_recommendations` — the corpus-mode / DB-backed members (B.2–B.3 + the Compose
@@ -156,11 +163,15 @@ mutating the parent: it deep-copies via a JSON round-trip, increments `iteration
 `parent_context_path` to the parent, caches the frozen generation snapshot, and appends
 an [`IterationNote`](../../../hardening.py). The chain of `parent_context_path` pointers
 IS the audit trail — see [[iteration-audit-chain]]. By default (`carry_edits=False`), it
-clears the consumed `edited_resume_text` / `edited_cover_letter_text` fields so they do
-not re-apply on the next iteration (the legacy path where `/api/generate` consumes them);
-with `carry_edits=True` (fix/frozen-composition-staleness, when the frozen path consumes no
-edits), it carries forward the edit fields and the parent's cached JSON Resume render so the
-preview continues showing them `[synthesis]`.
+clears `edited_resume_text` so it does not re-apply on the next iteration, and clears
+`edited_cover_letter_text` only when the generate produced a letter; a résumé-only
+generate leaves the typed letter edit, and keeps the parent's
+`last_generated_cover_letter` (item 162,
+[`hardening.py:resolve_cover_letter_after_generate`](../../../hardening.py), applied in
+[`hardening.py:save_iteration_context`](../../../hardening.py)). With `carry_edits=True`
+(fix/frozen-composition-staleness, when the frozen path consumes no edits), it carries
+forward the edit fields and the parent's cached JSON Resume render so the preview
+continues showing them `[synthesis]`.
 
 All writes to context files are serialized for safety against two distinct hazards.
 [`hardening.py:write_context_atomic`](../../../hardening.py) closes **torn reads**: it

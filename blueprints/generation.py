@@ -1332,8 +1332,8 @@ def run_generation() -> ResponseReturnValue:
                 (context_set.get("edited_resume_text") or "") if carry_edits else ""
             ),
             "edits_discarded": edits_discarded,
-            # fix/regenerate-keeps-cover-letter (item 162, D2/D4): a typed letter edit
-            # this generate did not consume goes back into the editor, as the résumé's.
+            # fix/regenerate-keeps-cover-letter (item 162, D2/D4): the typed letter edit
+            # the child context carries goes back into the editor, as the résumé's does.
             "edited_cover_letter_text": typed_letter_edit,
             # fix/regenerate-persistence (item 160): the DB audit write failed, so
             # resuming this application would show an older résumé; the client says so.

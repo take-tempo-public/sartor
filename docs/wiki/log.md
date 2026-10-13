@@ -2753,3 +2753,58 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   - `scripts/check_doc_links.py`: 637 files, no broken links or cites.
   - `scripts/wiki_freshness.py`: `OK (36 file(s) changed since the last ingest (< 75-file
     block threshold))`.
+
+## 2026-10-12 — scoped self-update pass (`fix/regenerate-keeps-cover-letter`)
+
+- **Mode:** a branch close-out **scoped** pass over this branch's own diff (`82f656b` →
+  `429ff43`), with owner-authorized spend. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged; scoped passes never advance it).
+- **Wiki-relevant changes in the diff (4):** `hardening.py`, `blueprints/generation.py`,
+  `static/app.js`, `templates/index.html` (per `scripts/wiki_relevance.py`).
+- **Pages changed (4):**
+  - `context-set-contract`: the typed letter edit and the letter snapshot across a generate;
+    the `carry_edits` paragraph.
+  - `iteration-audit-chain`: the `last_generated_cover_letter` and `edited_*` bullets;
+    `_typed_edits_disposition` (a typed résumé edit decides carry/discard); `_clear_run_edits`
+    (résumé edit only); both routes echo `edited_cover_letter_text`.
+  - `frontend-wizard`: `_renderOutput` fills the cover-letter editor from
+    `edited_cover_letter_text`; the notice is about the résumé edits.
+  - `route-surface`: `edited_cover_letter_text` and `cover_letter_preview` on both generate
+    routes.
+
+  One `wiki-scribe` and one `wiki-grounding-auditor` ran per page (author ≠ auditor).
+  `index.md` is unchanged: the topic lines still describe their pages.
+- **Verified no-edit:**
+  - `pipeline-stages` (its sentence that the cover-letter route's update lets "subsequent
+    résumé refinements preserve the letter" was false before this branch and is true now);
+  - `code-module-map` (lists symbols, not behavior);
+  - `generation-and-grounding` (typed edits as grounding material, not their lifecycle).
+- **Auditor catch-rate: 1 caught on 4 pages** (`iteration-audit-chain`: the opening sentence of
+  the `edited_cover_letter_text` bullet omitted the `carry_edits` condition).
+- **Caught in orchestrator review (5), not by the auditor:**
+  - `context-set-contract`: the scribe wrote that `edited_resume_text` is "cleared on every
+    generate". It is kept under `carry_edits=True`. Corrected before the audit.
+  - `route-surface`: the new `cover_letter_preview` clause sat in front of a parenthetical
+    that belonged to the field list. Moved after it before the audit.
+  - `route-surface`: "the typed letter edit that generate did not consume". Under
+    `carry_edits` with a produced letter the edit is read and kept. The auditor marked it
+    SUPPORTED on the stated evidence that "the LLM calls never receive
+    `edited_cover_letter_text`", which is false (`analyzer._current_cover_letter_draft`
+    reads it as the draft). Reworded after the audit.
+  - `iteration-audit-chain`: the scribe wrote that a typed letter edit is "not affected by
+    carry/discard". `carry_edits` is passed to `resolve_cover_letter_after_generate`. It also
+    omitted that `carry` now needs a typed résumé edit, and kept "the non-streaming route also
+    echoes" (the stream's `done` payload echoes the same fields). Corrected before the audit.
+  - `iteration-audit-chain`: a rotted `lines 2152–2155` cite was flagged by the scribe and
+    left. Replaced with the symbol.
+- **Retune signal:** repeats the two previous passes'. The auditor checked that symbols and
+  lines exist and that the page matched the scribe's own framing, not whether a behavior
+  claim holds on the branch the code can take (here, `carry_edits`), and it accepted a
+  claim on evidence that the source contradicts.
+- **Gates:**
+  - Backlinks in the four touched pages all resolve; no page created or removed, so the index
+    is unchanged: no ERROR.
+  - `scripts/check_doc_links.py`: 641 files, no broken links or cites.
+  - `scripts/doc_lints.py`: 0 blocks.
+  - `scripts/wiki_freshness.py`: `OK (36 file(s) changed since the last ingest (< 75-file
+    block threshold))`.
