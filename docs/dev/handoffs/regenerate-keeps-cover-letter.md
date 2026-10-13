@@ -121,9 +121,10 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
   owner chose CI as the merge gate (2026-10-12; the full gate takes more than 25 minutes and
   was killed by memory pressure last session).
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
-- **CI on the PR:** not yet run when this handoff was written. The result of
-  `python -m scripts.ci_wait <n>` is recorded in a follow-up commit on this branch, before
-  the merge.
+- **CI on PR #167 (run 38329364979, head `49df1ea`): `ci_wait` exit 0.** All eight required
+  checks passed (Analyze ×4, Lint/type-check/test on py3.11, 3.12 and 3.13, UX / a11y / PDF
+  on py3.12) and no required run log held an absorbed rerun. The docs-only commit that
+  records this re-triggers the checks; the merge needs `ci_wait` exit 0 on that head too.
 
 ---
 
