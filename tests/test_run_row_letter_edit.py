@@ -203,14 +203,7 @@ class TestControls:
 # Defect invariants (diagnosis A1-A3)
 # -------------------------------------------------------------------
 
-_DEFECT = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="item 163: the run row's letter edit is not consumed with the context's",
-)
 
-
-@_DEFECT
 @pytest.mark.parametrize("how", ["json", "stream"])
 def test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit(
     rig, persists, monkeypatch, how
@@ -230,7 +223,6 @@ def test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit(
     assert rec["resume_state_cover_letter_md"] == REWRITTEN, rec
 
 
-@_DEFECT
 def test_a3_the_detached_letter_route_consumes_the_run_row_letter_edit(rig, persists, monkeypatch):
     """The inferred half: `/api/generate-cover-letter` pops the context edit, writes only md."""
     _generate_stub(monkeypatch, rig, {"resume_content": "# FIRST"})

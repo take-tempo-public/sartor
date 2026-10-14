@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Reopening an application no longer shows a cover letter edit you replaced (`fix/run-row-letter-edit-shadow`, item 163)
+
+If you typed a cover letter edit, then used **Generate cover letter** or generated the résumé
+with a cover letter, the wizard showed the new letter. Reopening the application from the
+Pipeline showed your old typed text again, and the application still counted as edited.
+
+- **Fixed: a new cover letter replaces your typed cover letter edit on the saved application
+  too.** This covers both **Generate cover letter** and a Generate that writes a letter. The
+  saved application now forgets the edit at the moment the wizard does.
+- **Unchanged: generating the résumé only keeps your typed cover letter edit**, and
+  re-approving Compose still discards only your typed résumé edits.
+- Evidence: `docs/dev/diagnosis/run-row-letter-edit-shadow.md`.
+
 ### Four recurring dev-workflow failures now have mechanisms (`fix/recurrence-guardrails`, items 164-167 and 55)
 
 For people and agents working in this repo; the product is unchanged. Each of the four was a

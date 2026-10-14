@@ -1,9 +1,9 @@
 # Diagnosis — after a generate or a detached letter consumes the typed letter edit, the run row still holds it, and `resume_state` shows the stale text (item 163)
 
-> **Status:** mechanism OBSERVED for both routes that replace a letter (the with-letter
-> generate, JSON and SSE, and the detached `/api/generate-cover-letter`); the fix is not yet
-> written. One adjacent path (the frozen `carry_edits=True` generate) was observed and does NOT
-> show this defect.
+> **Status:** defect OBSERVED for both routes that replace a letter (the with-letter
+> generate, JSON and SSE, and the detached `/api/generate-cover-letter`); fixed in commit 2
+> of this branch and verified by the arms below plus a mutation check. One adjacent path (the
+> frozen `carry_edits=True` generate) was observed and does NOT show this defect.
 > **Branch:** `fix/run-row-letter-edit-shadow`
 
 ---
@@ -106,9 +106,41 @@ The three arms O1-O3 are the experiment. Each must fail at its invariant line on
 
 ## The fix
 
-_Not written yet. Commit 2 on this branch. Planned: the run row's letter edit is nulled
-exactly when the context consumes it, derived from `resolve_cover_letter_after_generate` so the
-two sides cannot disagree; and `_persist_cover_letter_to_db` nulls it in its existing session._
+`blueprints/generation.py` only; no schema, no migration, no change to `hardening.py`.
+
+- `_clear_run_edits(run_id, *, resume=False, letter=False)` writes only the flagged columns,
+  in one session. Its docstring now names both uses.
+- `_clear_consumed_run_edits` (new) derives the flags from the values both generate routes
+  already hold: `letter` is "this generate produced a letter AND the context did not carry the
+  typed edit forward" (`resolve_cover_letter_after_generate`'s `typed_letter_edit` is empty).
+  One write, none when nothing was consumed. Both routes call it, so JSON and SSE cannot drift.
+- `_persist_cover_letter_to_db` nulls `edited_cover_letter_text` in its existing session
+  (zero extra round trips); its only caller is the detached route, which always has a new
+  letter and always pops the context edit.
+
+**Result**, 2026-10-14, `-p no:rerunfailures`: `tests/test_run_row_letter_edit.py` 8 passed
+with the three `xfail` markers deleted and nothing else changed; the neighbouring suites
+(`test_regenerate_cover_letter`, `test_regenerate_persistence`, `test_app_iteration`,
+`test_application_routes`, `test_xfail_controls_gate`) 145 passed together with it.
+`mypy blueprints/generation.py`: no issues.
+
+**Mutation check** (the file restored and its sha256 verified after each):
+
+```
+--- mutation: generate-routes      (clear_letter forced False)
+FAILED ...test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit[json]
+FAILED ...test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit[stream]
+2 failed, 6 passed
+--- mutation: detached-persist     (the `= None` line removed)
+FAILED ...test_a3_the_detached_letter_route_consumes_the_run_row_letter_edit
+1 failed, 7 passed
+```
+
+Each half of the fix is needed by exactly the arms it was written for.
+
+**Status after the fix:** I1 stands as the mechanism, now with a discriminating test behind
+it (fails without the change, passes with it). That rests on one suite and one stub rig; it
+has not been exercised against a real LLM or a real browser resume.
 
 ---
 
