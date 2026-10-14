@@ -36,3 +36,15 @@ declared limit). Rare; deferred with the reason.
 ### 2026-10-14 — filed on `fix/recurrence-guardrails`
 
 Filed while closing item 164 so the unobserved shapes are on the board.
+
+### 2026-10-14 — one more instance, on `fix/run-row-letter-edit-shadow`
+
+The first `Edit` after a subagent hand-back message paused (the message arrived as "Another
+Claude session sent a message ... [Subagent hand-back]"), although the owner had typed nothing
+and the preceding turn had already cleared a pause for the same task. The identical call
+succeeded on re-run, as designed.
+
+**Not captured:** the `UserPromptSubmit` payload, so which shape armed the pause is unverified;
+this is one observation, and it is consistent with the hand-back message being treated as a
+prompt. The instrument that shows the payload is the one `fix/recurrence-guardrails` built and
+removed (`git show d3e5296 a2bdc9c`). The item's rule stands: no tag is guessed from the transcript.
