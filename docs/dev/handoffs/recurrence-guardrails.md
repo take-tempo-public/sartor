@@ -133,7 +133,10 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/recu
   ended (the harness reaps background jobs only "while the session was idle"), in the second it
   stayed active. One sample each, so that is a lead and not a finding.
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
-- **CI on the PR:** not run yet; the PR is opened only after the owner confirms the push.
+- **CI on PR #168 (head `e5c9a54`): `ci_wait` exit 0.** All eight required checks passed (Analyze
+  ×4, Lint/type-check/test on py3.11, 3.12 and 3.13, UX / a11y / PDF on py3.12) and no required
+  run log held an absorbed rerun. The docs-only commit that records this re-triggers the checks;
+  the merge needs `ci_wait` exit 0 on that head too.
 
 ---
 
