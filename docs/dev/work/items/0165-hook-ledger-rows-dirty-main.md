@@ -3,7 +3,7 @@ schema = 1
 id = 165
 kind = "item"
 title = "Hook-written compacted and plan-archived ledger rows leave a tracked file modified on main"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["fix/recurrence-guardrails"]
 refs = [
@@ -15,6 +15,14 @@ refs = [
   "docs/dev/diagnosis/recurrence-guardrails.md",
 ]
 summary = "record_compaction and the plan gate append to the tracked ledger on any branch, so main is left dirty."
+resolution = "2026-10-14, fix/recurrence-guardrails (owner decision: divert only on trunk). scripts/enforcement/ledger_spool.py routes every hook-written receipt: on main, master or a detached HEAD it goes to the untracked .claude/state/ledger/<session>.jsonl; on any other branch it stays in the tracked shard. compaction_count reads both, so the C-12 disclosure still counts a session's compactions. A directory that is not a git work tree keeps the tracked shard. SPEC.md section 3 now names compacted and plan-archived (item 55)."
+verified_by = [
+  "tests/test_ledger_spool.py::TestCompactionReceipt",
+  "tests/test_ledger_spool.py::TestPlanArchivedReceipt",
+  "tests/test_ledger_spool.py::TestWritersRouteThroughTheHelper",
+  "tests/test_ledger_spool.py::TestTheSpoolStaysUntracked",
+  "tests/test_c12_disclosure_gate.py::TestM3CompactionDisclosure",
+]
 ```
 
 **Observed** (`docs/dev/diagnosis/recurrence-guardrails.md` O3). Both writers append to
@@ -33,3 +41,18 @@ tracked shard; on `main`/`master`/detached HEAD they go to an untracked spool un
 
 Second instance of a known class (the handoff's Recurrence 1 notes the first). Item 55 covers
 the SPEC vocabulary drift for these two events; this item is the dirty-tree defect.
+
+### 2026-10-14 — closed on `fix/recurrence-guardrails`
+
+Reproduced first (`docs/dev/diagnosis/recurrence-guardrails.md` O12): six of the new tests
+failed on the unfixed writers, `git status --porcelain` reporting `docs/` untracked on `main`;
+the four that passed were the feature-branch, no-git and `.gitignore` controls. After the fix
+the same six pass, and a drive through the real `hook.py capture-before-compact` and
+`restore-evidence` entries on a throwaway repo gave a clean tree and a spool row on `main`, a
+tracked row on a branch, and a count of 2 across both (O13).
+
+**Declared, not fixed (C-0):** a repo where `git` itself fails keeps the tracked shard;
+`plan_gate` reports a detached HEAD as an empty branch name, so its receipt stays tracked
+there; the spool is machine-local and is not part of the committed record. A trunk-time
+`compacted` row is therefore no longer visible in `git log`. Items 84, 93, 94 and 110 cite
+branch-time rows, which are unchanged.

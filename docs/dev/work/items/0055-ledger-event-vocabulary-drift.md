@@ -3,14 +3,18 @@ schema = 1
 id = 55
 kind = "item"
 title = "Ledger event vocabulary has drifted from docs/dev/prov/SPEC.md without amendment"
-status = "watching"
+status = "closed"
 decision_owner = "agent"
+branches = ["fix/recurrence-guardrails"]
 refs = [
   "docs/dev/prov/SPEC.md",
   "scripts/enforcement/adapters/claude_context_hook.py",
   "hooks/lib/retire-approved-plan.sh",
+  "docs/dev/blast-radius/recurrence-guardrails.md",
 ]
 summary = "compacted (2026-07) and plan-archived (2026-08-07) both ship as ledger events SPEC.md's own vocabulary list never names."
+resolution = "2026-10-14, fix/recurrence-guardrails. docs/dev/prov/SPEC.md section 3 now names compacted and plan-archived, their fields, and where a hook-originated receipt goes, under a C-10 dossier (docs/dev/blast-radius/recurrence-guardrails.md). A scan test makes the next hook-emitted event without a SPEC entry fail."
+verified_by = ["tests/test_ledger_spool.py::TestSpecNamesTheHookEvents"]
 ```
 
 `docs/dev/prov/SPEC.md` §3 documents the ledger's event vocabulary as
@@ -49,3 +53,11 @@ amending SPEC.md, on a dedicated branch with a `docs/dev/blast-radius/` dossier.
 ## Updates
 
 ### 2026-08-07 — filed during `fix/plan-approval-marker-pr-merge` (found while adding `plan-archived`)
+
+### 2026-10-14 — closed on `fix/recurrence-guardrails`
+
+Closed by item 165's SPEC amendment. The reader enumeration this item asked for is in
+`docs/dev/blast-radius/recurrence-guardrails.md` (the ledger-dir and `compacted` rows): the one
+reader of the shards, `scripts/verify_doc_template.py` (`read_ledger` and
+`latest_generated_fingerprint`), filters on the document events and ignores the two hook
+events, so no reader assumption broke.
