@@ -96,3 +96,8 @@ A missed consumer would surface as a `ControlFailed` or a failing control in
 column's other writers and readers: `tests/test_app_iteration.py`,
 `tests/test_application_routes.py`, `tests/test_regenerate_cover_letter.py`. The grep above is
 re-derived at close-out and diffed against this table; a new hit is a site not yet decided.
+
+**Re-derived at close-out** (2026-10-14, after commit 2, same command): the same 13 files
+name `edited_cover_letter_text`; only `blueprints/generation.py` changed count (9 to 13, this
+branch's own code and docstrings). No new file, so no site was missed. Result: all 13 table
+rows hold; the instrument plus five neighbouring suites passed together (145).

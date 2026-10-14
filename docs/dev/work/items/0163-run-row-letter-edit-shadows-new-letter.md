@@ -3,7 +3,7 @@ schema = 1
 id = 163
 kind = "item"
 title = "After a with-letter generate the run row's typed letter edit still shadows the new letter in resume_state"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["fix/regenerate-keeps-cover-letter", "fix/run-row-letter-edit-shadow"]
 refs = [
@@ -17,6 +17,11 @@ refs = [
   "docs/dev/blast-radius/regenerate-keeps-cover-letter.md",
 ]
 summary = "A with-letter generate consumes the letter edit in the context but not on the run row; resume shows the typed text."
+resolution = "2026-10-14, fix/run-row-letter-edit-shadow: both generate routes call _clear_consumed_run_edits, which derives the run row's letter-edit clear from resolve_cover_letter_after_generate's result (the value the child context is written from), and _persist_cover_letter_to_db nulls edited_cover_letter_text in its existing session. Observed first on main for all three routes, including the detached route that was only inferred here. The frozen carry_edits path with a produced letter was observed and is consistent across surfaces, so no change there."
+verified_by = [
+  "tests/test_run_row_letter_edit.py::test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit",
+  "tests/test_run_row_letter_edit.py::test_a3_the_detached_letter_route_consumes_the_run_row_letter_edit",
+]
 ```
 
 **Observed** (`docs/dev/diagnosis/regenerate-keeps-cover-letter.md` O10, control C3 in
