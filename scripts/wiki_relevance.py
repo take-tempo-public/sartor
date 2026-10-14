@@ -141,6 +141,7 @@ RELEVANT_OVERRIDES = frozenset(
         "scripts/project_docs_to_mdx.py",
         "scripts/release_version.py",
         "scripts/verify_doc_template.py",
+        "scripts/wiki_cites.py",
         "scripts/work_items.py",
     }
 )
