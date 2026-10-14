@@ -5,8 +5,11 @@ kind = "item"
 title = "After a with-letter generate the run row's typed letter edit still shadows the new letter in resume_state"
 status = "open"
 decision_owner = "agent"
-branches = ["fix/regenerate-keeps-cover-letter"]
+branches = ["fix/regenerate-keeps-cover-letter", "fix/run-row-letter-edit-shadow"]
 refs = [
+  "docs/dev/diagnosis/run-row-letter-edit-shadow.md",
+  "docs/dev/blast-radius/run-row-letter-edit-shadow.md",
+  "tests/test_run_row_letter_edit.py",
   "blueprints/applications.py",
   "blueprints/generation.py",
   "db/persist_run.py",
@@ -46,3 +49,12 @@ row's edit in place too. Instrument it before choosing a fix.
 
 Found by that branch's control C3 while verifying that a with-letter generate still consumes the
 typed edit. Pre-existing, not caused by item 162's fix, and outside its scope (the context file).
+
+### 2026-10-14 — instrumented on `fix/run-row-letter-edit-shadow`
+
+Observed on `main` @ `562a3a0` (`tests/test_run_row_letter_edit.py`, `--runxfail`): the run
+row's `edited_cover_letter_text` outlives the context's edit after BOTH a with-letter generate
+(JSON and SSE) and a detached `/api/generate-cover-letter`, so the inferred half above is now
+observed (`docs/dev/diagnosis/run-row-letter-edit-shadow.md` O1-O3). The frozen
+`carry_edits=True` path with a produced letter keeps the typed edit on the context and the run
+row alike (O5): consistent, and not this defect. Fix not yet written.
