@@ -241,6 +241,30 @@ invocation. Re-run as two invocations (`-k` on `test_plan_approval_scoping.py` o
 `test_evidence_gate`, `test_c12_disclosure_gate`, `test_ledger_spool`,
 `test_verify_doc_template` and `test_interrogative_witness` (session scratchpad `wider2.log`).
 
+**O18 — the full local gate on `490f021` did not finish: the harness killed it for low system
+memory while the UX tier was at 52%.** Session scratchpad `gate.log`, read after the kill:
+
+```
+=== gate: ruff check . ===            passed
+=== gate: ruff format --check . ===   passed
+=== gate: mypy . ===                  Success: no issues found in 423 source files
+=== gate: pytest -m "not ux" -n auto ===   3365 passed, 8 skipped in 345.26s (0:05:45)
+=== gate: pytest -m ux ===            91 PASSED, 0 FAILED, killed at [ 52%]
+background task status: killed -- "the system is running low on memory"
+```
+
+- **Not a pass.** `python -m scripts.gate --result` reads `FAILED -- last run: exit 1, failed step
+  'memory preflight', finished 2026-10-11T09:09:54, HEAD 6dc58c3`: the killed run was terminated
+  hard and wrote no result, so the file still holds an earlier run's. There is **no local gate
+  pass for this tree**.
+- **No failure and no retry in what ran.** `grep -c -E "\] (FAILED|ERROR|RERUN|XPASS)"` over the
+  log returns 0; the 32 looser matches are test names containing "rerun" and the plugin banner
+  (`rerunfailures-16.4` was active, so an absorbed rerun would have printed).
+- **Free memory read 4.36 GB when it started** against the gate's 1.0 GB floor, so the preflight
+  did not refuse. The harness's own reaper stopped it. `CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1`
+  turns that off, but only at Claude Code startup.
+- The UX tier's remaining 48% is unrun here. CI's `ux` job is where it runs.
+
 ---
 
 ## Falsified
