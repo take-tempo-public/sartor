@@ -161,6 +161,86 @@ state: {"prompt_seq": 2, "armed_seq": 1, "interrogative": false, "witnessed": tr
 
 Each hook process took 0.13-0.35 s in that run.
 
+**O12 — the ledger defect, reproduced on the unfixed writers** (`tests/test_ledger_spool.py`,
+10 tests against throwaway git repos with the real `.claude/*` ignore rule, before
+`scripts/enforcement/ledger_spool.py` existed):
+
+```
+FAILED TestCompactionReceipt::test_a_compaction_on_main_leaves_the_tree_clean
+       AssertionError: assert '?? docs/\n' == ''
+FAILED TestCompactionReceipt::test_master_is_trunk_too[master]
+FAILED TestCompactionReceipt::test_a_detached_head_is_trunk_too
+FAILED TestCompactionReceipt::test_the_count_spans_both_locations
+FAILED TestCompactionReceipt::test_the_spool_is_lf_only
+FAILED TestPlanArchivedReceipt::test_a_retirement_on_main_leaves_the_tree_clean
+6 failed, 4 passed
+```
+
+The 4 that passed are controls (a feature branch, a directory with no git, the real
+`.gitignore`), so the 6 failures are the defect and not a broken drive.
+
+**O13 — after the fix, through the real entry points** (`hook.py capture-before-compact` and
+`hook.py restore-evidence`, throwaway repo, session `e2e-ledger-165`):
+
+```
+PreCompact on main          exit=0   git status --porcelain = ''   tracked shard exists = False   spool exists = True
+  spool row = {"event": "compacted", "session": "e2e-ledger-165", "branch": "main", "trigger": "auto", ...}
+SessionStart(compact)       "Compactions on record this session: 1."
+PreCompact on fix/e2e       exit=0   git status --porcelain = '?? docs/\n'   (a branch row is tracked, as before)
+SessionStart(compact)       "Compactions on record this session: 2."
+```
+
+**O14 — the xfail gate bites on the real tree, not only on synthetic source**
+(`tests/test_xfail_controls_gate.py`, session scratchpad `mutate_xfail_gate.py`):
+
+```
+baseline problems: []
+with violating file: 2
+   tests/_probe_xfail_violation.py:4: strict xfail without raises=AssertionError; a broken drive would read as the expected defect
+   tests/_probe_xfail_violation.py: holds a strict xfail but does not import control/ControlFailed from tests._controls, so its controls are bare asserts
+after removal: [] | probe exists: False
+```
+
+At HEAD the repo holds no strict xfail (`grep -rn "xfail(" tests | grep -i "strict=True"` finds
+only docstrings), so the gate passes on the shipped tree by construction; the probe is what shows
+it is not vacuous.
+
+**O15 — what the wiki's cites look like, measured with `scripts/wiki_cites.py` (item 166).**
+`python -m scripts.wiki_cites --summary`, 44 pages (`pages/*.md`, `overview.md`, `index.md`):
+
+```
+cites by kind:          {'symbol': 727, 'line': 11, 'prose-line': 14}
+with a resolved path:   {'symbol': 727, 'line': 11}
+line cites per page:    diagnostics-console 2, document-rendering 3, education-degree-field-rendering 12,
+                        governance-extraction 2, llm-call-catalog 1, non-dependency-downloads 2,
+                        openapi-api-reference 1, route-surface 2        (total 25)
+E2 (past end of file):  0        E3 (symbol absent from file):  0
+```
+
+The first run reported 6 E3 hits, all `` [`parser.py`](../../../parser.py) `` / `scraper.py`: a
+file-name label read as a symbol. They were false positives, fixed by treating a label that ends
+in a file extension as a path, and pinned by `test_a_filename_label_is_a_path_not_a_symbol`.
+Widening prose-line detection to the preceding wrapped line moved the count from 20 to 25
+(`education-degree-field-rendering.md` 7 → 12).
+
+**O16 — the three rules fire on a real page, not only on synthetic source.** A violation seeded
+into `docs/wiki/pages/llm-call-catalog.md` in memory (the file on disk untouched):
+
+```
+docs/wiki/pages/llm-call-catalog.md:164: E2: analyzer.py:99999 is past the end of the file (5027 lines)
+docs/wiki/pages/llm-call-catalog.md:164: E3: analyzer.py does not contain 'no_such_symbol_zzz' (cited as 'no_such_symbol_zzz')
+docs/wiki/pages/llm-call-catalog.md:0: E1: 3 bare line cite(s), 1 allowed: cite a symbol (or a heading) instead of a line number
+clean tree: True
+```
+
+**O17 — a corrected test sweep was needed to see anything.** The first "wider sweep" passed with
+`22 passed, 364 deselected`: a `-k` expression meant for one slow file filtered every file in the
+invocation. Re-run as two invocations (`-k` on `test_plan_approval_scoping.py` only):
+`11 passed, 26 deselected` and `408 passed, 2 skipped in 128.08s` over `test_enforcement_core`,
+`test_n1_pipeline`, `test_enforcement_coverage`, `test_governance_hooks_gate`,
+`test_evidence_gate`, `test_c12_disclosure_gate`, `test_ledger_spool`,
+`test_verify_doc_template` and `test_interrogative_witness` (session scratchpad `wider2.log`).
+
 ---
 
 ## Falsified
@@ -220,8 +300,53 @@ Item 164 (`28812dd`, after the instrument commits `d3e5296` and `a2bdc9c`):
   inside the window is refused once more. (3) The 1.13 s sibling gap is n = 1; no distribution
   was measured. (4) Scheduled-wakeup, cron and usage-limit-resume prompts were not observed
   and still arm.
-- The instrument is removed in the closing commit of this item; `git show d3e5296 a2bdc9c`
-  keeps it.
+- The instrument was removed in `960dcd9`; `git show d3e5296 a2bdc9c` keeps it.
+
+Item 165 (this commit's successor, same branch):
+
+- `scripts/enforcement/ledger_spool.py` routes a hook-written receipt: `main`, `master` or a
+  detached `HEAD` go to the untracked `.claude/state/ledger/<session>.jsonl`, any other branch to
+  the tracked shard. `claude_context_hook.record_compaction` and `plan_gate.retire` both write
+  through `hook_shard`, and `compaction_count` reads both places.
+- Owner decision (2026-10-14): divert only on trunk, so branch-time rows stay committed evidence.
+- `docs/dev/prov/SPEC.md` §3 now names `compacted` and `plan-archived` (closes item 55).
+- **Declared limits.** A branch name of `""` keeps the tracked shard (no repo, or `git` failed).
+  `plan_gate` reads `.git/HEAD` itself and reports a detached HEAD as `""`, so its receipt stays
+  tracked there. The spool is machine-local and is not part of the committed record.
+
+Item 166 (owner decision, 2026-10-14: all three parts):
+
+- `scripts/wiki_cites.py`: E1 bare line cites ratcheted per page in `ALLOWED_LINE_CITES` (exact
+  counts, both directions), E2 a line cite past the end of its file, E3 a cited symbol the file
+  does not contain, E4 (`--base`, listed; `--strict-removed` to fail) a symbol cite removed while
+  its target still exists. E1-E3 are a pytest test (`TestTheRealTree`), so they ride the gate's
+  `pytest` step like `wiki_freshness` does; **no separate `scripts/gate.py` step** (a deviation
+  from the plan, recorded in the blast-radius dossier row 33).
+- E4 is deliberately **not** in the merge gate: a deliberate removal has no way through there.
+  `commands/wiki-self-update.md` runs it (step 4), where the orchestrator restores the cite or
+  logs the removal.
+- `agents/wiki-grounding-auditor.md` moves to `claude-sonnet-5` and gains four explicit checks
+  (a claim about a branch the code can take, a negative or universal claim, an intent, a
+  placement or name). `CLAUDE.md`, `docs/dev/tooling.md` and `docs/dev/decisions.md` (PX-47b,
+  amended) carry the new counts.
+- `commands/wiki-self-update.md` step 6: the orchestrator reviews every added sentence against
+  source. **Prose, labeled unenforced** (C-11).
+- Declared limits: whether a sentence is *true* is not checkable by a script; a `lines N-M` with
+  no path on its own or the preceding line is not seen; E3 is word-presence, weaker than "defined
+  here". Not measured: Sonnet's catch rate against Haiku's, or its per-pass cost.
+
+Item 167:
+
+- `tests/_controls.py` holds `ControlFailed` and `control` once; the two files that each defined
+  them import it (`tests/test_regenerate_cover_letter.py`, the B7 browser arm).
+- `tests/test_xfail_controls_gate.py` fails on a strict `xfail` without `raises=AssertionError`
+  (or with `Exception`/`BaseException`/`ControlFailed`, which would match the step failures it
+  exists to separate), on a module holding one that does not import the shared helper, and on a
+  second `ControlFailed` definition. The project's `xfail_strict` setting is honored.
+- **Declared limits.** Whether a step *uses* `control` rather than a bare `assert` is not
+  checked: that needs a call graph through each arm's drive helpers. Non-strict xfails (two
+  exist, deliberately, in `test_20260708_busy_states_and_chip.py`) and the imperative
+  `pytest.xfail(...)` are out of scope.
 
 ---
 

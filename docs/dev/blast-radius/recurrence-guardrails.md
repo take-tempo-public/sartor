@@ -25,7 +25,9 @@ Ungated surfaces whose consumers still matter:
 - `scripts/enforcement/adapters/claude_context_hook.py`: `_ledger_shard`,
   `record_compaction`, `compaction_count`.
 - `scripts/enforcement/plan_gate.py`: the `plan-archived` write (`:276-292`).
-- New: a small ledger-path helper under `scripts/enforcement/`, `scripts/wiki_cites.py`,
+- New (built): `scripts/enforcement/ledger_spool.py`, with two importers outside tests
+  (`claude_context_hook.py`, `plan_gate.py`); `tests/test_ledger_spool.py`.
+- New: `scripts/wiki_cites.py`,
   `tests/_controls.py`, `tests/test_xfail_controls_gate.py`, `tests/test_wiki_cites.py`.
 - `agents/wiki-grounding-auditor.md` (`model:` and method), `commands/wiki-self-update.md`.
 
@@ -66,7 +68,7 @@ workflow script, so the helper must not be referenced from `.claude/workflows/n1
 | 3 | `claude_context_hook.py:173-226` `record_compaction` | update | Writes through the helper. Field set unchanged. |
 | 4 | `scripts/enforcement/plan_gate.py:276-292` | update | Same helper. `branch or "unknown"` already maps an unreadable branch to `"unknown"`, which the helper treats as trunk. |
 | 5 | `scripts/verify_doc_template.py:221-250,281` `read_ledger` | no change | Reads `docs/dev/ledger/*.jsonl` only. The spool is deliberately outside it: a spool row is never joined into provenance reads. |
-| 6 | `tests/test_c12_disclosure_gate.py:157-306` | update | Hardcodes `tmp_path/docs/dev/ledger/<sid>.jsonl`; these tests run on a tmp dir that is not a git repo (branch `""`). Behavior there must stay "tracked shard", so the helper treats an unreadable branch as **branch** only when the tree has no git metadata at all. See Deferred 1. |
+| 6 | `tests/test_c12_disclosure_gate.py:157-306` | no change (as built) | Hardcodes `tmp_path/docs/dev/ledger/<sid>.jsonl`; these tests run on a tmp dir that is not a git repo (branch `""`), which the helper keeps on the tracked shard, so all 27 pass unedited. See Deferred 1. |
 | 7 | `tests/test_verify_doc_template.py:294-372` `_LEDGER_APPEND_WRITERS` | update | The helper opens the file for append; register it, pin `newline="\n"`, and add the spool dir to the CR-byte scan. |
 | 8 | `tests/test_plan_approval_scoping.py:638` | no change | Reads the receipt from the tracked shard on a feature branch; stays true. Verify, don't assume. |
 | 9 | `tests/conftest.py:69-80` `_no_live_session_id` | no change | Still deletes `CLAUDE_CODE_SESSION_ID`. Add the spool dir to the autouse isolation if a test can reach the real one. |
@@ -74,7 +76,7 @@ workflow script, so the helper must not be referenced from `.claude/workflows/n1
 | 11 | `docs/dev/ledger/README.md:3-8` | update | Stale "exclusively by verify_doc_template". |
 | 12 | `docs/dev/n1-baseline-pipeline.md:225-233,284` | no change | Says a branch-time gate run can gain a `compacted` receipt. Still true on a branch. |
 | 13 | `docs/governance/charter.md:332` | no change | Cites the receipt as durable; the spool is durable local state and the branch rows stay committed. Re-read at the edit. |
-| 14 | `scripts/wiki_relevance.py:8,46` | no change | `docs/dev/ledger/` is process churn. The spool is outside `docs/`. |
+| 14 | `scripts/wiki_relevance.py:8,46` | no change for the ledger | `docs/dev/ledger/` is process churn. The spool is outside `docs/`. **But see row 34.** |
 | 15 | `scripts/doc_registry.py:33` | no change | Record prefix; unaffected. |
 | 16 | `interrogative_witness.py:132-151` `record_prompt` | update | Takes the extra payload facts; skips arming on a non-human turn; keeps counting `prompt_seq`. Signature stays backward compatible (new args optional). |
 | 17 | `interrogative_witness.py:176-198` `decide` | update | Adds batch-sibling blocking. Every failure path still allows. |
@@ -93,18 +95,20 @@ workflow script, so the helper must not be referenced from `.claude/workflows/n1
 | 30 | `tests/test_n1_pipeline.py:831` `test_frontmatter_pins` | no change | Pins the n1 agents only, not the wiki auditor. Verify by running it. |
 | 31 | `tests/test_wiki_relevance_classification.py:170-243` | update | The path-token regex and resolver move into `scripts/wiki_cites.py` and this test imports them. Behavior must be identical; its own tests are the check. |
 | 32 | `tests/test_regenerate_cover_letter.py:61-67`, `tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py:70-76` | update | Import `ControlFailed`/`_control` from `tests/_controls.py` instead of defining them. |
-| 33 | `scripts/gate.py` | update | Add the `wiki_cites` step. It is the single definition of "gate green", so CI picks it up. |
+| 33 | `scripts/gate.py` | no change (decided while building) | The check is a pytest test (`tests/test_wiki_cites.py::TestTheRealTree`), which the gate's `pytest -m "not ux"` step and CI already run, the same way `tests/test_wiki_freshness_gate.py` rides it. A separate step would run it twice. Deviation from the plan, recorded here. |
+| 34 | `scripts/wiki_relevance.py` `RELEVANT_OVERRIDES` (gated helper, the classifier behind the merge-blocking freshness gate) | update | `docs/wiki/SCHEMA.md` now cites `scripts/wiki_cites.py`, so `test_relevant_overrides_equal_wiki_cited_mixed_files` requires the override: found by staging the new file and running that test (it passed while the file was untracked). One entry, sorted; no classification logic changes. |
+| 35 | `docs/wiki/SCHEMA.md` "Grounding for code claims" (gated) | update | One sentence naming the mechanical enforcement. Its consumers (registry: the scribe, the auditor, `/wiki-lint`) read the cite rule; the rule itself ("prefer a symbol") is unchanged, so no reader's behavior is contradicted. |
+| 36 | `agents/wiki-grounding-auditor.md` method | update | Four checks the logged misses show were skipped (branch claims, negative claims, intent, placement), and bare line cites as a finding. Read by `commands/wiki-self-update.md` only. |
 
 ---
 
 ## Deferred
 
 1. **Trunk detection in a non-git temp dir.** The existing c12 tests call
-   `record_compaction` with `cwd` = a plain `tmp_path`, where `git_branch` returns `""`. The
-   helper must tell "git says detached/unknown on a real repo" from "not a git work tree". The
-   planned rule: spool only when the project dir **is** a work tree and the branch is
-   `main`/`master`/`HEAD`; otherwise keep the tracked shard. A real repo where git fails
-   (returns `""` with a `.git`) keeps today's behavior, which is a declared limit.
+   `record_compaction` with `cwd` = a plain `tmp_path`, where `git_branch` returns `""`. As
+   built: only the names `main`, `master` and `HEAD` spool, so `""` (no repo, or `git` failed)
+   keeps the tracked shard. A real repo where `git` fails therefore keeps today's behavior, a
+   declared limit. `plan_gate` reports a detached HEAD as `""` and so also stays tracked.
 2. **Rows already written.** Nothing is migrated. There was no stray row at the start of this
    session (`git status` clean on `main` @ `d9f1b8f`, per the session-start snapshot); the one
    untracked file now is this session's own consumed-ledger file, which the first commit
