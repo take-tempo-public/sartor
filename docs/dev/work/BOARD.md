@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 22 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 85
+**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 85
 
 ## Open
 
@@ -26,6 +26,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **146** -- Health endpoint, single-instance launch, and a pid/lock file in SARTOR_HOME (`agent`) -- A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **161** -- GET /composition parses the same context file about eleven times per request (`agent`) -- Each _read_* helper re-reads and re-parses the context JSON; one parse could serve them all.
+- **170** -- Confirm before a generate or a new cover letter overwrites a typed edit (Continue / Cancel) (`agent`) -- A typed edit is overwritten with a notice only after (résumé) or none (letter); warn first, Continue or Cancel.
 
 ## Blocked
 

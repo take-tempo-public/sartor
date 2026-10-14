@@ -1,12 +1,13 @@
-<!-- provenance: schema=1 session=c6221f23-8b99-4759-9ce5-08ab8e9ed9a6 branch=fix/run-row-letter-edit-shadow commit=840c87b actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-14 -->
+<!-- provenance: schema=1 session=c6221f23-8b99-4759-9ce5-08ab8e9ed9a6 branch=fix/run-row-letter-edit-shadow commit=2ec68aa actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-14 -->
 
 # Agent handoff — a new cover letter now clears the run row's typed letter edit (`fix/run-row-letter-edit-shadow`, item 163) → owner's next drawdown pick
 
-**Branch to create:** none directed by this session. The owner picks the next drawdown item;
-see "What this branch should build".
+**Branch to create:** `feat/confirm-before-overwriting-typed-edits` (item 170, the owner's chosen
+next branch), once the PR for this branch has merged.
 **Base branch:** `main`
 
-> **This session closed item 163 on one branch (owner pick, 2026-10-14).**
+> **This session closed item 163 on one branch (owner pick, 2026-10-14), and filed item 170 at
+> the owner's request.**
 > - **The defect:** after a generate or a detached `/api/generate-cover-letter` replaced a letter,
 >   the context dropped the typed letter edit but `ApplicationRun.edited_cover_letter_text` kept
 >   it, so a Pipeline resume showed the typed text over the new letter and `has_edits` stayed true.
@@ -18,6 +19,9 @@ see "What this branch should build".
 >   the typed letter edit over a newly produced letter on the context, the run row and the response
 >   alike (O5). That is consistent, so it is not this defect; whether it is the right product
 >   behaviour is the owner's call, and nothing here decides it.
+> - **Item 170 (new, owner request):** warn with Continue or Cancel before a typed edit is
+>   overwritten. The owner decided three things: a **separate branch after this merges**, **all
+>   three overwrite cases**, and a **server handshake** for the résumé case. Nothing is built.
 
 ---
 
@@ -70,7 +74,8 @@ see "What this branch should build".
 - ~~`fix/recurrence-guardrails`~~ ✓ (#168): items 164-167 filed and closed, item 55 closed;
   168 and 169 filed (watching).
 - ~~`fix/run-row-letter-edit-shadow`~~ ✓ (PR pending): item 163 closed.
-- **Next: the owner's pick.** Not started:
+- **Next: item 170, the owner's choice** (`feat/confirm-before-overwriting-typed-edits`, after
+  this branch's PR merges). Other Open items, not started:
   - item 161 (`GET /composition` parses the context about eleven times per request; counted from
     the code, not measured, so the first step is a measurement);
   - item 7 memory-consolidation apply (Deferred);
@@ -92,7 +97,8 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/run-
 | `b2bafb1` | **The dossiers and the reproduction first** (C-7, C-10). `docs/dev/diagnosis/run-row-letter-edit-shadow.md` (`## Observed` O1-O5), `docs/dev/blast-radius/run-row-letter-edit-shadow.md`, `tests/test_run_row_letter_edit.py` with the three defect arms as `xfail(strict=True, raises=AssertionError)`, and this session's consumed-ledger file. Run on `main` @ `562a3a0` with `--runxfail`, all three failed at the invariant line after their controls held. |
 | `09f2771` | **The fix.** `_clear_run_edits(run_id, *, resume, letter)`; new `_clear_consumed_run_edits`, called by both generate routes; `_persist_cover_letter_to_db` nulls the column in its existing session. Only the three xfail markers were deleted from the instrument. CHANGELOG entry. |
 | `840c87b` | Item 163 closed (`verified_by`, board regenerated); the wiki's "writes **only** `generated_cover_letter_md`" sentence corrected in `application-audit-chain.md`; `docs/wiki/log.md` entry; consumer grep re-derived. |
-| (this commit) | This handoff and its `generated` ledger file. |
+| `2ec68aa` | The first version of this handoff, its `generated` ledger row, and the item 169 note. |
+| (this commit) | Item 170 filed, board regenerated, this handoff regenerated to carry it (a second `generated` ledger row). Docs only. |
 
 **Tests run locally** (`-p no:rerunfailures`):
 - `tests/test_run_row_letter_edit.py`: 8 passed (3 controls x2 arms of `C2`, `C1`, `C3`, `A1`/`A2` json and stream, `A3`, `A5`);
@@ -101,20 +107,25 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/run-
 - `ruff check` and `ruff format --check` clean on the changed Python; `mypy blueprints/generation.py` clean; `work_items check` OK (169); `wiki_cites` OK; `wiki_freshness` OK (38 < 75); `tests/test_wiki_cites.py` 34 passed.
 
 **Gate:**
-- `python -m scripts.gate --result`, run on `840c87b` (the commit before this handoff):
+- `python -m scripts.gate --result`, run on `840c87b`, the last commit that touched code or tests:
   `gate --result: PASSED on this tree -- exit 0, failed step None, finished 2026-10-14T14:17:58-0700, HEAD 840c87b`
-- **That result goes stale the moment this handoff is committed**, because the result binds to
-  HEAD and this commit moves it. The gate ran on the tree one docs commit short of this one
-  (the handoff, its ledger file and the item 169 note).
+- **That result is stale for the tip**, because the result binds to HEAD. Two docs-only commits
+  sit on top of it: the first handoff (`2ec68aa`) and this one (item 170 filed, board
+  regenerated, handoff regenerated). Neither changes code or tests. `work_items check` and the
+  doc checks (`check_doc_links` 655 files OK, `check_doc_frontmatter` OK, `check_doc_single_home`
+  OK, `doc_lints` 0 blocks) were re-run by hand on the tip; the full gate was not.
 - **What it ran:** `ruff check` and `ruff format --check` clean; `mypy` clean;
   `pytest -m "not ux" -n auto` **3373 passed, 8 skipped** (6 m 32 s; 3365 before this branch, the
   8 new are `tests/test_run_row_letter_edit.py`); `pytest -m ux` **171 passed, 2 xpassed**
-  (9 m 02 s); `work_items check` OK (169). The log holds no `FAILED`, `ERROR` or `RERUN` status
-  line (a `grep -aE` count of 0). The 2 xpassed are the two deliberately non-strict xfails in
-  `tests/ux/regression/test_20260708_busy_states_and_chip.py`, which this branch does not touch.
+  (9 m 02 s); `work_items check` OK (169, now 170). The log holds no `FAILED`, `ERROR` or `RERUN`
+  status line (a `grep -aE` count of 0). The 2 xpassed are the two deliberately non-strict xfails
+  in `tests/ux/regression/test_20260708_busy_states_and_chip.py`, which this branch does not touch.
 - **The run was not killed**, and it passed the 52% UX mark where the previous session's first
   run was reaped. I kept the turn active with a blocking wait on the gate's process, as the
   previous handoff advised; whether that mattered is unproven (one run).
+- **Also declared:** `python scripts/check_docs_projection_fresh.py` reports `STALE -- projected
+  from uncommitted edits on top of 038c36cdccaf` on a clean tree. It is not a gate step and was
+  not investigated or regenerated here.
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
 - **CI on the PR:** not yet run; the PR is not open. Push needs the owner's confirmation.
 
@@ -122,11 +133,11 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `fix/run-
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 22 / 10 ceiling -- OVER"**
-(this branch closed 163; nothing was filed as Open). The owner's drawdown direction stands: down
+The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 23 / 10 ceiling -- OVER"**
+(this branch closed 163 and filed 170 at the owner's request, so Open is 22 + 1). The owner's drawdown direction stands: down
 to 0 if possible, before alpha staging. That is well past the ~8–10 reduction-sprint threshold.
 
-`## Open` (20 items listed; the header's 22 also counts open epics). Generated from the board;
+`## Open` (21 items listed; the header's 23 also counts open epics). Generated from the board;
 owner-decision items are marked *(owner)*:
 - **50** *(owner)*: C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **98**: Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
@@ -148,6 +159,7 @@ owner-decision items are marked *(owner)*:
 - **146**: A second launch starts a second server attempt on :5000; nothing identifies a running sartor or stops it cleanly.
 - **147**: Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **161**: Each _read_* helper re-reads and re-parses the context JSON; one parse could serve them all.
+- **170**: A typed edit is overwritten with a notice only after (résumé) or none (letter); warn first, Continue or Cancel. Owner request 2026-10-14, filed on this branch.
 
 `## Blocked` (4): **3**, **5**, **8**, **97**.
 
@@ -269,20 +281,31 @@ unless marked:
 
 ## What this branch should build
 
-**None directed by this session.** The next branch is the owner's pick from the Open list above,
-under item 40's drawdown direction. Item 161 is the nearest follow-on in the same files and
-needs a measurement before a fix. Items 168 and 169 are Watching: they need a live
-`/wiki-self-update` pass and a witness trace respectively, not a branch.
+**Item 170, `docs/dev/work/items/0170-confirm-before-overwriting-typed-edits.md`, on a new branch
+`feat/confirm-before-overwriting-typed-edits` off `main`, after the PR for this branch has
+merged.** The owner has decided: Continue or Cancel in all three overwrite cases (a discarded
+typed résumé edit, a typed letter edit consumed by a with-letter generate, one consumed by the
+detached Generate cover letter), and a server handshake for the résumé case. The item lists the
+constraints read from code: check before any LLM spend, parity across `/api/generate` and
+`/api/generate/stream`, reuse `cbConfirm`, enumerate the contract's consumers first (C-10), and
+keep item 163's `carry_edits` question out of it.
 
-Scope is whatever the owner names, as filed in `docs/dev/work/items/`. Do not expand beyond it.
+Open choices the plan still has to settle, and put to the owner if it cannot: the response key
+and the client's confirm flag names, the dialog copy, and how a Cancel leaves the editors.
+
+Items 168 and 169 are Watching: they need a live `/wiki-self-update` pass and a witness trace
+respectively, not a branch. Scope is whatever the owner names, as filed in
+`docs/dev/work/items/`. Do not expand beyond it.
 
 ---
 
 ## First move
 
-Run the pointer check and `--event consumed`, then ask the owner which Open item comes next.
-Then create that branch off `main`, write a plan at `~/.claude/plans/<slug>.md`, and show it to
-the user before touching any code. **Do not code first.**
+Run the pointer check and `--event consumed`. Confirm with the owner that the PR for
+`fix/run-row-letter-edit-shadow` has merged (this handoff's pointer names that branch's commit).
+Then create `feat/confirm-before-overwriting-typed-edits` off `main`, write a plan at
+`~/.claude/plans/<slug>.md`, and show it to the user before touching any code. **Do not code
+first.**
 
 ---
 
