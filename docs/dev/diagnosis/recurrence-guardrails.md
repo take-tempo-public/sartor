@@ -1,7 +1,8 @@
 # Diagnosis — four recurrences from the regenerate-keeps-cover-letter handoff had no fail-closed mechanism
 
-> **Status:** instrument-first. O1-O5 are observed (below). The **discriminator** the witness fix
-> keys on (A2) and the **batch mechanism** (A3) are hypotheses until the A1 trace has run live.
+> **Status:** O1-O8 observed. **A2** (re-arm only on a human prompt) has its discriminator: the
+> `prompt` begins with `<task-notification>` (O6, n=2). **A3** as designed (siblings from the
+> transcript) is falsified (O7); the replacement mechanism is an owner decision, below.
 > **Branch:** `fix/recurrence-guardrails`
 > **Items:** 164 (witness), 165 (ledger rows), 166 (wiki cites), 167 (xfail controls).
 
@@ -93,28 +94,66 @@ only docstring mentions of markers that were deleted
 `tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py:22`); `grep -n xfail_strict
 pyproject.toml pytest.ini setup.cfg` returns nothing.
 
+**O6 — a notification's `UserPromptSubmit` payload (the A1 instrument, commit `d3e5296`,
+read from `<OS temp>/sartor-interrogative-witness/8463b4af-….trace.jsonl`; two background
+tasks, 2026-10-14).** No `origin` field reaches the hook; the `prompt` text begins with the tag:
+
+```
+{"event": "prompt", "keys": ["cwd","hook_event_name","permission_mode","prompt","prompt_id","scratchpad_dir","session_id","transcript_path"], "prompt_head": "<task-notification>", "meta": {"hook_event_name": "UserPromptSubmit", "permission_mode": "auto", ...}}
+{"event": "prompt", "ts": 1791985669.255, "keys": [same 8], "prompt_head": "<task-notification>", ...}
+```
+
+The witness state moved `prompt_seq: 6 → 7, witnessed: false` on the first of them, and the
+next Write was refused with the `PAUSE` text. The transcript's `origin.kind` (O1) is **not**
+in the hook payload, so it cannot be the discriminator.
+
+**O7 — at PreToolUse time the paused call is not in the transcript yet.** Both probes (a
+parallel batch of two Writes after a notification), `batch_siblings` over the payload's
+`transcript_path`, 256 KB tail:
+
+```
+{"event": "pause", "tool_use_id": "toolu_018F4A7c…", "batch": {"found": false, "sibling_ids": [], "tail_bytes": 262001}}
+{"event": "pause", "ts": 1791985673.756, "tool_use_id": "toolu_01AZkEm4…", "batch": {"found": false, "sibling_ids": [], "tail_bytes": 262072}}
+```
+
+**Control** (so `found: false` is a timing fact and not a broken lookup): the same function on
+the same transcript after the turn, for the first probe's id, returned
+`found: True, message_id: msg_011Cg2EQvYtGjrUdJgcEEd6g, sibling_ids: [toolu_018F4A7c…, toolu_01E1PG8M…]`.
+
+**O8 — a batch sibling reached its hook 1.133 s after the pause.** From the timestamped
+records of the second probe:
+
+```
+{"event": "pause", "ts": 1791985673.756, "tool_use_id": "toolu_01AZkEm4…", "blocked": true}
+{"event": "call",  "ts": 1791985674.889, "tool_use_id": "toolu_01TwGQ8u…", "blocked": false}
+```
+
+n = 1 for the gap. Each hook is a fresh Python process, so part of that 1.1 s is interpreter
+start-up; the figure bounds nothing from above.
+
 ---
 
 ## Falsified
 
-_(Nothing yet.)_
+- **A3 as designed: find the paused call's siblings by reading `transcript_path` from the
+  PreToolUse hook.** Killed by O7: 2 of 2 pauses found nothing at hook time, with the lookup
+  proven working by its control. No per-call transcript read can see the batch the call
+  belongs to, because the assistant message is written after PreToolUse hooks run.
+- **The transcript's `origin.kind == "task-notification"` as the witness's discriminator.**
+  Killed by O6: the hook payload has no such field.
 
 ---
 
 ## Inferred
 
-- **That `prompt` starts with `<task-notification>` in the `UserPromptSubmit` hook payload.**
-  O1 shows the *transcript's* `origin` field and content. The hook payload has never been
-  captured (`docs/dev/work/items/0087-…` and `0094-…` record only `PreToolUse` key traces). The
-  transcript's `origin.kind` is the better discriminator **if** the hook payload carries it.
 - **That a notification arriving mid-turn does not fire `UserPromptSubmit`.** The memory note
   `feedback-interrogative-is-not-a-work-order` records 2 of 3 notifications arming and calls the
   cause unresolved. Not tested here.
-- **That the sibling `tool_use` blocks are already in the transcript when the first
-  `PreToolUse` of a batch fires.** O2 shows the storage layout after the fact, not its timing.
-  A3 depends on this.
-- **That a first Write being refused this session came from a notification rather than from the
-  `AskUserQuestion` answer.** Both preceded it; the trace separates them.
+- **That an `AskUserQuestion` answer does not re-arm.** Memory note
+  `reference-subagent-pretooluse-agent-id` records 0 of 3; the trace has not yet seen one.
+- **That a window of a few seconds after a pause separates a batch sibling from the model's
+  re-run.** O8 gives one sibling gap (1.133 s). A re-run needs a full model turn, which is
+  longer in every case seen, but no distribution has been measured.
 
 ---
 
@@ -124,7 +163,7 @@ The A1 instrument writes, per `UserPromptSubmit`, the payload's key names, any
 `origin`-like field, and the leading tag of `prompt`; and per pause, whether the paused call's
 `tool_use_id` and its siblings are in the transcript tail.
 
-- **A2 stands** if a notification's payload carries a field or a leading tag that a human
+- **A2 stands (O6)** if a notification's payload carries a field or a leading tag that a human
   prompt never does. Then the witness skips arming on it.
 - **A2 is dead** if notification and human payloads are indistinguishable. Then stop and
   bring the owner the observation: the fix would have to live elsewhere (for example keying on
@@ -132,6 +171,7 @@ The A1 instrument writes, per `UserPromptSubmit`, the payload's key names, any
 - **A3 stands** if the sibling ids are in the tail at first-`PreToolUse` time. **A3 is dead**
   if they are not; then no per-call hook can see the batch and the declared "no mechanism
   possible" for the batched half stays, with the reason written down.
+  **Verdict: dead (O7, 2 of 2, control passed).** The owner chooses what replaces it.
 
 ---
 

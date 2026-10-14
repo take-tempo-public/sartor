@@ -64,6 +64,10 @@ def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     from scripts.enforcement.guards import interrogative_witness
 
     monkeypatch.setenv(interrogative_witness.STATE_DIR_ENV, str(tmp_path / "witness-state"))
+    # The sibling-refusal window (item 164) would refuse a test's immediate "re-run the same
+    # call" as a sibling of the pause. Off by default under test; the tests of the window
+    # itself pass an explicit value (an explicit `env=` wins, as above).
+    monkeypatch.setenv(interrogative_witness.BATCH_WINDOW_ENV, "0")
 
 
 @pytest.fixture(autouse=True)
