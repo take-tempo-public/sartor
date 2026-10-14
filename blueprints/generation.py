@@ -163,6 +163,12 @@ def _persist_cover_letter_to_db(
     would clobber the saved résumé md. Used by `/api/generate-cover-letter` only
     when the context carries `application_run_id` (corpus-backed mode); the
     caller wraps this best-effort so a DB hiccup never fails the response.
+
+    Also nulls ``edited_cover_letter_text`` (item 163): the route pops the typed
+    letter edit from the context ("the user just got a fresh LLM-generated letter"),
+    and ``resume_state`` reads ``edited_cover_letter_text or generated_cover_letter_md``,
+    so leaving the run row's copy would show the typed text over the new letter.
+    The same session, so no extra round trip. Its only caller always has a new letter.
     """
     from db.models import Application, ApplicationRun
     from db.persist_run import persist_cover_letter_md
@@ -185,6 +191,7 @@ def _persist_cover_letter_to_db(
             return
 
         persist_cover_letter_md(session, run, cover_letter_md)
+        run.edited_cover_letter_text = None
         session.commit()
         logger.info(
             "Persisted cover-letter md: app_run=%d (%d chars)",
@@ -893,13 +900,22 @@ def _built_from_edited_baseline(context_set: Mapping[str, Any], result: Mapping[
     return bool(context_set.get("edited_cover_letter_text") and result.get("cover_letter_content"))
 
 
-def _clear_run_edits(application_run_id: int) -> None:
-    """Clear a run's saved typed RÉSUMÉ edit after a frozen regenerate discarded it.
+def _clear_run_edits(
+    application_run_id: int, *, resume: bool = False, letter: bool = False
+) -> None:
+    """Clear a run's saved typed edits that a generate has consumed or discarded.
 
-    `_persist_edited_text_to_db` treats None as "no change", so a discard needs its
-    own write; otherwise resuming the application would reload an edit the preview no
-    longer shows. The cover-letter edit is left alone (item 162, owner decision D4: a
-    discard is of the résumé edit). Best-effort, like its siblings.
+    `_persist_edited_text_to_db` treats None as "no change", so a clear needs its own
+    write; otherwise resuming the application would reload an edit the preview no
+    longer shows. Only the flagged columns are written, in one session:
+
+    - ``resume``: a frozen regenerate discarded the typed RÉSUMÉ edit (decision 4).
+      A discard is of the résumé edit only (item 162, owner decision D4).
+    - ``letter``: a generate that produced a letter consumed the typed LETTER edit, as
+      the context does (``hardening.resolve_cover_letter_after_generate``; item 163).
+      Without it ``resume_state`` shows the typed text over the new letter.
+
+    Best-effort, like its siblings.
     """
     from db.models import ApplicationRun
     from db.session import get_session
@@ -909,7 +925,10 @@ def _clear_run_edits(application_run_id: int) -> None:
         run = session.query(ApplicationRun).filter_by(id=application_run_id).first()
         if run is None:
             return
-        run.edited_resume_text = None
+        if resume:
+            run.edited_resume_text = None
+        if letter:
+            run.edited_cover_letter_text = None
         session.commit()
     except Exception:
         session.rollback()
@@ -918,6 +937,25 @@ def _clear_run_edits(application_run_id: int) -> None:
         )
     finally:
         session.close()
+
+
+def _clear_consumed_run_edits(
+    application_run_id: int,
+    result: Mapping[str, Any],
+    edits_discarded: bool,
+    typed_letter_edit: str,
+) -> None:
+    """Mirror onto the run row which typed edits this generate consumed (item 163).
+
+    Both generate routes call this with the values they already hold, so the DB side is
+    derived from the same ``resolve_cover_letter_after_generate`` result the child context
+    is written from, and the two cannot disagree. The letter edit is consumed when this
+    generate produced a letter and the context did not carry the edit forward
+    (``typed_letter_edit`` is empty). One write, and none when nothing was consumed.
+    """
+    clear_letter = bool(result.get("cover_letter_content")) and not typed_letter_edit
+    if edits_discarded or clear_letter:
+        _clear_run_edits(application_run_id, resume=edits_discarded, letter=clear_letter)
 
 
 def _frozen_composition(context_set: ContextSet) -> dict[str, Any] | None:
@@ -1279,13 +1317,13 @@ def run_generation() -> ResponseReturnValue:
     carry_edits, edits_discarded = _typed_edits_disposition(
         context_set, frozen_doc, result["resume_content"]
     )
-    if edits_discarded and app_run_id is not None:
-        _clear_run_edits(int(app_run_id))
     # fix/regenerate-keeps-cover-letter (item 162): the letter (and typed letter edit)
     # the child context will hold, by the one rule the helper applies to the file.
     cover_letter, typed_letter_edit = resolve_cover_letter_after_generate(
         context_set, result["cover_letter_content"], carry_edits=carry_edits
     )
+    if app_run_id is not None:
+        _clear_consumed_run_edits(int(app_run_id), result, edits_discarded, typed_letter_edit)
 
     new_context_path = save_iteration_context(
         parent_context=context_set,
@@ -1601,12 +1639,14 @@ def run_generation_stream() -> ResponseReturnValue:
             carry_edits, edits_discarded = _typed_edits_disposition(
                 context_set, frozen_doc, result["resume_content"]
             )
-            if edits_discarded and app_run_id is not None:
-                _clear_run_edits(int(app_run_id))
             # Item 162 — as /api/generate: what the child context will hold.
             cover_letter, typed_letter_edit = resolve_cover_letter_after_generate(
                 context_set, result["cover_letter_content"], carry_edits=carry_edits
             )
+            if app_run_id is not None:
+                _clear_consumed_run_edits(
+                    int(app_run_id), result, edits_discarded, typed_letter_edit
+                )
 
             new_context_path = save_iteration_context(
                 parent_context=context_set,

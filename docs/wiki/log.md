@@ -2839,3 +2839,33 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   `OK (38 file(s) changed since the last ingest (< 75-file block threshold))`.
 - **Not done, and why:** the first pass with the Sonnet auditor and the new cite-check step is
   still ahead; this entry has no auditor, review or cite-check catch counts to log.
+
+## 2026-10-14 — scoped `/wiki-self-update` (`fix/run-row-letter-edit-shadow`, item 163)
+
+- **Mode:** scoped to this branch's own diff (`562a3a0..HEAD`); one source,
+  `blueprints/generation.py`, one affected page, `application-audit-chain`. The checkpoint is
+  **not** advanced (`.last_ingest_sha` unchanged).
+- **Page changed:** `application-audit-chain.md`. The detached cover-letter write-back was
+  described as writing **only** `generated_cover_letter_md`; `_persist_cover_letter_to_db`
+  now also nulls `edited_cover_letter_text`, and the sentence says why
+  (`_build_resume_state` reads the edit first).
+- **Read, no edit needed:** `iteration-audit-chain.md`, `context-set-contract.md`,
+  `route-surface.md` and `frontend-wizard.md` describe the **context-side** rule
+  (`resolve_cover_letter_after_generate`), which this branch did not change.
+- **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): **1 catch**, E1.
+  The scribe cited `blueprints/generation.py:194`, a new bare line cite; re-anchored to the
+  `_build_resume_state` symbol and the already-cited `_persist_cover_letter_to_db`. Re-run:
+  `OK (0 violation(s), 0 removed cite(s) listed)`.
+- **Auditor** (Sonnet 5, `wiki-grounding-auditor`, a different context from the scribe):
+  **0 DRIFTED, 0 UNSUPPORTED of 15 claims**, over the changed paragraph only (page lines
+  133-158), not the whole page. One legibility note, acted on: the nulling is in the wrapper,
+  not in `persist_cover_letter_md`, and the sentence's "which" could read either way.
+- **Review** (step 6, mine, unenforced): checked the added sentence against source: the
+  `= None` in `_persist_cover_letter_to_db`, the context pop in `run_generate_cover_letter`,
+  and the read order at `blueprints/applications.py` `_build_resume_state`. **1 catch:** the
+  scribe had joined the paragraph's wrapped lines into one and put a cite mid-sentence;
+  restored the wrapping.
+- **Also run:** `python scripts/wiki_freshness.py` OK (38 files, under the 75 block
+  threshold); `tests/test_wiki_cites.py` 34 passed.
+- **Not done:** the other pages above were checked by reading the cited passages, not by an
+  auditor pass.

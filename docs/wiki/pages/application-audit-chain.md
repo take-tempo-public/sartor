@@ -151,7 +151,11 @@ DB audit trail is out of sync and resuming would show an older résumé (item 16
 `[synthesis]`. The detached cover-letter route uses a separate write-back,
 [`blueprints/generation.py:_persist_cover_letter_to_db`](../../../blueprints/generation.py) →
 [`db/persist_run.py:persist_cover_letter_md`](../../../db/persist_run.py),
-which writes **only** `generated_cover_letter_md` — routing it through the full
+which writes `generated_cover_letter_md`; the wrapper `_persist_cover_letter_to_db` also
+clears the run row's `edited_cover_letter_text` (item 163: the route pops the typed edit
+from the context, and
+[`blueprints/applications.py:_build_resume_state`](../../../blueprints/applications.py)
+reads the edit before the generated text) — routing it through the full
 persist path would null the already-saved résumé md `[synthesis]`.
 
 ## Clarification — cross-application memory
