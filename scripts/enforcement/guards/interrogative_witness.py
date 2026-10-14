@@ -46,6 +46,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -182,7 +183,7 @@ def trace(session_id: str, event: str, fields: dict[str, Any], env: Mapping[str,
     try:
         path = state_path(session_id, env).with_suffix(".trace.jsonl")
         path.parent.mkdir(parents=True, exist_ok=True)
-        record = {"event": event, **fields}
+        record = {"event": event, "ts": round(time.time(), 3), **fields}
         with path.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(record, default=str) + "\n")
     except Exception:
@@ -311,20 +312,18 @@ def claude_check(payload: dict[str, Any], env: Mapping[str, str] | None = None) 
         env = os.environ
     session_id = str(payload.get("session_id") or "")
     result = decide(session_id, env)
-    # Item 164 instrument (A1): on a pause, record whether the paused call's batch siblings are
-    # already in the transcript at PreToolUse time. Fail-open and off the allow path.
+    # Item 164 instrument (A1): every main-agent Edit/Write is traced with a timestamp (how far
+    # apart do a batch's calls arrive?), and a pause also records whether the paused call's
+    # batch siblings are already in the transcript at PreToolUse time. Fail-open.
+    fields: dict[str, Any] = {
+        "tool_name": payload.get("tool_name"),
+        "tool_use_id": payload.get("tool_use_id"),
+        "blocked": result.blocked,
+    }
     if result.blocked:
-        trace(
-            session_id,
-            "pause",
-            {
-                "tool_name": payload.get("tool_name"),
-                "tool_use_id": payload.get("tool_use_id"),
-                "batch": batch_siblings(
-                    str(payload.get("transcript_path") or ""),
-                    str(payload.get("tool_use_id") or ""),
-                ),
-            },
-            env,
+        fields["batch"] = batch_siblings(
+            str(payload.get("transcript_path") or ""),
+            str(payload.get("tool_use_id") or ""),
         )
+    trace(session_id, "pause" if result.blocked else "call", fields, env)
     return result
