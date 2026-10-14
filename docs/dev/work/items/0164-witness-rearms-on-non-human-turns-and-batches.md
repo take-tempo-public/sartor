@@ -3,7 +3,7 @@ schema = 1
 id = 164
 kind = "item"
 title = "The interrogative witness re-arms on task-notifications and hand-backs, and pauses only the first call of a parallel batch"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["fix/recurrence-guardrails"]
 refs = [
@@ -16,6 +16,12 @@ refs = [
   "docs/dev/diagnosis/recurrence-guardrails.md",
 ]
 summary = "The witness re-arms on every UserPromptSubmit, so notifications re-pause edits; a batch pauses only its first call."
+resolution = "2026-10-14, fix/recurrence-guardrails. A `<task-notification>` prompt no longer arms the pause (observed 2 of 2; the payload has no origin field), and for SARTOR_WITNESS_BATCH_WINDOW_S (default 3 s) after a pause the calls that follow are refused as its siblings (owner decision: the transcript cannot show the batch at hook time, observed 2 of 2). The window is a timing heuristic and fails open; it is labeled as one. Prompt shapes not seen (scheduled wakeups, cron) still arm."
+verified_by = [
+  "tests/test_interrogative_witness.py::TestNonHumanTurnsDoNotArm",
+  "tests/test_interrogative_witness.py::TestBatchWindow",
+  "tests/test_governance_hooks_gate.py",
+]
 ```
 
 **Observed** (`docs/dev/diagnosis/recurrence-guardrails.md` O1, O2). `record_prompt`
@@ -39,3 +45,14 @@ instrument (plan step A1) settles this before the discriminator is chosen.
 
 Filed from the handoff's Recurrences section, recurrence 3 (C-11: a recurrence obligates a
 mechanism on the branch that recognizes it).
+
+### 2026-10-14 — closed on `fix/recurrence-guardrails`
+
+Evidence and the decision are in `docs/dev/diagnosis/recurrence-guardrails.md` O6-O11. Both new
+test classes were mutation-checked in-process (A2 disabled: 6 of 11 fail; window disabled: 3 of
+11 fail), and the whole path was driven through the real `hook.py` entry points (O11).
+
+**Declared, not fixed (C-0):** the 1.13 s sibling gap is a single sample; the window is a
+heuristic, so a sibling slower than 3 s still lands, and a re-run inside it is refused once more.
+A sibling that is *not* refused is the failure this leaves; no per-call hook can close it,
+because the batch is not in the transcript at hook time.

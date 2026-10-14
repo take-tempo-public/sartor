@@ -165,8 +165,20 @@ skip it without losing coverage. Stated limits (C-0/C-11): intent classification
 deterministic — both halves are witnesses that force the consideration, not gates that
 prove intent, and every failure path fails open by design. The pause is scoped to the main
 agent: a PreToolUse payload carrying `agent_id` (a subagent's) is skipped (item 94,
-`docs/dev/diagnosis/witness-subagent-scope.md`). A subagent's hand-back still re-arms the
-pause for the main agent's next edit, which costs one re-run.
+`docs/dev/diagnosis/witness-subagent-scope.md`). Item 164
+(`docs/dev/diagnosis/recurrence-guardrails.md`) closed two more gaps:
+
+- **A notification does not arm the pause.** A background-task or subagent hand-back reaches
+  the hook as a `UserPromptSubmit` whose `prompt` begins `<task-notification>` (observed 2 of
+  2; the payload carries no `origin` field). That turn moves the event counter only. Limits: a
+  prompt shape not seen still arms, which is today's behavior and the safe direction, and an
+  owner who pastes text starting with that tag gets no pause for that turn.
+- **A paused call's batch-mates are refused with it.** A PreToolUse hook judges one call and
+  cannot see its batch: at hook time the paused call is not in the transcript yet (observed 2
+  of 2). So for `SARTOR_WITNESS_BATCH_WINDOW_S` seconds (default 3, 0 disables) after a pause,
+  main-agent Edit/Write calls are refused as siblings, and the batch applies all or nothing.
+  **This half is a timing heuristic, not a gate:** a sibling that arrives later than the window
+  lands as before, and a re-run that arrives inside it is refused once more. It fails open.
 
 **`block_subagent_git_stash` (Epic C C1c, 2026-09-24) is Claude Code only by NATURE.** It
 refuses a state-changing `git stash` (anything but `list`/`show`) in a Bash command whose

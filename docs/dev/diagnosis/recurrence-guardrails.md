@@ -131,6 +131,36 @@ records of the second probe:
 n = 1 for the gap. Each hook is a fresh Python process, so part of that 1.1 s is interpreter
 start-up; the figure bounds nothing from above.
 
+**O9 — an `AskUserQuestion` answer produced no `UserPromptSubmit` record** (n = 1, this
+session, between the second probe and the fix): the trace held exactly the two notification
+`prompt` records before and after the answer.
+
+**O10 — after the fix (`28812dd`), the drive that paused twice no longer pauses.** Same drive:
+a background task completes, its notification arrives, then one Write. State before and after:
+
+```
+before: {"prompt_seq": 8, "interrogative": false, "witnessed": true}
+after:  {"prompt_seq": 9, "interrogative": false, "witnessed": true}     # notification moved the counter only
+Write -> File created (no PAUSE)
+```
+
+**O11 — the whole path, through the real entry points** (`hook.py interrogative-prompt-witness`
+and `hook.py edit-write-dispatcher`, one process per call, throwaway session and state dir,
+default 3 s window; script kept in the session scratchpad):
+
+```
+human prompt arms                  exit=0
+call 1 (pause)                     exit=2  PAUSE (interrogative-witness): first Edit/Write since the last user prompt.
+call 2 (sibling, immediately)      exit=2  PAUSE (interrogative-witness): sibling of a paused call.
+call 3 (sibling, immediately)      exit=2  PAUSE (interrogative-witness): sibling of a paused call.
+call 4 (re-run after window)       exit=0
+notification (must not arm)        exit=0
+call 5 (after notification)        exit=0
+state: {"prompt_seq": 2, "armed_seq": 1, "interrogative": false, "witnessed": true, "paused_at": 1791988213.82}
+```
+
+Each hook process took 0.13-0.35 s in that run.
+
 ---
 
 ## Falsified
@@ -177,7 +207,21 @@ The A1 instrument writes, per `UserPromptSubmit`, the payload's key names, any
 
 ## The fix
 
-_Not started. Per C-7 the first production commit after this dossier is the A1 instrument._
+Item 164 (`28812dd`, after the instrument commits `d3e5296` and `a2bdc9c`):
+
+- **A2.** `record_prompt` does not arm on a prompt that begins `<task-notification>` (O6). It
+  advances `prompt_seq` only, so an arm the owner's real prompt left unconsumed survives, and
+  `armed_seq` counts real arms. Shapes not seen still arm.
+- **A3 replacement (owner decision, 2026-10-14).** `decide` stamps `paused_at`; main-agent
+  Edit/Write calls within `SARTOR_WITNESS_BATCH_WINDOW_S` (default 3, 0 disables) are refused as
+  siblings (O7 killed the transcript design). It is a timing heuristic and says so in the
+  refusal, the module docstring and `docs/governance/enforcement.md`.
+- **Declared limits.** (1) A sibling slower than the window lands as before. (2) A re-run
+  inside the window is refused once more. (3) The 1.13 s sibling gap is n = 1; no distribution
+  was measured. (4) Scheduled-wakeup, cron and usage-limit-resume prompts were not observed
+  and still arm.
+- The instrument is removed in the closing commit of this item; `git show d3e5296 a2bdc9c`
+  keeps it.
 
 ---
 

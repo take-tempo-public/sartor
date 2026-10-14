@@ -34,10 +34,14 @@ owner's stated trust in momentum-free judgment. A heuristic false negative
 (a directive phrased as a question) is acceptable: the owner is explicit
 when action is wanted. Subagent Edit/Write calls (payload carries
 `agent_id`) are skipped by `claude_check`, so they can no longer consume the
-main agent's pause (item 94). Known limit: non-user events such as a
-subagent's hand-back re-arm the pause (observed,
-`docs/dev/diagnosis/witness-subagent-scope.md`), so the main agent may pause
-on an edit no user prompt preceded. That costs one re-run.
+main agent's pause (item 94). A `<task-notification>` turn (a background
+task's or subagent's hand-back) does not re-arm it (item 164); and, because a
+per-call hook cannot see its batch, the calls that follow a pause within
+`SARTOR_WITNESS_BATCH_WINDOW_S` are refused as its siblings — a timing
+heuristic that fails open past the window. Known limits: a prompt shape not
+yet seen (a scheduled-wakeup prompt, say) still arms the pause, and a human
+paste that begins `<task-notification>` is not paused. See
+`docs/dev/diagnosis/recurrence-guardrails.md` O6-O8.
 """
 
 from __future__ import annotations
@@ -194,102 +198,6 @@ def _load_state(path: Path) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-#: How much of the transcript's end `batch_siblings` reads. A parallel batch is written within
-#: the last few lines; 256 KB bounds the cost and keeps the read off the common path.
-_TRANSCRIPT_TAIL_BYTES = 256 * 1024
-
-#: Payload keys never copied into the trace (paths, and the prompt text itself).
-_TRACE_SKIP_KEYS = frozenset({"prompt", "session_id", "transcript_path", "cwd"})
-
-#: A prompt that begins with an XML-ish tag (e.g. a task-notification) is traced as that tag
-#: alone: the tag is the discriminator under test, anything after it is content.
-_LEADING_TAG_RE = re.compile(r"<[A-Za-z][\w:-]*>")
-
-
-def trace(session_id: str, event: str, fields: dict[str, Any], env: Mapping[str, str]) -> None:
-    """Append one record to this session's witness trace (item 164 instrument). Never raises.
-
-    Lives beside the state file, under the OS temp dir: untracked, never committed. It records
-    payload KEY NAMES and small scalar metadata only, never prompt text, so the observation the
-    fix keys on (what distinguishes a typed prompt from a notification) is captured without
-    keeping what the owner typed.
-    """
-    try:
-        path = state_path(session_id, env).with_suffix(".trace.jsonl")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        record = {"event": event, "ts": round(time.time(), 3), **fields}
-        with path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps(record, default=str) + "\n")
-    except Exception:
-        return
-
-
-def payload_trace_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Key names, small scalar/dict metadata and the leading tag of `prompt`, never its text."""
-    prompt = payload.get("prompt")
-    head = ""
-    if isinstance(prompt, str):
-        tag = _LEADING_TAG_RE.match(prompt.lstrip())
-        head = tag.group(0) if tag else "(text)"
-    meta = {
-        key: value
-        for key, value in payload.items()
-        if key not in _TRACE_SKIP_KEYS
-        and isinstance(value, str | int | float | bool | dict)
-        and len(json.dumps(value, default=str)) <= 200
-    }
-    return {"keys": sorted(payload), "prompt_head": head, "meta": meta}
-
-
-def batch_siblings(transcript_path: str, tool_use_id: str) -> dict[str, Any]:
-    """Which tool calls share `tool_use_id`'s assistant message, per the transcript's tail.
-
-    Claude Code writes one JSONL line per `tool_use` block, all sharing `message.id`
-    (observed, `docs/dev/diagnosis/recurrence-guardrails.md` O2). Reads only the last
-    `_TRANSCRIPT_TAIL_BYTES`, and is meant for the pause path (rare), not every call.
-    Returns ``{"found": bool, "message_id": str | None, "sibling_ids": [...], "tail_bytes": n}``;
-    an unreadable transcript or an id outside the tail is ``found: False``, never an exception.
-    """
-    result: dict[str, Any] = {
-        "found": False,
-        "message_id": None,
-        "sibling_ids": [],
-        "tail_bytes": 0,
-    }
-    if not transcript_path or not tool_use_id:
-        return result
-    try:
-        with open(transcript_path, "rb") as handle:
-            handle.seek(0, os.SEEK_END)
-            size = handle.tell()
-            start = max(0, size - _TRANSCRIPT_TAIL_BYTES)
-            handle.seek(start)
-            raw = handle.read().decode("utf-8", errors="replace")
-    except OSError:
-        return result
-    result["tail_bytes"] = len(raw)
-    blocks: list[tuple[str, str]] = []  # (message id, tool_use id), in file order
-    for line in raw.splitlines():
-        try:
-            entry = json.loads(line)
-        except ValueError:
-            continue  # the first line of a mid-file tail is usually cut
-        message = entry.get("message") if isinstance(entry, dict) else None
-        if not isinstance(message, dict) or not isinstance(message.get("content"), list):
-            continue
-        for block in message["content"]:
-            if isinstance(block, dict) and block.get("type") == "tool_use":
-                blocks.append((str(message.get("id") or ""), str(block.get("id") or "")))
-    message_id = next((mid for mid, tid in blocks if tid == tool_use_id), None)
-    if message_id:
-        result.update(
-            found=True,
-            message_id=message_id,
-            sibling_ids=[tid for mid, tid in blocks if mid == message_id],
-        )
-    return result
-
-
 _PAUSE_HEADER = "PAUSE (interrogative-witness): first Edit/Write since the last user prompt."
 _PAUSE_CLASSIFIED = "The prompt-receipt heuristic classified that prompt as a QUESTION."
 _PAUSE_BODY: tuple[str, ...] = (
@@ -307,15 +215,16 @@ _PAUSE_BODY: tuple[str, ...] = (
 _SIBLING_LINES: tuple[str, ...] = (
     "PAUSE (interrogative-witness): sibling of a paused call.",
     "An Edit/Write was paused a moment ago and this call arrived within the batch window, so it"
-    " is refused with it: nothing in that batch was applied.",
-    "Re-run every call from the batch (this one included). The pause is spent, so the re-runs"
+    " is refused with it rather than landing alone.",
+    "Re-run every call from that batch (this one included). The pause is spent, so the re-runs"
     " proceed.",
     "(Timing heuristic, not proof of a shared batch; fail-open once the window passes.)",
 )
 
 
 def batch_window_seconds(env: Mapping[str, str]) -> float:
-    """The sibling-refusal window (`SARTOR_WITNESS_BATCH_WINDOW_S`); 0 or unparsable-to-0 disables."""
+    """The sibling-refusal window in seconds. `SARTOR_WITNESS_BATCH_WINDOW_S`: 0 (or a negative)
+    disables it; an unparsable value falls back to the default."""
     raw = env.get(BATCH_WINDOW_ENV, "")
     try:
         value = float(raw) if raw else DEFAULT_BATCH_WINDOW_S
@@ -380,26 +289,4 @@ def claude_check(payload: dict[str, Any], env: Mapping[str, str] | None = None) 
     """
     if payload.get("agent_id"):
         return GuardResult.allow()
-    if env is None:
-        env = os.environ
-    session_id = str(payload.get("session_id") or "")
-    result = decide(session_id, env)
-    # Item 164 instrument (A1): every main-agent Edit/Write is traced with a timestamp (how far
-    # apart do a batch's calls arrive?), and a pause also records whether the paused call's
-    # batch siblings are already in the transcript at PreToolUse time. Fail-open.
-    fields: dict[str, Any] = {
-        "tool_name": payload.get("tool_name"),
-        "tool_use_id": payload.get("tool_use_id"),
-        "blocked": result.blocked,
-    }
-    kind = "call"
-    if result.blocked:
-        is_sibling = bool(result.messages) and result.messages[0] == _SIBLING_LINES[0]
-        kind = "sibling" if is_sibling else "pause"
-        if not is_sibling:
-            fields["batch"] = batch_siblings(
-                str(payload.get("transcript_path") or ""),
-                str(payload.get("tool_use_id") or ""),
-            )
-    trace(session_id, kind, fields, env)
-    return result
+    return decide(str(payload.get("session_id") or ""), env)
