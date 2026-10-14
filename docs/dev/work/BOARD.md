@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 42 | Epics 6 | Closed 84
+**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 84
 
 ## Open
 
@@ -91,6 +91,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **90** -- Institution-less/name-less markdown emitter ambiguity misroutes fields on round-trip (work, education, projects alike) (`agent`) -- A first-field-less entry emits ambiguous markdown that misroutes on re-parse; the fix spans three entry kinds.
 - **91** -- spacious.html does not render education[].score while classic.html does (`user`) -- Inconsistent GPA rendering between two bundled personas; no record of whether Spacious omits it deliberately.
 - **92** -- generator.emit_bullet bypasses run-proto typography — bullets inherit no template fonts at all (`agent`) -- Bullets bypass the run-proto path, so no captured template typography (size/bold/font) applies to them.
+- **168** -- Measure the Sonnet 5 wiki auditor against the Haiku one it replaced: catch counts and cost per pass (`agent`) -- The auditor moved to Sonnet 5 on a measured miss rate, but its own catch rate and cost per pass are unmeasured.
+- **169** -- Non-human prompt shapes the witness has not seen (scheduled wakeup, cron, usage-limit resume) still arm the pause (`agent`) -- Only a <task-notification> prompt is exempt from arming; other injected turns, not yet observed, still arm it.
 
 ## Epics
 
