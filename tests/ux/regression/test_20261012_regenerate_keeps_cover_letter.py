@@ -33,6 +33,7 @@ from typing import Any
 import pytest
 from playwright.sync_api import Page
 
+from tests._controls import control as _control
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
 from tests.ux.stubs import install_llm_stubs
 from ui_pages import (
@@ -65,15 +66,6 @@ _COVER_STATE_JS = """() => {
             typeof _readEditorText === 'function' ? _readEditorText('coverLetterPreview') : null,
     };
 }"""
-
-
-class ControlFailed(Exception):
-    """A drive or control step did not hold, so the arm proves nothing (not the defect)."""
-
-
-def _control(ok: bool, what: object) -> None:
-    if not ok:
-        raise ControlFailed(str(what))
 
 
 def _wait_iteration(page: Page, n: int) -> None:
