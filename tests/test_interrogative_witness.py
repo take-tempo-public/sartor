@@ -282,3 +282,123 @@ class TestPromptWitnessAdapter:
             sys, "stdin", io.StringIO(json.dumps({"session_id": "s", "prompt": "is it ok?"}))
         )
         assert prompt_witness_hook.main(["prompt_witness_hook.py"]) == 0
+
+
+# --------------------------------------------------------------------------- #
+# Item 164 instrument (A1) — trace + transcript batch lookup.
+# --------------------------------------------------------------------------- #
+
+
+def _transcript_line(message_id: str, tool_use_id: str) -> str:
+    """One JSONL line in the layout observed in a live transcript: one tool_use per line."""
+    entry = {
+        "type": "assistant",
+        "message": {
+            "id": message_id,
+            "content": [{"type": "tool_use", "id": tool_use_id, "name": "Write", "input": {}}],
+        },
+    }
+    return json.dumps(entry)
+
+
+class TestBatchSiblings:
+    def test_lists_every_tool_use_sharing_the_message_id(self, tmp_path: Path) -> None:
+        lines = [
+            _transcript_line("msg_a", "toolu_a1"),
+            _transcript_line("msg_b", "toolu_b1"),
+            _transcript_line("msg_b", "toolu_b2"),
+            _transcript_line("msg_c", "toolu_c1"),
+        ]
+        transcript = tmp_path / "t.jsonl"
+        transcript.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        got = iw.batch_siblings(str(transcript), "toolu_b1")
+        assert got["found"] is True
+        assert got["message_id"] == "msg_b"
+        assert got["sibling_ids"] == ["toolu_b1", "toolu_b2"]
+
+    def test_id_outside_the_tail_is_not_found(self, tmp_path: Path) -> None:
+        transcript = tmp_path / "t.jsonl"
+        transcript.write_text(_transcript_line("msg_a", "toolu_a1") + "\n", encoding="utf-8")
+        got = iw.batch_siblings(str(transcript), "toolu_missing")
+        assert got["found"] is False
+        assert got["sibling_ids"] == []
+
+    def test_unreadable_or_blank_inputs_are_not_found_and_do_not_raise(
+        self, tmp_path: Path
+    ) -> None:
+        assert iw.batch_siblings(str(tmp_path / "nope.jsonl"), "toolu_1")["found"] is False
+        assert iw.batch_siblings("", "toolu_1")["found"] is False
+        assert iw.batch_siblings(str(tmp_path), "")["found"] is False
+
+    def test_a_cut_first_line_of_the_tail_is_skipped(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(iw, "_TRANSCRIPT_TAIL_BYTES", 220)
+        transcript = tmp_path / "t.jsonl"
+        transcript.write_text(
+            _transcript_line("msg_old", "toolu_old") + "\n" + _transcript_line("m2", "toolu_2"),
+            encoding="utf-8",
+        )
+        got = iw.batch_siblings(str(transcript), "toolu_2")
+        assert got["found"] is True
+        assert got["sibling_ids"] == ["toolu_2"]
+
+
+class TestTrace:
+    def test_payload_trace_never_carries_prompt_text_or_paths(self) -> None:
+        fields = iw.payload_trace_fields(
+            {
+                "session_id": "s",
+                "prompt": "secret thing the owner typed",
+                "transcript_path": "/home/someone/t.jsonl",
+                "cwd": "/home/someone/repo",
+                "prompt_id": "p-1",
+            }
+        )
+        dumped = json.dumps(fields)
+        assert "secret thing" not in dumped
+        assert "someone" not in dumped
+        assert fields["prompt_head"] == "(text)"
+        assert fields["meta"] == {"prompt_id": "p-1"}
+
+    def test_a_notification_prompt_records_its_leading_tag_only(self) -> None:
+        fields = iw.payload_trace_fields({"prompt": "<task-notification>\n<task-id>abc</task-id>"})
+        assert fields["prompt_head"].startswith("<task-notification>")
+        assert "task-id" not in fields["prompt_head"]
+
+    def test_adapter_writes_a_prompt_record_beside_the_state_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(iw.STATE_DIR_ENV, str(tmp_path))
+        payload = {"session_id": "sess-t", "prompt": "<task-notification>x", "hook_event_name": "X"}
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        assert prompt_witness_hook.main(["prompt_witness_hook.py"]) == 0
+        records = [
+            json.loads(line)
+            for line in (tmp_path / "sess-t.trace.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
+        assert records[0]["event"] == "prompt"
+        assert records[0]["prompt_head"].startswith("<task-notification>")
+        assert records[0]["keys"] == ["hook_event_name", "prompt", "session_id"]
+
+    def test_trace_into_an_unwritable_dir_does_not_raise(self, tmp_path: Path) -> None:
+        blocker = tmp_path / "file"
+        blocker.write_text("x", encoding="utf-8")
+        env = {iw.STATE_DIR_ENV: str(blocker / "nested")}
+        iw.trace("s", "prompt", {"keys": []}, env)  # must simply return
+
+    def test_a_pause_records_the_batch_lookup(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        transcript = tmp_path / "t.jsonl"
+        transcript.write_text(
+            _transcript_line("msg_x", "toolu_p1") + "\n" + _transcript_line("msg_x", "toolu_p2"),
+            encoding="utf-8",
+        )
+        iw.record_prompt("sess-p", "go", env)
+        payload = _main_payload("sess-p")
+        payload["tool_use_id"] = "toolu_p1"
+        payload["transcript_path"] = str(transcript)
+        assert iw.claude_check(payload, env).blocked
+        record = json.loads((tmp_path / "sess-p.trace.jsonl").read_text(encoding="utf-8"))
+        assert record["event"] == "pause"
+        assert record["batch"]["sibling_ids"] == ["toolu_p1", "toolu_p2"]

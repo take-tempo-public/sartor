@@ -20,6 +20,7 @@ Launched by `scripts/enforcement/adapters/hook.py` as the
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -38,6 +39,14 @@ def main(argv: list[str]) -> int:
         payload = claude_hook.load_payload()
         session_id = str(payload.get("session_id") or "")
         prompt = str(payload.get("prompt") or "")
+        # Item 164 instrument (A1): what does a notification's payload look like next to a
+        # typed prompt's? Key names and small metadata only, never the prompt text.
+        interrogative_witness.trace(
+            session_id,
+            "prompt",
+            interrogative_witness.payload_trace_fields(payload),
+            os.environ,
+        )
         if interrogative_witness.record_prompt(session_id, prompt):
             for line in interrogative_witness.REMINDER_LINES:
                 print(line)
