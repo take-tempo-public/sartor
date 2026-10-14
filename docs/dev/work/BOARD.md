@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 43 | Epics 6 | Closed 79
+**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 43 | Epics 6 | Closed 79
 
 ## Open
 
@@ -27,6 +27,10 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **147** -- In-app Quit, opt-in idle shutdown, and beforeunload limited to unsaved edits (`agent`) -- Closing the tab leaves the server running (correct), but there is no in-app way to stop it and no idle exit.
 - **161** -- GET /composition parses the same context file about eleven times per request (`agent`) -- Each _read_* helper re-reads and re-parses the context JSON; one parse could serve them all.
 - **163** -- After a with-letter generate the run row's typed letter edit still shadows the new letter in resume_state (`agent`) -- A with-letter generate consumes the letter edit in the context but not on the run row; resume shows the typed text.
+- **164** -- The interrogative witness re-arms on task-notifications and hand-backs, and pauses only the first call of a parallel batch (`agent`) -- The witness re-arms on every UserPromptSubmit, so notifications re-pause edits; a batch pauses only its first call.
+- **165** -- Hook-written compacted and plan-archived ledger rows leave a tracked file modified on main (`agent`) -- record_compaction and the plan gate append to the tracked ledger on any branch, so main is left dirty.
+- **166** -- The wiki scribe/auditor pair keeps passing defects that review then catches, including mechanically checkable ones (`agent`) -- No deterministic cite check exists; review, not the auditor, caught line cites, a removed cite and a false claim.
+- **167** -- A strict xfail whose controls are bare asserts reports a broken drive as the expected defect, and nothing enforces the convention (`agent`) -- The ControlFailed + raises=AssertionError convention is prose only; ControlFailed is defined twice.
 
 ## Blocked
 
