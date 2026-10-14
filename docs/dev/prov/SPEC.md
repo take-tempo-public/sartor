@@ -100,6 +100,29 @@ Each line, in this field order:
   the moment it runs. This is the value compared across `generated` →
   `consumed`/`blocked` pairs for the same `doc` path.
 
+**Hook-originated events.** Two events are written by hooks, not by
+`scripts/verify_doc_template.py`. They carry no `doc` or `fingerprint`, and
+the verifier's reads ignore them:
+
+- `compacted` (the PreCompact hook, `scripts/enforcement/adapters/claude_context_hook.py`):
+  `event`, `session`, `branch`, `agent_id` and `agent_type` when the compaction
+  was a subagent's, `trigger`, `ts`. The SessionStart hook counts them to
+  announce a context loss (charter C-12).
+- `plan-archived` (the plan gate, `scripts/enforcement/plan_gate.py`):
+  `event`, `session`, `branch`, `archive_id`, `plan` (a basename, never an
+  absolute path), `ts`.
+
+**Where a hook-originated receipt goes.** On a feature branch it is appended
+to the tracked shard above, so it rides that branch's commits. While HEAD is
+on `main`, `master` or a detached HEAD it is appended to an **untracked spool**,
+`.claude/state/ledger/<session>.jsonl`, instead: a hook that fires after a
+close-out (a compaction, an approval retirement) must not leave a tracked file
+modified on the trunk checkout. The spool is local state: it is not joined
+into the provenance reads below, and `compaction_count` reads both places.
+The routing lives in `scripts/enforcement/ledger_spool.py`; an unreadable
+branch name (`""`) keeps the tracked shard, which is today's behavior. The
+spool is machine-local and is not part of the committed record.
+
 Reads join across every shard (`docs/dev/ledger/*.jsonl`) on demand — the
 ledger is never aggregated into a second stored form.
 

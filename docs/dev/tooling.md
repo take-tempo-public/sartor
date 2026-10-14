@@ -109,7 +109,7 @@ These load as `sartor:<name>`. Each is defined in [`agents/`](../../agents/), an
 |---|---|---|
 | `eval-judge` | `claude-haiku-4-5-20251001` | the eval harness; interactive rubric grading |
 | `wiki-scribe` | `claude-haiku-4-5-20251001` | `/wiki-self-update` (writes one page) |
-| `wiki-grounding-auditor` | `claude-haiku-4-5-20251001` | `/wiki-self-update` (audits one page; never its own) |
+| `wiki-grounding-auditor` | `claude-sonnet-5` | `/wiki-self-update` (audits one page; never its own) |
 | `prompt-archaeologist` | `claude-sonnet-5` | eval regressions: proposes a prompt diff, never applies it |
 | `tune-drafter` | `claude-sonnet-5` | `/tune-from-annotations` (drafts a candidate constant) |
 | `headhunter` | `claude-sonnet-5` | recruiting-domain review of questions, bullets and rubric outcomes |

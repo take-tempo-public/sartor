@@ -230,11 +230,14 @@ applies, just un-namespaced.
 
 **Model-pin convention.** Each subagent's frontmatter `model:` field is
 either a dated snapshot or an undated alias, and the split is
-intentional and provider-imposed, not drift: `eval-judge`,
-`wiki-grounding-auditor`, and `wiki-scribe` pin the dated Haiku
-snapshot `claude-haiku-4-5-20251001` because Anthropic publishes one;
-seven subagents use the undated alias `claude-sonnet-5`, and `n1-judge`
+intentional and provider-imposed, not drift: `eval-judge` and
+`wiki-scribe` pin the dated Haiku snapshot
+`claude-haiku-4-5-20251001` because Anthropic publishes one;
+eight subagents use the undated alias `claude-sonnet-5`, and `n1-judge`
 the undated alias `claude-opus-5`, because no dated Sonnet-5 or Opus-5
 snapshot exists on the API. Revisit this note if/when Anthropic ships
 dated snapshots for those families — until then, do not "fix" the
-split by re-pinning.
+split by re-pinning. `wiki-grounding-auditor` is one of the eight: it
+moved from Haiku to Sonnet 5 on 2026-10-14 (item 166), a deliberate
+change of model for a measured reason (`docs/wiki/log.md`, three
+passes where review caught what it passed), not a re-pin of the split.

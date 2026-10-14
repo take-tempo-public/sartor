@@ -34,10 +34,14 @@ owner's stated trust in momentum-free judgment. A heuristic false negative
 (a directive phrased as a question) is acceptable: the owner is explicit
 when action is wanted. Subagent Edit/Write calls (payload carries
 `agent_id`) are skipped by `claude_check`, so they can no longer consume the
-main agent's pause (item 94). Known limit: non-user events such as a
-subagent's hand-back re-arm the pause (observed,
-`docs/dev/diagnosis/witness-subagent-scope.md`), so the main agent may pause
-on an edit no user prompt preceded. That costs one re-run.
+main agent's pause (item 94). A `<task-notification>` turn (a background
+task's or subagent's hand-back) does not re-arm it (item 164); and, because a
+per-call hook cannot see its batch, the calls that follow a pause within
+`SARTOR_WITNESS_BATCH_WINDOW_S` are refused as its siblings — a timing
+heuristic that fails open past the window. Known limits: a prompt shape not
+yet seen (a scheduled-wakeup prompt, say) still arms the pause, and a human
+paste that begins `<task-notification>` is not paused. See
+`docs/dev/diagnosis/recurrence-guardrails.md` O6-O8.
 """
 
 from __future__ import annotations
@@ -46,6 +50,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -55,6 +60,21 @@ from scripts.enforcement.guards.result import GuardResult
 #: Env var overriding where per-session witness state lives (tests point it
 #: at a tmpdir; unset, state lives under the OS temp dir).
 STATE_DIR_ENV = "SARTOR_WITNESS_STATE_DIR"
+
+#: Env var overriding the sibling-refusal window in seconds (0 disables it). Item 164.
+BATCH_WINDOW_ENV = "SARTOR_WITNESS_BATCH_WINDOW_S"
+
+#: Seconds after a pause during which main-agent Edit/Write calls are refused as siblings of
+#: the paused call. One sibling was observed at 1.13 s (`docs/dev/diagnosis/recurrence-guardrails.md`
+#: O8, n=1; each hook is a fresh interpreter, so the figure is a floor on a loaded machine); a
+#: re-run needs a full model turn. A timing heuristic, labeled as one in `decide`.
+DEFAULT_BATCH_WINDOW_S = 3.0
+
+#: A UserPromptSubmit whose prompt begins with this tag is a background-task or subagent
+#: notification, not something the owner typed. Observed: 2 of 2 notifications in the trace
+#: (O6), and the hook payload carries no `origin` field to key on instead. Anything else, and
+#: any shape not seen, still arms the pause (today's behavior).
+_NON_HUMAN_PROMPT_RE = re.compile(r"\s*<task-notification>")
 
 #: Leading tokens that classify a prompt as interrogative (work item 87's
 #: spec list, verbatim — deliberately not extended without an owner ask).
@@ -116,6 +136,15 @@ def classify_prompt(text: str) -> bool:
     return lead in INTERROGATIVE_LEADS
 
 
+def is_non_human_prompt(text: str) -> bool:
+    """True when `text` is a task-notification turn rather than a prompt the owner typed.
+
+    Known limit: an owner who pastes text beginning `<task-notification>` is treated the same
+    way (no pause for that turn), which is the fail-open direction.
+    """
+    return bool(_NON_HUMAN_PROMPT_RE.match(text or ""))
+
+
 def _state_dir(env: Mapping[str, str]) -> Path:
     override = env.get(STATE_DIR_ENV, "")
     if override:
@@ -138,12 +167,22 @@ def record_prompt(session_id: str, prompt: str, env: Mapping[str, str] | None = 
     """
     if env is None:
         env = os.environ
-    interrogative = classify_prompt(prompt)
     path = state_path(session_id, env)
     path.parent.mkdir(parents=True, exist_ok=True)
     previous = _load_state(path)
+    seq = int(previous.get("prompt_seq", 0)) + 1
+    if is_non_human_prompt(prompt):
+        # A background-task or subagent notification is not the owner's prompt: it must not
+        # re-arm the pause (item 164, `docs/dev/diagnosis/recurrence-guardrails.md` O6). Only
+        # the event counter moves; an arm the owner's real prompt left unconsumed stays as it
+        # was, and a session that has no state yet gets none (decide() allows on no state).
+        state = {**previous, "prompt_seq": seq} if previous else {"prompt_seq": seq}
+        path.write_text(json.dumps(state), encoding="utf-8")
+        return False
+    interrogative = classify_prompt(prompt)
     state = {
-        "prompt_seq": int(previous.get("prompt_seq", 0)) + 1,
+        "prompt_seq": seq,
+        "armed_seq": int(previous.get("armed_seq", 0)) + 1,
         "interrogative": interrogative,
         "witnessed": False,
     }
@@ -173,21 +212,60 @@ _PAUSE_BODY: tuple[str, ...] = (
 )
 
 
-def decide(session_id: str, env: Mapping[str, str] | None = None) -> GuardResult:
+_SIBLING_LINES: tuple[str, ...] = (
+    "PAUSE (interrogative-witness): sibling of a paused call.",
+    "An Edit/Write was paused a moment ago and this call arrived within the batch window, so it"
+    " is refused with it rather than landing alone.",
+    "Re-run every call from that batch (this one included). The pause is spent, so the re-runs"
+    " proceed.",
+    "(Timing heuristic, not proof of a shared batch; fail-open once the window passes.)",
+)
+
+
+def batch_window_seconds(env: Mapping[str, str]) -> float:
+    """The sibling-refusal window in seconds. `SARTOR_WITNESS_BATCH_WINDOW_S`: 0 (or a negative)
+    disables it; an unparsable value falls back to the default."""
+    raw = env.get(BATCH_WINDOW_ENV, "")
+    try:
+        value = float(raw) if raw else DEFAULT_BATCH_WINDOW_S
+    except ValueError:
+        return DEFAULT_BATCH_WINDOW_S
+    return max(value, 0.0)
+
+
+def decide(
+    session_id: str, env: Mapping[str, str] | None = None, now: float | None = None
+) -> GuardResult:
     """Edit|Write half: refuse the first Edit/Write per recorded prompt, once.
 
     Marking `witnessed` BEFORE returning the refusal is what makes the pause
     self-clearing; every failure path allows (fail-open by design — see the
     module docstring).
+
+    A pause also stamps `paused_at`. Calls that arrive within the batch window after it are
+    refused as siblings of the paused call (item 164): a PreToolUse hook judges one call and
+    cannot see its batch (the transcript has not been written yet at hook time, O7), so a
+    paused call's batch-mates would otherwise land while it did not. The window is a timing
+    heuristic, not proof of a shared batch, and it fails open once it has passed.
     """
     if env is None:
         env = os.environ
+    stamp = time.time() if now is None else now
     try:
         path = state_path(session_id, env)
         state = _load_state(path)
         if not state or state.get("witnessed", True):
+            paused_at = state.get("paused_at") if state else None
+            window = batch_window_seconds(env)
+            if (
+                window > 0
+                and isinstance(paused_at, int | float)
+                and 0 <= stamp - float(paused_at) < window
+            ):
+                return GuardResult.block(*_SIBLING_LINES)
             return GuardResult.allow()
         state["witnessed"] = True
+        state["paused_at"] = stamp
         path.write_text(json.dumps(state), encoding="utf-8")
     except OSError:
         return GuardResult.allow()

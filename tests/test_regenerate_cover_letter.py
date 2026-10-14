@@ -42,6 +42,7 @@ import pytest
 import analyzer
 import blueprints.analysis as banalysis
 import blueprints.generation as bgen
+from tests._controls import control as _control
 from tests.test_frozen_composition_staleness import B1, EDITED, USER, _freeze, _parse_sse
 from tests.test_frozen_composition_staleness import TYPED as TYPED_RESUME
 from tests.test_frozen_composition_staleness import rig as _rig_fixture
@@ -56,15 +57,6 @@ LETTER = "ZEBRA-LETTER first detached cover letter for the billing role"
 REWRITTEN = "ZEBRA-REWRITTEN a second, regenerated cover letter"
 TYPED = "ZEBRA-TYPED-LETTER a hand edit the candidate saved over the letter"
 PLACEHOLDER = "No cover letter yet"
-
-
-class ControlFailed(Exception):
-    """A drive or control step did not hold, so the arm proves nothing (not the defect)."""
-
-
-def _control(ok: bool, what: object) -> None:
-    if not ok:
-        raise ControlFailed(str(what))
 
 
 # -------------------------------------------------------------------

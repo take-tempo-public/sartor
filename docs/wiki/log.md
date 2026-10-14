@@ -2808,3 +2808,34 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   - `scripts/doc_lints.py`: 0 blocks.
   - `scripts/wiki_freshness.py`: `OK (36 file(s) changed since the last ingest (< 75-file
     block threshold))`.
+
+## 2026-10-14 — wiki-relevance check, verified no-edit (`fix/recurrence-guardrails`)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged). No spend was needed: every page that could be
+  affected was checked by grep, and none states what the branch changed.
+- **Wiki-relevant changes in the diff (5):** `CLAUDE.md`, `docs/dev/decisions.md`,
+  `docs/dev/tooling.md`, `docs/governance/enforcement.md` and the new
+  `scripts/wiki_cites.py`, per `is_wiki_relevant()` over `git diff --name-only d9f1b8f HEAD`
+  (32 files changed in all).
+- **Verified no-edit:**
+  - `grep -rniE "grounding-auditor|auditor|haiku|re-arm|hand-back|compacted|plan-archived|docs/dev/ledger|ledger shard|xfail|ControlFailed|model-pin|wiki_cites|wiki-self-update" docs/wiki/pages docs/wiki/overview.md docs/wiki/index.md`
+    returns hits only about the **product's** call routing (`HAIKU_MODEL`, the Haiku and Sonnet
+    tiers in `analyzer.py`). None concerns the wiki loop's subagents, the witness, or the
+    ledger.
+  - `CLAUDE.md` and `docs/dev/decisions.md`: no page cites the model-pin paragraph or PX-47b.
+    `governance-extraction.md` cites `CLAUDE.md` for its `@import` and for its line 18, both
+    untouched.
+  - `docs/dev/tooling.md`: `docs-information-architecture.md:63` names the roster in an
+    enumeration-drift rule and states no count or model.
+  - `docs/governance/enforcement.md`: pages cite §C2, §"Enforcement reach" and the W-1 row, none
+    edited. `governance-extraction.md:154` says `interrogative_witness` is Claude Code only by
+    nature, which still holds; no page mentions the re-arm or batch behavior this branch
+    changed.
+  - `scripts/wiki_cites.py`: no page describes the wiki loop's own checks; its description
+    lives in `docs/wiki/SCHEMA.md`, which is the rulebook and not a page.
+- **Deterministic checks, run on this tree:** `python -m scripts.wiki_cites` gave
+  `OK (0 violation(s), 0 removed cite(s) listed)`; `python scripts/wiki_freshness.py` gave
+  `OK (38 file(s) changed since the last ingest (< 75-file block threshold))`.
+- **Not done, and why:** the first pass with the Sonnet auditor and the new cite-check step is
+  still ahead; this entry has no auditor, review or cite-check catch counts to log.

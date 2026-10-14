@@ -67,6 +67,10 @@ wiki is the thing that is wrong (file it back via a `/wiki-*` op once those land
 - **Grounding for code claims.** Cite code as `path:line` (e.g.
   `analyzer.py:SYSTEM_PROMPT`) so a reader can verify the claim at its source. Prefer a
   symbol or anchor over a bare line number when one exists — line numbers drift.
+  [`scripts/wiki_cites.py`](../../scripts/wiki_cites.py) enforces this mechanically: a bare
+  line cite is ratcheted (existing ones are listed per page and may only go down), a line
+  past the end of its file fails, and a cited symbol the file does not contain fails. It
+  runs in the `pytest` gate and in `/wiki-self-update`.
 - **Mark synthesis.** Tag a statement that is *concluded* rather than quoted with
   `[synthesis]`, so a later audit knows to fact-check it against its cited sources.
 

@@ -82,7 +82,9 @@ class TestClassifyPrompt:
 
 
 def _env(tmp_path: Path) -> dict[str, str]:
-    return {iw.STATE_DIR_ENV: str(tmp_path)}
+    # Window off: these lifecycle tests re-run the paused call immediately (item 164); the
+    # window's own behavior is pinned in `TestBatchWindow` with explicit values.
+    return {iw.STATE_DIR_ENV: str(tmp_path), iw.BATCH_WINDOW_ENV: "0"}
 
 
 class TestPauseLifecycle:
@@ -282,3 +284,133 @@ class TestPromptWitnessAdapter:
             sys, "stdin", io.StringIO(json.dumps({"session_id": "s", "prompt": "is it ok?"}))
         )
         assert prompt_witness_hook.main(["prompt_witness_hook.py"]) == 0
+
+
+# --------------------------------------------------------------------------- #
+# Item 164 — notifications do not arm the pause; a paused call's batch-mates are
+# refused with it (docs/dev/diagnosis/recurrence-guardrails.md O6-O11).
+# --------------------------------------------------------------------------- #
+
+
+_NOTIFICATION = "<task-notification>\n<task-id>abc</task-id>\n<status>completed</status>"
+
+
+class TestNonHumanTurnsDoNotArm:
+    """Item 164, A2: a task-notification is not the owner's prompt (O6)."""
+
+    def test_a_notification_does_not_arm_the_pause(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        iw.record_prompt("sess-n", "go", env)
+        assert iw.claude_check(_main_payload("sess-n"), env).blocked  # the human prompt's pause
+        iw.record_prompt("sess-n", _NOTIFICATION, env)
+        assert not iw.claude_check(_main_payload("sess-n"), env).blocked, (
+            "a notification re-armed the pause: the owner typed nothing"
+        )
+
+    def test_a_notification_leaves_an_unconsumed_human_arm_alone(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        iw.record_prompt("sess-n", "is it done?", env)
+        iw.record_prompt("sess-n", _NOTIFICATION, env)
+        result = iw.claude_check(_main_payload("sess-n"), env)
+        assert result.blocked
+        assert any("QUESTION" in line for line in result.messages), (
+            "the human prompt's classification must survive an intervening notification"
+        )
+
+    def test_a_notification_in_a_fresh_session_leaves_no_pause(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        iw.record_prompt("sess-n", _NOTIFICATION, env)
+        assert not iw.claude_check(_main_payload("sess-n"), env).blocked
+
+    def test_a_notification_never_prints_the_question_reminder(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        assert iw.record_prompt("sess-n", _NOTIFICATION + "\nwhy did it fail?", env) is False
+
+    def test_counters_split_events_from_arms(self, tmp_path: Path) -> None:
+        env = _env(tmp_path)
+        iw.record_prompt("sess-n", "go", env)
+        iw.record_prompt("sess-n", _NOTIFICATION, env)
+        iw.record_prompt("sess-n", _NOTIFICATION, env)
+        iw.record_prompt("sess-n", "again", env)
+        state = json.loads(iw.state_path("sess-n", env).read_text(encoding="utf-8"))
+        assert (state["prompt_seq"], state["armed_seq"]) == (4, 2)
+
+    @pytest.mark.parametrize(
+        "text",
+        ["go", "is it done?", "", "<system-reminder>x</system-reminder>", "task-notification"],
+    )
+    def test_everything_else_still_arms(self, tmp_path: Path, text: str) -> None:
+        """Unknown shapes keep today's behavior: arm (the pause is the safe direction)."""
+        assert not iw.is_non_human_prompt(text)
+        env = _env(tmp_path)
+        iw.record_prompt("sess-n", text, env)
+        assert iw.claude_check(_main_payload("sess-n"), env).blocked
+
+    def test_leading_whitespace_before_the_tag_is_still_a_notification(self) -> None:
+        assert iw.is_non_human_prompt("\n  <task-notification>x")
+
+
+class TestBatchWindow:
+    """Item 164, A3 replacement: refuse a paused call's batch-mates (timing heuristic)."""
+
+    @staticmethod
+    def _armed(tmp_path: Path, window: str) -> dict[str, str]:
+        env = {iw.STATE_DIR_ENV: str(tmp_path), iw.BATCH_WINDOW_ENV: window}
+        iw.record_prompt("sess-w", "go", env)
+        return env
+
+    def test_a_call_inside_the_window_is_refused_as_a_sibling(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "3")
+        assert iw.decide("sess-w", env, now=1000.0).blocked  # the pause itself
+        sibling = iw.decide("sess-w", env, now=1001.1)
+        assert sibling.blocked
+        assert sibling.messages[0] == iw._SIBLING_LINES[0]
+
+    def test_a_call_after_the_window_proceeds(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "3")
+        assert iw.decide("sess-w", env, now=1000.0).blocked
+        assert not iw.decide("sess-w", env, now=1003.0).blocked, "the window is half-open"
+        assert not iw.decide("sess-w", env, now=1500.0).blocked
+
+    def test_every_sibling_in_the_window_is_refused_and_none_extends_it(
+        self, tmp_path: Path
+    ) -> None:
+        env = self._armed(tmp_path, "3")
+        iw.decide("sess-w", env, now=1000.0)
+        assert iw.decide("sess-w", env, now=1001.0).blocked
+        assert iw.decide("sess-w", env, now=1002.9).blocked
+        assert not iw.decide("sess-w", env, now=1003.5).blocked, (
+            "a sibling refusal must not push the window out"
+        )
+
+    def test_window_zero_disables_it(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "0")
+        assert iw.decide("sess-w", env, now=1000.0).blocked
+        assert not iw.decide("sess-w", env, now=1000.1).blocked
+
+    @pytest.mark.parametrize("raw", ["", "abc", "-5"])
+    def test_a_bad_value_falls_back_without_raising(self, raw: str) -> None:
+        env = {iw.BATCH_WINDOW_ENV: raw}
+        assert iw.batch_window_seconds(env) in (iw.DEFAULT_BATCH_WINDOW_S, 0.0)
+
+    def test_a_new_human_prompt_clears_the_window(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "3")
+        iw.decide("sess-w", env, now=1000.0)
+        iw.record_prompt("sess-w", "next", env)
+        state = json.loads(iw.state_path("sess-w", env).read_text(encoding="utf-8"))
+        assert "paused_at" not in state
+
+    def test_a_notification_keeps_the_window_running(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "3")
+        iw.decide("sess-w", env, now=1000.0)
+        iw.record_prompt("sess-w", _NOTIFICATION, env)
+        assert iw.decide("sess-w", env, now=1001.0).blocked
+
+    def test_without_state_there_is_no_window(self, tmp_path: Path) -> None:
+        env = {iw.STATE_DIR_ENV: str(tmp_path), iw.BATCH_WINDOW_ENV: "3"}
+        assert not iw.decide("never-seen", env, now=1.0).blocked
+
+    def test_a_subagent_call_is_never_refused_by_the_window(self, tmp_path: Path) -> None:
+        env = self._armed(tmp_path, "3")
+        iw.decide("sess-w", env, now=1000.0)
+        assert not iw.claude_check(_subagent_payload("sess-w"), env).blocked

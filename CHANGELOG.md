@@ -13,6 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Four recurring dev-workflow failures now have mechanisms (`fix/recurrence-guardrails`, items 164-167 and 55)
+
+For people and agents working in this repo; the product is unchanged. Each of the four was a
+recurrence recorded in the last handoff as "no mechanism possible".
+
+- **Fixed: a background-task or subagent notification no longer re-arms the interrogative
+  witness** (item 164). It paused the next Edit/Write although the owner had typed nothing. The
+  calls that follow a pause within `SARTOR_WITNESS_BATCH_WINDOW_S` (default 3 s, 0 disables)
+  are now refused with it, so a parallel batch applies all or nothing. That half is a timing
+  heuristic and fails open past the window.
+- **Fixed: a compaction or an approval retirement while HEAD is on `main` no longer leaves a
+  tracked ledger file modified** (item 165). Those receipts go to an untracked spool,
+  `.claude/state/ledger/`; on a feature branch they stay in `docs/dev/ledger/`. The
+  compaction count reads both. `docs/dev/prov/SPEC.md` now names the `compacted` and
+  `plan-archived` events (closes item 55).
+- **Added: `scripts/wiki_cites.py`, a deterministic wiki cite check** (item 166). A cited
+  symbol the file does not contain, and a line cite past the end of its file, fail; bare line
+  cites are ratcheted per page (25 today); `--base` lists a symbol cite that was removed. The
+  first two ride the `pytest` gate.
+- **Changed: the wiki auditor runs on Sonnet 5**, and `/wiki-self-update` gains a cite-check
+  step and an explicit review step. The review step is prose and unenforced.
+- **Added: `tests/test_xfail_controls_gate.py`** (item 167): a strict `xfail` needs
+  `raises=AssertionError` and the shared `tests/_controls.py` helper.
+- Evidence: `docs/dev/diagnosis/recurrence-guardrails.md`.
+
 ### Generating the résumé again keeps your cover letter (`fix/regenerate-keeps-cover-letter`, item 162)
 
 After you make a cover letter with **Generate cover letter**, generating the résumé again

@@ -59,6 +59,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from scripts.enforcement.guards.result import GuardResult  # noqa: E402
+from scripts.enforcement.ledger_spool import hook_shard  # noqa: E402
 
 NO_APPROVAL = (
     "NO EDIT APPROVAL: No approved plan found for this project.",
@@ -286,9 +287,12 @@ def retire(state: _State, branch: str, session: str) -> None:
             "ts": ts,
         }
         with contextlib.suppress(OSError):
-            ledger = Path(state.project_dir) / "docs" / "dev" / "ledger"
-            ledger.mkdir(parents=True, exist_ok=True)
-            with (ledger / f"{session}.jsonl").open("a", encoding="utf-8", newline="\n") as f:
+            # Tracked shard on a feature branch; the untracked spool when HEAD is on trunk, so
+            # a retirement after the merge does not leave a tracked file modified on `main`
+            # (item 165, `scripts/enforcement/ledger_spool.py`).
+            shard = hook_shard(Path(state.project_dir), session, branch)
+            shard.parent.mkdir(parents=True, exist_ok=True)
+            with shard.open("a", encoding="utf-8", newline="\n") as f:
                 f.write(json.dumps(record) + "\n")
 
 

@@ -1,5 +1,5 @@
 ---
-description: The self-documenting wiki loop — a bounded, cost-aware Haiku diff-pass that brings docs/wiki/ back into agreement with the code. Resolves the .last_ingest_sha→HEAD diff, surfaces cost before spending, delegates per-page synthesis to the wiki-scribe subagent and per-page grounding audit to the wiki-grounding-auditor subagent (author≠auditor), runs /wiki-lint as the deterministic gate, reconciles index/backlinks, advances the checkpoint, logs, and presents a reviewable diff. NEVER commits. Bounded-checkpoint trigger (branch close-out / pre-tag) + on-demand.
+description: The self-documenting wiki loop — a bounded, cost-aware diff-pass that brings docs/wiki/ back into agreement with the code. Resolves the .last_ingest_sha→HEAD diff, surfaces cost before spending, delegates per-page synthesis to the Haiku wiki-scribe subagent and per-page grounding audit to the Sonnet wiki-grounding-auditor subagent (author≠auditor), runs the deterministic cite check (scripts/wiki_cites.py) and /wiki-lint, has the orchestrator review every added sentence against source, reconciles index/backlinks, advances the checkpoint, logs, and presents a reviewable diff. NEVER commits. Bounded-checkpoint trigger (branch close-out / pre-tag) + on-demand.
 argument-hint: [--since <sha>] [--cap <N>]
 allowed-tools:
   - Bash
@@ -16,8 +16,10 @@ updates the committed LLM-wiki under `docs/wiki/` so it tracks the code **withou
 author**, while keeping the human at the **spend** boundary and the **commit** boundary.
 This command **orchestrates**; it does not synthesize or grade itself — it delegates
 synthesis to the `wiki-scribe` subagent (Haiku) and grounding audit to the separate
-`wiki-grounding-auditor` subagent (Haiku, read-only), then runs the deterministic
-[`/wiki-lint`](wiki-lint.md) as the structural backstop. The full design is
+`wiki-grounding-auditor` subagent (Sonnet 5, read-only; it moved off Haiku after three
+passes in a row where review caught what it passed, `docs/dev/diagnosis/recurrence-guardrails.md`
+O4), then runs the deterministic [`scripts/wiki_cites.py`](../scripts/wiki_cites.py) cite
+check and [`/wiki-lint`](wiki-lint.md) as the structural backstop. The full design is
 [`docs/dev/archive/self-documenting-loop-design.md`](../docs/dev/archive/self-documenting-loop-design.md);
 the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
 
@@ -51,7 +53,8 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
    `docs/governance/` / `CONTRIBUTING.md` etc. usually map to **no** page; only changes a
    page actually cites (`path:line`/symbol) or a genuinely new concept produce work. Print:
    the changed-source list, the affected-page list (created vs updated), and the estimated
-   spend (≈ 2 Haiku calls per affected page — one scribe synthesis, one auditor pass).
+   spend (≈ 2 subagent calls per affected page — one Haiku scribe synthesis, one Sonnet
+   auditor pass; the auditor is the dearer of the two).
    - **Page cap (default 8, override `--cap N`).** If the affected pages exceed the cap,
      **stop and ask** the human to scope down (`--since` a tighter window) or to raise
      `--cap` — an oversized diff is a signal this is not a steady-state increment but a
@@ -74,12 +77,22 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
      separate `Edit` and record it in the `log.md` entry, so the hand copy can't silently
      alter model output. The auditor then audits the file on disk like any changed page.
 
-4. **Audit — delegate per changed page to `wiki-grounding-auditor` (author≠auditor).** For
+4. **Cite check — deterministic, before the auditor spends anything.** Run
+   `python -m scripts.wiki_cites --base HEAD --strict-removed` (no LLM; stdlib only). It fails
+   on a cited symbol the file does not contain (E3), a line cite past the end of its file
+   (E2), a new bare line cite (E1, a ratchet in `ALLOWED_LINE_CITES`), and lists every symbol
+   cite the scribe **removed** while its file and symbol still exist (E4). Fix E1-E3 now
+   (re-anchor to a symbol). For E4, **restore the cite**, or record the removal and the reason
+   in the `log.md` entry; a scribe removing a cite outside its brief is the failure this
+   catches (`docs/wiki/log.md`, `fix/heredoc-escape-guard`). It does **not** judge whether a
+   sentence is true; steps 5 and 6 do.
+
+5. **Audit — delegate per changed page to `wiki-grounding-auditor` (author≠auditor).** For
    each page the scribe touched, launch the **`wiki-grounding-auditor`** subagent via `Task`
-   — a **different** context from the scribe that wrote it. The auditor (Haiku; read-only
-   `Read`/`Grep`/`Glob`) quote-matches every `path:line` cite and every `[synthesis]` claim
-   against source at HEAD and classifies each **SUPPORTED / DRIFTED / UNSUPPORTED**, returning
-   the verdict. It changes nothing.
+   — a **different** context from the scribe that wrote it. The auditor (Sonnet 5;
+   read-only `Read`/`Grep`/`Glob`) quote-matches every `path:line` cite and every
+   `[synthesis]` claim against source at HEAD and classifies each
+   **SUPPORTED / DRIFTED / UNSUPPORTED**, returning the verdict. It changes nothing.
    - **Re-anchor DRIFTED** cites (prefer a symbol/anchor over a bare line number) — you hold
      `Edit`; apply the auditor's suggested anchor.
    - **Surface UNSUPPORTED** claims to the human for a decision — **never auto-delete or
@@ -87,21 +100,37 @@ the rulebook is [`docs/wiki/SCHEMA.md`](../docs/wiki/SCHEMA.md).
      change worth tracing). If the human confirms a correction, apply it; otherwise leave it
      flagged.
 
-5. **Run the deterministic gate.** Run [`/wiki-lint`](wiki-lint.md) (no LLM) over the result:
+6. **Review every added sentence against source yourself — UNENFORCED.** This is prose, not a
+   gate (charter C-11, labeled as such): nothing here fails closed, and the three logged
+   passes where review caught what the auditor passed are why the step exists. Read each
+   sentence the scribe added or changed against the source at HEAD, and check in particular:
+   - a claim about **a branch the code can take** holds on every branch (a flag such as
+     `carry_edits`, a `with_cover_letter` switch), not only the one the scribe read;
+   - **scope words** (*every, always, never, only, both*) match the code;
+   - an **intent or purpose** ("defined for future expansion") names a source, or is
+     rewritten as the observable fact;
+   - a **UI placement** (which step, which panel) matches the template and the DOM;
+   - a **route or endpoint name** is the exact one (`/api/generate` vs `/api/generate/stream`).
+
+   If you edit a page here, re-run step 4. Log what review caught, **separately** from the
+   auditor's and the cite check's catches, so the three signals stay attributable.
+
+7. **Run the deterministic gate.** Run [`/wiki-lint`](wiki-lint.md) (no LLM) over the result:
    staleness, `[[backlink]]` resolution, `path:line` existence, orphans, index↔pages
    agreement. Resolve any **ERROR** before finishing — the loop does not leave the wiki
    internally inconsistent.
 
-6. **Reconcile, advance, log.** Add/revise the one-line [`index.md`](../docs/wiki/index.md)
+8. **Reconcile, advance, log.** Add/revise the one-line [`index.md`](../docs/wiki/index.md)
    entry per created/changed page; reconcile `[[backlinks]]` bidirectionally. Write the
    current `git rev-parse HEAD` (full 40-char SHA) into
    [`.last_ingest_sha`](../docs/wiki/.last_ingest_sha). Append a dated entry to
    [`log.md`](../docs/wiki/log.md) (newest last): the branch, mode (**diff** + the
-   `<sha>→HEAD` window), files read, pages created/changed, and the **auditor catch-rate**
-   for this run (DRIFTED + UNSUPPORTED caught / pages audited). `log.md` is the wiki's
+   `<sha>→HEAD` window), files read, pages created/changed, and three catch counts kept
+   apart: the **cite check's** (E1-E4), the **auditor's** (DRIFTED + UNSUPPORTED caught /
+   pages audited) and **your review's** (step 6). `log.md` is the wiki's
    changelog — do **not** touch the root [`CHANGELOG.md`](../CHANGELOG.md).
 
-7. **Present the diff for human review — do NOT commit.** Show `git status` + a summary of
+9. **Present the diff for human review — do NOT commit.** Show `git status` + a summary of
    the page diffs and the checkpoint advance. The loop's output is a **reviewable diff,
    never a silent push**: autonomy is in synthesis + execution; the commit stays human-gated.
    Stop here and let the human review and commit.
@@ -117,10 +146,14 @@ remove the human from the spend boundary.
 ## The auditor catch-rate is a tuning signal, not a gate
 
 Track the per-run catch-rate (DRIFTED + UNSUPPORTED caught) logged in `log.md` across the
-first few runs. If the auditor stops catching drift that the human review then finds, that
-is the signal to **retune the scribe** — but the loop is **not blocked** on a threshold.
-Its trust is structural: `/wiki-lint` (deterministic) + the auditor (adversarial) + **a
-human reviews every diff**.
+first few runs. If the auditor stops catching drift that review then finds, that is the
+signal to **retune the scribe** — but the loop is **not blocked** on a threshold. The signal
+fired on three consecutive passes (`docs/wiki/log.md`, each ending in a "Retune signal"); the
+responses are the deterministic cite check (step 4), the auditor's move to Sonnet 5, and the
+explicit review step (step 6). Its trust is structural: `scripts/wiki_cites.py` and
+`/wiki-lint` (deterministic) + the auditor (adversarial) + **a human reviews every diff**.
+What none of them can check is whether a sentence is *true*; the review step carries that,
+and it is prose.
 
 ## What this loop does NOT do
 

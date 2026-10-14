@@ -53,6 +53,7 @@ from scripts.enforcement.evidence import (  # noqa: E402
     template_text,
 )
 from scripts.enforcement.gitutil import git_branch, repo_root  # noqa: E402
+from scripts.enforcement.ledger_spool import all_shards, hook_shard  # noqa: E402
 
 _HOOK_NAMES = ("restore-evidence", "capture-before-compact")
 
@@ -150,24 +151,28 @@ def compaction_threshold_notice(payload: dict[str, Any]) -> str:
     return "\n".join(line.format(n=count) for line in _COMPACTION_THRESHOLD_NOTICE)
 
 
-def _ledger_shard(payload: dict[str, Any]) -> Path | None:
-    """This session's provenance-ledger shard (`docs/dev/prov/SPEC.md`), or None."""
-    session = payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID")
-    if not session:
-        return None
-    return _project_dir(payload) / "docs" / "dev" / "ledger" / f"{session}.jsonl"
+def _session_id(payload: dict[str, Any]) -> str:
+    """The payload's session id, falling back to the environment's; "" when neither is set."""
+    return str(payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID") or "")
 
 
 def compaction_count(payload: dict[str, Any]) -> int:
-    """How many `compacted` receipts this session's ledger shard already holds."""
-    shard = _ledger_shard(payload)
-    if shard is None:
+    """How many `compacted` receipts this session has on record.
+
+    A session's receipts are in the tracked shard (written on a branch) and/or the untracked
+    trunk spool (written while HEAD was on `main`, item 165), so both are read.
+    """
+    session = _session_id(payload)
+    if not session:
         return 0
-    try:
-        lines = shard.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return 0
-    return sum(1 for line in lines if '"event": "compacted"' in line)
+    count = 0
+    for shard in all_shards(_project_dir(payload), session):
+        try:
+            lines = shard.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        count += sum(1 for line in lines if '"event": "compacted"' in line)
+    return count
 
 
 def record_compaction(payload: dict[str, Any]) -> bool:
@@ -178,20 +183,20 @@ def record_compaction(payload: dict[str, Any]) -> bool:
     shard makes the data-loss event **auditable after the fact** rather than merely warned
     about in the moment -- and it is what `restore_evidence` counts on the way back in.
     """
-    shard = _ledger_shard(payload)
-    if shard is None:
+    session = _session_id(payload)
+    if not session:
         return False
-    # `session` mirrors `_ledger_shard`'s own fallback three lines up -- prior to this fix it
-    # read `payload.get("session_id", "unknown")` with NO environment fallback, so every row
-    # in every shard recorded "unknown" even though the SHARD FILENAME (which does fall back
-    # to CLAUDE_CODE_SESSION_ID) was always correct. Verified: 52/52 historical rows across
-    # every ledger shard in this repo had `"session": "unknown"`. Two adjacent functions, same
-    # input, different fallback behavior -- this brings them into agreement.
-    session = payload.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID") or "unknown"
+    project_dir = _project_dir(payload)
+    branch = git_branch(str(project_dir))
+    # The row's `session` field and the shard filename share one fallback (`_session_id`).
+    # Before D1 the field read `payload.get("session_id", "unknown")` with no environment
+    # fallback, so every row recorded "unknown" while the filename (which did fall back to
+    # CLAUDE_CODE_SESSION_ID) was right: 52/52 historical rows. Two reads of the same input
+    # with different fallbacks; one helper keeps them in agreement.
     record = {
         "event": "compacted",
         "session": session,
-        "branch": git_branch(str(_project_dir(payload))),
+        "branch": branch,
         # `agent_id` / `agent_type` are present in the PreToolUse payload inside a subagent
         # per the Claude Code hooks reference (see docs/dev/epic-a-chain-design-corrections.md
         # §14.7); captured here too, when present, so a `compacted` row can be attributed to
@@ -213,6 +218,9 @@ def record_compaction(payload: dict[str, Any]) -> bool:
         "trigger": payload.get("trigger", "unknown"),
         "ts": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    # On trunk the receipt goes to the untracked spool, so a compaction after a close-out does
+    # not leave a tracked file modified on `main` (item 165, `scripts/enforcement/ledger_spool.py`).
+    shard = hook_shard(project_dir, session, branch)
     try:
         shard.parent.mkdir(parents=True, exist_ok=True)
         # newline="\n": text-mode append otherwise translates \n to the platform ending,
