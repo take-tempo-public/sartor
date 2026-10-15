@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import os
 import time
+from dataclasses import dataclass
 from types import ModuleType
 
 import pytest
-from playwright.sync_api import Page, Request, Response, Route
+from playwright.sync_api import Frame, Page, Request, Response, Route
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.ux.seeding import seed_exp_with_bullets, seed_user
@@ -89,48 +90,184 @@ _READ_CASCADE_STATE_JS = r"""
 """
 
 
+@dataclass
+class _RequestRecord:
+    """One request's lifecycle as the census saw it. `request` is held so the
+    `id()` key can never be reused by a different request mid-test."""
+
+    request: Request
+    url: str
+    resource_type: str
+    frame_url: str | None
+    t_request: float
+    t_response: float | None = None  # `response`: status + HEADERS received
+    t_finished: float | None = None  # `requestfinished`: BODY downloaded
+    failure: str | None = None  # `requestfailed`
+
+
 class _NetworkCensus:
     """Live in-flight request tracker for the whole test (installed once, not
     per `_wait_settled` call -- a request that started during an EARLIER
     phase but is still open when a LATER settle hangs must still show up).
-    Every Playwright request ends in exactly one of `response`/`requestfailed`
-    (or never, if the page tears down mid-flight -- exactly what a
-    `networkidle` hang would look like), so those two plus `request` are the
-    complete event set.
+
+    Item 30 widening (fix/reorder-networkidle-empty-census): the original
+    census treated `response` (headers received) as "done", and never listened
+    to `requestfinished` (body downloaded), so a request with its headers in
+    and its body still streaming read as "nothing pending" while Playwright's
+    `networkidle` was still withheld. The CI samples to date all show
+    `still_pending_requests: []` at the timeout (item 30, 2026-10-12 and
+    2026-10-14 entries). `still_pending()` keeps its original meaning, so old
+    and new records stay comparable; `awaiting_body()` is the new split. The
+    frame timeline is the other thing the old census could not see: a child
+    frame that attaches or re-commits holds its own lifecycle, with no request
+    open at all.
     """
 
     def __init__(self, page: Page) -> None:
         self.hit_counts: dict[str, int] = {}
-        self._pending: dict[int, tuple[str, float]] = {}
-        self.finished: list[dict[str, object]] = []
+        self._t0 = time.monotonic()
+        self._records: dict[int, _RequestRecord] = {}
+        self.frame_timeline: list[dict[str, object]] = []
         page.on("request", self._on_request)
         page.on("response", self._on_response)
+        page.on("requestfinished", self._on_requestfinished)
         page.on("requestfailed", self._on_requestfailed)
+        page.on("frameattached", lambda f: self._on_frame("attached", f))
+        page.on("framenavigated", lambda f: self._on_frame("navigated", f))
+        page.on("framedetached", lambda f: self._on_frame("detached", f))
+
+    def _rel(self, t: float | None) -> float | None:
+        return None if t is None else round(t - self._t0, 3)
 
     def _on_request(self, request: Request) -> None:
         self.hit_counts[request.url] = self.hit_counts.get(request.url, 0) + 1
-        self._pending[id(request)] = (request.url, time.monotonic())
-
-    def _on_response(self, response: Response) -> None:
-        self._finish(response.request, "response", response.status)
-
-    def _on_requestfailed(self, request: Request) -> None:
-        self._finish(request, "requestfailed", request.failure)
-
-    def _finish(self, request: Request, kind: str, detail: object) -> None:
-        entry = self._pending.pop(id(request), None)
-        elapsed = round(time.monotonic() - entry[1], 3) if entry else None
-        self.finished.append(
-            {"url": request.url, "kind": kind, "detail": detail, "elapsed_s": elapsed}
+        try:
+            frame_url: str | None = request.frame.url
+        except Exception:  # service-worker / frameless requests have no frame
+            frame_url = None
+        self._records[id(request)] = _RequestRecord(
+            request=request,
+            url=request.url,
+            resource_type=request.resource_type,
+            frame_url=frame_url,
+            t_request=time.monotonic(),
         )
 
+    def _on_response(self, response: Response) -> None:
+        rec = self._records.get(id(response.request))
+        if rec is not None:
+            rec.t_response = time.monotonic()
+
+    def _on_requestfinished(self, request: Request) -> None:
+        rec = self._records.get(id(request))
+        if rec is not None:
+            rec.t_finished = time.monotonic()
+
+    def _on_requestfailed(self, request: Request) -> None:
+        rec = self._records.get(id(request))
+        if rec is not None:
+            rec.failure = str(request.failure)
+
+    def _on_frame(self, event: str, frame: Frame) -> None:
+        try:
+            parent = frame.parent_frame
+            parent_url = parent.url if parent is not None else None
+            entry: dict[str, object] = {
+                "t_s": self._rel(time.monotonic()),
+                "event": event,
+                "url": frame.url,
+                "name": frame.name,
+                "parent_url": parent_url,
+            }
+        except Exception as exc:  # a frame can die between the event and this read
+            entry = {"t_s": self._rel(time.monotonic()), "event": event, "error": repr(exc)}
+        self.frame_timeline.append(entry)
+
+    def _open(self, rec: _RequestRecord) -> bool:
+        return rec.t_finished is None and rec.failure is None
+
     def still_pending(self) -> list[dict[str, object]]:
-        """Requests with no response/failure yet, and how long each has been open."""
+        """Requests with no response and no failure yet -- the ORIGINAL meaning
+        of this field, kept so records from before the widening stay comparable.
+        """
         now = time.monotonic()
         return [
-            {"url": url, "open_s": round(now - started, 3)}
-            for url, started in self._pending.values()
+            {"url": r.url, "open_s": round(now - r.t_request, 3)}
+            for r in self._records.values()
+            if r.t_response is None and r.failure is None
         ]
+
+    def awaiting_body(self) -> list[dict[str, object]]:
+        """Requests whose headers arrived and whose body has NOT finished. The
+        original census counted these as done.
+        """
+        now = time.monotonic()
+        return [
+            {
+                "url": r.url,
+                "resource_type": r.resource_type,
+                "frame_url": r.frame_url,
+                "t_request_s": self._rel(r.t_request),
+                "t_response_s": self._rel(r.t_response),
+                "body_open_s": round(now - (r.t_response or now), 3),
+            }
+            for r in self._records.values()
+            if r.t_response is not None and self._open(r)
+        ]
+
+    def slowest_finished(self, n: int = 3) -> list[dict[str, object]]:
+        """The `n` requests with the longest request->body-finished time. A
+        finite stall (the null hypothesis) shows here with `t_finished`.
+        """
+        done = [r for r in self._records.values() if r.t_finished is not None]
+        done.sort(key=lambda r: (r.t_finished or 0.0) - r.t_request, reverse=True)
+        return [
+            {
+                "url": r.url,
+                "resource_type": r.resource_type,
+                "total_s": round((r.t_finished or 0.0) - r.t_request, 3),
+                "headers_s": None if r.t_response is None else round(r.t_response - r.t_request, 3),
+            }
+            for r in done[:n]
+        ]
+
+    def failed(self) -> list[dict[str, object]]:
+        return [{"url": r.url, "failure": r.failure} for r in self._records.values() if r.failure]
+
+
+def _frame_state(page: Page) -> list[dict[str, object]]:
+    """Per-frame state at a settle failure: which frame, if any, is the one
+    withholding `networkidle`. Called only after a failure, so its short
+    per-frame waits cost nothing on the passing path. Must never raise.
+    """
+    out: list[dict[str, object]] = []
+    try:
+        frames = list(page.frames)
+    except Exception as exc:
+        return [{"error": f"page.frames failed: {exc!r}"}]
+    for frame in frames:
+        item: dict[str, object] = {}
+        try:
+            parent = frame.parent_frame
+            item["url"] = frame.url
+            item["name"] = frame.name
+            item["parent_url"] = parent.url if parent is not None else None
+            item["detached"] = frame.is_detached()
+        except Exception as exc:
+            item["error"] = repr(exc)
+        try:
+            frame.wait_for_load_state("networkidle", timeout=250)
+            item["networkidle"] = "reached"
+        except PlaywrightTimeoutError:
+            item["networkidle"] = "NOT_REACHED"
+        except Exception as exc:
+            item["networkidle"] = f"error: {exc!r}"
+        try:
+            item["readyState"] = frame.evaluate("document.readyState")
+        except Exception as exc:
+            item["readyState"] = f"inaccessible: {exc!r}"
+        out.append(item)
+    return out
 
 
 def _install_settle_instrument(
@@ -174,7 +311,14 @@ def _install_settle_instrument(
                 record["cascade_state"] = self.page.evaluate(_READ_CASCADE_STATE_JS)
             except Exception as eval_exc:  # page gone mid-failure -- dump must never raise
                 record["cascade_state"] = f"COULD NOT EVALUATE: {eval_exc!r}"
+            # Request-side first (cheap, and taken before the per-frame waits
+            # below can shift timings), then the frame-side localization.
             record["still_pending_requests"] = census.still_pending()
+            record["awaiting_body"] = census.awaiting_body()
+            record["failed_requests"] = census.failed()
+            record["slowest_finished"] = census.slowest_finished()
+            record["frame_timeline"] = list(census.frame_timeline)
+            record["frames"] = _frame_state(self.page)
             record["hit_counts"] = dict(census.hit_counts)
             reaches.append(record)
             _dump(record)
@@ -201,6 +345,15 @@ def _dump_reaches_summary(reaches: list[dict[str, object]], census: _NetworkCens
             "census across the whole test -- the page.on() listeners may not have "
             "installed. Do not trust an empty still_pending_requests as 'no traffic'."
         )
+    # Item 30 widening: the frame timeline and the slowest request bodies are
+    # printed on EVERY run, pass or fail -- the failing attempt's output is the
+    # only artifact a rerun-then-pass leaves, and an ordinary-run baseline is
+    # what a failing one is read against.
+    print(f"[settle-instrument] awaiting_body at end of test: {census.awaiting_body()}")
+    print(f"[settle-instrument] slowest_finished: {census.slowest_finished(5)}")
+    print(f"[settle-instrument] frame_timeline ({len(census.frame_timeline)} events):")
+    for entry in census.frame_timeline:
+        print(f"  {entry}")
     if os.environ.get("SETTLE_INSTRUMENT_ALWAYS"):
         print(f"[settle-instrument] hit_counts={census.hit_counts}")
     log_path = os.environ.get("KEYBOARD_REORDER_SETTLE_LOG")
