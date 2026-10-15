@@ -65,6 +65,52 @@ python measure_compose_parse.py /c/Dev/sartor 200 before.json
   `blueprints/applications.py` has no entry in `scripts/enforcement/blast_radius.py` (searched
   `applications`: no match), so `require-consumer-enumeration` does not gate it; the list below is
   written anyway.
+- **O-7 — the guard test fails on `main` as pre-registered** (first run of the file on the
+  unfixed tree, `main` + the dossier commit `74b2f76`, one run, no rerun plugin output):
+
+  ```
+  python -m pytest tests/test_composition_single_context_read.py -p no:randomly -q --no-header -rfp
+  FAILED ...::test_get_composition_reads_the_context_file_exactly_once
+    AssertionError: GET /composition read the context file 11 times; it must be exactly once
+  FAILED ...::test_get_composition_degrades_on_a_non_object_context[null]       assert 500 == 200
+    AttributeError: 'NoneType' object has no attribute 'get'
+  FAILED ...::test_get_composition_degrades_on_a_non_object_context[[1, 2]]     assert 500 == 200
+    AttributeError: 'list' object has no attribute 'get'
+  FAILED ...::test_get_composition_degrades_on_a_non_object_context["text"]     assert 500 == 200
+    AttributeError: 'str' object has no attribute 'get'
+  PASSED ...::test_get_composition_degrades_on_a_non_object_context[{not json]
+  ========================= 4 failed, 1 passed in 3.80s =========================
+  ```
+
+  The count (11) agrees with O-2 from a second, independent method (a pytest monkeypatch rather
+  than the script's). The passing `{not json` case is the control: a syntax error already
+  degrades (`JSONDecodeError` is caught per helper), a well-formed non-object does not.
+- **O-8 — the after-run, same instrument file, unchanged** (the branch with the fix applied;
+  `helper_signature_mode` reports `ctx`, so the block is `_load_compose_context` + the eleven
+  helpers). One run each, same machine and Python as O-1, **not interleaved** with the
+  before-run, so the run-to-run noise on this laptop is not separated out (ms, median / p95):
+
+  | case | reads per GET | the block (before → after) | whole GET (before → after) |
+  |---|---|---|---|
+  | p50, 66,867 B | 11 → **1** | 12.519 / 20.441 → 2.027 / 3.718 | 21.469 / 36.229 → 6.300 / 10.608 |
+  | p90, 130,946 B | 11 → **1** | 19.890 / 32.746 → 1.723 / 2.196 | 29.896 / 46.214 → 7.768 / 14.079 |
+  | max, 204,996 B | 11 → **1** | 23.156 / 38.980 → 1.942 / 2.594 | 29.033 / 46.301 → 7.164 / 8.984 |
+
+  **Against the pre-registered predictions** (Falsification §2): `reads_per_get == 1` at all three
+  sizes, met; block median drop ≥ 10 × one read+parse, met at all three (10.492 ≥ 4.88,
+  18.167 ≥ 10.22, 21.214 ≥ 14.81).
+- **O-9 — the suites over the change**, one run each, no `RERUN` line:
+  - `tests/test_composition_single_context_read.py` plus the 11 other files that call
+    `/composition?context_path=` (`test_application_routes`, `test_composition_summary`,
+    `test_skill_composition`, `test_experience_summary_composition`, `test_gap_fill_decide`,
+    `test_regenerate_gap_fill`, `test_draft_experience_summaries`, `test_draft_summary`,
+    `test_draft_gap_fill`, `test_live_preview_route`, `test_corpus_to_json_resume`):
+    `272 passed in 47.25s`.
+  - The two UX tests that monkeypatch `_read_composition_overrides` by name
+    (`test_20260718_compose_unawaited_reloads.py`, `test_20260722_compose_bare_reload_settle.py`,
+    `-m ux`): `2 passed in 15.76s`.
+  - `python -m ruff check` / `ruff format --check` / `mypy` on `blueprints/applications.py` and the
+    new test: clean.
 
 ---
 
@@ -86,7 +132,9 @@ python measure_compose_parse.py /c/Dev/sartor 200 before.json
 
 ## Falsified
 
-_(Nothing yet.)_
+- **"The block is mostly parsing."** The shape of the item's own estimate ("eleven parses") would
+  put the block at about 11 × one read+parse. Observed (O-4): 1.4–2.3× that. Parsing is part of
+  it, not all of it.
 
 ---
 
@@ -97,9 +145,11 @@ _(Nothing yet.)_
 - **I-1 — one read also gives the GET a consistent snapshot.** Today a `/composition` POST landing
   between two of the eleven reads could mix two versions of the file into one response. Not
   reproduced and not tested; if the fix removes it, that is a side effect, not the reason for it.
-- **I-2 — the remainder of the block (O-4) is dominated by per-helper `_within` resolution and the
-  freeze-state digest.** A guess from reading the helpers. The after-run's `helper_block` figure
-  is the check: whatever is still there once the reads are single is not parsing.
+- **I-2 — the part of the block (O-4) beyond parsing was per-helper `_within` resolution plus
+  `exists()`, repeated eleven times.** A guess from reading the helpers, **not isolated**: the
+  after-run (O-8) is consistent with it (the block fell by more than ten parses' worth at every
+  size, and what remains is about 1.7–2.0 ms), but no run separated resolve cost from parse cost.
+  Not measured; do not cite it as the mechanism.
 
 ---
 
@@ -122,7 +172,20 @@ _(Nothing yet.)_
 
 ## The fix
 
-_Only after the experiment above has actually failed._
+Made after O-7 (the guard test red on `main`), not before.
+
+- `blueprints/applications.py`: new `_load_compose_context(context_path) -> dict`, which does the
+  containment check (`resolve_within`, the CodeQL-modelled barrier `_read_freeze_state` already
+  used), the `exists()` check, and one `read_text` + `json.loads`. It returns `{}` for every
+  failure, **including a well-formed JSON document that is not an object** (O-7: `null`, a list
+  and a string were 500s). The eleven `_read_*` helpers keep their names, bodies and return
+  values and now take the loaded `ctx` dict; each helper's old early-return was exactly what its
+  body returns for `{}`, so no response field changes. The GET calls the loader once.
+- `tests/test_composition_single_context_read.py`: the guard (exactly one read of the context
+  file; non-object contexts degrade to a 200). Fail-closed against the count growing by a
+  twelfth helper, the way it grew to eleven.
+- Not changed, deliberately: the other routes in this file that read a context once each; the
+  helper names (two UX tests patch one by name, Consumers table).
 
 ---
 

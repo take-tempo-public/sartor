@@ -727,65 +727,60 @@ def _latest_analysis_essentials(app_row: Application) -> set[str]:
     return set()
 
 
-def _read_freeze_state(context_path: str) -> tuple[bool, bool]:
-    """Return (has_frozen_composition, composition_stale) for a context file validated under OUTPUT_DIR.
+def _load_compose_context(context_path: str) -> dict[str, Any]:
+    """Return the context file at `context_path` as a dict, read and parsed ONCE.
 
-    fix/frozen-composition-staleness: lets Compose show, on every load, whether the
-    approved résumé still matches what it shows. (False, False) when absent/invalid.
-    One more parse of the file on top of the GET's existing per-helper reads; the
-    consolidation of those is filed separately rather than widened into this fix.
+    Item 161: `get_application_composition` used to hand the path to eleven `_read_*`
+    helpers that each validated, read and `json.loads`'d the same file. It now loads
+    here, once, and every helper below is a pure function of the returned dict
+    (`tests/test_composition_single_context_read.py` fails if the read count grows).
+
+    `{}` when the path is empty, escapes OUTPUT_DIR, is absent, is unreadable, is not
+    JSON, or is JSON that is not an object: every helper returns its "nothing here"
+    value on `{}`, so the route degrades to the default Compose state instead of 500ing.
     """
     if not context_path:
-        return False, False
+        return {}
     # resolve_within (not Path + _within): its return value is the modeled CodeQL
     # path-injection barrier (.github/codeql/extensions), so the read below is clean.
     try:
         cp = resolve_within(context_path, current_app.config["OUTPUT_DIR"])
     except PathTraversalError:
-        return False, False
+        return {}
     if not cp.exists():
-        return False, False
+        return {}
     try:
         ctx = json.loads(cp.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return False, False
+        return {}
+    return ctx if isinstance(ctx, dict) else {}
+
+
+def _read_freeze_state(ctx: dict[str, Any]) -> tuple[bool, bool]:
+    """Return (has_frozen_composition, composition_stale) for a loaded context dict.
+
+    fix/frozen-composition-staleness: lets Compose show, on every load, whether the
+    approved résumé still matches what it shows. (False, False) for an empty context.
+    """
     return frozen_composition_doc(ctx) is not None, composition_is_stale(ctx)
 
 
-def _read_composition_overrides(context_path: str) -> tuple[set[int], set[int]]:
-    """Return (pinned, excluded) bullet-id sets from a context file validated under OUTPUT_DIR.
+def _read_composition_overrides(ctx: dict[str, Any]) -> tuple[set[int], set[int]]:
+    """Return (pinned, excluded) bullet-id sets from a loaded context dict.
 
-    Empty sets when absent/invalid.
+    Empty sets when absent.
     """
-    if not context_path:
-        return set(), set()
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return set(), set()
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return set(), set()
     ov = ctx.get("composition_overrides") or {}
     return set(ov.get("pinned", []) or []), set(ov.get("excluded", []) or [])
 
 
-def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
-    """Return per-experience explicit bullet order from a context file's `composition_overrides.bullet_order`.
+def _read_bullet_order(ctx: dict[str, Any]) -> dict[int, list[int]]:
+    """Return per-experience explicit bullet order from a context dict's `composition_overrides.bullet_order`.
 
-    Maps experience-id → ordered `[bullet_id, ...]`. Validated within OUTPUT_DIR. Empty dict when
-    absent/invalid. Keys and ids are coerced to int (JSON persists keys as
-    strings); malformed entries are skipped, not fatal.
+    Maps experience-id → ordered `[bullet_id, ...]`. Empty dict when absent. Keys and
+    ids are coerced to int (JSON persists keys as strings); malformed entries are
+    skipped, not fatal.
     """
-    if not context_path:
-        return {}
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return {}
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
     raw = (ctx.get("composition_overrides") or {}).get("bullet_order") or {}
     out: dict[int, list[int]] = {}
     if isinstance(raw, dict):
@@ -797,22 +792,13 @@ def _read_bullet_order(context_path: str) -> dict[int, list[int]]:
     return out
 
 
-def _read_title_overrides(context_path: str) -> dict[int, int]:
-    """Return per-experience pinned title from a context file's `composition_overrides.pinned_title_ids`.
+def _read_title_overrides(ctx: dict[str, Any]) -> dict[int, int]:
+    """Return per-experience pinned title from a context dict's `composition_overrides.pinned_title_ids`.
 
-    Maps experience-id → chosen ExperienceTitle id. Validated within OUTPUT_DIR.
-    Empty dict when absent/invalid. Keys and ids are coerced to int (JSON persists keys as strings);
-    malformed entries are skipped, not fatal.
+    Maps experience-id → chosen ExperienceTitle id. Empty dict when absent. Keys and ids
+    are coerced to int (JSON persists keys as strings); malformed entries are skipped,
+    not fatal.
     """
-    if not context_path:
-        return {}
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return {}
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
     raw = (ctx.get("composition_overrides") or {}).get("pinned_title_ids") or {}
     out: dict[int, int] = {}
     if isinstance(raw, dict):
@@ -843,9 +829,9 @@ def _accepted_experience_summary_ids(overrides: dict[str, Any]) -> set[int]:
 
 
 def _read_experience_summary_overrides(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[dict[int, dict[str, Any]], dict[int, int], bool, set[int]]:
-    """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries, accepted_ids) from a context file.
+    """B.4: Return per-role intro state (recs_by_exp, chosen_by_exp, use_experience_summaries, accepted_ids) from a context dict.
 
     - recs_by_exp: experience-id → {summary_item_id, rationale, alternates}
       from `llm_experience_summary_recommendations.recommendations`.
@@ -854,25 +840,9 @@ def _read_experience_summary_overrides(
     - use_experience_summaries: the "Add role intros" toggle state.
     - accepted_ids: ExperienceSummaryItem ids KEPT for THIS application (A3
       close-out pending-leak guard) — see `_accepted_experience_summary_ids`.
-    _within-gated by OUTPUT_DIR. Returns ({}, {}, False, set()) on read/parse
-    failure so the route degrades to "no role intros" rather than 500ing.
+    Returns ({}, {}, False, set()) for an empty context, so the route degrades to
+    "no role intros" rather than 500ing.
     """
-    empty: tuple[dict[int, dict[str, Any]], dict[int, int], bool, set[int]] = (
-        {},
-        {},
-        False,
-        set(),
-    )
-    if not context_path:
-        return empty
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return empty
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return empty
-
     rec_block = ctx.get("llm_experience_summary_recommendations") or {}
     recs_by_exp: dict[int, dict[str, Any]] = {}
     if isinstance(rec_block, dict):
@@ -902,35 +872,25 @@ def _read_experience_summary_overrides(
 
 
 def _read_skill_composition(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[set[int], set[int], list[int], list[int] | None]:
-    """B.5: Return skill curation state (pinned_ids, excluded_ids, order, recommended_ids) from a context file.
+    """B.5: Return skill curation state (pinned_ids, excluded_ids, order, recommended_ids) from a context dict.
 
-    Reuses the deterministic corpus readers. _within-gated by OUTPUT_DIR;
-    returns empties / None on read/parse failure so the Compose UI degrades to
-    the default (all active+approved skills) rather than 500ing.
+    Reuses the deterministic corpus readers. Returns empties / None for an empty
+    context so the Compose UI degrades to the default (all active+approved skills)
+    rather than 500ing.
     """
     from corpus_to_json_resume import _read_skill_overrides, _read_skill_recommendations
 
-    empty: tuple[set[int], set[int], list[int], list[int] | None] = (set(), set(), [], None)
-    if not context_path:
-        return empty
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return empty
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return empty
     pinned, excluded, order = _read_skill_overrides(ctx)
     rec_ids = _read_skill_recommendations(ctx)
     return pinned, excluded, order, rec_ids
 
 
 def _read_summary_overrides(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[dict[str, Any] | None, int | None]:
-    """β.6c — (summary_recommendation, pinned_summary_id) from the context.
+    """β.6c — (summary_recommendation, pinned_summary_id) from the context dict.
 
     summary_recommendation is the dict persisted by
     /api/applications/<id>/recommend-summary (shape:
@@ -940,19 +900,9 @@ def _read_summary_overrides(
     (the override that wins over the LLM recommendation in the
     Compose UI), or None if no pin is set.
 
-    _within-gated by OUTPUT_DIR. Returns (None, None) on read/parse
-    failure so the route can degrade to "no recommendation, no pin"
-    rather than 500ing.
+    Returns (None, None) for an empty context so the route can degrade to
+    "no recommendation, no pin" rather than 500ing.
     """
-    if not context_path:
-        return None, None
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return None, None
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None, None
     summary_rec = ctx.get("llm_summary_recommendation")
     raw = (ctx.get("composition_overrides") or {}).get("pinned_summary_id")
     try:
@@ -965,29 +915,20 @@ def _read_summary_overrides(
     )
 
 
-def _read_summary_draft(context_path: str) -> tuple[str, bool]:
+def _read_summary_draft(ctx: dict[str, Any]) -> tuple[str, bool]:
     """Return (summary_text, summary_text_edited) — the Compose-drafted 2-sentence positioning summary.
 
-    ("", False) when absent / unreadable. _within-gated by OUTPUT_DIR. Delegates
-    to corpus_to_json_resume._read_summary_text_override so the read matches the
+    ("", False) when absent. Delegates to
+    corpus_to_json_resume._read_summary_text_override so the read matches the
     resolver that freezes it.
     """
     from corpus_to_json_resume import _read_summary_text_override
 
-    if not context_path:
-        return "", False
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return "", False
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return "", False
     return _read_summary_text_override(ctx)
 
 
 def _read_gap_fill(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], bool, set[int], list[str]]:
     """Return (gap_fill_proposals, has_gap_fill, accepted_generated_bullet_ids, retired_gap_fill_keys).
 
@@ -997,18 +938,8 @@ def _read_gap_fill(
     this application. feat/regenerate-gap-fill: also the durable
     composition_overrides.retired_gap_fill_keys list, surfaced so the client can
     seed its session state (and re-send it on every /composition save — see
-    hardening.ContextSet). ([], False, set(), []) when absent / unreadable.
-    _within-gated by OUTPUT_DIR.
+    hardening.ContextSet). ([], False, set(), []) when absent.
     """
-    if not context_path:
-        return [], False, set(), []
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return [], False, set(), []
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return [], False, set(), []
     has_gap_fill = "llm_gap_fill_proposals" in ctx
     raw = ctx.get("llm_gap_fill_proposals")
     proposals = [p for p in raw if isinstance(p, dict)] if isinstance(raw, list) else []
@@ -1019,22 +950,13 @@ def _read_gap_fill(
 
 
 def _read_recommendations_and_added(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[set[int], dict[int, dict[str, Any]]]:
-    """Return (added bullet-id set, recommendations dict keyed by experience id) from a context file.
+    """Return (added bullet-id set, recommendations dict keyed by experience id) from a context dict.
 
     Reads `composition_overrides.added` and `llm_recommendations` from the
-    context file. Empty / {} when absent. _within-gated by OUTPUT_DIR.
+    context dict. Empty / {} when absent.
     """
-    if not context_path:
-        return set(), {}
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return set(), {}
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return set(), {}
     added = set(int(x) for x in ((ctx.get("composition_overrides") or {}).get("added") or []))
     rec_by_exp: dict[int, dict[str, Any]] = {}
     for k, v in (ctx.get("llm_recommendations") or {}).items():
@@ -1051,26 +973,16 @@ def _read_recommendations_and_added(
 
 
 def _read_experience_summary_drafts(
-    context_path: str,
+    ctx: dict[str, Any],
 ) -> tuple[dict[int, dict[str, Any]], bool]:
-    """A3: Return (drafts keyed by experience id, has_drafts) from a context file.
+    """A3: Return (drafts keyed by experience id, has_drafts) from a context dict.
 
     `has_drafts` is KEY PRESENCE, not list length — the same latch contract
     `_read_gap_fill`'s `has_gap_fill` uses, so a draft call that legitimately
     produced nothing still stops the client re-firing. At most one draft per role
     (the analyzer already dedups), so a dict keyed by experience id is the right
-    shape here, unlike gap-fill's list-per-role. _within-gated by OUTPUT_DIR;
-    degrades to ({}, False) on read/parse failure rather than 500ing.
+    shape here, unlike gap-fill's list-per-role. ({}, False) for an empty context.
     """
-    if not context_path:
-        return {}, False
-    cp = Path(context_path)
-    if not _within(cp, current_app.config["OUTPUT_DIR"]) or not cp.exists():
-        return {}, False
-    try:
-        ctx = json.loads(cp.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}, False
     has_drafts = "llm_experience_summary_drafts" in ctx
     raw = ctx.get("llm_experience_summary_drafts") or []
     out: dict[int, dict[str, Any]] = {}
@@ -1113,24 +1025,27 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
 
         jd_kw = set(extract_keywords(app_row.jd_text).get("keywords", {}).keys())
         essential = _latest_analysis_essentials(app_row)
-        ctx_path = request.args.get("context_path", "")
-        pinned, excluded = _read_composition_overrides(ctx_path)
+        # Item 161: the context file is read and parsed ONCE here; every _read_* below
+        # is a pure function of the dict. (A helper that opens the file itself fails
+        # tests/test_composition_single_context_read.py.)
+        ctx = _load_compose_context(request.args.get("context_path", ""))
+        pinned, excluded = _read_composition_overrides(ctx)
         # feat/bullet-drag-reorder — explicit per-experience order, authoritative
         # over the score sort below when present for that experience.
-        bullet_order = _read_bullet_order(ctx_path)
+        bullet_order = _read_bullet_order(ctx)
         # Workstreams H + I: surface llm_recommendations + composition_overrides.added
         # so the Compose UI can default to the curated set and mark drawer-added
         # bullets as included.
-        added, rec_by_exp = _read_recommendations_and_added(ctx_path)
+        added, rec_by_exp = _read_recommendations_and_added(ctx)
         # β.6c — pull the summary recommendation + pinned_summary_id
         # from the context (both optional). The UI renders a Positioning
         # card at the top with the LLM's pick flagged + any user pin
         # overriding it.
-        summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx_path)
+        summary_recommendation, pinned_summary_id = _read_summary_overrides(ctx)
         # Generation-experience re-architecture — the Compose-drafted 2-sentence
         # positioning summary + edited flag, so the Positioning card can render
         # the editable draft alongside the variant picker.
-        drafted_summary_text, drafted_summary_edited = _read_summary_draft(ctx_path)
+        drafted_summary_text, drafted_summary_edited = _read_summary_draft(ctx)
         # Phase 3 — transient gap-fill proposals + the accepted-gap-fill bullet ids
         # for this application; has_gap_fill (key presence) drives the auto-fire latch.
         # feat/regenerate-gap-fill — retired_gap_fill_keys seeds the client's durable
@@ -1140,7 +1055,7 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             has_gap_fill,
             accepted_generated_ids,
             retired_gap_fill_keys,
-        ) = _read_gap_fill(ctx_path)
+        ) = _read_gap_fill(ctx)
         gap_fill_by_exp: dict[int, list[dict[str, Any]]] = {}
         for _gp in gap_fill_proposals:
             _geid = _gp.get("experience_id")
@@ -1149,7 +1064,7 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
         # feat/compose-add-title — per-experience title pin (experience_id →
         # ExperienceTitle id). Drives the title radio's selected state and the
         # per-experience chosen_title_id below.
-        pinned_title_ids = _read_title_overrides(ctx_path)
+        pinned_title_ids = _read_title_overrides(ctx)
         # B.4 — per-role intro recommendations + the user's per-role picks +
         # the "Add role intros" toggle state. Drives the per-experience
         # summary picker rendered inside each Compose experience card.
@@ -1158,13 +1073,11 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             exp_summary_chosen,
             use_experience_summaries,
             accepted_experience_summary_ids,
-        ) = _read_experience_summary_overrides(ctx_path)
+        ) = _read_experience_summary_overrides(ctx)
         # A3 — transient per-role intro DRAFTS (draft_experience_summaries).
         # has_experience_summary_drafts is key presence, so a draft call that
         # produced nothing still latches the client's once-only fire.
-        exp_summary_drafts, has_experience_summary_drafts = _read_experience_summary_drafts(
-            ctx_path
-        )
+        exp_summary_drafts, has_experience_summary_drafts = _read_experience_summary_drafts(ctx)
         # B.5 — per-JD skill curation: recommend_skills ordering + pin/drop/
         # reorder overrides. Drives the Compose skill-curation card.
         (
@@ -1172,8 +1085,8 @@ def get_application_composition(application_id: int) -> ResponseReturnValue:
             skill_excluded,
             skill_order,
             skill_rec_ids,
-        ) = _read_skill_composition(ctx_path)
-        has_frozen_composition, composition_stale = _read_freeze_state(ctx_path)
+        ) = _read_skill_composition(ctx)
+        has_frozen_composition, composition_stale = _read_freeze_state(ctx)
 
         # PX-38: selectinload the three per-experience collections this loop
         # walks (bullets+tag_links, titles+tag_links, summary_items) so the
