@@ -1631,10 +1631,67 @@ async function _fireRecommendThenCompose() {
 }
 
 // ---- Generation (P8 Gate #2) ----
+// item 170 — what the confirm dialog says when a generate would replace a saved typed
+// edit. `discards` is the server's list (`resume` / `cover_letter`); the wording follows
+// it, so the dialog names exactly what is at risk and nothing else.
+function _discardEditsCopy(discards) {
+  const list = Array.isArray(discards) ? discards : [];
+  const resume = list.includes('resume');
+  const letter = list.includes('cover_letter');
+  let lead;
+  if (resume && letter) {
+    lead = 'Generating now will replace the résumé and cover-letter edits you saved.';
+  } else if (letter) {
+    lead = 'Generating a new cover letter will replace the cover-letter edits you saved.';
+  } else {
+    lead = 'Generating now will replace the résumé edits you saved with the composition you '
+      + 'approved in Compose.';
+  }
+  return `${lead}\n\nYour edits will not be kept.`;
+}
+
+// Ask once, in the app's own modal. Resolves true on Continue; Cancel, Esc and a
+// backdrop click all resolve false, and the caller then sends nothing.
+function _confirmDiscardEdits(discards, triggerEl) {
+  return cbConfirm(_discardEditsCopy(discards), {
+    title: 'Replace your typed edits?',
+    confirmLabel: 'Continue',
+    danger: false,
+    triggerEl,
+  });
+}
+
+// Generate. Three gates run before any request is spent, in this order:
+//   1. unsaved text in the Step 6 editors (`_gateEditsBeforeAction`, the same Use /
+//      Discard / Cancel modal Refine and Iterate use; it was not wired here before);
+//   2. a SAVED typed edit the server says this generate would lose (a 409
+//      `edits_would_be_discarded`, answered before any LLM call), confirmed with
+//      `cbConfirm`, then one re-send with `confirm_discard_edits: true`.
+// Cancel at either gate sends nothing and changes nothing.
 async function runGeneration() {
   if (!lastContextPath) return alert('Run analysis first');
   _maybeFireTourStop('tourGenerating', null);  // KW3: first Generate click
 
+  const btn = document.getElementById('btnGenerate');
+  const proceed = await _gateEditsBeforeAction(btn);
+  if (!proceed) {
+    setStatus('GENERATION CANCELED');
+    return;
+  }
+  const asked = await _runGenerationOnce(false);
+  if (!asked) return;
+  if (!(await _confirmDiscardEdits(asked.discards, btn))) {
+    setStatus('GENERATION CANCELED');
+    _announce('Generation canceled. Your edits are unchanged.');
+    return;
+  }
+  await _runGenerationOnce(true);
+}
+
+// One generate request and its whole busy/pending lifecycle. Returns `{discards}` when the
+// server asked before spending (nothing ran; the busy UI is already reset by `finally`),
+// else undefined.
+async function _runGenerationOnce(confirmDiscardEdits) {
   setStatus('GENERATING');
   _setBusy(true, 'Generating your tailored résumé');
   document.getElementById('btnGenerate').disabled = true;
@@ -1715,6 +1772,8 @@ async function runGeneration() {
         // generate_cover_letter defaults False on the backend (β.5 — cover
         // letter is opt-in via /api/generate-cover-letter); preserved here
         // by omission so we don't widen the request unintentionally.
+        // item 170: sent only on the re-send after the user chose Continue.
+        ...(confirmDiscardEdits ? { confirm_discard_edits: true } : {}),
       },
       (eventName, payload) => {
         if (eventName === 'chunk') {
@@ -1747,6 +1806,11 @@ async function runGeneration() {
     );
 
     if (httpError) {
+      // item 170 — the server asked before spending (409 edits_would_be_discarded):
+      // hand the question to runGeneration. Not an error, so no error modal.
+      if (httpError.body && httpError.body.edits_would_be_discarded) {
+        return { discards: httpError.body.discards || [] };
+      }
       // fix/frozen-composition-staleness — the server refused an approval Compose
       // has changed since (409 composition_stale): lock Step 5 to match, then say
       // why (the message points back to Save and continue).
@@ -1839,6 +1903,22 @@ async function runGenerateCoverLetter() {
   if (!currentUser) return alert('Select a user first');
   if (!lastContextPath) return alert('Generate the résumé first');
   _maybeFireTourStop('tourCoverLetter', null);  // KW3: first cover-letter
+  // item 170: a saved typed letter edit is replaced by the new letter, so the server asks
+  // first (409 edits_would_be_discarded, before the LLM call); Continue re-sends once.
+  const asked = await _runGenerateCoverLetterOnce(false);
+  if (!asked) return;
+  const btn = document.getElementById('btnGenerateCover');
+  if (!(await _confirmDiscardEdits(asked.discards, btn))) {
+    setStatus('GENERATION CANCELED');
+    _announce('Cover letter canceled. Your edits are unchanged.');
+    return;
+  }
+  await _runGenerateCoverLetterOnce(true);
+}
+
+// One cover-letter request and its busy lifecycle. Returns `{discards}` when the server
+// asked before spending (nothing ran), else undefined.
+async function _runGenerateCoverLetterOnce(confirmDiscardEdits) {
   setStatus('GENERATING COVER LETTER');
   _setBusy(true, 'Generating your cover letter');
   const gen = document.getElementById('btnGenerateCover');
@@ -1850,10 +1930,12 @@ async function runGenerateCoverLetter() {
       body: JSON.stringify({
         username: currentUser,
         context_path: lastContextPath,
+        ...(confirmDiscardEdits ? { confirm_discard_edits: true } : {}),
       }),
     });
     const data = await res.json();
     if (!res.ok) {
+      if (data.edits_would_be_discarded) return { discards: data.discards || [] };
       return reportError(
         'Cover letter',
         data.error || 'Cover letter generation failed',
@@ -3449,14 +3531,47 @@ function closeChangesModal() {
 // and broke the résumé download path (round-5 smoke). We restore
 // the original hidden state immediately, so the mutation isn't
 // visible to the user (no reflow paint in the same JS tick).
+//
+// item 170: removing the element's OWN `hidden` class is not enough when an
+// ANCESTOR is display:none (the résumé editor sits in #tabResume, which is hidden
+// while the Cover-letter tab is active). innerText of a node that is not rendered
+// is its textContent, which drops every <br>, so the text read back lost its line
+// breaks: _detectEdits() reported an edit nobody typed, and the résumé download
+// posted line-break-less text (observed, tests/ux/regression/
+// test_20261014_editor_text_hidden_tab.py). When the node has no layout, measure a
+// rendered copy instead, so the answer never depends on which tab is showing.
 function _readEditorText(id) {
   const el = document.getElementById(id);
   if (!el) return '';
   const wasHidden = el.classList.contains('hidden');
   if (wasHidden) el.classList.remove('hidden');
-  const text = el.innerText;
-  if (wasHidden) el.classList.add('hidden');
+  let text;
+  try {
+    text = el.getClientRects().length > 0 ? el.innerText : _renderedInnerText(el);
+  } finally {
+    if (wasHidden) el.classList.add('hidden');
+  }
   return text;
+}
+
+// innerText of `el` as if it were on screen: a copy in an off-screen, laid-out holder.
+// Not visibility:hidden (innerText skips non-visible nodes); opacity 0 keeps layout.
+function _renderedInnerText(el) {
+  const holder = document.createElement('div');
+  holder.setAttribute('aria-hidden', 'true');
+  holder.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:800px;opacity:0;pointer-events:none;'
+    + 'white-space:pre-wrap;';
+  const copy = el.cloneNode(true);
+  copy.removeAttribute('id');
+  copy.classList.remove('hidden');
+  holder.appendChild(copy);
+  document.body.appendChild(holder);
+  try {
+    return copy.innerText;
+  } finally {
+    holder.remove();
+  }
 }
 
 async function downloadResume() {

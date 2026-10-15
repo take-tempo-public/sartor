@@ -104,12 +104,18 @@ to get a draft that uses them, then **Save and continue** to approve it. (On an 
 application that was never approved in Compose, the button reads **Submit answers and
 regenerate** and regenerates the résumé directly.)
 
-**If you edited the preview first:** asking for a refinement or follow-up questions while you
-have unsaved edits in **✎ Edit before downloading** opens **"Your edits aren't saved yet"**.
-Choose **Use edits as baseline** to keep them, **Discard edits**, or **Cancel**. Edits you keep
-stay on this version of your résumé when you generate it again. If you approve changes in
-Compose first, the next version starts from the newly approved content without them, and Step
-6 tells you so.
+**If you edited the preview first:** asking for a refinement or follow-up questions, or
+clicking **Generate documents** again, while you have unsaved edits in **✎ Edit before
+downloading** opens **"Your edits aren't saved yet"**. Choose **Use edits as baseline** to keep
+them, **Discard edits**, or **Cancel**. Edits you keep stay on this version of your résumé when
+you generate it again.
+
+**If you approved changes in Compose after typing edits:** the next version starts from the
+newly approved content, so your saved edits can't come with it. **Generate documents** asks
+before it does that: a dialog titled **Replace your typed edits?** names what would be
+replaced. Click **Continue** to generate anyway, and Step 6 tells you the edits weren't carried
+over. Click **Cancel** to stop: nothing is generated and your edits and your current résumé
+stay as they are.
 
 ---
 

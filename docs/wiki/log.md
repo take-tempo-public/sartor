@@ -2869,3 +2869,57 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   threshold); `tests/test_wiki_cites.py` 34 passed.
 - **Not done:** the other pages above were checked by reading the cited passages, not by an
   auditor pass.
+
+## 2026-10-14 — scoped `/wiki-self-update` (`feat/confirm-before-overwriting-typed-edits`, item 170)
+
+- **Mode:** scoped to this branch's own diff (`13d8117..HEAD`); wiki-relevant sources
+  `blueprints/generation.py` and `static/app.js` (`docs/dev/architecture.md` and
+  `docs/user/iterating.md` are canonical docs the wiki references, not pages). Three pages
+  edited by three `wiki-scribe` runs in parallel. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged).
+- **Pages changed:**
+  - `route-surface.md`: the new pre-LLM `409 edits_would_be_discarded` and the
+    `confirm_discard_edits` request flag on the two generate routes and the detached
+    cover-letter route, its place among the other pre-LLM refusals, and the json-vs-stream
+    comparand difference.
+  - `frontend-wizard.md`: Generate's two gates and the confirm-and-re-send (`runGeneration`,
+    `_runGenerationOnce`, `_confirmDiscardEdits`), the cover-letter handler, and
+    `_readEditorText` reading a rendered copy when an ancestor tab is `display:none`.
+  - `iteration-audit-chain.md`: one sentence naming `_pending_discards`, which calls
+    `_typed_edits_disposition` before the LLM, and "After the LLM work" on the existing call.
+    Reciprocal `[[route-surface]]` / `[[iteration-audit-chain]]` backlinks added by me (the
+    scribe omitted the one it was asked for).
+- **Read, no edit needed:** `cover-letters`, `corpus-to-output-reach`, `pipeline-stages`,
+  `application-audit-chain`, `document-rendering`, `context-set-contract`. I read the
+  passages that mention the changed routes or the `edited_*` lifecycle; each describes the
+  context-side rule or the post-persist writes, which this branch did not change. Not
+  audited by an auditor.
+- **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): **0 catches**,
+  `OK (0 violation(s), 0 removed cite(s) listed)` on the scribes' output and again after every
+  later edit.
+- **Review** (step 6, mine, unenforced, run **before** the auditors): **7 catches** on two
+  pages.
+  - `frontend-wizard.md` (4): the reason the cover-letter path is unreachable was backwards
+    (the page said the button "shows only after a résumé is generated"; `_updateCoverLetterButtons`
+    hides it once a letter exists); the page said Cancel announces at **either** gate, but only
+    the second does; the résumé editor's ancestor was called a "hidden top tab" when
+    `#tabResume` is a panel inside the Step 6 output; "before any request is spent" should be
+    before any LLM call.
+  - `route-surface.md` (3): the new paragraph omitted its order after the stale-composition
+    409 and the month block; wrote `discards: []`, which reads as always empty; and omitted the
+    `carry_edits` exception under which a requested letter does not appear in `discards`.
+- **Auditor** (Sonnet 5, `wiki-grounding-auditor`, a different context from each scribe, run
+  **after** my review fixes): **1 UNSUPPORTED of 30 claims**, over the changed paragraphs
+  only. `route-surface` 0 of 10, `iteration-audit-chain` 0 of 7, `frontend-wizard` 1 of 13: the
+  page said "the same flow applies" to `runGenerateCoverLetter`, which has only the second
+  gate (verified in code: it never calls `_gateEditsBeforeAction`); reworded. Because my
+  review ran first, a clean auditor result on the other two pages is not a measure of the
+  scribes' accuracy.
+- **Also run:** `python scripts/wiki_freshness.py` OK (38 files, under the 75 block
+  threshold); structural check of every `[[backlink]]`: only `[[wikilink]]` in
+  `docs-information-architecture.md` does not resolve, which is the page documenting the
+  syntax and is unchanged; no page added, removed or missing from `index.md`.
+- **Retune signal:** the scribes' errors were reasoning errors about reachability and which
+  branch a claim holds on (a "which gate" and a "when is it shown" claim), the class the step-6
+  list names. The scribe was handed the right facts in the brief for the cover-letter button
+  and still inverted them.

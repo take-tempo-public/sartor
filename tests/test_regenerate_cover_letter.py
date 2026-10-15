@@ -112,11 +112,13 @@ def _post_generate(rig, how: str = "json", **extra: Any) -> dict[str, Any]:
     return dict(done or {})
 
 
-def _detach_letter(rig, monkeypatch, text: str = LETTER) -> None:
+def _detach_letter(rig, monkeypatch, text: str = LETTER, **extra: Any) -> None:
     """Run /api/generate-cover-letter against the rig's current context, as Step 6 does.
 
     The route imports `generate_cover_letter_against_resume` inside the function, so the
     stub goes on `analyzer`, not on `blueprints.generation` (item 160, recurrence 1).
+    `extra` rides on the request body: `confirm_discard_edits=True` is the user's Continue
+    when a typed letter edit is about to be consumed (item 170).
     """
     monkeypatch.setattr(
         analyzer,
@@ -124,7 +126,7 @@ def _detach_letter(rig, monkeypatch, text: str = LETTER) -> None:
         lambda *a, **k: {"cover_letter_content": text},
     )
     r = rig.client.post(
-        "/api/generate-cover-letter", json={"username": USER, "context_path": rig.cp}
+        "/api/generate-cover-letter", json={"username": USER, "context_path": rig.cp, **extra}
     )
     _control(r.status_code == 200, r.get_data(as_text=True))
     _control(rig.ctx().get("last_generated_cover_letter") == text, "the letter was not stored")
@@ -205,7 +207,9 @@ class TestControls:
             json={"username": USER, "context_path": rig.cp, "edited_cover_letter": TYPED},
         )
         assert saved.status_code == 200, saved.get_data(as_text=True)
-        second = _post_generate(rig, generate_cover_letter=True)
+        # The user's Continue (item 170): the new letter consumes the typed edit, so the
+        # route asks first (tests/test_confirm_overwrite_edits.py A3).
+        second = _post_generate(rig, generate_cover_letter=True, confirm_discard_edits=True)
         rec = _observe(
             rig,
             persists,
@@ -375,7 +379,9 @@ def test_b8_a_typed_letter_edit_survives_a_discarded_resume_edit(rig, persists, 
     _control(saved.status_code == 200, saved.get_data(as_text=True))
     rig.compose_corpus_edit("PUT", f"/api/bullets/{rig.ids['b1']}", {"text": EDITED})
     _freeze(rig)
-    body = _post_generate(rig)
+    # The user's Continue (item 170): the résumé edit is about to be discarded, so the
+    # route asks first (tests/test_confirm_overwrite_edits.py A1/A2).
+    body = _post_generate(rig, confirm_discard_edits=True)
 
     session = get_session()
     try:

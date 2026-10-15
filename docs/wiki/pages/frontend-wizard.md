@@ -394,6 +394,8 @@ and `#templateStaleNotice` together (shown while `_compositionFrozen && _composi
 re-renders the rail, which re-locks Step 5 `[synthesis]`. In normal use the rail is already
 locked, so this is the floor under it.
 
+**Confirming before a generate overwrites a saved typed edit (item 170).** [`app.js:runGeneration`](../../../static/app.js) gates the request with two confirmations, in order, before any LLM call is spent `[synthesis]`: (1) unsaved text in the Step 6 editors, checked by [`_gateEditsBeforeAction`](../../../static/app.js) (the same Use / Discard / Cancel modal Refine and Iterate use; it was not wired to Generate before), and (2) a SAVED typed edit the server says a generate would lose — answered as a 409 `{edits_would_be_discarded}` BEFORE any LLM call, confirmed with [`_confirmDiscardEdits`](../../../static/app.js), then one re-send with `confirm_discard_edits: true`. Cancel at either gate sets the status to `GENERATION CANCELED` [`app.js:setStatus`](../../../static/app.js) and sends nothing further; Cancel at the second gate also announces it [`app.js:_announce`](../../../static/app.js) ("Your edits are unchanged"), and Cancel at the first does not. [`app.js:runGenerateCoverLetter`](../../../static/app.js) (the focused, cheaper cover-letter-only call) has only the second gate: it never calls `_gateEditsBeforeAction`, so no unsaved-edit check precedes it. That gate cannot be reached from the shipped UI today: a saved typed letter edit needs an existing letter, and [`_updateCoverLetterButtons`](../../../static/app.js) hides the Generate cover letter button once a letter exists, while `runGeneration` never asks the server for one `[synthesis]`.
+
 **WYSIWYG-as-source: the preview always matches what Download would produce.**
 Editing `#resumePreview` / `#coverPreviewFrame`'s companion editor debounces
 (300ms) into [`app.js:_refreshLiveEditPreview`](../../../static/app.js), which
@@ -445,6 +447,8 @@ résumé edits, and says typed cover-letter edits are kept (`templates/index.htm
 `#persistFailedNotice` when the response's `persist_failed` is true (the generate succeeded
 but its database record didn't save, so resuming the application later would show an
 earlier version).
+
+**Reading editor text reliably across tab visibility (item 170).** [`app.js:_readEditorText`](../../../static/app.js) reads a contenteditable preview's text for consumers [`_detectEdits`](../../../static/app.js), [`downloadResume`](../../../static/app.js), [`downloadCoverLetter`](../../../static/app.js), and the live-preview refresh [`_refreshLiveEditPreview`](../../../static/app.js). When an ancestor is `display:none` (the résumé editor sits in `#tabResume`, which is hidden while the Cover-letter tab is active), `innerText` returns its `textContent`, which drops every `<br>` line break; `_readEditorText` now measures a rendered off-screen copy via [`_renderedInnerText`](../../../static/app.js) in this case, so the text read never depends on which tab is showing `[synthesis]`.
 
 ## Config persistence
 

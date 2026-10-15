@@ -74,6 +74,7 @@ from hardening import (
     frozen_composition_doc,
     resolve_cover_letter_after_generate,
     save_iteration_context,
+    strip_cover_letter_block,
 )
 from web_infra import (
     _get_client,
@@ -888,6 +889,80 @@ def _typed_edits_disposition(
     return False, True
 
 
+def _frozen_resume_md(frozen_doc: dict[str, Any]) -> str:
+    """The deterministic markdown view of a frozen composition (rendered once per request).
+
+    Both generate routes need it twice: for the pre-LLM discard check below and as the
+    assembled résumé body. Rendering it in the preamble and handing it to
+    ``_assemble_from_frozen_composition`` keeps that at one render.
+    """
+    from json_resume import json_resume_to_markdown
+
+    return json_resume_to_markdown(frozen_doc)
+
+
+def _pending_discards(
+    context_set: Mapping[str, Any],
+    frozen_doc: dict[str, Any] | None,
+    resume_content: str,
+    *,
+    with_cover_letter: bool,
+) -> list[str]:
+    """Return which saved typed edits this generate would lose: ``resume`` / ``cover_letter``.
+
+    item 170: the question asked BEFORE any LLM spend, so a Cancel costs nothing. One
+    predicate, built on the two rules the post-generate path already applies, so the
+    warning and the later ``edits_discarded`` / consumed-letter outcome cannot disagree:
+
+    - ``resume``: ``_typed_edits_disposition`` says the frozen re-assemble changed the
+      résumé the typed edit was made over (decision 4 of
+      ``fix/frozen-composition-staleness``). A legacy-path typed résumé edit is consumed
+      into the prompt, not discarded, so it is never listed.
+    - ``cover_letter``: a letter was requested and a typed letter edit exists and
+      ``carry_edits`` does not keep it (``resolve_cover_letter_after_generate``'s rule: a
+      produced letter consumes the edit outside ``carry_edits``). A résumé-only generate
+      never reads the letter edit (item 162, owner decision D4), so it is not listed.
+
+    One deliberate over-approximation: a requested letter the model returns empty would
+    have kept the edit, and this still asks. A needless confirm beats a silent loss, and
+    the case needs a failed letter call.
+    """
+    carry, resume_discarded = _typed_edits_disposition(context_set, frozen_doc, resume_content)
+    discards: list[str] = []
+    if resume_discarded:
+        discards.append("resume")
+    if with_cover_letter and context_set.get("edited_cover_letter_text") and not carry:
+        discards.append("cover_letter")
+    return discards
+
+
+_DISCARD_PHRASES = {
+    "resume": "the résumé edits you saved",
+    "cover_letter": "the cover-letter edits you saved",
+}
+
+
+def _edits_would_be_discarded_response(discards: list[str]) -> ResponseReturnValue:
+    """The shared pre-LLM 409 for a request that would lose a saved typed edit (item 170).
+
+    Mirrors ``_stale_composition_response``: plain JSON on every generate entry point
+    (the stream route answers before it opens). The client confirms with the user and
+    re-sends the same request with ``confirm_discard_edits: true``; nothing has been
+    written or spent by the time this is returned.
+    """
+    what = " and ".join(_DISCARD_PHRASES[d] for d in discards)
+    return jsonify(
+        {
+            "error": (
+                f"Generating now will replace {what}. "
+                "Continue to replace them, or cancel to keep them."
+            ),
+            "edits_would_be_discarded": True,
+            "discards": list(discards),
+        }
+    ), 409
+
+
 def _built_from_edited_baseline(context_set: Mapping[str, Any], result: Mapping[str, Any]) -> bool:
     """True when this generate was built from typed edits (the iteration note's wording).
 
@@ -986,6 +1061,7 @@ def _assemble_from_frozen_composition(
     with_cover_letter: bool,
     username: str,
     run_id: str,
+    resume_md: str | None = None,
 ) -> dict[str, Any]:
     """Build the generate()-shaped result dict from a frozen composition — no résumé LLM.
 
@@ -999,10 +1075,13 @@ def _assemble_from_frozen_composition(
     call_kind="generate_cover_letter"). Audit ``selected_bullets`` are synthesized from
     the frozen ``meta.sartor.work_provenance`` so the application_bullet chain still
     fills. Charter C-6: zero LLM for the résumé body.
-    """
-    from json_resume import json_resume_to_markdown
 
-    resume_md = json_resume_to_markdown(doc)
+    ``resume_md`` is the caller's already-rendered ``_frozen_resume_md(doc)`` (item 170:
+    the routes render it once for the pre-LLM discard check); omitted, it is rendered here,
+    so ``evals/runner.py`` and the tests that call this directly are unchanged.
+    """
+    if resume_md is None:
+        resume_md = _frozen_resume_md(doc)
 
     cover_letter = ""
     if with_cover_letter:
@@ -1108,6 +1187,22 @@ def run_generation() -> ResponseReturnValue:
     if month_needed:
         return _month_block_response(month_needed)
 
+    # item 170 — ask BEFORE any LLM spend whether this generate would lose a saved typed
+    # edit; Cancel must cost nothing. Last of the pre-LLM refusals, so a user never confirms
+    # a generate that is then refused for another reason. The frozen markdown is rendered
+    # once here and reused by the assemble below. The comparand is this route's own
+    # (post-strip), the value `_typed_edits_disposition` sees after the LLM step.
+    frozen_md = _frozen_resume_md(frozen_doc) if frozen_doc is not None else None
+    if not data.get("confirm_discard_edits"):
+        discards = _pending_discards(
+            context_set,
+            frozen_doc,
+            strip_cover_letter_block(frozen_md) if frozen_md is not None else "",
+            with_cover_letter=with_cover_letter,
+        )
+        if discards:
+            return _edits_would_be_discarded_response(discards)
+
     logger.info(
         "Starting generation for %s (iteration=%s)", username, context_set.get("iteration", 0)
     )
@@ -1137,6 +1232,7 @@ def run_generation() -> ResponseReturnValue:
                 with_cover_letter=with_cover_letter,
                 username=username,
                 run_id=run_id,
+                resume_md=frozen_md,
             )
         else:
             # β.6d / B.4 / B.5 — apply the user's chosen summary / per-role intros /
@@ -1171,8 +1267,6 @@ def run_generation() -> ResponseReturnValue:
 
     # C3 guardrail: strip any cover-letter block that leaked into the résumé
     # markdown before it is saved / rendered (deterministic; no-op when clean).
-    from hardening import strip_cover_letter_block
-
     if isinstance(result.get("resume_content"), str):
         result["resume_content"] = strip_cover_letter_block(result["resume_content"])
         if frozen_doc is None:
@@ -1452,6 +1546,21 @@ def run_generation_stream() -> ResponseReturnValue:
     if month_needed:
         return _month_block_response(month_needed)
 
+    # item 170 — the same pre-LLM discard check as /api/generate, as plain JSON before the
+    # stream opens (the stale-409 contract above). This route's post-LLM comparand is the
+    # assembled markdown AS IS: unlike /api/generate it never strips a cover-letter block
+    # from a frozen result, so the pre-check must not either, or the two could disagree.
+    frozen_md = _frozen_resume_md(frozen_doc) if frozen_doc is not None else None
+    if not data.get("confirm_discard_edits"):
+        discards = _pending_discards(
+            context_set,
+            frozen_doc,
+            frozen_md if frozen_md is not None else "",
+            with_cover_letter=with_cover_letter,
+        )
+        if discards:
+            return _edits_would_be_discarded_response(discards)
+
     logger.info(
         "Starting streaming generation for %s (iteration=%s)",
         username,
@@ -1515,6 +1624,7 @@ def run_generation_stream() -> ResponseReturnValue:
                     with_cover_letter=with_cover_letter,
                     username=safe_user,
                     run_id=run_id,
+                    resume_md=frozen_md,
                 )
                 yield _sse("chunk", {"text": result["resume_content"]})
             else:
@@ -1777,6 +1887,8 @@ def run_generate_cover_letter() -> ResponseReturnValue:
     username = data.get("username", "")
     context_path = data.get("context_path", "")
     refinement_notes = data.get("refinement_notes", "")
+    # item 170: the user's Continue, sent on the re-request after the 409 below.
+    confirm_discard = bool(data.get("confirm_discard_edits"))
 
     if not context_path:
         return jsonify({"error": "context_path required"}), 400
@@ -1811,6 +1923,11 @@ def run_generate_cover_letter() -> ResponseReturnValue:
         safe_user = secure_filename(cp.parent.name)
     if not safe_user:
         return jsonify({"error": "Invalid or unknown user"}), 400
+
+    # item 170: this route pops the typed letter edit once a new letter lands (below), so a
+    # saved edit is asked about BEFORE the paid call. Same shared 409 as the generate routes.
+    if context_set.get("edited_cover_letter_text") and not confirm_discard:
+        return _edits_would_be_discarded_response(["cover_letter"])
 
     client = _get_client()
     run_id = context_set.get("run_id") or uuid.uuid4().hex[:12]

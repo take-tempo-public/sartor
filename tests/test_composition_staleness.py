@@ -275,8 +275,16 @@ class TestTypedEdits:
         rig.state["context_path"] = child
         rig.compose_corpus_edit("PUT", f"/api/bullets/{rig.ids['b1']}", {"text": EDITED})
         _freeze(rig)
+        # The user's Continue (item 170): without the flag this is a 409 that names the
+        # résumé edit (tests/test_confirm_overwrite_edits.py A1).
         r = rig.client.post(
-            "/api/generate", json={"username": USER, "context_path": child, "output_format": ".md"}
+            "/api/generate",
+            json={
+                "username": USER,
+                "context_path": child,
+                "output_format": ".md",
+                "confirm_discard_edits": True,
+            },
         )
         body = r.get_json()
         assert r.status_code == 200, body

@@ -140,6 +140,24 @@ sequence). Each gates on `_safe_username` at entry:
   ([`_month_imprecise_roles`](../../../blueprints/generation.py)) reads the
   frozen approved_composition's work entries when Compose froze one, else the
   career_corpus snapshot.
+  Last of the pre-LLM refusals (after the stale-composition 409 and the month block),
+  both entry points also return a 409 via
+  [`_edits_would_be_discarded_response`](../../../blueprints/generation.py)
+  (item 170) when a saved typed edit would be lost by this generate — the
+  client must confirm with `confirm_discard_edits: true` to proceed `[synthesis]`.
+  The response carries `{error, edits_would_be_discarded: true, discards: [...]}`,
+  where `discards` is `["resume"]` if the typed résumé edit would be discarded
+  (on a frozen deterministic re-assemble of a changed composition), `["cover_letter"]`
+  if a requested cover letter would consume the typed letter edit and `carry_edits`
+  does not keep it ([`_pending_discards`](../../../blueprints/generation.py); the carry and
+  discard rules it mirrors are on [[iteration-audit-chain]]), or both. For
+  `/api/generate/stream`, the pre-LLM validation returns before the stream opens;
+  unlike `/api/generate` it does not strip a cover-letter block from the frozen
+  markdown before the discard check (the stream's post-LLM path also leaves the
+  block in place, so the two cannot disagree) `[synthesis]`. The separate
+  `/api/generate-cover-letter` route ([`run_generate_cover_letter`](../../../blueprints/generation.py))
+  checks for a typed letter edit and returns the same 409 with `discards: ["cover_letter"]`
+  before calling the LLM `[synthesis]`.
 
 These call into `analyzer.py`; the blueprints themselves stay request glue,
 reading paths from `current_app.config` rather than a module global — the

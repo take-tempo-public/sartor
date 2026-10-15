@@ -192,7 +192,9 @@ class TestControls:
         _control(saved.status_code == 200, saved.get_data(as_text=True))
         rig.compose_corpus_edit("PUT", f"/api/bullets/{rig.ids['b1']}", {"text": "ZEBRA-CHANGED"})
         _freeze(rig)
-        body = _post_generate(rig)
+        # The user's Continue (item 170): the résumé edit is about to be discarded, so the
+        # route asks first (tests/test_confirm_overwrite_edits.py A1/A2).
+        body = _post_generate(rig, confirm_discard_edits=True)
         _control(body.get("edits_discarded") is True, body)  # decision 4 held
         rec = _record(rig, persists, "C3", body)
         assert rec["run_edited_resume_text"] is None, rec
@@ -213,7 +215,9 @@ def test_a1_a2_a_with_letter_generate_consumes_the_run_row_letter_edit(
         monkeypatch,
         second={"resume_content": "# SECOND", "cover_letter_content": REWRITTEN},
     )
-    second = _post_generate(rig, how, generate_cover_letter=True)
+    # The user's Continue (item 170): the new letter consumes the typed edit, so the route
+    # asks first (tests/test_confirm_overwrite_edits.py A3/A4).
+    second = _post_generate(rig, how, generate_cover_letter=True, confirm_discard_edits=True)
     rec = _record(rig, persists, f"A1A2-{how}", second)
     # Controls: the context did what it should, and the run row holds the new letter.
     _control(rec["child_last_generated_cover_letter"] == REWRITTEN, rec)
@@ -230,7 +234,9 @@ def test_a3_the_detached_letter_route_consumes_the_run_row_letter_edit(rig, pers
     _follow(rig, first["context_path"])
     _detach_letter(rig, monkeypatch)
     _type_letter_edit(rig)
-    _detach_letter(rig, monkeypatch, REWRITTEN)  # a second detached letter, over the edit
+    # A second detached letter, over the edit: the user's Continue (item 170; the route asks
+    # first, tests/test_confirm_overwrite_edits.py A5).
+    _detach_letter(rig, monkeypatch, REWRITTEN, confirm_discard_edits=True)
     rec = _record(rig, persists, "A3")
     # Controls: the context consumed the edit, and the run row holds the new letter.
     _control(rec["child_last_generated_cover_letter"] == REWRITTEN, rec)
