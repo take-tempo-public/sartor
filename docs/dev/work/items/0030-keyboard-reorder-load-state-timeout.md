@@ -377,3 +377,28 @@ Probe only, by owner direction; **no fix, no change to the test's trigger, statu
      fetch not yet issued), so this one needs the loop-and-A/B treatment.
 - **C-11:** no fail-closed mechanism authored here. The widened instrument records and does not
   gate; the flake still trips `ci_wait` (exit 3) until a fix lands, at about 7 minutes a time.
+
+### 2026-10-15 — Phase A of the owner's fix pick (`fix/reorder-networkidle-bound`)
+
+Full record: `docs/dev/diagnosis/reorder-networkidle-bound.md` (O-1..O-16, F-1, F-2, I-1..I-3).
+**Status stays `watching`.** The owner chose "bound the instrument, measure the 5 s stall, replace
+the pre-drain only if it shows a gain"; this entry covers the first step only.
+
+- **Observed:** the instrument's `networkidle` wait (`test_20260604_bullet_drag_reorder.py`, the
+  line every traceback since 2026-10-07 goes through) had no timeout, while production's identical
+  wait is capped at 5 s and swallowed (`ui_pages/wizard_compose.py`). The prior entries' `:163`
+  cite is `:303` at `18c5ce1`.
+- **Changed:** one shared `predrain_networkidle(page)` used by both; a `[ux] networkidle pre-drain:`
+  summary line per run; a fail-closed guard (`test_20261015_compose_predrain_bounded.py`), red under
+  a mutation of the bound.
+- **A/B on the real test with the P5 order injected before reach 9** (scratchpad plugin, one run per
+  arm): the unmodified instrument hung at 30.047 s with `still_pending_requests: []` and the main
+  frame `NOT_REACHED`, the CI shape; the bounded instrument passed, with that reach
+  `networkidle_timed_out: True` at 5.012 s. **That is capability and mitigation, not a finding that
+  this order caused any CI failure.**
+- **What this does to the counters, stated plainly:** a stall no longer fails an attempt, so
+  `ci_wait` (exit 3) and `flake_rates` stop seeing it. The `[ux] networkidle pre-drain:` line is
+  the only place it shows, and **neither tool reads it** (C-11: unenforced, declared).
+- **Not done:** Phase B (the stall rate across every Compose test) and the pre-drain replacement.
+  Nothing in this entry is evidence that the item is closed; one clean CI run against a 3.3%
+  per-attempt rate would not be either.

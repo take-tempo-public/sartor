@@ -39,6 +39,7 @@ from ui_pages import (
 )
 from ui_pages.base import DEFAULT_TIMEOUT_MS
 from ui_pages.selectors import Compose, Wizard
+from ui_pages.wizard_compose import predrain_networkidle
 
 _JD = "Senior Backend Engineer — Kubernetes latency at scale, Kafka, Postgres."
 _K8S = "Reduced Kubernetes"
@@ -291,6 +292,22 @@ def _install_settle_instrument(
             with open(log_path, "a", encoding="utf-8") as fh:
                 fh.write(f"{record}\n")
 
+    def _capture(page: Page, into: dict[str, object]) -> None:
+        """The wide dump, shared by the exception path and a pre-drain stall."""
+        try:
+            into["cascade_state"] = page.evaluate(_READ_CASCADE_STATE_JS)
+        except Exception as eval_exc:  # page gone mid-failure -- dump must never raise
+            into["cascade_state"] = f"COULD NOT EVALUATE: {eval_exc!r}"
+        # Request-side first (cheap, and taken before the per-frame waits
+        # below can shift timings), then the frame-side localization.
+        into["still_pending_requests"] = census.still_pending()
+        into["awaiting_body"] = census.awaiting_body()
+        into["failed_requests"] = census.failed()
+        into["slowest_finished"] = census.slowest_finished()
+        into["frame_timeline"] = list(census.frame_timeline)
+        into["frames"] = _frame_state(page)
+        into["hit_counts"] = dict(census.hit_counts)
+
     def _instrumented_wait_settled(self: WizardComposePage) -> None:
         record: dict[str, object] = {"reach": len(reaches) + 1}
         t_start = time.monotonic()
@@ -299,9 +316,20 @@ def _install_settle_instrument(
                 Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
             )
             record["panel_visible_s"] = round(time.monotonic() - t_start, 3)
-            t_ni = time.monotonic()
-            self.page.wait_for_load_state("networkidle")
-            record["networkidle_s"] = round(time.monotonic() - t_ni, 3)
+            # Item 30 (docs/dev/diagnosis/reorder-networkidle-bound.md): the SAME
+            # bounded, swallowed wait production runs. This line used to be an
+            # unbounded `wait_for_load_state("networkidle")`, and every traceback
+            # recorded on item 30 since 2026-10-07 was raised by it, 30 s after the
+            # settle gate below had already held (dossier O-1, O-3, O-4). A stall is
+            # now a recorded event, not a failure; it is counted in the `[ux]
+            # networkidle pre-drain` summary line (tests/ux/conftest.py).
+            networkidle_s, timed_out = predrain_networkidle(self.page)
+            record["networkidle_s"] = round(networkidle_s, 3)
+            record["networkidle_timed_out"] = timed_out
+            if timed_out:
+                stall: dict[str, object] = {}
+                _capture(self.page, stall)
+                record["stall"] = stall
             t_settled = time.monotonic()
             self.page.wait_for_selector(
                 Compose.SETTLED, state="attached", timeout=DEFAULT_TIMEOUT_MS
@@ -310,23 +338,13 @@ def _install_settle_instrument(
         except Exception as exc:
             record["exception"] = repr(exc)
             record["elapsed_total_s"] = round(time.monotonic() - t_start, 3)
-            try:
-                record["cascade_state"] = self.page.evaluate(_READ_CASCADE_STATE_JS)
-            except Exception as eval_exc:  # page gone mid-failure -- dump must never raise
-                record["cascade_state"] = f"COULD NOT EVALUATE: {eval_exc!r}"
-            # Request-side first (cheap, and taken before the per-frame waits
-            # below can shift timings), then the frame-side localization.
-            record["still_pending_requests"] = census.still_pending()
-            record["awaiting_body"] = census.awaiting_body()
-            record["failed_requests"] = census.failed()
-            record["slowest_finished"] = census.slowest_finished()
-            record["frame_timeline"] = list(census.frame_timeline)
-            record["frames"] = _frame_state(self.page)
-            record["hit_counts"] = dict(census.hit_counts)
+            _capture(self.page, record)
             reaches.append(record)
             _dump(record)
             raise
         reaches.append(record)
+        if timed_out:
+            _dump(record)
 
     monkeypatch.setattr(WizardComposePage, "_wait_settled", _instrumented_wait_settled)
     return reaches

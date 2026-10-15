@@ -8,9 +8,11 @@ persistence round-trip.
 
 from __future__ import annotations
 
-import contextlib
+import os
+import time
+from dataclasses import dataclass, field
 
-from playwright.sync_api import Locator, expect
+from playwright.sync_api import Locator, Page, expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from ui_pages.base import DEFAULT_TIMEOUT_MS, LLM_TIMEOUT_MS, BasePage
@@ -23,6 +25,48 @@ from ui_pages.selectors import Compose, Wizard
 # DEFAULT_TIMEOUT_MS budget, and two orders of magnitude below the Playwright
 # default this replaces.
 _NETWORKIDLE_PREDRAIN_MS = 5_000
+
+
+@dataclass
+class PredrainTally:
+    """What the bounded pre-drain below has cost this process.
+
+    Item 30 (docs/dev/diagnosis/reorder-networkidle-bound.md): the bound turns a
+    stalled ``networkidle`` into a 5 s wait instead of a 30 s failure, which also
+    takes it out of the rerun counters ``ci_wait`` and ``flake_rates`` read.
+    This keeps the cost visible; ``tests/ux/conftest.py`` prints it once per run.
+    Report-only, deliberately: a stall is not a failure. The UX tier does not run
+    under xdist (``tests/ux/conftest.py``), so one process-wide tally is complete.
+    """
+
+    reaches: int = 0
+    waited_s: float = 0.0
+    stalls: list[tuple[str, float]] = field(default_factory=list)
+
+
+PREDRAIN = PredrainTally()
+
+
+def predrain_networkidle(page: Page) -> tuple[float, bool]:
+    """The bounded ``networkidle`` pre-drain: ``(elapsed_s, timed_out)``.
+
+    The one definition of this wait. ``WizardComposePage._wait_settled`` and the
+    keyboard-reorder test's timed override both call it, so the instrument cannot
+    drift back to the unbounded wait that raised every traceback recorded on item
+    30 since 2026-10-07 (dossier O-1, O-3). A timeout is swallowed and recorded.
+    """
+    t0 = time.monotonic()
+    timed_out = False
+    try:
+        page.wait_for_load_state("networkidle", timeout=_NETWORKIDLE_PREDRAIN_MS)
+    except PlaywrightTimeoutError:
+        timed_out = True
+    elapsed = time.monotonic() - t0
+    PREDRAIN.reaches += 1
+    PREDRAIN.waited_s += elapsed
+    if timed_out:
+        PREDRAIN.stalls.append((os.environ.get("PYTEST_CURRENT_TEST", ""), round(elapsed, 3)))
+    return elapsed, timed_out
 
 
 class WizardComposePage(BasePage):
@@ -90,8 +134,7 @@ class WizardComposePage(BasePage):
         self.page.wait_for_selector(
             Wizard.PANEL_COMPOSE, state="visible", timeout=DEFAULT_TIMEOUT_MS
         )
-        with contextlib.suppress(PlaywrightTimeoutError):
-            self.page.wait_for_load_state("networkidle", timeout=_NETWORKIDLE_PREDRAIN_MS)
+        predrain_networkidle(self.page)
         self.page.wait_for_selector(Compose.SETTLED, state="attached", timeout=DEFAULT_TIMEOUT_MS)
 
     def wait_cards(self) -> WizardComposePage:

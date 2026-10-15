@@ -1,9 +1,10 @@
 # Diagnosis — the keyboard-reorder test's instrument waits on `networkidle` with no bound; production's identical wait is bounded
 
-> **Status:** the failing line is **observed**; that bounding it removes the recorded failure is
-> **inferred** (I-1) and is what Phase A's A/B exists to test. The cause of `networkidle` being
-> withheld on CI is **not shown**, and this branch neither depends on nor claims it (the prior
-> dossier's I-8 stays a hypothesis). The fix is shaped by the owner's 2026-10-15 pick: "Both, in
+> **Status:** the failing line is **observed** (O-1). Phase A's A/B **reproduced the CI shape with
+> an injected order and showed the bounded instrument passing it** (O-11, O-13): capability and
+> mitigation shown, **not** that this order happened on any CI run. The cause of `networkidle`
+> being withheld on CI is **not shown**, and this branch neither depends on nor claims it (the
+> prior dossier's I-8 stays a hypothesis). The fix is shaped by the owner's 2026-10-15 pick: "Both, in
 > sequence" — bound the instrument and add a visible stall signal (Phase A), measure the 5 s
 > pre-drain stall (Phase B), replace the pre-drain only if Phase B shows a gain (Phase C, which
 > needs the owner's go).
@@ -73,6 +74,56 @@ item file, not from the raw job logs** (C-12).
   `pytest_terminal_summary`**, which `del`s its arguments and never touches `exitstatus`
   (`:90-91`). A second hook of that name in the same module is not possible; the stall line goes
   inside it.
+
+**Results of the pre-registered runs** (2026-10-15, this branch, local Windows, Playwright
+1.60.0, one run per arm; every pytest invocation used `-p no:rerunfailures -o addopts=""`).
+The injection plugin is a scratchpad file, no repo edit: before the Nth `has_custom_order` call it
+awaits a same-origin `fetch` to completion, then appends a hidden `about:blank` iframe and awaits
+its `load` (the P5 `fetch_then_commit` order).
+**Deviation from the pre-registration:** the two arms ran in **separate** pytest processes (HEAD
+arm before A1 was applied, FIXED arm after), not one process. A1 is a file change, not a toggle.
+
+- **O-10. HEAD arm, plugin present, injection off (`AB_INJECT_NTH=0`)**, instrument as at
+  `18c5ce1`: `1 passed in 37.10s`; `[ab-plugin] calls seen=4 nth=0`. The plugin alone changes
+  nothing.
+- **O-11. HEAD arm, injected before call #3 (`AB_INJECT_NTH=3`): the real test hangs and fails.**
+  `[ab-plugin] injected before has_custom_order call #3 in 0.147s`, then
+  `playwright._impl._errors.TimeoutError: Timeout 30000ms exceeded.`, `1 failed in 73.59s`. The
+  instrument's record: `{'reach': 9, 'panel_visible_s': 0.019, 'exception':
+  "TimeoutError('Timeout 30000ms exceeded.')", 'elapsed_total_s': 30.047, 'cascade_state':
+  {'composeReady': True, 'bgPending': None, 'draftSummaryFiredForApp': 1, 'gapFillFiredForApp': 1,
+  'composeApplicationId': 1, 'previewFrameReadyState': 'complete'}, 'still_pending_requests': [],
+  'awaiting_body': [], 'failed_requests': []}`. Per-frame check: main frame `networkidle:
+  NOT_REACHED`, `readyState: complete`; `livePreviewFrame`, `outputPreviewFrame`,
+  `coverPreviewFrame` and `abInjectFrame` all `reached`. That is field-for-field the shape O-4
+  records from CI, at reach 9 as in runs `38310545397` and `38676437085`. It shows the injected
+  order **reproduces the symptom**; it does not show that the order occurred on any CI run.
+- **O-12. FIXED arm (A1+A2 applied), injection off:** `1 passed in 15.04s`; 12 reaches,
+  `networkidle_s` 0.010-0.795, `networkidle_timed_out: False` on every reach;
+  `[ux] networkidle pre-drain: 0 stall(s) in 12 reach(es), 1.4 s waiting`. The pre-registered
+  prediction (12 reaches, 0 stalls) held.
+- **O-13. FIXED arm, injected before call #3: the test passes and the stall is recorded.**
+  `1 passed in 23.08s`. Reach 9: `networkidle_s: 5.012, networkidle_timed_out: True`, with a
+  `stall` capture attached; the settle gate then passed. `[ux] networkidle pre-drain: 2 stall(s)
+  in 12 reach(es), 11.9 s waiting`, both stalls `5.0 s`, node id printed. **Not pre-registered:**
+  reach 10 stalled too (`networkidle_s: 5.02`), and reach 11 recovered (`0.486`); reach 12 `0.011`.
+  Not explained here. It is consistent with the prior dossier's recovery observation (O-16: a
+  later main-frame request finishing re-arms it) and does not test it.
+- **O-14. G1 guard, `tests/ux/regression/test_20261015_compose_predrain_bounded.py`.** Branch,
+  no mutation: `1 passed in 14.21s`, `[ux] networkidle pre-drain: 1 stall(s) in 3 reach(es), 5.1 s
+  waiting`, stalled `5.0 s`; the in-test control (`networkidle` raised within 1.5 s) held. Mutant
+  (`MUT_PREDRAIN_MS=20000`, a scratchpad plugin swapping `ui_pages.wizard_compose.
+  _NETWORKIDLE_PREDRAIN_MS`, log line `[mut-predrain] bound 5000 -> 20000`): `1 failed in 31.46s`,
+  `AssertionError: _wait_settled took 20.1s with networkidle withheld; the pre-drain is no longer
+  bounded (item 30)`. The guard is red under the mutation it exists for.
+- **O-16. The tally counts deliberate stalls too.** A 14-test run of the three Compose settle
+  files, the reorder file and G1 printed `[ux] networkidle pre-drain: 2 stall(s) in 31 reach(es),
+  11.3 s waiting` (`14 passed in 93.47s`); both stalls were on purpose:
+  `test_diagnostic_p1_stalled_live_preview_iframe_vs_compose_reload_networkidle` and G1. **Phase B's
+  readout must exclude those two node ids**, or it overstates the stall rate.
+- **O-15. The new summary line carries none of the keys the log parsers match** (O-8): the printed
+  text is `[ux] networkidle pre-drain: <k> stall(s) in <n> reach(es), <s> s waiting` (O-12, O-13).
+  Whether `ci_wait` and `flake_rates` ignore it was **not** run against a real job log.
 
 ---
 
@@ -208,8 +259,24 @@ set is O-6.
 
 ## The fix
 
-Not written yet. A1 and A2 land in the second commit, after this dossier's `## Observed` is
-committed (C-7) and the G1/A-B predictions above are on record.
+Phase A, landed in the commit after the one that committed this dossier's `## Observed` and
+predictions (C-7):
+
+- **A1.** `ui_pages/wizard_compose.py::predrain_networkidle(page)` is the one definition of the
+  bounded, swallowed `networkidle` wait. `_wait_settled` calls it (replacing the inline
+  `contextlib.suppress`), and so does the keyboard-reorder test's `_instrumented_wait_settled`
+  (replacing the unbounded wait at the old `:303`), so the two cannot drift. On a stall the
+  instrument takes the same wide capture its exception path takes and prints it, then lets the
+  settle gate run.
+- **A2.** `PREDRAIN` (a small tally) records reaches, seconds waited and each stall's node id;
+  `tests/ux/conftest.py::_report_predrain_stalls`, called from the existing
+  `pytest_terminal_summary`, prints one `[ux] networkidle pre-drain:` line per run, including at
+  zero stalls. **Report-only and unenforced (C-11, declared):** a stall is not a failure.
+- **G1.** `tests/ux/regression/test_20261015_compose_predrain_bounded.py`, the fail-closed guard.
+
+This is the Phase A fix, not the whole of what the owner chose. Phase B (measure) and the Phase C
+decision are open. Nothing here changes what the pre-drain waits for, so it does not touch the
+history in `reference-ux-compose-ready-wait`.
 
 ---
 
