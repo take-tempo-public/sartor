@@ -3,7 +3,7 @@ schema = 1
 id = 170
 kind = "item"
 title = "Confirm before a generate or a new cover letter overwrites a typed edit (Continue / Cancel)"
-status = "open"
+status = "closed"
 decision_owner = "agent"
 branches = ["feat/confirm-before-overwriting-typed-edits"]
 refs = [
@@ -16,6 +16,16 @@ refs = [
   "docs/dev/diagnosis/regenerate-keeps-cover-letter.md",
 ]
 summary = "A typed edit is overwritten with a notice only after (résumé) or none (letter); warn first, Continue or Cancel."
+resolution = "2026-10-14, feat/confirm-before-overwriting-typed-edits: the generate routes and /api/generate-cover-letter answer a pre-LLM 409 edits_would_be_discarded (from one predicate, _pending_discards, built on the rules the post-generate path already applies) unless the request carries confirm_discard_edits; the client confirms with cbConfirm and re-sends once, and Generate now also runs the unsaved-edit gate (case 4, unsaved editor text). Observed first on main: all nine route arms were served as 200, changed state, and the seven with a letter spent one LLM call before the edit was dropped. Cases 2 and 3 (a letter edit consumed by a new letter) have no shipped client trigger, so the browser tier drives cases 1 and 4 and the route arms cover all three. The full UX tier found a pre-existing defect the new gate exposed: _readEditorText lost the editor's line breaks whenever an ancestor tab was display:none (also making the resume download post line-break-less text); fixed at the helper on the owner's decision."
+verified_by = [
+  "tests/test_confirm_overwrite_edits.py::test_a1_a_discarded_resume_edit_is_refused_until_confirmed",
+  "tests/test_confirm_overwrite_edits.py::test_a2_both_edits_are_named_when_both_would_be_lost",
+  "tests/test_confirm_overwrite_edits.py::test_a3_a_with_letter_generate_is_refused_before_the_letter_llm_call_legacy",
+  "tests/test_confirm_overwrite_edits.py::test_a4_a_with_letter_generate_is_refused_before_the_letter_llm_call_frozen",
+  "tests/test_confirm_overwrite_edits.py::test_a5_the_detached_letter_route_is_refused_over_a_typed_edit",
+  "tests/ux/regression/test_20261014_confirm_overwrite_edits.py::test_generate_asks_before_replacing_a_typed_edit",
+  "tests/ux/regression/test_20261014_editor_text_hidden_tab.py::test_editor_text_does_not_depend_on_the_active_tab",
+]
 ```
 
 **Owner request, 2026-10-14** (during close-out of `fix/run-row-letter-edit-shadow`): "add an
