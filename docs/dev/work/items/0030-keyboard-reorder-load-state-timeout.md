@@ -339,3 +339,41 @@ Status stays `watching`. No mechanism has been identified.
   `173 passed`). A control run of this test on `main` was not done.
 - Nothing was changed for this item here (out of scope). The open C-7 probe branch for this item
   is still the place to find why `networkidle` is not reached with nothing pending.
+
+### 2026-10-14 — C-7 probe branch run (`fix/reorder-networkidle-empty-census`)
+
+Full record: `docs/dev/diagnosis/reorder-networkidle-empty-census.md` (O-1..O-20, F-3, I-1..I-9).
+Probe only, by owner direction; **no fix, no change to the test's trigger, status stays
+`watching`.**
+
+- **Capability shown, from first principles (P5, one run, fresh page per arm, no app JS):** with
+  Playwright 1.60.0 the main frame's `networkidle` is order-dependent. A main-frame request
+  finishing and *then* a child-frame commit times out the wait (8.03 s bound) with nothing
+  pending, nothing awaiting a body, every child frame reached and `readyState: complete`. The
+  opposite order returns in 0.505 s. That is the recorded CI shape (`composeReady: True`,
+  `still_pending_requests: []`, preview frame `complete`).
+- **Also capable, and distinguishable (P3, isolated):** a request with headers received and its
+  body held is invisible to the original census, and withholds `networkidle` once a frame commit
+  forces the recalculation. The widened census lists it under `awaiting_body`.
+- **Not established:** that either happened on any CI run. The natural-capture attempt found
+  nothing: 30 of 30 passed locally under 6 CPU loaders (O-20). At 3.3% per attempt that is about
+  a 0.37 chance with no change, and they were not CI runs.
+- **The instrument now separates the two.** On a natural failure the dump carries `awaiting_body`
+  (filled = a held body), `frame_timeline`, and a per-frame `networkidle` check (all children
+  `reached` and main `NOT_REACHED` with `awaiting_body` empty = the order dependence). Read
+  those fields from the next `ci_wait` exit-3 job log, not from `still_pending_requests`.
+- **Inferred, not observed (I-9):** production `_wait_settled` bounds this wait to 5 s and
+  swallows the timeout, so there the stall costs 5 s and does not fail. Every traceback in this
+  item since 2026-10-07 goes through the test instrument's *unbounded* wait. The instrument
+  arrived 2026-07-31; recurrences are recorded from 2026-08-03.
+- **Fix options the evidence supports, none chosen (owner's pick, a `fix/*` branch with its own
+  A/B against the real test):**
+  1. Bound the instrument's wait as production does (5 s, suppressed) and record
+     `networkidle_timed_out` in its record. It removes the 30 s failure; `ci_wait` and
+     `flake_rates` would then stop seeing it unless something reads that field.
+  2. Replace the `networkidle` pre-drain in `ui_pages/wizard_compose.py::_wait_settled`, whose
+     comment calls it "NOT the settle gate". It removes the 5 s stall as well. The pre-drain
+     has history (`reference-ux-compose-ready-wait`: the marker cannot see an in-flight
+     fetch not yet issued), so this one needs the loop-and-A/B treatment.
+- **C-11:** no fail-closed mechanism authored here. The widened instrument records and does not
+  gate; the flake still trips `ci_wait` (exit 3) until a fix lands, at about 7 minutes a time.

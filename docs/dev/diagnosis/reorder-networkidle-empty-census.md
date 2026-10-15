@@ -161,6 +161,15 @@ this branch has not re-read the raw job logs for the older runs.
   because every completed request then reads as awaiting a body. The file was restored from a copy
   and its sha256 prefix verified equal (`c9bfddd9f6c47bf9`) before anything else ran.
 
+- **O-20. Natural-capture attempt: no capture.** The real test, 30 iterations in one pytest
+  process (in-process loop plugin, `-p no:rerunfailures`), 6 CPU busy-loop processes on an 8-core
+  machine, local Windows, Playwright 1.60.0: `30 passed, 270 deselected in 486.47s`, wrapper
+  marker `LOOP_DONE pytest_exit=0`, 0 `FAILED`, 0 `[settle-instrument]` exception records. The
+  largest `networkidle_s` over the 30 runs' reaches was 0.679 s. The loader processes were killed
+  and no stray process of this session's was left. That is a rate datum, not evidence of a fix:
+  at the 3.3% per-attempt rate item 30 measured on CI, 30 clean attempts has probability about
+  0.37, and these were local runs, not the CI runners the failures came from.
+
 ---
 
 ## Falsified
