@@ -121,6 +121,21 @@ arm before A1 was applied, FIXED arm after), not one process. A1 is a file chang
   11.3 s waiting` (`14 passed in 93.47s`); both stalls were on purpose:
   `test_diagnostic_p1_stalled_live_preview_iframe_vs_compose_reload_networkidle` and G1. **Phase B's
   readout must exclude those two node ids**, or it overstates the stall rate.
+- **O-17. Phase B, pass 1 (one pass, unloaded, local).** Every tracked UX test file that names
+  `WizardComposePage` (25 files by `git grep -l WizardComposePage -- 'tests/ux/*.py'`; G1's file
+  among them, G1 itself deselected), with `-k "not diagnostic and not predrain_stall"`,
+  `-p no:rerunfailures -o addopts=""`. Result lines:
+  `[ux] networkidle pre-drain: 0 stall(s) in 106 reach(es), 8.4 s waiting` and
+  `66 passed, 9 deselected, 1 xfailed, 1 xpassed in 249.99s (0:04:09)`; marker
+  `PHASEB_DONE tag=pass1 exit=0`. 0 failed, 0 rerun lines. The xfailed/xpassed pair is the known
+  non-strict xfail pair, not touched here.
+- **O-18. Phase B, looped arm: no data.** The unloaded 4-pass loop was stopped by the harness's
+  memory-pressure reaper at about 52% of its first 288 test executions (the log's last progress
+  line `....XXXxXXXX..................`, no terminal summary, so **no stall tally was printed**).
+  The wrapper was killed but its pytest process and Playwright driver and browser children kept
+  running; they were terminated by hand afterwards (`taskkill /T /F` on pid 22800, five processes
+  reported terminated; free memory 2.66 -> 3.07 GB). The loop was **not** restarted. The CPU-loaded
+  arm was never started. Nothing is inferred from the partial log.
 - **O-15. The new summary line carries none of the keys the log parsers match** (O-8): the printed
   text is `[ux] networkidle pre-drain: <k> stall(s) in <n> reach(es), <s> s waiting` (O-12, O-13).
   Whether `ci_wait` and `flake_rates` ignore it was **not** run against a real job log.
@@ -227,6 +242,13 @@ from one measured pass, `-p no:rerunfailures`, one arm under about 0.75× cores 
 owner's:** the stall rate per reach, seconds per UX run, and whether any stall occurred outside
 the reorder test. A rate of zero is recorded as a result and closes the branch after Phase A.
 Phase C is not designed in detail until those numbers exist.
+
+**Where Phase B stands (O-17, O-18):** one pass, 0 stalls in 106 reaches. The loop and the loaded
+arm did not produce data. One pass at the per-attempt rate item 30 measured for a *failure* (3.3%)
+has a good chance of showing nothing even if the stall is real, and 106 reaches are not 106
+independent chances at the specific reach-9-shaped event. This is a datum, not a finding that the
+stall does not occur. The remaining sources are the PR's own CI UX jobs (they print the line; no
+local memory cost) and a local re-run, which is the owner's call given the memory reaper.
 
 ---
 
