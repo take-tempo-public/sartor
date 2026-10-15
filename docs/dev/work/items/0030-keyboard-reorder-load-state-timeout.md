@@ -425,3 +425,7 @@ Dossier O-17, O-18. **Status stays `watching`; the owner chose to stop at Phase 
 - **What would close this item:** a falsifiable `verified_by` and `ci_wait` exit 0 with 0 `RERUN`
   markers on the reorder test, across enough CI runs to mean something at 3.3% per attempt. None
   of that exists yet; this branch removes one recorded failure path and makes a stall visible.
+- **Whole-tier datum from the branch's gate run (dossier O-19):** `[ux] networkidle pre-drain: 2
+  stall(s) in 115 reach(es), 21.1 s waiting` over `pytest -m ux` (180 passed, 0 reruns). Both
+  stalls are the deliberate ones (the P1 probe and the new guard), so 0 unintended in 115 reaches.
+  One run; a datum, not a rate.

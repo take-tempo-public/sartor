@@ -136,6 +136,12 @@ arm before A1 was applied, FIXED arm after), not one process. A1 is a file chang
   running; they were terminated by hand afterwards (`taskkill /T /F` on pid 22800, five processes
   reported terminated; free memory 2.66 -> 3.07 GB). The loop was **not** restarted. The CPU-loaded
   arm was never started. Nothing is inferred from the partial log.
+- **O-19. The full gate's UX tier, on `d6f7fee` (2026-10-15, local, `python -m scripts.gate`,
+  markers `GATE_START 13:28:42` / `GATE_DONE exit=0 13:44:00`):** `[ux] networkidle pre-drain: 2
+  stall(s) in 115 reach(es), 21.1 s waiting`; `180 passed, 3409 deselected, 2 xpassed in 550.46s`;
+  0 `RERUN`, 0 `FAILED` lines. Both stalls are the deliberate ones named in O-16
+  (`test_diagnostic_p1_*` and G1), each `5.0 s`. So **0 unintended stalls in 115 reaches** over the
+  whole tier, in one run. Like O-17, a datum: it has little power against a rate near 3.3%.
 - **O-15. The new summary line carries none of the keys the log parsers match** (O-8): the printed
   text is `[ux] networkidle pre-drain: <k> stall(s) in <n> reach(es), <s> s waiting` (O-12, O-13).
   Whether `ci_wait` and `flake_rates` ignore it was **not** run against a real job log.
