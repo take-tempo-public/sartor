@@ -34,8 +34,9 @@ The controls hold on `main` and after the fix: the cases where a prompt must **n
 Continue path (the flag is sent, the request succeeds, the edit is discarded as today). On
 `main` the flag is an unknown key and is ignored, so the Continue controls already pass.
 
-The defect invariants are `xfail(strict=True, raises=AssertionError)`; the fix commit deletes
-only those markers. Drive steps and controls raise `ControlFailed` through
+The defect invariants were `xfail(strict=True, raises=AssertionError)` on `main` (quoted in
+item 170's `## Updates`, with `--runxfail`); the fix commit deleted only those markers.
+Drive steps and controls raise `ControlFailed` through
 `tests._controls.control`, never a bare `assert`, so a broken drive fails the arm instead of
 passing as the defect it exists to catch (item 167).
 """
@@ -68,12 +69,6 @@ from tests.test_run_row_letter_edit import (
 # The staleness instrument's rig and the item-160 persist recorder, registered here.
 rig = _rig_fixture
 persists = _persists_fixture
-
-_DEFECT = pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="item 170: a generate that loses a typed edit does not ask first",
-)
 
 _HOWS = ["json", "stream"]
 _EDITED = "ZEBRA-CHANGED"
@@ -361,7 +356,6 @@ class TestControls:
 # -------------------------------------------------------------------
 
 
-@_DEFECT
 @pytest.mark.parametrize("how", _HOWS)
 def test_a1_a_discarded_resume_edit_is_refused_until_confirmed(rig, persists, monkeypatch, how):
     """Case 1: the re-approved composition would drop the typed résumé edit."""
@@ -379,7 +373,6 @@ def test_a1_a_discarded_resume_edit_is_refused_until_confirmed(rig, persists, mo
     _assert_refused(rec, res, ["resume"])
 
 
-@_DEFECT
 @pytest.mark.parametrize("how", _HOWS)
 def test_a2_both_edits_are_named_when_both_would_be_lost(rig, persists, monkeypatch, how):
     """Case 1 plus a letter request: the résumé edit is discarded AND the letter consumed."""
@@ -397,7 +390,6 @@ def test_a2_both_edits_are_named_when_both_would_be_lost(rig, persists, monkeypa
     _assert_refused(rec, res, ["resume", "cover_letter"])
 
 
-@_DEFECT
 @pytest.mark.parametrize("how", _HOWS)
 def test_a3_a_with_letter_generate_is_refused_before_the_letter_llm_call_legacy(
     rig, persists, monkeypatch, how
@@ -421,7 +413,6 @@ def test_a3_a_with_letter_generate_is_refused_before_the_letter_llm_call_legacy(
     _assert_refused(rec, res, ["cover_letter"])
 
 
-@_DEFECT
 @pytest.mark.parametrize("how", _HOWS)
 def test_a4_a_with_letter_generate_is_refused_before_the_letter_llm_call_frozen(
     rig, persists, monkeypatch, how
@@ -441,7 +432,6 @@ def test_a4_a_with_letter_generate_is_refused_before_the_letter_llm_call_frozen(
     _assert_refused(rec, res, ["cover_letter"])
 
 
-@_DEFECT
 def test_a5_the_detached_letter_route_is_refused_over_a_typed_edit(rig, persists, monkeypatch):
     """Case 3: `/api/generate-cover-letter` would pop the typed letter edit."""
     _letter_then_typed_edit(rig, monkeypatch, second={"resume_content": "# SECOND"})

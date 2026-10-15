@@ -102,3 +102,23 @@ gets its client handler, and the UX tier can drive cases 1 and 4 only.
 `runGeneration` overwrites *unsaved* Step 6 editor text with no gate, because
 `_gateEditsBeforeAction` is wired only to refine (`static/app.js:2724`) and iterate-clarify
 (`:3055`). Case 4 reuses that gate; it needs no server change.
+
+### 2026-10-14 — server handshake built (commit 2)
+
+`blueprints/generation.py` only. New request flag `confirm_discard_edits`; new pre-LLM `409`
+`{error, edits_would_be_discarded: true, discards: [...]}` on all three routes, from one
+predicate, `_pending_discards`.
+
+- **Observed after the change:** all 23 instrument tests pass (the 9 defect arms with their
+  markers deleted); 192 passed across the instrument and every suite that touches these routes.
+  Exactly seven existing drives failed first, and they were the seven the dossier had decided
+  as "update (drive)" (rows 16-17): they now send the user's Continue. The carry arms
+  (`A5`, `D6`, `B5`) passed unchanged, as classed.
+- **Mutation checks**, file restored and sha256 verified after each: skipping the check on the
+  stream route alone fails exactly its four arms (A1-A4 `[stream]`); making `_pending_discards`
+  ignore `carry_edits` fails exactly the two carry controls (`C4` `[json]`, `[stream]`).
+- **Not driven:** the over-approximation noted on `_pending_discards` (a requested letter the
+  model returns empty would have kept the edit, and the route still asks) has no test; it
+  needs a failed letter call and the cost of being wrong is one needless confirm.
+- **Declared, not fixed:** the shipped client shows the new `409` as a plain error until
+  commit 3, so this branch lands as one PR and is not user-visible half-built.
