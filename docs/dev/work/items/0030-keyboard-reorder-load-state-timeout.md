@@ -377,3 +377,60 @@ Probe only, by owner direction; **no fix, no change to the test's trigger, statu
      fetch not yet issued), so this one needs the loop-and-A/B treatment.
 - **C-11:** no fail-closed mechanism authored here. The widened instrument records and does not
   gate; the flake still trips `ci_wait` (exit 3) until a fix lands, at about 7 minutes a time.
+
+### 2026-10-15 — Phase A of the owner's fix pick (`fix/reorder-networkidle-bound`)
+
+Full record: `docs/dev/diagnosis/reorder-networkidle-bound.md` (O-1..O-16, F-1, F-2, I-1..I-3).
+**Status stays `watching`.** The owner chose "bound the instrument, measure the 5 s stall, replace
+the pre-drain only if it shows a gain"; this entry covers the first step only.
+
+- **Observed:** the instrument's `networkidle` wait (`test_20260604_bullet_drag_reorder.py`, the
+  line every traceback since 2026-10-07 goes through) had no timeout, while production's identical
+  wait is capped at 5 s and swallowed (`ui_pages/wizard_compose.py`). The prior entries' `:163`
+  cite is `:303` at `18c5ce1`.
+- **Changed:** one shared `predrain_networkidle(page)` used by both; a `[ux] networkidle pre-drain:`
+  summary line per run; a fail-closed guard (`test_20261015_compose_predrain_bounded.py`), red under
+  a mutation of the bound.
+- **A/B on the real test with the P5 order injected before reach 9** (scratchpad plugin, one run per
+  arm): the unmodified instrument hung at 30.047 s with `still_pending_requests: []` and the main
+  frame `NOT_REACHED`, the CI shape; the bounded instrument passed, with that reach
+  `networkidle_timed_out: True` at 5.012 s. **That is capability and mitigation, not a finding that
+  this order caused any CI failure.**
+- **What this does to the counters, stated plainly:** a stall no longer fails an attempt, so
+  `ci_wait` (exit 3) and `flake_rates` stop seeing it. The `[ux] networkidle pre-drain:` line is
+  the only place it shows, and **neither tool reads it** (C-11: unenforced, declared).
+- **Not done:** Phase B (the stall rate across every Compose test) and the pre-drain replacement.
+  Nothing in this entry is evidence that the item is closed; one clean CI run against a 3.3%
+  per-attempt rate would not be either.
+
+### 2026-10-15 — Phase B result and branch close (`fix/reorder-networkidle-bound`)
+
+Dossier O-17, O-18. **Status stays `watching`; the owner chose to stop at Phase A.**
+
+- **Measured, one pass, unloaded, local:** every `WizardComposePage` test file, diagnostic probes
+  and G1 deselected: `[ux] networkidle pre-drain: 0 stall(s) in 106 reach(es), 8.4 s waiting`;
+  66 passed, 0 failed, 0 rerun lines, 4m10s. **A datum, not a finding that the stall does not
+  occur**: one pass has little power against a rate near 3.3%.
+- **Not obtained:** the 4-pass loop was stopped by the harness's memory-pressure reaper before it
+  printed a tally (no data), and the CPU-loaded arm never ran. The reaper killed the wrapper and
+  left the pytest, Playwright-driver and browser processes running; they were terminated by hand.
+- **Decision (owner, 2026-10-15): stop at Phase A.** The pre-drain is **not** replaced. Nothing
+  measured shows it costing anything in the ordinary case, and its history
+  (`reference-ux-compose-ready-wait`) is a reason for it. Reopen Phase C only on a stall rate from
+  real runs.
+- **Where the rate will come from, with no local memory cost:** every CI UX job now prints the
+  `[ux] networkidle pre-drain:` line. Read it from the raw job log
+  (`gh run view <run> --job <job> --log`). Neither `ci_wait` nor `flake_rates` parses it. A first
+  reading on this branch's own PR is the next natural datum.
+- **What would close this item:** a falsifiable `verified_by` and `ci_wait` exit 0 with 0 `RERUN`
+  markers on the reorder test, across enough CI runs to mean something at 3.3% per attempt. None
+  of that exists yet; this branch removes one recorded failure path and makes a stall visible.
+- **Whole-tier datum from the branch's gate run (dossier O-19):** `[ux] networkidle pre-drain: 2
+  stall(s) in 115 reach(es), 21.1 s waiting` over `pytest -m ux` (180 passed, 0 reruns). Both
+  stalls are the deliberate ones (the P1 probe and the new guard), so 0 unintended in 115 reaches.
+  One run; a datum, not a rate.
+- **First CI reading of the line (dossier O-20):** PR #173, run `38804779159`, job
+  `116662673338`, raw log: `[ux] networkidle pre-drain: 2 stall(s) in 115 reach(es), 39.8 s
+  waiting`, both the deliberate ones, so 0 unintended in 115 on CI. `ci_wait 173`: GREEN (exit 0),
+  no absorbed reruns. One run, one attempt of the reorder test: a datum, not a rate. Status stays
+  `watching`.

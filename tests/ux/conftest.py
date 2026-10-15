@@ -75,6 +75,30 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
             _safe_print(f"---- {title} ----\n{content}")
 
 
+def _report_predrain_stalls() -> None:
+    """One line per run: how often, and how long, Compose's bounded `networkidle`
+    pre-drain stalled (item 30, docs/dev/diagnosis/reorder-networkidle-bound.md).
+
+    The bound makes a stall cost 5 s instead of failing the attempt, which also hides
+    it from the rerun counters `ci_wait` and `flake_rates` read. **Report-only and
+    unenforced by design (charter C-11, declared):** nothing fails on it and neither
+    tool parses it. Printed even at zero stalls, so a missing line on a run that
+    reached Compose reads as a dead recorder, never as "nothing happened". The
+    wording avoids `[ux] RERUN`, `rerun-rate alarm` and `attempt(s) failed`, the keys
+    those two tools match on.
+    """
+    from ui_pages.wizard_compose import PREDRAIN
+
+    if not PREDRAIN.reaches:
+        return
+    _safe_print(
+        f"\n[ux] networkidle pre-drain: {len(PREDRAIN.stalls)} stall(s) in "
+        f"{PREDRAIN.reaches} reach(es), {PREDRAIN.waited_s:.1f} s waiting"
+    )
+    for nodeid, seconds in PREDRAIN.stalls:
+        _safe_print(f"  {nodeid or '<unknown test>'} - stalled {seconds:.1f} s")
+
+
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
 ) -> None:
@@ -89,6 +113,7 @@ def pytest_terminal_summary(
     """
     del terminalreporter, config  # unused — the tally already lives in `_rerun_counts`
     del exitstatus  # never altered; see docstring
+    _report_predrain_stalls()
     if not _rerun_counts:
         return
     reruns = sorted(_rerun_counts.items())
