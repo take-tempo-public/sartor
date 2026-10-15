@@ -402,3 +402,26 @@ the pre-drain only if it shows a gain"; this entry covers the first step only.
 - **Not done:** Phase B (the stall rate across every Compose test) and the pre-drain replacement.
   Nothing in this entry is evidence that the item is closed; one clean CI run against a 3.3%
   per-attempt rate would not be either.
+
+### 2026-10-15 — Phase B result and branch close (`fix/reorder-networkidle-bound`)
+
+Dossier O-17, O-18. **Status stays `watching`; the owner chose to stop at Phase A.**
+
+- **Measured, one pass, unloaded, local:** every `WizardComposePage` test file, diagnostic probes
+  and G1 deselected: `[ux] networkidle pre-drain: 0 stall(s) in 106 reach(es), 8.4 s waiting`;
+  66 passed, 0 failed, 0 rerun lines, 4m10s. **A datum, not a finding that the stall does not
+  occur**: one pass has little power against a rate near 3.3%.
+- **Not obtained:** the 4-pass loop was stopped by the harness's memory-pressure reaper before it
+  printed a tally (no data), and the CPU-loaded arm never ran. The reaper killed the wrapper and
+  left the pytest, Playwright-driver and browser processes running; they were terminated by hand.
+- **Decision (owner, 2026-10-15): stop at Phase A.** The pre-drain is **not** replaced. Nothing
+  measured shows it costing anything in the ordinary case, and its history
+  (`reference-ux-compose-ready-wait`) is a reason for it. Reopen Phase C only on a stall rate from
+  real runs.
+- **Where the rate will come from, with no local memory cost:** every CI UX job now prints the
+  `[ux] networkidle pre-drain:` line. Read it from the raw job log
+  (`gh run view <run> --job <job> --log`). Neither `ci_wait` nor `flake_rates` parses it. A first
+  reading on this branch's own PR is the next natural datum.
+- **What would close this item:** a falsifiable `verified_by` and `ci_wait` exit 0 with 0 `RERUN`
+  markers on the reorder test, across enough CI runs to mean something at 3.3% per attempt. None
+  of that exists yet; this branch removes one recorded failure path and makes a stall visible.

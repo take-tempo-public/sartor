@@ -311,3 +311,99 @@ ux` run. For **item 30**: stays `watching` unless a falsifiable `verified_by` ex
 (C-7, C-11). One clean CI run against a 3.3% per-attempt base rate is not evidence the flake is
 gone (a single attempt passes about 96.7% of the time with no change); the deterministic guard
 and the A/B are what carry the claim, and only for the mechanism they exercise.
+
+**Outcome (owner, 2026-10-15): stop at Phase A.** Phase C is not started. Item 30 stays
+`watching`.
+
+---
+
+## Appendix — the scratchpad plugins, verbatim
+
+None of these are committed as tests; they were run with `PYTHONPATH=<dir> python -m pytest <node>
+-p <plugin> -p no:rerunfailures -o addopts=""`. The in-process loop plugin (`--loop N`) is the one
+already recorded verbatim in `docs/dev/diagnosis/test-reliability.md` §Falsification; the Phase B
+runner used an equivalent form and is not reproduced.
+
+**`ab_plugin.py`** (the A/B injection, O-10..O-13; `AB_INJECT_NTH=0` is the control):
+
+```python
+import os
+import time
+
+import pytest
+
+_INJECT_JS = """
+async () => {
+  const r = await fetch('/static/style.css?ab=' + Date.now(), {cache: 'no-store'});
+  await r.text();
+  await new Promise((resolve) => {
+    const f = document.createElement('iframe');
+    f.id = 'abInjectFrame';
+    f.style.display = 'none';
+    f.onload = () => resolve();
+    document.body.appendChild(f);
+  });
+}
+"""
+
+
+def _log(line):
+    print(f"\n[ab-plugin] {line}")
+    path = os.environ.get("AB_LOG")
+    if path:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_call(item):
+    mod = item.module
+    if "keyboard_reorder_persists" not in item.name:
+        return (yield)
+    nth = int(os.environ.get("AB_INJECT_NTH", "3"))
+    cls = mod.WizardComposePage
+    original = cls.has_custom_order
+    state = {"n": 0}
+
+    def wrapped(self):
+        state["n"] += 1
+        if nth and state["n"] == nth:
+            t0 = time.monotonic()
+            self.page.evaluate(_INJECT_JS)
+            self.page.wait_for_timeout(100)
+            _log(f"injected before has_custom_order call #{nth} in {time.monotonic() - t0:.3f}s")
+        return original(self)
+
+    cls.has_custom_order = wrapped
+    try:
+        return (yield)
+    finally:
+        cls.has_custom_order = original
+        _log(f"calls seen={state['n']} nth={nth}")
+```
+
+**`mut_predrain.py`** (the G1 mutation, O-14; an unset `MUT_PREDRAIN_MS` is the control):
+
+```python
+import os
+
+import pytest
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_call(item):
+    raw = os.environ.get("MUT_PREDRAIN_MS")
+    if not raw:
+        return (yield)
+    import ui_pages.wizard_compose as wc
+
+    if not hasattr(wc, "_NETWORKIDLE_PREDRAIN_MS"):
+        raise RuntimeError("MutationNotApplied: _NETWORKIDLE_PREDRAIN_MS missing")
+    original = wc._NETWORKIDLE_PREDRAIN_MS
+    wc._NETWORKIDLE_PREDRAIN_MS = int(raw)
+    print(f"\n[mut-predrain] bound {original} -> {wc._NETWORKIDLE_PREDRAIN_MS}")
+    try:
+        return (yield)
+    finally:
+        wc._NETWORKIDLE_PREDRAIN_MS = original
+```
