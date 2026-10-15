@@ -5,11 +5,13 @@ kind = "item"
 title = "Confirm before a generate or a new cover letter overwrites a typed edit (Continue / Cancel)"
 status = "open"
 decision_owner = "agent"
-branches = []
+branches = ["feat/confirm-before-overwriting-typed-edits"]
 refs = [
   "blueprints/generation.py",
   "static/app.js",
   "templates/index.html",
+  "docs/dev/blast-radius/confirm-before-overwriting-typed-edits.md",
+  "tests/test_confirm_overwrite_edits.py",
   "docs/dev/diagnosis/run-row-letter-edit-shadow.md",
   "docs/dev/diagnosis/regenerate-keeps-cover-letter.md",
 ]
@@ -65,3 +67,38 @@ item 163 merges**; **all three overwrite cases**; the **server handshake** for t
 
 Filed during that branch's close-out, at the owner's request, so it is on the board before the
 merge rather than a follow-up branch. Not started.
+
+### 2026-10-14 — instrumented on `feat/confirm-before-overwriting-typed-edits`
+
+Commit 1 of the branch: the consumer dossier
+(`docs/dev/blast-radius/confirm-before-overwriting-typed-edits.md`) and the instrument
+(`tests/test_confirm_overwrite_edits.py`: 14 controls, 9 strict-xfail defect arms). No
+production code changed yet.
+
+**Observed on `main` @ `13d8117`** (`--runxfail`, 9 arms, 0 `ControlFailed`, every arm fails at
+`assert res["status"] == 409`, `tests/test_confirm_overwrite_edits.py:244` at that commit):
+
+| Arm | Route | Edit at risk | status | LLM calls spent | state changed |
+|---|---|---|---|---|---|
+| A1 | `/api/generate`, `/api/generate/stream` | typed résumé (frozen, composition changed) | 200 | 0 | yes |
+| A2 | both | résumé and letter (frozen, letter requested) | 200 | 1 | yes |
+| A3 | both | letter (legacy path, letter requested) | 200 | 1 | yes |
+| A4 | both | letter (frozen path, letter requested) | 200 | 1 | yes |
+| A5 | `/api/generate-cover-letter` | letter (detached) | 200 | 1 | yes |
+
+The one LLM call is spent **before** the edit is dropped: the combined résumé-and-letter
+`generate()` on the legacy path (A3), the letter call inside
+`_assemble_from_frozen_composition` on the frozen path (A2, A4), and the letter call on the
+detached route (A5). So the pre-check has to run ahead of the assemble, not inside it. A1
+spends nothing (the frozen résumé path has no LLM call): its cost is the lost edit alone.
+
+**Read from code, not driven** (declared limit): cases 2 and 3 have no shipped client
+trigger. The client never sends `generate_cover_letter` (`static/app.js:1715-1717`), and
+`#btnGenerateCover` is hidden once a letter exists (`_updateCoverLetterButtons`). They are
+reachable by a direct POST only. So the server floor covers all three cases, case 3 also
+gets its client handler, and the UX tier can drive cases 1 and 4 only.
+
+**A fourth case, found while enumerating** (owner chose to include it, 2026-10-14):
+`runGeneration` overwrites *unsaved* Step 6 editor text with no gate, because
+`_gateEditsBeforeAction` is wired only to refine (`static/app.js:2724`) and iterate-clarify
+(`:3055`). Case 4 reuses that gate; it needs no server change.
