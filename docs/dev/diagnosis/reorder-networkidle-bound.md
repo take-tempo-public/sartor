@@ -142,6 +142,17 @@ arm before A1 was applied, FIXED arm after), not one process. A1 is a file chang
   0 `RERUN`, 0 `FAILED` lines. Both stalls are the deliberate ones named in O-16
   (`test_diagnostic_p1_*` and G1), each `5.0 s`. So **0 unintended stalls in 115 reaches** over the
   whole tier, in one run. Like O-17, a datum: it has little power against a rate near 3.3%.
+- **O-20. First CI reading of the line, PR #173, run `38804779159`, job `116662673338`
+  (`UX / a11y / PDF (Playwright, py3.12)`), read from the raw job log with
+  `gh run view 38804779159 --job 116662673338 --log`, not from a parser:**
+  `[ux] networkidle pre-drain: 2 stall(s) in 115 reach(es), 39.8 s waiting`; the two stalls are
+  `test_diagnostic_p1_stalled_live_preview_iframe_vs_compose_reload_networkidle` and
+  `test_predrain_stall_is_bounded_and_swallowed`, each `5.0 s`, so **0 unintended stalls in 115
+  reaches on CI as well as locally (O-19)**. Same job: `180 passed, 1 skipped, 3380 deselected, 1
+  xfailed, 1 xpassed in 302.30s`; no `RERUN` or `rerun-rate` line. `python -m scripts.ci_wait 173`:
+  `GREEN (exit 0)`, all 8 required checks `pass`, "no absorbed reruns found in any required run
+  log". The 39.8 s against O-19's 21.1 s is the ordinary `networkidle` waits being slower on the
+  runner; not investigated. One CI run, one attempt of the reorder test: a datum, not a rate.
 - **O-15. The new summary line carries none of the keys the log parsers match** (O-8): the printed
   text is `[ux] networkidle pre-drain: <k> stall(s) in <n> reach(es), <s> s waiting` (O-12, O-13).
   Whether `ci_wait` and `flake_rates` ignore it was **not** run against a real job log.

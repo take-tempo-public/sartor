@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=f202e00d-9a81-4ebf-8944-ff521fd01ca5 branch=fix/reorder-networkidle-bound commit=d6f7fee actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-15 -->
+<!-- provenance: schema=1 session=f202e00d-9a81-4ebf-8944-ff521fd01ca5 branch=fix/reorder-networkidle-bound commit=9b638a6 actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-15 -->
 
 # Agent handoff — item 30, Phase A: the reorder test's `networkidle` wait is bounded, stalls are visible (`fix/reorder-networkidle-bound`) → owner's next drawdown pick
 
@@ -24,7 +24,8 @@
 > - **Measured:** one local pass, 25 UX test files, probes and the guard deselected: **0 stalls in
 >   106 reaches**, 8.4 s waiting, 66 passed. The gate's full UX tier: `2 stall(s) in 115
 >   reach(es)`, both the deliberate ones (the P1 probe and the new guard), so **0 unintended in
->   115**. A datum, not evidence the stall does not occur.
+>   115**. The same on CI, PR #173's UX job: `2 stall(s) in 115 reach(es), 39.8 s waiting`, both
+>   deliberate. A datum, not evidence the stall does not occur.
 > - **Not obtained:** the 4-pass loop was reaped by the harness's memory-pressure reaper before it
 >   printed a tally, and the CPU-loaded arm never ran. The reaper killed only the wrapper; the
 >   pytest, driver and browser processes were left running and were terminated by hand.
@@ -102,7 +103,8 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 | `7a67c54` | **The change.** `predrain_networkidle` and the `PREDRAIN` tally in `ui_pages/wizard_compose.py`; the override in `tests/ux/regression/test_20260604_bullet_drag_reorder.py` calls it and captures the wide dump on a stall; `tests/ux/conftest.py` prints the `[ux] networkidle pre-drain:` line; the fail-closed guard `tests/ux/regression/test_20261015_compose_predrain_bounded.py`. |
 | `b9613bc` | Phase B record: one pass, 0 stalls in 106 reaches; the loop reaped, no data. |
 | `d6f7fee` | Item 30 `## Updates` (Phase B result, owner stops at Phase A) and the dossier appendix: the A/B plugin and the mutation plugin, verbatim. |
-| (this commit) | This handoff, and dossier O-19 / item 30's whole-tier datum. Docs only. |
+| `9b638a6` | The first version of this handoff, dossier O-19 and item 30's whole-tier datum. Docs only. |
+| (this commit) | CI's first reading of the stall line (dossier O-20, item 30) and this handoff's update for it. Docs only. |
 
 **Verified, with the evidence:**
 - **Before:** the override's `wait_for_load_state("networkidle")` had no timeout
@@ -128,9 +130,11 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 **Gate:**
 - `python -m scripts.gate --result`, run on `d6f7fee` (the tip before this handoff commit):
   `gate --result: PASSED on this tree -- exit 0, failed step None, finished 2026-10-15T13:44:00-0700, HEAD d6f7fee`
-- **That result is stale for the tip**, because the result binds to HEAD. One docs-only commit
-  (this handoff) sits on top of it and changes no code or tests. `work_items check` and the
-  handoff validation are re-run by hand on the tip; the full gate was not.
+- **That result is stale for the tip**, because the result binds to HEAD. Two docs-only commits
+  (the handoff, then its CI-reading update) sit on top of it and change no code or tests.
+  `work_items check` and the handoff validation are re-run by hand on the tip; the full gate was
+  not. CI ran the tree at the first handoff commit `9b638a6` (PR #173, above) and was green; it
+  re-runs on the tip.
 - **What it ran:** hooksPath and memory preflights, `ruff check`, `ruff format --check` and `mypy`
   clean; `pytest -m "not ux" -n auto` **3401 passed, 8 skipped** (5 m 46 s, unchanged from last
   session); `pytest -m ux` **180 passed, 2 xpassed** (9 m 10 s; one more than last session: the
@@ -140,10 +144,12 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 - **Wall-clock, measured this time** (`GATE_START 13:28:42`, `GATE_DONE exit=0 13:44:00`, the
   wrapper's own markers): **15 min 18 s** for the whole gate. This replaces the earlier handoffs'
   untimed ">25 minutes" figure for this machine at about 3 GB free.
-- **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look. This
-  branch's own PR is the first CI run that prints the `[ux] networkidle pre-drain:` line: read it
-  from the raw job log (`gh run view <run> --job <job> --log`) and record it in item 30, whatever
-  it says.
+- **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
+- **CI, PR #173** (`python -m scripts.ci_wait 173`: `GREEN (exit 0)`, all 8 required checks `pass`,
+  "no absorbed reruns found in any required run log"). The first CI reading of the new line, from
+  the raw UX job log (run `38804779159`, job `116662673338`): `[ux] networkidle pre-drain: 2
+  stall(s) in 115 reach(es), 39.8 s waiting`, both the deliberate ones, so **0 unintended in 115 on
+  CI** (dossier O-20, item 30). One run: a datum, not a rate.
 
 ---
 
@@ -307,9 +313,10 @@ Carried from earlier handoffs, **not re-verified this session**:
 Scope for whatever is chosen is whatever the owner names, as filed in `docs/dev/work/items/`.
 Do not expand beyond it.
 
-If the owner returns to **item 30**: the open work is *evidence*, not a fix. Read the
-`[ux] networkidle pre-drain:` line from real CI UX job logs (this branch's own PR is the first),
-and record the stall count and node ids in item 30 whatever they are. Phase C (replace the
+If the owner returns to **item 30**: the open work is *evidence*, not a fix. Keep reading the
+`[ux] networkidle pre-drain:` line from real CI UX job logs (PR #173's was the first: 0 unintended
+in 115 reaches), and record the stall count and node ids in item 30 whatever they are. Subtract
+the two deliberate node ids. Phase C (replace the
 pre-drain) needs a stall rate that shows a cost, and an A/B against the real test and the three
 Compose settle files; the marker cannot see an in-flight POST not yet issued, which is why the
 pre-drain exists (`reference-ux-compose-ready-wait`). Do not close item 30 without a falsifiable

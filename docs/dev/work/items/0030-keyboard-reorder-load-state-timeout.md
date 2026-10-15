@@ -429,3 +429,8 @@ Dossier O-17, O-18. **Status stays `watching`; the owner chose to stop at Phase 
   stall(s) in 115 reach(es), 21.1 s waiting` over `pytest -m ux` (180 passed, 0 reruns). Both
   stalls are the deliberate ones (the P1 probe and the new guard), so 0 unintended in 115 reaches.
   One run; a datum, not a rate.
+- **First CI reading of the line (dossier O-20):** PR #173, run `38804779159`, job
+  `116662673338`, raw log: `[ux] networkidle pre-drain: 2 stall(s) in 115 reach(es), 39.8 s
+  waiting`, both the deliberate ones, so 0 unintended in 115 on CI. `ci_wait 173`: GREEN (exit 0),
+  no absorbed reruns. One run, one attempt of the reorder test: a datum, not a rate. Status stays
+  `watching`.
