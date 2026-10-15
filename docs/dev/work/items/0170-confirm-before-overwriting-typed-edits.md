@@ -122,3 +122,55 @@ predicate, `_pending_discards`.
   needs a failed letter call and the cost of being wrong is one needless confirm.
 - **Declared, not fixed:** the shipped client shows the new `409` as a plain error until
   commit 3, so this branch lands as one PR and is not user-visible half-built.
+
+### 2026-10-14 — client built; UX tier red on one test, cause observed (commit 3 not made)
+
+`static/app.js` (`runGeneration` split into a wrapper plus `_runGenerationOnce`;
+`runGenerateCoverLetter` likewise), `ui_pages/selectors.py` (additive), the browser test
+`tests/ux/regression/test_20261014_confirm_overwrite_edits.py`, docs and CHANGELOG are
+written and **uncommitted**, because the full UX tier is not green.
+
+- **Observed:** `pytest -m ux`: `1 failed, 171 passed, 2 xpassed in 667 s`, 0 `RERUN` lines,
+  `PYTEST_EXIT=1` (the harness reported exit 0). The new test passed. The failure is
+  `test_20261012_regenerate_keeps_cover_letter.py::test_b7_...`: after a detached cover
+  letter, clicking Generate at Step 5 opens `#editModal` ("Your edits aren't saved yet") with
+  nothing typed, so no request is sent and the test times out waiting for `iter 2`.
+- **Cause, observed with a throwaway diagnostic (deleted):** `_detectEdits().resumeEdited`
+  is `false` right after the first generate and `true` right after
+  `runGenerateCoverLetter`, with no typing. The résumé editor's DOM is text nodes joined by
+  `<br>`. `_readEditorText` un-hides only the element's own `hidden` class; once the
+  Cover-letter tab is active the element's *ancestor* (`#tabResume`) is `display:none`, so
+  `innerText` falls back to `textContent`, which drops the `<br>`s: 207 characters against
+  218 in `lastGeneratedResume`. The text differs, so an edit is reported.
+- **Not caused by this branch:** `_detectEdits` and `_readEditorText` are untouched. The false
+  positive predates it and is reachable today by Refine and Iterate in the same state (not
+  driven there). Wiring Generate to the gate (case 4) is what exposes it on an ordinary
+  second Generate.
+- **Other consumers of `_readEditorText`** (grep, `static/app.js`): `downloadResume` (`:3547`),
+  `downloadCoverLetter` (`:3573`), the live-preview refresh (`:7949`). Whether the résumé
+  download posts newline-less text when the Cover-letter tab is active was **not driven**.
+
+### 2026-10-14 — editor-text read fixed at the helper; UX tier green (commit 3)
+
+Owner decision (2026-10-14): fix `_readEditorText` itself, not only `_detectEdits`.
+
+- **Instrument first** (`tests/ux/regression/test_20261014_editor_text_hidden_tab.py`), run on
+  the unfixed helper with the Cover-letter tab active, all controls holding: the read was 207
+  characters against 218 in `lastGeneratedResume`, `resumeEdited` was `true`, and
+  **`downloadResume()` POSTed 207 characters to `/api/download-edited`**. The download half was
+  inferred in the entry above and is now observed.
+- **Fix:** `static/app.js` `_readEditorText` measures a rendered off-screen copy
+  (`_renderedInnerText`) only when the node has no layout; the rendered case is the unchanged
+  `innerText` read. After: 218 = 218, `resumeEdited` `false`, a 218-character download body.
+- **Consumers decided before the edit:** dossier rows 28-33 (`_detectEdits`, the Refine and
+  Iterate gates, both downloads, the live-preview refresh).
+- **Observed, full tier** (`pytest -m ux`, run 2): `173 passed, 2 xpassed in 489 s`,
+  `PYTEST_EXIT=0`, 0 `FAILED`/`ERROR`, 0 `RERUN`. Run 1 was `1 failed, 171 passed`.
+  B7 and both new tests are in the passing set.
+- **Mutation checks on the client** (`static/app.js` restored, sha256 verified): removing the
+  case-4 gate fails `test_generate_asks_before_replacing_a_typed_edit` at the edit-dialog
+  assertion; making the 409 handler ignore `edits_would_be_discarded` fails it at the confirm
+  dialog (the error modal shows instead).
+- **Not driven:** the live-preview refresh (`:7949`) from a hidden tab after the fix (covered
+  only by the existing live-preview UX tests passing in the full tier); Refine and Iterate
+  reaching the old false positive on `main` was read from the shared mechanism, not run there.

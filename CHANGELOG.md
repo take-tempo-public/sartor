@@ -13,6 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Generate now asks before it replaces an edit you typed (`feat/confirm-before-overwriting-typed-edits`, item 170)
+
+Before this, an edit you typed could be replaced by a new version with only an after-the-fact
+note, or with no note at all. Now the app asks first, and **Cancel** changes nothing.
+
+- **New: "Replace your typed edits?"** When you approved changes in Compose after typing edits
+  into the résumé, **Generate documents** asks before it replaces them. **Continue** generates
+  and Step 6 still tells you the edits weren't carried over. **Cancel** generates nothing and
+  leaves your edits and your current résumé as they are. The check runs before any AI call, so
+  cancelling costs nothing.
+- **New: unsaved edits stop Generate too.** Clicking **Generate documents** while the preview
+  holds text you haven't saved now opens the same **"Your edits aren't saved yet"** dialog that
+  refinement and follow-up questions already open.
+- **Also in place: the same question for a typed cover letter edit.** The server asks before a
+  new cover letter replaces one you edited and saved, and **Generate cover letter** handles
+  the answer. The current screens don't reach that case (the button is hidden once a letter
+  exists, and Generate never requests a letter), so it protects direct API use and any later
+  screen that does.
+- **For API callers:** `/api/generate`, `/api/generate/stream` and `/api/generate-cover-letter`
+  answer `409 {edits_would_be_discarded: true, discards: [...]}` instead of proceeding, and
+  accept `confirm_discard_edits: true` to proceed. A request that loses nothing is unchanged.
+- **Fixed: a cover letter could make the app think you'd edited the résumé.** After you
+  generated a cover letter, the résumé editor's text was read back without its line breaks.
+  That could open "Your edits aren't saved yet" when you hadn't typed anything, and the
+  **Download résumé** request carried the text without its line breaks. Both now read the
+  same text whichever tab is showing.
+- **Not changed:** keeping a typed cover letter edit over a new letter when your résumé edits
+  are carried over (item 163's open question); that stays as it was.
+- Evidence and consumer map: `docs/dev/blast-radius/confirm-before-overwriting-typed-edits.md`.
+
 ### Reopening an application no longer shows a cover letter edit you replaced (`fix/run-row-letter-edit-shadow`, item 163)
 
 If you typed a cover letter edit, then used **Generate cover letter** or generated the résumé

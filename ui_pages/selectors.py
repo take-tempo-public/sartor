@@ -171,6 +171,37 @@ class ErrorModal:
     TEXT = "#errorModalText"
 
 
+class ConfirmModal:
+    """The generic in-app confirm dialog (`cbConfirm()` in app.js).
+
+    Promise-returning, Esc / backdrop = Cancel, focus lands on Cancel. Used for retire /
+    delete / merge and, since item 170, for "Replace your typed edits?" before a generate
+    would lose a saved edit. `MODAL` is `.hidden` while closed.
+    """
+
+    MODAL = "#cbConfirmModal"
+    OPEN = "#cbConfirmModal:not(.hidden)"
+    TITLE = "#cbConfirmTitle"
+    BODY = "#cbConfirmBody"
+    OK = "#cbConfirmOk"
+    CANCEL = "#cbConfirmCancel"
+
+
+class EditGateModal:
+    """The edit-detection dialog (`_gateEditsBeforeAction()` in app.js).
+
+    Opens when the Step 6 editors hold text that differs from the last generated version:
+    Use edits as baseline / Discard edits / Cancel. Wired to Refine and Iterate, and, since
+    item 170, to Generate.
+    """
+
+    MODAL = "#editModal"
+    OPEN = "#editModal:not(.hidden)"
+    USE = "#btnUseEdits"
+    DISCARD = "#btnDiscardEdits"
+    CANCEL = "#btnCancelRefine"
+
+
 class LiveRegion:
     """The shell's screen-reader announcer (`_announce()` in app.js).
 
@@ -416,6 +447,9 @@ class Output:
     GENERATE_COVER = "#btnGenerateCover"
     COVER_TAB = "#tabBtnCoverLetter"
     COVER_TAB_ACTIVE = "#tabCoverLetter.active"
+    # Shown AFTER a generate that dropped a saved typed résumé edit (item 170 asks first;
+    # this stays as the record once the user chose Continue).
+    EDITS_DISCARDED_NOTICE = "#editsDiscardedNotice"
     # #coverLetterPreview's home location is hidden by default — it's only
     # visible once relocated into the edit drawer via openEditDrawer('cover')
     # (templates/index.html:586). OPEN_EDIT_DRAWER is that trigger button.

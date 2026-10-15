@@ -33,6 +33,12 @@ The change:
 The behaviour change: a request that would lose a *saved* typed edit is refused before any LLM
 spend unless it carries `confirm_discard_edits: true`.
 
+**Added after the first UX run (owner decision, 2026-10-14):** `static/app.js`
+`_readEditorText` (`:3534`) becomes render-independent. The case-4 gate calls `_detectEdits`,
+which reads the editors through it, and with the Cover-letter tab active the résumé editor's
+ancestor is `display:none`, so `innerText` returns `textContent` and drops every `<br>`: an
+edit nobody typed is reported (`docs/dev/work/items/0170-*.md`, 2026-10-14 entry).
+
 ---
 
 ## Enumeration
@@ -101,6 +107,17 @@ response keys `edits_discarded`, `edits_would_be_discarded`, `composition_stale`
 `resolve_cover_letter_after_generate`; the three route strings; the client's `cbConfirm` and
 `_gateEditsBeforeAction`.
 
+`_readEditorText` (re-derived 2026-10-14, `git grep -n _readEditorText -- static templates`):
+
+```
+static/app.js:1994  _detectEdits  resume      static/app.js:3547  downloadResume
+static/app.js:1995  _detectEdits  cover       static/app.js:3573  downloadCoverLetter
+static/app.js:7949  live-preview refresh (_refreshLiveEditPreview)
+(0 hits in templates/; comments at :529 and :1991; definition at :3534)
+tests naming it: tests/ux/regression/test_20260707_ux_w4_aesthetic.py,
+                 tests/ux/regression/test_20261012_regenerate_keeps_cover_letter.py
+```
+
 **Negative results:** 0 hits for the new names; `static/assistant.js` and
 `static/help-modal.js` have no generate, `409` or `cbConfirm` references; `ui_pages/` and
 `scripts/` hold no `/api/generate` URL string (they drive the DOM); the one other `409`
@@ -137,6 +154,15 @@ branch in `static/app.js` (`:10208`) is a preview GET probe, unrelated.
 | 22 | `docs/wiki/pages/route-surface.md`, `frontend-wizard.md`, `iteration-audit-chain.md`, `corpus-to-output-reach.md`, `pipeline-stages.md`, `cover-letters.md`, `application-audit-chain.md`, `context-set-contract.md` | **check at close-out** | They describe the generate request/response and the edit lifecycle. A scoped wiki pass decides, per the close-out checklist. |
 | 23 | `docs/user/iterating.md:107-112`, `docs/dev/architecture.md` (Step 5 sequence, `api/generate-cover-letter` x3) | **update** | User-facing description of the warning; architecture's route table gains the `409`. |
 | 24 | `CHANGELOG.md` | **update** | New request flag and response key on three routes. |
+| 25 | `ui_pages/selectors.py` (**gated surface**: "the one selector registry", `scripts/enforcement/blast_radius.py`) | **update (additive)** | Two new classes: `ConfirmModal` (`#cbConfirmModal` and its title / body / OK / Cancel ids) and `EditGateModal` (`#editModal` and its Use / Discard / Cancel ids), so the new UX test does not hard-code ids in the test file (the registry's stated purpose). Plus one constant, `Output.EDITS_DISCARDED_NOTICE` (`#editsDiscardedNotice`). All three names are new (0 hits tree-wide before the edit). No existing name is renamed, moved or removed, so no importer can break. Re-derived importers on 2026-10-14: **15** non-test (`scripts/bench_corpus_scale.py`, `scripts/capture_screenshots.py`, `ui_pages/__init__.py`, `base.py`, `corpus.py`, `dashboard_console.py`, `pipeline.py`, `prior_apps.py`, `user_picker.py`, `wizard_clarify.py`, `wizard_compose.py`, `wizard_generate.py`, `wizard_job.py`, `wizard_output.py`, `wizard_template.py`) and 51 test files; the registry's own "14 non-test importers" is already stale by one. |
+| 26 | `tests/ux/regression/test_20260612_corpus_affordance_polish.py:131-132`, `test_20260707_ux_w4_aesthetic.py:88-119` | no change | Hard-code the same `#cbConfirm*` ids in the test body. They would adopt the new class; moving them is a refactor beyond this item, and they keep working untouched. |
+| 27 | `tests/ux/regression/test_20261014_confirm_overwrite_edits.py` (new) | **create** | The browser arm: case 4 and case 1 through the real wizard. |
+| 28 | `static/app.js:3534` `_readEditorText` | **update** | Reads the rendered text of the editor even when an ancestor is `display:none`, by measuring a rendered off-screen clone in that one case. The rendered case is the unchanged `innerText` read, so every visible-tab consumer sees byte-identical text. |
+| 29 | `static/app.js:1994-1995` `_detectEdits` | no change (fixed by #28) | The consumer that showed the defect: a false `resumeEdited` once the Cover-letter tab is active. Edit detection is correct again with no edit of its own. |
+| 30 | `static/app.js:2773`, `:3055` `_gateEditsBeforeAction` (Refine, Iterate) | no change (fixed by #28) | Same false positive was reachable there (not driven before). Fixed by the same change; no site edit. |
+| 31 | `static/app.js:3547` `downloadResume`, `:3573` `downloadCoverLetter` | no change (**behaviour changes**) | They post `_readEditorText(...)` as `content`. With the other tab active they posted newline-less text (inferred from the same mechanism; **driven in the instrument below before the fix**). After #28 they post the real text. Instrumented, not assumed. |
+| 32 | `static/app.js:7949` live-preview refresh | no change (behaviour changes) | Same read, same correction; guarded by `_composeApplicationId == null` and a hidden-tab refresh is the case that was wrong. Covered by the existing live-preview UX tests, re-run. |
+| 33 | `tests/ux/regression/test_20260707_ux_w4_aesthetic.py`, `test_20261012_regenerate_keeps_cover_letter.py` | no change | They read editor text through the same helper in the rendered state; B7 is the red test this fixes. Re-run. |
 
 ---
 

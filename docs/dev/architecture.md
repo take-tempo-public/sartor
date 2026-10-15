@@ -57,7 +57,12 @@ boundary, charter C-6):
    A Compose edit made after the freeze marks it **stale**
    (`hardening.composition_is_stale`): Step 5 re-locks and both generate
    routes refuse with a 409 until Save and continue re-approves (items 106/66,
-   `fix/frozen-composition-staleness`).
+   `fix/frozen-composition-staleness`). A request that would lose a *saved* typed
+   edit is refused the same way, before any LLM call, with a 409
+   `edits_would_be_discarded` naming what would go; the client confirms with the
+   user and re-sends with `confirm_discard_edits: true` (item 170,
+   `feat/confirm-before-overwriting-typed-edits`; `/api/generate-cover-letter`
+   answers the same way for a typed letter edit).
 5. **Surgical refinement** *(optional, corpus mode)* — Sonnet
    drafts a reworded bullet (`draft_surgical_refinement`, no new
    facts permitted); accepting loops back to Compose rather than
