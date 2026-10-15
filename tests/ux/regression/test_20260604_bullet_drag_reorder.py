@@ -17,7 +17,10 @@ re-fetches GET `/composition` and re-reads the saved order.
 from __future__ import annotations
 
 import os
+import socket
+import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import ModuleType
 
@@ -558,3 +561,302 @@ def test_diagnostic_p2_forced_draft_summary_400_vs_compose_cascade(
     if log_path:
         with open(log_path, "a", encoding="utf-8") as fh:
             fh.write(f"{result}\n")
+
+
+# ---------------------------------------------------------------------------
+# DIAGNOSTIC PROBES P3/P4 (item 30, docs/dev/diagnosis/reorder-networkidle-empty-census.md
+# `## Falsification`). Same status as P1/P2: capability experiments, pre-registered
+# in the dossier BEFORE they ran, observe-and-report. The only assertions are on
+# CONTROLS (the page was idle before arming; the widened census listed the held
+# request) -- a void probe must fail loudly, a surprising outcome must not.
+# Result lines go to the same KEYBOARD_REORDER_SETTLE_LOG as P1/P2.
+# ---------------------------------------------------------------------------
+
+_PROBE_NETWORKIDLE_MS = 8_000
+
+_APPEND_HIDDEN_IFRAME_JS = """
+(id) => {
+  const f = document.createElement('iframe');
+  f.id = id;
+  f.name = id;
+  f.style.display = 'none';
+  document.body.appendChild(f);
+}
+"""
+
+# Mirrors _refreshLivePreview's URL (static/app.js) but navigates the preview
+# iframe directly, once or twice back to back, so the aborted-navigation shape
+# can be tried without the app's own probe fetch in between.
+_NAVIGATE_PREVIEW_FRAME_JS = """
+(mode) => {
+  const frame = document.getElementById('livePreviewFrame');
+  const appId = (typeof _composeApplicationId !== 'undefined') ? _composeApplicationId : null;
+  const url = (n) => {
+    const p = new URLSearchParams({ template_id: '1', p4: String(n) });
+    if (typeof lastContextPath === 'string' && lastContextPath) p.set('context_path', lastContextPath);
+    return `/api/applications/${appId}/preview?${p.toString()}`;
+  };
+  frame.contentWindow.location.replace(url(1));
+  if (mode === 'double') frame.contentWindow.location.replace(url(2));
+}
+"""
+
+
+def _probe_networkidle(page: Page) -> tuple[bool, float]:
+    """Wait for `networkidle` with a bound; return (timed_out, elapsed_s)."""
+    t0 = time.monotonic()
+    try:
+        page.wait_for_load_state("networkidle", timeout=_PROBE_NETWORKIDLE_MS)
+        timed_out = False
+    except PlaywrightTimeoutError:
+        timed_out = True
+    return timed_out, round(time.monotonic() - t0, 3)
+
+
+def _await_frame_event(
+    page: Page,
+    census: _NetworkCensus,
+    predicate: Callable[[dict[str, object]], bool],
+    timeout_s: float = 10.0,
+) -> bool:
+    """Poll the census's frame timeline until an event matches. A probe arm must
+    not start its `networkidle` wait until the frame commit it is about has been
+    SEEN: before the commit the main frame still holds its already-fired
+    `networkidle` (dossier O-12), so an early wait returns instantly and the arm
+    would read "returned normally" for a reason that has nothing to do with the
+    mechanism under test.
+    """
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if any(predicate(e) for e in census.frame_timeline):
+            return True
+        page.wait_for_timeout(50)
+    return False
+
+
+def _navigated_named(name: str) -> Callable[[dict[str, object]], bool]:
+    """Frame-timeline predicate: a `framenavigated` for the frame called `name`."""
+
+    def _match(event: dict[str, object]) -> bool:
+        return event.get("event") == "navigated" and event.get("name") == name
+
+    return _match
+
+
+def _record_probe(tag: str, result: str) -> None:
+    print(f"\n[{tag}] {result}")
+    log_path = os.environ.get("KEYBOARD_REORDER_SETTLE_LOG")
+    if log_path:
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"{result}\n")
+
+
+class _HeldBodyServer:
+    """One-shot loopback HTTP server: answers with headers and ONE chunk of a
+    chunked body, then holds the body open until `release()`. The client sees
+    `response` (headers) promptly and `requestfinished` (body) only on release.
+    CORS-open so a page on the live_server origin can fetch it.
+    """
+
+    def __init__(self) -> None:
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.bind(("127.0.0.1", 0))
+        self._sock.listen(4)
+        self.url = f"http://127.0.0.1:{self._sock.getsockname()[1]}/held-body"
+        self.headers_sent = threading.Event()
+        self._release = threading.Event()
+        self._thread = threading.Thread(target=self._serve, daemon=True)
+        self._thread.start()
+
+    def _serve(self) -> None:
+        conn: socket.socket | None = None
+        try:
+            conn, _ = self._sock.accept()
+            conn.settimeout(10)
+            buf = b""
+            while b"\r\n\r\n" not in buf:
+                data = conn.recv(4096)
+                if not data:
+                    return
+                buf += data
+            conn.sendall(
+                b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+                b"Access-Control-Allow-Origin: *\r\nCache-Control: no-store\r\n"
+                b"Transfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n"
+            )
+            self.headers_sent.set()
+            self._release.wait(timeout=60)
+            conn.sendall(b"0\r\n\r\n")
+        except OSError:
+            pass
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def release(self) -> None:
+        self._release.set()
+
+    def close(self) -> None:
+        self._release.set()
+        self._sock.close()
+        self._thread.join(timeout=2)
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_diagnostic_p3_held_body_is_invisible_to_the_old_census(
+    page: Page,
+    live_server: str,
+) -> None:
+    """Falsification P3 for item 30 hypothesis I-1, isolated (one page, no app).
+
+    The first draft of P3 ran three arms in sequence on the Compose page and was
+    contaminated: arm A left the page in the stuck state P5 isolates, so arms B
+    and C said nothing about a held body (dossier O-13, F-3). This version is
+    only the question I-1 asks: with headers received and the body held, is
+    `networkidle` withheld while the ORIGINAL census (`still_pending`) is empty
+    and the widened one (`awaiting_body`) lists it? Then release and recover.
+    """
+    census = _NetworkCensus(page)
+    page.goto(f"{live_server}/static/style.css")
+    page.wait_for_load_state("networkidle", timeout=10_000)  # control: idle first
+    assert census.still_pending() == [] and census.awaiting_body() == [], "probe void: not at rest"
+
+    server = _HeldBodyServer()
+    out: dict[str, object] = {}
+    try:
+        page.evaluate("url => { window.__p3 = fetch(url).then(r => r.text()); }", server.url)
+        assert server.headers_sent.wait(10), "probe void: held server never saw the request"
+        for _ in range(100):
+            if census.awaiting_body():
+                break
+            page.wait_for_timeout(50)
+        assert census.awaiting_body(), "probe void: widened census did not list the held body"
+        # No lifecycle event has recalculated networkidle since the request
+        # started, so an already-fired `networkidle` is retained (dossier O-12).
+        out["held"] = _probe_networkidle(page)
+        out["held_still_pending_old"] = census.still_pending()
+        out["held_awaiting_body"] = len(census.awaiting_body())
+        # Now a frame commit forces the recalculation (isolated arm C).
+        page.evaluate(_APPEND_HIDDEN_IFRAME_JS, "p3c")
+        assert _await_frame_event(page, census, _navigated_named("p3c")), (
+            "probe void: the iframe commit was never observed"
+        )
+        out["held_then_commit"] = _probe_networkidle(page)
+        out["held_then_commit_still_pending_old"] = census.still_pending()
+        out["held_then_commit_awaiting_body"] = len(census.awaiting_body())
+        server.release()
+        out["after_release"] = _probe_networkidle(page)
+    finally:
+        server.close()
+
+    _record_probe("p3-probe", f"P3 RESULT: {out}")
+
+
+_FETCH_SAME_ORIGIN_JS = "async (n) => { const r = await fetch('/static/style.css?p5=' + n, {cache: 'no-store'}); await r.text(); }"
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "steps",
+    [
+        pytest.param(("commit",), id="commit_only"),
+        pytest.param(("fetch", "commit"), id="fetch_then_commit"),
+        pytest.param(("commit", "fetch"), id="commit_then_fetch"),
+        pytest.param(("fetch", "commit", "fetch"), id="fetch_commit_fetch"),
+    ],
+)
+def test_diagnostic_p5_networkidle_order_dependence(
+    page: Page,
+    live_server: str,
+    steps: tuple[str, ...],
+) -> None:
+    """Falsification P5 for item 30 hypothesis I-8: is the main frame's
+    `networkidle` order-dependent on (main-frame request finishes) vs
+    (child-frame commit)? Each arm gets a FRESH page via the parametrization, so
+    arms cannot contaminate each other (the defect of P3's first draft). No app
+    JS runs: the page is `/static/style.css`.
+
+    Pre-registered in the dossier (P5): `fetch_then_commit` is the arm predicted
+    to hang; the other three are predicted to return in about 0.5-1 s. The only
+    assertions are on controls (idle first; every action seen to complete).
+    """
+    census = _NetworkCensus(page)
+    page.goto(f"{live_server}/static/style.css")
+    page.wait_for_load_state("networkidle", timeout=10_000)  # control: idle first
+
+    done: list[str] = []
+    for i, step in enumerate(steps):
+        if step == "fetch":
+            page.evaluate(_FETCH_SAME_ORIGIN_JS, i)
+            for _ in range(100):  # `requestfinished` trails the fetch's own resolution
+                if not census.still_pending() and not census.awaiting_body():
+                    break
+                page.wait_for_timeout(50)
+            assert not census.awaiting_body(), "probe void: the fetch never finished"
+        else:
+            name = f"p5c{i}"
+            page.evaluate(_APPEND_HIDDEN_IFRAME_JS, name)
+            assert _await_frame_event(page, census, _navigated_named(name)), (
+                "probe void: the iframe commit was never observed"
+            )
+        done.append(step)
+
+    timed_out, elapsed = _probe_networkidle(page)
+    frames = _frame_state(page) if timed_out else None
+    _record_probe(
+        "p5-probe",
+        f"P5 RESULT: steps={'+'.join(done)} timed_out={timed_out} elapsed_s={elapsed} "
+        f"still_pending_old={census.still_pending()} awaiting_body={census.awaiting_body()} "
+        f"frames={frames}",
+    )
+
+
+@pytest.mark.ux
+@pytest.mark.slow
+def test_diagnostic_p4_single_vs_double_preview_navigation_vs_networkidle(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Falsification P4 for item 30 hypothesis I-3: does an aborted (superseded)
+    preview-iframe navigation leave `networkidle` unreachable?
+
+    The single `location.replace` is the control (the app's ordinary shape, reach 7
+    in the instrument). The double is two back-to-back replaces, the first
+    superseded before it commits.
+    """
+    census = _NetworkCensus(page)
+    _reach_compose(page, live_server, ux_app, monkeypatch)
+    page.wait_for_load_state("networkidle", timeout=10_000)
+    out: dict[str, object] = {}
+
+    def _committed(n: int) -> Callable[[dict[str, object]], bool]:
+        return lambda e: (
+            e.get("event") == "navigated"
+            and e.get("name") == "livePreviewFrame"
+            and f"p4={n}" in str(e.get("url"))
+        )
+
+    page.evaluate(_NAVIGATE_PREVIEW_FRAME_JS, "single")
+    assert _await_frame_event(page, census, _committed(1)), "probe void: single nav never committed"
+    out["single"] = _probe_networkidle(page)
+    out["single_awaiting_body"] = census.awaiting_body()
+
+    page.evaluate(_NAVIGATE_PREVIEW_FRAME_JS, "double")
+    # The first replace is superseded; only the second is required to commit.
+    assert _await_frame_event(page, census, _committed(2)), "probe void: double nav never committed"
+    out["double_committed_p4"] = [
+        str(e.get("url"))[-40:]
+        for e in census.frame_timeline
+        if e.get("event") == "navigated" and "p4=" in str(e.get("url"))
+    ]
+    out["double"] = _probe_networkidle(page)
+    out["double_still_pending_old"] = census.still_pending()
+    out["double_awaiting_body"] = census.awaiting_body()
+    out["double_failed"] = census.failed()
+    out["double_frames"] = _frame_state(page)
+
+    _record_probe("p4-probe", f"P4 RESULT: {out}")
