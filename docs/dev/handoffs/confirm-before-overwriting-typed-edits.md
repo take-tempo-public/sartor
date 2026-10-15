@@ -71,8 +71,8 @@
   ~~`fix/frozen-composition-staleness`~~ ✓ (#165) · ~~`fix/regenerate-persistence`~~ ✓ (#166) ·
   ~~`fix/regenerate-keeps-cover-letter`~~ ✓ (#167) · ~~`fix/recurrence-guardrails`~~ ✓ (#168) ·
   ~~`fix/run-row-letter-edit-shadow`~~ ✓ (#169): item 163 closed.
-- ~~`feat/confirm-before-overwriting-typed-edits`~~ ✓ (PR pending at the time of writing; see the
-  pointer's commit on `main`): item 170 closed.
+- ~~`feat/confirm-before-overwriting-typed-edits`~~ ✓ (PR #170; see the pointer's commit on
+  `main`): item 170 closed.
 - **Next: the owner's pick.** Open items, none started: 161 (`GET /composition` parses the
   context about eleven times per request; counted from the code, not measured, so the first
   step is a measurement); item 7 memory-consolidation apply (Deferred); item 30's C-7 probe
@@ -94,7 +94,8 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 | `75c1369` | **Server handshake.** `_pending_discards`, `_edits_would_be_discarded_response`, `_frozen_resume_md` in `blueprints/generation.py`; the check sits after the month block and before any LLM work on both routes; `_assemble_from_frozen_composition` takes an optional `resume_md` (one render). Seven existing drives gained `confirm_discard_edits=True`. Markers deleted from the instrument. |
 | `9c46412` | **Client, the helper fix, UX tests, docs.** `runGeneration` over `_runGenerationOnce`, `runGenerateCoverLetter` over `_runGenerateCoverLetterOnce`; `_readEditorText` measures a rendered copy when the node has no layout; `tests/ux/regression/test_20261014_confirm_overwrite_edits.py` and `test_20261014_editor_text_hidden_tab.py`; additive `ui_pages/selectors.py` classes; user doc, architecture note, CHANGELOG. |
 | `2be49f5` | Scoped `/wiki-self-update` (`route-surface`, `frontend-wizard`, `iteration-audit-chain`, `log.md`); item 170 closed with `verified_by`; board regenerated. |
-| (this commit) | The correction to one item-170 sentence, and this handoff with its `generated` ledger row. Docs only. |
+| `f2230bd` | The correction to one item-170 sentence, and the first version of this handoff with its ledger rows (a `failed` then a `generated`). Docs only. |
+| (this commit) | The PR #170 `ci_wait` exit-3 sample recorded in item 30's `## Updates`, and this handoff regenerated to carry the CI facts (another `generated` row). Docs only. |
 
 **Verified, with the evidence:**
 - **Routes:** 192 passed across the instrument and every suite that touches these routes.
@@ -108,8 +109,9 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
 **Gate:**
 - `python -m scripts.gate --result`, run on `2be49f5`, the last commit that touched code or tests:
   `gate --result: PASSED on this tree -- exit 0, failed step None, finished 2026-10-14T20:21:46-0700, HEAD 2be49f5`
-- **That result is stale for the tip**, because the result binds to HEAD. One docs-only commit
-  sits on top of it (the item-170 correction and this handoff). It changes no code or tests.
+- **That result is stale for the tip**, because the result binds to HEAD. Two docs-only commits
+  sit on top of it (the handoff with the item-170 correction, then the item-30 CI-sample record
+  and this regenerated handoff). Neither changes code or tests.
   `work_items check` and the doc checks were re-run by hand on the tip; the full gate was not.
 - **What it ran:** `ruff check` and `ruff format --check` clean; `mypy` clean;
   `pytest -m "not ux" -n auto` **3396 passed, 8 skipped** (6 m 02 s; 3373 before this branch,
@@ -118,7 +120,13 @@ Once the owner confirms the PR (merge commit; never squash or rebase),
   status lines. The 2 xpassed are the two deliberately non-strict xfails in
   `tests/ux/regression/test_20260708_busy_states_and_chip.py`, which this branch does not touch.
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
-- **CI on the PR:** not yet run at the time of writing; the PR is opened after this commit.
+- **CI on the PR (#170), first run at head `f2230bd`:** all 8 required checks passed and
+  `python -m scripts.ci_wait 170` exited **3**: one UX test, item 30's
+  `test_keyboard_reorder_persists_and_reset_reverts`, failed 1 of 3 attempts (reach 9, nothing
+  pending, `composeReady: True`, retry passed 3 s later). That is item 30's recorded signature
+  and this branch touches no Compose reorder path. I recorded the sample in item 30's `## Updates`
+  on this branch (a docs-only commit) **before** any merge, which pushed a new head and a second
+  CI run. That second run's result is on the PR and is not in this frozen file.
 
 **Wiki pass** (`docs/wiki/log.md`, 2026-10-14): scoped to this branch's diff; cite check 0
 catches; my review 7 catches (run before the auditors); auditor (Sonnet 5) 1 UNSUPPORTED of 30
@@ -274,6 +282,17 @@ Carried from earlier handoffs, **not re-verified this session**:
    **Mechanism authored: none.** The cite check cannot see it and the auditor ran after my
    review; the held control is step 6, labeled unenforced in the command itself. Item 168 is
    the home for measuring the auditor; it needs a pass with review and auditor kept separate.
+6. **Item 30's flake tripped `ci_wait` on this PR** (the third recorded failure since the
+   2026-10-02 re-measurement, same test, same reach, same empty census; recognized from item
+   30's own entries).
+   - **The existing mechanism held:** `scripts/ci_wait.py` exit 3 made the absorbed retry
+     visible (`gh pr checks` would have shown green), and I did not merge on it. I read the raw
+     job log and compared it to the two earlier records before calling it the same signature.
+   - **Mechanism authored: none, plainly.** The flake has been open since 2026-07-29 and its
+     C-7 probe branch has not run; this branch's job was not to fix it. Recording the sample
+     (item 30) is a record, not a mechanism (C-11). The cost is real and recurring: a
+     re-push and a second CI run (about 7 minutes) before a merge that was otherwise ready.
+     Surfaced here and to the user in the session.
 
 ---
 

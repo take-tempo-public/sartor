@@ -306,3 +306,36 @@ Status stays `watching`. No mechanism has been identified.
   `networkidle` never fired.
 - This branch's client diff is a Step 6 banner and its toggle in `_renderOutput`; nothing on
   Compose's reorder path. Nothing was changed for this item here (out of scope).
+
+### 2026-10-14 — recurred on PR #170 (`feat/confirm-before-overwriting-typed-edits`)
+
+- `python -m scripts.ci_wait 170` exited **3**: all eight required checks passed, but the same
+  test failed 1 of 3 attempts (run 38676437085, job 116231042086, 2026-10-15T03:30:31Z, py3.12 UX
+  job, PR head `f2230bd`). The traceback is the same as the two entries above: `:254` →
+  `_wait_settled` → the test's `_instrumented_wait_settled` (`:163`) →
+  `wait_for_load_state("networkidle")` → `TimeoutError: Timeout 30000ms exceeded.` The retry
+  passed 3 s later in the same log.
+- **The instrument's record for the failing reach**, read from the raw job log
+  (`gh run view 38676437085 --job 116231042086 --log`), not from the parser:
+  `reach: 9`, `panel_visible_s: 0.013`, `elapsed_total_s: 30.044`,
+  `cascade_state: {composeReady: True, bgPending: None, draftSummaryFiredForApp: 1,
+  gapFillFiredForApp: 1, composeApplicationId: 1, previewFrameReadyState: 'complete'}`,
+  `still_pending_requests: []`. Reaches 1–8 had `networkidle_s` of 0.0–0.633 s.
+  - The census shows **no request still open** at the timeout, and the settle condition already
+    held. Same as the 2026-10-12 record: reach 9 of 9, nothing pending, `composeReady: True`.
+  - Hit counts at the timeout included `/api/applications/1/preview?template_id=1&context_path=…`
+    ×2, `/api/users/alice/preview?template_id=1` ×2 and `static/vendor/paged.polyfill.js` ×2.
+    Whether those are relevant is not decided here.
+- **Three recorded failures since the 2026-10-02 re-measurement**: PR #160 (10-07), PR #166
+  (10-12), PR #170 (10-14). The last two have the identical reach, the identical empty census
+  and a retry that passes within seconds.
+- **Still inferred, unverified:** the unbounded `networkidle` in the instrument is the timeout's
+  source (2026-10-07 entry). Nothing on this branch tests or changes that.
+- **This branch is not the cause, by its diff and by two clean local runs, not by a control.** Its
+  client diff is Generate's confirm flow (`runGeneration`, `runGenerateCoverLetter`) and
+  `_readEditorText`; no Compose reorder path, no `networkidle`, no `wizard_compose.py`
+  (`git diff --name-only origin/main..HEAD` names no such file). The test passed in both full
+  local UX runs on this branch (run 1 `1 failed, 171 passed` with a different test red; run 2
+  `173 passed`). A control run of this test on `main` was not done.
+- Nothing was changed for this item here (out of scope). The open C-7 probe branch for this item
+  is still the place to find why `networkidle` is not reached with nothing pending.
