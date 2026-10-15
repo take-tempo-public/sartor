@@ -2923,3 +2923,33 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   branch a claim holds on (a "which gate" and a "when is it shown" claim), the class the step-6
   list names. The scribe was handed the right facts in the brief for the cover-letter button
   and still inverted them.
+
+## 2026-10-15 — scoped `/wiki-self-update` (`fix/compose-single-context-parse`, item 161)
+
+- **Mode:** scoped to this branch's own diff (`main..HEAD`); the wiki-relevant source is
+  `blueprints/applications.py`. One page, one `wiki-scribe` run. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged). `context-set-contract.md:96` (cites
+  `_read_freeze_state`, which still calls `frozen_composition_doc`) and `pipeline-stages.md`
+  (routes only) were checked and need no edit.
+- **Pages changed:** `route-surface.md`, the `get_application_composition` bullet only:
+  the stale "validated with `_within(cp, ...)`" is now "loaded once via `_load_compose_context`"
+  (the scribe's edit, one sentence); and the title-scoring clause, below.
+- **Cite check** (step 4, `python -m scripts.wiki_cites --base HEAD --strict-removed`):
+  `OK (0 violation(s), 0 removed cite(s) listed)` after the scribe and again after my edit.
+- **Auditor** (Sonnet 5, `wiki-grounding-auditor`, a different context from the scribe):
+  **1 UNSUPPORTED of 6 claims**, over the one bullet. The new claims (`loaded once`, the
+  context file named by `context_path`, `_read_freeze_state`) were all SUPPORTED, with every
+  `_read_*` call in the route traced. The one finding was **pre-existing**, already on `main`
+  and not introduced by this branch: the bullet said eligible titles are fit-ranked via
+  `score_corpus_bullet`, which has one call site (the bullets loop, `applications.py:1121`);
+  titles use an inline token-overlap count (`:1181`). Verified by me against source, then
+  corrected on the owner's decision (asked, not auto-applied).
+- **Review** (step 6, mine, unenforced): the correction was checked against
+  `get_application_composition` (`jd_kw` from `extract_keywords(jd_text)`, `essential` from
+  `_latest_analysis_essentials`, title tokens longer than two characters). No other catch.
+- **Also run:** `python scripts/wiki_freshness.py` OK (38 files, under the 75 block
+  threshold); the new link target `blueprints/applications.py` resolves; no page added or
+  removed, no `[[backlink]]` or `index.md` change.
+- **Retune signal:** none from the scribe on this page. The auditor's catch was drift the
+  scribe was not asked about (a sentence outside its brief), which a bullet-scoped audit
+  found because it audited the whole bullet and not only the changed clause.

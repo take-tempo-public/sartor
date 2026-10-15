@@ -169,11 +169,13 @@ deterministic/LLM boundary is owned elsewhere (see
 A GET/POST pair on the application's context file:
 
 - [`blueprints/applications.py:get_application_composition`](../../../blueprints/applications.py)
-  (`GET /api/applications/<id>/composition`) — fit-ranks bullets + eligible titles
-  via `score_corpus_bullet`, reading pin/exclude/added/summary/title overrides out
-  of the context file named by the `context_path` query param (validated with
-  `_within(cp, current_app.config["OUTPUT_DIR"])`). Response includes
-  `has_frozen_composition` and `composition_stale`
+  (`GET /api/applications/<id>/composition`) — fit-ranks bullets via
+  `score_corpus_bullet` and eligible titles by their token overlap with the JD
+  keywords and the latest analysis's essential skills (an inline count in the same
+  function, not `score_corpus_bullet`), reading pin/exclude/added/summary/title
+  overrides out of the context file named by the `context_path` query param, loaded once via
+  [`blueprints/applications.py:_load_compose_context`](../../../blueprints/applications.py).
+  Response includes `has_frozen_composition` and `composition_stale`
   ([`blueprints/applications.py:_read_freeze_state`](../../../blueprints/applications.py))
   `[synthesis]` — see [[corpus-to-output-reach]].
 - [`blueprints/applications.py:save_application_composition`](../../../blueprints/applications.py)
