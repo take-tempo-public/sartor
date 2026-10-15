@@ -141,7 +141,8 @@ predicate, `_pending_discards`.
 written and **uncommitted**, because the full UX tier is not green.
 
 - **Observed:** `pytest -m ux`: `1 failed, 171 passed, 2 xpassed in 667 s`, 0 `RERUN` lines,
-  `PYTEST_EXIT=1` (the harness reported exit 0). The new test passed. The failure is
+  `PYTEST_EXIT=1`. The background status said exit 0 because the wrapper's last command was `tail`;
+  that was the wrapper's own exit code, not a misreport of the run. The new test passed. The failure is
   `test_20261012_regenerate_keeps_cover_letter.py::test_b7_...`: after a detached cover
   letter, clicking Generate at Step 5 opens `#editModal` ("Your edits aren't saved yet") with
   nothing typed, so no request is sent and the test times out waiting for `iter 2`.
