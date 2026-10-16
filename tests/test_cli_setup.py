@@ -9,14 +9,18 @@ monkeypatched — no Chromium download, no server, no browser.
 
 from __future__ import annotations
 
+import atexit
+import os
 import subprocess
 import sys
+import webbrowser
 from pathlib import Path
 
 import pytest
 
 import app as app_module
 import instance
+import preflight
 
 
 @pytest.fixture(autouse=True)
@@ -112,7 +116,7 @@ def test_a_running_sartor_is_reused_not_duplicated(
     )
     _never_serve(monkeypatch)
     opened: list[str] = []
-    monkeypatch.setattr(app_module.webbrowser, "open", lambda url, *a, **k: opened.append(url))
+    monkeypatch.setattr(webbrowser, "open", lambda url, *a, **k: opened.append(url))
     monkeypatch.delenv("SARTOR_NO_BROWSER", raising=False)
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setattr(app_module, "_is_ci_or_container", lambda: False)
@@ -134,7 +138,7 @@ def test_a_running_sartor_with_no_browser_flag_exits_zero_without_opening(
     )
     _never_serve(monkeypatch)
     opened: list[str] = []
-    monkeypatch.setattr(app_module.webbrowser, "open", lambda url, *a, **k: opened.append(url))
+    monkeypatch.setattr(webbrowser, "open", lambda url, *a, **k: opened.append(url))
 
     with pytest.raises(SystemExit) as exc:
         app_module.main(["--no-browser"])
@@ -166,7 +170,7 @@ def test_a_free_port_writes_the_instance_file_and_registers_its_release(
     monkeypatch.setattr(app_module.app, "run", lambda **k: served.update(k))
     monkeypatch.setattr(app_module, "_should_open_browser", lambda *a: False)
     registered: list[tuple] = []
-    monkeypatch.setattr(app_module.atexit, "register", lambda fn, *a: registered.append((fn, a)))
+    monkeypatch.setattr(atexit, "register", lambda fn, *a: registered.append((fn, a)))
 
     app_module.main(["--port", "5123"])
 
@@ -176,7 +180,7 @@ def test_a_free_port_writes_the_instance_file_and_registers_its_release(
     new_id = app_module.app.config["INSTANCE_ID"]
     assert info["instance_id"] == new_id != "pre-existing"
     # exported for the reloader's serving child, which re-runs main() with this env
-    assert app_module.os.environ[instance.ENV_INSTANCE_ID] == new_id
+    assert os.environ[instance.ENV_INSTANCE_ID] == new_id
     assert registered == [(instance.release_instance_file, (tmp_path, new_id))]
     assert served["port"] == 5123
 
@@ -225,7 +229,7 @@ def test_setup_and_doctor_never_probe_or_claim(
 
     monkeypatch.setattr(instance, "probe", _boom)
     monkeypatch.setattr(app_module, "_run_setup", lambda *a, **k: 0)
-    monkeypatch.setattr(app_module.preflight, "run_doctor", lambda *a, **k: 0)
+    monkeypatch.setattr(preflight, "run_doctor", lambda *a, **k: 0)
 
     with pytest.raises(SystemExit) as exc:
         app_module.main([flag])
