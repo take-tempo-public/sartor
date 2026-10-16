@@ -1343,7 +1343,11 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
         # but re-assert containment explicitly here — same belt-and-suspenders
         # pattern as the _safe_username recheck just above, and what the
         # route-security-lint hook expects to see in a filesystem-touching route.
-        if not _within(Path(docx_template_path), personas_dir):
+        # Two legitimate roots: a user's upload lives under PERSONAS_DIR, a bundled template
+        # under BUNDLED_PERSONAS_DIR -- which is the packaged directory, OUTSIDE PERSONAS_DIR,
+        # whenever the data root is not the code root (`SARTOR_HOME`, a wheel; item 145).
+        docx_path = Path(docx_template_path)
+        if not (_within(docx_path, personas_dir) or _within(docx_path, bundled_personas_dir)):
             return jsonify({"error": "Template not found"}), 404
 
         if doc_type == "resume":

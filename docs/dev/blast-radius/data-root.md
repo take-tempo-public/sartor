@@ -124,6 +124,13 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 - **`scripts/**`** (doc lints, wiki, hooks, `smoke_phase_b1.py:43,205`, `export_corpus_seed.py:45`,
   `build_vector_index.py`): dev/CI tooling run from a clone. Stated cost: a dev who exports `SARTOR_HOME`
   in their shell and runs `smoke_phase_b1.py` reads the old location.
+- **Eval results: written beside the code, read from the data root.** `evals/runner.py` `RESULTS_DIR =
+  EVALS_DIR / "results"` (code-rooted) while `dashboard/routes.py:55` `EVAL_RESULTS_DIR = PROJECT_ROOT /
+  "evals" / "results"` follows the data root. A mismatch only when `SARTOR_HOME` is set on a checkout; the
+  mismatch pre-dates this branch (the dashboard has followed `_default_base_dir()` since the
+  packaging-floor fix). Deferred: the eval harness is dev-only, `evals/` is not in the wheel or the image
+  (`.dockerignore`), and the fix touches fixture paths that are legitimately code. Observed by reading
+  two lines, not run.
 - **Migrating existing five-volume container data**: out of scope, nothing is published. `install.md` gets a note.
 - **`STOPSIGNAL SIGINT`** (not added). Python as PID 1 has no SIGTERM handler, so `docker stop` may wait out
   its 10 s grace and SIGKILL. That is a prediction from how PID 1 signals work, not an observation, and the
@@ -264,6 +271,21 @@ passes, and 152 passed across `test_data_root`, `test_config`, `test_live_previe
 unchanged. **Not observed:** the second site (`preview_edited_html`, `:1362`) under `SARTOR_HOME`; it
 shares the property but has no test of its own here. **Not fixed, and not branch 1's:** a wheel does not
 ship `personas/cover_letter.html` at all (H4), so an installed wheel still fails here after this change.
+
+**O8 — a fourth site, caused by the H1 fix itself.** A systematic pass over every `PERSONAS_DIR` /
+`BASE_DIR` use in runtime code, and over every caller of the two persona resolvers, found one more:
+`preview_edited_html` re-checks the resolver's path with `_within(Path(docx_template_path),
+personas_dir)` (`blueprints/templates.py:1346`, "belt-and-suspenders"). After the H1 fix a bundled
+template resolves into the packaged directory, which is outside `PERSONAS_DIR` under `SARTOR_HOME`.
+`test_preview_edited_accepts_a_bundled_template_under_sartor_home[resume|cover_letter]` (one run each,
+on the code with H1 fixed and nothing else) returned `404 {"error":"Template not found"}` for both. The
+recheck now accepts either `PERSONAS_DIR` or `BUNDLED_PERSONAS_DIR`, keeping an explicit `_within` for the
+route-security lint. After: both pass, and 166 passed across `test_data_root`, `test_live_preview_route`,
+`test_persona_routes`, `test_default_template_resolver`, `test_route_containment_gate`,
+`test_frozen_composition_staleness` and `test_app_security`. This also settles the earlier "not observed"
+for the second cover-letter site (`:1362`): it is the `cover_letter` arm of the same test. The other
+callers of the resolvers (`templates.py:1073,1435`, `generation.py:1305,1598,2066`) use the returned path
+directly and do no containment check against `PERSONAS_DIR` (read; not run under `SARTOR_HOME`).
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,

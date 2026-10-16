@@ -445,3 +445,27 @@ class TestBundledPersonaUnderSartorHome:
 
         assert response.status_code == 200, response.get_data(as_text=True)[:300]
         assert 'class="cover-letter"' in response.get_data(as_text=True)
+
+    @pytest.mark.parametrize("doc_type", ["resume", "cover_letter"])
+    def test_preview_edited_accepts_a_bundled_template_under_sartor_home(
+        self, home_app: tuple[Any, Path, Path], doc_type: str
+    ) -> None:
+        """The route re-checks the resolver's path is inside `PERSONAS_DIR`; a bundled template is not.
+
+        Under `SARTOR_HOME` the resolver (correctly, after H1) returns the packaged directory, which is
+        outside `PERSONAS_DIR`, so the belt-and-suspenders containment check answered 404 for both
+        document types. The cover-letter branch also reads the shipped shell (the second site).
+        """
+        from tests.test_live_preview_route import _seed_candidate_app
+
+        app, home, _packaged = home_app
+        (home / "configs" / "casey.config").write_text("{}", encoding="utf-8")
+        _cid, application_id = _seed_candidate_app(app, username="casey")
+
+        response = app.test_client().post(
+            f"/api/applications/{application_id}/preview-edited",
+            json={"content": "Dear Hiring Manager,\n\nI rebuilt three systems.", "type": doc_type},
+        )
+
+        assert response.status_code == 200, response.get_data(as_text=True)[:300]
+        assert "html" in response.get_json()
