@@ -101,6 +101,109 @@ def _probe(home: Path) -> dict[str, object]:
     return parsed
 
 
+class TestSartorHome:
+    """The helper itself: precedence, the platform directory, and the stdlib-only boundary."""
+
+    def test_sartor_home_wins_and_is_expanded_and_resolved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import sartor_home
+
+        monkeypatch.setenv("SARTOR_HOME", str(tmp_path / "a" / ".." / "data"))
+        assert sartor_home.base_dir() == (tmp_path / "data").resolve()
+
+    def test_a_dev_checkout_defaults_to_the_repo_root(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import sartor_home
+
+        monkeypatch.delenv("SARTOR_HOME", raising=False)
+        assert sartor_home.is_dev_checkout() is True
+        assert sartor_home.base_dir() == sartor_home.code_root() == REPO_ROOT
+
+    def test_an_installed_wheel_defaults_to_the_platform_dir(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import sartor_home
+
+        monkeypatch.delenv("SARTOR_HOME", raising=False)
+        monkeypatch.setattr(sartor_home, "is_dev_checkout", lambda: False)
+        assert sartor_home.base_dir() == sartor_home.platform_data_dir()
+
+    def test_an_empty_sartor_home_is_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """`-e SARTOR_HOME=` (set but empty) must not resolve to the current directory."""
+        import sartor_home
+
+        monkeypatch.setenv("SARTOR_HOME", "")
+        assert sartor_home.base_dir() == REPO_ROOT
+
+    def test_data_path_joins_under_the_root(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import sartor_home
+
+        monkeypatch.setenv("SARTOR_HOME", str(tmp_path))
+        assert sartor_home.data_path() == tmp_path.resolve()
+        assert (
+            sartor_home.data_path("db", "resume.sqlite")
+            == tmp_path.resolve() / "db" / "resume.sqlite"
+        )
+
+    def test_platform_data_dir_matches_platformdirs_on_this_os(self) -> None:
+        import platformdirs
+
+        import sartor_home
+
+        expected = Path(platformdirs.user_data_dir("sartor", appauthor=False))
+        assert sartor_home.platform_data_dir() == expected
+        assert sartor_home.platform_data_dir("other") == Path(
+            platformdirs.user_data_dir("other", appauthor=False)
+        )
+
+    @pytest.mark.parametrize(
+        ("platform", "env", "expected_tail"),
+        [
+            ("win32", {"LOCALAPPDATA": "L:/Local"}, Path("L:/Local") / "sartor"),
+            ("linux", {"XDG_DATA_HOME": "/x/share"}, Path("/x/share") / "sartor"),
+            ("linux", {"XDG_DATA_HOME": "  "}, Path.home() / ".local" / "share" / "sartor"),
+            ("darwin", {}, Path.home() / "Library" / "Application Support" / "sartor"),
+        ],
+    )
+    def test_platform_data_dir_branches(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        platform: str,
+        env: dict[str, str],
+        expected_tail: Path,
+    ) -> None:
+        """The branches the host OS never takes, driven by patching the platform."""
+        import sartor_home
+
+        for name in ("LOCALAPPDATA", "XDG_DATA_HOME"):
+            monkeypatch.delenv(name, raising=False)
+        for name, value in env.items():
+            monkeypatch.setenv(name, value)
+        monkeypatch.setattr(sys, "platform", platform)
+        assert sartor_home.platform_data_dir() == expected_tail
+
+    def test_it_imports_only_the_standard_library(self) -> None:
+        """The launcher's core imports this module and must stay stdlib-only (item 145)."""
+        import ast
+
+        tree = ast.parse((REPO_ROOT / "sartor_home.py").read_text(encoding="utf-8"))
+        roots = {
+            alias.name.split(".")[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        } | {
+            (node.module or "").split(".")[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.level == 0
+        }
+        assert roots <= set(sys.stdlib_module_names), roots - set(sys.stdlib_module_names)
+
+
 @pytest.mark.xfail(
     strict=True,
     raises=AssertionError,

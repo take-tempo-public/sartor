@@ -31,6 +31,7 @@ import platformdirs
 import pytest
 
 import config as config_module
+import sartor_home
 from app import create_app
 from config import STATIC_DIR, TEMPLATES_DIR, Config, _package_dir
 
@@ -166,7 +167,9 @@ class TestSartorHomeDataDirRedirect:
         # Simulate a real non-editable wheel install (no pyproject.toml next to
         # config.py) without needing an actual fresh-venv install.
         monkeypatch.delenv("SARTOR_HOME", raising=False)
-        monkeypatch.setattr(config_module, "_is_dev_checkout", lambda: False)
+        # The resolution lives in `sartor_home` (item 145); `config._is_dev_checkout` is an
+        # alias captured at import, so patching it would no longer reach `base_dir()`.
+        monkeypatch.setattr(sartor_home, "is_dev_checkout", lambda: False)
         expected = Path(platformdirs.user_data_dir("sartor", appauthor=False))
         assert config_module._default_base_dir() == expected
         assert Config().base_dir == expected

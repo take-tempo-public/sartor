@@ -173,6 +173,10 @@ py-modules = [
     # `--setup`, and `blueprints/users.py` imports `pdf_available` for the PDF
     # capability gate. Omitting it would ship a wheel whose `app.py` fails at import.
     "preflight",
+    # Imported at RUNTIME by `config.py` (the single resolution of the user-data root,
+    # item 145). A stdlib-only leaf: omitting it would ship a wheel whose `config.py`
+    # fails at import.
+    "sartor_home",
     "scraper",
 ]
 
@@ -453,6 +457,7 @@ module = [
     "app",
     "instance",
     "preflight",
+    "sartor_home",
     "web_infra.*",
     "recall.*",
     "onboarding.*",
