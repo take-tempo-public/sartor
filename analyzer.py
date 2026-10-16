@@ -89,7 +89,8 @@ _SDK_NO_AUTH_MARKER = "Could not resolve authentication method"
 _NO_CREDENTIAL_DETAIL = (
     "the Anthropic client resolved no credential (neither `api_key` nor "
     "`auth_token` is set). Set ANTHROPIC_API_KEY, or create a `.api_key` file "
-    "at the repo root."
+    "in your Sartor data folder (the repo folder for a source install); "
+    "`sartor --setup` will write it for you."
 )
 
 

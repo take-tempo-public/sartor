@@ -15,13 +15,19 @@
 ## The defect
 
 When no Anthropic API key is configured (neither `ANTHROPIC_API_KEY` env var nor `.api_key`
-file at the repo root), [`web_infra/clients.py:_get_client`](../../../web_infra/clients.py)
-returns `anthropic.Anthropic(api_key="")` — the SDK accepts it at construction time. The SDK
+file in the data root) and demo mode is off, [`web_infra/clients.py:_get_client`](../../../web_infra/clients.py)
+(via [`preflight.api_key_path()`](../../../preflight.py) resolving per [`sartor_home.base_dir()`](../../../sartor_home.py))
+returns `anthropic.Anthropic(api_key="")` — the SDK accepts it at construction time. (With
+`SARTOR_DEMO=1` it returns the `web_infra/clients.py:_DemoClient` sentinel before any key lookup, so
+none of what follows applies.) The SDK
 only refuses at request-build time, raising a bare `TypeError` from
 `anthropic/_client.py::_validate_headers` **before any network I/O**, so
-`anthropic.APIConnectionError` never fires. Every LLM route in `blueprints/` pairs exactly
+`anthropic.APIConnectionError` never fires. Every LLM route in the résumé-pipeline blueprints
+(`analysis`, `applications`, `generation`, `corpus/skills`, `corpus/proposals`) pairs exactly
 two handlers (`APIConnectionError` + `LLMResponseError`) — neither matches a `TypeError`, so
-it escaped to Flask as an unhandled **500** `[synthesis]`. Observed live on PR #117's
+it escaped to Flask as an unhandled **500** `[synthesis]`. An LLM route outside that set,
+the avatar stream (`blueprints/assistant.py:ask`), pairs `APIConnectionError` with a
+generic `except Exception` instead. Observed live on PR #117's
 required check, 3/3 in CI, from `POST /api/applications/<id>/draft-summary` (cited in
 [`analyzer.py:LLMConfigurationError`](../../../analyzer.py)).
 
@@ -34,7 +40,7 @@ It performs a **positive determination only** — when both credential slots are
 falsy (the keyless case), it raises [`analyzer.py:LLMConfigurationError`](../../../analyzer.py)
 `[synthesis]`. The message it carries is [`analyzer.py:_NO_CREDENTIAL_DETAIL`](../../../analyzer.py),
 which names both remediation paths: `ANTHROPIC_API_KEY` environment variable or `.api_key`
-file `[synthesis]`.
+file in the data root `[synthesis]`.
 
 **Why `LLMConfigurationError` subclasses `LLMResponseError`.** This is a deliberate taxonomy
 choice (not sloppy inheritance). [`analyzer.py:LLMConfigurationError`](../../../analyzer.py)

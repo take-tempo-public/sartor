@@ -3007,3 +3007,59 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   should say *re-derive with an anchored pattern and list the per-file numbers*; that was in the
   brief here and the scribe still matched a docstring, so a count in a wiki page is worth a
   deterministic check — **no mechanism authored on this branch** (C-11 stated: prose, unenforced).
+
+## 2026-10-16 — scoped `/wiki-self-update` (`feat/data-root`, item 145 branch 1)
+
+- **Mode:** scoped to this branch's own diff (`main...HEAD` plus the working tree); 16 of 27 changed
+  paths classed wiki-relevant by `scripts.wiki_relevance`. `.last_ingest_sha` **not** advanced
+  (`3798e2d18a8a`). The new source is `sartor_home.py` (the one user-data root); `config.py`,
+  `analyzer.py`, `db/session.py`, `preflight.py`, `web_infra/clients.py` and
+  `onboarding/corpus_import.py` are the changed ones.
+- **Pages changed (4):** `code-module-map.md` (new `sartor_home.py` row; `config.py` row),
+  `troubleshooting.md` (key-file location; data-directory contents and per-OS paths),
+  `keyless-client-refusal.md` (key-file location; two scope fixes below),
+  `non-dependency-downloads.md` (key-file location; the `platformdirs` sentence; item 8 and the
+  closing paragraph on `nltk`). **Verified no-edit (3):** `machine-capability-preflight.md` (its
+  API-key section states the resolution order, never where the file lives: read lines 78-85 and
+  grepped for location words), `eval-harness.md`, `importing-your-experience.md` (mention changed
+  files, state nothing the branch falsified). No page added or removed; no `index.md` or
+  `[[backlink]]` change.
+- **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): the first run after
+  the scribes failed with **2** violations, both mechanical: **E1** `non-dependency-downloads` (the
+  scribe added two bare line cites, `sartor_home.py:58` and `tests/test_data_root.py:159`;
+  re-anchored to symbols) and **E4** `troubleshooting` (the scribe replaced
+  `config.py:_default_base_dir`, which still exists as an alias; restored beside the new cite).
+  `OK (0 violation(s), 0 removed cite(s) listed)` after the fixes and again after the last edits.
+- **Auditor** (`wiki-grounding-auditor`, Sonnet 5, 4 pages, each briefed to the whole bullet or
+  paragraph): **40 SUPPORTED / 1 DRIFTED / 5 UNSUPPORTED** (the auditor also called two correct
+  `pyproject.toml:81`/`:92` cites "drifted by form"; they are pre-existing entries in the cite
+  ratchet and land correctly, so not counted or changed). DRIFTED: `troubleshooting` cited
+  `install.md §"API key"`; the heading is "API key: keep it out of your shell history". UNSUPPORTED,
+  **all five in older text this branch did not write**, fixed on the owner's say-so: (1) Linux data
+  path ignored `$XDG_DATA_HOME`; (2) `_get_client` "returns `Anthropic(api_key="")`" ignored the
+  demo-mode branch; (3) "every LLM route in `blueprints/`" excluded `assistant.py`; (4) `nltk`
+  called code-only although `evals/grounding_signals.py:_ensure_minicheck_nltk_data` downloads
+  `punkt_tab`; (5) a packaging clause with no cite. Per page: `code-module-map` 14/0/0,
+  `troubleshooting` 6/1/1, `keyless-client-refusal` 9/0/2, `non-dependency-downloads` 11/0/2.
+- **Review** (step 6, mine, **unenforced**), catches neither the cite check nor the auditor made:
+  1. `analyzer.py:_NO_CREDENTIAL_DETAIL`, the text the keyless page paraphrases, still said "create a
+     `.api_key` file at the repo root". The page's new "in the data root" would have been false
+     against the code. Code fixed on this branch (a user-facing error string, not a prompt).
+  2. The scribe wrote that `platformdirs` is kept "as a test pin": a purpose with no source. Rewritten
+     as the checkable fact (still declared; no runtime import; a test compares the two).
+  3. My own CHANGELOG line claimed `sartor --doctor` shows where the key is looked up. It prints only
+     "found in .api_key" / "not found" (`preflight.py:api_key_capability`). Corrected.
+  4. In my own fixes: "the one LLM route outside that set" claimed a universal I had not shown, and
+     "when `XDG_DATA_HOME` is set" ignored that `platform_data_dir` strips whitespace. Both tightened.
+- **`/wiki-lint`:** 42 pages; **0 broken link targets, 0 orphans, 0 pages missing from the index**; 1
+  finding from a naive check, on a page this branch did not touch
+  (`docs-information-architecture.md:66`): a literal `[[wikilink]]` inside a code span describing the
+  syntax, not a link (the previous entry logged the same). Staleness: 300 non-wiki files changed since
+  the checkpoint; a scoped pass never advances it, so ingest debt is **not** reduced here.
+- **Retune signal (scribe):** none new. No scribe asserted a count this pass. The scribe's own
+  additions drew 0 UNSUPPORTED from the auditor; what the scribes got wrong were the two mechanical
+  cite errors (caught deterministically) and one unsourced purpose phrase (caught by review). The
+  auditor's five UNSUPPORTED were all older text, which is what widening its region to the whole
+  bullet is for. The recurring gap is the one the previous entries name: nothing here checks whether a
+  *code string* a page paraphrases (item 1 above) was updated with the code. No mechanism authored
+  (C-11 stated: prose, unenforced).

@@ -37,18 +37,23 @@ available and which need setup.
 - **An API-key or authentication error.** sartor needs an Anthropic API key for the AI
   writing. Run `sartor --doctor` to check whether a key is found and where it came from
   (see `preflight.py:api_key_capability`). If missing, `sartor --setup` prompts for one
-  without echoing it and writes it with owner-only permissions, so it never reaches
+  without echoing it and writes it with owner-only permissions (`app.py:_prompt_for_api_key`,
+  `app.py:_write_api_key`), so it never reaches
   your shell history — this is the recommended way. Alternatively, set the
-  `ANTHROPIC_API_KEY` environment variable or create a `.api_key` file in the repo
-  root. See `docs/user/install.md` §"API key" for details.
+  `ANTHROPIC_API_KEY` environment variable or create a `.api_key` file in the data directory
+  (see `preflight.py:api_key_path`). See `docs/user/install.md` §"API key: keep it out of your shell history" for details.
 - **"Where did my data go?" — resumes, templates, and generated files.** Your data lives in
-  a data directory (containing `configs/`, `resumes/`, `output/`, and the corpus database).
+  a data directory (containing `.api_key`, `configs/`, `resumes/`, `output/`, `personas/` for
+  uploaded templates, the SQLite database, and the LLM call log).
   [synthesis] The location depends on how you installed sartor: if you cloned the repo or ran
   `pip install -e .` (editable), it's at the repo root; if you ran `pip install sartor`
-  (non-editable wheel), it's in your OS user-data folder (`%LOCALAPPDATA%\sartor` on
-  Windows, `~/.local/share/sartor` on Linux, `~/Library/Application Support/sartor` on
-  macOS). You can override the location by setting the `SARTOR_HOME` environment variable
-  to any path you prefer (see `config.py:_default_base_dir`).
+  (non-editable wheel), it's in your OS user-data folder (`sartor_home.py:platform_data_dir`):
+  `%LOCALAPPDATA%\sartor` on Windows (`~/AppData/Local/sartor` if `LOCALAPPDATA` is unset),
+  `$XDG_DATA_HOME/sartor` on Linux when that variable is set and non-empty,
+  `~/.local/share/sartor` otherwise, `~/Library/Application Support/sartor` on macOS. You can override the location
+  by setting the `SARTOR_HOME` environment variable
+  to any path you prefer (see `sartor_home.py:base_dir`; `config.py:_default_base_dir` is an
+  alias of it).
 - **A "date check" note on your résumé.** sartor flags a date in the generated résumé
   that doesn't match your corpus and asks you to verify it before sending; your corpus
   dates were **not** changed. Read the note and confirm the dates are right.

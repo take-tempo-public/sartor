@@ -24,8 +24,10 @@ wheel, it meant your data sat inside the program's own directory.
   import tool and the eval tools use now live under the same folder as `configs/`, `resumes/` and
   `output/`: your repo folder for a source install, the folder `SARTOR_HOME` names if you set it,
   and your OS user-data folder for an installed wheel. Nothing changes for a source clone.
-  **If you installed a wheel and already created a `.api_key` next to the program,** move it to
-  the data folder (`sartor --doctor` shows where it looks).
+  **If you installed a wheel and had put a `.api_key` next to the program,** Sartor no longer
+  looks there: run `sartor --setup` (it asks for the key again and prints where it saved it), or
+  move the file into your user-data folder. (`sartor --doctor` reports only whether a key is
+  found, not where it looks.) The "no API key" error now points at the data folder too.
 - **Fixed: bundled templates could not be found when `SARTOR_HOME` was set.** The built-in templates
   (Classic and the rest) were looked up inside the data folder instead of the files that ship with the
   program, so the download answered "Persona file missing on disk" (observed), and the template
