@@ -97,6 +97,7 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 | 11e | `config.py` `Config` + `as_flask_config` | **update** — add `cover_letter_shell` and the `COVER_LETTER_SHELL` key | Same pattern as `bundled_personas_dir` (`config.py:175-208`): an explicitly injected `base_dir` keeps `personas_dir / "cover_letter.html"` (tests materialise a copy there), the default resolves from `sartor_home.code_root()`. Consumers of `as_flask_config`, enumerated: `app.py:109` (`app.config.update`, key-agnostic), `tests/test_config.py:63` (exact key set: **update on purpose**), `tests/test_demo_mode.py:100,106` (reads `DEMO_MODE` only: no change). No other code enumerates the dict. |
 | 11f | `generator.py:363` | **no change** | Already `Path(__file__)`-rooted (the code root); listed in `_CODE_ANCHORS`. |
 | 11g | `tests/test_live_preview_route.py:72-77`, `tests/test_frozen_composition_staleness.py:124` | **no change** | Copy the shell into `cfg.personas_dir` for an explicit `base_dir`; the new property keeps that branch, so these seams still work (verified by running them). |
+| 11h | `scripts/enforcement/blast_radius.py` (`GATED`, the `helper` section) | **update** — found by the full gate, not by me | `sartor_home.py` has 8 non-test importers, which is `FAN_IN_THRESHOLD`, so `tests/test_blast_radius_classification.py::test_widely_consumed_modules_are_all_classified` fails until the new module is classified (O9). Decision: **GATED, kind `helper`.** Reason: `base_dir()` decides where every piece of user data is read and written (DB, key, log, configs, résumés); an edit to its precedence moves data silently. Unlike `analyzer.py` (ungated because its edits are prompt text under `PROMPT_VERSION` discipline) it is small and almost every edit is semantic. This file is itself gated (its own entry says "changing what the gate fires on is itself a contract change"), hence this row before the edit. Its consumers: `scripts/enforcement/guards/require_consumer_enumeration.py` (reads `GATED`), `tests/test_blast_radius_classification.py` (derives fan-in and asserts every `GATED` path exists), `tests/test_consumer_enumeration_gate.py`; no document states an entry count (grep of `docs/governance`, `docs/dev/tooling.md`, `AGENTS.md`, `CLAUDE.md`). Consequence for the next session: editing `sartor_home.py` now needs a dossier whose `## Consumers` names `sartor_home.py`. |
 | 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`. |
 | 13 | `docs/user/install.md:137-142` (the command), `:157-174` ("declares no `VOLUME`"), `:176-193` (the bind-mount trap), `:201-226` (bulk output; the two unverified notes) | **update** | One `-v sartor-data:/data`. The trap is gone: `/data` holds only data, and nothing under `/app` is a mount point. `:160` stated the `Dockerfile` "declares no `VOLUME`", which this branch makes false. The "fresh `/app/db` mount shadows the recall index" note (`:219-226`) is obsolete for the same reason. |
 | 13a | `docs/user/install.md:439-440, 661-662, 675-679` (key file "in the repo root"; "all under the repo root") | **update** | True for a source install, incomplete for a wheel or a container: both now name the data root. |
@@ -287,6 +288,22 @@ route-security lint. After: both pass, and 166 passed across `test_data_root`, `
 for the second cover-letter site (`:1362`): it is the `cover_letter` arm of the same test. The other
 callers of the resolvers (`templates.py:1073,1435`, `generation.py:1305,1598,2066`) use the returned path
 directly and do no containment check against `PERSONAS_DIR` (read; not run under `SARTOR_HOME`).
+
+**O9 — the full gate failed, on the repo's own C-10 audit.** `python -m scripts.gate` on `0318d6e`
+(wrapper markers `GATE_START 05:58:34`, `GATE_DONE exit=1 06:03:52`) stopped at `pytest -m "not ux"
+-n auto`: `1 failed, 3484 passed, 8 skipped in 302.19s`. The one failure:
+
+```text
+tests\test_blast_radius_classification.py:144: in test_widely_consumed_modules_are_all_classified
+AssertionError: Unclassified widely-consumed module(s) - [('sartor_home.py', 8)] cross FAN_IN_THRESHOLD=8
+non-test importers but appear in neither GATED nor ACKNOWLEDGED_NOT_GATED.
+```
+
+Before that gate run I had run the suites that import the routed modules, never this one: a subset
+standing in for the definition ("`scripts/gate.py` is the single definition of gate green"), the
+lapse the previous handoff already named. Everything before `pytest` (ruff, format, mypy,
+preflights) passed in that run; the UX tier and `work_items check` did not run because the gate stops
+at the first failing step. Fixed by row 11h; the gate is re-run in full afterwards.
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,
