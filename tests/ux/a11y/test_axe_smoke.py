@@ -52,8 +52,10 @@ from ui_pages import (
 from ui_pages.base import DEFAULT_TIMEOUT_MS
 from ui_pages.selectors import (
     Assistant,
+    ConfirmModal,
     Dashboard,
     Help,
+    Lifecycle,
     Memory,
     Personas,
     Settings,
@@ -208,6 +210,40 @@ def test_axe_main_tabs_and_settings(page: Page, live_server: str, ux_app: Module
     page.click(Settings.OPEN_PILL)
     page.wait_for_selector(Settings.DRAWER, state="visible")
     found["settings-drawer"] = _axe_serious(page)
+
+    _assert_clean(found)
+
+
+@pytest.mark.ux
+@pytest.mark.a11y
+def test_axe_quit_control_confirm_and_stopped_dialog(
+    page: Page,
+    live_server: str,
+    ux_app: ModuleType,
+) -> None:
+    """Items 146/147: the Quit section, the confirm it opens, and the stopped dialog.
+
+    The default smoke above runs on a server with no `SHUTDOWN_FN`, so `{% if quit_available %}`
+    never renders and axe never sees these three states. This one gives the app a stand-in
+    shutdown (nothing exits) and scans each in its OPEN state (axe excludes hidden controls).
+    """
+    ux_app.app.config["SHUTDOWN_FN"] = lambda: None
+    BasePage(page, live_server).load()
+
+    found: dict[str, list[dict[str, Any]]] = {}
+
+    page.click(Settings.OPEN_PILL)
+    page.wait_for_selector(Settings.DRAWER, state="visible")
+    page.wait_for_selector(Settings.QUIT_BUTTON, state="visible")
+    found["settings-drawer-with-quit"] = _axe_serious(page)
+
+    page.click(Settings.QUIT_BUTTON)
+    page.wait_for_selector(ConfirmModal.OPEN)
+    found["quit-confirm"] = _axe_serious(page)
+
+    page.click(ConfirmModal.OK)
+    page.wait_for_selector(Lifecycle.STOPPED_OPEN)
+    found["stopped-dialog"] = _axe_serious(page)
 
     _assert_clean(found)
 
