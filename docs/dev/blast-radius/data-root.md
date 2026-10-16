@@ -2,8 +2,8 @@
 
 > **Branch:** `feat/data-root` (item 145, branch 1 of 3)
 > **Status (2026-10-16):** enumeration complete; instrument run (`## Observed`); writers routed through
-> `sartor_home` (rows 1-10, 14-15 done); the bundled-persona resolver (row 11), Dockerfile (12) and
-> install.md (13) are still to do on this branch.
+> `sartor_home` (rows 1-11, 14-15 done); the Dockerfile (12) is edited but not built; install.md (13)
+> is still to do on this branch.
 
 **Why this branch exists.** Item 145's container contract is `-v sartor-data:/data -e SARTOR_HOME=/data`.
 Only `config._default_base_dir()` reads `SARTOR_HOME` (below). The SQLite DB, the LLM log, `.api_key`
@@ -112,6 +112,17 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
   `build_vector_index.py`): dev/CI tooling run from a clone. Stated cost: a dev who exports `SARTOR_HOME`
   in their shell and runs `smoke_phase_b1.py` reads the old location.
 - **Migrating existing five-volume container data**: out of scope, nothing is published. `install.md` gets a note.
+- **`STOPSIGNAL SIGINT`** (not added). Python as PID 1 has no SIGTERM handler, so `docker stop` may wait out
+  its 10 s grace and SIGKILL. That is a prediction from how PID 1 signals work, not an observation, and the
+  fix changes shutdown behaviour; it waits for a measured `stop` with and without it.
+- **`/app` left owned by `sartor`** (the plan's "leave it root-owned so a missed writer fails loudly"
+  is not done). It needs a container run to prove nothing else writes under `/app` at runtime, and an
+  unverified ownership change could ship a broken image. The ratchet test covers the same risk at
+  review time instead.
+- **Building and running the image.** Not done: a full build installs Chromium and its OS libraries
+  through the owner's Podman machine under memory pressure, and needs the owner's go-ahead.
+- **Podman and `HEALTHCHECK`.** Podman builds the OCI format by default, which does not record a
+  `HEALTHCHECK`; `podman build --format docker` does. Not verified here. `docker.yml` builds with buildx.
 - **H2** (the image's index build may always fall to its WARN branch): not this branch; goes to the owner
   or branch 2.
 
@@ -189,6 +200,31 @@ O2. After the fix: `tests/test_data_root.py` 18 passed, and the persona and rout
 `test_route_containment_gate`: 112 passed together). The preview route (`:922`) shares the helper but
 has no test of its own here; it is covered by the helper and by `test_live_preview_route` for the
 checkout case only. **Not observed:** the preview route under `SARTOR_HOME`.
+
+**O6 — the real app under `SARTOR_HOME`** (one run, Windows 11, `FLASK_DEBUG=0`,
+`SARTOR_HOME=<scratch>`, `python app.py --no-browser --port 5057`, driven by a scratch script):
+
+```text
+healthz 200 {"app": "sartor", "idle_timeout_s": null, "pid": 21932, "version": "1.0.9", ...}
+personas/bundled 200 list  -> 4 rows; first: id 1 "Classic Single-Column" personas/bundled/classic.docx
+download 200 37354
+shutdown 202 {"status":"stopping"}
+server gone after 1.44s
+files under SARTOR_HOME: db/resume.sqlite 303104, db/resume.sqlite-shm 32768, db/resume.sqlite-wal 0
+```
+
+The `/healthz` request used the same `urllib.request.urlopen(..., timeout=3)` call the Dockerfile
+`HEALTHCHECK` runs (port aside). The bundled-persona download that returned 404 before the fix (O5)
+returns the 37,354-byte file. The DB and its migrations landed under `SARTOR_HOME`. No `logs/` appeared
+because no LLM call was made, and no `sartor-instance.json` remained because the shutdown released it.
+**The owner's real files were not touched:** `logs/llm_calls.jsonl` (502803 B), `db/resume.sqlite`
+(2134016 B) and `.api_key` (108 B) had identical size and mtime before and after. Afterwards the
+`python.exe` count was back to its starting value (1), and port 5057 had only client-side `TIME_WAIT`
+entries, no listener.
+
+**Not observed — the container itself.** No image was built, so the `HEALTHCHECK` reaching `healthy`,
+the named-volume copy-up of `/data` ownership under rootless Podman, and data surviving `rm` and
+recreate are all unverified. See `## Deferred`.
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,
