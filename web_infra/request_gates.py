@@ -23,3 +23,22 @@ def _is_localhost_request() -> bool:
     """
     host = (request.host or "").split(":")[0]
     return host in {"localhost", "127.0.0.1", "::1", "[::1]"}
+
+
+def _is_same_origin_request() -> bool:
+    """True unless a browser says this request came from another site (items 146/147).
+
+    The CSRF-style companion to `_is_localhost_request`, for a state-changing route a
+    page on another origin could otherwise POST to the user's own machine (`/api/shutdown`).
+    Rejects a request whose `Sec-Fetch-Site` is anything but `same-origin` / `none`, or
+    whose `Origin` is not this server's own origin. A client that sends neither header
+    (curl, the item-145 launcher) passes: browsers always send one of the two on a
+    cross-site request, so absence means "not a browser acting for another site" — and the
+    route still requires its own custom action header, which a cross-site page can only
+    send after a CORS preflight this server never answers.
+    """
+    site = request.headers.get("Sec-Fetch-Site")
+    if site is not None and site not in {"same-origin", "none"}:
+        return False
+    origin = request.headers.get("Origin")
+    return origin is None or origin == request.host_url.rstrip("/")

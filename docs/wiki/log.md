@@ -2953,3 +2953,57 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Retune signal:** none from the scribe on this page. The auditor's catch was drift the
   scribe was not asked about (a sentence outside its brief), which a bullet-scoped audit
   found because it audited the whole bullet and not only the changed clause.
+
+## 2026-10-15 — scoped `/wiki-self-update` (`feat/single-instance-and-quit`, items 146/147)
+
+- **Mode:** scoped to this branch's own diff (`eb3ecc9` → working tree); 16 paths classed
+  wiki-relevant by `scripts.wiki_relevance`, of which the wiki states something about three
+  facts: the blueprint count/roster, the route count, and the root-module list. `.last_ingest_sha`
+  **not** advanced. The branch's new module `instance.py` and blueprint `blueprints/lifecycle.py`
+  are the sources; `app.py`, `web_infra/request_gates.py`, `web_infra/openapi.py` the changed ones.
+- **Pages changed (4):** `code-module-map.md` (new `instance.py` row; `blueprints/`, `web_infra/`
+  and `app.py` rows; the "mounts all ten" paragraph; app.py length), `route-surface.md` (Concept
+  line, intro counts, "Other blueprints" list + `lifecycle.py` bullet), `diagnostics-console.md`
+  (one count: nine → ten), `engineering-workstreams.md` (one sentence: "every route lives on one
+  of eight domain blueprints" + "118 route decorators"). The last was **not** a scribe target: it
+  was found by searching the wiki for the same class of stale count after an auditor finding.
+- **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): `OK (0
+  violation(s), 0 removed cite(s) listed)`, run before the scribes' edits, after them, and after
+  my corrections. No bare line cite points into a file this branch changed, so no cite drifted by
+  line shift.
+- **Auditor** (Sonnet 5, `wiki-grounding-auditor`, three runs, a different context from each
+  scribe), kept apart from the other two signals:
+  - `diagnostics-console`: **SUPPORTED** (the count, the quoted call, the prefix).
+  - `route-surface`: 7 SUPPORTED / **1 DRIFTED** — the page's own `Concept:` line still said
+    "eight `blueprints/` modules". Outside the scribe's brief; a propagation miss.
+  - `code-module-map`: 14 SUPPORTED / **1 UNSUPPORTED** — "each seam registers with no
+    `url_prefix`" is false for `assistant_bp` (`/api/assistant`). A **scribe regression**: the
+    original said "each of the seven monolith-origin seams" and the scribe widened it.
+  - Also flagged, not a wiki defect: `blueprints/corpus/__init__.py`'s own docstring sums to 50
+    routes where the files hold 54.
+- **Review** (step 6, mine, **unenforced**), four catches the cite check and the auditor did
+  not make:
+  1. The scribe reported "123 route decorators, `applications.py` 24 (actually counted via
+     grep)". Both wrong: its `grep -c "@applications_bp"` matched a **docstring** quoting the
+     decorator (`blueprints/applications.py:12`, which says 23). Correct: 23 and 122 (124 with the
+     dashboard's 2), re-derived with an anchored pattern.
+  2. "The only module that opens a loopback socket" had no search behind it;
+     `scripts/bench_corpus_scale.py` also binds `127.0.0.1`. Replaced with the checkable fact
+     (names exactly one host; `tests/test_egress_allowlist.py` pins it).
+  3. "`app.py` is a 392-line composition root" left stale (498 at HEAD).
+  4. The new `instance.py` row omitted the caveat its neighbour `preflight.py` carries (not one
+     of the eight C-6 boundary modules).
+- **Also run:** the `/wiki-lint` checks (below); `python scripts/wiki_freshness.py` OK (50 files,
+  under the 75 block threshold). No page added or removed; no `[[backlink]]` or `index.md` change.
+- **`/wiki-lint`:** 42 pages, 44 index entries (the two extra were not examined);
+  **0 broken links, 0 orphans, 0 pages missing from the index**; 1 finding from a naive check, on a page this
+  branch did not touch (`docs-information-architecture.md:66`): a literal `[[wikilink]]` inside a
+  code span describing the syntax — not a link. Staleness: 278 files changed since the
+  2026-era checkpoint (a scoped pass never advances it), so ingest debt is **not** reduced here.
+- **Retune signal (scribe):** the Haiku scribe produced a wrong count it said it had verified,
+  an unsearched scope word ("only"), and widened an existing scoped claim ("each seam"). The
+  auditor caught one of the three; review caught the rest. Same class as earlier passes
+  ("the scribe edits outside its brief / asserts a count it did not derive"). The count brief
+  should say *re-derive with an anchored pattern and list the per-file numbers*; that was in the
+  brief here and the scribe still matched a docstring, so a count in a wiki page is worth a
+  deterministic check — **no mechanism authored on this branch** (C-11 stated: prose, unenforced).

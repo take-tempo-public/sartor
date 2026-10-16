@@ -11,6 +11,8 @@ moved to the blueprints + the leaf `web_infra` package across Sprints 8.3a–h).
 """
 
 import argparse
+import atexit
+import functools
 import getpass
 import logging
 import os
@@ -22,6 +24,7 @@ from pathlib import Path
 
 from flask import Flask
 
+import instance
 import preflight
 from blueprints import (
     analysis_bp,
@@ -30,11 +33,13 @@ from blueprints import (
     corpus_bp,
     diagnostics_bp,
     generation_bp,
+    lifecycle_bp,
     templates_bp,
     users_bp,
 )
 from config import STATIC_DIR, TEMPLATES_DIR, Config
 from dashboard import dashboard_bp
+from web_infra.openapi import app_version
 
 # P7 Observability: structured logging
 logging.basicConfig(
@@ -74,6 +79,9 @@ def register_blueprints(app: Flask) -> None:
     # carry full paths (/api/annotation/…, /api/eval/run, /api/tune/run), so the URLs
     # stay byte-identical (Sprint 8.3h — the last seam; app.py now has zero routes).
     app.register_blueprint(diagnostics_bp)
+    # No url_prefix: /healthz, /api/shutdown and /api/heartbeat carry full paths
+    # (items 146/147). The only routes that talk about the server itself.
+    app.register_blueprint(lifecycle_bp)
 
 
 def create_app(config: Config | None = None) -> Flask:
@@ -158,6 +166,46 @@ def _is_ci_or_container() -> bool:
     if ci_env not in ("", "0", "false"):
         return True
     return os.path.exists("/.dockerenv")
+
+
+def _claim_port_or_exit(port: int, no_browser: str | None) -> None:
+    """Return when `port` is free; otherwise explain who owns it and exit (item 146).
+
+    Called only from the supervisor / single process, never the reloader's serving
+    child (which would see the supervisor's own listening socket and call it foreign).
+
+    * a running Sartor: say so, open the browser on it (same opt-outs as a fresh start),
+      exit 0 — a second double-click on a launcher lands on the copy that is already up;
+    * anything else on the port: exit 1 naming the port and `--port`. No silent fallback to
+      the next port: the browser's stored state is per-origin, port included.
+
+    Needed because, observed on Windows, Werkzeug's own address-in-use error does not fire
+    (`instance.py`, the dossier `docs/dev/blast-radius/single-instance-and-quit.md`).
+    """
+    found = instance.probe(port)
+    if found.state == "free":
+        return
+    url = f"http://localhost:{port}"
+    if found.state == "sartor":
+        print(f"\n  sartor. is already running — {url}\n")
+        if _should_open_browser(None, no_browser):
+            try:
+                webbrowser.open(url)
+            except Exception as exc:  # best-effort; the URL is already printed
+                logger.debug("Could not auto-open browser: %s", exc)
+        raise SystemExit(0)
+    print(
+        f"\n  ! Port {port} is in use by another program, so sartor. did not start.\n"
+        f"    Stop that program, or start sartor. on another port: sartor --port {port + 1}",
+        file=sys.stderr,
+    )
+    if sys.platform == "darwin" and port == 5000:
+        print(
+            "    On macOS, try searching for and disabling 'AirPlay Receiver' in System Settings.",
+            file=sys.stderr,
+        )
+    print(file=sys.stderr)
+    raise SystemExit(1)
 
 
 def _write_api_key(key: str, base_dir: Path | None = None) -> Path:
@@ -296,6 +344,12 @@ def main(argv: list[str] | None = None) -> None:
       `--setup`       one-time bootstrap (Chromium + vector index), then exit
       `--host`/`--port`  bind override (the container passes `--host 0.0.0.0`)
       `--no-browser`  skip the auto-open (alias for `SARTOR_NO_BROWSER=1`)
+      `--idle-timeout MINUTES`  stop after that long with no open page (item 147; off by
+                      default, minimum 5)
+
+    A second launch no longer starts a second server (item 146): if Sartor already
+    answers on the port it opens the browser on that copy and exits 0; if another program
+    owns the port it exits 1 saying so. Quit is also available in-app (Settings).
 
     Set `FLASK_DEBUG=0` to disable Flask's reloader + verbose error pages (see
     SECURITY.md). The default host stays loopback-only (127.0.0.1) per PX-19.
@@ -335,7 +389,17 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="do not auto-open a browser (same as SARTOR_NO_BROWSER=1)",
     )
+    parser.add_argument(
+        "--idle-timeout",
+        type=int,
+        metavar="MINUTES",
+        default=None,
+        help="stop the server after this many minutes with no open page "
+        f"(off by default; at least {instance.MIN_IDLE_MINUTES})",
+    )
     args = parser.parse_args(argv)
+    if args.idle_timeout is not None and args.idle_timeout < instance.MIN_IDLE_MINUTES:
+        parser.error(f"--idle-timeout must be at least {instance.MIN_IDLE_MINUTES} minutes")
 
     # --doctor before --setup: it is the read-only one, and the whole point of item 100
     # is that a user can find out what will work BEFORE downloading several GB.
@@ -344,6 +408,43 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.setup:
         raise SystemExit(_run_setup())
+
+    # Browser opt-out, resolved once and used twice: by the already-running branch and by
+    # the fresh-start open below. F-18: an explicit SARTOR_NO_BROWSER / --no-browser wins;
+    # unset defaults to "open" locally and "skip" under a CI/container signal.
+    no_browser = "1" if args.no_browser else os.environ.get("SARTOR_NO_BROWSER")
+    if no_browser is None and _is_ci_or_container():
+        no_browser = "1"
+
+    # Item 146. Under Flask's reloader main() runs in a persistent supervisor AND in a
+    # serving child that is re-executed on every reload. The supervisor (or the single
+    # non-debug process) claims the port and owns the instance file; the child must not
+    # probe — the supervisor's listening socket is already on the port by then.
+    is_reload_child = os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    base_dir: Path = app.config["BASE_DIR"]
+    if is_reload_child:
+        instance_id = os.environ.get(instance.ENV_INSTANCE_ID) or instance.new_instance_id()
+    else:
+        _claim_port_or_exit(args.port, no_browser)
+        instance_id = instance.new_instance_id()
+        os.environ[instance.ENV_INSTANCE_ID] = instance_id  # inherited by the reload child
+        try:
+            instance.write_instance_file(
+                base_dir,
+                instance_id=instance_id,
+                port=args.port,
+                host=args.host,
+                version=app_version(),
+            )
+        except OSError as exc:  # the instance file is a convenience; never block the app on it
+            logger.warning("Could not write the instance file: %s", exc)
+        else:
+            atexit.register(instance.release_instance_file, base_dir, instance_id)
+    app.config["INSTANCE_ID"] = instance_id
+    # The callable `POST /api/shutdown` and the idle monitor invoke. Set here, not in
+    # create_app, so a WSGI host that never calls main() reports 501 instead of exiting.
+    shutdown_fn = functools.partial(instance.request_shutdown, base_dir, instance_id)
+    app.config["SHUTDOWN_FN"] = shutdown_fn
 
     print(f"\n  sartor. — http://localhost:{args.port}\n")
     # F-18: FLASK_DEBUG explicit wins; unset defaults to debug-on locally, but
@@ -363,10 +464,7 @@ def main(argv: list[str] | None = None) -> None:
     # F-18: SARTOR_NO_BROWSER (or --no-browser) explicit wins; unset defaults to
     # "open" locally, but "skip" when a CI/container signal is detected — see
     # _is_ci_or_container(). _should_open_browser's own (tested) 2-arg contract
-    # is untouched; this only changes what gets passed in as `no_browser`.
-    no_browser = "1" if args.no_browser else os.environ.get("SARTOR_NO_BROWSER")
-    if no_browser is None and _is_ci_or_container():
-        no_browser = "1"
+    # is untouched; this only changes what gets passed in as `no_browser` (resolved above).
     if _should_open_browser(os.environ.get("WERKZEUG_RUN_MAIN"), no_browser):
 
         def _open_browser() -> None:
@@ -385,6 +483,14 @@ def main(argv: list[str] | None = None) -> None:
     # posture SECURITY.md commits to. `--host 0.0.0.0` (used only by the container,
     # which then maps -p 127.0.0.1:5000:5000 on the host) is the sole exception.
     # (A third silent-flip vector is `SERVER_NAME`; leave it unset locally.)
+
+    # Item 147: opt-in idle shutdown. The monitor runs in the process that SERVES — the
+    # reloader's child under debug, the single process otherwise — not in the supervisor.
+    if args.idle_timeout is not None:
+        tracker = instance.IdleTracker(args.idle_timeout * 60.0)
+        app.config["IDLE_TRACKER"] = tracker
+        if is_reload_child or not debug_mode:
+            instance.start_idle_monitor(tracker, shutdown_fn)
     app.run(host=args.host, debug=debug_mode, port=args.port)
 
 

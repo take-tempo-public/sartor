@@ -23,7 +23,7 @@
 
 A self-contained observability surface mounted at `/_dashboard`, registered as
 `app.register_blueprint(dashboard_bp, url_prefix="/_dashboard")` inside
-[`app.py:register_blueprints`](../../../app.py) — one call among the nine that
+[`app.py:register_blueprints`](../../../app.py) — one call among the ten that
 factory function makes (see [[code-module-map]] for the full blueprint
 roster). The blueprint object is built in
 [`dashboard/routes.py:dashboard_bp`](../../../dashboard/routes.py) with a single

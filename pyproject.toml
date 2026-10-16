@@ -162,6 +162,10 @@ py-modules = [
     "docx_to_persona_html",
     "generator",
     "hardening",
+    # Imported at RUNTIME by `app.py` (single-instance probe, instance file, idle
+    # shutdown) and `blueprints/lifecycle.py` (items 146/147). A leaf module: omitting
+    # it would ship a wheel whose `app.py` fails at import.
+    "instance",
     "json_resume",
     "parser",
     "pdf_render",
@@ -447,6 +451,7 @@ module = [
     "config",
     "demo_fixtures",
     "app",
+    "instance",
     "preflight",
     "web_infra.*",
     "recall.*",

@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>sartor.</title>
+  {#- Item 147: the page's keep-alive period, present ONLY when the server was started
+      with --idle-timeout. Absent means the page sends no heartbeat at all. -#}
+  {% if idle_heartbeat_s %}
+  <meta name="sartor-idle-heartbeat-s" content="{{ idle_heartbeat_s }}">
+  {% endif %}
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -1461,9 +1466,35 @@
           <p class="edit-hint">Telemetry + interactive eval/tuning console.</p>
           <a class="cb-btn cb-bg-teal" href="/_dashboard" target="_blank" rel="noopener">Open dashboard ↗</a>
         </section>
+        {#- Item 147: shown only when this process can stop itself (started by `sartor`;
+            see blueprints/users.py `quit_available`). Closing the tab does NOT stop the
+            server, so say where the off switch is. -#}
+        {% if quit_available %}
+        <section class="settings-section" id="quitSection">
+          <h3 class="settings-section-title">Quit Sartor</h3>
+          <p class="edit-hint">Stops Sartor on this computer. Closing this tab alone leaves it running.</p>
+          <button type="button" id="btnQuitSartor" class="cb-btn cb-bg-danger" onclick="quitSartor(this)">Quit Sartor</button>
+        </section>
+        {% endif %}
       </div>
     </div>
   </aside>
+
+  {% if quit_available %}
+  {#- Item 147: the static "it has stopped" state after Quit. Same .cb-modal shell as
+      #cbConfirmModal, but with no dismiss control and no backdrop handler: there is
+      nothing left to go back to. -#}
+  <div id="sartorStopped" class="cb-modal hidden" role="alertdialog" aria-modal="true"
+       aria-labelledby="sartorStoppedTitle" aria-describedby="sartorStoppedBody">
+    <div class="cb-modal-backdrop"></div>
+    <div class="cb-modal-content" role="document">
+      <h2 id="sartorStoppedTitle" class="cb-modal-title" tabindex="-1">Sartor has stopped</h2>
+      <div id="sartorStoppedBody" class="cb-modal-body">
+        <p style="margin:0 0 10px">You can close this tab. Start Sartor again to continue.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- sartor. floating status strip — viewport-bottom sticky element
        that mirrors statusPill state and surfaces the active wizard step.

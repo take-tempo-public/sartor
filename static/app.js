@@ -83,6 +83,97 @@ document.addEventListener('DOMContentLoaded', () => {
   _wireLiveEditPreview('coverLetterPreview', 'cover_letter', 'coverPreviewFrame');
 });
 
+// ---- Lifecycle: Quit, keep-alive, unsaved-edit guard (items 146/147) ----------
+//
+// Closing a tab must NOT stop the server: `beforeunload`/`pagehide` also fire on a
+// refresh and for one tab of several, and never fire on a crash. So the server stops
+// only on an explicit Quit (below) or, opt-in, after `--idle-timeout` minutes with no
+// page open (the heartbeat). `beforeunload` is used for one thing only: unsaved edits.
+
+// Set once the server has been told to stop; everything here goes quiet after it.
+let _sartorStopped = false;
+let _heartbeatTimer = null;
+
+// True when closing the tab would lose something the user typed. Three states this
+// file already tracks (nothing new is polled):
+//  - a Compose autosave that is scheduled but not yet sent (_composeSaveTimer);
+//  - Step-6 preview text that differs from the generated baseline (_detectEdits);
+//  - an open form modal whose fields differ from what it opened with.
+function _hasUnsavedEdits() {
+  if (_composeSaveTimer !== null) return true;
+  try {
+    if (_detectEdits().anyEdited) return true;
+  } catch (_) { /* a missing editor must never block closing the tab */ }
+  const snap = _openFormModalSnapshot;
+  if (snap) {
+    for (const [name, el] of Object.entries(snap.inputs)) {
+      if (el.value !== snap.initial[name]) return true;
+    }
+  }
+  return false;
+}
+
+// Never says "close the app?" — browsers show only their own generic text here and run
+// no code after the answer. Prompts only when `_hasUnsavedEdits()`.
+window.addEventListener('beforeunload', (e) => {
+  if (_sartorStopped || !_hasUnsavedEdits()) return;
+  e.preventDefault();
+  e.returnValue = '';  // legacy browsers prompt only when this is set
+});
+
+// Keep-alive for `--idle-timeout`. The server renders the meta tag only when idle
+// shutdown is on, so a default run sends no heartbeat and makes no extra request.
+document.addEventListener('DOMContentLoaded', () => {
+  const meta = document.querySelector('meta[name="sartor-idle-heartbeat-s"]');
+  const seconds = meta ? Number(meta.getAttribute('content')) : 0;
+  if (!(seconds > 0)) return;
+  const beat = () => {
+    if (_sartorStopped) return;
+    fetch('/api/heartbeat', { method: 'POST' }).catch(() => { /* server gone; nothing to do */ });
+  };
+  beat();
+  _heartbeatTimer = setInterval(beat, seconds * 1000);
+});
+
+// The static end state after Quit: drawer closed, a dialog saying so, no more requests.
+function _showSartorStopped() {
+  _sartorStopped = true;
+  if (_heartbeatTimer !== null) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
+  const drawer = document.getElementById('settingsDrawer');
+  if (drawer) drawer.classList.add('hidden');
+  const panel = document.getElementById('sartorStopped');
+  if (!panel) return;
+  panel.classList.remove('hidden');
+  const title = document.getElementById('sartorStoppedTitle');
+  if (title) title.focus();
+}
+
+// Settings → Quit Sartor. Confirms first (a running generation stops with the server),
+// then POST /api/shutdown. The custom header is what the server requires: a cross-site
+// page cannot send it without a CORS preflight the server never answers.
+async function quitSartor(triggerEl) {
+  const ok = await cbConfirm(
+    'This stops Sartor on this computer. A generation that is still running stops with it, '
+    + 'and anything you have not saved is lost.\n\nStart Sartor again whenever you want to continue.',
+    { title: 'Quit Sartor?', confirmLabel: 'Quit', cancelLabel: 'Keep running', danger: true, triggerEl },
+  );
+  if (!ok) return;
+  let resp;
+  try {
+    resp = await fetch('/api/shutdown', { method: 'POST', headers: { 'X-Sartor-Action': 'shutdown' } });
+  } catch (_) {
+    // The connection can drop as the server exits. On localhost, no answer means no server.
+    _showSartorStopped();
+    return;
+  }
+  if (resp.status === 202) { _showSartorStopped(); return; }
+  if (resp.status === 501) {
+    reportError('Quit', 'This copy of Sartor was not started by the sartor command, so it cannot stop itself from here.', '');
+    return;
+  }
+  reportError('Quit', 'Sartor could not be stopped from this page.', `HTTP ${resp.status}`);
+}
+
 // ---- Users ----
 async function loadUsers() {
   const res = await fetch('/api/users');
@@ -10412,6 +10503,13 @@ function _previewPersonaWithResume(personaId, _name) {
 //   title, subtitle, submitLabel, fields: [{name,label,type,required,
 //     placeholder,options:[{value,label}],defaultValue}], onSubmit(values)
 // }) -> Promise that resolves with the entered values or null on cancel.
+//
+// Item 147: while a form modal is open, `_openFormModalSnapshot` holds its inputs and
+// the values they opened with, so `_hasUnsavedEdits()` can tell a half-typed field from
+// an untouched one. Fields are set through the `.value` property, so `defaultValue`
+// cannot serve as the baseline. Cleared on every exit path (cancel, Esc, submit).
+let _openFormModalSnapshot = null;
+
 function openFormModal(opts) {
   return new Promise((resolve) => {
     const modal = document.getElementById('formModal');
@@ -10462,9 +10560,14 @@ function openFormModal(opts) {
     });
     const errRow = _el('div', { className: 'form-row-error', id: 'formModalError' });
     body.appendChild(errRow);
+    _openFormModalSnapshot = {
+      inputs,
+      initial: Object.fromEntries(Object.entries(inputs).map(([k, el]) => [k, el.value])),
+    };
 
     const focusable = modal.querySelectorAll('button, input, textarea, select');
     const cleanup = (result) => {
+      _openFormModalSnapshot = null;
       modal.classList.add('hidden');
       modal.removeEventListener('keydown', onKey);
       submit.onclick = null;

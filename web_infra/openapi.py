@@ -35,6 +35,7 @@ blueprint, or `config.py` — `spectree` + `pydantic` only.
 
 from __future__ import annotations
 
+from functools import cache
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from typing import Any
@@ -53,17 +54,21 @@ __all__ = [
     "ExperiencesNeedsOnboarding",
     "UserConfigResponse",
     "UsersListResponse",
+    "app_version",
     "spec",
 ]
 
 
-def _app_version() -> str:
+@cache
+def app_version() -> str:
     """The installed `sartor` distribution version, with a fallback.
 
     Falls back when the package metadata isn't discoverable (e.g. running from
     a source checkout that was never `pip install -e .`'d) rather than raising
     out of module import — spec emission should never hard-fail on a cosmetic
-    version string.
+    version string. Public since items 146/147: `/healthz` and the instance file
+    report it too. Cached, because `importlib.metadata` scans the filesystem and
+    `/healthz` is polled.
     """
     try:
         return _pkg_version("sartor")
@@ -74,7 +79,7 @@ def _app_version() -> str:
 spec = SpecTree(
     "flask",
     title="sartor. API",
-    version=_app_version(),
+    version=app_version(),
     annotations=False,
     mode="strict",
 )

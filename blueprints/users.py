@@ -56,6 +56,7 @@ from spectree import Response as OpenApiResponse
 from werkzeug.utils import secure_filename
 
 from hardening import validate_config
+from instance import HEARTBEAT_S
 from preflight import pdf_available
 from web_infra import (
     _get_or_provision_candidate,
@@ -91,8 +92,21 @@ def index() -> ResponseReturnValue:
     machine that could not render one. The probe is `lru_cache`d in `preflight`,
     so this costs one dictionary lookup per page load, not a filesystem walk —
     and it is read here, in the shell route, rather than per download request.
+
+    Items 146/147: `quit_available` shows the Settings "Quit" control only when this
+    process can stop itself (started by `sartor`, not a WSGI host); `idle_heartbeat_s`
+    is the page's keep-alive period, set only when `--idle-timeout` is on, so a default
+    run makes no extra request.
     """
-    resp = make_response(render_template("index.html", pdf_available=pdf_available()))
+    idle_on = current_app.config.get("IDLE_TRACKER") is not None
+    resp = make_response(
+        render_template(
+            "index.html",
+            pdf_available=pdf_available(),
+            quit_available=current_app.config.get("SHUTDOWN_FN") is not None,
+            idle_heartbeat_s=HEARTBEAT_S if idle_on else None,
+        )
+    )
     resp.headers["Cache-Control"] = "no-cache, must-revalidate"
     return resp
 

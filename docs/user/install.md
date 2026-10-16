@@ -251,7 +251,30 @@ when stdin is not a terminal (a container build or CI step), so it cannot hang.
 
 `sartor --doctor` reports the same capabilities without changing anything.
 `sartor --host` / `--port` override the bind address; `sartor --no-browser`
-skips the auto-open.
+skips the auto-open; `sartor --idle-timeout MINUTES` stops Sartor after that
+long with no page open (see the next section).
+
+### Starting again, and stopping Sartor
+
+Starting `sartor` a second time does not start a second copy. If Sartor already
+answers on the port, the second launch opens your browser on the copy that is
+running (unless you opted out of the auto-open) and exits. If a different
+program is using the port, `sartor` says so, names the port, and exits without
+starting; start it on another port with `sartor --port 5001`.
+
+To stop Sartor, choose **Settings → Quit Sartor** and confirm. Closing the
+browser tab on its own leaves Sartor running: a page refresh or a second tab
+closes a tab too, and stopping the server on each of those would lose your
+place. Pressing `Ctrl+C` in the terminal that started Sartor also stops it.
+
+To have Sartor stop by itself once no page is open, start it with
+`sartor --idle-timeout 30` (minutes; the smallest value is 5). It is off by
+default. An open page counts as in use, so the timer starts when the last tab
+closes. The timer does not run out while a request, including a generation that
+is still running, is being answered.
+
+Closing a tab, or quitting, with text you typed and have not saved asks you to
+confirm first. The prompt appears only in that case.
 
 ### API key: keep it out of your shell history
 
@@ -639,10 +662,15 @@ one without echoing it. To check by hand, confirm one of:
   no quotes, no trailing newline.
 
 **Port 5000 already in use.**
-Another process is on `:5000`. On Windows: `netstat -ano | findstr :5000`
-to find the PID, then `taskkill /PID <pid> /F`. On macOS/Linux:
-`lsof -i :5000` then `kill <pid>`. Or change the port in
-[`app.py`](../../app.py) `main()` — search for `port=5000`.
+`sartor` says `Port 5000 is in use by another program` and exits when something
+that is not Sartor owns the port. (If it is Sartor, the second launch opens the
+copy already running instead; see
+[Starting again, and stopping Sartor](#starting-again-and-stopping-sartor).)
+Start on another port with `sartor --port 5001`, or stop the other program. To
+find it on Windows: `netstat -ano | findstr :5000` for the PID, then
+`taskkill /PID <pid> /F`. On macOS/Linux: `lsof -i :5000`, then `kill <pid>`.
+On macOS 12 and later, the system's AirPlay Receiver listens on `:5000`; turn it
+off in System Settings or use another port.
 
 **"My data is somewhere I can't find."**
 See the "What gets saved on your machine" section in

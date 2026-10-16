@@ -95,7 +95,10 @@ because it is enumerable, this clause is machine-verifiable. The sanctioned clas
 exactly two: **(a)** the configured LLM provider, and **(b)** the optional
 profile/website scrape when the user supplies LinkedIn/portfolio URLs. JDs are pasted
 text — no JD-URL fetch exists. No telemetry, analytics, or error reporting leaves the
-machine. *[src: charter C-2; `../../vision.md` "Local-first"; `../../SECURITY.md` threat
+machine. A connection Sartor makes to its own loopback address (`127.0.0.1`) — the
+single-instance probe — is not outbound traffic and is not a third class; the one module that
+makes it, `instance.py`, may name no other host, and a test pins that.
+*[src: charter C-2; `../../vision.md` "Local-first"; `../../SECURITY.md` threat
 model. The egress falsifiability gate C-0 requires is **SHIPPED** (**PX-08**;
 [`../../tests/test_egress_allowlist.py`](../../tests/test_egress_allowlist.py) —
 **F-qe-rel-02** P0 / **F-sec-01**). The pin-era divergences are resolved: Chart.js
@@ -105,6 +108,17 @@ phantom third JD-URL egress class corrected to the two-class enumeration (**PX-0
 **F-sec-04** / **F-docs-01**). The eval-grounding model download (~3.2GB from
 huggingface.co) is a sanctioned power-user opt-in under D-6, not a third egress class —
 **F-sec-10**.]*
+
+*[src: adopted 2026-10-15, owner-directed (chat, 2026-10-15), from
+`feat/single-instance-and-quit` (items 146/147). On Windows a second launch binds a port a
+running copy already serves without any error
+([`../dev/blast-radius/single-instance-and-quit.md`](../dev/blast-radius/single-instance-and-quit.md)
+"Observed before building"), so the launch must ask the port who owns it before it binds. That
+is a socket the app opens, and the egress gate fails on any new socket-opening module.
+Clarification only: the two off-box classes are unchanged. Backed by
+`tests/test_egress_allowlist.py` (`instance.py` is on `SANCTIONED_EGRESS_FILES`, and a pin test
+fails if any host other than `127.0.0.1` appears in it). Recorded in `../../CHANGELOG.md`;
+owner sign-off at this branch's PR.]*
 
 ### C-3 — Grounding mechanisms; grounded synthesis is the feature
 

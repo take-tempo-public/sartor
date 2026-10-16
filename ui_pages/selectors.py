@@ -422,6 +422,24 @@ class Settings:
     EDUCATION_FIELD_ROW = "#cfgEducationFieldRow"
     EDUCATION_CORPUS_ROW = "#cfgEducationCorpusRow"
     GO_TO_CORPUS_BUTTON_NAME = "Go to Career corpus"
+    # Item 147 — the in-app Quit. Rendered only when this process can stop itself
+    # (started by `sartor`, not a WSGI host), so a test that expects it must run on a
+    # server that has `SHUTDOWN_FN` configured. Handler: `quitSartor()` in app.js.
+    QUIT_SECTION = "#quitSection"
+    QUIT_BUTTON = "#btnQuitSartor"
+
+
+class Lifecycle:
+    """The static end state after Quit (`_showSartorStopped()` in app.js).
+
+    A `.cb-modal` with no dismiss control: once it is open the server is gone and the
+    page makes no further request. Rendered into the DOM only when Quit is available;
+    `.hidden` while the server is up.
+    """
+
+    STOPPED = "#sartorStopped"
+    STOPPED_OPEN = "#sartorStopped:not(.hidden)"
+    STOPPED_TITLE = "#sartorStoppedTitle"
 
 
 class Onboarding:

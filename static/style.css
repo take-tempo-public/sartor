@@ -2840,6 +2840,13 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .settings-drawer-content { animation: none; }
 }
+/* Item 147: a dialog opened FROM the Settings drawer (Quit Sartor -> cbConfirm, and its
+   reportError on a refused quit) must stack above it. `.cb-modal` is z-index 1000 and the
+   drawer 1500, so the drawer's backdrop sat on top of the dialog and swallowed every click
+   on it (observed: the Cancel button was unreachable by mouse). Scoped to the two shared
+   dialogs a drawer control can open; every other `.cb-modal` keeps its order. */
+#cbConfirmModal,
+#errorModal { z-index: 1600; }
 .settings-drawer-header {
   display: flex;
   align-items: center;
