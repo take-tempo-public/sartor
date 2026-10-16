@@ -315,3 +315,584 @@ How a missed consumer would surface:
   *without* an exemption entry (the blueprint has no filesystem indicator by construction).
 - `python scripts/generate_openapi_spec.py` run before and after: the path list is unchanged (5).
 - `python -m scripts.gate`, cited with `--result`.
+
+---
+
+## Appendix: instruments, verbatim
+
+The scratchpad scripts the numbers above came from, kept here because a session's scratchpad
+does not survive it. Paths are this machine's (`C:\Dev\sartor`); adjust `REPO` to re-run. None of
+them is part of the product or the gate.
+
+### `observe_launch.py`
+
+Pre-build observation (A1, A2, B, C in the Observed table): a second launch on a taken port, a foreign owner, and the reloader supervisor's exit code when its child exits 0.
+
+```python
+"""Observation script for item 146/147 (scratchpad; not committed).
+
+Records, on this machine, with the real app:
+  A. second `python app.py` on a port that a first copy already serves
+     (default debug/reloader mode AND FLASK_DEBUG=0)
+  B. a foreign program (plain http.server) owning the port, then `python app.py`
+  C. under the reloader, a serving child that calls os._exit(0): the
+     supervisor's exit code and whether any python process is left over
+
+Every process started is killed (taskkill /T /F) in a finally block.
+"""
+
+from __future__ import annotations
+
+import http.server
+import json
+import os
+import socket
+import subprocess
+import sys
+import textwrap
+import threading
+import time
+import urllib.request
+from pathlib import Path
+
+REPO = Path(r"C:\Dev\sartor")
+SCRATCH = Path(__file__).parent
+STARTED: list[subprocess.Popen[str]] = []
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def kill_tree(p: subprocess.Popen[str]) -> None:
+    if p.poll() is None:
+        subprocess.run(
+            ["taskkill", "/PID", str(p.pid), "/T", "/F"],
+            capture_output=True,
+            check=False,
+        )
+
+
+def launch(args: list[str], env_extra: dict[str, str], log: Path) -> subprocess.Popen[str]:
+    env = dict(os.environ)
+    env.update(env_extra)
+    fh = log.open("w", encoding="utf-8")
+    p = subprocess.Popen(  # noqa: S603
+        args, cwd=REPO, env=env, stdout=fh, stderr=subprocess.STDOUT, text=True
+    )
+    STARTED.append(p)
+    return p
+
+
+def answers(port: int, timeout: float = 1.0) -> int | None:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=timeout) as r:  # noqa: S310
+            return int(r.status)
+    except Exception:
+        return None
+
+
+def wait_up(port: int, secs: float = 60.0) -> bool:
+    end = time.monotonic() + secs
+    while time.monotonic() < end:
+        if answers(port) is not None:
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def python_procs() -> int:
+    out = subprocess.run(
+        ["tasklist", "/FI", "IMAGENAME eq python.exe", "/FO", "CSV", "/NH"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    return sum(1 for ln in out.splitlines() if ln.lower().startswith('"python.exe"'))
+
+
+def tail(path: Path, n: int = 12) -> list[str]:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").splitlines()[-n:]
+    except OSError:
+        return []
+
+
+def scenario_second_launch(label: str, env_extra: dict[str, str]) -> dict[str, object]:
+    port = free_port()
+    log1 = SCRATCH / f"{label}-first.log"
+    log2 = SCRATCH / f"{label}-second.log"
+    first = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], env_extra, log1)
+    res: dict[str, object] = {"port": port, "first_up": wait_up(port)}
+    second = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], env_extra, log2)
+    try:
+        rc = second.wait(timeout=25)
+        res["second_exit"] = rc
+        res["second_still_running"] = False
+    except subprocess.TimeoutExpired:
+        res["second_exit"] = None
+        res["second_still_running"] = True
+    res["second_log_tail"] = tail(log2)
+    res["first_alive_after"] = first.poll() is None
+    res["port_answers_after"] = answers(port)
+    kill_tree(second)
+    kill_tree(first)
+    time.sleep(1.5)
+    return res
+
+
+class _H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self) -> None:  # noqa: N802
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"not sartor")
+
+    def log_message(self, *a: object) -> None:  # silence
+        return
+
+
+def scenario_foreign(env_extra: dict[str, str]) -> dict[str, object]:
+    port = free_port()
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), _H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    log = SCRATCH / "foreign-app.log"
+    p = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], env_extra, log)
+    res: dict[str, object] = {"port": port}
+    try:
+        res["exit"] = p.wait(timeout=25)
+    except subprocess.TimeoutExpired:
+        res["exit"] = None
+    res["log_tail"] = tail(log)
+    res["foreign_still_answers"] = answers(port)
+    kill_tree(p)
+    srv.shutdown()
+    time.sleep(1.0)
+    return res
+
+
+EXIT_DRIVER = textwrap.dedent(
+    """
+    import os, sys, threading
+    sys.path.insert(0, r"C:\\Dev\\sartor")
+    import app as appmod
+    flask_app = appmod.app
+
+    @flask_app.route("/__exit0")
+    def _exit0():
+        threading.Timer(0.3, lambda: os._exit(0)).start()
+        return "bye", 202
+
+    if __name__ == "__main__":
+        flask_app.run(host="127.0.0.1", port=int(sys.argv[1]), debug=True)
+    """
+)
+
+
+def scenario_reloader_exit0() -> dict[str, object]:
+    port = free_port()
+    drv = SCRATCH / "exit_driver.py"
+    drv.write_text(EXIT_DRIVER, encoding="utf-8")
+    log = SCRATCH / "reloader-exit0.log"
+    before = python_procs()
+    p = launch([sys.executable, str(drv), str(port)], {}, log)
+    res: dict[str, object] = {"port": port, "python_before": before}
+    res["up"] = wait_up(port)
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/__exit0")
+        urllib.request.urlopen(req, timeout=3).read()  # noqa: S310
+    except Exception as exc:  # response may race the exit
+        res["request_error"] = repr(exc)
+    try:
+        res["supervisor_exit"] = p.wait(timeout=20)
+    except subprocess.TimeoutExpired:
+        res["supervisor_exit"] = None
+    time.sleep(1.5)
+    res["port_answers_after"] = answers(port)
+    res["python_after"] = python_procs()
+    res["log_tail"] = tail(log)
+    kill_tree(p)
+    return res
+
+
+def main() -> None:
+    out: dict[str, object] = {}
+    try:
+        out["A1_second_launch_default_debug"] = scenario_second_launch("a1", {})
+        out["A2_second_launch_debug0"] = scenario_second_launch("a2", {"FLASK_DEBUG": "0"})
+        out["B_foreign_owner_default_debug"] = scenario_foreign({})
+        out["C_reloader_child_exit0"] = scenario_reloader_exit0()
+    finally:
+        for p in STARTED:
+            kill_tree(p)
+    (SCRATCH / "observed.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
+    print(json.dumps(out, indent=2))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### `measure_probe.py`
+
+The three ways to ask "is this port taken?": refused-connect cost, exclusive bind, and the owner-classification cost.
+
+```python
+"""Scratchpad: cost and behaviour of the two ways to ask "is this port taken?" (Windows)."""
+
+from __future__ import annotations
+
+import http.client
+import http.server
+import json
+import socket
+import statistics
+import sys
+import threading
+import time
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def time_connect_refused(port: int, n: int = 5) -> list[float]:
+    out: list[float] = []
+    for _ in range(n):
+        t = time.perf_counter()
+        try:
+            c = http.client.HTTPConnection("127.0.0.1", port, timeout=3.0)
+            c.request("GET", "/healthz")
+            c.getresponse()
+        except OSError as exc:
+            out.append(time.perf_counter() - t)
+            last = type(exc).__name__
+    out.append(-1.0)  # sentinel; replaced below
+    out.pop()
+    time_connect_refused.last = last  # type: ignore[attr-defined]
+    return out
+
+
+def exclusive_bind_free(port: int) -> tuple[bool, float, str]:
+    t = time.perf_counter()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if sys.platform == "win32":
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        else:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1", port))
+        return True, time.perf_counter() - t, "bound"
+    except OSError as exc:
+        return False, time.perf_counter() - t, f"{type(exc).__name__}:{getattr(exc, 'winerror', exc.errno)}"
+    finally:
+        s.close()
+
+
+class _H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self) -> None:  # noqa: N802
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"x")
+
+    def log_message(self, *a: object) -> None:
+        return
+
+
+def main() -> None:
+    res: dict[str, object] = {}
+    p_closed = free_port()
+    times = time_connect_refused(p_closed)
+    res["refused_connect_seconds"] = [round(x, 3) for x in times]
+    res["refused_connect_exc"] = time_connect_refused.last  # type: ignore[attr-defined]
+    res["refused_connect_median"] = round(statistics.median(times), 3)
+
+    free, dt, why = exclusive_bind_free(p_closed)
+    res["exclusive_bind_on_free_port"] = {"free": free, "seconds": round(dt, 4), "why": why}
+
+    # A listener built the way Werkzeug/http.server builds it (allow_reuse_address=1).
+    p_busy = free_port()
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", p_busy), _H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    time.sleep(0.2)
+    free2, dt2, why2 = exclusive_bind_free(p_busy)
+    res["exclusive_bind_on_reuseaddr_listener"] = {"free": free2, "seconds": round(dt2, 4), "why": why2}
+
+    # And a plain bind WITHOUT the exclusive flag, to reproduce the silent double-bind.
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1", p_busy))
+        res["reuseaddr_bind_on_listener"] = "bound (silent double-bind)"
+    except OSError as exc:
+        res["reuseaddr_bind_on_listener"] = f"refused {type(exc).__name__}"
+    finally:
+        s.close()
+
+    # Healthz-style connect against the busy port: the cost of CLASSIFYING an owner.
+    t = time.perf_counter()
+    c = http.client.HTTPConnection("127.0.0.1", p_busy, timeout=1.0)
+    c.request("GET", "/healthz")
+    r = c.getresponse()
+    r.read()
+    res["classify_owner_seconds"] = round(time.perf_counter() - t, 4)
+    srv.shutdown()
+    print(json.dumps(res, indent=2))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### `e2e_launch.py`
+
+After-build end to end, both modes: second launch, `/healthz`, refusals, Quit, and a foreign owner. Kills every process it starts.
+
+```python
+"""Scratchpad e2e for items 146/147: real app.py, real sockets, this machine. Not committed."""
+
+from __future__ import annotations
+
+import http.server
+import json
+import os
+import socket
+import subprocess
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+REPO = Path(r"C:\Dev\sartor")
+SCRATCH = Path(__file__).parent
+INSTANCE = REPO / "sartor-instance.json"
+STARTED: list[subprocess.Popen[str]] = []
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def kill_tree(p: subprocess.Popen[str]) -> None:
+    if p.poll() is None:
+        subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True, check=False)
+
+
+def launch(args: list[str], env_extra: dict[str, str], log: Path) -> subprocess.Popen[str]:
+    env = dict(os.environ)
+    env.update(env_extra)
+    env.pop("SARTOR_NO_BROWSER", None)
+    fh = log.open("w", encoding="utf-8")
+    p = subprocess.Popen(  # noqa: S603
+        args, cwd=REPO, env=env, stdout=fh, stderr=subprocess.STDOUT, text=True
+    )
+    STARTED.append(p)
+    return p
+
+
+def http_json(method: str, url: str, headers: dict[str, str] | None = None) -> tuple[int, object]:
+    req = urllib.request.Request(url, method=method, headers=headers or {})  # noqa: S310
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:  # noqa: S310
+            raw = r.read()
+            return int(r.status), (json.loads(raw) if raw else None)
+    except urllib.error.HTTPError as e:
+        raw = e.read()
+        try:
+            return int(e.code), json.loads(raw)
+        except ValueError:
+            return int(e.code), raw.decode("utf-8", "replace")[:80]
+    except OSError as e:
+        return -1, repr(e)
+
+
+def wait_healthz(port: int, secs: float = 60.0) -> bool:
+    end = time.monotonic() + secs
+    while time.monotonic() < end:
+        code, _ = http_json("GET", f"http://127.0.0.1:{port}/healthz")
+        if code == 200:
+            return True
+        time.sleep(0.4)
+    return False
+
+
+def tail(path: Path, n: int = 6) -> list[str]:
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()[-n:]
+
+
+class _H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self) -> None:  # noqa: N802
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"not sartor")
+
+    def log_message(self, format: str, *args: object) -> None:
+        return
+
+
+def run_mode(label: str, env_extra: dict[str, str]) -> dict[str, object]:
+    out: dict[str, object] = {}
+    port = free_port()
+    base = f"http://127.0.0.1:{port}"
+    if INSTANCE.exists():
+        INSTANCE.unlink()
+    first = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], env_extra, SCRATCH / f"{label}-1.log")
+    out["first_up"] = wait_healthz(port)
+    out["healthz"] = http_json("GET", f"{base}/healthz")
+    out["instance_file"] = json.loads(INSTANCE.read_text("utf-8")) if INSTANCE.exists() else None
+
+    t = time.perf_counter()
+    second = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], env_extra, SCRATCH / f"{label}-2.log")
+    try:
+        out["second_exit"] = second.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        out["second_exit"] = None
+    out["second_seconds"] = round(time.perf_counter() - t, 2)
+    out["second_log"] = tail(SCRATCH / f"{label}-2.log")
+    out["first_alive_after_second"] = first.poll() is None
+
+    out["shutdown_no_header"] = http_json("POST", f"{base}/api/shutdown")[0]
+    out["shutdown_cross_site"] = http_json(
+        "POST", f"{base}/api/shutdown", {"X-Sartor-Action": "shutdown", "Sec-Fetch-Site": "cross-site"}
+    )[0]
+    out["still_up_after_refusals"] = http_json("GET", f"{base}/healthz")[0] == 200
+    out["shutdown_ok"] = http_json(
+        "POST", f"{base}/api/shutdown", {"X-Sartor-Action": "shutdown", "Origin": f"http://127.0.0.1:{port}"}
+    )
+    t = time.perf_counter()
+    try:
+        out["first_exit"] = first.wait(timeout=20)
+    except subprocess.TimeoutExpired:
+        out["first_exit"] = None
+    out["stop_seconds"] = round(time.perf_counter() - t, 2)
+    out["instance_file_after"] = INSTANCE.exists()
+    out["port_answers_after"] = http_json("GET", f"{base}/healthz")[0]
+    return out
+
+
+def foreign_owner() -> dict[str, object]:
+    port = free_port()
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), _H)
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True).start()
+    p = launch([sys.executable, "app.py", "--no-browser", "--port", str(port)], {}, SCRATCH / "foreign.log")
+    out: dict[str, object] = {}
+    try:
+        out["exit"] = p.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        out["exit"] = None
+    out["log"] = tail(SCRATCH / "foreign.log", 8)
+    out["instance_file_written"] = INSTANCE.exists()
+    srv.shutdown()
+    return out
+
+
+def main() -> None:
+    res: dict[str, object] = {}
+    try:
+        res["default_reloader_mode"] = run_mode("rl", {})
+        res["flask_debug_0"] = run_mode("nd", {"FLASK_DEBUG": "0"})
+        res["foreign_owner"] = foreign_owner()
+    finally:
+        for p in STARTED:
+            kill_tree(p)
+        if INSTANCE.exists():
+            res["LEFTOVER_instance_file"] = True
+            INSTANCE.unlink()
+    (SCRATCH / "e2e.json").write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
+    print(json.dumps(res, indent=2, default=str))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### `idle_e2e.py`
+
+`--idle-timeout 5` against the real app; polls `/healthz` throughout. Run as `IDLE_TAG=_nodebug FLASK_DEBUG=0 python idle_e2e.py` or `IDLE_TAG=_reloader python idle_e2e.py`, and **do not edit any `.py` under the repo root while it runs** (the reloader watches them).
+
+```python
+"""Scratchpad: real `--idle-timeout 5` run. Writes idle_e2e.json itself (no reliance on exit codes)."""
+
+from __future__ import annotations
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+REPO = Path(r"C:\Dev\sartor")
+SCRATCH = Path(__file__).parent
+INSTANCE = REPO / "sartor-instance.json"
+TAG = os.environ.get("IDLE_TAG", "")
+OUT = SCRATCH / f"idle_e2e{TAG}.json"
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def healthz(port: int) -> int:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=2) as r:  # noqa: S310
+            return int(r.status)
+    except OSError:
+        return -1
+
+
+def main() -> None:
+    res: dict[str, object] = {"started": time.strftime("%H:%M:%S")}
+    port = free_port()
+    env = dict(os.environ)
+    env.pop("SARTOR_NO_BROWSER", None)
+    log = (SCRATCH / f"idle{TAG}.log").open("w", encoding="utf-8")
+    p = subprocess.Popen(  # noqa: S603
+        [sys.executable, "app.py", "--no-browser", "--port", str(port), "--idle-timeout", "5"],
+        cwd=REPO,
+        env=env,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+    )
+    try:
+        t0 = None
+        up = time.monotonic() + 60
+        while time.monotonic() < up:
+            if healthz(port) == 200:
+                t0 = time.monotonic()
+                break
+            time.sleep(0.4)
+        res["came_up"] = t0 is not None
+        # /healthz must NOT count as activity: poll it every 20 s for the whole wait.
+        deadline = time.monotonic() + 9 * 60
+        while p.poll() is None and time.monotonic() < deadline:
+            healthz(port)
+            time.sleep(20)
+        res["exited"] = p.poll() is not None
+        res["exit_code"] = p.poll()
+        res["seconds_up"] = round(time.monotonic() - t0, 1) if t0 else None
+        res["instance_file_left"] = INSTANCE.exists()
+        res["finished"] = time.strftime("%H:%M:%S")
+    finally:
+        if p.poll() is None:
+            subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True, check=False)
+        if INSTANCE.exists():
+            res["instance_file_removed_by_script"] = True
+            INSTANCE.unlink()
+        OUT.write_text(json.dumps(res, indent=2), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
+```
