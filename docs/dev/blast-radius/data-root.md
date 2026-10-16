@@ -88,7 +88,10 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 | 8 | `onboarding/corpus_import.py:57-60,557` | **update** → `data_path(...)` for the three dirs and the key fallback (`preflight.api_key_path()`) | CLI that writes into the same configs/output/resumes the app reads. Constants stay module-level (`tests/test_corpus_import.py:45,342`). |
 | 9 | `evals/annotation.py:155`, `evals/bootstrap.py:81` `ALLOWED_ROOT` | **update** → `data_path("evals","fixtures","real")` | Must equal `Config.annotation_root` (`config.py:167`), which follows `SARTOR_HOME`; otherwise the localhost annotation routes' containment check rejects the real directory. Identical in a clone. |
 | 10 | `evals/runner.py:94,156` | **update** log path and key fallback | A dev who sets `SARTOR_HOME` would otherwise read a log `analyzer` no longer writes (silent zero-cost telemetry). One-line each. |
-| 11 | `blueprints/templates.py:151,770,796,857,922` | **update** — H1 observed (O2) | One resolver, `personas/bundled/*` → `BUNDLED_PERSONAS_DIR`, else `BASE_DIR / rel`; containment checked against the root that applies. Red-before test is `tests/test_data_root.py`. |
+| 11 | `blueprints/templates.py:151,796,922` (resolve, download, preview) | **update** — H1 observed (O2, O5) | One helper, `_persona_row_location(source, path)`: a `bundled` row's `personas/bundled/<n>` maps to `BUNDLED_PERSONAS_DIR` with that directory as the containment root; every other row stays `BASE_DIR / path` inside `PERSONAS_DIR`. Keyed on `source`, not the prefix, because a candidate may be named "bundled". |
+| 11a | `blueprints/templates.py:770` (delete) | **no change** | Returns 403 for `source == "bundled"` before it reaches the join (`:767-768`); only user uploads get here, and those are data-root-relative. |
+| 11b | `blueprints/templates.py:857` (copy) | **no change** | Returns 400 unless `source.source == "user_upload"` (`:847-848`); user data, data-root-relative. |
+| 11c | `blueprints/templates.py:82` (`_persona_dict`) | **no change** | Serialises the stored `path` string to the client; no filesystem access. |
 | 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`. |
 | 13 | `docs/user/install.md:137-142,176-193` | **update** | Collapse five mounts to one; delete the "`/app/db` is a package" trap, which no longer applies. |
 | 14 | `pyproject.toml` `py-modules`, mypy roster, `scripts/wiki_relevance.py` | **update** | Register `sartor_home`. |
@@ -177,6 +180,15 @@ suites that import the routed modules pass: 403 passed, 1 skipped across `test_d
 `test_call_kind_telemetry`, `test_llm_credential_gate`, `test_export_corpus_seed`, `test_web_infra`.
 In a clone `base_dir()` is the repo root, so those paths are byte-identical; that is argued from the
 code (`sartor_home.base_dir`, branch 2), and the 403 are consistent with it, not a proof.
+
+**O5 — H1 fixed, with the red-before.** Against `HEAD` before the fix (a detached scratch worktree, the
+new test file copied in; removed afterwards), the download route for a seeded bundled persona under
+`SARTOR_HOME` returned `404 {"error":"Persona file missing on disk"}`, and the resolver arm failed as in
+O2. After the fix: `tests/test_data_root.py` 18 passed, and the persona and route suites pass
+(`test_persona_routes`, `test_default_template_resolver`, `test_live_preview_route`,
+`test_route_containment_gate`: 112 passed together). The preview route (`:922`) shares the helper but
+has no test of its own here; it is covered by the helper and by `test_live_preview_route` for the
+checkout case only. **Not observed:** the preview route under `SARTOR_HOME`.
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,

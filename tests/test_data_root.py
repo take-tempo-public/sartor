@@ -31,6 +31,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -228,11 +229,6 @@ def test_every_user_data_writer_honours_sartor_home(tmp_path: Path) -> None:
     assert not offenders, "sites that ignore SARTOR_HOME:\n  " + "\n  ".join(offenders)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="H1: a seeded bundled row is joined onto BASE_DIR, which has no personas/bundled",
-)
 def test_a_bundled_template_resolves_when_sartor_home_redirects_the_base_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _migrated_template_db: Path
 ) -> None:
@@ -337,3 +333,81 @@ class TestNoUnclassifiedFileAnchoredPath:
             f"add it to _CODE_ANCHORS with the reason."
         )
         assert not stale, f"_CODE_ANCHORS names files that no longer anchor a path: {stale}"
+
+
+class TestBundledPersonaUnderSartorHome:
+    """H1's fix, beyond the resolver: the download route and the row-location helper.
+
+    `SARTOR_HOME` makes `Config.base_dir` the default data root, so `bundled_personas_dir` is
+    the packaged directory while the seeded rows still say `personas/bundled/<name>`.
+    """
+
+    @pytest.fixture
+    def home_app(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _migrated_template_db: Path
+    ) -> tuple[object, Path, Path]:
+        from tests.conftest import _fresh_migrated_db
+
+        home = (tmp_path / "home").resolve()
+        home.mkdir()
+        monkeypatch.setenv("SARTOR_HOME", str(home))
+        db_file = _fresh_migrated_db(
+            tmp_path, monkeypatch, _migrated_template_db, filename="bundled.sqlite"
+        )
+
+        from app import create_app
+        from config import Config, _package_dir
+        from db.session import init_db
+
+        cfg = Config()
+        control(cfg.base_dir == home, "Config() must follow SARTOR_HOME")
+        app = create_app(cfg)
+        control(init_db(db_file) is False, "the pre-registered copy must skip the alembic chain")
+        return app, home, _package_dir("personas.bundled")
+
+    def test_the_download_route_serves_a_bundled_persona(
+        self, home_app: tuple[Any, Path, Path]
+    ) -> None:
+        from db.models import PersonaTemplate
+        from db.session import get_session
+
+        app, _home, packaged = home_app
+        session = get_session()
+        try:
+            row = session.query(PersonaTemplate).filter_by(source="bundled").first()
+            control(row is not None, "the migrated template must carry bundled rows")
+            assert row is not None
+            persona_id, stored = row.id, row.path
+        finally:
+            session.close()
+        control(stored.startswith("personas/bundled/"), f"unexpected seeded path {stored!r}")
+
+        response = app.test_client().get(f"/api/personas/{persona_id}/download")
+
+        assert response.status_code == 200, response.get_data(as_text=True)
+        assert response.data == (packaged / stored.removeprefix("personas/bundled/")).read_bytes()
+        response.close()
+
+    def test_a_user_named_bundled_keeps_their_upload_in_the_data_root(
+        self, home_app: tuple[Any, Path, Path]
+    ) -> None:
+        """A candidate called "bundled" writes to `personas/bundled/`: the source decides, not the prefix."""
+        from blueprints.templates import _persona_row_location
+
+        app, home, _packaged = home_app
+        with app.app_context():
+            located, root = _persona_row_location("user_upload", "personas/bundled/mine.docx")
+        assert located == home / "personas" / "bundled" / "mine.docx"
+        assert root == home / "personas"
+
+    def test_a_bundled_row_cannot_point_outside_the_shipped_directory(
+        self, home_app: tuple[Any, Path, Path]
+    ) -> None:
+        from blueprints.templates import _persona_row_location
+        from web_infra import _within
+
+        app, _home, packaged = home_app
+        with app.app_context():
+            located, root = _persona_row_location("bundled", "personas/bundled/../../config.py")
+        assert root == packaged
+        assert not _within(located, root)
