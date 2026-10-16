@@ -36,3 +36,18 @@ list and port handling):
 ## Updates
 
 ### 2026-10-02 — filed on `chore/release-v1.1.0` (owner-directed)
+
+### 2026-10-15 — taken by `feat/single-instance-and-quit` (owner pick, with item 147)
+
+**Observed (Windows 11, Python 3.13, Flask 3.1.3, Werkzeug 3.1.8; real `app.py`; one run each):**
+- **A second `python app.py` on a port a first copy already serves does not fail.** In both debug
+  (reloader) and `FLASK_DEBUG=0` it stays running and logs `* Running on http://127.0.0.1:P`.
+- **A plain `http.server` owning the port does not stop sartor from "binding" it either.**
+- Werkzeug's `EADDRINUSE` message and its macOS AirPlay hint **never fired** on this OS.
+  So this item is a defect on Windows, and a pre-bind probe is the only guard there.
+- Under the reloader, a serving child that exits 0 ends the supervisor with exit 0 and leaves no
+  `python.exe` behind.
+
+**Not observed:** which process answered `GET /` in those runs; a race of two simultaneous
+launches (declared as an open limit, see `docs/dev/blast-radius/single-instance-and-quit.md`
+§Deferred). Full table and the consumer enumeration are in that dossier.
