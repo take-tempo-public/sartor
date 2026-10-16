@@ -1,16 +1,17 @@
-<!-- provenance: schema=1 session=19babbc7-54bd-4b7a-890f-6491880aa395 branch=feat/data-root commit=eb5dc12 actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-16 -->
+<!-- provenance: schema=1 session=19babbc7-54bd-4b7a-890f-6491880aa395 branch=feat/data-root commit=e31fd09 actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-16 -->
 
 # Agent handoff — item 145, branch 1 of 3: one data root under `SARTOR_HOME` (`feat/data-root`) → owner's next pick
 
 **Branch to create:** none chosen. The owner picks the next item. Natural follow-ons: item 145's branch 2
-(`feat/launcher`, owner questions listed under "What this branch should build"), the container
-verification this branch owes, or the item-164 instrument. Do not start one unprompted.
+(`feat/launcher`, owner questions listed under "What this branch should build"), the remaining
+container checks, or the item-164 instrument. Do not start one unprompted.
 **Base branch:** `main`
 
 > **This session took item 145 (owner pick, 2026-10-15), cut it into three sequential branches at the
-> owner's direction, and did branch 1. The branch is committed (11 commits plus this handoff's) and the
-> full gate is green on its code. It is NOT pushed or merged: the PR, its checks and the merge are the
-> owner's.**
+> owner's direction, and did branch 1. The branch is committed (14 commits, 15 with this handoff's
+> update) and PR #178 is open. The full gate **passes on a clean checkout of its code and fails in place for
+> three tests**, because another session's worktree sits inside this directory (see "What just landed").
+> It is NOT merged: the merge is the owner's.**
 > - **The change:** `sartor_home.py` (new stdlib-only leaf: `base_dir()` = `SARTOR_HOME` > the repo root
 >   in a checkout > the per-user platform dir; `data_path()`); `config._default_base_dir` is now an alias
 >   of it. Every user-data writer follows it: `analyzer.py` (log), `db/session.py` (the DB),
@@ -34,11 +35,25 @@ verification this branch owes, or the item-164 instrument. Do not start one unpr
 >     202 and **gone in 1.44 s**. The owner's real `logs/llm_calls.jsonl`, `db/resume.sqlite` and
 >     `.api_key` had identical size and mtime before and after; the `python.exe` count was back to its
 >     start value and the port had no listener.
+>   - **The container, built and run locally** (rootful Podman 5.8.3, from a clean `git archive`;
+>     dossier O10–O13): `HEALTHCHECK` healthy after 34–35 s; a fresh named `/data` owned by uid 10001;
+>     data survived remove-and-recreate **and starting a newer image on the same volume**; Chromium
+>     rendered an 8,966-byte PDF as that user; `podman stop` **11.0 s and 11.2 s** with the default
+>     signal against **1.3 s and 1.7 s** with SIGINT (exit 0, instance file released), so the image now
+>     has `STOPSIGNAL SIGINT`; a read-only root filesystem (writable only `/tmp`, a home tmpfs and
+>     `/data`) served every flow tested.
 > - **Defects found late, each written down when found** (the first enumeration searched the join it
 >   expected and missed siblings; see "Recurrences"):
 >   - **The cover-letter preview raised `FileNotFoundError`** under `SARTOR_HOME`: it read the shipped
->     `personas/cover_letter.html` as `PERSONAS_DIR / ...`. This branch's own Dockerfile change would
->     have broken the container's preview. Found by re-reading a grep hit, observed before fixing.
+>     `personas/cover_letter.html` as `PERSONAS_DIR / ...`. Found by re-reading a grep hit, observed
+>     before fixing.
+>   - **The image did not contain `personas/cover_letter.html` at all**, found only by building it.
+>     `.dockerignore`'s `personas/*/` also matches that *file* (Docker strips the trailing slash), so
+>     the container's cover-letter preview and PDF failed; this pre-dates the branch. **I had written,
+>     in the dossier, this handoff's earlier draft and item 0145, that the file was in the image and
+>     that my Dockerfile change would have broken a working preview. That was an untested inference
+>     and false; it is retracted in the dossier (O7, O11).** Fixed with `!personas/cover_letter.html`
+>     and a derived-set test.
 >   - **`preview-edited` answered `404 Template not found` for both document types** after the first
 >     fix, because a `_within(path, PERSONAS_DIR)` recheck refuses the packaged directory. Caused by the
 >     fix itself; found by a systematic pass over every `PERSONAS_DIR`/`BASE_DIR` use and every resolver
@@ -47,18 +62,21 @@ verification this branch owes, or the item-164 instrument. Do not start one unpr
 >     (not by the cite check or the auditor). Fixed, with the page's claim.
 >   - **The full gate failed** on the repo's own C-10 audit: `sartor_home.py` has 8 non-test importers,
 >     so it must be classified. Now **GATED**, kind `helper`.
-> - **Not observed, declared (C-11/C-12):** the container image was **never built or run** (HEALTHCHECK
->   reaching `healthy`, a named `/data` volume taking uid 10001 ownership under rootless Podman, data
->   surviving recreate, `podman stop` time); no real **wheel** was built or run; the template preview
->   route (`preview_application_html`) under `SARTOR_HOME` was read, not run. Hypotheses H2 (the image's
->   recall-index build probably always falls to its `WARN`), H3 (`alembic.ini` not in the wheel) and H4
->   (`personas/cover_letter.html` not in the wheel) are **unobserved** and are branch 2's first
->   instruments.
-> - **The wiki-freshness gate is at 63 of its 75-file block threshold.** The scoped wiki pass on this
+> - **Not observed, declared (C-11/C-12):** **rootless Podman** (the machine was rootful, so volume
+>   ownership under rootless is untested, and `install.md` still says so); the **CI-built GHCR image** and
+>   Docker; the LLM generation path and `sartor --setup` inside the image; no real **wheel** was built or
+>   run; the template-preview route (`preview_application_html`) under `SARTOR_HOME` was read, not run.
+>   **H2 is observed with its mechanism corrected, and not fixed:** the image's recall index is not built
+>   because the base image has no `git` (`FileNotFoundError: 'git'`), not because `.git` is excluded as I
+>   first wrote. H3 (`alembic.ini` not in the wheel) and H4 (`personas/cover_letter.html` not in the
+>   *wheel*; the image has it now) are unobserved and are branch 2's first instruments.
+> - **The wiki-freshness gate is at 64 of its 75-file block threshold.** The scoped wiki pass on this
 >   branch does not advance the checkpoint (`3798e2d18a8a`), and this branch's own diff adds
 >   wiki-relevant files. A checkpoint-advancing pass is owed **before** the next wiki-relevant branch, or
 >   the merge-blocking `scripts/wiki_freshness.py` will trip.
-> - **Gate:** green on the branch's code; the exact result and its limit are under "What just landed".
+> - **Gate:** PASSED in a clean checkout of `e31fd09`; FAILED in the repo directory on the same commit (three
+>   whole-tree tests, caused by another session's linked worktree inside it). Both results, and why, are under
+>   "What just landed".
 
 ---
 
@@ -137,7 +155,9 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `feat/dat
 | `11a397d` | **Fix:** the `preview-edited` containment recheck accepts the bundled directory (O8). |
 | `0318d6e` | Scoped wiki update (4 pages), `analyzer.py`'s error string, a corrected CHANGELOG line. |
 | `eb5dc12` | `sartor_home.py` classified **GATED** in `scripts/enforcement/blast_radius.py` (O9). |
-| (this commit) | This handoff and its `generated` ledger event. Docs only. |
+| `cf6b90b`, `466105d` | The first handoff, and its correction (another project's plans were generalized out of a public file). |
+| `e31fd09` | **Container fixes, found by building and running the image** (O10–O13): `!personas/cover_letter.html` in `.dockerignore`, `STOPSIGNAL SIGINT`, the recall-index claim corrected everywhere, `TestImageShipsItsFiles`. |
+| (this commit) | This handoff's update and its `generated` ledger event. Docs only. |
 
 **Verified, with the evidence:**
 - **Before / after:** see the callout. The probe is `tests/test_data_root.py` (a subprocess, because the
@@ -151,34 +171,41 @@ Once the owner confirms the PR (merge commit; never squash or rebase), `feat/dat
 - **Wiki:** scoped `/wiki-self-update` on four pages. Cite check 0 violations (after 2 mechanical ones);
   auditor **40 supported / 1 drifted / 5 unsupported** (all five in older text, fixed on the owner's
   say-so); my review made 4 more catches including the stale code string. `docs/wiki/log.md` keeps the
-  three signals apart. The checkpoint was **not** advanced; `wiki_freshness` reads 63 of 75.
+  three signals apart. The checkpoint was **not** advanced; `wiki_freshness` reads 64 of 75.
 
 **Gate:**
-- `python -m scripts.gate --result`, run on `eb5dc12`:
-  `gate --result: PASSED on this tree -- exit 0, failed step None, finished 2026-10-16T06:19:46-0700, HEAD eb5dc12`
-- **That result is stale for the tip**, because the result binds to HEAD. This handoff's own commit (docs
-  plus one ledger line) sits on top of it and changes no code or tests. The handoff validation,
-  `work_items check`, `doc_lints` and `wiki_cites` were re-run on the tip; the full gate was not. CI
-  re-runs on the tip.
-- **The first gate run FAILED**, on `0318d6e`: `pytest -m "not ux"` reported `1 failed, 3484 passed, 8
-  skipped`, the failure being the C-10 classification audit for the new module (dossier O9). It was fixed
-  in `eb5dc12` and the gate re-run **in full**; the figures below are the second run.
-- **What it ran** (`GATE_START 06:05:48`, `GATE_DONE exit=0 06:19:46`, the wrapper's own markers):
-  **13 min 58 s** for the whole gate. Preflights (hooks path; 1.69 GB free against the 1.00 GB floor),
+- **Passed in a clean checkout, failed in place.** `python -m scripts.gate --result`, run in a **clean
+  detached checkout of `e31fd09`** outside the repo directory:
+  `gate --result: PASSED on this tree -- exit 0, failed step None, finished 2026-10-16T07:29:06-0700, HEAD e31fd09`
+- **In the repo directory the same gate FAILED on the same commit, and `--result` there says so:**
+  `gate --result: FAILED -- last run: exit 1, failed step 'pytest -m "not ux" -n auto', finished 2026-10-16T07:07:11-0700, HEAD e31fd09`.
+  The three failing tests scan the whole tree: `tests/test_egress_allowlist.py::test_static_egress_allowlist`,
+  `tests/test_docstring_coverage_gate.py::test_docstring_coverage_meets_floor` and
+  `tests/test_ux_toast_wait_gate.py::test_toast_sites_equal_the_allowlist`. **Another session's locked linked
+  worktree, `.claude/worktrees/dependabot-triage-item`, a full copy of the repo with uncommitted work in it,
+  now sits inside the scanned tree.** Evidence: all three failure texts list that worktree's paths; in the
+  repo's own 64 files **0 of 592** docstrings are missing (404 worktree files carry the 3,008 misses); the
+  other 3,484 tests, `ruff`, `ruff format` and `mypy` passed. I did not remove or move that worktree.
+  **Until it is gone, a plain `python -m scripts.gate` in this directory fails those three tests**; expect it.
+- **Earlier failure:** the first gate run, on `0318d6e`, failed the C-10 classification audit (dossier O9);
+  fixed in `eb5dc12`, and a run on `eb5dc12` in place passed (3485 passed, 189 UX passed, 1 xfailed, 1 xpassed).
+- **That result is stale for the tip**, because the result binds to HEAD. This handoff's own commit(s)
+  (docs plus ledger lines) sit on top of it and change no code or tests. The handoff validation,
+  `work_items check`, `doc_lints` and `wiki_cites` were re-run on the tip; the full gate was not. CI re-runs
+  on the tip, on a clean checkout, where the worktree does not exist.
+- **What the clean run ran** (`GATE_CLEAN_START 07:09:28`, `GATE_CLEAN_DONE exit=0 07:29:06`, the wrapper's
+  own markers): **19 min 38 s**. Preflights (hooks path `.githooks`; 4.35 GB free against the 1.00 GB floor),
   `ruff check` clean, `ruff format --check` (420 files) and `mypy .` (436 files) clean;
-  `pytest -m "not ux" -n auto` **3485 passed, 8 skipped** (4 m 42 s); `pytest -m ux` **189 passed, 1
-  xfailed, 1 xpassed** (9 m 02 s); `work_items check` OK (170 files). **0 `RERUN`, 0 `FAILED`, no
-  rerun-rate alarm.** The stall line read `[ux] networkidle pre-drain: 2 stall(s) in 115 reach(es), 26.9 s
-  waiting`: the two deliberate probes and the same 115 reaches as last session, so 0 unintended (item 30:
-  unchanged, still `watching`).
-- **The xfail/xpass split moved, and I did not investigate it.** Last session recorded 2 xpassed; this run
-  `test_wizard_render_smooth_scroll_creeps_explicit_baseline` XFAILed and
-  `test_wizard_render_firing_after_baseline_creeps_it` XPASSed. Both are the deliberate non-strict xfails
-  in `tests/ux/regression/test_20260708_busy_states_and_chip.py`, whose own rationale says both outcomes
-  are legal ("its xfail/xpass status is the live signal"). This branch does not touch that file or the
-  wizard rail.
-- **Wall-clock note:** 14 minutes here against 22 minutes last session. Machine load was not captured
-  in either run, so do not read either number as this branch's cost.
+  `pytest -m "not ux" -n auto` **3487 passed, 8 skipped** (4 m 08 s; +2 over the earlier run, the new
+  `TestImageShipsItsFiles` pair); `pytest -m ux` **189 passed, 2 xpassed** (11 m 46 s); `work_items check`
+  OK (170 files). **0 `RERUN`, 0 `FAILED`, no rerun-rate alarm.** The stall line read `[ux] networkidle
+  pre-drain: 2 stall(s) in 115 reach(es), 32.1 s waiting`: the two deliberate probes and the same 115
+  reaches as before, so 0 unintended (item 30: unchanged, still `watching`).
+- **The two non-strict xfails moved between runs and I did not investigate:** both XPASSed here; the run on
+  `eb5dc12` had one XFAIL and one XPASS (`tests/ux/regression/test_20260708_busy_states_and_chip.py`, whose own
+  rationale makes both outcomes legal). This branch does not touch that file or the wizard rail.
+- **Wall-clock note:** 14 to 20 minutes across this session's passing runs, 22 last session. Machine load was
+  not captured, so do not read any of those numbers as this branch's cost.
 - **The merge rule:** `python -m scripts.ci_wait <n>` must exit 0. Exit 3 means stop and look.
 
 ---
@@ -295,20 +322,29 @@ Carried from earlier handoffs, **not re-verified this session**:
   bullet or paragraph (`docs/wiki/log.md`, the 2026-10-15 entries).
 
 New this session, declared, not filed (**observed unless marked**):
-- **The container image was never built or run.** Open: `HEALTHCHECK` reaching `healthy`; whether a
-  named `/data` volume takes uid 10001 ownership under **rootless** Podman; data surviving `rm` and
-  recreate; `podman stop` time with and without `STOPSIGNAL SIGINT` (Python as PID 1 may ignore SIGTERM:
-  a prediction); then `/app` root-owned so a missed writer fails loudly. A build installs Chromium
-  through the owner's Podman machine under memory pressure: **needs the owner's go-ahead.** Detail in
-  item 0145's `## Updates` and the dossier's `## Deferred`. **Before a local build run
-  `git ls-files --eol Dockerfile`**: this machine's working copy is CRLF (`core.autocrlf=true`), the
-  committed blob is LF, and a CR after a `\` continuation breaks a `RUN`.
-- **H2, H3, H4 are hypotheses read from code, none observed.** H2: `.dockerignore:6` drops `.git`, so
-  `scripts/build_vector_index.py` `_git()` raises `SystemExit` and the image's index build probably
-  always falls to its `WARN` (also affects a wheel's `--setup`; `install.md` now says the index claim is
-  unchecked). H3: `alembic.ini` is not packaged, and `db/session.py` loads it. H4:
-  `personas/cover_letter.html` is outside every package (`pyproject.toml` ships only `personas.bundled`),
-  so a wheel does not have it; branch 1 only made the routes read it from the code root.
+- **The container was built and run locally, on a rootful machine only.** Unrun: **rootless** Podman
+  (ownership of a named volume and of a bind mount), the CI-built GHCR image, Docker, the LLM generation
+  path and `sartor --setup` inside the image. `/app` was **not** made root-owned: a read-only rootfs served
+  every flow tested, but `install.md` used to recommend `sartor --setup` in the container (it writes under
+  `/app/db`) and generation was not run there. **Before any local build run `git ls-files --eol
+  Dockerfile`**: this machine's working copy is CRLF, so build from a clean `git archive` as I did, with
+  `--format docker`. Everything I created was named `sartor-b1-verify*` and removed, plus the base layer my
+  first build pulled; the owner's own containers, volumes and images were untouched. **`podman machine ssh`
+  run from the repo drops a file named `NUL` there** (mine was deleted); run it from a scratch directory.
+- **H2 is observed (mechanism corrected); H3 and H4 are hypotheses read from code.** H2:
+  `scripts/build_vector_index.py:57` `_git` raises `FileNotFoundError: 'git'` because the base image has no
+  git, and there is no `.git` in the context either, so installing git alone would not fix it;
+  `/app/db/vector_index` holds `model/` only. `install.md`, the CHANGELOG and the Dockerfile header no
+  longer say the index is baked. A wheel's `--setup` runs the same step (not run). H3: `alembic.ini` is
+  not packaged, and `db/session.py` loads it. H4: `personas/cover_letter.html` is outside every package
+  (`pyproject.toml` ships only `personas.bundled`), so a **wheel** does not have it; the image does now.
+- **Another session shares this clone.** At 06:55 a linked worktree
+  `.claude/worktrees/dependabot-triage-item` (branch `chore/dependabot-triage-item`, locked, at `f01d29e`)
+  appeared and `core.hooksPath` became the absolute `C:\Dev\sartor\.githooks`; the gate's hooksPath
+  preflight refused. I reset it to `.githooks` on the owner's instruction (that session was stopped and
+  waiting). **I did not establish what wrote the absolute path**; seven seconds after the worktree points
+  at that session's setup. The setting is per clone, not per worktree, so expect it to recur. `ListAgents`
+  showed two other idle sessions (`sartor-e4`, `resume-epic-279-design-pass`); I messaged neither.
 - **`platformdirs` has no runtime importer now** (grepped; `config.py` and `sartor_home.py` mention it in
   docstrings only). It is still in `[project.dependencies]` and the parity test needs it, so it moves to
   the dev extra when branch 2 reorganises the dependencies.
@@ -339,12 +375,13 @@ New this session, declared, not filed (**observed unless marked**):
 1. **An enumeration that searched the one join I expected** (C-10). A recurrence of the
    `compose-unawaited-reloads` class (`be48fec` fixed 5 sites, a later grep found 9 more): here
    `BASE_DIR / row.path` was searched, and `PERSONAS_DIR / "cover_letter.html"` (two sites), a
-   `_within` recheck that **my first fix broke**, and an error string turned up afterwards, one at a
-   time. Recognized as the same class when the second site appeared.
+   `_within` recheck that **my first fix broke**, an error string, and a `.dockerignore` rule that hid a
+   shipped file from the image turned up afterwards, one at a time. Recognized as the same class when the second site appeared.
    - **Mechanism authored (partial):** `TestNoUnclassifiedFileAnchoredPath` in `tests/test_data_root.py`
-     fails closed on an unclassified runtime file that anchors a path on itself. **It would not have
-     caught any of the four**: none contained `Path(__file__)`. Each late find has its own red-before
-     test (`TestBundledPersonaUnderSartorHome`).
+     fails closed on an unclassified runtime file that anchors a path on itself, and `TestImageShipsItsFiles`
+     fails closed if `.dockerignore` drops a tracked file directly under `personas/` (red on the pre-fix
+     file; that directory only). **The first would not have caught any of the five**: none contained
+     `Path(__file__)`. Each late find has its own red-before test (`TestBundledPersonaUnderSartorHome`).
    - **For the class itself: none.** "A shipped file looked up under the data root" has no general gate.
      A mechanism would be a whole-suite run under a redirected `SARTOR_HOME`; not built. **Unenforced**,
      stated to the owner here. Memory: `feedback-enumerate-by-class-and-recheck-downstream-guards`.
@@ -353,10 +390,15 @@ New this session, declared, not filed (**observed unless marked**):
    failed on `test_widely_consumed_modules_are_all_classified`.
    - **The gate failed closed as designed** and named the test. **No new mechanism authored**; stated
      plainly: the lapse is running a subset in place of the definition, and nothing prevents that.
-3. **An unsourced assertion written into a doc** (C-12; three instances this session). My CHANGELOG said
+3. **An unsourced assertion written into a doc** (C-12; four instances this session). I wrote, in the
+   dossier, an earlier draft of this handoff and item 0145, that `personas/cover_letter.html` was in the
+   image because `.dockerignore` "only excludes `personas/*/`"; building the image showed it was not (the
+   pattern also matches the file). It was committed in three places before the build and is retracted in
+   all of them. My CHANGELOG said
    `sartor --doctor` shows where the key is looked up (it does not); a scribe called `platformdirs` "a
    test pin" (a purpose with no source); I wrote "the one LLM route outside that set" (a universal I had
-   not shown). All three were caught by the wiki review step or by re-reading, none by a gate.
+   not shown). The first was caught by building the image and the rest by the wiki review step or re-reading; none by a
+   gate.
    - **No mechanism possible** for prose; the defence is the review step and checking each behavioural
      claim against code before writing it. **Unenforced.**
 4. **The interrogative witness paused edits after turns the owner did not type** (item 164's class). It
@@ -371,7 +413,15 @@ New this session, declared, not filed (**observed unless marked**):
      instrument first.**
    - **No mechanism authored on this branch**, stated plainly. It needs its own branch and is the
      owner's pick.
-5. **Wiki scribes made mechanical cite errors** (E1 bare line cites, E4 a removed still-valid cite). The
+5. **A concurrent session changed shared git config** (first sighting for me; related to the
+   concurrent-agents worktree memory). The gate's hooksPath preflight (item 150) **failed closed before
+   running anything**: an existing mechanism that worked. No new mechanism authored. Not established:
+   what wrote the absolute path, and whether it will again (see the "Another session" bullet).
+6. **Side-effect files I created while verifying**, both found and removed (first sightings): a file named
+   `NUL` in the repo root from `podman machine ssh` (found by `git status`), and an empty `/tmp/__noop`
+   from a stray `cat` in one of my own commands. No mechanism; recorded in memory
+   (`reference-windows-console-unicode-print-crash`). **Unenforced.**
+7. **Wiki scribes made mechanical cite errors** (E1 bare line cites, E4 a removed still-valid cite). The
    deterministic check (`scripts/wiki_cites.py`) existed and **caught both before the auditor spent
    anything**: a mechanism that worked, not a new one.
 
@@ -391,13 +441,16 @@ a loopback shutdown POST and a health read), the PEP 668 fallback for `pip insta
 `sartor` with no runtime runs `up`, and whether `sartor` is free on PyPI. Its end-to-end still depends on
 item 3 (nothing is published).
 
-If the owner picks the **container verification**: it needs their go-ahead to build; the checklist is
-under "New this session" and in item 0145. Check the Dockerfile's line endings first.
+If the owner picks the **remaining container checks**: rootless Podman, the CI-built image, Docker,
+generation and `--setup` in the image. The method is in dossier O10–O13: build from a clean `git
+archive` with `--format docker`, name everything uniquely, clean up only those names. If the owner
+picks the **recall-index fix (H2)**: it needs a no-git path in `scripts/build_vector_index.py` (or git
+plus a context with `.git`) and the `Dockerfile`; instrument first.
 
 If the owner picks **reopening item 164**: start with the instrument, not a fix; the evaluation is in
 `docs/dev/handoffs/single-instance-and-quit.md` "Recurrences" #5 and this handoff's #4.
 
-If the owner asks what is cheapest: a **checkpoint-advancing wiki pass** (the freshness gate is at 63 of
+If the owner asks what is cheapest: a **checkpoint-advancing wiki pass** (the freshness gate is at 64 of
 75), and the *(owner)* items, which need a decision before any branch.
 
 ---
