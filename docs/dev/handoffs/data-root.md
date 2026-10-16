@@ -327,9 +327,9 @@ New this session, declared, not filed (**observed unless marked**):
   said it did; it was wrong and is corrected.
 - **A doc that paraphrases a code string has no check.** `analyzer.py:_NO_CREDENTIAL_DETAIL` was updated
   only because the wiki review step compared a page to it. **Unenforced.**
-- **Reported by subagents, not verified by me (leads):** spolia's item 199 is deferred, container-only,
-  renamed `isidium-research`, and has no launcher code or sharing plan with Sartor (an Explore agent's
-  read of `C:\Dev\spolia`); the status of items 3, 99 and 100 (the same agent's read); the Plan agent's
+- **Reported by subagents, not verified by me (leads):** that the sibling project item 0145 refers to has
+  no launcher code Sartor could share (an Explore agent's read of that project, deliberately not
+  described further here); the status of items 3, 99 and 100 (the same agent's read); the Plan agent's
   questions for branch 2 (PEP 668, bare `sartor` behaviour, a possible C-2 amendment).
 
 ---
