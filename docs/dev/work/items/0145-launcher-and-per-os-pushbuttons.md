@@ -47,3 +47,44 @@ owner's fresh-clone e2e test exercises it.
 ## Updates
 
 ### 2026-10-02 — filed on `chore/release-v1.1.0` (owner-directed)
+
+### 2026-10-16 — taken up (owner pick); cut into three branches
+
+Owner decisions, chat, 2026-10-15/16:
+
+- **Keep 145 whole, in three sequential branches:**
+  1. `feat/data-root` — every user-data writer honours `SARTOR_HOME`, plus the Dockerfile
+     `SARTOR_HOME`/`VOLUME`/`HEALTHCHECK` and `install.md`'s single mount. Dossier:
+     `docs/dev/blast-radius/data-root.md`.
+  2. `feat/launcher` — the launcher and both backends.
+  3. `feat/pushbuttons` — the per-OS wrappers.
+- **Shape: one distribution, `sartor`, with a stdlib-only core.** The verbs import only the stdlib;
+  the server is imported lazily; the heavy dependencies move to a `sartor[app]` extra that
+  `install --native` puts in a managed venv. No second distribution name.
+- **Why:** the launcher serves the two *published* paths (wheel, GHCR container), not the source
+  clone. Nothing is published yet (item 3), so the end-to-end test waits on it; branch 1 does not.
+
+Why branch 1 comes first: item 2's `-v sartor-data:/data -e SARTOR_HOME=/data` loses the SQLite DB,
+the LLM log, `.api_key` and the onboarding CLI's paths today, because only `config._default_base_dir()`
+reads `SARTOR_HOME` (enumeration in the dossier above).
+
+**Branch 2 outline (not started; written down so it survives this session):**
+
+- A stdlib-only `sartor_cli/` package: dispatch, state file, a `Runner` protocol for subprocesses,
+  a lazy `serve`, a `doctor` reusing stdlib `preflight` and `instance`.
+- Native backend: a managed venv with `sartor[app]==V`. Container backend: Podman, then Docker;
+  `create -p 127.0.0.1:P:5000 -v sartor-data:/data -e SARTOR_HOME=/data`.
+- Dependencies move to the `[app]` extra, with `dev` self-referencing it; the entry point becomes
+  `sartor_cli.main:main`; bare `sartor` keeps serving in a clone. An AST stdlib-only boundary test;
+  a two-phase `release.yml` smoke.
+- **First commit is an instrument** (C-7): does a built wheel ship `alembic.ini` (H3) and
+  `personas/cover_letter.html` (H4)? Both are hypotheses from reading code.
+- **Owner questions at its start:** the C-2 wording (charter.md:98-100 names "the single-instance
+  probe"; the launcher adds a loopback shutdown POST and a health read); the PEP 668 fallback for
+  `pip install --user`; whether bare `sartor` with no runtime runs `up`; H2 (the image's index build
+  may always fall to its WARN branch); separate native/container data; whether `sartor` is free on PyPI.
+
+**Branch 3 outline:** `packaging/launchers/{windows/sartor.cmd, macos/sartor.command,
+linux/sartor.sh + sartor.desktop}`, each three steps (find Python 3.11+, `pip install --user sartor`
+only if `import sartor_cli` fails, then `python -m sartor_cli up`); `.gitattributes` EOL rules and the
+exec bit in the index; static plus stub-Python tests; the Gatekeeper and Mark-of-the-Web caveats documented.
