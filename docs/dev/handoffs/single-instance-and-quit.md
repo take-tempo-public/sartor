@@ -314,13 +314,34 @@ Carried from earlier handoffs, **not re-verified this session**:
    five reach-throughs in my own test; I had type-checked single files). The gate **failed
    closed as designed** and named the file; the lapse was running a subset in place of the
    definition ("`gate.py` is the single definition"). No new mechanism needed or authored.
-5. **The interrogative witness paused the first `Edit`/`Write` after each subagent hand-back**
-   (about four times: wiki page edits, the memory edits, a route-surface edit). Item 164 (closed
-   2026-10-14) says notifications no longer re-arm it; these arrived as `Another Claude session
-   sent a message` hand-backs, a different shape. **Observed, not diagnosed:** I did not look at
-   the hook's classifier. Each pause cleared on a re-run, as designed, with no bypass.
-   - **No mechanism authored.** Whether this reopens item 164 (which would require a guardrail
-     under C-11) is the owner's call.
+5. **The interrogative witness paused the first `Edit`/`Write` after turns the owner did not
+   type** (about four to six times: wiki page edits, the memory edits, a route-surface edit, a
+   scratch script). Each pause cleared on a re-run, as designed, with no bypass.
+   - **Observed.** Item 164 (closed 2026-10-14) added a prefix test, `_NON_HUMAN_PROMPT_RE =
+     \s*<task-notification>` (`scripts/enforcement/guards/interrogative_witness.py:77`), and the
+     batch window; anything else still arms, which the code's own comment says. This session's
+     state file reads `prompt_seq 18, armed_seq 10` against **4 prompts the owner typed**. The
+     transcript has exactly **6 other user-role turns** that do not begin `<task-notification>`:
+     2 `origin=peer` hand-backs (text begins `Another Claude session sent a message:`), 3
+     harness-injected skill bodies (`isMeta`), and one `[Request interrupted by user]`. 4 + 6 = 10.
+     `<task-notification>` turns were not seen to arm, and the batch window refused siblings as
+     designed, so 164's *verified* scope is not refuted.
+   - **Not established.** Which of the six armed which pause: the hook writes no per-pause
+     receipt and stores no prompt text, and the payload's `prompt` for a peer turn was never
+     observed (164's O6 found no `origin` field in the payload). **An earlier version of this
+     handoff said the pauses followed hand-backs. Skill bodies are at least as likely (3 against
+     2) and have no stable prefix, so a peer-prefix patch alone would miss them.** Five of the 18
+     events are also unaccounted for.
+   - **Evaluation (owner-requested): reopen 164, instrument first.** Its title names
+     "hand-backs" but its `verified_by` covers only `<task-notification>`, and its resolution
+     names unseen shapes as a residual that this session has now seen. The first commit on that
+     branch should be the instrument (C-7): per `UserPromptSubmit`, log the payload's keys, the
+     first ~60 characters of `prompt`, and whether the transcript's last entry exposes `origin`
+     at hook time (164's O7 tested that only at `PreToolUse`). Choose the discriminator after
+     that, not before (arming only on non-`meta` turns is one candidate). Reopening needs
+     `guardrail_deferred` or a `guardrail` under C-11.
+   - **No mechanism authored on this branch**, stated plainly. The reopen is **not done here**: it
+     needs its own branch, and it is the owner's pick.
 6. **The harness reaper killed a background gate run** (known class). Listed processes
    afterwards; no orphans. No repo mechanism possible; the owner asked for the rerun explicitly
    and it was not restarted on my initiative.
@@ -342,6 +363,10 @@ shutdown`; 501 unless started by `sartor`), and `--idle-timeout`. Start from the
 "For item 145" list above, and re-verify each line before depending on it. The probe module is
 `instance.py`; a launcher that talks to a running server needs the same C-2 loopback clarification
 that is now in the charter. The end-to-end still depends on item 3 (publish).
+
+If the owner picks **reopening item 164** (the interrogative witness arming on turns the owner did
+not type): the evaluation is in "Recurrences" #5. Start with the instrument, not a fix; do not
+patch a peer prefix before the payload's `prompt` for those turns has been observed.
 
 If the owner asks what is cheapest to unblock: the *(owner)* items need a decision before any
 branch. The lane doc's template path (above) is a one-line fix that no one has been asked to take.
