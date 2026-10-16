@@ -87,11 +87,11 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 | 8 | `onboarding/corpus_import.py:57-60,557` | **update** → `data_path(...)` for the three dirs and the key fallback (`preflight.api_key_path()`) | CLI that writes into the same configs/output/resumes the app reads. Constants stay module-level (`tests/test_corpus_import.py:45,342`). |
 | 9 | `evals/annotation.py:155`, `evals/bootstrap.py:81` `ALLOWED_ROOT` | **update** → `data_path("evals","fixtures","real")` | Must equal `Config.annotation_root` (`config.py:167`), which follows `SARTOR_HOME`; otherwise the localhost annotation routes' containment check rejects the real directory. Identical in a clone. |
 | 10 | `evals/runner.py:94,156` | **update** log path and key fallback | A dev who sets `SARTOR_HOME` would otherwise read a log `analyzer` no longer writes (silent zero-cost telemetry). One-line each. |
-| 11 | `blueprints/templates.py:151,770,796,857,922` | **conditional** — change only if the instrument observes H1 | See `## Inferred`. A fix is one resolver, `personas/bundled/*` → `BUNDLED_PERSONAS_DIR`, else `BASE_DIR / rel`. |
+| 11 | `blueprints/templates.py:151,770,796,857,922` | **update** — H1 observed (O2) | One resolver, `personas/bundled/*` → `BUNDLED_PERSONAS_DIR`, else `BASE_DIR / rel`; containment checked against the root that applies. Red-before test is `tests/test_data_root.py`. |
 | 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`. |
 | 13 | `docs/user/install.md:137-142,176-193` | **update** | Collapse five mounts to one; delete the "`/app/db` is a package" trap, which no longer applies. |
 | 14 | `pyproject.toml` `py-modules`, mypy roster, `scripts/wiki_relevance.py` | **update** | Register `sartor_home`. |
-| 15 | `tests/test_packaging.py:169,182` | **no change expected** | Patches `config_module._is_dev_checkout`; the alias must still be the name `_default_base_dir()` consults. Verified by running it. |
+| 15 | `tests/test_packaging.py:169,182` | **update** (corrected after reading it) | `:169` patches `config_module._is_dev_checkout`, which `_default_base_dir()` stops consulting once it delegates; patch `sartor_home.is_dev_checkout` instead. `:153,161,174` keep `config_module._PROJECT_ROOT`, so that name stays. `:123` is the `py-modules` roster pin (verified): `sartor_home` must be registered. |
 
 ---
 
@@ -117,15 +117,63 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 
 *Hypotheses from reading code. None is established until the instrument commit runs.*
 
-- **H1.** With `SARTOR_HOME` set (or any wheel install), `Config.bundled_personas_dir` resolves to the
-  packaged directory, but `blueprints/templates.py:151` joins the DB row's `personas/bundled/x.docx` onto
-  `BASE_DIR`, a directory that has no `personas/bundled/`. Expected: a bundled template resolves to `None`.
+- **H1 — promoted to Observed (O2/O3 below).** With `SARTOR_HOME` set (or any wheel install),
+  `Config.bundled_personas_dir` resolves to the packaged directory, but `blueprints/templates.py:151`
+  joins the DB row's `personas/bundled/x.docx` onto `BASE_DIR`, a directory that has no
+  `personas/bundled/`.
 - **H2.** `.dockerignore:6` excludes `.git`, and `scripts/build_vector_index.py:55-67` `_git()` raises
   `SystemExit` on a git failure, so the Dockerfile's best-effort index build falls through to its WARN branch.
 
 ## Observed
 
-*(empty until the instrument commit; filled in the same turn it runs — C-8.)*
+Instrument: `tests/test_data_root.py`, run 2026-10-16 on `feat/data-root` with `--runxfail` so the
+failures print. One run each, Windows 11, Python 3.13.14. The committed form is `2 xfailed`.
+
+**O1 — the path probe** (`test_every_user_data_writer_honours_sartor_home`: a fresh interpreter,
+`SARTOR_HOME=<tmp>` set before import, `.api_key` placed in `<tmp>`). 12 of 13 sites ignore it:
+
+```text
+analyzer.LOG_PATH: C:\Dev\sartor\logs\llm_calls.jsonl
+db.session.DEFAULT_DB_PATH: C:\Dev\sartor\db\resume.sqlite
+preflight.api_key_path(): C:\Dev\sartor\.api_key
+web_infra.clients reads the key from SARTOR_HOME: False
+onboarding.corpus_import.CONFIGS_DIR: C:\Dev\sartor\configs
+onboarding.corpus_import.OUTPUT_DIR: C:\Dev\sartor\output
+onboarding.corpus_import.RESUMES_DIR: C:\Dev\sartor\resumes
+onboarding.corpus_import reads the key from SARTOR_HOME: False
+evals.annotation.ALLOWED_ROOT: C:\Dev\sartor\evals\fixtures\real
+evals.bootstrap.ALLOWED_ROOT: C:\Dev\sartor\evals\fixtures\real
+evals.runner.LLM_LOG_PATH: C:\Dev\sartor\logs\llm_calls.jsonl
+dashboard reads the log analyzer writes: False
+```
+
+The one site that already honoured it is `Config().annotation_root`. The last line is the
+read/write split the enumeration predicted: `dashboard/routes.py` follows `SARTOR_HOME` while
+`analyzer.py` writes beside the code, so under `SARTOR_HOME` the dashboard reads a file nothing writes.
+
+**O2 — H1 is real** (`test_a_bundled_template_resolves_when_sartor_home_redirects_the_base_dir`:
+in-process, a copy of the migrated template DB, `SARTOR_HOME=<tmp>`, `Config()` default base dir,
+packaged `classic.docx` present, `<tmp>/personas/bundled` absent). The resolver returned `None` and
+the app logged its own warning:
+
+```text
+WARNING  blueprints.templates:templates.py:153 Persona template id=1 has invalid path personas/bundled/classic.docx
+```
+
+Controls held: `Config().base_dir == <tmp>`, `bundled_personas_dir` was the packaged directory and
+`classic.docx` existed there. So the failure is the `BASE_DIR / row.path` join at
+`blueprints/templates.py:151`, not a missing shipped file. This promotes H1 from Inferred.
+
+**O3 — H1 is not an edge case.** `Config.bundled_personas_dir` takes the packaged-directory branch
+whenever `base_dir == _default_base_dir()` (`config.py:206`), which is exactly the `SARTOR_HOME` and
+installed-wheel case. The same branch makes `BUNDLED_PERSONAS_DIR` correct while `BASE_DIR` stays wrong.
+
+**Not observed:** H2. No image was built.
+
+**Row 15 correction (found while reading `tests/test_packaging.py:163-172`):** that test
+monkeypatches `config_module._is_dev_checkout` and expects `_default_base_dir()` to honour the
+patch. Once `_default_base_dir` delegates to `sartor_home`, the patch has no effect. Row 15 said "no
+change expected"; that was wrong. The test must patch `sartor_home.is_dev_checkout` instead.
 
 ---
 
