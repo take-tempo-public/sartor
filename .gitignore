@@ -1,5 +1,9 @@
 # ---- Secrets ----
 .api_key
+# Single-instance marker (items 146/147): written under SARTOR_HOME while a copy runs;
+# in a dev checkout that is the repo root.
+sartor-instance.json
+sartor-instance.json.*.tmp
 .env
 .env.*
 *.key

@@ -163,6 +163,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "docx_to_persona_html.py",
         "generator.py",
         "hardening.py",
+        "instance.py",
         "json_resume.py",
         "parser.py",
         "pdf_render.py",

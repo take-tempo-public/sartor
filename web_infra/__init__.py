@@ -24,7 +24,7 @@ from web_infra.config_io import _load_config, _save_config
 from web_infra.http import _error_detail_payload, _sse
 from web_infra.openapi import spec
 from web_infra.provisioning import _get_or_provision_candidate
-from web_infra.request_gates import _is_localhost_request
+from web_infra.request_gates import _is_localhost_request, _is_same_origin_request
 from web_infra.security import (
     PathTraversalError,
     _safe_username,
@@ -38,6 +38,7 @@ __all__ = [
     "_get_client",
     "_get_or_provision_candidate",
     "_is_localhost_request",
+    "_is_same_origin_request",
     "_load_config",
     "_safe_username",
     "_save_config",

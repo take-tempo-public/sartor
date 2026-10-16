@@ -26,7 +26,7 @@ Not gated, but changed (listed so each has a decision):
 - `instance.py` — **new**, top-level, stdlib only. The only module that opens a socket (loopback).
 - `blueprints/lifecycle.py` — **new**: `GET /healthz`, `POST /api/shutdown`, `POST /api/heartbeat`,
   and a `before_app_request` activity touch. `blueprints/__init__.py` exports it.
-- `web_infra/request_gates.py` — one new function, `is_same_origin_request`; re-exported from
+- `web_infra/request_gates.py` — one new function, `_is_same_origin_request`; re-exported from
   `web_infra/__init__.py` (an acknowledged-not-gated re-export shim, `blast_radius.py:206`).
 - `web_infra/openapi.py:60` — `_app_version` becomes the public `app_version`.
 - `blueprints/users.py:95` — one new template variable for `render_template("index.html", …)`.
@@ -69,6 +69,47 @@ What this settles, and what it does not:
   design does not close this; it is declared under Deferred.
 - The reloader supervisor exiting 0 when its child exits 0 is observed (C), which is the premise
   `request_shutdown` relies on.
+
+### Measured: three ways to ask "is this port taken?" (same machine; scratchpad `measure_probe.py`)
+
+| Method | Result |
+|---|---|
+| `http.client` GET `/healthz` on a **free** port | `ConnectionRefusedError` after **2.043 s** median (5 runs: 2.037–2.058 s). Windows retries a refused loopback connect. |
+| exclusive bind (`SO_EXCLUSIVEADDRUSE`) on a **free** port | succeeds in **0.3 ms** |
+| exclusive bind on a listener built the way `http.server`/Werkzeug builds one (`allow_reuse_address=1`) | refused, `WinError 10048`, **0.1 ms** |
+| plain `SO_REUSEADDR` bind on that same listener | **succeeds** — the silent double-bind of A1/A2/B reproduced at the socket level |
+| `http.client` GET `/healthz` against a live listener (classifying the owner) | **24.5 ms** |
+
+**Consequence for the design (supersedes the plan's "probe by connecting first"):** a connect-first
+probe would add ~2 s to every normal launch, because the common case is a free port. So `probe`
+binds exclusively first. A successful bind means `FREE` with no connection at all. Only a *failed*
+bind is followed by a `GET /healthz` to classify the owner as `SARTOR` or `FOREIGN`, and that
+connect succeeds, so it costs ~25 ms. Measured: one run per row, not a rate.
+
+Not measured: macOS or Linux (there a plain bind already fails on a listening port, so the bind
+test is correct there but its timing is unmeasured here).
+
+### Observed after the build (real `app.py`, scratchpad `e2e_launch.py`, same machine; one run per mode)
+
+| Check | Default (reloader) | `FLASK_DEBUG=0` |
+|---|---|---|
+| second `python app.py --no-browser --port P` | **exit 0**, prints `sartor. is already running — http://localhost:P`; first copy still alive | **exit 0**, same message; first copy still alive |
+| wall-clock of that second launch | 2.53 s | 1.86 s |
+| `GET /healthz` | 200, `pid` 29000 (the serving child), `instance_id` matches the file | 200, `pid` 5608 |
+| instance file `pid` | 13188 (the supervisor — **differs from `/healthz`**, as designed) | 5608 |
+| `POST /api/shutdown` with no action header / `Sec-Fetch-Site: cross-site` | 403 / 403; server still up | 403 / 403; server still up |
+| `POST /api/shutdown` same-origin with the action header | 202 `{"status":"stopping"}`; **process exit 0 after 0.49 s** | 202; **exit 0 after 0.33 s** |
+| after Quit | instance file gone; port closed | instance file gone; port closed |
+
+And with a plain `http.server` owning the port: `python app.py` **exit 1**, `! Port P is in use by
+another program, so sartor. did not start. … sartor --port P+1`, **no instance file written**.
+
+All processes started were killed; the only `python.exe` left was the unrelated isidium MCP server
+(pid 28852). `git status` showed no `sartor-instance.json` (it is in `.gitignore`).
+
+Not separated: how much of the 1.9–2.5 s second launch is interpreter and import time (`import app`
+pulls the whole app) versus the probe, which the measured table above puts at tens of milliseconds
+for an owned port.
 
 ### `ui_pages/selectors.py` importers
 
@@ -158,7 +199,7 @@ tests/test_mypy_strict_roster_gate.py  (new top-level modules must be on the str
 | 6 | `tests/test_cli_setup.py:28,44`, `tests/test_setup_api_key.py:275,281,290` | **no change** | `--setup` and `--doctor` return before the probe by design (the probe sits after both). Asserted by a test, not assumed. |
 | 7 | `pyproject.toml:148`, `Dockerfile:62` | **no change** | Same `main`; the container's `0.0.0.0` bind is probed on `127.0.0.1`, which a wildcard bind answers. |
 | 8 | `web_infra/openapi.py:60,77` | **update** | Promote to `app_version()`; the single call site follows. |
-| 9 | `web_infra/__init__.py:27,40` | **update** | Re-export `is_same_origin_request`. 15 importers of the shim see an added name only. |
+| 9 | `web_infra/__init__.py:27,40` | **update** | Re-export `_is_same_origin_request`. 15 importers of the shim see an added name only. |
 | 10 | `app.py:47-76` `register_blueprints`, `blueprints/__init__.py` | **update** | Mount and export `lifecycle_bp`. No test asserts the blueprint set (grep above). |
 | 11 | `blueprints/users.py:95` | **update** | One new template variable; `index.html` reads it under `{% if %}`, so a missing value renders as before. |
 | 12 | `scripts/generate_openapi_spec.py` | **no change** | Strict mode excludes undecorated routes; verified by reading the generator, and re-run at close-out. |
@@ -168,6 +209,7 @@ tests/test_mypy_strict_roster_gate.py  (new top-level modules must be on the str
 | 16 | `docs/user/install.md` (`:641-645` "Port 5000 already in use", flags list) | **update** | The behaviour the section describes changes. Verify every label against `templates/index.html`. |
 | 17 | `.gitignore` | **update** | `sartor-instance.json`: in a dev checkout `base_dir` is the repo root. |
 | 18 | `pyproject.toml:156-173`, `:437-472` | **update** | `instance` into `py-modules` and the strict roster. |
+| 19 | `scripts/wiki_relevance.py:155` `KNOWN_RELEVANT_TOP_LEVEL` | **update** | **Found after the first draft of this table**, by a name search for the sibling root module (`preflight`): `tests/test_wiki_relevance_classification.py` requires every tracked root entry to be classified, so a new root `instance.py` fails it until listed. Added. The derived-set test reads `git ls-files`, so the file must be staged before that test sees it. |
 
 ---
 

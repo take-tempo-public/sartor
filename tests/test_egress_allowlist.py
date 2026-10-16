@@ -131,6 +131,10 @@ SANCTIONED_EGRESS_FILES = frozenset(
         "blueprints/applications.py",  # provider — recommend/suggest route bodies: anthropic error types (uses web_infra._get_client, 8.3f)
         "web_infra/clients.py",  # provider — the _get_client() Anthropic factory (shared, 8.3a)
         "scraper.py",  # scrape — the sole requests importer (arbitrary user URLs)
+        # LOOPBACK, not a third class (charter C-2, amended 2026-10-15): the single-instance
+        # probe binds/connects 127.0.0.1 only. `test_instance_module_names_only_loopback`
+        # below pins that, so listing the file here cannot quietly widen it.
+        "instance.py",
         "evals/runner.py",  # provider — eval harness LLM calls
         "evals/bootstrap.py",  # provider — TYPE_CHECKING-only anthropic import
         "onboarding/extract_experiences.py",  # provider — corpus extraction
@@ -224,6 +228,103 @@ def test_static_egress_allowlist():
         f"Allowlist rot — these no longer import an egress library: {sorted(stale)}. "
         "Remove them from SANCTIONED_EGRESS_FILES so the gate stays tight."
     )
+
+
+# --------------------------------------------------------------------------- #
+# 4b. The one sanctioned *loopback* module names no host but 127.0.0.1.
+# --------------------------------------------------------------------------- #
+_INSTANCE_SINKS = frozenset({"bind", "connect", "connect_ex", "create_connection", "urlopen"})
+_INSTANCE_CONN_CLASSES = frozenset({"HTTPConnection", "HTTPSConnection"})
+# A string that looks like a host: an IPv4 literal, a scheme://, or a dotted DNS name.
+_HOSTISH = re.compile(r"^(\d{1,3}(\.\d{1,3}){3}|[a-z][a-z0-9+.-]*://.*|[\w-]+(\.[\w-]+)+)$", re.I)
+# Dotted names whose last label is one of these are file names (`sartor-instance.json`), not hosts.
+_FILE_SUFFIXES = frozenset({"json", "tmp", "py", "txt", "md", "log", "toml", "cfg"})
+
+
+def _looks_like_host(text: str) -> bool:
+    """True for an IPv4 literal, a URL, or a dotted DNS-ish name that is not a file name."""
+    value = text.strip()
+    if not _HOSTISH.match(value):
+        return False
+    return value.rsplit(".", 1)[-1].lower() not in _FILE_SUFFIXES
+
+
+def _call_name(node: ast.Call) -> str:
+    """The trailing name of a call target (`sock.bind` -> `bind`, `HTTPConnection` -> itself)."""
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    if isinstance(func, ast.Name):
+        return func.id
+    return ""
+
+
+def test_instance_module_names_only_loopback():
+    """`instance.py` is on the egress allowlist ONLY as a loopback prober (C-2 amendment).
+
+    Static, by AST, so no socket is needed. It fails if (a) ``LOOPBACK`` is anything but
+    ``127.0.0.1``; (b) any bind/connect/``HTTPConnection`` call takes a host that is not the
+    ``LOOPBACK`` name; (c) a second network sink appears; or (d) a host-looking string
+    literal other than ``127.0.0.1`` exists outside docstrings. A caller-supplied host would
+    show up as (b) — which is the point: the module may be asked *which port*, never *which host*.
+    """
+    path = REPO_ROOT / "instance.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+    loopback = [
+        n.value.value
+        for n in ast.walk(tree)
+        if isinstance(n, ast.AnnAssign)
+        and isinstance(n.target, ast.Name)
+        and n.target.id == "LOOPBACK"
+        and isinstance(n.value, ast.Constant)
+    ]
+    assert loopback == ["127.0.0.1"], (
+        f"LOOPBACK must be the single literal 127.0.0.1, got {loopback}"
+    )
+
+    sinks = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and (_call_name(n) in _INSTANCE_SINKS or _call_name(n) in _INSTANCE_CONN_CLASSES)
+    ]
+    assert sorted(_call_name(n) for n in sinks) == ["HTTPConnection", "bind"], (
+        "instance.py must contain exactly one bind and one HTTPConnection and no other "
+        f"network sink; found {sorted(_call_name(n) for n in sinks)}"
+    )
+    for call in sinks:
+        first = call.args[0] if call.args else None
+        if isinstance(first, ast.Tuple) and first.elts:  # sock.bind((host, port))
+            first = first.elts[0]
+        assert isinstance(first, ast.Name) and first.id == "LOOPBACK", (
+            f"{_call_name(call)}() at line {call.lineno} must take the LOOPBACK name as its "
+            "host, never a parameter or a literal"
+        )
+
+    docstring_ids = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Module | ast.FunctionDef | ast.ClassDef | ast.AsyncFunctionDef):
+            body = node.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                docstring_ids.add(id(body[0].value))
+    strays = sorted(
+        {
+            n.value
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Constant)
+            and isinstance(n.value, str)
+            and id(n) not in docstring_ids
+            and _looks_like_host(n.value)
+            and n.value != "127.0.0.1"
+        }
+    )
+    assert not strays, f"host-looking literal(s) in instance.py besides 127.0.0.1: {strays}"
 
 
 # --------------------------------------------------------------------------- #
