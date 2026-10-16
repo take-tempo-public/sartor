@@ -98,7 +98,8 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 | 11f | `generator.py:363` | **no change** | Already `Path(__file__)`-rooted (the code root); listed in `_CODE_ANCHORS`. |
 | 11g | `tests/test_live_preview_route.py:72-77`, `tests/test_frozen_composition_staleness.py:124` | **no change** | Copy the shell into `cfg.personas_dir` for an explicit `base_dir`; the new property keeps that branch, so these seams still work (verified by running them). |
 | 11h | `scripts/enforcement/blast_radius.py` (`GATED`, the `helper` section) | **update** — found by the full gate, not by me | `sartor_home.py` has 8 non-test importers, which is `FAN_IN_THRESHOLD`, so `tests/test_blast_radius_classification.py::test_widely_consumed_modules_are_all_classified` fails until the new module is classified (O9). Decision: **GATED, kind `helper`.** Reason: `base_dir()` decides where every piece of user data is read and written (DB, key, log, configs, résumés); an edit to its precedence moves data silently. Unlike `analyzer.py` (ungated because its edits are prompt text under `PROMPT_VERSION` discipline) it is small and almost every edit is semantic. This file is itself gated (its own entry says "changing what the gate fires on is itself a contract change"), hence this row before the edit. Its consumers: `scripts/enforcement/guards/require_consumer_enumeration.py` (reads `GATED`), `tests/test_blast_radius_classification.py` (derives fan-in and asserts every `GATED` path exists), `tests/test_consumer_enumeration_gate.py`; no document states an entry count (grep of `docs/governance`, `docs/dev/tooling.md`, `AGENTS.md`, `CLAUDE.md`). Consequence for the next session: editing `sartor_home.py` now needs a dossier whose `## Consumers` names `sartor_home.py`. |
-| 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`. |
+| 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`, and `STOPSIGNAL SIGINT` (added after it was measured, O10/O13). |
+| 12a | `.dockerignore:39-40` | **update** — found by building the image (O11) | `personas/*/` is read as `personas/*`, so it also excluded the FILE `personas/cover_letter.html`; add `!personas/cover_letter.html`. Pinned by `TestImageShipsItsFiles` (every tracked file directly under `personas/` needs an explicit `!` after the broad rule), which fails on the pre-fix file. |
 | 13 | `docs/user/install.md:137-142` (the command), `:157-174` ("declares no `VOLUME`"), `:176-193` (the bind-mount trap), `:201-226` (bulk output; the two unverified notes) | **update** | One `-v sartor-data:/data`. The trap is gone: `/data` holds only data, and nothing under `/app` is a mount point. `:160` stated the `Dockerfile` "declares no `VOLUME`", which this branch makes false. The "fresh `/app/db` mount shadows the recall index" note (`:219-226`) is obsolete for the same reason. |
 | 13a | `docs/user/install.md:439-440, 661-662, 675-679` (key file "in the repo root"; "all under the repo root") | **update** | True for a source install, incomplete for a wheel or a container: both now name the data root. |
 | 13b | `README.md:148-152, 159-163` | **update** | Carries the same two-mount command and the "`/app/db` must be a named volume" rule. Found by a grep for `sartor-db` / `/app/db`, which the first pass did not run. |
@@ -134,19 +135,21 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
   (`.dockerignore`), and the fix touches fixture paths that are legitimately code. Observed by reading
   two lines, not run.
 - **Migrating existing five-volume container data**: out of scope, nothing is published. `install.md` gets a note.
-- **`STOPSIGNAL SIGINT`** (not added). Python as PID 1 has no SIGTERM handler, so `docker stop` may wait out
-  its 10 s grace and SIGKILL. That is a prediction from how PID 1 signals work, not an observation, and the
-  fix changes shutdown behaviour; it waits for a measured `stop` with and without it.
-- **`/app` left owned by `sartor`** (the plan's "leave it root-owned so a missed writer fails loudly"
-  is not done). It needs a container run to prove nothing else writes under `/app` at runtime, and an
-  unverified ownership change could ship a broken image. The ratchet test covers the same risk at
-  review time instead.
-- **Building and running the image.** Not done: a full build installs Chromium and its OS libraries
-  through the owner's Podman machine under memory pressure, and needs the owner's go-ahead.
-- **Podman and `HEALTHCHECK`.** Podman builds the OCI format by default, which does not record a
-  `HEALTHCHECK`; `podman build --format docker` does. Not verified here. `docker.yml` builds with buildx.
-- **H2** (the image's index build may always fall to its WARN branch): not this branch; goes to the owner
-  or branch 2.
+- **`STOPSIGNAL SIGINT`: resolved.** It was a prediction (PID 1 ignores SIGTERM); measured in O10/O13
+  (default 11.0 s and 11.2 s; SIGINT 1.3 s and 1.7 s, exit code 0, instance file released) and added.
+- **`/app` left owned by `sartor`** (the plan's "leave it root-owned so a missed writer fails loudly" is
+  not done). A read-only root filesystem, writable only at `/tmp`, a home tmpfs and `/data`, served every
+  flow tested (O13), so those flows write nothing under `/app`. Not done because the LLM generation path
+  and `--setup` were not run in the image, and `install.md` used to recommend `sartor --setup` inside the
+  container, which writes under `/app/db`; a root-owned `/app` would break that (the advice is removed,
+  O12).
+- **Building and running the image: done** with the owner's go-ahead (O10-O13). Still unrun: rootless
+  Podman, the CI-built GHCR image, Docker, the LLM generation path and `--setup` in the image.
+- **Podman and `HEALTHCHECK`.** Built with `--format docker`, the image config records the
+  `Healthcheck` (seen in `podman image inspect`). A default OCI-format build was not tried, and the
+  CI-built image (`docker.yml`, buildx) was not inspected.
+- **H2** (the image's recall index is not built; observed, O12): not fixed on this branch. The fix touches
+  `scripts/build_vector_index.py` and the `Dockerfile`; it goes to branch 2 or its own item.
 
 ---
 
@@ -158,8 +161,8 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
   `Config.bundled_personas_dir` resolves to the packaged directory, but `blueprints/templates.py:151`
   joins the DB row's `personas/bundled/x.docx` onto `BASE_DIR`, a directory that has no
   `personas/bundled/`.
-- **H2.** `.dockerignore:6` excludes `.git`, and `scripts/build_vector_index.py:55-67` `_git()` raises
-  `SystemExit` on a git failure, so the Dockerfile's best-effort index build falls through to its WARN branch.
+- **H2 — promoted to Observed (O12), with a corrected mechanism.** I inferred `.dockerignore:6` (no
+  `.git`) plus a `SystemExit`; the build log shows `FileNotFoundError: 'git'` instead.
 
 ## Observed
 
@@ -244,9 +247,8 @@ because no LLM call was made, and no `sartor-instance.json` remained because the
 `python.exe` count was back to its starting value (1), and port 5057 had only client-side `TIME_WAIT`
 entries, no listener.
 
-**Not observed — the container itself.** No image was built, so the `HEALTHCHECK` reaching `healthy`,
-the named-volume copy-up of `/data` ownership under rootless Podman, and data surviving `rm` and
-recreate are all unverified. See `## Deferred`.
+**The container** was built and run later in the session: see O10-O13. (At the time of O6 no image had
+been built.)
 
 **O7 — a second shipped file read under the data root, found after the Dockerfile edit.**
 `TestBundledPersonaUnderSartorHome::test_the_cover_letter_preview_finds_its_shipped_shell` (the existing
@@ -259,11 +261,14 @@ File "C:\Dev\sartor\pdf_render.py", line 274, in render_cover_letter_html
 FileNotFoundError: Cover-letter HTML template not found at ...\home\personas\cover_letter.html.
 ```
 
-So with `SARTOR_HOME=/data` the container's cover-letter preview would have returned a 500; before this
-branch the container's base dir was `/app`, where the file is (`.dockerignore` excludes only `personas/*/`,
-so `personas/cover_letter.html` is in the image). This branch's Dockerfile change would have introduced
-that regression; it was caught by re-reading a grep hit from the earlier enumeration, not by the
-ratchet (the ratchet looks for `Path(__file__)`, and this join has none). **Known limit, widened:** the
+**[Retracted 2026-10-16, see O11.]** This paragraph first said: with `SARTOR_HOME=/data` the container's
+cover-letter preview would have returned a 500, that before this branch the container's base dir was
+`/app` "where the file is", and that the Dockerfile change "would have introduced that regression". The
+middle claim was an inference I had not tested and it is **false**: building the image showed
+`personas/cover_letter.html` is not in it, so the container's cover-letter features were already broken
+before this branch and this branch did not regress them. The finding itself stands (a shipped file was
+read from the data root; it was caught by re-reading a grep hit from the earlier enumeration, not by the
+ratchet, which looks for `Path(__file__)` and this join has none). **Known limit, widened:** the
 class "a shipped file looked up under the data root" has no mechanism here beyond these tests.
 
 **After the fix** (`Config.cover_letter_shell`, `COVER_LETTER_SHELL`, both route sites): the same test
@@ -304,6 +309,69 @@ standing in for the definition ("`scripts/gate.py` is the single definition of g
 lapse the previous handoff already named. Everything before `pytest` (ruff, format, mypy,
 preflights) passed in that run; the UX tier and `work_items check` did not run because the gate stops
 at the first failing step. Fixed by row 11h; the gate is re-run in full afterwards.
+
+**O10 — the container, built and run** (2026-10-16; Podman 5.8.3 on the owner's WSL machine, **rootful**
+(`rootless=false`); image built from a clean `git archive` of `466105d` with `podman build --format docker`
+in 3 m 27 s, 1.71 GB; every resource named `sartor-b1-verify*`; one run each unless stated):
+
+```text
+healthcheck: starting -> healthy after 34s (again 34s after stop+rm+recreate on the same volume)
+healthz from the host through the port map: 200 {"app":"sartor","pid":1,"version":"1.0.9",...}
+runs as uid=10001(sartor); fresh named volume /data is 10001:10001 mode 755
+boot layout under /data: configs/ output/ resumes/ sartor-instance.json ; db/resume.sqlite after the first request
+base_dir /data | db /data/db/resume.sqlite | log /data/logs/llm_calls.jsonl     (inside the image)
+bundled personas: 200, 4 rows ; download 200, 37354 bytes
+casey (seeded in container 1) was present in the recreated container: "casey already present (data survived)"
+preview-edited type=resume: 200        (the containment-recheck fix, O8, validated in the image)
+podman stop, default signal:  11.0 s and 11.2 s (two runs)
+podman stop, --stop-signal SIGINT: 1.3 s
+--read-only rootfs + tmpfs /tmp, /data mounted: up in 2.0 s ; personas 200 ; download 200
+```
+
+**Still not observed after O13:** rootless Podman (this machine is rootful, so the ownership result says
+nothing about the `install.md` rootless claim); the GHCR-published and CI-built image, and Docker; the
+LLM generation path and `--setup` inside the image.
+
+**O11 — a shipped file is missing from the image, and my claim about it was false.**
+`ls /app/personas/cover_letter.html` in the container: `No such file or directory`.
+`cover-letter-preview` → 500 and `preview-edited type=cover_letter` → 500. The file is tracked and was in
+the build context (checked). `.dockerignore:39` is `personas/*/`; Docker and Buildah strip a trailing
+slash from ignore patterns, so it behaves as `personas/*` and excludes the *file* too, and
+`!personas/bundled/` re-includes only that folder. The mechanism is an inference from the pattern
+semantics; the missing file is the observation. It pre-dates this branch (the base dir was `/app` and the
+path the same), so the container's cover-letter preview and the cover-letter PDF (`generator.py`) never
+worked in the published-image design.
+
+**O12 — H2 observed, with the mechanism corrected.** The index does not bake. My hypothesis named
+`.dockerignore:6` (`.git` excluded) and `SystemExit`; the build log says otherwise:
+`FileNotFoundError: [Errno 2] No such file or directory: 'git'` at `scripts/build_vector_index.py:57`
+(`_git`), reached from `head_sha = _git(["rev-parse","HEAD"])` at `:217`, after the model had been saved
+(`saved model to /app/db/vector_index/model`). `python:3.13-slim` has no `git` binary, and `.git` is not
+in the context either, so installing git alone would not fix it. `/app/db/vector_index` holds `model/`
+only (no `embeddings.npy`, no `chunks.json`), and the Dockerfile fell through to
+`WARN: vector index not baked; assistant recall will be lexical-only`. The outcome I predicted was right;
+the cause I named was wrong.
+
+**O13 — round two, after the `.dockerignore` and `STOPSIGNAL` fixes** (image rebuilt from the staged tree
+in 3 m 32 s; same machine; one run each; resources removed afterwards):
+
+```text
+/app/personas/cover_letter.html present in the image
+NEW image on the volume written by the OLD image: healthy after 35s ; "casey already present (data survived)"
+cover-letter-preview 200 (body has class="cover-letter") ; preview-edited resume 200 ; preview-edited cover_letter 200
+Chromium: render_cover_letter_pdf as uid 10001 -> 8966 bytes, %PDF- header
+podman stop (STOPSIGNAL SIGINT now the image default): 1.7s, container exit code 0
+/data after that stop: configs db output resumes   (no sartor-instance.json: released, not left stale)
+--read-only rootfs, tmpfs /tmp and /home/sartor, /data volume: up in 3.1s ; personas 200 ; download 200 ;
+  the probe above all 200 ; PDF 8966 bytes
+```
+
+Limits and mistakes: the build context was extracted on Windows, so files in the image carry mode 0777
+(`-rwxrwxrwx` on the shell file); that is an artefact of how I made the context, not of the `Dockerfile` or
+CI, and I draw no permission conclusions from it. My first read-only probe used a `--tmpfs` option Podman
+rejects (`uid=`, rc 125): a test error, fixed and re-run. Cleanup: every `sartor-b1-verify*` container, the
+volume, both image tags and the base-image layer my first build pulled were removed (the log showed it
+"Trying to pull"); the owner's 3 containers, 3 volumes and other images were untouched.
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,

@@ -125,9 +125,11 @@ Then run `sartor --doctor` to confirm what your machine supports.
 > ready and reviewed when the first tag ships; until then use the
 > [source install](#install-from-source-the-path-that-works-today).
 
-Once published, the container is the lowest-friction path — Chromium (PDF) and
-the semantic-recall index are **baked into the image**, so you need nothing but
-an API key. The same image runs under Docker or Podman.
+Once published, the container is the lowest-friction path — Chromium (PDF) is
+**baked into the image**, so you need nothing but an API key. The semantic-recall
+index is **not** baked in: the step that builds it fails inside the image today
+(see "Recall index" below), so the assistant runs on its lexical tiers. The same
+image runs under Docker or Podman.
 
 ### The command to use
 
@@ -165,8 +167,7 @@ a name the engine gives that container its own anonymous one. It survives
 `stop` → `start` of the *same* container, but a second `run` creates a *new*
 container with a new, empty volume — and with no `--name`, the first one is an
 unnamed row in `podman ps -a` you have no reason to connect to your corpus.
-(Reasoned from the image definition and the engines' documented `VOLUME`
-behaviour; not observed, because the image has never been published.)
+(Reasoned from the engines' documented `VOLUME` behaviour; not run.)
 
 Use the bare form only for a genuinely throwaway look:
 
@@ -213,24 +214,30 @@ podman run --name sartor -p 127.0.0.1:5000:5000 \
   ghcr.io/take-tempo-public/sartor
 ```
 
-**Two things here are unverified, and are stated rather than asserted.** Neither
-can be settled without a container run on supported hardware, and the image has
-never been published, so nothing has been run:
+**What has and has not been run.** The image has never been *published*, but a
+local build was run on a rootful Podman machine (2026-10-16) and observed: it
+starts and reports healthy, a fresh named volume at `/data` is owned by the
+container's user, your data survives removing and recreating the container and
+starting a newer image on the same volume, the template, cover-letter and PDF
+features work, and `podman stop` takes about two seconds. Still unverified, and
+stated rather than asserted:
 
 1. Under **rootless Podman**, a host bind mount (whole `/data`, or the `output`
    folder above) may not be writable by the container's uid (10001, per the
-   `Dockerfile`) without `--userns=keep-id:uid=10001,gid=10001`. This is
-   reasoned from the image definition, not observed. The same applies to whether
-   a *named* volume takes on `/data`'s ownership under rootless Podman.
+   `Dockerfile`) without `--userns=keep-id:uid=10001,gid=10001`, and a *named*
+   volume may not take on `/data`'s ownership. The machine above was rootful, so
+   this is reasoned from the image definition, not observed.
 2. Mounting a host folder at `/data/output` inside the `sartor-data` volume (a
    mount nested in a mount) is a standard feature of both engines, but it has
-   not been run here either.
+   not been run here.
+3. The published image itself (built by CI and pulled from GHCR), and Docker
+   rather than Podman.
 
-Separately, the recall index the page above calls "baked into the image" is built
-at image time on a best-effort basis, and **whether that build succeeds in the
-published image has not been checked**: if the assistant falls back to lexical
-search, `podman exec sartor sartor --setup` rebuilds the index inside the
-container.
+**Recall index.** The image does not contain the semantic-recall index. The build
+step that creates it needs `git`, the base image has none, and the build carries
+on without the index (observed). `sartor --setup` inside the container would run
+the same step and, reading the code, fail the same way; that has not been run, so
+no workaround is documented here.
 
 ## First-run setup for a source install (`sartor --setup`)
 

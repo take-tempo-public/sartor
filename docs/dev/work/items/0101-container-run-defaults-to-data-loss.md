@@ -75,7 +75,9 @@ Status stays `closed`; this records that the layout the resolution describes no 
 - The two unverified claims are carried over, reworded for `/data`: rootless-Podman ownership of a bind
   mount **and** of a named volume's contents (uid 10001). The "fresh `/app/db` mount shadows the recall
   index" claim is obsolete (the index stays under `/app`, which is no longer a mount point).
-- Evidence and consumer map: `docs/dev/blast-radius/data-root.md`. **The image has not been built.**
+- Evidence and consumer map: `docs/dev/blast-radius/data-root.md`. **The image was built and run
+  locally** (rootful Podman, 2026-10-16): data survived remove-and-recreate and an image update on the
+  same volume. Rootless ownership, the CI-built image and Docker were not run.
 
 ### 2026-09-02 — filed from a live macOS install session
 

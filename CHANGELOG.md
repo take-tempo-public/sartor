@@ -38,8 +38,18 @@ wheel, it meant your data sat inside the program's own directory.
 - **Changed: the container uses one volume.** The image sets `SARTOR_HOME=/data` and declares it a
   `VOLUME`, so `-v sartor-data:/data` replaces the five mounts under `/app`, and the "never bind-mount
   `/app/db`" trap is gone. The image also gains a `HEALTHCHECK` (a loopback `GET /healthz` made
-  inside the container). **The image has not been built or run for this change**; the install guide
-  says which parts are unverified.
+  inside the container) and `STOPSIGNAL SIGINT`. **Built and run locally** (rootful Podman,
+  2026-10-16): it reports healthy after about 35 s, your data survives removing and recreating the
+  container and starting a newer image on the same volume, and `podman stop` takes about 2 s instead
+  of 11 s. Not run: rootless Podman, the CI-built image from GHCR, or Docker; the install guide says
+  which parts are unverified.
+- **Fixed: the container's cover-letter preview and cover-letter PDF.** The image did not contain
+  `personas/cover_letter.html` (a `.dockerignore` rule meant for user-upload folders also matched that
+  file), so those features returned an error in the container. Found by building and running the
+  image; both now work, and a Chromium PDF renders as the container's user.
+- **Not fixed: the semantic-recall index is not built in the image.** The build step needs `git`,
+  which the base image does not have, so the assistant runs on its lexical tiers. `install.md` no
+  longer says the index is baked in. Recorded in item 145 for the launcher branch.
 - **New, for contributors:** `sartor_home.py` is the one place the data folder is decided.
   `tests/test_data_root.py` fails if a runtime file that anchors a path on itself is not on its
   reviewed list of shipped-code files, so a new writer that quietly lands beside the program is

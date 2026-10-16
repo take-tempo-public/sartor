@@ -3,9 +3,11 @@
 # Sartor container image — Docker- AND Podman-compatible (`docker build` /
 # `podman build` both consume this file unchanged).
 #
-# Bakes in the two heavy runtime downloads so `docker run` needs nothing but an
-# Anthropic API key: Chromium (PDF output) + the model2vec vector index (the
-# assistant's semantic-recall tier). The app is installed EDITABLE from the copied
+# Bakes in Chromium (PDF output) so `docker run` needs nothing but an Anthropic API
+# key. The model2vec vector-index step (the assistant's semantic-recall tier) is
+# best-effort and, observed 2026-10-16, does NOT complete in this image: `git` is not
+# installed in the base image and no `.git` is in the build context (item 145 dossier
+# O12), so recall runs on its lexical tiers until that is fixed. The app is installed EDITABLE from the copied
 # source tree (`pip install -e .`) so Flask resolves templates/ · static/ ·
 # personas/ relative to /app. The wheel now ships those same data dirs too
 # (templates/ · static/ · personas/bundled/ · docs/wiki/ via package-data,
@@ -69,6 +71,11 @@ VOLUME ["/data"]
 USER sartor
 
 EXPOSE 5000
+
+# Python as PID 1 has no SIGTERM handler, so the default stop signal is ignored and the engine waits
+# out its grace period before SIGKILL. Measured (rootful Podman, 2026-10-16): `podman stop` took
+# 11.0 s and 11.2 s with the default, 1.3 s with SIGINT, which Werkzeug turns into a normal exit.
+STOPSIGNAL SIGINT
 
 # `/healthz` answers only loopback-Host requests and is exempt from idle tracking, so
 # polling it never keeps an `--idle-timeout` instance alive. Stdlib only: the image needs

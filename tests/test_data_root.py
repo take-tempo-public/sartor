@@ -469,3 +469,39 @@ class TestBundledPersonaUnderSartorHome:
 
         assert response.status_code == 200, response.get_data(as_text=True)[:300]
         assert "html" in response.get_json()
+
+
+class TestImageShipsItsFiles:
+    """`.dockerignore` must not silently drop a shipped file (item 145 dossier O11).
+
+    `personas/*/` is read as `personas/*` (a trailing slash is stripped from ignore patterns), so it
+    also excluded `personas/cover_letter.html`, a FILE; the image shipped without it and the
+    cover-letter preview returned 500. Observed by building the image, not by any test.
+    """
+
+    @staticmethod
+    def _rules() -> list[str]:
+        text = (REPO_ROOT / ".dockerignore").read_text(encoding="utf-8")
+        return [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.startswith("#")]
+
+    def test_every_tracked_file_directly_under_personas_is_re_included(self) -> None:
+        tracked = subprocess.run(
+            ["git", "ls-files", "personas"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        direct_files = sorted(p for p in tracked if p.count("/") == 1)
+        control(direct_files != [], "git ls-files found no file directly under personas/")
+        rules = self._rules()
+        broad = rules.index("personas/*/")
+        for path in direct_files:
+            assert f"!{path}" in rules[broad:], (
+                f"{path} is shipped code but .dockerignore's `personas/*/` also excludes it. "
+                f"Add `!{path}` after that line, or the image will lack it."
+            )
+
+    def test_the_bundled_folder_is_still_re_included_after_the_broad_rule(self) -> None:
+        rules = self._rules()
+        assert "!personas/bundled/" in rules[rules.index("personas/*/") :]
