@@ -180,7 +180,72 @@ def test_a_failing_request_still_releases_its_in_flight_count(app: Flask) -> Non
         raise RuntimeError("boom")
 
     client = app.test_client()
-    assert client.get("/__boom").status_code == 500
+    # Flask turns an unhandled exception into a streamed 500 (`force_type` wraps the WSGI
+    # app iterable), so the count is released when the response is CLOSED — which a WSGI
+    # server always does; the context manager is the test client's equivalent.
+    with client.get("/__boom") as resp:
+        assert resp.status_code == 500
+    assert tracker.in_flight == 0
+
+
+def _add_stream_route(app: Flask, tracker: instance.IdleTracker, seen: list[int]) -> None:
+    """A route shaped like the app's SSE routes: `Response(generator)`, no stream_with_context.
+
+    The app's four SSE routes (`blueprints/analysis.py`, `generation.py`, `assistant.py`,
+    `diagnostics.py`) return the generator this way, so Flask tears the request down when the
+    view returns — before the generator does its (paid, slow) work.
+    """
+    from flask import Response
+
+    @app.route("/__stream")
+    def _stream() -> Response:
+        def gen() -> Any:
+            seen.append(tracker.in_flight)
+            yield "data: a\n\n"
+            seen.append(tracker.in_flight)
+            yield "data: b\n\n"
+
+        return Response(gen(), mimetype="text/event-stream")
+
+
+def test_a_streamed_response_holds_the_in_flight_count_until_it_closes(
+    app: Flask, client: FlaskClient
+) -> None:
+    """Regression for a hole found while writing the docs: teardown runs before an SSE
+    generator starts, so counting only the request would read 0 for the whole generation
+    and let `--idle-timeout` stop the server mid-run once the tab was closed."""
+    tracker = instance.IdleTracker(60.0)
+    app.config["IDLE_TRACKER"] = tracker
+    seen: list[int] = []
+    _add_stream_route(app, tracker, seen)
+
+    with client.get("/__stream") as resp:  # closed on exit, as a WSGI server closes it
+        body = resp.get_data(as_text=True)
+        assert tracker.in_flight == 1, "the count must be held until the response is closed"
+
+    assert "data: a" in body and "data: b" in body
+    assert seen == [1, 1], "the stream ran with nothing counted in flight"
+    assert tracker.in_flight == 0, "the count leaked after the stream closed"
+
+
+def test_an_abandoned_stream_releases_the_count_when_closed(
+    app: Flask, client: FlaskClient
+) -> None:
+    """A client that disconnects after the first chunk (or before any) must not leak the
+    count — a leaked +1 would mean idle shutdown never fires again."""
+    tracker = instance.IdleTracker(60.0)
+    app.config["IDLE_TRACKER"] = tracker
+    _add_stream_route(app, tracker, [])
+
+    resp = client.get("/__stream", buffered=False)
+    next(iter(resp.response))  # first chunk only
+    assert tracker.in_flight == 1
+    resp.close()
+    assert tracker.in_flight == 0
+
+    never_read = client.get("/__stream", buffered=False)
+    assert tracker.in_flight == 1
+    never_read.close()
     assert tracker.in_flight == 0
 
 

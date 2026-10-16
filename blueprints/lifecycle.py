@@ -20,15 +20,20 @@ No filesystem path is read or written by any route here (the instance file is ha
 `_within` containment pattern does not apply — there is no user-supplied path to contain.
 
 The request hooks feed `instance.IdleTracker` when one is configured: a request in flight
-blocks idle expiry, so a long generation whose tab was closed is not cut off.
+blocks idle expiry, so a long generation whose tab was closed is not cut off. That includes
+a streamed (SSE) response, which holds the count until the server closes it
+(`_hand_count_to_stream`) — the request itself is long gone by then.
 """
 
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
+from typing import cast
 
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, Response, current_app, g, jsonify, request
 from flask.typing import ResponseReturnValue
+from werkzeug.wsgi import ClosingIterator
 
 import instance
 from web_infra import _is_localhost_request, _is_same_origin_request
@@ -63,9 +68,40 @@ def _begin_activity() -> None:
         setattr(g, _COUNTED, True)
 
 
+@lifecycle_bp.after_app_request
+def _hand_count_to_stream(response: Response) -> Response:
+    """For a streamed response, make the response — not the request — own the in-flight count.
+
+    The app's SSE routes return `Response(generator)` without `stream_with_context`, so Flask
+    tears the request down as soon as the view returns, BEFORE the generator does its slow,
+    paid work. Releasing the count at teardown would read 0 for the whole generation and let
+    `--idle-timeout` stop the server mid-run once the tab was closed. So the count moves onto
+    the response's iterable and is released when the server closes it (stream finished, client
+    disconnected, or never read). `ClosingIterator` runs its callback from `close()` even when
+    iteration never started, and the callback is guarded to run once.
+    """
+    tracker = _tracker()
+    if tracker is None or not response.is_streamed or not getattr(g, _COUNTED, False):
+        return response
+    setattr(g, _COUNTED, False)  # teardown must not release it: the stream owns it now
+    released = False
+
+    def _release() -> None:
+        nonlocal released
+        if not released:
+            released = True
+            tracker.end()
+
+    response.response = ClosingIterator(cast("Iterable[bytes]", response.response), [_release])
+    return response
+
+
 @lifecycle_bp.teardown_app_request
 def _end_activity(_exc: BaseException | None) -> None:
-    """Release the in-flight count taken by `_begin_activity`, exactly once per request."""
+    """Release the in-flight count taken by `_begin_activity`, exactly once per request.
+
+    Not reached for the count a streamed response took over (`_hand_count_to_stream`).
+    """
     if getattr(g, _COUNTED, False):
         setattr(g, _COUNTED, False)
         tracker = _tracker()
