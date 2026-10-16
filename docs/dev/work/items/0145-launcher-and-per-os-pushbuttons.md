@@ -84,6 +84,36 @@ reads `SARTOR_HOME` (enumeration in the dossier above).
   `pip install --user`; whether bare `sartor` with no runtime runs `up`; H2 (the image's index build
   may always fall to its WARN branch); separate native/container data; whether `sartor` is free on PyPI.
 
+**Branch 1 (`feat/data-root`) — what it did, and what it leaves open.** Evidence is in the dossier's
+`## Observed` (O1–O6); this lists only the obligations.
+
+- *Done and observed:* every user-data writer now follows `SARTOR_HOME` through `sartor_home.py`
+  (12 of 13 probed sites ignored it before, 13 of 13 follow it after); bundled personas resolve from
+  the shipped directory (download route: 404 before, 200 after, on the real app); a derived-set test
+  fails when an unclassified runtime file anchors a path on itself.
+- *Open, container (needs the owner's go-ahead; a build installs Chromium through the owner's Podman
+  machine):* build the image and observe (a) `HEALTHCHECK` reaching `healthy`, (b) a named `/data`
+  volume taking uid 10001 ownership under **rootless** Podman, (c) data surviving `rm` and recreate,
+  (d) `podman stop` time with and without `STOPSIGNAL SIGINT` (Python as PID 1 may ignore SIGTERM; a
+  prediction, not an observation). Only then consider `/app` root-owned (so a writer that missed
+  `SARTOR_HOME` fails loudly). **Before a local build, run `git ls-files --eol Dockerfile`**: this
+  machine's working copy is CRLF (`core.autocrlf=true`) though the committed blob is LF.
+- *Open, hypothesis H2 (first instrument of branch 2):* the image's recall-index build probably always
+  falls to its `WARN` branch, because `.dockerignore:6` drops `.git` and
+  `scripts/build_vector_index.py:55-67` `_git()` raises `SystemExit` on a git failure. Also affects a
+  wheel's `--setup`. `install.md` now says the index claim is unchecked; it is not fixed.
+- *Open, not observed:* the template **preview** route under `SARTOR_HOME` (it shares the fixed helper;
+  tested only for a checkout); a real installed wheel (the same code path as `SARTOR_HOME`, argued from
+  `config.bundled_personas_dir`, not run).
+- *Left for branch 2:* `platformdirs` has no runtime importer now (only the parity test), so it moves
+  to the dev extra when the dependencies are reorganised. **H4 stands:** `personas/cover_letter.html`
+  sits outside every package, so a wheel does not ship it. Branch 1 only made the routes read it from
+  the code root (`Config.cover_letter_shell`), which is right for a checkout and the container image
+  (`/app/personas/`) and still wrong for a wheel; `generator.py:363` has always read it from the code
+  root. The cover-letter preview under `SARTOR_HOME` was a second find of the bundled-persona class
+  (dossier O7), caught late: the Dockerfile edit would otherwise have broken the container's preview.
+- *Open, not observed:* the second cover-letter site (`preview_edited_html`) under `SARTOR_HOME`.
+
 **Branch 3 outline:** `packaging/launchers/{windows/sartor.cmd, macos/sartor.command,
 linux/sartor.sh + sartor.desktop}`, each three steps (find Python 3.11+, `pip install --user sartor`
 only if `import sartor_cli` fails, then `python -m sartor_cli up`); `.gitattributes` EOL rules and the

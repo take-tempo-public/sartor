@@ -68,6 +68,8 @@ class TestAsFlaskConfig:
             "ANNOTATION_ROOT",
             "PERSONAS_DIR",
             "BUNDLED_PERSONAS_DIR",
+            # The shipped business-letter shell; resolved like BUNDLED_PERSONAS_DIR (item 145).
+            "COVER_LETTER_SHELL",
             "ALLOWED_EXTENSIONS",
             "HOST",
             # F-19 demo mode (feat/ux-w3-demo-mode) — not a legacy app.py global;

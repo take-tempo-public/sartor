@@ -1256,7 +1256,7 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
             },
         )
 
-    cover_template = current_app.config["PERSONAS_DIR"] / "cover_letter.html"
+    cover_template = current_app.config["COVER_LETTER_SHELL"]
     html_str = render_cover_letter_html(
         cover_letter_md,
         font_family=font_family,
@@ -1359,7 +1359,7 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
         else:
             css_path = Path(docx_template_path).with_suffix(".css")
             font_family = persona_font_family(css_path)
-            cover_template = personas_dir / "cover_letter.html"
+            cover_template = current_app.config["COVER_LETTER_SHELL"]
             html_str = render_cover_letter_html(
                 content,
                 font_family=font_family,

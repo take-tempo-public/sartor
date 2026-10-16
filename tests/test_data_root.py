@@ -411,3 +411,37 @@ class TestBundledPersonaUnderSartorHome:
             located, root = _persona_row_location("bundled", "personas/bundled/../../config.py")
         assert root == packaged
         assert not _within(located, root)
+
+    def test_the_cover_letter_preview_finds_its_shipped_shell(
+        self, home_app: tuple[Any, Path, Path]
+    ) -> None:
+        """`personas/cover_letter.html` is shipped, like the bundled personas.
+
+        The preview route read it as `PERSONAS_DIR / "cover_letter.html"`, which is only the shipped
+        file in a checkout. Under `SARTOR_HOME` (the container's `/data`) that directory is empty, and
+        `render_cover_letter_html` raises `FileNotFoundError`.
+        """
+        from tests.test_live_preview_route import (
+            _seed_candidate_app,
+            _write_context_with_cover_letter,
+        )
+
+        app, home, _packaged = home_app
+        (home / "configs" / "casey.config").write_text("{}", encoding="utf-8")
+        _cid, application_id = _seed_candidate_app(app, username="casey")
+        ctx = _write_context_with_cover_letter(
+            home / "output" / "casey",
+            application_id,
+            "June 4, 2026\nHiring Manager\n\nDear Hiring Manager,\n\nI rebuilt three systems.\n\nSincerely,\nCasey",
+        )
+        control(
+            not (home / "personas" / "cover_letter.html").exists(),
+            "the data root must not contain a copy of the shell",
+        )
+
+        response = app.test_client().get(
+            f"/api/applications/{application_id}/cover-letter-preview?context_path={ctx}"
+        )
+
+        assert response.status_code == 200, response.get_data(as_text=True)[:300]
+        assert 'class="cover-letter"' in response.get_data(as_text=True)

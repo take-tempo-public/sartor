@@ -2,8 +2,8 @@
 
 > **Branch:** `feat/data-root` (item 145, branch 1 of 3)
 > **Status (2026-10-16):** enumeration complete; instrument run (`## Observed`); writers routed through
-> `sartor_home` (rows 1-11, 14-15 done); the Dockerfile (12) is edited but not built; install.md (13)
-> is still to do on this branch.
+> `sartor_home` (rows 1-11g, 14-15 done); the Dockerfile (12) is edited but not built; the docs (13-13i)
+> are done except the wiki page (13d), which the scoped `/wiki-self-update` handles at close-out.
 
 **Why this branch exists.** Item 145's container contract is `-v sartor-data:/data -e SARTOR_HOME=/data`.
 Only `config._default_base_dir()` reads `SARTOR_HOME` (below). The SQLite DB, the LLM log, `.api_key`
@@ -92,6 +92,10 @@ Run with the Grep tool over the whole tree (`C:\Dev\sartor`), `*.py`, no path ex
 | 11a | `blueprints/templates.py:770` (delete) | **no change** | Returns 403 for `source == "bundled"` before it reaches the join (`:767-768`); only user uploads get here, and those are data-root-relative. |
 | 11b | `blueprints/templates.py:857` (copy) | **no change** | Returns 400 unless `source.source == "user_upload"` (`:847-848`); user data, data-root-relative. |
 | 11c | `blueprints/templates.py:82` (`_persona_dict`) | **no change** | Serialises the stored `path` string to the client; no filesystem access. |
+| 11d | `blueprints/templates.py:1259` (`preview_cover_letter_html`) and `:1362` (`preview_edited_html`, cover-letter branch) | **update** — found late, after the Dockerfile edit (O7) | Both read `PERSONAS_DIR / "cover_letter.html"`, a **shipped** file. Under `SARTOR_HOME` that directory is empty and `render_cover_letter_html` raises `FileNotFoundError`. The first enumeration searched `BASE_DIR / row.path` and missed this join, which goes through `PERSONAS_DIR` and a literal filename. Both read `current_app.config["COVER_LETTER_SHELL"]`. |
+| 11e | `config.py` `Config` + `as_flask_config` | **update** — add `cover_letter_shell` and the `COVER_LETTER_SHELL` key | Same pattern as `bundled_personas_dir` (`config.py:175-208`): an explicitly injected `base_dir` keeps `personas_dir / "cover_letter.html"` (tests materialise a copy there), the default resolves from `sartor_home.code_root()`. Consumers of `as_flask_config`, enumerated: `app.py:109` (`app.config.update`, key-agnostic), `tests/test_config.py:63` (exact key set: **update on purpose**), `tests/test_demo_mode.py:100,106` (reads `DEMO_MODE` only: no change). No other code enumerates the dict. |
+| 11f | `generator.py:363` | **no change** | Already `Path(__file__)`-rooted (the code root); listed in `_CODE_ANCHORS`. |
+| 11g | `tests/test_live_preview_route.py:72-77`, `tests/test_frozen_composition_staleness.py:124` | **no change** | Copy the shell into `cfg.personas_dir` for an explicit `base_dir`; the new property keeps that branch, so these seams still work (verified by running them). |
 | 12 | `Dockerfile` | **update** | `SARTOR_HOME=/data`, `/data` owned by uid 10001 *before* `VOLUME`, `HEALTHCHECK`. |
 | 13 | `docs/user/install.md:137-142` (the command), `:157-174` ("declares no `VOLUME`"), `:176-193` (the bind-mount trap), `:201-226` (bulk output; the two unverified notes) | **update** | One `-v sartor-data:/data`. The trap is gone: `/data` holds only data, and nothing under `/app` is a mount point. `:160` stated the `Dockerfile` "declares no `VOLUME`", which this branch makes false. The "fresh `/app/db` mount shadows the recall index" note (`:219-226`) is obsolete for the same reason. |
 | 13a | `docs/user/install.md:439-440, 661-662, 675-679` (key file "in the repo root"; "all under the repo root") | **update** | True for a source install, incomplete for a wheel or a container: both now name the data root. |
@@ -234,6 +238,32 @@ entries, no listener.
 **Not observed — the container itself.** No image was built, so the `HEALTHCHECK` reaching `healthy`,
 the named-volume copy-up of `/data` ownership under rootless Podman, and data surviving `rm` and
 recreate are all unverified. See `## Deferred`.
+
+**O7 — a second shipped file read under the data root, found after the Dockerfile edit.**
+`TestBundledPersonaUnderSartorHome::test_the_cover_letter_preview_finds_its_shipped_shell` (the existing
+`cover-letter-preview` flow driven under `SARTOR_HOME`, reusing `tests/test_live_preview_route.py`'s own
+seed and context helpers; one run, before any fix) failed with:
+
+```text
+File "C:\Dev\sartor\blueprints\templates.py", line 1260, in preview_cover_letter_html
+File "C:\Dev\sartor\pdf_render.py", line 274, in render_cover_letter_html
+FileNotFoundError: Cover-letter HTML template not found at ...\home\personas\cover_letter.html.
+```
+
+So with `SARTOR_HOME=/data` the container's cover-letter preview would have returned a 500; before this
+branch the container's base dir was `/app`, where the file is (`.dockerignore` excludes only `personas/*/`,
+so `personas/cover_letter.html` is in the image). This branch's Dockerfile change would have introduced
+that regression; it was caught by re-reading a grep hit from the earlier enumeration, not by the
+ratchet (the ratchet looks for `Path(__file__)`, and this join has none). **Known limit, widened:** the
+class "a shipped file looked up under the data root" has no mechanism here beyond these tests.
+
+**After the fix** (`Config.cover_letter_shell`, `COVER_LETTER_SHELL`, both route sites): the same test
+passes, and 152 passed across `test_data_root`, `test_config`, `test_live_preview_route`,
+`test_frozen_composition_staleness`, `test_generate_cover_letter_formats`, `test_persona_routes` and
+`test_route_containment_gate`. The two suites that copy the shell into an explicit `base_dir` (11g) pass
+unchanged. **Not observed:** the second site (`preview_edited_html`, `:1362`) under `SARTOR_HOME`; it
+shares the property but has no test of its own here. **Not fixed, and not branch 1's:** a wheel does not
+ship `personas/cover_letter.html` at all (H4), so an installed wheel still fails here after this change.
 
 **Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
 in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,

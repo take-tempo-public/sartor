@@ -174,6 +174,25 @@ class Config:
             return _package_dir("personas.bundled")
         return self.personas_dir / "bundled"
 
+    @property
+    def cover_letter_shell(self) -> Path:
+        """The shipped business-letter HTML shell (`personas/cover_letter.html`).
+
+        Shipped, read-only content like `bundled_personas_dir`, resolved the same way and for
+        the same reason (item 145): reading it as `personas_dir / "cover_letter.html"` is only
+        correct when the data root IS the code root (a checkout). Under `SARTOR_HOME` (the
+        container's `/data`) or an installed wheel that directory holds none of the program's
+        files, and the cover-letter preview raised `FileNotFoundError`
+        (`docs/dev/blast-radius/data-root.md` O7).
+
+        An EXPLICITLY overridden `base_dir` keeps `personas_dir / "cover_letter.html"`: the tests
+        materialise a copy there. The default `base_dir` resolves from the code root. A wheel does
+        not yet ship this file (it sits outside every package; branch 2 of item 145).
+        """
+        if self.base_dir == _default_base_dir():
+            return sartor_home.code_root() / "personas" / "cover_letter.html"
+        return self.personas_dir / "cover_letter.html"
+
     def ensure_dirs(self) -> None:
         """Create the directories the import-time loop made (app.py:85-86).
 
@@ -205,6 +224,7 @@ class Config:
             "ANNOTATION_ROOT": self.annotation_root,
             "PERSONAS_DIR": self.personas_dir,
             "BUNDLED_PERSONAS_DIR": self.bundled_personas_dir,
+            "COVER_LETTER_SHELL": self.cover_letter_shell,
             "ALLOWED_EXTENSIONS": self.allowed_extensions,
             "HOST": self.host,
             "DEMO_MODE": self.demo_mode,

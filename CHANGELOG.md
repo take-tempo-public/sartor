@@ -29,8 +29,10 @@ wheel, it meant your data sat inside the program's own directory.
 - **Fixed: bundled templates could not be found when `SARTOR_HOME` was set.** The built-in templates
   (Classic and the rest) were looked up inside the data folder instead of the files that ship with the
   program, so the download answered "Persona file missing on disk" (observed), and the template
-  preview refused the same way (read from the code, not run). An installed wheel takes the same code
-  path, but no real wheel was run. They are now read from the shipped files.
+  preview refused the same way (read from the code, not run). The cover-letter preview failed too,
+  with a server error (observed): it read the shipped `cover_letter.html` from the data folder. An
+  installed wheel takes the same code paths, but no real wheel was run, and a wheel does not yet ship
+  that file at all. They are now read from the shipped files.
 - **Changed: the container uses one volume.** The image sets `SARTOR_HOME=/data` and declares it a
   `VOLUME`, so `-v sartor-data:/data` replaces the five mounts under `/app`, and the "never bind-mount
   `/app/db`" trap is gone. The image also gains a `HEALTHCHECK` (a loopback `GET /healthz` made
