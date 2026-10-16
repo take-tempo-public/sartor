@@ -131,13 +131,35 @@ def _persona_dicts_safe(templates: list[PersonaTemplate]) -> list[dict[str, Any]
 # transitional duplicate of this pair; it now imports them from here.
 
 
+def _persona_row_location(source: str, path: str) -> tuple[Path, Path]:
+    """Where a persona_template row's file lives, and the root it must stay inside.
+
+    The DB stores `path` relative to the data root (e.g. "personas/bundled/classic.docx").
+    A `bundled` row is SHIPPED content, though, and `BUNDLED_PERSONAS_DIR` says where: the
+    packaged directory whenever `BASE_DIR` is the default data root (an installed wheel, or
+    `SARTOR_HOME` -- the container's `/data`), `PERSONAS_DIR/bundled` for an explicitly injected
+    `base_dir`. Joining the stored path onto `BASE_DIR` only works in a checkout, where the two
+    coincide (`docs/dev/blast-radius/data-root.md` O2). Every other row is user data and stays
+    `BASE_DIR`-relative inside `PERSONAS_DIR`.
+
+    Keyed on `source`, not on the path prefix: a candidate may be named "bundled", and their
+    uploads land in `personas/bundled/` too.
+    """
+    prefix = "personas/bundled/"
+    if source == "bundled" and path.startswith(prefix):
+        bundled_root: Path = current_app.config["BUNDLED_PERSONAS_DIR"]
+        return bundled_root / path[len(prefix) :], bundled_root
+    return current_app.config["BASE_DIR"] / path, current_app.config["PERSONAS_DIR"]
+
+
 def _resolve_persona_template_path(persona_template_id: int) -> str | None:
     """Look up a persona_template's on-disk path. None if not found / missing.
 
-    The DB stores `path` relative to the repo root (e.g.
-    "personas/bundled/classic.docx"). We resolve to absolute, verify
-    containment under PERSONAS_DIR (defense-in-depth), and return the
-    string path generator.py expects.
+    The DB stores `path` relative to the data root (e.g.
+    "personas/bundled/classic.docx"); `_persona_row_location` maps it to the
+    shipped or user-data location. We resolve to absolute, verify containment
+    under that location's root (defense-in-depth), and return the string path
+    generator.py expects.
     """
     from db.models import PersonaTemplate
     from db.session import get_session, init_db
@@ -148,8 +170,9 @@ def _resolve_persona_template_path(persona_template_id: int) -> str | None:
         row = session.query(PersonaTemplate).filter_by(id=persona_template_id).first()
         if row is None:
             return None
-        disk_path = (current_app.config["BASE_DIR"] / row.path).resolve()
-        if not disk_path.exists() or not _within(disk_path, current_app.config["PERSONAS_DIR"]):
+        located, root = _persona_row_location(row.source, row.path)
+        disk_path = located.resolve()
+        if not disk_path.exists() or not _within(disk_path, root):
             logger.warning(
                 "Persona template id=%s has invalid path %s",
                 persona_template_id,
@@ -793,12 +816,12 @@ def download_persona(persona_id: int) -> ResponseReturnValue:
         row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
         if row is None:
             return jsonify({"error": "Persona not found"}), 404
-        disk_path = current_app.config["BASE_DIR"] / row.path
+        disk_path, root = _persona_row_location(row.source, row.path)
         if not disk_path.exists():
             return jsonify({"error": "Persona file missing on disk"}), 404
-        # Containment: bundled lives under personas/bundled/, user uploads
-        # under personas/{user}/ — both inside PERSONAS_DIR.
-        if not _within(disk_path, current_app.config["PERSONAS_DIR"]):
+        # Containment: bundled lives in the shipped bundled dir, user uploads
+        # under personas/{user}/ in PERSONAS_DIR (`_persona_row_location`).
+        if not _within(disk_path, root):
             return jsonify({"error": "Invalid persona path"}), 403
         return send_file(str(disk_path), as_attachment=True, download_name=f"{row.name}.docx")
     finally:
@@ -919,8 +942,9 @@ def preview_persona_with_resume(persona_id: int) -> ResponseReturnValue:
         row = session.query(PersonaTemplate).filter_by(id=persona_id).first()
         if row is None:
             return jsonify({"error": "Persona not found"}), 404
-        disk_path = (current_app.config["BASE_DIR"] / row.path).resolve()
-        if not disk_path.exists() or not _within(disk_path, current_app.config["PERSONAS_DIR"]):
+        located, root = _persona_row_location(row.source, row.path)
+        disk_path = located.resolve()
+        if not disk_path.exists() or not _within(disk_path, root):
             return jsonify({"error": "Invalid persona path"}), 403
         candidate = cast(
             "Candidate",
@@ -1232,7 +1256,7 @@ def preview_cover_letter_html(application_id: int) -> ResponseReturnValue:
             },
         )
 
-    cover_template = current_app.config["PERSONAS_DIR"] / "cover_letter.html"
+    cover_template = current_app.config["COVER_LETTER_SHELL"]
     html_str = render_cover_letter_html(
         cover_letter_md,
         font_family=font_family,
@@ -1319,7 +1343,11 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
         # but re-assert containment explicitly here — same belt-and-suspenders
         # pattern as the _safe_username recheck just above, and what the
         # route-security-lint hook expects to see in a filesystem-touching route.
-        if not _within(Path(docx_template_path), personas_dir):
+        # Two legitimate roots: a user's upload lives under PERSONAS_DIR, a bundled template
+        # under BUNDLED_PERSONAS_DIR -- which is the packaged directory, OUTSIDE PERSONAS_DIR,
+        # whenever the data root is not the code root (`SARTOR_HOME`, a wheel; item 145).
+        docx_path = Path(docx_template_path)
+        if not (_within(docx_path, personas_dir) or _within(docx_path, bundled_personas_dir)):
             return jsonify({"error": "Template not found"}), 404
 
         if doc_type == "resume":
@@ -1335,7 +1363,7 @@ def preview_edited_html(application_id: int) -> ResponseReturnValue:
         else:
             css_path = Path(docx_template_path).with_suffix(".css")
             font_family = persona_font_family(css_path)
-            cover_template = personas_dir / "cover_letter.html"
+            cover_template = current_app.config["COVER_LETTER_SHELL"]
             html_str = render_cover_letter_html(
                 content,
                 font_family=font_family,

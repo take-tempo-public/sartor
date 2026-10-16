@@ -18,13 +18,13 @@ from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Literal, cast
 
 import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
 import demo_fixtures
+import sartor_home
 from demo_fixtures import is_demo_mode as _demo_mode_active
 from hardening import ContextSet, CorpusExperience
 from recall.models import Context, Unit
@@ -89,7 +89,8 @@ _SDK_NO_AUTH_MARKER = "Could not resolve authentication method"
 _NO_CREDENTIAL_DETAIL = (
     "the Anthropic client resolved no credential (neither `api_key` nor "
     "`auth_token` is set). Set ANTHROPIC_API_KEY, or create a `.api_key` file "
-    "at the repo root."
+    "in your Sartor data folder (the repo folder for a source install); "
+    "`sartor --setup` will write it for you."
 )
 
 
@@ -565,14 +566,16 @@ def effective_prompt_version() -> str:
     return f"candidate:{digest}"
 
 
-LOG_DIR = Path(__file__).parent / "logs"
+# Telemetry is user data: it follows `SARTOR_HOME` (item 145), like the dashboard that reads it.
+LOG_DIR = sartor_home.data_path("logs")
 LOG_PATH = LOG_DIR / "llm_calls.jsonl"
 
 
 def _emit_call_log(record: dict[str, Any]) -> None:
     """Append one JSON line to logs/llm_calls.jsonl. Best-effort — never raise."""
     try:
-        LOG_DIR.mkdir(exist_ok=True)
+        # `parents=True`: under `SARTOR_HOME` or a fresh platform dir the root may not exist yet.
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
         with LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
     except Exception as exc:

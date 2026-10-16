@@ -20,12 +20,10 @@ P1 Hardening boundary: this module is deterministic — no LLM calls (charter C-
 from __future__ import annotations
 
 import importlib
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import platformdirs
-
+import sartor_home
 from demo_fixtures import is_demo_mode
 
 # The repo root. `config.py` is a top-level module (like `app.py`), so this is the
@@ -34,7 +32,7 @@ from demo_fixtures import is_demo_mode
 # installed (non-editable wheel) case, where this resolves to `site-packages/`
 # instead and is deliberately NOT used as the user-data root. Still overridable
 # directly via `Config(base_dir=...)`.
-_PROJECT_ROOT = Path(__file__).resolve().parent
+_PROJECT_ROOT = sartor_home.code_root()
 
 
 def _package_dir(dotted_name: str) -> Path:
@@ -68,47 +66,16 @@ TEMPLATES_DIR = _package_dir("templates")
 STATIC_DIR = _package_dir("static")
 
 
-def _is_dev_checkout() -> bool:
-    """True when this is a source checkout (a plain git clone or `pip install -e .`).
-
-    `pyproject.toml` ships in the repo/sdist but is deliberately NOT part of the
-    wheel's `[tool.setuptools.package-data]` (it describes the build, it isn't
-    runtime data) — so a real non-editable `pip install` drops `config.py` into
-    `site-packages/` with no `pyproject.toml` alongside it, while an editable
-    install or a plain clone resolves `config.py`'s `__file__` back to the real
-    repo root, where `pyproject.toml` always sits next to it. Cheap, dependency-free
-    heuristic — no need to shell out to `importlib.metadata` to distinguish
-    editable vs. wheel installs.
-    """
-    return (_PROJECT_ROOT / "pyproject.toml").is_file()
-
-
-def _default_base_dir() -> Path:
-    r"""Resolve the default user-writable data root (configs/resumes/output/db).
-
-    Packaging-floor fix (owner decision 8; Carry-forward ledger #2 residual
-    (ii)): on a bare `pip install sartor && sartor` (non-editable wheel),
-    `_PROJECT_ROOT` resolves to `site-packages/`, so user data would land there
-    instead of a proper per-user data directory. Precedence:
-
-    1. `SARTOR_HOME` env var, if set — always wins, dev checkout or not (an
-       explicit escape hatch for anyone who wants a non-default data root).
-    2. Dev/editable checkout (`_is_dev_checkout()`) — keep today's behavior,
-       the repo root (`_PROJECT_ROOT`), unchanged.
-    3. Otherwise (a real installed wheel) — the platform user-data directory
-       via `platformdirs` (`%LOCALAPPDATA%\\sartor` on Windows, `~/.local/share/sartor`
-       on Linux, `~/Library/Application Support/sartor` on macOS).
-
-    Read via `field(default_factory=...)` on `Config.base_dir` (like
-    `demo_mode` below) so each `Config()` construction re-reads the env var —
-    not frozen at module-import time.
-    """
-    override = os.environ.get("SARTOR_HOME")
-    if override:
-        return Path(override).expanduser().resolve()
-    if _is_dev_checkout():
-        return _PROJECT_ROOT
-    return Path(platformdirs.user_data_dir("sartor", appauthor=False))
+# The data-root resolution moved to `sartor_home` (item 145, branch 1) so the stdlib-only
+# launcher and every user-data writer share ONE definition; its module docstring holds the
+# precedence (`SARTOR_HOME` > dev checkout > platform user-data dir) and the packaging-floor
+# history (owner decision 8; Carry-forward ledger #2 residual (ii)). These names stay because
+# `Config.base_dir`'s `default_factory`, `bundled_personas_dir` below, `dashboard/routes.py`
+# and `tests/test_packaging.py` consult them. `_default_base_dir` is read through
+# `field(default_factory=...)` on `Config.base_dir` (like `demo_mode` below), so each
+# `Config()` re-reads the environment and is not frozen at module-import time.
+_is_dev_checkout = sartor_home.is_dev_checkout
+_default_base_dir = sartor_home.base_dir
 
 
 @dataclass(frozen=True)
@@ -207,6 +174,25 @@ class Config:
             return _package_dir("personas.bundled")
         return self.personas_dir / "bundled"
 
+    @property
+    def cover_letter_shell(self) -> Path:
+        """The shipped business-letter HTML shell (`personas/cover_letter.html`).
+
+        Shipped, read-only content like `bundled_personas_dir`, resolved the same way and for
+        the same reason (item 145): reading it as `personas_dir / "cover_letter.html"` is only
+        correct when the data root IS the code root (a checkout). Under `SARTOR_HOME` (the
+        container's `/data`) or an installed wheel that directory holds none of the program's
+        files, and the cover-letter preview raised `FileNotFoundError`
+        (`docs/dev/blast-radius/data-root.md` O7).
+
+        An EXPLICITLY overridden `base_dir` keeps `personas_dir / "cover_letter.html"`: the tests
+        materialise a copy there. The default `base_dir` resolves from the code root. A wheel does
+        not yet ship this file (it sits outside every package; branch 2 of item 145).
+        """
+        if self.base_dir == _default_base_dir():
+            return sartor_home.code_root() / "personas" / "cover_letter.html"
+        return self.personas_dir / "cover_letter.html"
+
     def ensure_dirs(self) -> None:
         """Create the directories the import-time loop made (app.py:85-86).
 
@@ -238,6 +224,7 @@ class Config:
             "ANNOTATION_ROOT": self.annotation_root,
             "PERSONAS_DIR": self.personas_dir,
             "BUNDLED_PERSONAS_DIR": self.bundled_personas_dir,
+            "COVER_LETTER_SHELL": self.cover_letter_shell,
             "ALLOWED_EXTENSIONS": self.allowed_extensions,
             "HOST": self.host,
             "DEMO_MODE": self.demo_mode,

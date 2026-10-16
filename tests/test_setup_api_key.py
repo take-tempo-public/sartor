@@ -47,17 +47,28 @@ def _no_ambient_key(monkeypatch):
 
 
 class TestKeyPathAgreement:
-    def test_preflight_and_the_app_client_resolve_the_same_file(self):
+    def test_preflight_and_the_app_client_resolve_the_same_file(self, tmp_path, monkeypatch):
         """The probe must not report 'missing' on a file the app happily reads.
 
-        `web_infra.clients._get_client` falls back to `_REPO_ROOT / ".api_key"`.
-        `preflight.api_key_path()` is the single resolution `--setup` writes to and
-        `--doctor` reports on. If these two ever diverge, the preflight starts lying
-        in one direction or the other -- so the agreement is asserted, not commented.
+        `web_infra.clients._get_client` falls back to `preflight.api_key_path()`, the single
+        resolution `--setup` writes to and `--doctor` reports on. If the client ever computes
+        its own path again, the preflight starts lying in one direction or the other -- so
+        the agreement is asserted, not commented: the key is placed where `preflight` says,
+        under a redirected `SARTOR_HOME`, and the client must read it from there.
         """
         from web_infra import clients
 
-        assert preflight.api_key_path() == clients._REPO_ROOT / ".api_key"
+        monkeypatch.delenv("SARTOR_DEMO", raising=False)
+        monkeypatch.setenv("SARTOR_HOME", str(tmp_path))
+        assert preflight.api_key_path() == tmp_path.resolve() / ".api_key"
+        preflight.api_key_path().write_text(_FAKE_KEY + "\n", encoding="utf-8")
+        assert clients._get_client().api_key == _FAKE_KEY
+
+    def test_the_default_key_path_is_the_data_root(self, monkeypatch):
+        import sartor_home
+
+        monkeypatch.delenv("SARTOR_HOME", raising=False)
+        assert preflight.api_key_path() == sartor_home.base_dir() / ".api_key"
 
     def test_base_dir_override_is_honored(self, tmp_path):
         assert preflight.api_key_path(tmp_path) == tmp_path / ".api_key"

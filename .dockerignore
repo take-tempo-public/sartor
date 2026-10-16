@@ -38,6 +38,10 @@ logs
 # Exclude user-uploaded persona dirs, but KEEP the bundled templates the app ships.
 personas/*/
 !personas/bundled/
+# `personas/*/` is read as `personas/*` (a trailing slash is stripped from ignore patterns), so it also
+# excluded the shared cover-letter shell, a FILE directly under personas/. Observed: the image had no
+# /app/personas/cover_letter.html and the cover-letter preview returned 500 (item 145 dossier O11).
+!personas/cover_letter.html
 db/*.sqlite
 db/vector_index
 .api_key

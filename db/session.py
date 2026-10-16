@@ -5,8 +5,8 @@ concurrent read performance and is the right default for a local single-user
 app. FK enforcement is OFF by default in SQLite (yes, really) so we turn it
 on at connect time.
 
-DB file lives at `db/resume.sqlite` under the project root (per plan; user
-decision recorded 2026-05-12). Gitignored. A new clone gets a fresh empty DB
+DB file lives at `db/resume.sqlite` under the data root (`sartor_home.base_dir()`: the project
+root in a checkout, per plan; user decision recorded 2026-05-12). Gitignored. A new clone gets a fresh empty DB
 on first launch via alembic upgrade head.
 """
 
@@ -20,9 +20,14 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-# Resolve repo-root relative path so `python app.py` and `pytest` see the same DB.
+import sartor_home
+
+# `_REPO_ROOT` is where the CODE lives: `alembic.ini` is read from it (`init_db`). The DB is
+# user data and follows the data root (item 145) -- the repo root in a checkout, so `python
+# app.py` and `pytest` still see the same DB, and `SARTOR_HOME` (the container's `/data`)
+# anywhere else.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DB_PATH = _REPO_ROOT / "db" / "resume.sqlite"
+DEFAULT_DB_PATH = sartor_home.data_path("db", "resume.sqlite")
 
 
 def _db_url(db_path: Path | str | None = None) -> str:

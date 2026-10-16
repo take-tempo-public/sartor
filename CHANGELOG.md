@@ -13,6 +13,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### One data folder: everything you own follows `SARTOR_HOME` (`feat/data-root`, item 145, branch 1 of 3)
+
+Before this, only part of your data followed `SARTOR_HOME`. Your database, the telemetry log, your
+API key file and the import tool's folders were always read and written next to the program. In a
+source clone that is the same folder, so nothing looked wrong. In a container, or an installed
+wheel, it meant your data sat inside the program's own directory.
+
+- **Fixed: one data folder.** The database, `logs/llm_calls.jsonl`, `.api_key`, and the folders the
+  import tool and the eval tools use now live under the same folder as `configs/`, `resumes/` and
+  `output/`: your repo folder for a source install, the folder `SARTOR_HOME` names if you set it,
+  and your OS user-data folder for an installed wheel. Nothing changes for a source clone.
+  **If you installed a wheel and had put a `.api_key` next to the program,** Sartor no longer
+  looks there: run `sartor --setup` (it asks for the key again and prints where it saved it), or
+  move the file into your user-data folder. (`sartor --doctor` reports only whether a key is
+  found, not where it looks.) The "no API key" error now points at the data folder too.
+- **Fixed: bundled templates could not be found when `SARTOR_HOME` was set.** The built-in templates
+  (Classic and the rest) were looked up inside the data folder instead of the files that ship with the
+  program, so the download answered "Persona file missing on disk" (observed), and the template
+  preview refused the same way (read from the code, not run). The cover-letter preview failed too,
+  with a server error (observed): it read the shipped `cover_letter.html` from the data folder. An
+  installed wheel takes the same code paths, but no real wheel was run, and a wheel does not yet ship
+  that file at all. They are now read from the shipped files.
+- **Changed: the container uses one volume.** The image sets `SARTOR_HOME=/data` and declares it a
+  `VOLUME`, so `-v sartor-data:/data` replaces the five mounts under `/app`, and the "never bind-mount
+  `/app/db`" trap is gone. The image also gains a `HEALTHCHECK` (a loopback `GET /healthz` made
+  inside the container) and `STOPSIGNAL SIGINT`. **Built and run locally** (rootful Podman,
+  2026-10-16): it reports healthy after about 35 s, your data survives removing and recreating the
+  container and starting a newer image on the same volume, and `podman stop` takes about 2 s instead
+  of 11 s. Not run: rootless Podman, the CI-built image from GHCR, or Docker; the install guide says
+  which parts are unverified.
+- **Fixed: the container's cover-letter preview and cover-letter PDF.** The image did not contain
+  `personas/cover_letter.html` (a `.dockerignore` rule meant for user-upload folders also matched that
+  file), so those features returned an error in the container. Found by building and running the
+  image; both now work, and a Chromium PDF renders as the container's user.
+- **Not fixed: the semantic-recall index is not built in the image.** The build step needs `git`,
+  which the base image does not have, so the assistant runs on its lexical tiers. `install.md` no
+  longer says the index is baked in. Recorded in item 145 for the launcher branch.
+- **New, for contributors:** `sartor_home.py` is the one place the data folder is decided.
+  `tests/test_data_root.py` fails if a runtime file that anchors a path on itself is not on its
+  reviewed list of shipped-code files, so a new writer that quietly lands beside the program is
+  caught in review.
+- **Not changed:** `platformdirs` stays a dependency for now, although nothing at runtime imports it
+  any more; the launcher branch that follows reorganises the dependencies.
+- Evidence and consumer map: `docs/dev/blast-radius/data-root.md`.
+
 ### A second launch reuses the running copy, and there is a Quit button (`feat/single-instance-and-quit`, items 146 and 147)
 
 Before this, starting `sartor` twice started two servers, and the only way to stop one was

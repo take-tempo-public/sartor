@@ -149,9 +149,9 @@ class TestActivation:
         monkeypatch.delenv("SARTOR_DEMO", raising=False)
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         # Point the local-key-file fallback at an empty temp dir so a real
-        # `.api_key` sitting at the repo root (if any) can't make this test
+        # `.api_key` sitting in the data root (if any) can't make this test
         # pass for the wrong reason.
-        monkeypatch.setattr(web_infra_clients, "_REPO_ROOT", tmp_path)
+        monkeypatch.setenv("SARTOR_HOME", str(tmp_path))
         client = web_infra_clients._get_client()
         assert not isinstance(client, web_infra_clients._DemoClient)
         assert client.api_key == ""

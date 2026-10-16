@@ -49,6 +49,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+import sartor_home
+
 #: Minimum Python, mirroring `pyproject.toml`'s `requires-python = ">=3.11"`.
 #: Duplicated deliberately: reading pyproject at runtime would fail on a non-editable
 #: wheel install, where no pyproject sits beside the package (see `config._is_dev_checkout`).
@@ -405,14 +407,15 @@ def vector_index_capability(base_dir: Path | None = None) -> Capability:
 def api_key_path(base_dir: Path | None = None) -> Path:
     """The `.api_key` file's location — the ONE resolution both readers and writers use.
 
-    `web_infra.clients._get_client` falls back to `_REPO_ROOT / ".api_key"`, where
-    `_REPO_ROOT` is `web_infra/`'s parent — the same directory this module lives in.
-    `--setup`'s key prompt (item 104) writes here and `api_key_capability` reports on
-    here, so a preflight cannot tell a user their key is missing while the app happily
-    reads it (or the reverse). `tests/test_setup_api_key.py` asserts the agreement
+    The key is user data, so it lives in the data root (`sartor_home.base_dir()`: the repo
+    root in a checkout, `SARTOR_HOME` anywhere else). `web_infra.clients._get_client` and
+    `onboarding.corpus_import` fall back to this function rather than computing a path of
+    their own, `--setup`'s key prompt (item 104) writes here and `api_key_capability`
+    reports on here, so a preflight cannot tell a user their key is missing while the app
+    happily reads it (or the reverse). `tests/test_setup_api_key.py` asserts the agreement
     directly rather than trusting this comment to stay true.
     """
-    root = base_dir if base_dir is not None else Path(__file__).resolve().parent
+    root = base_dir if base_dir is not None else sartor_home.base_dir()
     return root / ".api_key"
 
 

@@ -147,7 +147,7 @@ today. Use the source install above.
 
 ```bash
 docker run --name sartor -e ANTHROPIC_API_KEY=your-key-here -p 127.0.0.1:5000:5000 \
-  -v sartor-db:/app/db -v sartor-output:/app/output \
+  -v sartor-data:/data \
   ghcr.io/take-tempo-public/sartor            # podman run … works identically
 ```
 
@@ -156,10 +156,10 @@ Then open `http://localhost:5000`. `sartor --setup` replaces the manual
 index). A **`pip install sartor` / `uvx sartor`** path is planned once the wheel
 ships its data files (tracked follow-up).
 
-When the image does ship, name the container and mount volumes as shown above —
-the bare `docker run` form discards your corpus on the next run, and `/app/db`
-must be a **named volume**, never a bind mount (it is a Python package inside the
-image, not a data directory). Full setup (Windows/macOS/Linux),
+When the image does ship, name the container and mount the data volume as shown
+above — the bare `docker run` form strands your corpus on the next run, and the
+one volume at `/data` holds everything you own (mount nothing under `/app`; that
+is the program). Full setup (Windows/macOS/Linux),
 container data-persistence, cost guidance, and troubleshooting:
 [`docs/user/install.md`](docs/user/install.md). Cap spend via
 [Anthropic usage limits](https://console.anthropic.com/settings/limits) — Sartor

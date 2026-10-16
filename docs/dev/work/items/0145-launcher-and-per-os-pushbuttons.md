@@ -47,3 +47,81 @@ owner's fresh-clone e2e test exercises it.
 ## Updates
 
 ### 2026-10-02 — filed on `chore/release-v1.1.0` (owner-directed)
+
+### 2026-10-16 — taken up (owner pick); cut into three branches
+
+Owner decisions, chat, 2026-10-15/16:
+
+- **Keep 145 whole, in three sequential branches:**
+  1. `feat/data-root` — every user-data writer honours `SARTOR_HOME`, plus the Dockerfile
+     `SARTOR_HOME`/`VOLUME`/`HEALTHCHECK` and `install.md`'s single mount. Dossier:
+     `docs/dev/blast-radius/data-root.md`.
+  2. `feat/launcher` — the launcher and both backends.
+  3. `feat/pushbuttons` — the per-OS wrappers.
+- **Shape: one distribution, `sartor`, with a stdlib-only core.** The verbs import only the stdlib;
+  the server is imported lazily; the heavy dependencies move to a `sartor[app]` extra that
+  `install --native` puts in a managed venv. No second distribution name.
+- **Why:** the launcher serves the two *published* paths (wheel, GHCR container), not the source
+  clone. Nothing is published yet (item 3), so the end-to-end test waits on it; branch 1 does not.
+
+Why branch 1 comes first: item 2's `-v sartor-data:/data -e SARTOR_HOME=/data` loses the SQLite DB,
+the LLM log, `.api_key` and the onboarding CLI's paths today, because only `config._default_base_dir()`
+reads `SARTOR_HOME` (enumeration in the dossier above).
+
+**Branch 2 outline (not started; written down so it survives this session):**
+
+- A stdlib-only `sartor_cli/` package: dispatch, state file, a `Runner` protocol for subprocesses,
+  a lazy `serve`, a `doctor` reusing stdlib `preflight` and `instance`.
+- Native backend: a managed venv with `sartor[app]==V`. Container backend: Podman, then Docker;
+  `create -p 127.0.0.1:P:5000 -v sartor-data:/data -e SARTOR_HOME=/data`.
+- Dependencies move to the `[app]` extra, with `dev` self-referencing it; the entry point becomes
+  `sartor_cli.main:main`; bare `sartor` keeps serving in a clone. An AST stdlib-only boundary test;
+  a two-phase `release.yml` smoke.
+- **First commit is an instrument** (C-7): does a built wheel ship `alembic.ini` (H3) and
+  `personas/cover_letter.html` (H4)? Both are hypotheses from reading code.
+- **Owner questions at its start:** the C-2 wording (charter.md:98-100 names "the single-instance
+  probe"; the launcher adds a loopback shutdown POST and a health read); the PEP 668 fallback for
+  `pip install --user`; whether bare `sartor` with no runtime runs `up`; H2 (the image's recall index is not built: no
+  `git` in the base image, observed); separate native/container data; whether `sartor` is free on PyPI.
+
+**Branch 1 (`feat/data-root`) — what it did, and what it leaves open.** Evidence is in the dossier's
+`## Observed` (O1–O13); this lists only the obligations.
+
+- *Done and observed:* every user-data writer follows `SARTOR_HOME` through `sartor_home.py` (12 of 13
+  probed sites ignored it before, 13 of 13 after); bundled personas resolve from the shipped directory
+  (download: 404 before, 200 after, on the real app and in a built image); the cover-letter preview and
+  `preview-edited` work under `SARTOR_HOME` and in the image; a derived-set test fails on an
+  unclassified runtime file that anchors a path on itself, and another fails if `.dockerignore` drops a
+  file directly under `personas/`.
+- *Done and observed, the container* (a local build on **rootful** Podman 5.8.3, 2026-10-16, dossier
+  O10–O13): `HEALTHCHECK` healthy after 34–35 s; a fresh named `/data` volume owned by uid 10001; data
+  survives remove-and-recreate **and an image update** on the same volume; Chromium renders a PDF as that
+  user; `podman stop` took 11.0 s and 11.2 s with the default signal against 1.3–1.7 s with SIGINT (now
+  `STOPSIGNAL SIGINT`; exit code 0, and the instance file is released); a read-only root filesystem
+  (writable only `/tmp`, a home tmpfs and `/data`) serves every flow tested.
+- *Fixed because the build found it:* `.dockerignore`'s `personas/*/` also excluded the **file**
+  `personas/cover_letter.html`, so the image lacked it and the container's cover-letter preview and PDF
+  failed. That pre-dates this branch. My earlier claim that the file was in the image was an untested
+  inference; it is retracted in the dossier (O7, O11).
+- *Open, container:* **rootless** Podman (ownership of a named volume and of a bind mount; the machine
+  was rootful); the CI-built GHCR image; Docker; the LLM generation path and `--setup` inside the image.
+  `/app` was **not** made root-owned: a read-only rootfs works for the flows tested, but a root-owned
+  `/app` would break any writer there, and `install.md` used to recommend `sartor --setup` in the
+  container (that advice has been removed).
+- *Open, H2 (outcome observed, mechanism corrected, fix not done):* the image's recall index is not
+  built. `scripts/build_vector_index.py:57` `_git` raises `FileNotFoundError: 'git'`: the base image has
+  no git, and `.dockerignore` leaves no `.git` in the context, so installing git alone would not fix it.
+  `/app/db/vector_index` holds `model/` only. A wheel's `--setup` runs the same step (not run). The first
+  thing I wrote about it, "`.dockerignore:6` drops `.git` and `_git` raises `SystemExit`", was wrong
+  about the cause.
+- *Open, not observed:* the template-preview route (`preview_application_html`) under `SARTOR_HOME`, and
+  a real installed wheel.
+- *Left for branch 2:* `platformdirs` has no runtime importer now (only the parity test), so it moves to
+  the dev extra when the dependencies are reorganised. **H4 stands for a wheel:** `personas/cover_letter.html`
+  sits outside every package, so a wheel does not ship it (the image does now). Branch 1 made the routes
+  read it from the code root (`Config.cover_letter_shell`); `generator.py:363` always did.
+
+**Branch 3 outline:** `packaging/launchers/{windows/sartor.cmd, macos/sartor.command,
+linux/sartor.sh + sartor.desktop}`, each three steps (find Python 3.11+, `pip install --user sartor`
+only if `import sartor_cli` fails, then `python -m sartor_cli up`); `.gitattributes` EOL rules and the
+exec bit in the index; static plus stub-Python tests; the Gatekeeper and Mark-of-the-Web caveats documented.

@@ -61,6 +61,24 @@ bind mount and the browser download; add the `podman ps -a` / `podman start` rec
 
 ## Updates
 
+### 2026-10-16 — layout superseded by item 145, branch 1 (`feat/data-root`)
+
+Status stays `closed`; this records that the layout the resolution describes no longer exists.
+
+- The image now sets `SARTOR_HOME=/data` and declares `VOLUME ["/data"]`. One `-v sartor-data:/data`
+  replaces the five mounts under `/app`, so **the `/app/db` bind-mount trap this item named is gone**:
+  nothing a user owns lives under `/app` any more.
+- The `Dockerfile` therefore **does** declare a `VOLUME`; the "declares no `VOLUME`" reasoning in this
+  item's body described the earlier image. A bare `run` now gets an anonymous volume per container
+  rather than a writable layer: still not what a user wants, for the same reason (a second `run` is a
+  new container with a new, empty volume), which `install.md` still says, marked as reasoned, not observed.
+- The two unverified claims are carried over, reworded for `/data`: rootless-Podman ownership of a bind
+  mount **and** of a named volume's contents (uid 10001). The "fresh `/app/db` mount shadows the recall
+  index" claim is obsolete (the index stays under `/app`, which is no longer a mount point).
+- Evidence and consumer map: `docs/dev/blast-radius/data-root.md`. **The image was built and run
+  locally** (rootful Podman, 2026-10-16): data survived remove-and-recreate and an image update on the
+  same volume. Rootless ownership, the CI-built image and Docker were not run.
+
 ### 2026-09-02 — filed from a live macOS install session
 
 Drafted before the session discovered the image was never published (item 99). The guidance

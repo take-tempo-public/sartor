@@ -157,6 +157,14 @@ GATED: dict[str, Surface] = dict(
             "9 non-test importers; every guard's branch/repo detection.",
         ),
         _s(
+            "sartor_home.py",
+            "helper",
+            "8 non-test importers; the one resolution of the user-data root (item 145). "
+            "base_dir()'s precedence decides where the DB, the key, the log, configs and "
+            "résumés are read and written, so an edit that looks local moves a user's "
+            "data silently.",
+        ),
+        _s(
             "scripts/wiki_relevance.py",
             "helper",
             "the classifier behind a merge-blocking freshness gate; a wrong answer "

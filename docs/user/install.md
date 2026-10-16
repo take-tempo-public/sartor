@@ -125,9 +125,11 @@ Then run `sartor --doctor` to confirm what your machine supports.
 > ready and reviewed when the first tag ships; until then use the
 > [source install](#install-from-source-the-path-that-works-today).
 
-Once published, the container is the lowest-friction path — Chromium (PDF) and
-the semantic-recall index are **baked into the image**, so you need nothing but
-an API key. The same image runs under Docker or Podman.
+Once published, the container is the lowest-friction path — Chromium (PDF) is
+**baked into the image**, so you need nothing but an API key. The semantic-recall
+index is **not** baked in: the step that builds it fails inside the image today
+(see "Recall index" below), so the assistant runs on its lexical tiers. The same
+image runs under Docker or Podman.
 
 ### The command to use
 
@@ -136,13 +138,16 @@ Name the container and mount volumes from the start:
 ```bash
 podman run --name sartor -p 127.0.0.1:5000:5000 \
   -e ANTHROPIC_API_KEY=your-key-here \
-  -v sartor-db:/app/db -v sartor-configs:/app/configs \
-  -v sartor-resumes:/app/resumes -v sartor-output:/app/output \
-  -v sartor-personas:/app/personas \
+  -v sartor-data:/data \
   ghcr.io/take-tempo-public/sartor
 ```
 
 (`docker run` is identical — substitute the command name.)
+
+**One volume holds everything you own.** The image sets `SARTOR_HOME=/data`, so
+your database, the telemetry log, uploaded templates, `configs/`, `resumes/` and
+`output/` all live under `/data`. Nothing you own is kept anywhere else, so
+updating to a newer image never touches it.
 
 `-p 127.0.0.1:5000:5000` keeps Sartor loopback-only on your machine (the app
 binds `0.0.0.0` **inside** the container only). Open `http://localhost:5000`.
@@ -157,11 +162,12 @@ podman ps -a                # list containers, including stopped ones
 ### Why the short form is not the default
 
 A bare `podman run … ghcr.io/take-tempo-public/sartor` with no `-v` and no
-`--name` **discards your work.** The `Dockerfile` declares no `VOLUME`, so
-everything written under `/app` lands in that container's writable layer. It
-survives `stop` → `start` of the *same* container, but a second `run` creates a
-*new* container with an empty layer — and with no `--name`, the first one is an
+`--name` **strands your work.** The image declares `/data` a `VOLUME`, so without
+a name the engine gives that container its own anonymous one. It survives
+`stop` → `start` of the *same* container, but a second `run` creates a *new*
+container with a new, empty volume — and with no `--name`, the first one is an
 unnamed row in `podman ps -a` you have no reason to connect to your corpus.
+(Reasoned from the engines' documented `VOLUME` behaviour; not run.)
 
 Use the bare form only for a genuinely throwaway look:
 
@@ -173,24 +179,24 @@ podman run --rm -p 127.0.0.1:5000:5000 \
 `--rm` is deliberate there: it makes the discard explicit instead of leaving an
 orphan holding data you might later assume was saved.
 
-### Named volumes, not bind mounts, for `/app/db` and `/app/personas`
+### Mount `/data`, and nothing under `/app`
 
-**This distinction is load-bearing, and getting it wrong stops the app booting.**
+`/data` is the only place the container keeps your data. `/app` is the program:
+the Python packages, the bundled templates and the recall index built at image
+time. Do not mount anything over a path under `/app` — a mount there shadows
+shipped code, and the app can fail at startup on `import db`. (Earlier
+versions of this page asked for five mounts under `/app`, one of which was
+exactly that trap. With a single `/data` volume there is no reason to mount
+under `/app` at all.)
 
-- `db/` is **not** a data directory. It is a Python package inside the image —
-  `__init__.py`, `models.py`, `session.py`, `migrations/` — plus the recall
-  index built at image-build time. A host **bind mount** over `/app/db` shadows
-  that package, and the app fails at startup on `import db`.
-- `personas/bundled/` ships in the image too (`.dockerignore` keeps it with
-  `!personas/bundled/`), so the same applies to `/app/personas`.
-- **Named volumes are safe for both** — an empty named volume is populated from
-  the image's existing contents on first use, which is why the command above
-  works.
-- **Only `output/`, `configs/` and `resumes/` are safe to bind-mount.** Those
-  three are excluded from the image, so there is nothing to shadow.
+A **named volume** (`-v sartor-data:/data`) is the default to use: the engine
+manages it, and it is populated with `/data`'s ownership on first use. A host
+**bind mount** (`-v /some/host/path:/data`) works as a place to keep the data,
+but see the ownership note below.
 
-If you reach for the `-v /some/host/path:/app/db` form because it is the one you
-know, that is the trap this section exists to name.
+If you ran a local build of the older five-volume image, do not mount its old
+`sartor-db` volume over `/data` — the database now lives at `/data/db/`. Copy
+what you want out of the old volumes instead.
 
 ### Getting files onto the host
 
@@ -198,32 +204,40 @@ For a document or two, **you do not need a mount at all** — download from the
 app in your browser exactly as you would from any web page. That is the right
 answer for one-off retrieval and skips the volume question entirely.
 
-For bulk access to everything generated, bind-mount the one directory that is
-safe to bind-mount:
+For bulk access to everything generated, keep the data volume and bind-mount
+just the output folder over its `output/` directory:
 
 ```bash
 podman run --name sartor -p 127.0.0.1:5000:5000 \
   -e ANTHROPIC_API_KEY=your-key-here \
-  -v sartor-db:/app/db -v "$PWD/output:/app/output" \
+  -v sartor-data:/data -v "$PWD/output:/data/output" \
   ghcr.io/take-tempo-public/sartor
 ```
 
-**Two things here are unverified, and are stated rather than asserted.** Neither
-can be settled without a container run on supported hardware, and the image has
-never been published, so nothing has been run:
+**What has and has not been run.** The image has never been *published*, but a
+local build was run on a rootful Podman machine (2026-10-16) and observed: it
+starts and reports healthy, a fresh named volume at `/data` is owned by the
+container's user, your data survives removing and recreating the container and
+starting a newer image on the same volume, the template, cover-letter and PDF
+features work, and `podman stop` takes about two seconds. Still unverified, and
+stated rather than asserted:
 
-1. Under **rootless Podman**, a host bind mount may not be writable by the
-   container's uid (10001, per the `Dockerfile`) without
-   `--userns=keep-id:uid=10001,gid=10001`. This is reasoned from the image
-   definition, not observed.
-2. An earlier version of this page stated that mounting a fresh `/app/db`
-   shadows the baked recall index, degrading the assistant to its lexical tier
-   until `sartor --setup` is re-run. Named-volume copy-up semantics suggest that
-   is **wrong for a named volume** — which is the form recommended above. The
-   claim has been removed rather than restated, because it was never verified in
-   either direction. If you do see the assistant fall back to lexical search
-   after a fresh mount, `podman exec sartor sartor --setup` rebuilds the index
-   into the volume.
+1. Under **rootless Podman**, a host bind mount (whole `/data`, or the `output`
+   folder above) may not be writable by the container's uid (10001, per the
+   `Dockerfile`) without `--userns=keep-id:uid=10001,gid=10001`, and a *named*
+   volume may not take on `/data`'s ownership. The machine above was rootful, so
+   this is reasoned from the image definition, not observed.
+2. Mounting a host folder at `/data/output` inside the `sartor-data` volume (a
+   mount nested in a mount) is a standard feature of both engines, but it has
+   not been run here.
+3. The published image itself (built by CI and pulled from GHCR), and Docker
+   rather than Podman.
+
+**Recall index.** The image does not contain the semantic-recall index. The build
+step that creates it needs `git`, the base image has none, and the build carries
+on without the index (observed). `sartor --setup` inside the container would run
+the same step and, reading the code, fail the same way; that has not been run, so
+no workaround is documented here.
 
 ## First-run setup for a source install (`sartor --setup`)
 
@@ -437,7 +451,8 @@ extras, sizes, and licensing) live in
      Permanent (both shells): `Win + R` → `sysdm.cpl` → Advanced →
      Environment Variables → New under "User variables".
    - **Key file:** create a file named `.api_key` in the repo
-     root containing only your key.
+     root (or in the folder `SARTOR_HOME` names, if you set it)
+     containing only your key.
 
 7. **Run the app:**
    ```cmd
@@ -658,8 +673,9 @@ one without echoing it. To check by hand, confirm one of:
 - `echo $ANTHROPIC_API_KEY` (or `echo %ANTHROPIC_API_KEY%` on
   Windows) shows your key in the same shell where you launched
   `python app.py`.
-- `.api_key` exists in the repo root and contains only the key,
-  no quotes, no trailing newline.
+- `.api_key` exists in your data root (the repo root for a source install, the
+  folder `SARTOR_HOME` names, or `/data` in the container) and contains only
+  the key, no quotes, no trailing newline.
 
 **Port 5000 already in use.**
 `sartor` says `Port 5000 is in use by another program` and exits when something
@@ -676,7 +692,9 @@ off in System Settings or use another port.
 See the "What gets saved on your machine" section in
 [`README.md`](../../README.md). The short answer: `configs/`,
 `resumes/`, `output/`, `db/resume.sqlite`, `logs/` — all under
-the repo root.
+your data root: the repo root for a source install, the folder `SARTOR_HOME`
+names if you set it, `/data` in the container, and your OS user-data folder for
+an installed wheel.
 
 ---
 

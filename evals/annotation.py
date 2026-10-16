@@ -67,6 +67,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from werkzeug.utils import secure_filename  # noqa: E402
 
+import sartor_home  # noqa: E402
+
 logger = logging.getLogger(__name__)
 
 ANNOTATION_SCHEMA_VERSION = 1
@@ -151,8 +153,10 @@ DEFAULT_MIN_SCORES = {
 
 # The only directory annotation artifacts are ever written into. Already
 # gitignored (evals/fixtures/real/* in .gitignore), so the PII-bearing snapshot
-# stays untracked. Mirrors evals/bootstrap.py:ALLOWED_ROOT.
-ALLOWED_ROOT = PROJECT_ROOT / "evals" / "fixtures" / "real"
+# stays untracked. Mirrors evals/bootstrap.py:ALLOWED_ROOT, and equals
+# `Config.annotation_root`: it follows the data root (item 145), which is the repo root in a
+# checkout, so the annotation routes' containment check accepts the directory they write to.
+ALLOWED_ROOT = sartor_home.data_path("evals", "fixtures", "real")
 
 _TOP_LEVEL_REQUIRED_KEYS = (
     "annotation_schema_version",

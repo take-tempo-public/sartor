@@ -168,6 +168,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         "parser.py",
         "pdf_render.py",
         "preflight.py",
+        "sartor_home.py",
         "scraper.py",
         "db",
         "dashboard",

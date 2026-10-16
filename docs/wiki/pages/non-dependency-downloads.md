@@ -33,7 +33,8 @@
    `playwright` is a declared dependency; the browser binary it pulls is not — hence the
    separate step.)* **Internally, a Chromium install downloads five artifacts:** `chromium-<rev>`, `chromium_headless_shell-<rev>`, `ffmpeg-<rev>` (twice), and `winldd-<rev>` (`preflight.py:_parse_browsers_json`). PDF rendering specifically needs the **headless shell**, not the headed binary (`pdf_render.py:render_pdf`); each artifact carries an `INSTALLATION_COMPLETE` sentinel to distinguish complete from interrupted installs (`preflight.py:_INSTALL_MARKER`). **On macOS 12 and earlier, PDF output is unavailable** — current Playwright releases ship no Chromium build for that OS (`preflight.py:MACOS_CHROMIUM_FLOOR`). `[synthesis]` **`sartor --doctor` reports whether both PDF-critical artifacts are installed, without downloading anything** (`preflight.py:chromium_capability`).
 4. **An Anthropic API key** — a *credential*, not a download, but required: all AI writing
-   goes to Claude. `ANTHROPIC_API_KEY` env var or a `.api_key` file at the repo root.
+   goes to Claude. `ANTHROPIC_API_KEY` env var or a `.api_key` file in the data root
+   (`preflight.api_key_path` resolves it to `sartor_home.base_dir()`).
 5. **A modern browser** — the app is a local site at `http://localhost:5000`.
 6. **(Linux only) a few system libraries** Chromium needs (`libnss3`, `libatk1.0-0`,
    `libgbm1`, …) — surfaced by the Playwright installer if missing.
@@ -51,8 +52,9 @@ invented anything):
 7. **`torch`** (~200 MB CPU wheel, larger for CUDA) — installed **first**, from a
    platform-specific PyTorch index URL, and **deliberately kept out of `pyproject.toml`**
    because the correct wheel depends on your hardware.
-8. **The `[eval-grounding]` extras** — `transformers` + `accelerate` + `nltk` (all
-   code-only, ordinary pip packages) + **MiniCheck installed from GitHub, pinned to a
+8. **The `[eval-grounding]` extras** — `transformers` + `accelerate` + `nltk` (ordinary pip
+   packages; `nltk` is code-only except that it fetches its `punkt_tab` tokenizer data on
+   first use, `evals/grounding_signals.py:_ensure_minicheck_nltk_data`) + **MiniCheck installed from GitHub, pinned to a
    fixed commit** (`git+https://github.com/Liyan06/MiniCheck.git@b58b9fa...`, not PyPI
    and not a floating ref — the upstream default branch drifted to an incompatible
    vLLM/Bespoke-7B rewrite, so an unpinned `git+` ref would silently re-drift;
@@ -101,12 +103,18 @@ walk's 2026-06-07 verification); every other row is unchanged since that date
 `[synthesis]`.
 
 **The core "no runtime deps for downloads" claim still holds.** `pyproject.toml`'s
-`[project.dependencies]` gained `platformdirs` (platform user-data resolution; `pyproject.toml:81`);
-the packaging/wheel setuptools fix widens `[tool.setuptools]` `py-modules` / `packages.find` /
-`package-data` so an installed wheel ships modules + static assets previously missing.
+`[project.dependencies]` still declares `platformdirs` (`pyproject.toml:81`), but no runtime
+module imports it any more: the per-user data directory is computed by the stdlib-only
+`sartor_home.py:platform_data_dir`, and
+`tests/test_data_root.py:test_platform_data_dir_matches_platformdirs_on_this_os` compares the
+two `[synthesis]`; the packaging/wheel setuptools fix widens `[tool.setuptools]` `py-modules` / `packages.find` /
+`package-data` so an installed wheel ships modules + static assets previously missing
+(`pyproject.toml:py-modules`, `pyproject.toml:packages.find`, `pyproject.toml:package-data`)
+`[synthesis]`.
 New `[project.optional-dependencies]` additions — `packaging` (release versioning; `pyproject.toml:92`),
 `interrogate` (kit-adoption `dev` extra), and `accelerate` + `nltk` (`[eval-grounding]`
-extra) — are ordinary pip packages, none a non-pip download in their own right, and add
+extra) — are ordinary pip packages, and none is a non-pip download in its own right except
+that `nltk` fetches its `punkt_tab` tokenizer data on first use (item 8). They add
 no new heavy weight/binary fetch beyond items 3 and 7–10 above `[synthesis]`.
 
 ## Related

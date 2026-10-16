@@ -41,6 +41,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import preflight  # noqa: E402
+import sartor_home  # noqa: E402
 from analyzer import (  # noqa: E402
     analyze,
     clarify,
@@ -90,8 +92,9 @@ from hardening import (  # noqa: E402
 from parser import parse_resume  # noqa: E402
 
 # Same JSONL telemetry sink analyzer.py writes to — read here to compute
-# per-eval cost by tailing entries written during this run.
-LLM_LOG_PATH = PROJECT_ROOT / "logs" / "llm_calls.jsonl"
+# per-eval cost by tailing entries written during this run. Both follow the data root
+# (item 145); a dev who exports `SARTOR_HOME` would otherwise read a log nothing writes.
+LLM_LOG_PATH = sartor_home.data_path("logs", "llm_calls.jsonl")
 
 EVALS_DIR = Path(__file__).resolve().parent
 FIXTURES_DIR = EVALS_DIR / "fixtures"
@@ -153,11 +156,11 @@ class EvalRunResult:
 def _get_client() -> anthropic.Anthropic:
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        key_file = PROJECT_ROOT / ".api_key"
+        key_file = preflight.api_key_path()
         if key_file.exists():
             api_key = key_file.read_text(encoding="utf-8").strip()
     if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY not set and no .api_key file found at project root")
+        raise RuntimeError("ANTHROPIC_API_KEY not set and no .api_key file found in the data root")
     return anthropic.Anthropic(api_key=api_key)
 
 
