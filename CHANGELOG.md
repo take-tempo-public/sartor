@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### One data folder: everything you own follows `SARTOR_HOME` (`feat/data-root`, item 145, branch 1 of 3)
+
+Before this, only part of your data followed `SARTOR_HOME`. Your database, the telemetry log, your
+API key file and the import tool's folders were always read and written next to the program. In a
+source clone that is the same folder, so nothing looked wrong. In a container, or an installed
+wheel, it meant your data sat inside the program's own directory.
+
+- **Fixed: one data folder.** The database, `logs/llm_calls.jsonl`, `.api_key`, and the folders the
+  import tool and the eval tools use now live under the same folder as `configs/`, `resumes/` and
+  `output/`: your repo folder for a source install, the folder `SARTOR_HOME` names if you set it,
+  and your OS user-data folder for an installed wheel. Nothing changes for a source clone.
+  **If you installed a wheel and already created a `.api_key` next to the program,** move it to
+  the data folder (`sartor --doctor` shows where it looks).
+- **Fixed: bundled templates could not be found when `SARTOR_HOME` was set.** The built-in templates
+  (Classic and the rest) were looked up inside the data folder instead of the files that ship with the
+  program, so the download answered "Persona file missing on disk" (observed), and the template
+  preview refused the same way (read from the code, not run). An installed wheel takes the same code
+  path, but no real wheel was run. They are now read from the shipped files.
+- **Changed: the container uses one volume.** The image sets `SARTOR_HOME=/data` and declares it a
+  `VOLUME`, so `-v sartor-data:/data` replaces the five mounts under `/app`, and the "never bind-mount
+  `/app/db`" trap is gone. The image also gains a `HEALTHCHECK` (a loopback `GET /healthz` made
+  inside the container). **The image has not been built or run for this change**; the install guide
+  says which parts are unverified.
+- **New, for contributors:** `sartor_home.py` is the one place the data folder is decided.
+  `tests/test_data_root.py` fails if a runtime file that anchors a path on itself is not on its
+  reviewed list of shipped-code files, so a new writer that quietly lands beside the program is
+  caught in review.
+- **Not changed:** `platformdirs` stays a dependency for now, although nothing at runtime imports it
+  any more; the launcher branch that follows reorganises the dependencies.
+- Evidence and consumer map: `docs/dev/blast-radius/data-root.md`.
+
 ### A second launch reuses the running copy, and there is a Quit button (`feat/single-instance-and-quit`, items 146 and 147)
 
 Before this, starting `sartor` twice started two servers, and the only way to stop one was

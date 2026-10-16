@@ -54,10 +54,12 @@ single-unauthenticated-user boundary is **C-1**.*
   by `sartor`, so a WSGI host is never stopped by it. `GET /healthz`
   (app, version, pid, instance id) is loopback-only. These two, and
   `POST /api/heartbeat`, are the only routes about the server itself.
-  Tests: `tests/test_lifecycle_routes.py`.
-- API key handling: read from `.api_key` (gitignored) or
-  `$ANTHROPIC_API_KEY`; never logged, never sent anywhere except
-  to the Anthropic API.
+  Tests: `tests/test_lifecycle_routes.py`. The container image's
+  `HEALTHCHECK` is a `GET /healthz` to `127.0.0.1` made inside the
+  container; it sends nothing off the box.
+- API key handling: read from `.api_key` in the data root (gitignored; see
+  *User data residency*) or `$ANTHROPIC_API_KEY`; never logged, never sent
+  anywhere except to the Anthropic API.
 - Prompt injection from job descriptions: mitigated by the
   system-prompt persona constraints in `analyzer.py`; the LLM
   returns structured JSON, not free-text that's executed.
@@ -156,7 +158,11 @@ Your Anthropic API key is sensitive. Follow these rules:
 
 ## User data residency
 
-All user data stays on your machine in:
+All user data stays on your machine, under one **data root**: the repository
+root for a source clone or an editable install; the directory `SARTOR_HOME`
+names if you set it (the container image sets it to `/data`); and your OS
+user-data folder for an installed wheel. Everything below, including the
+`.api_key` file, lives in it:
 
 - `configs/{username}.config` — profile data (name, email,
   LinkedIn URL, portfolio URLs, notes)
