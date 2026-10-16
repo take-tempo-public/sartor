@@ -1,7 +1,7 @@
 # The Flask route surface
 
 > **Audience:** `dev`
-> **Concept:** the HTTP surface, now spread across eight `blueprints/` modules
+> **Concept:** the HTTP surface, now spread across nine `blueprints/` modules
 > (one a 7-submodule sub-package) — the mandatory security gate every
 > filesystem route shares (now centralized in `web_infra/security.py`), and
 > the four route families it carries (wizard, composition, the B.4/B.5
@@ -21,13 +21,14 @@ monolith-to-blueprints split, see [[engineering-workstreams]]) moved every
 [`blueprints/`](../../../blueprints/) — `analysis.py`, `generation.py`,
 `corpus/` (a 7-submodule sub-package), `templates.py`, `applications.py`,
 `users.py`, `diagnostics.py`, `assistant.py` — plus the pre-existing read-only
-`dashboard/` blueprint. At HEAD, `app.py` is a ~392-line composition root
-(`create_app()` factory + `register_blueprints()` + `main()`) carrying **zero**
+`dashboard/` blueprint. At HEAD, `app.py` carries **zero**
 `@app.route` decorators [`app.py`](../../../app.py); the route count that used
-to live in one file (93 at the walk's 2026-06-07 reading) is now **120**
-`@<bp>.route` decorators spread across the nine blueprint modules — up from 117
-after Epic A sprint A3 added two routes to `blueprints/applications.py`
-(`draft-experience-summaries`, `experience-summary-decide`) `[synthesis]`. The
+to live in one file (93 at the walk's 2026-06-07 reading) is now **124**
+`@<bp>.route` decorators spread across ten blueprint modules — the eight domain
+blueprints named above, plus new `lifecycle.py` (items 146/147, adding three
+routes: `GET /healthz`, `POST /api/shutdown`, `POST /api/heartbeat`)
+[`blueprints/lifecycle.py`](../../../blueprints/lifecycle.py), plus the separate
+read-only `dashboard/` `[synthesis]`. The
 seven blueprints that moved out of the monolith
 (analysis/generation/corpus/templates/applications/users/diagnostics) register
 with **no** `url_prefix`, so every URL they carry stays byte-identical to the
@@ -324,8 +325,8 @@ response models, the `mode="strict"` scoping, and the
 
 ## Other blueprints (not re-catalogued here)
 
-Three more domain blueprints round out the nine-module surface; each has its own
-wiki treatment or is a small enough seam not to need a dedicated route-by-route
+Five more seams round out the ten-module surface; each has its own wiki
+treatment or is a small enough seam not to need a dedicated route-by-route
 section on this page — see [[code-module-map]] for the full per-blueprint
 inventory:
 
@@ -340,6 +341,10 @@ inventory:
 - [`blueprints/assistant.py`](../../../blueprints/assistant.py) — the one-route
   doc-grounded-assistant seam (`POST /api/assistant/ask`), the first blueprint to
   exist (Sprint 7.5, predates the WS-1 split).
+- [`blueprints/lifecycle.py`](../../../blueprints/lifecycle.py) (items 146/147) —
+  server lifecycle routes: `GET /healthz` (app identity), `POST /api/shutdown`
+  (in-app Quit, same-origin + custom-header guard), `POST /api/heartbeat`
+  (keep-alive when idle shutdown is on via `--idle-timeout`).
 
 ## Related
 

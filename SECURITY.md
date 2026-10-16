@@ -46,6 +46,15 @@ single-unauthenticated-user boundary is **C-1**.*
 - Path-traversal prevention: `werkzeug.utils.secure_filename()` on
   all user-supplied filenames; resolved-path containment via
   `_within(path, parent)`.
+- Stopping the server: `POST /api/shutdown` (the in-app Quit) is
+  loopback-only, refuses a request a browser marks as cross-site
+  (`Sec-Fetch-Site` / `Origin`), and requires an `X-Sartor-Action`
+  header a cross-site page cannot send without a CORS preflight the
+  server never answers. It answers 501 when the process was not started
+  by `sartor`, so a WSGI host is never stopped by it. `GET /healthz`
+  (app, version, pid, instance id) is loopback-only. These two, and
+  `POST /api/heartbeat`, are the only routes about the server itself.
+  Tests: `tests/test_lifecycle_routes.py`.
 - API key handling: read from `.api_key` (gitignored) or
   `$ANTHROPIC_API_KEY`; never logged, never sent anywhere except
   to the Anthropic API.
@@ -56,7 +65,10 @@ single-unauthenticated-user boundary is **C-1**.*
 **Out of scope (explicit non-goals):**
 - Multi-user authentication / authorization. Not implemented;
   localhost is the boundary.
-- TLS / CSRF / rate-limiting. Not implemented; same boundary.
+- TLS / CSRF / rate-limiting. Not implemented app-wide; same boundary.
+  The one exception is the shutdown route above, which carries its own
+  same-origin gate because a cross-site page could otherwise stop the
+  server on your machine.
 - Sandbox isolation between user data on the same machine. The
   filesystem permissions of the OS are the boundary.
 - Recovery from a compromised local machine. If your machine is
@@ -69,7 +81,10 @@ single-unauthenticated-user boundary is **C-1**.*
   profile/website scraper for the LinkedIn / portfolio URLs you
   provide (best-effort, fails gracefully). Job descriptions are
   always pasted text — a JD URL is stored as provenance only and
-  is never fetched.
+  is never fetched. (Not a third destination: at launch Sartor
+  connects to its own loopback address to check whether a copy is
+  already running — charter C-2; `instance.py` names no other host
+  and a test pins that.)
 - No background updates / auto-installs / phone-home.
 - No cross-candidate insights — the corpus and applications live
   only on your machine; the tool literally cannot compare you to

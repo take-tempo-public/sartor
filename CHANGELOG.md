@@ -13,6 +13,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### A second launch reuses the running copy, and there is a Quit button (`feat/single-instance-and-quit`, items 146 and 147)
+
+Before this, starting `sartor` twice started two servers, and the only way to stop one was
+`Ctrl+C` in its terminal. On Windows the second one bound the same port **without any error**,
+so you could be talking to a stale copy.
+
+- **Fixed: a second launch no longer starts a second server.** If Sartor already answers on
+  the port, the second launch opens your browser on that copy and exits. If another program
+  owns the port, it exits with a message naming the port and `sartor --port 5001`. It does not
+  switch ports silently: your browser's saved state belongs to the port you used.
+- **New: Settings → Quit Sartor.** It asks first, then stops Sartor and shows "Sartor has
+  stopped". The button appears only when Sartor was started by `sartor` (or `python app.py`).
+  Closing the browser tab on its own still leaves Sartor running; that is deliberate, because
+  a refresh or a second tab would otherwise stop it too.
+- **New: `sartor --idle-timeout MINUTES`** (at least 5; off by default) stops Sartor once no
+  page has been open for that long. A request that is still being answered, including a running
+  generation, holds the timer.
+- **New: closing the tab asks first only when you have unsaved typed text.** That is a Compose
+  autosave that has not been sent, Step 6 text that differs from what was generated, or an open
+  form with changed fields. Never otherwise.
+- **Fixed: a dialog opened from the Settings drawer could not be clicked.** The drawer's
+  backdrop covered the shared confirm and error dialogs.
+- **For API callers:** `GET /healthz` (loopback only: app, version, pid, instance id),
+  `POST /api/shutdown` (loopback, same-origin, needs the `X-Sartor-Action: shutdown` header;
+  501 when not started by `sartor`), `POST /api/heartbeat`. A `sartor-instance.json` marker is
+  written under `SARTOR_HOME` while a copy runs and removed on exit.
+- **Governance:** charter **C-2** is clarified (owner-directed): a connection Sartor makes to its
+  own loopback address, to check whether a copy is already running, is not outbound traffic and
+  is not a third class. The two off-box classes are unchanged. `instance.py` is the one module
+  that does it; `tests/test_egress_allowlist.py` pins that it names no other host.
+- **Known limit:** two launches started within the same fraction of a second can still both
+  bind. Closing that needs a different server setup; recorded in item 146.
+- Evidence and consumer map: `docs/dev/blast-radius/single-instance-and-quit.md`.
+
 ### Generate now asks before it replaces an edit you typed (`feat/confirm-before-overwriting-typed-edits`, item 170)
 
 Before this, an edit you typed could be replaced by a new version with only an after-the-fact

@@ -111,6 +111,74 @@ Not separated: how much of the 1.9–2.5 s second launch is interpreter and impo
 pulls the whole app) versus the probe, which the measured table above puts at tens of milliseconds
 for an owned port.
 
+### Found by the UX test: a dialog opened from the Settings drawer was unclickable
+
+First run of `test_20261015_quit_and_unsaved_guard.py::test_quit_asks_first_then_shows_the_stopped_state`
+failed at `page.click("#cbConfirmCancel")` with Playwright's own call log:
+`<div data-settings-dismiss class="settings-drawer-backdrop"> from <aside id="settingsDrawer"> subtree
+intercepts pointer events`. Cause (read in `static/style.css`): `.cb-modal` is `z-index: 1000`, the
+Settings drawer `1500`. A confirm or error dialog opened **from** the drawer sat underneath its
+backdrop, so a mouse user could not press Quit or Keep running.
+
+Fix: `#cbConfirmModal, #errorModal { z-index: 1600 }` beside the drawer rules, scoped to the two
+shared dialogs a drawer control can open (the second is the 501/403 path of Quit). Same test, same
+selectors, passes after. Before/after is one run each.
+
+**Not checked:** whether other flows already open `#errorModal` from the drawer (profile fetch
+failure) and were hit by the same stacking. The new rule would fix them too; that is a side effect,
+not a finding.
+
+### Idle shutdown: the first real run was invalid, so it is NOT a result
+
+`idle_e2e.py` (`--idle-timeout 5`, default reloader mode) was still up after 544 s. The run's log
+shows why it proves nothing: the Werkzeug reloader watches every `.py` under the repo root and
+restarted the serving child three times (17:37:36, 17:39:04, 17:41:24) because this session edited
+`ui_pages/selectors.py` and the new test file meanwhile. Each restart re-runs `main()`, which builds
+a fresh tracker, so the 300 s clock restarted; the last restart was ~100 s before the script gave up.
+
+Consequences recorded rather than guessed at:
+
+- **Idle shutdown was not demonstrated by that run.** A clean run is below (single-process mode first,
+  then the reloader mode, with no `.py` edited while it runs).
+- It does surface a real property: **in the reloader (dev default), a code change resets the idle
+  clock** — expected for a dev server, harmless, and not worth a mechanism.
+
+**Clean single-process run (`FLASK_DEBUG=0`, `--idle-timeout 5`, nothing edited, `/healthz` polled
+every 20 s throughout):** `exited: true`, `exit_code: 0`, **`seconds_up: 300.1`**, instance file
+removed. So idle shutdown works in a real process, and the `/healthz` exemption holds under real
+polling (30 polls did not extend the clock). One run.
+
+**Clean reloader-mode run (the dev default; `--idle-timeout 5`; only `.md` edited while it ran;
+`/healthz` polled every 20 s):** `exited: true`, `exit_code: 0`, **`seconds_up: 300.3`**, instance
+file removed, **0 "Detected change" lines** in the log (so the clock was never reset). The idle
+monitor runs in the serving child; its `os._exit(0)` ended the supervisor with 0, as C observed.
+One run. This supersedes the invalidated one above.
+
+### Found while writing the docs: the in-flight count did not cover streamed responses
+
+The doc sentence "a generation that is still running is never cut off" was about to ship, so it was
+checked against the code. All four SSE routes (`blueprints/analysis.py:300`, `generation.py:1839`,
+`assistant.py:284`, `diagnostics.py:102`) return `Response(stream(), mimetype="text/event-stream")`
+**without** `stream_with_context`. Flask therefore tears the request down when the view returns,
+before the generator does its work, and the teardown-time `tracker.end()` released the count at once.
+Red-before test (`test_a_streamed_response_holds_the_in_flight_count_until_it_closes`): the
+generator saw `in_flight == 0` for the whole stream — i.e. with `--idle-timeout` and the tab closed
+mid-run past the timeout, the server could be stopped during a paid run, the one case the counter
+exists for.
+
+Fix: `_hand_count_to_stream` (an `after_app_request` hook) moves the count onto the response's
+iterable via `werkzeug.wsgi.ClosingIterator`, released once when the server closes it (finished,
+disconnected, or never read; the unstarted case is tested). Green after: `seen == [1, 1]`, count 0
+after close, 0 after an abandoned stream.
+
+Side effect observed and accepted: Flask turns an unhandled exception into a *streamed* 500, so
+that count is also held until the response is closed — which every WSGI server does, and which the
+test client does only via `with client.get(...)`. Two of my tests initially failed on exactly this
+(instrument, not product).
+
+**Not verified:** a real SSE route (`/api/generate/stream`) end to end under `--idle-timeout`; the
+mechanism is proved on a route shaped like them, not on them.
+
 ### `ui_pages/selectors.py` importers
 
 ```
