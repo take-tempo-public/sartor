@@ -44,7 +44,7 @@
   "overrides": {
     "postcss": "^8.5.16",
     "sharp": "^0.35.0",
-    "fast-uri": "^3.1.5"
+    "fast-uri": "^3.1.7"
   },
   "comment:typescript": [
     "Held at ^6.0.3 (not the latest 7.x) deliberately: typescript@7 restructured to a",
