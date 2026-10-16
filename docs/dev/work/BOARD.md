@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 19 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 89
+**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 89
 
 ## Open
 
@@ -23,6 +23,8 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **139** -- capture_screenshots leaves its demo user behind: cleanup skips on failure, and DB rows always persist (`agent`) -- cleanup() runs only on success; demo DB rows are never removed, so a stale import blocks later runs.
 - **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Prompts hand bullets to the model as id="b{id}"; the model echoes the handle into prose. Letter date is ungrounded.
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
+- **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
+- **172** -- Whole-tree gate tests scan linked worktrees under .claude/worktrees and fail the main checkout's gate (`agent`) -- A harness worktree under .claude/worktrees fails 3 whole-tree gate tests in the main checkout; hooksPath also changed.
 
 ## Blocked
 
