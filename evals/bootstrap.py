@@ -54,6 +54,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from werkzeug.utils import secure_filename  # noqa: E402
 
+import sartor_home  # noqa: E402
 from analyzer import (  # noqa: E402
     analyze,
     clarify,
@@ -77,8 +78,9 @@ GENERATOR = "evals/bootstrap.py"
 DEFAULT_JACCARD = 0.75
 
 # The only directory bootstrap.json is ever written into. Already gitignored
-# (evals/fixtures/real/* in .gitignore), so the snapshot's PII stays untracked.
-ALLOWED_ROOT = PROJECT_ROOT / "evals" / "fixtures" / "real"
+# (evals/fixtures/real/* in .gitignore), so the snapshot's PII stays untracked. Equals
+# `Config.annotation_root`: it follows the data root (item 145), the repo root in a checkout.
+ALLOWED_ROOT = sartor_home.data_path("evals", "fixtures", "real")
 
 # A "grounding function" matches run_grounding_signals' shape: (resume_md,
 # source_texts) -> signal dict. Injected so the optional grounding pass is

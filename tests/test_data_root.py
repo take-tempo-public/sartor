@@ -14,8 +14,14 @@ onboarding CLI's paths resolved from the install directory, so that one mount lo
 * The persona resolver reads `Config()` at call time, so it runs in-process on a copy of the
   migrated template DB (never the real `db/resume.sqlite`).
 
-Both are committed red (`xfail(strict=True)`) as the first instrument (charter C-7): they record
-what the code does today. Drive steps use `control`; only the invariant is a plain `assert`.
+Both were committed red (`xfail(strict=True)`) as the first instrument (charter C-7), recording what
+the code did before the fix; the dossier's `## Observed` holds that output. The path probe is now an
+ordinary test. The persona arm stays red until the resolver is fixed. Drive steps use `control`;
+only the invariant is a plain `assert`.
+
+**The ratchet** (`TestNoUnclassifiedFileAnchoredPath`) is the mechanism for the recurrence: a
+writer that anchors a path on its own file silently resolves from the install directory, which is
+the site of the next lost-data bug. Charter C-11 asks for a gate, not a note.
 """
 
 from __future__ import annotations
@@ -204,11 +210,6 @@ class TestSartorHome:
         assert roots <= set(sys.stdlib_module_names), roots - set(sys.stdlib_module_names)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="item 145 branch 1: writers resolve from the install dir, not SARTOR_HOME",
-)
 def test_every_user_data_writer_honours_sartor_home(tmp_path: Path) -> None:
     home = (tmp_path / "sartor-home").resolve()
     home.mkdir()
@@ -261,3 +262,78 @@ def test_a_bundled_template_resolves_when_sartor_home_redirects_the_base_dir(
 
     assert resolved is not None, "the bundled default template did not resolve under SARTOR_HOME"
     assert Path(resolved).resolve().is_relative_to(packaged)
+
+
+#: Every runtime module that anchors a path on its own file (`Path(__file__)`), and why that path is
+#: CODE (shipped, read-only) and not user data. A new entry is a decision: if the path holds anything
+#: the user owns, it belongs under `sartor_home.data_path(...)` instead. `scripts/**` is dev and CI
+#: tooling that locates the checkout, and is out of scope (`docs/dev/blast-radius/data-root.md`).
+_CODE_ANCHORS: dict[str, str] = {
+    "sartor_home.py": "defines code_root()",
+    "docx_to_persona_html.py": "reads the shipped personas/bundled/classic.html skeleton",
+    "generator.py": "reads shipped personas/bundled/classic.html and personas/cover_letter.html",
+    "preflight.py": "the recall-index probe default: the index is built from shipped source",
+    "db/session.py": "alembic.ini is code; the DB path itself follows the data root",
+    "blueprints/assistant.py": "the checkout-only git-grep tier and the index built from shipped source",
+    "evals/runner.py": "sys.path bootstrap, and EVALS_DIR for the shipped fixtures and rubrics",
+    "evals/annotation.py": "sys.path bootstrap so `python -m evals.annotation` resolves imports",
+    "evals/bootstrap.py": "sys.path bootstrap so `python -m evals.bootstrap` resolves imports",
+    "evals/corpus_drafting_probe.py": "sys.path bootstrap, and the shipped synthetic fixtures",
+}
+
+_RUNTIME_PACKAGES = (
+    "blueprints",
+    "dashboard",
+    "db",
+    "evals",
+    "onboarding",
+    "recall",
+    "ui_pages",
+    "web_infra",
+)
+
+
+def _file_anchored(root: Path) -> set[str]:
+    """Repo-relative posix paths of runtime `.py` files that call `Path(__file__)`."""
+    import ast
+
+    candidates = list(root.glob("*.py"))
+    for package in _RUNTIME_PACKAGES:
+        candidates.extend((root / package).rglob("*.py"))
+    found: set[str] = set()
+    for path in candidates:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "Path"
+                and node.args
+                and isinstance(node.args[0], ast.Name)
+                and node.args[0].id == "__file__"
+            ):
+                found.add(path.relative_to(root).as_posix())
+                break
+    return found
+
+
+class TestNoUnclassifiedFileAnchoredPath:
+    def test_the_scan_sees_a_file_anchored_path(self, tmp_path: Path) -> None:
+        """Control arm: the scan must be able to fail, or the test below proves nothing."""
+        (tmp_path / "onboarding").mkdir()
+        (tmp_path / "onboarding" / "new_writer.py").write_text(
+            "from pathlib import Path\nLOG = Path(__file__).parent / 'logs'\n", encoding="utf-8"
+        )
+        (tmp_path / "clean.py").write_text("X = 1\n", encoding="utf-8")
+        assert _file_anchored(tmp_path) == {"onboarding/new_writer.py"}
+
+    def test_every_file_anchored_path_is_classified_as_code(self) -> None:
+        found = _file_anchored(REPO_ROOT)
+        unclassified = sorted(found - set(_CODE_ANCHORS))
+        stale = sorted(set(_CODE_ANCHORS) - found)
+        assert not unclassified, (
+            f"a runtime file anchors a path on itself: {unclassified}. If it holds user data it must "
+            f"use sartor_home.data_path(...) so SARTOR_HOME is honoured; if it is shipped code, "
+            f"add it to _CODE_ANCHORS with the reason."
+        )
+        assert not stale, f"_CODE_ANCHORS names files that no longer anchor a path: {stale}"

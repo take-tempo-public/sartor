@@ -1,7 +1,7 @@
 """Anthropic client factory shared by `app.py` and the assistant blueprint.
 
 `_get_client` reads the API key from the environment, falling back to a local
-`.api_key` file at the repo root. It moved here (Sprint 8.3a) from `app.py`;
+`.api_key` file in the data root (`preflight.api_key_path()`). It moved here (Sprint 8.3a) from `app.py`;
 `blueprints/assistant.py` carried a duplicate copy that is now deleted.
 
 This is the only `web_infra/` module that imports `anthropic`, so it is the one
@@ -22,16 +22,12 @@ never dereferenced — it exists only so this function's return type stays
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import cast
 
 import anthropic
 
+import preflight
 from demo_fixtures import is_demo_mode
-
-# Repo root for the local `.api_key` fallback (web_infra/ -> repo root). Mirrors
-# the retired `app.py:BASE_DIR / ".api_key"` lookup behavior-for-behavior.
-_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 class _DemoClient:
@@ -57,8 +53,9 @@ def _get_client() -> anthropic.Anthropic:
         return cast("anthropic.Anthropic", _DemoClient())
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        # Try reading from a local key file
-        key_file = _REPO_ROOT / ".api_key"
+        # Try reading from the local key file: the same resolution `--setup` writes to and
+        # `--doctor` reports on (`preflight.api_key_path`), in the data root (item 145).
+        key_file = preflight.api_key_path()
         if key_file.exists():
             api_key = key_file.read_text().strip()
     return anthropic.Anthropic(api_key=api_key)

@@ -35,6 +35,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy.orm import Session
 
+import preflight
+import sartor_home
 from db.models import (
     Bullet,
     Candidate,
@@ -53,11 +55,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Repo-relative paths to existing file-based PII.
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-CONFIGS_DIR = _REPO_ROOT / "configs"
-OUTPUT_DIR = _REPO_ROOT / "output"
-RESUMES_DIR = _REPO_ROOT / "resumes"
+# Data-root paths to the existing file-based PII (the repo root in a checkout, `SARTOR_HOME`
+# anywhere else; item 145). Module-level so the tests' `monkeypatch.setattr` seams still work.
+CONFIGS_DIR = sartor_home.data_path("configs")
+OUTPUT_DIR = sartor_home.data_path("output")
+RESUMES_DIR = sartor_home.data_path("resumes")
 
 
 # ---------------------------------------------------------------------------
@@ -548,13 +550,13 @@ def ingest_one_resume(
 
 
 def _resolve_api_key(explicit: str | None) -> str | None:
-    """Search explicit arg → env var → `.api_key` file at repo root."""
+    """Search explicit arg → env var → the `.api_key` file in the data root."""
     if explicit:
         return explicit.strip()
     env = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if env:
         return env
-    key_file = _REPO_ROOT / ".api_key"
+    key_file = preflight.api_key_path()
     if key_file.exists():
         return key_file.read_text(encoding="utf-8").strip() or None
     return None

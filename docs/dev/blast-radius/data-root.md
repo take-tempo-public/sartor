@@ -1,8 +1,9 @@
 # Blast radius — data-root
 
 > **Branch:** `feat/data-root` (item 145, branch 1 of 3)
-> **Status:** enumeration complete for the runtime sites; **the instrument (step 2) has not run yet**, so
-> nothing below is `## Observed` except the greps themselves. Hypotheses are under `## Inferred`.
+> **Status (2026-10-16):** enumeration complete; instrument run (`## Observed`); writers routed through
+> `sartor_home` (rows 1-10, 14-15 done); the bundled-persona resolver (row 11), Dockerfile (12) and
+> install.md (13) are still to do on this branch.
 
 **Why this branch exists.** Item 145's container contract is `-v sartor-data:/data -e SARTOR_HOME=/data`.
 Only `config._default_base_dir()` reads `SARTOR_HOME` (below). The SQLite DB, the LLM log, `.api_key`
@@ -167,6 +168,24 @@ Controls held: `Config().base_dir == <tmp>`, `bundled_personas_dir` was the pack
 **O3 — H1 is not an edge case.** `Config.bundled_personas_dir` takes the packaged-directory branch
 whenever `base_dir == _default_base_dir()` (`config.py:206`), which is exactly the `SARTOR_HOME` and
 installed-wheel case. The same branch makes `BUNDLED_PERSONAS_DIR` correct while `BASE_DIR` stays wrong.
+
+**O4 — after routing the writers (same probe, no code change to it):** all 13 sites resolve under
+`SARTOR_HOME`; `test_every_user_data_writer_honours_sartor_home` passes (1 run, 4.8 s). The
+suites that import the routed modules pass: 403 passed, 1 skipped across `test_demo_mode`,
+`test_setup_api_key`, `test_preflight`, `test_corpus_import`, `test_annotation*`, `test_bootstrap`,
+`test_packaging`, `test_config`, `test_cli_setup`, `test_analyzer_model_selection`,
+`test_call_kind_telemetry`, `test_llm_credential_gate`, `test_export_corpus_seed`, `test_web_infra`.
+In a clone `base_dir()` is the repo root, so those paths are byte-identical; that is argued from the
+code (`sartor_home.base_dir`, branch 2), and the 403 are consistent with it, not a proof.
+
+**Mechanism authored for the recurrence (C-11), same branch:** `TestNoUnclassifiedFileAnchoredPath`
+in `tests/test_data_root.py` scans every runtime `.py` (root modules and `blueprints`, `dashboard`,
+`db`, `evals`, `onboarding`, `recall`, `ui_pages`, `web_infra`) for `Path(__file__)` and requires the
+exact set to match `_CODE_ANCHORS` (10 files today, each with a reason). A new file-anchored path
+fails the test until someone decides whether it is shipped code or user data. Its control arm
+builds a scratch tree with an unclassified file and asserts the scan finds it. **Known limit (C-0):**
+it sees `Path(__file__)` only; a path built from `os.path.dirname(__file__)`, `__file__` in a string
+join, or `importlib.resources` is invisible to it, and `scripts/**` is out of scope.
 
 **Not observed:** H2. No image was built.
 
