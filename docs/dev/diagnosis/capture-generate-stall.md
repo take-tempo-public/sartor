@@ -1,6 +1,8 @@
 # Diagnosis — screenshot capture stalls at Template → Generate (item 140, part a)
 
-> **Status:** hypothesis only. Cause NOT established; the instrument has not run yet.
+> **Status:** cause of the capture stall established (observed in run 1, mechanism confirmed at route level, fix
+> verified by one passing live run). Whether the APP should protect a user from the same race is open and is the
+> owner's call.
 > **Branch:** `fix/capture-generate-stall`
 
 ---
@@ -117,6 +119,29 @@ persists a summary. No rerun is shown in the output. **The mechanism is confirme
 draft that lands after the freeze stales the approval. What stays unobserved is that THIS is what happened inside run 1
 (the digest itself was not recorded), so the sequence in run 1 is "consistent with" it, with the draft's persist as the
 only context writer between the two `GET /composition` calls.
+
+### Probe run 2, after the fix (2026-10-17 22:08:32Z to 22:10:38Z, commit `91e6cf2`)
+
+Command: `python -m scripts.capture_stall_probe --out <scratchpad>/stall_probe_run2.jsonl --headless` (no `--keep-user`).
+
+```text
+✓ capture complete in 125.2s
+  · removed configs\demo.config / resumes\demo / output\demo / scripts\_tmp_capture
+PROBE_DONE ec=0
+```
+
+- The same snapshot that failed in run 1 now reads (probe lines 52 and 61): `before_click` `wizardStep 4`,
+  `compositionFrozen true`, **`compositionStale false`**, **`reachable5 true`**; `after_click_ok` `wizardStep 5`. No
+  `pageerror`, no `dialog`, no `continue_to_generate_failed`, `end status 0`.
+- **The recaptured `docs/screenshots/walkthrough_coverletter_first-generation.png` was read:** the letter (editor and
+  preview) is dated "October 17, 2026", the run date, and shows no `b`/`e`/`t` id. The committed image it replaces
+  showed `b180` and `March 2025`. `walkthrough_step6_download-with-refine.png` from the same run was also read and
+  shows no id; it and the other eight PNGs the script overwrote were restored with `git checkout`, so only the
+  cover-letter image changes.
+- **Spend, by `compute_call_cost` over the telemetry rows of each window:** run 1 `$0.114` (5 calls), run 2 `$0.192`
+  (7 calls), `$0.306` in total; the cap for this item was about `$0.45`.
+- n = 1 passing run. One pass does not show the stall cannot recur: the app-side race is still there for any caller
+  that clicks Save-and-continue early.
 
 ---
 

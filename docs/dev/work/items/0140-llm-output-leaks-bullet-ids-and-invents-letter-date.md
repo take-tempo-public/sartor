@@ -5,16 +5,17 @@ kind = "item"
 title = "LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date"
 status = "open"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement", "fix/llm-handle-leak-and-letter-date"]
+branches = ["feat/docs-assets-enforcement", "fix/llm-handle-leak-and-letter-date", "fix/capture-generate-stall"]
 refs = [
   "analyzer.py:_corpus_block",
   "analyzer.py:generate_cover_letter_against_resume",
   "docs/dev/diagnosis/llm-handle-leak-and-letter-date.md",
+  "docs/dev/diagnosis/capture-generate-stall.md",
   "docs/dev/blast-radius/llm-handle-leak-and-letter-date.md",
   "docs/screenshots/readme_hero_wizard-step1-filled.png",
   "docs/screenshots/walkthrough_coverletter_first-generation.png",
 ]
-summary = "Fix built and measured; open: cover-letter screenshot not recaptured, one fixture score drop unexplained."
+summary = "Fix built and measured; screenshots recaptured; open: one fixture score drop unexplained, hypothesis B untested."
 ```
 
 **Observed (2026-10-01, D4 screenshot capture, live Sonnet 5 run, synthetic Priya fixture).**
@@ -61,3 +62,22 @@ two acceptance parts are not met. The full record is `docs/dev/diagnosis/llm-han
 - **Seen, not fixed here:** `_parse_or_retry`'s retry drops `max_tokens`; `pm-senior` generate mode intermittently gets
   an empty response (`Expecting value`); `evals/fixtures/synthetic/corpus` is picked up as a fixture and fails to
   load; analyses saved before the fix that already contain ids will keep feeding later prompts.
+
+**2026-10-17, `fix/capture-generate-stall`.** Open 1 is closed: the cover-letter screenshot is recaptured. The full record
+is `docs/dev/diagnosis/capture-generate-stall.md`.
+
+- **Cause (observed, then confirmed):** the capture script returned from `WizardComposePage.wait_cards()` at the first
+  experience card and clicked Save and continue while Compose's arrival `draft_summary` call was still in flight. The
+  freeze stamped its digest first, the draft then wrote `composition_overrides.summary_text`, the approval went stale, and
+  `wizardGoTo(5)` refused with the app's own "You changed your composition after approving it" toast. It was not the
+  item-139 stale rows. Probe run 1 recorded the state and the toast; a route-level test confirms that a draft persisted
+  after the freeze stales the approval.
+- **Fix:** `wait_cards()` also waits for `Compose.SETTLED` (the gate every UX-suite path already used). A recording-page
+  test fails without it. No app code changed.
+- **Verified:** one live capture ran end to end; `walkthrough_coverletter_first-generation.png` was read and shows
+  "October 17, 2026" and no id. Spend `$0.306` (telemetry).
+- **Still open on this item:** Open 2 (the `data-scientist-junior` score drop) and the untested carrier hypothesis. Whether
+  to close the item over them, with a `closure_exception`, is the owner's call.
+- **Declared, not fixed (the owner's call):** a real user who clicks Save and continue while an arrival draft is in flight
+  hits the same lock, with a message saying they changed something they did not. `TestDraftLandingAfterTheFreeze`
+  pins today's behavior and says it is not a statement that it is right.
