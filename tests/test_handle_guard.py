@@ -124,16 +124,28 @@ class TestValidatorAndRetry:
         assert "internal id handle(s) b14" in ei.value.validation_error
         assert "validation error for" not in ei.value.validation_error
 
+    @pytest.mark.parametrize("logging_disabled", [False, True])
     def test_two_leaks_in_a_soft_field_are_accepted_after_the_retry(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+        self, monkeypatch: pytest.MonkeyPatch, logging_disabled: bool
     ) -> None:
         # The retry still happens (the model is asked to fix it); only the final raise is relaxed.
+        # The warning is asserted on the call, not on captured log text: another test in the same
+        # xdist worker can silence the `analyzer` logger (a logging.config.fileConfig from an Alembic
+        # migration), which left `caplog.text` empty in the gate run that failed on this line. The
+        # `True` arm is that condition made deterministic, so the assertion cannot depend on order.
+        monkeypatch.setattr(analyzer.logger, "disabled", logging_disabled)
+        warnings: list[str] = []
+        monkeypatch.setattr(
+            analyzer.logger,
+            "warning",
+            lambda msg, *args, **kwargs: warnings.append(msg % args if args else msg),
+        )
         fake = _scripted([_payload("b14 here"), _payload("and b14 again")])
         monkeypatch.setattr(analyzer, "_call_llm", fake)
         out = _run(_block_guard(BLOCK))  # no hard_fields: every field is soft
         assert out["recommendations"][0]["rationale"] == "and b14 again"
         assert [k for k, _ in fake.calls] == ["recommend", "recommend_retry"]
-        assert "Accepting response after 2 attempts" in caplog.text
+        assert any("Accepting response after 2 attempts" in w for w in warnings)
 
     def test_a_soft_leak_next_to_a_shipped_leak_still_raises(
         self, monkeypatch: pytest.MonkeyPatch
