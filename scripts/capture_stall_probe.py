@@ -68,7 +68,7 @@ _TOAST_WATCH = """
     if (key === last || window.__probeToasts.length >= 200) return;
     last = key;
     window.__probeToasts.push({ms: Math.round(performance.now() - t0), text, cls});
-  }).observe(document.documentElement, {
+  }).observe(document, {
     subtree: true, childList: true, characterData: true, attributes: true,
   });
 })();
