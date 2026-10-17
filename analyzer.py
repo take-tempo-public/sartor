@@ -660,7 +660,7 @@ class RefinementScopeResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-10-17.1"  # fix/llm-handle-leak-and-letter-date (item 140): (1) _NO_HANDLES_IN_PROSE_RULE appended to 14 persona constants (SYSTEM_PROMPT, EXTRACTION, CLARIFY, CLARIFY_ITERATION, PROPOSAL_CRITIQUE, RECOMMEND, RECOMMEND_SUMMARIES, RECOMMEND_EXPERIENCE_SUMMARIES, RECOMMEND_SKILLS, SUGGEST_SKILLS, SUGGEST_SKILLS_FROM_CORPUS, DRAFT_GAP_FILL, DRAFT_EXPERIENCE_SUMMARIES, DRAFT_SURGICAL_REFINEMENT) with an OK/NOT OK pair; the critique prompt's "source bullet b41" example reworded; (2) both cover-letter prompts carry <letter_date> and _COVER_LETTER_RULES_BLOCK FORMAT says to copy it, with a DATE worked example. Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-14.1 (Epic B sprint B2); that value's rationale, kept for the record: Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
+PROMPT_VERSION = "2026-10-17.2"  # fix/llm-handle-leak-and-letter-date (item 140), second revision: the analyze extraction schema (keyword_placement suggested_location/how asked for a "bullet area", answered with the bullet id) and the synthesis schema (strengths/section/action) now say to name a bullet by company and role or a quote, never an id; measured cause: 4 of 6 analyses needed a guard retry on 2026-10-17.1. Supersedes 2026-10-17.1, whose entry follows: (1) _NO_HANDLES_IN_PROSE_RULE appended to 14 persona constants (SYSTEM_PROMPT, EXTRACTION, CLARIFY, CLARIFY_ITERATION, PROPOSAL_CRITIQUE, RECOMMEND, RECOMMEND_SUMMARIES, RECOMMEND_EXPERIENCE_SUMMARIES, RECOMMEND_SKILLS, SUGGEST_SKILLS, SUGGEST_SKILLS_FROM_CORPUS, DRAFT_GAP_FILL, DRAFT_EXPERIENCE_SUMMARIES, DRAFT_SURGICAL_REFINEMENT) with an OK/NOT OK pair; the critique prompt's "source bullet b41" example reworded; (2) both cover-letter prompts carry <letter_date> and _COVER_LETTER_RULES_BLOCK FORMAT says to copy it, with a DATE worked example. Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-14.1 (Epic B sprint B2); that value's rationale, kept for the record: Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -2026,8 +2026,8 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
   "keyword_placement": [
     {{
       "keyword": "missing keyword (atomic)",
-      "suggested_location": "Where in the résumé to add it (section / bullet area)",
-      "how": "How to incorporate naturally without keyword-stuffing"
+      "suggested_location": "Where in the résumé to add it: the section, or the company and role of the bullet area. Never a bullet or experience id",
+      "how": "How to incorporate naturally without keyword-stuffing. Name a bullet by its company and role or a short quote, never by id"
     }}
   ]
 }}
@@ -2075,14 +2075,14 @@ ATS warnings: {json.dumps(context_set["deterministic_analysis"]["ats_warnings"])
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
   "comparison": {{
-    "strengths": ["specific strength — cite an extracted skill or résumé item by name"],
+    "strengths": ["specific strength — cite an extracted skill or résumé item by name (company and role, or a short quote; never an id)"],
     "gaps": ["specific gap — cite an essential_skill that's missing or weak"],
     "title_alignment": "Assessment of how well current titles align with the target role"
   }},
   "suggestions": [
     {{
-      "section": "Section name in résumé",
-      "action": "Concrete change to make",
+      "section": "Section name in résumé, or the company and role it sits under (never an id)",
+      "action": "Concrete change to make. Name a bullet by its company and role or a short quote, never by id",
       "rationale": "Why this improves candidacy — cite an extracted signal or gap"
     }}
   ],

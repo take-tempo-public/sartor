@@ -130,3 +130,30 @@ class TestLetterDate:
         monkeypatch.setattr(analyzer, "_parse_or_retry", fake_parse)
         generate_cover_letter_against_resume(None, _ctx(), {}, "resume text")  # type: ignore[arg-type]
         assert "<letter_date>July 9, 2033</letter_date>" in seen["prompt"]
+
+
+# Just the deterministic_analysis the two analyze prompt builders read (as in test_analyze_split.py).
+_ANALYZE_CTX: Any = {
+    "deterministic_analysis": {
+        "keyword_overlap": {
+            "match_score": 0.5,
+            "matched": ["docker"],
+            "missing_from_resume": ["kubernetes"],
+        },
+        "ats_warnings": [],
+    },
+}
+
+
+class TestAnalyzeSchemasDoNotInviteIds:
+    """2026-10-17.2: the schemas asked for a bullet area while the only name a bullet had was its id."""
+
+    def test_extraction_schema_names_company_and_role_not_a_bullet_area(self) -> None:
+        prompt = analyzer._analyze_extraction_prompt(_ANALYZE_CTX)
+        assert "section / bullet area" not in prompt
+        assert "Never a bullet or experience id" in prompt
+        assert "never by id" in prompt
+
+    def test_synthesis_schema_says_never_an_id(self) -> None:
+        prompt = analyzer._analyze_synthesis_prompt(_ANALYZE_CTX, {})
+        assert prompt.count("never an id") + prompt.count("never by id") >= 3
