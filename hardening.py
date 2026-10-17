@@ -1638,33 +1638,45 @@ def find_leaked_handles(
     return hits
 
 
+def iter_prose_leaves(obj: object, path: str = "") -> Iterator[tuple[str, str]]:
+    """`(path, text)` for every string leaf of a parsed LLM response that is prose, not an id field.
+
+    Skips values under keys that legitimately carry ids (`id`, `*_id`, `*_ids`,
+    `*ids_in_order`), so `selected_bullets` and `evidence.bullet_id` stay legal.
+    """
+    if isinstance(obj, str):
+        yield path, obj
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            if isinstance(key, str) and _HANDLE_ID_KEY_RE.match(key):
+                continue
+            yield from iter_prose_leaves(value, f"{path}.{key}" if path else str(key))
+    elif isinstance(obj, (list, tuple)):
+        for i, value in enumerate(obj):
+            yield from iter_prose_leaves(value, f"{path}[{i}]")
+
+
 def find_leaked_handles_in(
     obj: object,
     handles: HandleSet,
     source_tokens: frozenset[str] = frozenset(),
     path: str = "",
 ) -> list[tuple[str, str]]:
-    """`(path, handle)` for every leaked handle in the string leaves of a parsed LLM response.
+    """`(path, handle)` for every leaked handle in the prose leaves of a parsed LLM response."""
+    return [
+        (leaf_path, handle)
+        for leaf_path, text in iter_prose_leaves(obj, path)
+        for handle in find_leaked_handles(text, handles, source_tokens)
+    ]
 
-    Skips values under keys that legitimately carry ids (`id`, `*_id`, `*_ids`,
-    `*ids_in_order`), so `selected_bullets` and `evidence.bullet_id` stay legal.
-    """
-    out: list[tuple[str, str]] = []
-    if isinstance(obj, str):
-        out.extend((path, h) for h in find_leaked_handles(obj, handles, source_tokens))
-    elif isinstance(obj, dict):
-        for key, value in obj.items():
-            if isinstance(key, str) and _HANDLE_ID_KEY_RE.match(key):
-                continue
-            out.extend(
-                find_leaked_handles_in(
-                    value, handles, source_tokens, f"{path}.{key}" if path else str(key)
-                )
-            )
-    elif isinstance(obj, (list, tuple)):
-        for i, value in enumerate(obj):
-            out.extend(find_leaked_handles_in(value, handles, source_tokens, f"{path}[{i}]"))
-    return out
+
+def handle_snippet(text: str, handle: str, width: int = 50) -> str:
+    """`width` characters either side of the first place `handle` appears in `text`, for audit."""
+    needle = handle.removeprefix("id ")
+    i = text.find(needle)
+    if i < 0:
+        return text[: 2 * width]
+    return " ".join(text[max(0, i - width) : i + len(needle) + width].split())
 
 
 _MONTHS = (

@@ -36,6 +36,26 @@ internal ids, and the cover letter carried a date the run could not have produce
 - The cover-letter user prompt (`analyzer.py:2998-3035`) contains no `id="…"` markup. It does include
   `Strategy: {analysis.get("overall_strategy", "")}` (`:3010`).
 
+- **Baseline run 1, instrument commit `6f00573`, prompts unchanged, `PROMPT_VERSION` `2026-08-14.1`** (live, corpus seed
+  `evals/fixtures/synthetic/corpus/role-summary-drafting/seed.json`, smoke subset = 3 fixtures; cost `$0.243` per mode,
+  `$0.485` total from the result records' `cost_usd`):
+  - Command: `python evals/runner.py --suite synthetic --subset smoke --seed <seed> --mode generate` →
+    `evals/results/20261017_091327Z.jsonl`; the same with `--mode assemble` → `evals/results/20261017_091722Z.jsonl`.
+  - `leaked_handles.total` per fixture, from the runner's log lines: generate 18 (data-scientist-junior), 15
+    (sre-mid-level); assemble 15, 12, 29. All in the `analysis` and `clarify` sections (plus 2 in `changes_made`,
+    generate mode). **UNAUDITED:** the records held paths and handles but no text, and no response text is persisted
+    anywhere (`logs/llm_calls.jsonl` has token counts only), so I could not confirm these are leaks and not detector
+    false positives. The next run records a snippet per finding.
+  - `letter_carriers` was `{}` in all five fixture-runs: **no handle was found in any cover letter.** The original
+    "Earlier, at b180" letter did not reproduce at this n.
+  - **Letter date:** the three letters that carried a date in their first lines were all wrong against the run date
+    `October 2026`: `October 2024` (generate, data-scientist-junior), `February 2025` (assemble, data-scientist-junior),
+    `April 2025` (assemble, sre-mid-level). The other two letters carried no date in their first 3 non-blank lines.
+  - `pm-senior`, generate mode: `Pipeline failed … LLM response failed validation: Expecting value: line 1 column 1
+    (char 0)` after 2 attempts, call `generate`. Not examined; no handle or date claim rests on it.
+  - The `corpus` directory under `evals/fixtures/synthetic/` is picked up as a fixture and fails to load
+    (`Fixture load failed: corpus — … corpus\jd.txt`) in both runs. Pre-existing, unrelated to this item.
+
 ---
 
 ## Falsified

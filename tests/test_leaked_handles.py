@@ -231,3 +231,24 @@ class TestEvalLeakReport:
         assert r["total"] == 0
         assert r["letter_carriers"] == {}
         assert r["letter_date"]["matches_run_date"] is True  # type: ignore[index]
+
+
+class TestSnippetAndLeaves:
+    def test_snippet_is_centred_on_the_handle(self) -> None:
+        from hardening import handle_snippet
+
+        text = "x" * 80 + " implied by b173 (4M+ daily shipments) " + "y" * 80
+        snip = handle_snippet(text, "b173", width=20)
+        assert "b173" in snip
+        assert len(snip) <= 20 + 4 + 20
+
+    def test_snippet_for_a_bare_id_phrase_finds_the_number(self) -> None:
+        from hardening import handle_snippet
+
+        assert "44" in handle_snippet("see id 44 for detail", "id 44", width=10)
+
+    def test_iter_prose_leaves_skips_id_keys_only(self) -> None:
+        from hardening import iter_prose_leaves
+
+        obj = {"rationale": "r", "bullet_ids": ["b1"], "nested": [{"id": "e1", "text": "t"}]}
+        assert dict(iter_prose_leaves(obj)) == {"rationale": "r", "nested[0].text": "t"}

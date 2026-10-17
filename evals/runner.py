@@ -90,7 +90,9 @@ from hardening import (  # noqa: E402
     extract_company_terms,
     extract_jd_label,
     extract_keywords,
-    find_leaked_handles_in,
+    find_leaked_handles,
+    handle_snippet,
+    iter_prose_leaves,
     source_handle_tokens,
 )
 from parser import parse_resume  # noqa: E402
@@ -379,9 +381,18 @@ def _leak_report(
     findings: list[dict[str, str]] = []
     by_section: dict[str, set[str]] = {}
     for name, value in sections.items():
-        for path, handle in find_leaked_handles_in(value, handles, src_tokens, name):
-            findings.append({"section": name, "path": path, "handle": handle})
-            by_section.setdefault(name, set()).add(handle)
+        for path, text in iter_prose_leaves(value, name):
+            for handle in find_leaked_handles(text, handles, src_tokens):
+                # The snippet is what lets a reader audit a finding: no response text is persisted elsewhere.
+                findings.append(
+                    {
+                        "section": name,
+                        "path": path,
+                        "handle": handle,
+                        "snippet": handle_snippet(text, handle),
+                    }
+                )
+                by_section.setdefault(name, set()).add(handle)
     letter_handles = by_section.get("cover_letter_content", set())
     letter_carriers = {
         h: sorted(s for s, hs in by_section.items() if s != "cover_letter_content" and h in hs)
@@ -393,6 +404,7 @@ def _leak_report(
         "findings": findings,
         "letter_carriers": letter_carriers,
         "letter_date": compute_letter_date(result.get("cover_letter_content", ""), run_date),
+        "letter_head": str(result.get("cover_letter_content", ""))[:160],
     }
 
 
