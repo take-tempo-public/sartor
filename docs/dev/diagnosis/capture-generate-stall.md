@@ -54,6 +54,13 @@ log below is populated.
   `pageerror`, no `dialog`, no overlay (`overlays: []`), and the button was visible and on top at `after_click_failed`
   (`selfIsTop true`). So the click landed and `wizardGoTo(5)` returned early; the rivals "selector hit another
   element", "modal intercepted" and "JS exception" are **not** what happened in this run.
+- **Provenance of the toast fields above:** run 1 used the probe as committed at `4eccf51`, which read the app's shared
+  toast element. The gate then failed (`tests/test_ux_toast_wait_gate.py::test_toast_sites_equal_the_allowlist`, item
+  159: any Python file naming that element is an offender, and a bare-name collision with the probe's `_STATE_JS` also
+  flagged `tests/ux/regression/test_20261014_editor_text_hidden_tab.py`). The toast reads were **removed** from the
+  probe in a later commit, with no allowlist entry added. Run 2 and later runs carry the same reason in `lockReason5`,
+  which the app's own `_wizardLockReason(5)` returns (`static/app.js:7418-7429`); only the "it was actually shown to the
+  user" fact is no longer recorded.
 - **The ordering of the traffic around the freeze** (probe lines 36-47, seconds since probe start; method, route,
   status 200 unless noted):
 

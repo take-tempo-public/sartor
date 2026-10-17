@@ -7,11 +7,11 @@ outside, what the page and the network looked like around that click, so the cau
 is read from an artifact rather than inferred from code.
 
 It records WIDER than any one theory: every console / pageerror / dialog event, every
-`/api/` request and response (status plus a body excerpt), every change to the toast
-element, and, around the click, the wizard's state variables, which panels are
+`/api/` request and response (status plus a body excerpt), and, around the click, the
+wizard's state variables and the lock reason the app itself gives, which panels are
 visible, the button's match count / box / what sits on top of it, and any open
 modal or drawer. A snapshot is taken after a successful click too, so a stall can be
-compared with a pass.
+compared with a pass. It does not read the app's shared toast element (see `_STATE_JS`).
 
 Cost: the same as the capture it wraps (about $0.11-0.27 of real API spend).
 Prereqs: as `capture_screenshots` (app running, `.api_key`, Chromium installed).
@@ -52,28 +52,9 @@ from ui_pages.selectors import Wizard
 _BODY_ROUTES = ("composition", "freeze", "approve", "generate", "context")
 _BODY_EXCERPT = 600
 
-# Records every change to the toast element; `_toast` (static/app.js) is how a refused
-# wizardGoTo() tells the user why, and it fades, so a late snapshot would miss it.
-_TOAST_WATCH = """
-(() => {
-  window.__probeToasts = [];
-  let last = null;
-  const t0 = performance.now();
-  new MutationObserver(() => {
-    const el = document.getElementById('_corpusToast');
-    if (!el) return;
-    const text = el.textContent || '';
-    const cls = el.className;
-    const key = text + '|' + cls;
-    if (key === last || window.__probeToasts.length >= 200) return;
-    last = key;
-    window.__probeToasts.push({ms: Math.round(performance.now() - t0), text, cls});
-  }).observe(document, {
-    subtree: true, childList: true, characterData: true, attributes: true,
-  });
-})();
-"""
-
+# Deliberately does NOT read the app's shared toast element: tests/test_ux_toast_wait_gate.py
+# (item 159, C-11) fails any Python file that names it. The reason a refused wizardGoTo()
+# gives is read from the app's own function instead (`lockReason5` below).
 _STATE_JS = """
 () => {
   // A ReferenceError means the app.js global does not exist; that is itself a finding.
@@ -90,7 +71,6 @@ _STATE_JS = """
     return {x: r.x, y: r.y, w: r.width, h: r.height};
   };
   const panel = document.getElementById('panelGenerate');
-  const toast = document.getElementById('_corpusToast');
   const overlays = Array.from(document.querySelectorAll(
     '[role="dialog"], dialog, .cb-modal, .cb-drawer, [class*="modal"], [class*="drawer"]'
   )).filter(shown).map((el) => ({
@@ -108,8 +88,6 @@ _STATE_JS = """
       display: getComputedStyle(panel).display,
     } : null,
     visiblePanels: Array.from(document.querySelectorAll('.cb-panel')).filter(shown).map((p) => p.id),
-    toast: toast ? {text: toast.textContent, cls: toast.className, shown: shown(toast)} : null,
-    toastLog: window.__probeToasts || null,
     overlays,
     scrollY: window.scrollY,
     viewport: {w: window.innerWidth, h: window.innerHeight},
@@ -155,7 +133,6 @@ class Recorder:
 
 
 def _attach(rec: Recorder, page: Page) -> None:
-    page.add_init_script(_TOAST_WATCH)
 
     def on_console(m: ConsoleMessage) -> None:
         rec.emit("console", level=m.type, text=m.text[:500])
