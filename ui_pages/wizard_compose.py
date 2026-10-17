@@ -141,9 +141,16 @@ class WizardComposePage(BasePage):
         """Wait for compose cards to render after a clarify-submit lands on Compose.
 
         Used e.g. by the screenshot script's full-flow path.
+
+        Returns only once Compose has SETTLED, not at the first card: the first card is
+        the initial render, and the arrival auto-draft (a Sonnet call) is still in flight
+        behind it. A Save-and-continue clicked in that window freezes before the draft
+        lands, the draft then stales the approval, and Step 5 refuses to open
+        (docs/dev/diagnosis/capture-generate-stall.md).
         """
         self.page.wait_for_selector(Wizard.PANEL_COMPOSE, state="visible", timeout=LLM_TIMEOUT_MS)
         self.page.wait_for_selector(Compose.EXPERIENCE_CARD, timeout=LLM_TIMEOUT_MS)
+        self.page.wait_for_selector(Compose.SETTLED, state="attached", timeout=LLM_TIMEOUT_MS)
         return self
 
     def continue_to_template(self) -> None:

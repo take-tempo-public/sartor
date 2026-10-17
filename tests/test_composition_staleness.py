@@ -214,6 +214,37 @@ class TestCompositionResponses:
         assert rs["has_frozen_composition"] is True and rs["composition_stale"] is True
 
 
+class TestDraftLandingAfterTheFreeze:
+    """Characterizes today's behavior; it is not a statement that the behavior is right.
+
+    docs/dev/diagnosis/capture-generate-stall.md: the screenshot capture clicked Save and
+    continue while Compose's arrival `draft-summary` call was still in flight. The freeze
+    stamped its digest first, the draft then wrote `composition_overrides.summary_text`,
+    and Step 5 locked behind "You changed your composition after approving it". Whether
+    the app should protect a user who does the same is the owner's call; if that call
+    changes this behavior, change this test with it.
+    """
+
+    def test_a_summary_draft_persisted_after_the_freeze_stales_the_approval(self, rig, monkeypatch):
+        import analyzer
+
+        monkeypatch.setattr(
+            analyzer,
+            "draft_positioning_summary",
+            lambda *_args, **_kwargs: {"summary": "A drafted two-sentence positioning summary."},
+        )
+        _freeze(rig)
+        # Control arm: right after the freeze nothing has changed, so it is fresh.
+        assert json.loads(rig.compose_view())["composition_stale"] is False
+
+        r = rig.client.post(
+            f"/api/applications/{rig.aid}/draft-summary", json={"context_path": rig.cp}
+        )
+
+        assert r.status_code == 200, r.get_data(as_text=True)
+        assert json.loads(rig.compose_view())["composition_stale"] is True
+
+
 class TestGenerateRefusesStale:
     @pytest.mark.parametrize("route", ["/api/generate", "/api/generate/stream"])
     def test_409_with_no_llm_call(self, rig, route):
