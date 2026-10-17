@@ -1,9 +1,10 @@
 # Diagnosis — LLM prose contains internal id handles (b173, b180) and the cover letter invents its date
 
-> **Status:** Hypothesis A (ids leak into analysis and clarify prose) is **observed**, in every fixture-run. The
-> invented letter date is **observed** (6 of 6 dated letters wrong). Hypothesis B (a letter's handle arrives through
-> the analysis) is **untested, not refuted**: no letter carried a handle in 11 letters, so the original `b180`
-> letter has not reproduced.
+> **Status:** Hypothesis A (ids leak into analysis and clarify prose) is **observed**, in every baseline fixture-run,
+> and the rule plus validator removed it from every completed candidate run. The invented letter date is **observed**
+> (6 of 6 dated baseline letters wrong, 0 of 4 wrong with `<letter_date>`). Hypothesis B (a letter's handle arrives
+> through the analysis) is **untested, not refuted**: no letter carried a handle in 15 letters, so the original `b180`
+> letter has not reproduced. **Open cost:** the validator turned 1 of 6 analyze pipelines into a hard error.
 > **Branch:** `fix/llm-handle-leak-and-letter-date` (work item 140)
 
 ---
@@ -84,6 +85,37 @@ internal ids, and the cover letter carried a date the run could not have produce
 - **Letter-date mechanism, still read not observed:** the letter prompt contains no date and no clock call exists
   outside telemetry (above); six wrong dates fit "the model writes one because FORMAT asks for one", but no run has yet
   shown the date disappearing when it is supplied. That is what the candidate run tests.
+
+- **Cost, corrected.** The `$1.252` above sums `cost_usd` on the result records, which a failed fixture does not
+  carry. Summed from `logs/llm_calls.jsonl` with `hardening.compute_call_cost` over each run's time window instead:
+  baseline 1 `$0.649`, baseline 2 `$0.767`, candidate `$0.596`: **`$2.013` for all three pairs**, at the owner's
+  `~$2` approval before the screenshot recapture (`~$0.27`).
+
+- **Candidate run, commit `54674d0`, `PROMPT_VERSION` `2026-10-17.1`** (rule on 14 personas, `<letter_date>`, guard
+  active). Same commands and seed. Results: `evals/results/20261017_094902Z.jsonl` (generate) and
+  `evals/results/20261017_095211Z.jsonl` (assemble). All records read `prompt_version 2026-10-17.1`.
+  - **Letter date:** all four letters that carried a date read `October 2026` (run date `October 2026`), against 0 of 6
+    in the baselines. The `<letter_date>` block fixed the date: the mechanism is now observed, not only read.
+  - **Handles in completed runs:** the four fixture-runs that completed have **zero b/e/t handles** (baseline 2:
+    105 in the six that completed, every one of the six with some). What remains is 5 `q` findings per affected run, all
+    in `clarify.reasoning` ("experience_probe q1, q3"): the clarify response numbering its own questions, the
+    self-reference recorded above as not the defect.
+  - **The cost of the validator, observed:** `sre-mid-level` triggered it in both modes. Generate mode: the Haiku
+    extraction wrote ids into `keyword_placement[2].suggested_location` on **both** attempts, so `analyze_extraction`
+    raised and **the pipeline failed**: `LLM response failed validation: Prose contains internal id handle(s) b303 (first
+    at keyword_placement[2].suggested_location)…`. Assemble mode: `analyze_extraction` retried once (`b305, b303`) and
+    `analyze_synthesis` retried once (`b303, b305, b301, b302`, first at `comparison.strengths[0]`); both recovered.
+    So 3 of the 12 analyze passes in the candidate run needed a retry, and 1 of 6 analyze pipelines ended in the hard
+    error the owner accepted. n=6; the rate is not estimated here.
+  - **The rule alone did not stop the extraction persona** (`EXTRACTION_SYSTEM_PROMPT` carries it). In the same
+    fixture the other five fixture-runs wrote no handles in the analysis.
+  - **Unrelated, seen in both baseline 1 and the candidate:** `pm-senior`, generate mode, `Expecting value: line 1
+    column 1 (char 0)` on both attempts (empty or non-JSON response; it did not occur in baseline 2). Not examined; no
+    claim rests on it.
+  - **Scores:** `data-scientist-junior` generate-mode grounding read 2.1, 3.2, then 1.2. Its judge reasons name an
+    identity mismatch between the fixture and the corpus seed ("not the candidate named in the fixture"), i.e. the
+    seed is a platform engineer and the fixture a junior data scientist, so low generate-mode scores are expected
+    for that pairing; assemble mode read 4.8, 4.8, 4.8. n=1 per arm: not attributed to the change either way.
 
 ---
 
