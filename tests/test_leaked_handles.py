@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from typing import Any
 
 from hardening import (
     HandleSet,
@@ -170,7 +171,7 @@ class TestComputeLetterDate:
 class TestEvalLeakReport:
     """`evals.runner._leak_report`: wider than the letter, and it names the upstream carrier."""
 
-    def _report(self, **over: object) -> dict[str, object]:
+    def _report(self, **over: object) -> dict[str, Any]:
         from evals import runner
 
         context = {
@@ -208,16 +209,16 @@ class TestEvalLeakReport:
 
     def test_scans_every_section_and_maps_the_carrier(self) -> None:
         r = self._report()
-        sections = {f["section"] for f in r["findings"]}  # type: ignore[attr-defined]
+        sections = {f["section"] for f in r["findings"]}
         assert sections == {"analysis", "cover_letter_content", "recommend.bullets"}
         assert r["letter_carriers"] == {"b180": ["analysis"]}
-        assert r["letter_date"]["matches_run_date"] is False  # type: ignore[index]
+        assert r["letter_date"]["matches_run_date"] is False
 
     def test_recommended_ids_in_id_fields_are_not_findings(self) -> None:
         r = self._report(analysis={}, result={"cover_letter_content": "", "resume_content": ""})
         assert [f["path"] for f in r["findings"]] == [
             "recommend.bullets.recommendations[0].rationale"
-        ]  # type: ignore[attr-defined]
+        ]
 
     def test_clean_run_reports_zero(self) -> None:
         r = self._report(
@@ -230,7 +231,7 @@ class TestEvalLeakReport:
         )
         assert r["total"] == 0
         assert r["letter_carriers"] == {}
-        assert r["letter_date"]["matches_run_date"] is True  # type: ignore[index]
+        assert r["letter_date"]["matches_run_date"] is True
 
 
 class TestSnippetAndLeaves:

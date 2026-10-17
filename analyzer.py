@@ -14,10 +14,10 @@ import logging
 import math
 import re
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Literal, cast
 
 import anthropic
@@ -603,7 +603,7 @@ class RefinementScopeResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-08-14.1"  # Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
+PROMPT_VERSION = "2026-10-17.1"  # fix/llm-handle-leak-and-letter-date (item 140): (1) _NO_HANDLES_IN_PROSE_RULE appended to 14 persona constants (SYSTEM_PROMPT, EXTRACTION, CLARIFY, CLARIFY_ITERATION, PROPOSAL_CRITIQUE, RECOMMEND, RECOMMEND_SUMMARIES, RECOMMEND_EXPERIENCE_SUMMARIES, RECOMMEND_SKILLS, SUGGEST_SKILLS, SUGGEST_SKILLS_FROM_CORPUS, DRAFT_GAP_FILL, DRAFT_EXPERIENCE_SUMMARIES, DRAFT_SURGICAL_REFINEMENT) with an OK/NOT OK pair; the critique prompt's "source bullet b41" example reworded; (2) both cover-letter prompts carry <letter_date> and _COVER_LETTER_RULES_BLOCK FORMAT says to copy it, with a DATE worked example. Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-14.1 (Epic B sprint B2); that value's rationale, kept for the record: Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -756,6 +756,18 @@ def _safe_exc_str(exc: BaseException) -> str:
 
 
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
+# Item 140 — appended (below, after each definition) to every persona that is shown id-bearing
+# markup or analysis prose that quotes it. Baseline runs showed bullet and experience ids
+# ("e102 bullet b304 …") in the analysis, clarify and generate-notes text a user reads. The name
+# must not end in SYSTEM_PROMPT or `tests/test_prompt_overrides.py` demands it be registered.
+# The runtime half is `_LLMResponse.reject_handle_leaks`; this rule is the half that is A/B-able.
+_NO_HANDLES_IN_PROSE_RULE = """
+
+INTERNAL IDS — NEVER IN PROSE. Values like e7, t4, b12, s44, or a bare numeric id are machine handles. Write one ONLY in a JSON field that asks for an id (bullet_ids, experience_id, selected_bullets, summary_item_id, ...). In every prose field — analysis, rationale, notes, questions, résumé text, cover letter — never write one. Name the company and role, or quote the bullet's own words, instead.
+  NOT OK: "Earlier, at b12, I led the migration."  /  "e7 bullet b14 shows streaming depth."
+  OK: "Earlier, at Northwind Freight, I led the migration."  /  "The Calder Analytics streaming-pipeline bullet shows depth."
+"""
+
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
 You specialize in resume optimization, ATS compatibility, and candidate positioning.
 
@@ -784,6 +796,7 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume
 - Never alter, swap, or "reconcile" employment date ranges BECAUSE dates are immutable facts: every experience keeps exactly the date range its source states, reordering experiences for relevance NEVER changes their dates, two roles may legitimately overlap or sit adjacent in time, and a shifted or duplicated range is instantly verifiable fabrication that disqualifies the candidate at the first background check"""
+SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # P6 Specialized Review — Pass 1 persona for the two-pass analyze pipeline
 # (r1/analyze-split-retry). An ATS-scanner specialist that extracts and
@@ -812,6 +825,7 @@ ALWAYS/NEVER rules:
   - stakeholder_gravity — exec-facing, cross-functional influence without formal authority, customer-facing
   - resilience — turnaround, ambiguity tolerance, self-directed with minimal oversight
   The "signal" is one portable sentence an adjacent-background candidate could map onto (e.g. "Builds for regulated, workflow-heavy environments where errors have real consequences"). One concept per signal."""
+EXTRACTION_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # P6 Specialized Review — Pass 2 (synthesis) deliberately has NO dedicated system
 # prompt. It runs under the default SYSTEM_PROMPT (the hiring-manager persona) so
@@ -872,6 +886,7 @@ WORKED EXAMPLES — iteration probe quality:
     NOT OK: "Was the SLO definition deliberate or reactive?" (leading dichotomy; no detail surfaces either way)
 
   The pattern: substance-of-claim follow-ups produce citable detail (named collaborators, numeric scope). Cause/effect or yes/no follow-ups don't."""
+CLARIFY_ITERATION_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
 # because the task is narrowly scoped (question generation, not resume
@@ -911,6 +926,7 @@ RULES:
 - Bias toward EXPERIENCE PROBES + CONTEXT PROBES (≥60% combined) — these are the most likely to surface real experience the candidate didn't write down. Tool-name-only probes without an adjacent-experience escape hatch are dead ends; do not emit them.
 - When the JD strongly implies an operating-context or scope-of-ownership signal (regulated industry, 0→1, exec-facing, etc.), prefer a context_probe over a narrow tool-name experience_probe. The context_probe surfaces transferable experience; the tool-name probe only confirms or denies a specific item.
 - Output JSON only, no markdown fences, no preamble."""
+CLARIFY_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # Persona for the doc-grounded assistant ("avatar", Sprint 7.5) — the only LLM in the
 # Memory/recall stack. It reads an assembled, cited <recalled_context> block (built by
@@ -2518,6 +2534,23 @@ def _current_cover_letter_draft(context_set: ContextSet) -> tuple[str, str]:
 # generate_cover_letter_against_resume() (β.5). Promoted to a module-level
 # constant so the two call sites stay byte-identical and the cover-letter
 # contract has one source of truth.
+#
+# The letter's date is NOT in this constant: it changes daily, and a user-prompt block is
+# the only place it can go without breaking the cached prefix (item 140). `_letter_date_block()`
+# supplies it beside this block at both call sites; `_clock_today` is the one clock read, so a
+# test can pin it.
+_clock_today: Callable[[], date] = date.today
+
+
+def _letter_date_block() -> str:
+    """The `<letter_date>` block both cover-letter prompts carry, e.g. ``October 17, 2026``.
+
+    Built from ``d.day`` rather than ``%-d`` (not portable to Windows).
+    """
+    d = _clock_today()
+    return f"<letter_date>{d:%B} {d.day}, {d.year}</letter_date>\n"
+
+
 _COVER_LETTER_RULES_BLOCK = """<cover_letter_rules>
 VOICE — VP-level professional: courteous, concise, direct, confident, considerate. A clear outlier.
 
@@ -2555,7 +2588,7 @@ Paragraph 3 — CLOSE (2-3 sentences):
   One sentence on fit or timing if relevant. Close cleanly. No trailing pleasantries.
 
 FORMAT:
-  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown)
+  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown). The date is EXACTLY the value in <letter_date>, copied as given. Never invent, guess or carry over a date.
   - Salutation: "Dear [Name]," or "Dear Hiring Manager,"
   - Close: "Sincerely," or "Best regards,"
   - Match industry register: measured for finance/law; direct for tech; considered for mission-driven orgs
@@ -2575,6 +2608,12 @@ WORKED EXAMPLES — the opener and the close are where this voice most often sli
             (Passive, generic, no specificity — it sounds like waiting to be called.)
     OK: "I'd welcome a direct conversation about the first-90-days migration sequence and the year-one scaling questions the role description doesn't cover. I can make time this week."
             (Forward-leaning, names a concrete topic and a timing signal, implies initiative.)
+
+  DATE — with <letter_date>March 3, 2031</letter_date> in the prompt:
+    NOT OK: "March 2025" at the top of the letter.
+            (A date the model made up; the letter goes out with a wrong date.)
+    OK: "March 3, 2031" at the top of the letter.
+            (The <letter_date> value, copied exactly.)
 </cover_letter_rules>"""
 
 
@@ -2632,7 +2671,9 @@ def _build_generate_prompt(
             cb_lines.append("</candidate_clarifications>")
             clarifications_block = "\n".join(cb_lines) + "\n\n"
 
-    cover_letter_rules_block = _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
+    cover_letter_rules_block = (
+        _letter_date_block() + _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
+    )
 
     refinement_target = (
         "to both the resume and cover letter" if with_cover_letter else "to the resume"
@@ -3137,7 +3178,7 @@ Strategy: {analysis.get("overall_strategy", "")}
 Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
-{_COVER_LETTER_RULES_BLOCK}
+{_letter_date_block()}{_COVER_LETTER_RULES_BLOCK}
 {
         f'''
 <refinement_instructions>
@@ -3257,9 +3298,10 @@ CHECK FOR (and cite specifically in concerns):
 4. **Title elevation** — claiming seniority beyond the candidate's official title or clarified scope.
 5. **Verb overreach** — "Owned" / "Led" / "Drove" when source says "Contributed" / "Supported" / "Helped".
 
-When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in source bullet b41 — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
+When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in the Acme source bullet — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
 
 Be brief. 1-3 concerns is plenty per critique."""
+PROPOSAL_CRITIQUE_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def critique_proposal(
@@ -3389,6 +3431,7 @@ Output JSON only, this exact shape:
 }
 
 Omit an experience from the array ONLY when NONE of its bullets fit this JD at all (don't return empty bullet_ids). Use the numeric ids only — do NOT prefix with "b" or "e"."""
+RECOMMEND_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_bullets(
@@ -3540,6 +3583,7 @@ If the candidate has zero summary variants in <summary_items>, return:
 {"recommendation": null, "alternates": []}
 
 Use the numeric ids only — do NOT prefix with "s"."""
+RECOMMEND_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_summaries(
@@ -3743,6 +3787,7 @@ Output JSON only, this exact shape:
 }
 
 Omit any role you have no good pick for (do not emit an entry with a null id). Use the numeric ids only — do NOT prefix with "e" or "s"."""
+RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_experience_summaries(
@@ -3997,6 +4042,7 @@ If the candidate has zero skills in <skills>, return:
 {"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
 
 Use the numeric ids only — do NOT prefix with "s"."""
+RECOMMEND_SKILLS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_skills(
@@ -4178,6 +4224,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
+SUGGEST_SKILLS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 # PROMPT-TEXT CHANGE (fix/review-surface-and-flows, 2026-07-08): NEW constant,
@@ -4223,6 +4270,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
+SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def suggest_skills(
@@ -4645,6 +4693,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus evidences an uncovered JD requirement. Use numeric ids only (the number after the e/b prefix)."""
+DRAFT_GAP_FILL_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def draft_gap_fill_bullets(
@@ -4776,6 +4825,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"drafts": []} when no role has evidence you can honestly fit to this JD. Use numeric ids only (the number after the e/b/s prefix), and never emit two entries for the same experience_id."""
+DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def _experience_summary_targets_block(targets: list[dict[str, Any]]) -> str:
@@ -5047,6 +5097,7 @@ Output JSON only, this exact shape:
  "rationale": "<one sentence>"}
 
 Use numeric ids only (the number after the e/b prefix, if any)."""
+DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def draft_surgical_refinement(

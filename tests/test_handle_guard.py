@@ -48,15 +48,30 @@ def _payload(rationale: str, ids: tuple[str, ...] = ("b12",)) -> str:
     )
 
 
-def _scripted(responses: list[str]) -> Any:
-    calls: list[tuple[str, str]] = []
+class _Scripted:
+    """A fake `_call_llm` that pops one scripted response per call and records `(call_kind, prompt)`."""
 
-    def fake(client, prompt, *, cached_user_prefix, call_kind, username, run_id, **kwargs):
-        calls.append((call_kind, prompt))
-        return responses.pop(0)
+    def __init__(self, responses: list[str]) -> None:
+        self.responses = responses
+        self.calls: list[tuple[str, str]] = []
 
-    fake.calls = calls
-    return fake
+    def __call__(
+        self,
+        client: Any,
+        prompt: str,
+        *,
+        cached_user_prefix: str,
+        call_kind: str,
+        username: str,
+        run_id: str,
+        **kwargs: Any,
+    ) -> str:
+        self.calls.append((call_kind, prompt))
+        return self.responses.pop(0)
+
+
+def _scripted(responses: list[str]) -> _Scripted:
+    return _Scripted(responses)
 
 
 def _run(guard: dict[str, Any] | None) -> dict[str, Any]:
