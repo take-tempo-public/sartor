@@ -140,6 +140,27 @@ internal ids, and the cover letter carried a date the run could not have produce
     prompt gives the model bullets only as `id="b303"` markup, so "bullet area" is answered with the id. The synthesis
     prompt likewise asks the model to "cite … by name" (`analyzer.py:~1868`). The shared rule alone did not stop it.
 
+- **Targeted verification, commit `692a392`, `PROMPT_VERSION 2026-10-17.2`** (schema rewording: extraction
+  `keyword_placement` and synthesis `strengths`/`section`/`action` say to name a bullet by company and role or a quote,
+  never an id). Assemble mode, `sre-mid-level` and `data-scientist-junior` only. Results:
+  `evals/results/20261017_132655Z.jsonl`, `evals/results/20261017_132814Z.jsonl`. Telemetry cost `$0.193`; cumulative `$3.024`.
+  - **Guard retries: 1 retry call across the 2 analyses** (`analyze_extraction_retry` on `data-scientist-junior`),
+    against 3 on the same two fixtures in assemble mode under `.1` (`$0.132`/16% of that run was retries). `sre-mid-level`,
+    which retried on both attempts and once hard-failed under `.1`, needed none. n=2 analyses: a direction, not a rate.
+  - **Handles:** `data-scientist-junior` 0 findings; `sre-mid-level` 5, all the clarify response's own `q1..q5`
+    self-references. Both letters read `October 17, 2026` (the full date, copied from `<letter_date>`).
+  - **Open, not explained: the `data-scientist-junior` grounding score.** Same fixture, same corpus seed (a platform
+    engineer; the fixture expects a junior data scientist, a mismatch the judge names in every run):
+    generate mode `2.1`, `3.2` under `.0814.1`, then `1.2`, `1.2` under `.1`; assemble mode `4.8`, `4.8` under the old
+    prompts, `4.8`, `4.8` under `.1`, then **`1.2` under `.2`** (`failed_rules`: `invented_credential`, `invented_metric`,
+    `jd_pandering`, `scope_inflation`; the letter claimed "building hands-on fluency in scikit-learn and statsmodels now").
+    The same kind of claim is flagged in old-prompt runs too (generate `2.1`), so the claim type is not new, but the
+    lower scores follow the prompt changes and n is 1–2 per arm. **I have not established whether this is the change or
+    run-to-run variance.** What would settle it: repeat this fixture N times on the old and new prompts with
+    `--prompt-overrides`, which costs about `$0.15` per run per arm. Not done; not approved.
+  - One stray result file in the directory, `evals/results/20261017_093904Z.jsonl`, is from a pytest run
+    (`test_eval_runner`, stubbed), not a live run; it is excluded from every figure above.
+
 ---
 
 ## Falsified
