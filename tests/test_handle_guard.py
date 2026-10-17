@@ -113,14 +113,85 @@ class TestValidatorAndRetry:
         assert "validation error for" not in retry_prompt
         assert "input_value" not in retry_prompt
 
-    def test_two_leaks_raise_with_a_readable_message(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_two_leaks_in_a_shipped_field_raise_with_a_readable_message(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setattr(
             analyzer, "_call_llm", _scripted([_payload("b14 here"), _payload("and b14 again")])
         )
         with pytest.raises(LLMResponseError) as ei:
-            _run(_block_guard(BLOCK))
+            _run(_block_guard(BLOCK, hard_fields=("recommendations",)))
         assert "internal id handle(s) b14" in ei.value.validation_error
         assert "validation error for" not in ei.value.validation_error
+
+    def test_two_leaks_in_a_soft_field_are_accepted_after_the_retry(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # The retry still happens (the model is asked to fix it); only the final raise is relaxed.
+        fake = _scripted([_payload("b14 here"), _payload("and b14 again")])
+        monkeypatch.setattr(analyzer, "_call_llm", fake)
+        out = _run(_block_guard(BLOCK))  # no hard_fields: every field is soft
+        assert out["recommendations"][0]["rationale"] == "and b14 again"
+        assert [k for k, _ in fake.calls] == ["recommend", "recommend_retry"]
+        assert "Accepting response after 2 attempts" in caplog.text
+
+    def test_a_soft_leak_next_to_a_shipped_leak_still_raises(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def both(rationale: str) -> str:
+            return json.dumps(
+                {
+                    "cover_letter_content": f"at {rationale}",
+                    "proofread_notes": [f"checked {rationale}"],
+                }
+            )
+
+        class Resp(analyzer._LLMResponse):
+            cover_letter_content: Any
+            proofread_notes: Any
+
+        monkeypatch.setattr(analyzer, "_call_llm", _scripted([both("b14"), both("b14")]))
+        guard = _block_guard(BLOCK, hard_fields=("cover_letter_content",))
+        with pytest.raises(LLMResponseError):
+            _parse_or_retry(
+                None,  # type: ignore[arg-type]
+                "p",
+                cached_user_prefix="",
+                response_model=Resp,
+                call_kind="generate",
+                username="u",
+                run_id="r",
+                validation_context=guard,
+            )
+
+    def test_a_leak_only_in_a_soft_field_beside_a_clean_shipped_field_is_accepted(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def resp() -> str:
+            return json.dumps({"cover_letter_content": "clean", "proofread_notes": ["checked b14"]})
+
+        class Resp(analyzer._LLMResponse):
+            cover_letter_content: Any
+            proofread_notes: Any
+
+        monkeypatch.setattr(analyzer, "_call_llm", _scripted([resp(), resp()]))
+        out = _parse_or_retry(
+            None,  # type: ignore[arg-type]
+            "p",
+            cached_user_prefix="",
+            response_model=Resp,
+            call_kind="generate",
+            username="u",
+            run_id="r",
+            validation_context=_block_guard(BLOCK, hard_fields=("cover_letter_content",)),
+        )
+        assert out["cover_letter_content"] == "clean"
+
+    def test_a_non_leak_failure_is_never_accepted(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Control: soft acceptance applies to a pure handle leak only, so bad JSON still raises.
+        monkeypatch.setattr(analyzer, "_call_llm", _scripted(["not json", "still not json"]))
+        with pytest.raises(LLMResponseError):
+            _run(_block_guard(BLOCK))
 
     def test_id_fields_are_legal(self, monkeypatch: pytest.MonkeyPatch) -> None:
         fake = _scripted([_payload("Strong deploy-time evidence", ids=("b12", "b14"))])
@@ -303,3 +374,67 @@ class TestEveryCallForwardsAGuard:
         )
         ((_, kind, forwards),) = _parser_calls(f)
         assert kind == "brand_new" and not forwards and kind not in EXEMPT_CALL_KINDS
+
+
+class TestSoftAcceptanceStreaming:
+    def test_a_soft_leak_that_survives_the_retry_ends_in_done(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        attempts = iter([[_payload("b14 first")], [_payload("b14 again")]])
+
+        def fake(
+            client: Any,
+            prompt: str,
+            *,
+            cached_user_prefix: str,
+            call_kind: str,
+            username: str,
+            run_id: str,
+            **kwargs: Any,
+        ) -> Any:
+            chunks = next(attempts)
+            yield from chunks
+            yield _StreamDone(text="".join(chunks), stop_reason="end_turn")
+
+        monkeypatch.setattr(analyzer, "_call_llm_streaming", fake)
+        events = list(
+            _parse_or_retry_streaming(
+                None,  # type: ignore[arg-type]
+                "p",
+                cached_user_prefix="",
+                response_model=RecommendResponse,
+                call_kind="recommend",
+                username="u",
+                run_id="r",
+                validation_context=_block_guard(BLOCK),
+            )
+        )
+        assert [k for k, _ in events if k != "chunk"] == ["retry", "done"]
+
+
+class TestShippedFieldsAreHard:
+    """Where the text goes to a third party the leak stays a hard error (the b180-in-a-letter case)."""
+
+    def test_the_generate_and_letter_guards_name_their_shipped_fields(self) -> None:
+        tree = ast.parse((REPO_ROOT / "analyzer.py").read_text(encoding="utf-8"))
+        sites: dict[str, tuple[str, ...]] = {}
+        for fn in (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)):
+            for call in (c for c in ast.walk(fn) if isinstance(c, ast.Call)):
+                if not (isinstance(call.func, ast.Name) and call.func.id == "_corpus_guard"):
+                    continue
+                kw = {k.arg: k.value for k in call.keywords if k.arg}
+                if "answered_q_ids" not in kw:
+                    continue
+                hard = kw.get("hard_fields")
+                sites[fn.name] = (
+                    tuple(ast.literal_eval(hard))
+                    if isinstance(hard, ast.Tuple)
+                    else ("<named constant>",)
+                )
+        assert set(sites) == {
+            "generate",
+            "generate_streaming",
+            "generate_cover_letter_against_resume",
+        }
+        assert sites["generate_cover_letter_against_resume"] == ("cover_letter_content",)
+        assert analyzer._SHIPPED_FIELDS == ("resume_content", "cover_letter_content")

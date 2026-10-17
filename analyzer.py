@@ -256,7 +256,16 @@ GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset(
 
 
 class HandleLeakError(ValueError):
-    """A response put an internal id handle (``b173``) in prose; the message is written for the user and the retry."""
+    """A response put an internal id handle (``b173``) in prose; the message is written for the user and the retry.
+
+    ``leaks`` is the full ``(path, handle)`` list (the message names only the first few), so the
+    parser can tell a leak in a field that ships from one in a field that does not.
+    """
+
+    def __init__(self, message: str, leaks: list[tuple[str, str]]) -> None:
+        """Store the readable message and every ``(path, handle)`` found."""
+        super().__init__(message)
+        self.leaks = leaks
 
 
 class _LLMResponse(BaseModel):
@@ -281,9 +290,47 @@ class _LLMResponse(BaseModel):
             names = ", ".join(dict.fromkeys(handle for _, handle in leaks[:5]))
             raise HandleLeakError(
                 f"Prose contains internal id handle(s) {names} (first at {leaks[0][0]}). "
-                "Ids belong only in id fields; name the company, role, or quote the text instead."
+                "Ids belong only in id fields; name the company, role, or quote the text instead.",
+                leaks,
             )
         return self
+
+
+# The generate() response fields whose text goes to a third party. A handle there is the user-harm
+# case behind item 140 (a letter sent with "at b180"), so it keeps the hard error.
+_SHIPPED_FIELDS = ("resume_content", "cover_letter_content")
+
+
+def _leak_errors(exc: Exception) -> list[HandleLeakError]:
+    """The ``HandleLeakError``s inside ``exc``, but only when EVERY validation error is one; else ``[]``."""
+    if not isinstance(exc, ValidationError):
+        return []
+    errors = exc.errors()
+    found = [
+        err
+        for err in ((e.get("ctx") or {}).get("error") for e in errors)
+        if isinstance(err, HandleLeakError)
+    ]
+    return found if errors and len(found) == len(errors) else []
+
+
+def _accept_soft_leaks(exc: Exception, validation_context: dict[str, Any] | None) -> bool:
+    """True when the retry budget is spent but every leak is in a field that does not ship (item 140).
+
+    ``hard_fields`` on the guard names the top-level response fields whose text goes to a third party
+    (the résumé and cover-letter bodies). A leak there keeps the hard error. A leak anywhere else
+    (analysis hints, rationales, notes) was retried once and is then accepted with a warning: a
+    cosmetic id in a hint is not worth failing the whole call. Anything that is not purely a leak
+    (bad JSON, a missing key) is never accepted here.
+    """
+    guard = (validation_context or {}).get("handle_guard")
+    leak_errors = _leak_errors(exc)
+    if not guard or not leak_errors:
+        return False
+    hard = set(guard.get("hard_fields", ()))
+    return not any(
+        path.split(".")[0].split("[")[0] in hard for err in leak_errors for path, _ in err.leaks
+    )
 
 
 def _retry_reason(exc: Exception) -> str:
@@ -294,16 +341,8 @@ def _retry_reason(exc: Exception) -> str:
     whole rejected response back into the retry prompt. Only a failure made up entirely of
     ``HandleLeakError`` is rewritten; every other failure keeps its existing text.
     """
-    if isinstance(exc, ValidationError):
-        errors = exc.errors()
-        leak_messages = [
-            str(err)
-            for err in ((e.get("ctx") or {}).get("error") for e in errors)
-            if isinstance(err, HandleLeakError)
-        ]
-        if errors and len(leak_messages) == len(errors):
-            return " ".join(leak_messages)
-    return str(exc)
+    leak_errors = _leak_errors(exc)
+    return " ".join(str(err) for err in leak_errors) if leak_errors else str(exc)
 
 
 def _handle_guard(
@@ -311,8 +350,12 @@ def _handle_guard(
     *,
     context_set: ContextSet | None = None,
     markup: str = "",
+    hard_fields: tuple[str, ...] = (),
 ) -> dict[str, Any] | None:
     """Build the ``handle_guard`` validation context for one call, or ``None`` when no handle was shipped.
+
+    ``hard_fields`` are the top-level response fields whose text ships to a third party; a leak
+    there still raises after the retry (see ``_accept_soft_leaks``). Empty: every leak is soft.
 
     ``None`` makes the validator cost nothing (file-based mode ships no ids). A handle that also
     occurs as a token in real text the model saw (a bullet saying "t3 instances", the résumé, the
@@ -326,11 +369,20 @@ def _handle_guard(
     if context_set is not None:
         texts.extend(assemble_source_union(context_set))
         texts.append(str(context_set.get("job_description") or ""))
-    return {"handle_guard": {"handles": handles, "source_tokens": source_handle_tokens(texts)}}
+    return {
+        "handle_guard": {
+            "handles": handles,
+            "source_tokens": source_handle_tokens(texts),
+            "hard_fields": hard_fields,
+        }
+    }
 
 
 def _corpus_guard(
-    context_set: ContextSet, *, answered_q_ids: bool = False
+    context_set: ContextSet,
+    *,
+    answered_q_ids: bool = False,
+    hard_fields: tuple[str, ...] = (),
 ) -> dict[str, Any] | None:
     """``_handle_guard`` for a call whose prompt carries the corpus block (and, for generate, answered ``q`` ids).
 
@@ -348,17 +400,22 @@ def _corpus_guard(
             if qid and str(answers.get(qid, "")).strip()
         ]
     handles = corpus_handles(list(context_set.get("career_corpus") or []), q_ids)
-    return _handle_guard(handles, context_set=context_set)
+    return _handle_guard(handles, context_set=context_set, hard_fields=hard_fields)
 
 
 def _block_guard(
-    markup: str, context_set: Mapping[str, Any] | None = None
+    markup: str,
+    context_set: Mapping[str, Any] | None = None,
+    *,
+    hard_fields: tuple[str, ...] = (),
 ) -> dict[str, Any] | None:
     """``_handle_guard`` for a call whose handles live in one id-bearing prompt block (``markup``)."""
     ctx = (
         cast("ContextSet", context_set) if context_set is not None else None
     )  # only `.get` is used
-    return _handle_guard(handles_from_markup(markup), context_set=ctx, markup=markup)
+    return _handle_guard(
+        handles_from_markup(markup), context_set=ctx, markup=markup, hard_fields=hard_fields
+    )
 
 
 class HiddenQualityItem(BaseModel):
@@ -1704,6 +1761,7 @@ def _parse_or_retry_streaming(
     base_text = ""
     retry_prompt = base_prompt
     current_kind = call_kind
+    data: Any = None  # bound by json.loads before any validation error can be accepted
     for attempt in range(max_attempts):
         accumulated = ""
         for item in _call_llm_streaming(
@@ -1729,6 +1787,16 @@ def _parse_or_retry_streaming(
         except (json.JSONDecodeError, ValidationError) as e:
             reason = _retry_reason(e)
             if attempt + 1 >= max_attempts:
+                if _accept_soft_leaks(e, validation_context):
+                    logger.warning(
+                        "Accepting response after %d attempts: handle leak in a non-shipped "
+                        "field only — call=%s %s",
+                        max_attempts,
+                        call_kind,
+                        reason,
+                    )
+                    yield ("done", data)
+                    return
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
                     max_attempts,
@@ -1790,6 +1858,7 @@ def _parse_or_retry(
         model=model,
         max_tokens=max_tokens,
     )
+    data: Any = None  # bound by json.loads before any validation error can be accepted
     for attempt in range(max_attempts):
         try:
             # `strict=False` allows ASCII control characters (0x00-0x1F)
@@ -1807,6 +1876,15 @@ def _parse_or_retry(
         except (json.JSONDecodeError, ValidationError) as e:
             reason = _retry_reason(e)
             if attempt + 1 >= max_attempts:
+                if _accept_soft_leaks(e, validation_context):
+                    logger.warning(
+                        "Accepting response after %d attempts: handle leak in a non-shipped "
+                        "field only — call=%s %s",
+                        max_attempts,
+                        call_kind,
+                        reason,
+                    )
+                    return cast("dict[str, Any]", data)
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
                     max_attempts,
@@ -3006,7 +3084,9 @@ def generate(
         call_kind="generate",
         username=username,
         run_id=run_id,
-        validation_context=_corpus_guard(context_set, answered_q_ids=True),  # item 140
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=_SHIPPED_FIELDS
+        ),  # item 140
     )
     if not with_cover_letter:
         result.setdefault("cover_letter_content", "")
@@ -3055,7 +3135,9 @@ def generate_streaming(
         call_kind="generate",
         username=username,
         run_id=run_id,
-        validation_context=_corpus_guard(context_set, answered_q_ids=True),  # item 140
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=_SHIPPED_FIELDS
+        ),  # item 140
     ):
         kind, payload = event
         if kind == "done" and not with_cover_letter and isinstance(payload, dict):
@@ -3211,7 +3293,9 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         run_id=run_id,
         # item 140: the letter never sees the corpus markup, but the analysis prose it is
         # given can carry the handles (b180), so the letter is held to the same guard.
-        validation_context=_corpus_guard(context_set, answered_q_ids=True),
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=("cover_letter_content",)
+        ),
     )
 
 
