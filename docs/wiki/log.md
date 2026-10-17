@@ -3063,3 +3063,44 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   bullet is for. The recurring gap is the one the previous entries name: nothing here checks whether a
   *code string* a page paraphrases (item 1 above) was updated with the code. No mechanism authored
   (C-11 stated: prose, unenforced).
+
+## 2026-10-17 — scoped `/wiki-self-update` (`fix/llm-handle-leak-and-letter-date`, item 140)
+
+- **Mode:** scoped to this branch's own diff (`main...HEAD`); 3 of 11 changed paths classed wiki-relevant by
+  `scripts.wiki_relevance` (`analyzer.py`, `hardening.py`, `evals/runner.py`). `.last_ingest_sha` **not**
+  advanced (`3798e2d18a8a`); `scripts/wiki_freshness.py` reads 64 files, under the 75 block threshold. The wiki
+  cites `analyzer.py` by symbol, never by line (0 line cites into it), so the +297-line growth moved nothing.
+- **Pages changed (4):** `prompt-version-discipline.md` (the `PROMPT_VERSION` value and what changed under it),
+  `eval-harness.md` (the stale `PROMPT_VERSION` line; a new "Leaked-handles detection" paragraph),
+  `llm-call-catalog.md` (the handle guard on the retry path, the hard/soft decision, the four exempt calls),
+  `generation-and-grounding.md` (the `<letter_date>` block; the guard on the generate and letter calls).
+  **Verified no-edit (1):** `deterministic-llm-boundary.md` (read lines 38-60 and the `hardening.py` mentions: it
+  says `_parse_or_retry` adds parse, validate and one retry, still true, and the new `hardening.py` functions are
+  pure checkers, which fits its safety-net framing). No page added or removed; no `index.md` or `[[backlink]]`
+  change.
+- **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): **0 violations, 0 removed cites**
+  after the scribes, and again after the corrections. Nothing here for the check to catch: every new cite was a
+  symbol.
+- **Auditor** (`wiki-grounding-auditor`, Sonnet 5, 4 pages): **33 SUPPORTED / 0 DRIFTED / 4 UNSUPPORTED**, all four
+  in text the scribes wrote this pass. `llm-call-catalog` (1): "leaks elsewhere are accepted" dropped the purity
+  condition in `_accept_soft_leaks` (a leak beside a missing key or bad JSON still raises). `generation-and-grounding`
+  (3): the letter call was said to pass `hard_fields=_SHIPPED_FIELDS` (it passes `("cover_letter_content",)`);
+  `b173` was said to come "from clarifications" (corpus bullet ids, plus answered `q` ids); the paragraph was silent
+  on the branch where the guard is inert. `prompt-version-discipline` 4/0/0 and `eval-harness` 13/0/0 were clean,
+  the latter with one attribution nuance (`_leak_report` computes the key; `run_suite` writes it), corrected. The
+  auditors had no `Bash`, so each located the changed lines by content; I confirmed from `git diff` that the changed
+  regions were the ones audited.
+- **My review (step 6, unenforced):** before the audit came back it caught the two `generation-and-grounding`
+  errors above and the confusing "remains only in" wording, and on `eval-harness` that the paragraph omitted the
+  record's keys, which records carry `leaked_handles` (two write sites; not `pipeline_error` rows or the
+  `iteration_quality` record, checked by grep) and that a clarify response's own `q` ids are counted. It **missed**
+  the `llm-call-catalog` purity condition; only the auditor caught that.
+- **`/wiki-lint`:** 42 pages; **0 broken link targets, 0 orphans, 0 pages missing from the index, 0 thin pages**;
+  1 finding from a naive check on a page this branch did not touch (`docs-information-architecture.md`, a literal
+  `[[wikilink]]` in a code span; the previous two entries log the same). Verdict: **pass**.
+- **Retune signal (scribe):** yes. After a pass where the scribes' additions drew 0 UNSUPPORTED, this one drew 4,
+  on the two pages that describe branching code: a value taken from a shared pattern instead of from each call
+  site, a provenance claim conflated with a neighbouring id class, and a conjunctive condition shortened to its
+  headline half. All were caught by the auditor and most by review, none by the cite check. No mechanism
+  authored (C-11 stated): nothing deterministic can check whether a sentence about a branch is true, so this stays
+  with the auditor and the review, which is prose and unenforced.

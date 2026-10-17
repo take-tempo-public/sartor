@@ -28,7 +28,7 @@ import uuid
 from collections.abc import Callable
 from contextlib import ExitStack, suppress
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -81,13 +81,19 @@ from hardening import (  # noqa: E402
     compute_fabricated_specifics,
     compute_grounding_overlap,
     compute_keyword_overlap,
+    compute_letter_date,
     compute_quantification_rate,
     compute_specificity_density,
     compute_top_third_density,
     compute_verb_diversity,
+    corpus_handles,
     extract_company_terms,
     extract_jd_label,
     extract_keywords,
+    find_leaked_handles,
+    handle_snippet,
+    iter_prose_leaves,
+    source_handle_tokens,
 )
 from parser import parse_resume  # noqa: E402
 
@@ -337,6 +343,68 @@ def _post_generation_metrics(
         "quantification_rate": compute_quantification_rate(generated_resume),
         "fabricated_specifics": fabricated_specifics,
         "groundedness": _groundedness_composite(fabricated_specifics),
+    }
+
+
+def _leak_report(
+    *,
+    context: ContextSet,
+    analysis: dict[str, Any],
+    clarify_questions: list[dict[str, Any]],
+    clarify_reasoning: str,
+    result: dict[str, Any],
+    capture: dict[str, Any],
+    run_date: date,
+) -> dict[str, Any]:
+    """Item 140: internal id handles in every prose field the pipeline produced, plus the letter date.
+
+    Scans all string leaves of each section, not just the letter, so the instrument is wider than
+    the hypothesis that the letter's handle came from the analysis. Handles are the ones the
+    prompts shipped (the corpus `e`/`t`/`b` ids and the clarification question ids); a handle that
+    also occurs in real source text is excluded. `letter_carriers` maps each handle found in the
+    cover letter to the OTHER sections whose text also holds it. Kept out of `det_metrics`, which is
+    passed to the judge, so rubric inputs stay identical to history. One O(n) pass per field over
+    data already in hand.
+    """
+    q_ids = [str(q.get("id")) for q in clarify_questions if q.get("id")]
+    handles = corpus_handles(cast("list[Any]", context.get("career_corpus") or []), q_ids)
+    src_tokens = source_handle_tokens([*assemble_source_union(context), context["job_description"]])
+    sections: dict[str, object] = {
+        "analysis": analysis,
+        "clarify": {"questions": clarify_questions, "reasoning": clarify_reasoning},
+        "resume_content": result.get("resume_content", ""),
+        "cover_letter_content": result.get("cover_letter_content", ""),
+        "changes_made": result.get("changes_made", ""),
+        "proofread_notes": result.get("proofread_notes", ""),
+        **{f"recommend.{k}": v for k, v in capture.items()},
+    }
+    findings: list[dict[str, str]] = []
+    by_section: dict[str, set[str]] = {}
+    for name, value in sections.items():
+        for path, text in iter_prose_leaves(value, name):
+            for handle in find_leaked_handles(text, handles, src_tokens):
+                # The snippet is what lets a reader audit a finding: no response text is persisted elsewhere.
+                findings.append(
+                    {
+                        "section": name,
+                        "path": path,
+                        "handle": handle,
+                        "snippet": handle_snippet(text, handle),
+                    }
+                )
+                by_section.setdefault(name, set()).add(handle)
+    letter_handles = by_section.get("cover_letter_content", set())
+    letter_carriers = {
+        h: sorted(s for s, hs in by_section.items() if s != "cover_letter_content" and h in hs)
+        for h in sorted(letter_handles)
+    }
+    return {
+        "handles_shipped": len(handles["prefixed"]),
+        "total": len(findings),
+        "findings": findings,
+        "letter_carriers": letter_carriers,
+        "letter_date": compute_letter_date(result.get("cover_letter_content", ""), run_date),
+        "letter_head": str(result.get("cover_letter_content", ""))[:160],
     }
 
 
@@ -930,6 +998,7 @@ def _run_assemble_pipeline(
     analysis: dict[str, Any],
     username: str,
     run_id: str,
+    capture: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """``mode="assemble"``: build the generate()-shaped result via the REAL Compose
     -> freeze -> assemble path instead of calling ``analyzer.generate()``.
@@ -992,6 +1061,11 @@ def _run_assemble_pipeline(
     )
     cs.pop("jd_text", None)
     cs.pop("summary_items", None)
+    if capture is not None:
+        # The recommend rationales are user-visible prose that this function otherwise discards;
+        # the item 140 leak scan reads them from here.
+        capture["bullets"] = bullet_rec
+        capture["summaries"] = cs["llm_summary_recommendation"]
 
     cs["approved_composition"] = freeze_approved_composition(
         session,
@@ -1211,6 +1285,7 @@ def run_suite(
             clarify_questions: list[dict[str, Any]] = []
             clarify_reasoning = ""
             clarify_error: str | None = None
+            recommend_capture: dict[str, Any] = {}
             _t_analyze: float | None = None
             _t_clarify: float | None = None
             _t_generate: float | None = None
@@ -1282,6 +1357,7 @@ def run_suite(
                         analysis=analysis,
                         username=f"eval:{fixture['name']}",
                         run_id=run_id,
+                        capture=recommend_capture,
                     )
                 else:
                     _emit("generating", fixture=fixture["name"], index=index, total=total_fixtures)
@@ -1397,6 +1473,22 @@ def run_suite(
                 cost_usd,
             )
 
+            leak_report = _leak_report(
+                context=context,
+                analysis=analysis,
+                clarify_questions=clarify_questions,
+                clarify_reasoning=clarify_reasoning,
+                result=result,
+                capture=recommend_capture,
+                run_date=date.today(),
+            )
+            logger.info(
+                "  leaked_handles: %d found (of %d shipped); letter_date=%s",
+                leak_report["total"],
+                leak_report["handles_shipped"],
+                leak_report["letter_date"]["found"],
+            )
+
             payload_det = dict(context["deterministic_analysis"])
             payload_det["post_generation"] = det_metrics
 
@@ -1502,6 +1594,7 @@ def run_suite(
                                 "prompt_version": effective_prompt_version(),
                                 "run_id": run_id,
                                 "deterministic_metrics": det_metrics,
+                                "leaked_handles": leak_report,
                                 "cost_usd": cost_usd,
                                 "pipeline_latency_ms": elapsed_ms,
                                 "anchor_version": anchor_version,
@@ -1660,6 +1753,7 @@ def run_suite(
                     "prompt_version": effective_prompt_version(),
                     "run_id": run_id,
                     "deterministic_metrics": det_metrics,
+                    "leaked_handles": leak_report,
                     "cost_usd": cost_usd,
                     "pipeline_latency_ms": elapsed_ms,
                     "anchor_version": anchor_version,

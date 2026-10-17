@@ -120,6 +120,31 @@ perturbed `[synthesis]`. Per-eval `cost_usd` is rolled up from `logs/llm_calls.j
 tailing records tagged `eval:<fixture>` since the run started ([`evals/runner.py:_eval_cost_since`](../../../evals/runner.py))
 and summing via [`hardening.py:compute_call_cost`](../../../hardening.py).
 
+**Leaked-handles detection** (item 140) — `leaked_handles` is a sibling record key (not inside
+`deterministic_metrics`, which is the part handed to the judge), computed by
+[`evals/runner.py:_leak_report`](../../../evals/runner.py) and written by
+[`evals/runner.py:run_suite`](../../../evals/runner.py) onto the regular per-rubric record and the
+clarify-failure row; a `pipeline_error` row and the `iteration_quality` record do not carry it. It
+scans all string leaves of the analysis, clarifications, resume, cover letter, changes,
+proofread notes, and (in assemble mode) recommend outputs for internal corpus ids (`e`/`t`/`b`
+and clarification `q` ids) that escaped into prose via [`hardening.py:find_leaked_handles`](../../../hardening.py).
+It uses [`hardening.py:corpus_handles`](../../../hardening.py) to collect the ids shipped,
+[`hardening.py:source_handle_tokens`](../../../hardening.py) to exclude real text matches,
+[`hardening.py:iter_prose_leaves`](../../../hardening.py) to traverse the output tree while
+skipping legitimate id fields, and [`hardening.py:handle_snippet`](../../../hardening.py) to
+capture context for each finding `[synthesis]`. The value holds `handles_shipped`, `total`,
+`findings` (each with `section`, `path`, `handle`, `snippet`), `letter_carriers` (the other sections
+whose text also holds a handle found in the letter), `letter_date` and `letter_head`. The clarify
+questions' own `q` ids are in the handle set, so a clarify response that numbers its own questions in
+`reasoning` is counted too; that is the response referring to itself, not an input handle leaking
+`[synthesis]`. The metric does NOT flag bare numeric ids unless
+they appear in an explicit "id N" phrase — a bare "44" or "44% growth" is deliberately
+undetected `[synthesis]`, and numeric date forms like `03/2025` are not recognized by
+[`hardening.py:compute_letter_date`](../../../hardening.py), which reads only the first
+non-blank lines of the letter `[synthesis]`. In `mode="assemble"`, the `capture` kwarg to
+[`evals/runner.py:_run_assemble_pipeline`](../../../evals/runner.py) keeps the recommend
+outputs for this scan `[synthesis]`.
+
 For `--suite real` fixtures with `--grounding-signals` enabled, the computed NLI and
 MiniCheck scores are additionally persisted back into the fixture's `annotations.json`
 (RH-1, 2026-07 e2e-run-health-review) via [`evals/annotation.py:patch_grounding_scores_by_text`](../../../evals/annotation.py),
@@ -230,7 +255,7 @@ duration, makes `_resolve_system_prompt` return the candidate text for the named
 the `_BASE_SYSTEM_PROMPTS` registry, and makes [`analyzer.py:effective_prompt_version`](../../../analyzer.py)
 return a stable `candidate:<sha256[:12]>` so the run is **quarantined** from score-over-time.
 The default (empty/None) path is byte-identical — the resolver returns the identical constant
-object and the version stays `PROMPT_VERSION` (`2026-08-14.1` at HEAD), so the analyze→generate
+object and the version stays `PROMPT_VERSION` (`2026-10-17.2` at HEAD), so the analyze→generate
 cache is untouched `[synthesis]`. `run_suite` enters the context over the whole fixture loop
 when `--prompt-overrides` supplies a name→text mapping
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)); unknown constant names raise
