@@ -14,10 +14,10 @@ import logging
 import math
 import re
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Literal, cast
 
 import anthropic
@@ -26,7 +26,16 @@ from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, mod
 import demo_fixtures
 import sartor_home
 from demo_fixtures import is_demo_mode as _demo_mode_active
-from hardening import ContextSet, CorpusExperience
+from hardening import (
+    ContextSet,
+    CorpusExperience,
+    HandleSet,
+    assemble_source_union,
+    corpus_handles,
+    find_leaked_handles_in,
+    handles_from_markup,
+    source_handle_tokens,
+)
 from recall.models import Context, Unit
 
 logger = logging.getLogger(__name__)
@@ -246,10 +255,167 @@ GENERATE_CORPUS_NO_CL_REQUIRED_KEYS = GENERATE_NO_CL_REQUIRED_KEYS | frozenset(
 # ---------------------------------------------------------------------------
 
 
+class HandleLeakError(ValueError):
+    """A response put an internal id handle (``b173``) in prose; the message is written for the user and the retry.
+
+    ``leaks`` is the full ``(path, handle)`` list (the message names only the first few), so the
+    parser can tell a leak in a field that ships from one in a field that does not.
+    """
+
+    def __init__(self, message: str, leaks: list[tuple[str, str]]) -> None:
+        """Store the readable message and every ``(path, handle)`` found."""
+        super().__init__(message)
+        self.leaks = leaks
+
+
 class _LLMResponse(BaseModel):
     """Permissive base model for raw LLM JSON responses (extra keys allowed before typed coercion)."""
 
     model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="after")
+    def reject_handle_leaks(self, info: ValidationInfo) -> "_LLMResponse":
+        """Reject prose that names an id handle the prompt shipped (item 140).
+
+        Inert unless the caller passes ``validation_context["handle_guard"]``, built by
+        ``_handle_guard`` from the handles that call's prompt actually shipped. Id fields
+        (``id``, ``*_id``, ``*_ids``, ``*ids_in_order``) are legal and skipped. A failure
+        makes ``_parse_or_retry`` re-ask once; a second failure raises ``LLMResponseError``.
+        """
+        guard = (info.context or {}).get("handle_guard")
+        if not guard:
+            return self
+        leaks = find_leaked_handles_in(self.model_dump(), guard["handles"], guard["source_tokens"])
+        if leaks:
+            names = ", ".join(dict.fromkeys(handle for _, handle in leaks[:5]))
+            raise HandleLeakError(
+                f"Prose contains internal id handle(s) {names} (first at {leaks[0][0]}). "
+                "Ids belong only in id fields; name the company, role, or quote the text instead.",
+                leaks,
+            )
+        return self
+
+
+# The generate() response fields whose text goes to a third party. A handle there is the user-harm
+# case behind item 140 (a letter sent with "at b180"), so it keeps the hard error.
+_SHIPPED_FIELDS = ("resume_content", "cover_letter_content")
+
+
+def _leak_errors(exc: Exception) -> list[HandleLeakError]:
+    """The ``HandleLeakError``s inside ``exc``, but only when EVERY validation error is one; else ``[]``."""
+    if not isinstance(exc, ValidationError):
+        return []
+    errors = exc.errors()
+    found = [
+        err
+        for err in ((e.get("ctx") or {}).get("error") for e in errors)
+        if isinstance(err, HandleLeakError)
+    ]
+    return found if errors and len(found) == len(errors) else []
+
+
+def _accept_soft_leaks(exc: Exception, validation_context: dict[str, Any] | None) -> bool:
+    """True when the retry budget is spent but every leak is in a field that does not ship (item 140).
+
+    ``hard_fields`` on the guard names the top-level response fields whose text goes to a third party
+    (the résumé and cover-letter bodies). A leak there keeps the hard error. A leak anywhere else
+    (analysis hints, rationales, notes) was retried once and is then accepted with a warning: a
+    cosmetic id in a hint is not worth failing the whole call. Anything that is not purely a leak
+    (bad JSON, a missing key) is never accepted here.
+    """
+    guard = (validation_context or {}).get("handle_guard")
+    leak_errors = _leak_errors(exc)
+    if not guard or not leak_errors:
+        return False
+    hard = set(guard.get("hard_fields", ()))
+    return not any(
+        path.split(".")[0].split("[")[0] in hard for err in leak_errors for path, _ in err.leaks
+    )
+
+
+def _retry_reason(exc: Exception) -> str:
+    """The text shown to the user and fed to the retry: our own leak message alone, else pydantic's full text.
+
+    pydantic wraps a validator's message in ``N validation error(s) for X ... input_value=...``,
+    which the UI renders verbatim (``static/app.js`` retry handlers) and which would put the
+    whole rejected response back into the retry prompt. Only a failure made up entirely of
+    ``HandleLeakError`` is rewritten; every other failure keeps its existing text.
+    """
+    leak_errors = _leak_errors(exc)
+    return " ".join(str(err) for err in leak_errors) if leak_errors else str(exc)
+
+
+def _handle_guard(
+    handles: HandleSet,
+    *,
+    context_set: ContextSet | None = None,
+    markup: str = "",
+    hard_fields: tuple[str, ...] = (),
+) -> dict[str, Any] | None:
+    """Build the ``handle_guard`` validation context for one call, or ``None`` when no handle was shipped.
+
+    ``hard_fields`` are the top-level response fields whose text ships to a third party; a leak
+    there still raises after the retry (see ``_accept_soft_leaks``). Empty: every leak is soft.
+
+    ``None`` makes the validator cost nothing (file-based mode ships no ids). A handle that also
+    occurs as a token in real text the model saw (a bullet saying "t3 instances", the résumé, the
+    JD) is not a leak, so ``source_tokens`` carries those. ``markup`` is stripped of tags first:
+    its ``id="b12"`` attributes are the handles themselves and must not exempt them. Computed
+    once per call and reused by the retry, one O(n) pass over text already in hand.
+    """
+    if not handles["prefixed"] and not handles["bare"]:
+        return None
+    texts: list[str] = [re.sub(r"<[^>]*>", " ", markup)] if markup else []
+    if context_set is not None:
+        texts.extend(assemble_source_union(context_set))
+        texts.append(str(context_set.get("job_description") or ""))
+    return {
+        "handle_guard": {
+            "handles": handles,
+            "source_tokens": source_handle_tokens(texts),
+            "hard_fields": hard_fields,
+        }
+    }
+
+
+def _corpus_guard(
+    context_set: ContextSet,
+    *,
+    answered_q_ids: bool = False,
+    hard_fields: tuple[str, ...] = (),
+) -> dict[str, Any] | None:
+    """``_handle_guard`` for a call whose prompt carries the corpus block (and, for generate, answered ``q`` ids).
+
+    A clarify response's own ``q`` ids are NOT shipped handles (the model writes them), so
+    ``answered_q_ids`` stays False there.
+    """
+    q_ids: list[str] = []
+    if answered_q_ids:
+        answers = context_set.get("clarifications") or {}
+        q_ids = [
+            qid
+            for qid in (
+                str(q.get("id") or "") for q in context_set.get("clarification_questions") or []
+            )
+            if qid and str(answers.get(qid, "")).strip()
+        ]
+    handles = corpus_handles(list(context_set.get("career_corpus") or []), q_ids)
+    return _handle_guard(handles, context_set=context_set, hard_fields=hard_fields)
+
+
+def _block_guard(
+    markup: str,
+    context_set: Mapping[str, Any] | None = None,
+    *,
+    hard_fields: tuple[str, ...] = (),
+) -> dict[str, Any] | None:
+    """``_handle_guard`` for a call whose handles live in one id-bearing prompt block (``markup``)."""
+    ctx = (
+        cast("ContextSet", context_set) if context_set is not None else None
+    )  # only `.get` is used
+    return _handle_guard(
+        handles_from_markup(markup), context_set=ctx, markup=markup, hard_fields=hard_fields
+    )
 
 
 class HiddenQualityItem(BaseModel):
@@ -343,10 +509,11 @@ class ClarifyResponse(_LLMResponse):
         always passes the context; clarify_iteration() does not (different question
         kinds and rules), so for it this validator is a no-op.
         """
-        # Only enforce when the caller explicitly passes validation_context.
-        # clarify() always passes it; clarify_iteration() does not (it has
-        # different question kinds and composition rules).
-        if info.context is None:
+        # Only enforce when the caller passes the composition context. clarify()
+        # always does; clarify_iteration() does not (it has different question
+        # kinds and composition rules). Keyed on the composition key, not on any
+        # context at all: clarify_iteration() now passes a handle_guard.
+        if info.context is None or "hidden_qualities_non_empty" not in info.context:
             return self
 
         ctx = info.context
@@ -493,7 +660,7 @@ class RefinementScopeResponse(_LLMResponse):
 # Bump when SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT, or any per-call prompt
 # template changes. Labels every JSONL telemetry record so quality regressions
 # can be attributed to a revision.
-PROMPT_VERSION = "2026-08-14.1"  # Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
+PROMPT_VERSION = "2026-10-17.2"  # fix/llm-handle-leak-and-letter-date (item 140), second revision: the analyze extraction schema (keyword_placement suggested_location/how asked for a "bullet area", answered with the bullet id) and the synthesis schema (strengths/section/action) now say to name a bullet by company and role or a quote, never an id; measured cause: 4 of 6 analyses needed a guard retry on 2026-10-17.1. Supersedes 2026-10-17.1, whose entry follows: (1) _NO_HANDLES_IN_PROSE_RULE appended to 14 persona constants (SYSTEM_PROMPT, EXTRACTION, CLARIFY, CLARIFY_ITERATION, PROPOSAL_CRITIQUE, RECOMMEND, RECOMMEND_SUMMARIES, RECOMMEND_EXPERIENCE_SUMMARIES, RECOMMEND_SKILLS, SUGGEST_SKILLS, SUGGEST_SKILLS_FROM_CORPUS, DRAFT_GAP_FILL, DRAFT_EXPERIENCE_SUMMARIES, DRAFT_SURGICAL_REFINEMENT) with an OK/NOT OK pair; the critique prompt's "source bullet b41" example reworded; (2) both cover-letter prompts carry <letter_date> and _COVER_LETTER_RULES_BLOCK FORMAT says to copy it, with a DATE worked example. Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-14.1 (Epic B sprint B2); that value's rationale, kept for the record: Epic B sprint B2 (feat/ats-conformance): EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance changed — "year-only is fine" replaced with month-preferred wording (year-only still accepted so roles land flagged rather than dropped; blast-radius rows 36-38). Prompt-template change -> bumped in the same commit per AGENTS.md "LLM prompts". Supersedes 2026-08-09.1 (DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT addition).
 
 # The doc-grounded assistant ("avatar", Sprint 7.5) is a SEPARATE LLM subsystem from
 # the résumé pipeline: a different persona, a different model role, and — critically —
@@ -646,6 +813,18 @@ def _safe_exc_str(exc: BaseException) -> str:
 
 
 # P6: Specialist persona — <50 tokens, real job title, domain vocabulary
+# Item 140 — appended (below, after each definition) to every persona that is shown id-bearing
+# markup or analysis prose that quotes it. Baseline runs showed bullet and experience ids
+# ("e102 bullet b304 …") in the analysis, clarify and generate-notes text a user reads. The name
+# must not end in SYSTEM_PROMPT or `tests/test_prompt_overrides.py` demands it be registered.
+# The runtime half is `_LLMResponse.reject_handle_leaks`; this rule is the half that is A/B-able.
+_NO_HANDLES_IN_PROSE_RULE = """
+
+INTERNAL IDS — NEVER IN PROSE. Values like e7, t4, b12, s44, or a bare numeric id are machine handles. Write one ONLY in a JSON field that asks for an id (bullet_ids, experience_id, selected_bullets, summary_item_id, ...). In every prose field — analysis, rationale, notes, questions, résumé text, cover letter — never write one. Name the company and role, or quote the bullet's own words, instead.
+  NOT OK: "Earlier, at b12, I led the migration."  /  "e7 bullet b14 shows streaming depth."
+  OK: "Earlier, at Northwind Freight, I led the migration."  /  "The Calder Analytics streaming-pipeline bullet shows depth."
+"""
+
 SYSTEM_PROMPT = """You are a seasoned hiring manager with a decade of HR and recruiting experience. \
 You specialize in resume optimization, ATS compatibility, and candidate positioning.
 
@@ -674,6 +853,7 @@ ALWAYS/NEVER rules (P5 Institutional Memory):
 - Never upgrade a tool category into a specific vendor or framework BECAUSE "used a CI tool" must not become "authored Jenkins pipelines" if the source does not name Jenkins; vendor-specific claims are verifiable and disqualifying when wrong
 - Never escalate scope adjectives (team → organization-wide, project → enterprise initiative, regional → global) BECAUSE scope inflation is verifiable in interviews and triggers credibility loss across the rest of the resume
 - Never alter, swap, or "reconcile" employment date ranges BECAUSE dates are immutable facts: every experience keeps exactly the date range its source states, reordering experiences for relevance NEVER changes their dates, two roles may legitimately overlap or sit adjacent in time, and a shifted or duplicated range is instantly verifiable fabrication that disqualifies the candidate at the first background check"""
+SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # P6 Specialized Review — Pass 1 persona for the two-pass analyze pipeline
 # (r1/analyze-split-retry). An ATS-scanner specialist that extracts and
@@ -702,6 +882,7 @@ ALWAYS/NEVER rules:
   - stakeholder_gravity — exec-facing, cross-functional influence without formal authority, customer-facing
   - resilience — turnaround, ambiguity tolerance, self-directed with minimal oversight
   The "signal" is one portable sentence an adjacent-background candidate could map onto (e.g. "Builds for regulated, workflow-heavy environments where errors have real consequences"). One concept per signal."""
+EXTRACTION_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # P6 Specialized Review — Pass 2 (synthesis) deliberately has NO dedicated system
 # prompt. It runs under the default SYSTEM_PROMPT (the hiring-manager persona) so
@@ -762,6 +943,7 @@ WORKED EXAMPLES — iteration probe quality:
     NOT OK: "Was the SLO definition deliberate or reactive?" (leading dichotomy; no detail surfaces either way)
 
   The pattern: substance-of-claim follow-ups produce citable detail (named collaborators, numeric scope). Cause/effect or yes/no follow-ups don't."""
+CLARIFY_ITERATION_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # Dedicated short persona for the clarify() step. Smaller than SYSTEM_PROMPT
 # because the task is narrowly scoped (question generation, not resume
@@ -801,6 +983,7 @@ RULES:
 - Bias toward EXPERIENCE PROBES + CONTEXT PROBES (≥60% combined) — these are the most likely to surface real experience the candidate didn't write down. Tool-name-only probes without an adjacent-experience escape hatch are dead ends; do not emit them.
 - When the JD strongly implies an operating-context or scope-of-ownership signal (regulated industry, 0→1, exec-facing, etc.), prefer a context_probe over a narrow tool-name experience_probe. The context_probe surfaces transferable experience; the tool-name probe only confirms or denies a specific item.
 - Output JSON only, no markdown fences, no preamble."""
+CLARIFY_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 # Persona for the doc-grounded assistant ("avatar", Sprint 7.5) — the only LLM in the
 # Memory/recall stack. It reads an assembled, cited <recalled_context> block (built by
@@ -1555,6 +1738,7 @@ def _parse_or_retry_streaming(
     max_attempts: int = 2,
     system_prompt: str = "",
     model: str | None = None,
+    validation_context: dict[str, Any] | None = None,
 ) -> Iterator[tuple[str, object]]:
     """Streaming generator variant of `_parse_or_retry`.
 
@@ -1577,6 +1761,7 @@ def _parse_or_retry_streaming(
     base_text = ""
     retry_prompt = base_prompt
     current_kind = call_kind
+    data: Any = None  # bound by json.loads before any validation error can be accepted
     for attempt in range(max_attempts):
         accumulated = ""
         for item in _call_llm_streaming(
@@ -1596,28 +1781,39 @@ def _parse_or_retry_streaming(
         base_text = accumulated
         try:
             data = json.loads(_strip_fences(accumulated), strict=False)
-            response_model.model_validate(data)
+            response_model.model_validate(data, context=validation_context)
             yield ("done", data)
             return
         except (json.JSONDecodeError, ValidationError) as e:
+            reason = _retry_reason(e)
             if attempt + 1 >= max_attempts:
+                if _accept_soft_leaks(e, validation_context):
+                    logger.warning(
+                        "Accepting response after %d attempts: handle leak in a non-shipped "
+                        "field only — call=%s %s",
+                        max_attempts,
+                        call_kind,
+                        reason,
+                    )
+                    yield ("done", data)
+                    return
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
                     max_attempts,
                     call_kind,
                     e,
                 )
-                raise LLMResponseError(accumulated, str(e)) from e
+                raise LLMResponseError(accumulated, reason) from e
             logger.warning(
                 "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
                 attempt + 1,
                 call_kind,
                 e,
             )
-            yield ("retry", str(e))
+            yield ("retry", reason)
             retry_prompt = (
                 f"{base_prompt}\n\n<retry_reason>Your previous response failed "
-                f"validation: {e}. Respond again with valid JSON matching the "
+                f"validation: {reason}. Respond again with valid JSON matching the "
                 f"exact structure requested above. Output JSON only, no markdown "
                 f"fences, no commentary.</retry_reason>"
             )
@@ -1662,6 +1858,7 @@ def _parse_or_retry(
         model=model,
         max_tokens=max_tokens,
     )
+    data: Any = None  # bound by json.loads before any validation error can be accepted
     for attempt in range(max_attempts):
         try:
             # `strict=False` allows ASCII control characters (0x00-0x1F)
@@ -1677,14 +1874,24 @@ def _parse_or_retry(
             response_model.model_validate(data, context=validation_context)
             return cast("dict[str, Any]", data)
         except (json.JSONDecodeError, ValidationError) as e:
+            reason = _retry_reason(e)
             if attempt + 1 >= max_attempts:
+                if _accept_soft_leaks(e, validation_context):
+                    logger.warning(
+                        "Accepting response after %d attempts: handle leak in a non-shipped "
+                        "field only — call=%s %s",
+                        max_attempts,
+                        call_kind,
+                        reason,
+                    )
+                    return cast("dict[str, Any]", data)
                 logger.error(
                     "LLM response validation failed after %d attempts — call=%s err=%s",
                     max_attempts,
                     call_kind,
                     e,
                 )
-                raise LLMResponseError(raw, str(e)) from e
+                raise LLMResponseError(raw, reason) from e
             logger.warning(
                 "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
                 attempt + 1,
@@ -1693,7 +1900,7 @@ def _parse_or_retry(
             )
             retry_prompt = (
                 f"{base_prompt}\n\n<retry_reason>Your previous response failed "
-                f"validation: {e}. Respond again with valid JSON matching the "
+                f"validation: {reason}. Respond again with valid JSON matching the "
                 f"exact structure requested above. Output JSON only, no markdown "
                 f"fences, no commentary.</retry_reason>"
             )
@@ -1747,6 +1954,7 @@ def analyze(
     # cached prefix; both passes share it byte-identically so Pass 2 (Sonnet)
     # writes the prompt-cache block that the later generate() call reads.
     prefix = _stable_user_prefix(context_set)
+    guard = _corpus_guard(context_set)  # item 140: both passes write prose that must not name an id
     extraction = _parse_or_retry(
         client,
         _analyze_extraction_prompt(context_set),
@@ -1757,6 +1965,7 @@ def analyze(
         run_id=run_id,
         system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=guard,
     )
     # Synthesis runs under the DEFAULT SYSTEM_PROMPT (no system_prompt override),
     # NOT a dedicated synthesis persona, so its cached prefix
@@ -1775,6 +1984,7 @@ def analyze(
         username=username,
         run_id=run_id,
         # system_prompt + model default to SYSTEM_PROMPT + SONNET_MODEL in _call_llm
+        validation_context=guard,
     )
     return {**extraction, **synthesis}
 
@@ -1816,8 +2026,8 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
   "keyword_placement": [
     {{
       "keyword": "missing keyword (atomic)",
-      "suggested_location": "Where in the résumé to add it (section / bullet area)",
-      "how": "How to incorporate naturally without keyword-stuffing"
+      "suggested_location": "Where in the résumé to add it: the section, or the company and role of the bullet area. Never a bullet or experience id",
+      "how": "How to incorporate naturally without keyword-stuffing. Name a bullet by its company and role or a short quote, never by id"
     }}
   ]
 }}
@@ -1865,14 +2075,14 @@ ATS warnings: {json.dumps(context_set["deterministic_analysis"]["ats_warnings"])
 Respond with valid JSON only. No markdown code fences. Use this exact structure:
 {{
   "comparison": {{
-    "strengths": ["specific strength — cite an extracted skill or résumé item by name"],
+    "strengths": ["specific strength — cite an extracted skill or résumé item by name (company and role, or a short quote; never an id)"],
     "gaps": ["specific gap — cite an essential_skill that's missing or weak"],
     "title_alignment": "Assessment of how well current titles align with the target role"
   }},
   "suggestions": [
     {{
-      "section": "Section name in résumé",
-      "action": "Concrete change to make",
+      "section": "Section name in résumé, or the company and role it sits under (never an id)",
+      "action": "Concrete change to make. Name a bullet by its company and role or a short quote, never by id",
       "rationale": "Why this improves candidacy — cite an extracted signal or gap"
     }}
   ],
@@ -1907,6 +2117,7 @@ def analyze_streaming(
         yield ("done", demo_fixtures.demo_analysis())
         return
     prefix = _stable_user_prefix(context_set)
+    guard = _corpus_guard(context_set)  # item 140
 
     yield ("phase", {"phase": "extraction"})
     extraction: dict[str, Any] | None = None
@@ -1920,6 +2131,7 @@ def analyze_streaming(
         run_id=run_id,
         system_prompt=_resolve_system_prompt("EXTRACTION_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=guard,
     ):
         if event_name == "done" and isinstance(payload, dict):
             extraction = payload
@@ -1943,6 +2155,7 @@ def analyze_streaming(
         call_kind="analyze_synthesis",
         username=username,
         run_id=run_id,
+        validation_context=guard,
     ):
         if event_name == "done" and isinstance(payload, dict):
             synthesis = payload
@@ -2225,7 +2438,11 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         # structured output; clarification_quality cleared 4.0 stably after the
         # R1 two-pass split. Switch is eval-gated — see evals/TUNING_LOG.md.
         model=HAIKU_MODEL,
-        validation_context={"hidden_qualities_non_empty": bool(hidden_qualities)},
+        # item 140: the guard rides beside the composition key; ClarifyResponse keys on the latter.
+        validation_context={
+            "hidden_qualities_non_empty": bool(hidden_qualities),
+            **(_corpus_guard(context_set) or {}),
+        },
     )
 
 
@@ -2361,6 +2578,7 @@ Respond with valid JSON only. No markdown fences. Use this exact structure:
         username=username,
         run_id=run_id,
         system_prompt=_resolve_system_prompt("CLARIFY_ITERATION_SYSTEM_PROMPT"),
+        validation_context=_corpus_guard(context_set),  # item 140
     )
 
 
@@ -2394,6 +2612,23 @@ def _current_cover_letter_draft(context_set: ContextSet) -> tuple[str, str]:
 # generate_cover_letter_against_resume() (β.5). Promoted to a module-level
 # constant so the two call sites stay byte-identical and the cover-letter
 # contract has one source of truth.
+#
+# The letter's date is NOT in this constant: it changes daily, and a user-prompt block is
+# the only place it can go without breaking the cached prefix (item 140). `_letter_date_block()`
+# supplies it beside this block at both call sites; `_clock_today` is the one clock read, so a
+# test can pin it.
+_clock_today: Callable[[], date] = date.today
+
+
+def _letter_date_block() -> str:
+    """The `<letter_date>` block both cover-letter prompts carry, e.g. ``October 17, 2026``.
+
+    Built from ``d.day`` rather than ``%-d`` (not portable to Windows).
+    """
+    d = _clock_today()
+    return f"<letter_date>{d:%B} {d.day}, {d.year}</letter_date>\n"
+
+
 _COVER_LETTER_RULES_BLOCK = """<cover_letter_rules>
 VOICE — VP-level professional: courteous, concise, direct, confident, considerate. A clear outlier.
 
@@ -2431,7 +2666,7 @@ Paragraph 3 — CLOSE (2-3 sentences):
   One sentence on fit or timing if relevant. Close cleanly. No trailing pleasantries.
 
 FORMAT:
-  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown)
+  - Date, then hiring manager name/title/company (use "Hiring Manager" if name unknown). The date is EXACTLY the value in <letter_date>, copied as given. Never invent, guess or carry over a date.
   - Salutation: "Dear [Name]," or "Dear Hiring Manager,"
   - Close: "Sincerely," or "Best regards,"
   - Match industry register: measured for finance/law; direct for tech; considered for mission-driven orgs
@@ -2451,6 +2686,12 @@ WORKED EXAMPLES — the opener and the close are where this voice most often sli
             (Passive, generic, no specificity — it sounds like waiting to be called.)
     OK: "I'd welcome a direct conversation about the first-90-days migration sequence and the year-one scaling questions the role description doesn't cover. I can make time this week."
             (Forward-leaning, names a concrete topic and a timing signal, implies initiative.)
+
+  DATE — with <letter_date>March 3, 2031</letter_date> in the prompt:
+    NOT OK: "March 2025" at the top of the letter.
+            (A date the model made up; the letter goes out with a wrong date.)
+    OK: "March 3, 2031" at the top of the letter.
+            (The <letter_date> value, copied exactly.)
 </cover_letter_rules>"""
 
 
@@ -2508,7 +2749,9 @@ def _build_generate_prompt(
             cb_lines.append("</candidate_clarifications>")
             clarifications_block = "\n".join(cb_lines) + "\n\n"
 
-    cover_letter_rules_block = _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
+    cover_letter_rules_block = (
+        _letter_date_block() + _COVER_LETTER_RULES_BLOCK if with_cover_letter else ""
+    )
 
     refinement_target = (
         "to both the resume and cover letter" if with_cover_letter else "to the resume"
@@ -2841,6 +3084,9 @@ def generate(
         call_kind="generate",
         username=username,
         run_id=run_id,
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=_SHIPPED_FIELDS
+        ),  # item 140
     )
     if not with_cover_letter:
         result.setdefault("cover_letter_content", "")
@@ -2889,6 +3135,9 @@ def generate_streaming(
         call_kind="generate",
         username=username,
         run_id=run_id,
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=_SHIPPED_FIELDS
+        ),  # item 140
     ):
         kind, payload = event
         if kind == "done" and not with_cover_letter and isinstance(payload, dict):
@@ -3011,7 +3260,7 @@ Strategy: {analysis.get("overall_strategy", "")}
 Professional vocabulary: {", ".join(analysis.get("professional_vocabulary", []))}
 </analysis>
 
-{_COVER_LETTER_RULES_BLOCK}
+{_letter_date_block()}{_COVER_LETTER_RULES_BLOCK}
 {
         f'''
 <refinement_instructions>
@@ -3042,6 +3291,11 @@ Respond with valid JSON only. No markdown code fences. Use this exact structure:
         call_kind="generate_cover_letter",
         username=username,
         run_id=run_id,
+        # item 140: the letter never sees the corpus markup, but the analysis prose it is
+        # given can carry the handles (b180), so the letter is held to the same guard.
+        validation_context=_corpus_guard(
+            context_set, answered_q_ids=True, hard_fields=("cover_letter_content",)
+        ),
     )
 
 
@@ -3128,9 +3382,10 @@ CHECK FOR (and cite specifically in concerns):
 4. **Title elevation** — claiming seniority beyond the candidate's official title or clarified scope.
 5. **Verb overreach** — "Owned" / "Led" / "Drove" when source says "Contributed" / "Supported" / "Helped".
 
-When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in source bullet b41 — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
+When a concern fires, NAME the specific claim ("the '800-unit fleet' phrase appears in the Acme source bullet — OK", or "'24 clinicians interviewed' has no source — fabricated specific").
 
 Be brief. 1-3 concerns is plenty per critique."""
+PROPOSAL_CRITIQUE_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def critique_proposal(
@@ -3260,6 +3515,7 @@ Output JSON only, this exact shape:
 }
 
 Omit an experience from the array ONLY when NONE of its bullets fit this JD at all (don't return empty bullet_ids). Use the numeric ids only — do NOT prefix with "b" or "e"."""
+RECOMMEND_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_bullets(
@@ -3326,6 +3582,7 @@ Industry keywords: {keywords or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("RECOMMEND_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(corpus_block, context_set),  # item 140
     )
     # Workstream B1.2 safety pass: even with the explicit prompt rule, the
     # LLM occasionally returns two near-restatements of the same achievement
@@ -3410,6 +3667,7 @@ If the candidate has zero summary variants in <summary_items>, return:
 {"recommendation": null, "alternates": []}
 
 Use the numeric ids only — do NOT prefix with "s"."""
+RECOMMEND_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_summaries(
@@ -3488,6 +3746,7 @@ Industry keywords: {keywords or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("RECOMMEND_SUMMARIES_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(items_block, context_set),  # item 140
     )
     # Ensure the alternates key exists even when the LLM omits it
     result.setdefault("alternates", [])
@@ -3612,6 +3871,7 @@ Output JSON only, this exact shape:
 }
 
 Omit any role you have no good pick for (do not emit an entry with a null id). Use the numeric ids only — do NOT prefix with "e" or "s"."""
+RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_experience_summaries(
@@ -3718,6 +3978,7 @@ Industry keywords: {keywords or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("RECOMMEND_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(items_block, context_set),  # item 140
     )
     # Normalize the LLM's recs: coerce ids, ensure alternates exists, drop
     # entries without a usable pick, then dedup alternates per experience.
@@ -3865,6 +4126,7 @@ If the candidate has zero skills in <skills>, return:
 {"recommendation": {"skill_ids": [], "rationale": "No skills to order."}}
 
 Use the numeric ids only — do NOT prefix with "s"."""
+RECOMMEND_SKILLS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def recommend_skills(
@@ -3939,6 +4201,7 @@ Industry keywords: {keywords or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("RECOMMEND_SKILLS_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(items_block, context_set),  # item 140
     )
     # Normalize: coerce ids, keep only ids that exist in the staged set, drop
     # dupes (preserving order). Belt-and-suspenders against hallucinated ids.
@@ -4045,6 +4308,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a JD-wanted skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
+SUGGEST_SKILLS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 # PROMPT-TEXT CHANGE (fix/review-surface-and-flows, 2026-07-08): NEW constant,
@@ -4090,6 +4354,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus or prior_clarifications evidences a skill the candidate doesn't already have. Use numeric ids only (null for both when the evidence is a clarification, not a corpus row)."""
+SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def suggest_skills(
@@ -4162,6 +4427,7 @@ Preferred skills: {preferred or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("SUGGEST_SKILLS_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(corpus_block, context_set),  # item 140
     )
     # Normalize + dedup against existing canonical names (case-insensitive) and
     # against each other. Belt-and-suspenders: the route also enforces the
@@ -4263,6 +4529,7 @@ def suggest_skills_from_corpus(
         run_id=run_id,
         system_prompt=_resolve_system_prompt("SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT"),
         model=HAIKU_MODEL,
+        validation_context=_block_guard(corpus_block, context_set),  # item 140
     )
     # Normalize + dedup against existing canonical names (case-insensitive) and
     # against each other. Belt-and-suspenders: the route also enforces the
@@ -4510,6 +4777,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"proposals": []} when nothing in the corpus evidences an uncovered JD requirement. Use numeric ids only (the number after the e/b prefix)."""
+DRAFT_GAP_FILL_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def draft_gap_fill_bullets(
@@ -4599,6 +4867,7 @@ Requirements missing from the resume: {missing_str or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("DRAFT_GAP_FILL_SYSTEM_PROMPT"),
         model=SONNET_MODEL,
+        validation_context=_block_guard(corpus_block, context_set),  # item 140
     )
     proposals = [p for p in (result.get("proposals") or []) if isinstance(p, dict)]
     return {"proposals": proposals}
@@ -4640,6 +4909,7 @@ Output JSON only, this exact shape:
 }
 
 Return {"drafts": []} when no role has evidence you can honestly fit to this JD. Use numeric ids only (the number after the e/b/s prefix), and never emit two entries for the same experience_id."""
+DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def _experience_summary_targets_block(targets: list[dict[str, Any]]) -> str:
@@ -4811,6 +5081,7 @@ Industry keywords: {keywords or "(none)"}
         run_id=run_id,
         system_prompt=_resolve_system_prompt("DRAFT_EXPERIENCE_SUMMARIES_SYSTEM_PROMPT"),
         model=SONNET_MODEL,
+        validation_context=_block_guard(targets_block, context_set),  # item 140
     )
     # Normalize: coerce ids, drop empties, drop drafts for roles we did not
     # stage, and keep only the FIRST draft per role. `known` is a set so the
@@ -4910,6 +5181,7 @@ Output JSON only, this exact shape:
  "rationale": "<one sentence>"}
 
 Use numeric ids only (the number after the e/b prefix, if any)."""
+DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT += _NO_HANDLES_IN_PROSE_RULE
 
 
 def draft_surgical_refinement(
@@ -4982,6 +5254,7 @@ def draft_surgical_refinement(
         run_id=run_id,
         system_prompt=_resolve_system_prompt("DRAFT_SURGICAL_REFINEMENT_SYSTEM_PROMPT"),
         model=SONNET_MODEL,
+        validation_context=_block_guard(current_block, context_set),  # item 140
     )
     kind = result.get("target_kind")
     if kind not in ("bullet", "summary", "none"):

@@ -19,7 +19,7 @@ import uuid
 from collections import Counter
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, TypedDict
 from urllib.parse import urlparse
@@ -1499,6 +1499,212 @@ def compute_date_grounding(
     if result["flagged"]:
         result["status"] = "flag"
     return result
+
+
+# --- Internal id handles in prose (item 140) --------------------------------
+# Prompts hand the model ids as handles (`e12`, `t4`, `b173`, `q2`, or a bare
+# numeric `id="44"`) so it can name them in JSON id fields. They must never
+# surface in prose a user reads. Detection is deterministic and matches ONLY
+# handles the prompt actually shipped, so an ordinary token ("b2b", "S3",
+# "Q1 2024") cannot false-positive: a false positive costs a paid retry and
+# then a hard error.
+
+_HANDLE_TOKEN_RE = re.compile(r"(?<![\w./-])([a-z]\d+)(?!\w|[./-]\w)")
+_BARE_ID_PHRASE_RE = re.compile(r"\bid[ \t]*[:=#]?[ \t]*\"?(\d+)\b", re.IGNORECASE)
+_MARKUP_ID_RE = re.compile(r"<([A-Za-z_]+)\b[^>]*?\b(?:experience_)?id=\"([A-Za-z]?\d+)\"")
+# Bare numeric ids get the prefix their tag implies, so `<bullet id="12">` and
+# `b12` are one handle. Tags with no prefix convention contribute the bare number only.
+_TAG_HANDLE_PREFIX = {
+    "experience": "e",
+    "role": "e",
+    "bullet": "b",
+    "eligible_title": "t",
+    "summary_item": "s",
+    "q": "",
+}
+# Keys that LEGITIMATELY carry ids: the id fields the prompt asks for.
+_HANDLE_ID_KEY_RE = re.compile(r"^(?:id|.*_ids?|.*ids_in_order)$")
+
+
+class HandleSet(TypedDict):
+    """The handles one prompt shipped: prefixed (`b12`) and bare numeric (`12`)."""
+
+    prefixed: frozenset[str]
+    bare: frozenset[str]
+
+
+def handles_from_markup(markup: str) -> HandleSet:
+    """Collect the id handles in a prompt's XML-ish markup, from `id="…"` attributes.
+
+    One regex pass over the text the prompt builder already holds. A prefixed
+    value (`b173`) is kept as is; a bare number is kept in `bare` and, when its
+    tag has a prefix convention, also as the prefixed form.
+    """
+    prefixed: set[str] = set()
+    bare: set[str] = set()
+    for m in _MARKUP_ID_RE.finditer(markup):
+        tag, value = m.group(1), m.group(2)
+        if value[0].isalpha():
+            prefixed.add(value)
+            bare.add(value[1:])
+        else:
+            bare.add(value)
+            prefix = _TAG_HANDLE_PREFIX.get(tag, "")
+            if prefix:
+                prefixed.add(f"{prefix}{value}")
+    return {"prefixed": frozenset(prefixed), "bare": frozenset(bare)}
+
+
+def corpus_handles(
+    corpus: list[CorpusExperience], q_ids: list[str] | tuple[str, ...] = ()
+) -> HandleSet:
+    """The handles `analyzer._corpus_block` ships (`e`, `t`, `b`) plus clarification `q` ids.
+
+    Built from the corpus data itself, for the paths whose handles arrive inside
+    analysis prose rather than markup (the cover letter).
+    """
+    prefixed: set[str] = {q for q in q_ids if q}
+    bare: set[str] = set()
+    for exp in corpus or []:
+        eid = exp.get("id")
+        if eid is not None:
+            prefixed.add(f"e{eid}")
+            bare.add(str(eid))
+        for t in exp.get("eligible_titles", []) or []:
+            tid = t.get("id")
+            if tid is not None:
+                prefixed.add(f"t{tid}")
+                bare.add(str(tid))
+        for b in exp.get("bullets", []) or []:
+            bid = b.get("id")
+            if bid is not None:
+                prefixed.add(f"b{bid}")
+                bare.add(str(bid))
+    return {"prefixed": frozenset(prefixed), "bare": frozenset(bare)}
+
+
+def merge_handles(*sets: HandleSet) -> HandleSet:
+    """Union of several `HandleSet`s."""
+    return {
+        "prefixed": frozenset().union(*(s["prefixed"] for s in sets)),
+        "bare": frozenset().union(*(s["bare"] for s in sets)),
+    }
+
+
+def source_handle_tokens(source_texts: list[str]) -> frozenset[str]:
+    """Handle-shaped tokens that occur in REAL source text (résumé, JD, clarifications).
+
+    A handle that also appears there ("t3 instances" in a bullet) is not a leak, so
+    callers subtract this set. Pass real text only, never the id-bearing markup.
+    """
+    found: set[str] = set()
+    for text in source_texts:
+        if text:
+            found.update(_HANDLE_TOKEN_RE.findall(text))
+    return frozenset(found)
+
+
+def find_leaked_handles(
+    text: str,
+    handles: HandleSet,
+    source_tokens: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Handles from `handles` that appear in `text`, in order of first appearance.
+
+    Prefixed handles match as whole lowercase tokens only (so "b2b", "S3",
+    "Q1 2024", "t2.micro" never hit). Bare numeric ids match only inside an
+    explicit id phrase ("id 44", "ID: 44"); a bare "44" or "44% growth" is
+    deliberately NOT flagged: missing it costs a cosmetic miss, flagging it costs
+    a paid retry and then a hard error.
+    """
+    if not text:
+        return []
+    hits: list[str] = []
+    seen: set[str] = set()
+    prefixed = handles["prefixed"]
+    for m in _HANDLE_TOKEN_RE.finditer(text):
+        tok = m.group(1)
+        if tok in prefixed and tok not in source_tokens and tok not in seen:
+            seen.add(tok)
+            hits.append(tok)
+    bare = handles["bare"]
+    if bare:
+        for m in _BARE_ID_PHRASE_RE.finditer(text):
+            num = m.group(1)
+            label = f"id {num}"
+            if num in bare and label not in seen:
+                seen.add(label)
+                hits.append(label)
+    return hits
+
+
+def iter_prose_leaves(obj: object, path: str = "") -> Iterator[tuple[str, str]]:
+    """`(path, text)` for every string leaf of a parsed LLM response that is prose, not an id field.
+
+    Skips values under keys that legitimately carry ids (`id`, `*_id`, `*_ids`,
+    `*ids_in_order`), so `selected_bullets` and `evidence.bullet_id` stay legal.
+    """
+    if isinstance(obj, str):
+        yield path, obj
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            if isinstance(key, str) and _HANDLE_ID_KEY_RE.match(key):
+                continue
+            yield from iter_prose_leaves(value, f"{path}.{key}" if path else str(key))
+    elif isinstance(obj, (list, tuple)):
+        for i, value in enumerate(obj):
+            yield from iter_prose_leaves(value, f"{path}[{i}]")
+
+
+def find_leaked_handles_in(
+    obj: object,
+    handles: HandleSet,
+    source_tokens: frozenset[str] = frozenset(),
+    path: str = "",
+) -> list[tuple[str, str]]:
+    """`(path, handle)` for every leaked handle in the prose leaves of a parsed LLM response."""
+    return [
+        (leaf_path, handle)
+        for leaf_path, text in iter_prose_leaves(obj, path)
+        for handle in find_leaked_handles(text, handles, source_tokens)
+    ]
+
+
+def handle_snippet(text: str, handle: str, width: int = 50) -> str:
+    """`width` characters either side of the first place `handle` appears in `text`, for audit."""
+    needle = handle.removeprefix("id ")
+    i = text.find(needle)
+    if i < 0:
+        return text[: 2 * width]
+    return " ".join(text[max(0, i - width) : i + len(needle) + width].split())
+
+
+_MONTHS = (
+    "January February March April May June July August September October November December"
+).split()
+_LETTER_DATE_RE = re.compile(
+    r"\b(" + "|".join(_MONTHS) + r")\b(?:[ \t]+\d{1,2}(?:st|nd|rd|th)?,?)?[ \t]+(\d{4})\b"
+)
+_LETTER_DATE_HEAD_LINES = 3
+
+
+def compute_letter_date(letter: str, run_date: date) -> dict[str, Any]:
+    """The month-and-year date written in a cover letter's first lines, against the run date.
+
+    Returns `{"found": "March 2025" | None, "run_date": "October 2026", "matches_run_date": bool | None}`;
+    `matches_run_date` is None when the letter carries no recognizable date. Only the
+    first non-blank lines are read (the date line sits above the addressee), so a
+    month-year in the body ("in March 2019, I led") is not mistaken for the letter date.
+    Numeric forms such as `03/2025` are not recognized (stated limit).
+    """
+    run_label = f"{_MONTHS[run_date.month - 1]} {run_date.year}"
+    head = [ln for ln in (letter or "").splitlines() if ln.strip()][:_LETTER_DATE_HEAD_LINES]
+    for line in head:
+        m = _LETTER_DATE_RE.search(line)
+        if m:
+            found = f"{m.group(1)} {m.group(2)}"
+            return {"found": found, "run_date": run_label, "matches_run_date": found == run_label}
+    return {"found": None, "run_date": run_label, "matches_run_date": None}
 
 
 def compute_call_cost(record: dict[str, Any]) -> float:

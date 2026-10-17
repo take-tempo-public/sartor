@@ -13,6 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: internal ids in your analysis and cover letter, and a made-up letter date (`fix/llm-handle-leak-and-letter-date`, item 140)
+
+Two things showed up in a live run of the README walkthrough: the analysis said "…implied by company name
+and **b173**", and the cover letter said "Earlier, at **b180**, I led…" under the date "March 2025", in October
+2026.
+
+- **Fixed: ids in the text you read.** Sartor hands the model your bullets as `b173`-style handles so it can
+  name them in its answers. It was also writing them into the analysis, the clarify questions and the notes
+  beside a generated résumé. Every prompt that shows the model ids now says to name the company and role, or
+  quote the bullet, instead, and the analysis prompts no longer ask for a "bullet area" the model could only
+  answer with an id. In the live runs after the change, the analyses that finished had no ids (a handful of runs,
+  not a rate). The original `b180` letter did not reproduce in any of the 23 letters across the runs, so that one is guarded rather than
+  observed fixed.
+- **Fixed: the cover letter's date.** The letter prompt asked for a date and gave none, so the model made one up
+  (six dated letters, six wrong). It is now given today's date and told to copy it. All twelve dated letters
+  after the change carry the run date.
+- **Changed: a response that still names an id.** Sartor re-asks the model once. If an id is still in the
+  résumé or cover-letter text, the call fails with an error that says which field; an id left only in a hint,
+  rationale or note is accepted and logged. **Cost:** the re-ask is an extra model call. In the last check, 4 of
+  6 analyses needed one before the analysis prompts were reworded (about 16% of that run's spend and 20 seconds
+  per analysis); after the rewording, 1 call across the 2 analyses re-run.
+- **Not fixed:** `docs/screenshots/walkthrough_coverletter_first-generation.png` still shows the old text. The
+  capture script stopped before the cover letter step and the cause is not established. The README hero
+  screenshot was recaptured and shows no ids.
+- **Not explained:** the grounding score of one eval fixture (a deliberately mismatched corpus) dropped after
+  these prompt changes; whether that is the change or run-to-run variance is not established
+  (`docs/dev/diagnosis/llm-handle-leak-and-letter-date.md`).
+- **For tuners:** `PROMPT_VERSION` is `2026-10-17.2`; `--prompt-overrides` replaces a persona's whole text, so a
+  candidate that omits the new no-ids rule drops it.
+
 ### One data folder: everything you own follows `SARTOR_HOME` (`feat/data-root`, item 145, branch 1 of 3)
 
 Before this, only part of your data followed `SARTOR_HOME`. Your database, the telemetry log, your
