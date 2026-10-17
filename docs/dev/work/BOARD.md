@@ -21,7 +21,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Short review: are the pinned models and call settings (thinking, caching, routing) still the best performance/cost fit?
 - **138** -- The Settings drawer has no help bubble (`user`) -- _initHelp attaches only to .cb-panel; Settings is a drawer, so it gets no (i) bubble or Learn more link.
 - **139** -- capture_screenshots leaves its demo user behind: cleanup skips on failure, and DB rows always persist (`agent`) -- cleanup() runs only on success; demo DB rows are never removed, so a stale import blocks later runs.
-- **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Prompts hand bullets to the model as id="b{id}"; the model echoes the handle into prose. Letter date is ungrounded.
+- **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Fix built and measured; open: cover-letter screenshot not recaptured, one fixture score drop unexplained.
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
 

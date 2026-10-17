@@ -3231,3 +3231,68 @@ compose-add-title precedent: prove byte-identity with a check, don't spend a pai
       keeps this flat as a corpus grows. A per-role implementation of the same
       feature would have been 3 calls on a 3-role fixture and ~N on a real
       corpus.
+
+
+---
+
+## Internal ids in prose, and the invented cover-letter date — 2026-10-17 — `fix/llm-handle-leak-and-letter-date` (item 140) — `2026-08-14.1` → `2026-10-17.1` → `2026-10-17.2`
+
+**What changed?** Four things, one defect (a model told to "cite by name" about bullets it only knows by id):
+
+1. `_NO_HANDLES_IN_PROSE_RULE` (a new constant in [`analyzer.py`](../analyzer.py), with an OK / NOT OK pair) is
+   appended to 14 persona constants: `SYSTEM_PROMPT`, `EXTRACTION`, `CLARIFY`, `CLARIFY_ITERATION`,
+   `PROPOSAL_CRITIQUE`, `RECOMMEND`, `RECOMMEND_SUMMARIES`, `RECOMMEND_EXPERIENCE_SUMMARIES`, `RECOMMEND_SKILLS`,
+   `SUGGEST_SKILLS`, `SUGGEST_SKILLS_FROM_CORPUS`, `DRAFT_GAP_FILL`, `DRAFT_EXPERIENCE_SUMMARIES`,
+   `DRAFT_SURGICAL_REFINEMENT`. The critique prompt's own example ("source bullet b41") was reworded: it taught the
+   leak. (`.1`)
+2. Both cover-letter prompts carry `<letter_date>`, read from one clock seam (`_clock_today`), in the **user**
+   prompt only. The system prompt and `_stable_user_prefix` do not carry it, so the analyze→generate cache is
+   untouched. `_COVER_LETTER_RULES_BLOCK` FORMAT says to copy it, with a DATE worked example. (`.1`)
+3. The analyze extraction schema asked `keyword_placement.suggested_location` for a "bullet area"; the synthesis
+   schema's `strengths`, `section` and `action` left a bullet unnamed. Both now say company and role or a quote,
+   never an id. (`.2`)
+4. Not a prompt: `_LLMResponse.reject_handle_leaks` rejects prose naming a handle that prompt shipped, so
+   `_parse_or_retry` re-asks once. If it persists, it raises only for a leak in `resume_content` /
+   `cover_letter_content`; elsewhere the response is accepted with a logged warning. `hardening.py` and
+   `evals/runner.py` gained the detector and a `leaked_handles` record key (a sibling of `deterministic_metrics`,
+   not in it, so the judge's input is unchanged).
+
+**Why?** The 2026-10-01 screenshot run showed `b173` in the analysis's "Where to focus" and "Earlier, at `b180`"
+in a letter dated "March 2025" on an October 2026 run. Reproduced and measured before any fix (smoke subset, corpus
+seed `role-summary-drafting`, both modes): on the unchanged prompts **every one of the six fixture-runs** put
+ids in the analysis (105 b/e/t findings in baseline run 2, audited from per-finding snippets), clarify question text
+and, in generate mode, the notes; **all six letters that carried a date were wrong**.
+
+**What was the result?** (n is small: a smoke subset of 3 fixtures per mode; read these as directions, not rates.)
+
+| run | prompts | b/e/t handles in completed runs | letters with the run date | guard-triggered retry calls |
+|---|---|---|---|---|
+| baselines (2 runs × 2 modes) | `2026-08-14.1`, no guard | present in 6 of 6 | 0 of 6 | n/a |
+| candidate | `.1`, guard hard everywhere | 0 of 4 completed | 4 of 4 | 3; **1 of 6 analyses hard-failed** |
+| verification | `.1`, hard only for shipped fields | 0 of 5, one soft acceptance | 6 of 6 | 6 (4 of 6 analyses), 16% of spend |
+| targeted (2 fixtures, assemble) | `.2` | 0 of 2 | 2 of 2 | 1 (vs 3 on the same fixtures under `.1`) |
+
+Live spend by telemetry: `$2.013` (baselines + candidate), `$0.818` (verification), `$0.193` (targeted),
+`$3.024` in all, before the screenshot capture. The `data-scientist-junior` grounding score fell (generate
+`2.1`, `3.2` → `1.2`, `1.2`; assemble `4.8` ×4 → `1.2` once). The judge reads that fixture as a corpus/fixture
+mismatch in every run and flags the same fabrication kind in old-prompt runs, but the drop follows the prompt
+changes and **is not explained**; see `docs/dev/diagnosis/llm-handle-leak-and-letter-date.md`.
+
+**What did we learn?**
+
+- A shared rule on the persona did not stop the extraction persona, because **its own schema asked for what it
+  could only answer with an id.** Fix the schema that invites the leak; the rule is the backstop. `.1` → `.2`
+  cut guard retries on the two worst fixtures from 3 calls to 1.
+- A validator that raises needs a **rate** before it ships: the first design (hard error everywhere) failed 1 of 6
+  analyses in its first live run. The owner narrowed it to the fields that reach a third party.
+- The first baseline stored paths and handles but **no text**, and no response text is persisted anywhere, so its
+  counts could not be audited. A per-finding snippet in the record is what made the second baseline checkable.
+  Store the evidence in the record, not only the verdict.
+- `leaked_handles` also counts a clarify response's own `q1..q5` in `clarify.reasoning`. That is the response
+  numbering itself, not an input leaking; the runtime guard does not treat it as one.
+- **Limit for the next tuner:** `--prompt-overrides` replaces a persona's whole text, so a candidate
+  `SYSTEM_PROMPT` that omits `_NO_HANDLES_IN_PROSE_RULE` silently drops the rule (the guard still applies).
+- Coverage: the eval exercises analyze, clarify, generate, `recommend_bullets`, `recommend_summaries` and both
+  letter paths. It does not exercise `suggest_skills` (both), `draft_gap_fill`, `recommend_experience_summaries`,
+  `recommend_skills`, `draft_experience_summaries`, `draft_surgical_refinement` or critique: for those the guard and
+  unit tests are the only protection.

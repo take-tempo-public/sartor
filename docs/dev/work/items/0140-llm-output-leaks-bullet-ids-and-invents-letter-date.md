@@ -5,14 +5,16 @@ kind = "item"
 title = "LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date"
 status = "open"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement"]
+branches = ["feat/docs-assets-enforcement", "fix/llm-handle-leak-and-letter-date"]
 refs = [
-  "analyzer.py:1183",
-  "analyzer.py:2903",
+  "analyzer.py:_corpus_block",
+  "analyzer.py:generate_cover_letter_against_resume",
+  "docs/dev/diagnosis/llm-handle-leak-and-letter-date.md",
+  "docs/dev/blast-radius/llm-handle-leak-and-letter-date.md",
   "docs/screenshots/readme_hero_wizard-step1-filled.png",
   "docs/screenshots/walkthrough_coverletter_first-generation.png",
 ]
-summary = "Prompts hand bullets to the model as id=\"b{id}\"; the model echoes the handle into prose. Letter date is ungrounded."
+summary = "Fix built and measured; open: cover-letter screenshot not recaptured, one fixture score drop unexplained."
 ```
 
 **Observed (2026-10-01, D4 screenshot capture, live Sonnet 5 run, synthetic Priya fixture).**
@@ -36,3 +38,26 @@ letter they might send. An invented date on a letter is an ungrounded fact (char
 A/B. Two parts: a rule that ids are handles for `selected_bullets` only, never prose, with
 a worked NOT-OK example; and passing today's date into the cover-letter call. **Then
 recapture** the two screenshots above.
+
+## Updates
+
+**2026-10-17, `fix/llm-handle-leak-and-letter-date`.** The fix is built and measured; the item stays **open** because
+two acceptance parts are not met. The full record is `docs/dev/diagnosis/llm-handle-leak-and-letter-date.md`.
+
+- **Reproduced first (C-7), then fixed.** On unchanged prompts, all six fixture-runs put ids in the analysis (105
+  b/e/t findings in the audited run), and all six dated letters carried a wrong date. The "read in code, not yet
+  proven" carrier above is still **untested**: no letter carried a handle in 23 completed runs, so the original `b180`
+  letter has not reproduced.
+- **Built:** a no-ids rule on 14 persona constants, `<letter_date>` in both cover-letter prompts, the analyze schemas
+  reworded (`PROMPT_VERSION 2026-10-17.2`), a validator that re-asks once (a hard error only for `resume_content` /
+  `cover_letter_content`), and a `leaked_handles` eval metric. After the change: no b/e/t handle in the completed
+  runs, and all 12 dated letters carry the run date.
+- **Open 1:** `walkthrough_coverletter_first-generation.png` still shows `b180` and `March 2025`. The capture script
+  stopped at the Template to Generate step (no `generate` call logged); cause not established. The hero shot was
+  recaptured and shows no ids.
+- **Open 2:** `data-scientist-junior` grounding scores fell after the prompt changes (generate `2.1`, `3.2` to `1.2`,
+  `1.2`; assemble `4.8` x4 to `1.2` once). Not established whether the change or run-to-run variance; the experiment
+  is named in the dossier and not run.
+- **Seen, not fixed here:** `_parse_or_retry`'s retry drops `max_tokens`; `pm-senior` generate mode intermittently gets
+  an empty response (`Expecting value`); `evals/fixtures/synthetic/corpus` is picked up as a fixture and fails to
+  load; analyses saved before the fix that already contain ids will keep feeding later prompts.
