@@ -52,6 +52,7 @@ import pytest
 
 import analyzer
 from hardening import MODEL_PRICING
+from tests._repo_files import repo_files
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REAL_LOG_PATH = REPO_ROOT / "logs" / "llm_calls.jsonl"
@@ -103,13 +104,11 @@ EXPECTED_CALL_KINDS = frozenset(
 
 
 def _production_py_files() -> list[Path]:
-    out: list[Path] = []
-    for path in REPO_ROOT.rglob("*.py"):
-        rel_parts = path.relative_to(REPO_ROOT).parts
-        if any(part in _SCAN_EXCLUDE_PARTS for part in rel_parts):
-            continue
-        out.append(path)
-    return out
+    return [
+        path
+        for path in repo_files(".py", root=REPO_ROOT)
+        if not any(part in _SCAN_EXCLUDE_PARTS for part in path.relative_to(REPO_ROOT).parts)
+    ]
 
 
 def _call_kind_literals(tree: ast.AST) -> set[str]:

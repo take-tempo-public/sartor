@@ -13,7 +13,8 @@ or on a state the action owns, never on the toast. A test that genuinely has to 
 writer, after synchronizing on something else, goes in `ALLOWED_TOAST_SITES` with its reason.
 
 How a reference is found:
-- Every `.py` file in the repo (minus vendored and build directories) whose bytes match
+- Every `.py` file git lists for the repo (`tests/_repo_files.py`: tracked, or untracked and not
+  ignored; so no vendored or build output, and no linked worktree under `.claude/`) whose bytes match
   `corpus[-_]?toast` (any case) is parsed. A matching string constant is a site, unless it is
   a docstring (exempt), or the whole right-hand side of an assignment to a name or attribute,
   which makes that name an alias instead.
@@ -32,34 +33,18 @@ Known limits (stated, not papered over — C-0):
 from __future__ import annotations
 
 import ast
-import os
 import re
 from collections import Counter
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
+
+from tests._repo_files import repo_files
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 _SELF = Path(__file__).resolve()
 
 _TOAST_RE = re.compile(r"corpus[-_]?toast", re.IGNORECASE)
 _TOAST_BYTES_RE = re.compile(rb"corpus[-_]?toast", re.IGNORECASE)
-
-# Directory names never walked: VCS, environments, caches, vendored JS, build output.
-_PRUNE_DIRS = frozenset(
-    {
-        ".git",
-        ".venv",
-        "venv",
-        "node_modules",
-        "docs-site",
-        "__pycache__",
-        "build",
-        "dist",
-        ".mypy_cache",
-        ".ruff_cache",
-        ".pytest_cache",
-    }
-)
 
 Site = tuple[str, str]  # (repo-relative POSIX path, enclosing qualname or "<module>")
 
@@ -85,18 +70,10 @@ ALLOWED_TOAST_SITES: dict[Site, tuple[int, str]] = {
 }
 
 
-def _iter_py_files(root: Path) -> Iterator[Path]:
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in _PRUNE_DIRS]
-        for name in filenames:
-            if name.endswith(".py"):
-                yield Path(dirpath) / name
-
-
 def _repo_rels() -> list[str]:
     return [
-        Path(os.path.relpath(p, REPO_ROOT)).as_posix()
-        for p in _iter_py_files(REPO_ROOT)
+        p.relative_to(REPO_ROOT).as_posix()
+        for p in repo_files(".py", root=REPO_ROOT)
         if p.resolve() != _SELF
     ]
 
