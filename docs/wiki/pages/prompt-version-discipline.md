@@ -22,7 +22,7 @@ confuse it with RELEASE versioning** ([`docs/governance/charter.md:D-7`](../../.
 ## What `PROMPT_VERSION` is
 
 A single module-level string, [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py)
-(`"2026-08-14.1"` at this ingest — Epic B sprint B2, EXTRACT_EXPERIENCES_SYSTEM_PROMPT start_date guidance).
+(`"2026-10-17.2"` at this ingest — fix/llm-handle-leak-and-letter-date, item 140: [`analyzer.py:_NO_HANDLES_IN_PROSE_RULE`](../../../analyzer.py) appended to 14 persona constants; both cover-letter prompts carry `<letter_date>` via [`analyzer.py:_letter_date_block()`](../../../analyzer.py) / [`analyzer.py:_clock_today`](../../../analyzer.py); [`analyzer.py:_analyze_extraction_prompt`](../../../analyzer.py) and [`analyzer.py:_analyze_synthesis_prompt`](../../../analyzer.py) schemas reworded so a bullet is named by company and role or quote, never id).
 Its own comment says to bump it when
 `SYSTEM_PROMPT`, `CLARIFY_SYSTEM_PROMPT`, **or any per-call prompt template**
 changes, because it "labels every JSONL telemetry record so quality regressions

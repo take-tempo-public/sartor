@@ -29,6 +29,33 @@ the cover-letter rules + schema line are dropped and the result still carries an
 empty `cover_letter_content` so renderers never KeyError
 ([`analyzer.py:generate`](../../../analyzer.py)).
 
+When `with_cover_letter` is true, both `_build_generate_prompt` and
+[`analyzer.py:generate_cover_letter_against_resume`](../../../analyzer.py) include
+a `<letter_date>` block read from [`analyzer.py:_letter_date_block`](../../../analyzer.py),
+which calls [`analyzer.py:_clock_today`](../../../analyzer.py) to get today's date
+formatted as (e.g.) "October 17, 2026". The block is injected into the user prompt
+(never the cached prefix) with a direct instruction: the model must copy the date
+exactly from `<letter_date>`, not invent one. The worked-example pair in
+[`analyzer.py:_COVER_LETTER_RULES_BLOCK`](../../../analyzer.py) shows this expectation
+(DATE: NOT OK to use a made-up date; OK to copy the `<letter_date>` value exactly).
+
+The generate calls and the dedicated cover-letter call pass a `validation_context` built by
+[`analyzer.py:_corpus_guard`](../../../analyzer.py) with `answered_q_ids=True`, so a prose id
+handle in the response is retried once: a corpus experience, title or bullet id such as `b173`,
+or the id of an answered clarification question
+([`hardening.py:corpus_handles`](../../../hardening.py)). `generate` and `generate_streaming`
+pass `hard_fields=_SHIPPED_FIELDS` (`resume_content`, `cover_letter_content`); the dedicated
+letter call passes `hard_fields=("cover_letter_content",)`, the only shipped field its response
+carries ([`analyzer.py:generate`](../../../analyzer.py),
+[`analyzer.py:generate_streaming`](../../../analyzer.py),
+[`analyzer.py:generate_cover_letter_against_resume`](../../../analyzer.py)). If a leak survives
+the retry and sits in a hard field, the call raises `LLMResponseError`. A leak confined to other
+fields (for example `changes_made`, `proofread_notes`) is accepted with a logged warning, and only
+when every validation failure on that attempt is a handle leak
+([`analyzer.py:_accept_soft_leaks`](../../../analyzer.py)). The guard is inert when nothing was
+shipped: [`analyzer.py:_handle_guard`](../../../analyzer.py) returns `None` for an empty handle
+set, which is a file-based context with no `career_corpus` and no answered clarification.
+
 ## The grounding check is the load-bearing prompt section
 
 The résumé prompt's `<resume_rules>` opens with a **GROUNDING CHECK** applied
