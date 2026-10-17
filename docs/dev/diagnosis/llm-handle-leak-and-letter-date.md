@@ -1,7 +1,9 @@
 # Diagnosis — LLM prose contains internal id handles (b173, b180) and the cover letter invents its date
 
-> **Status:** hypothesis only. The carrier of `b180` into the letter is **inferred by elimination, not observed**.
-> The baseline run (C2) is what settles it.
+> **Status:** Hypothesis A (ids leak into analysis and clarify prose) is **observed**, in every fixture-run. The
+> invented letter date is **observed** (6 of 6 dated letters wrong). Hypothesis B (a letter's handle arrives through
+> the analysis) is **untested, not refuted**: no letter carried a handle in 11 letters, so the original `b180`
+> letter has not reproduced.
 > **Branch:** `fix/llm-handle-leak-and-letter-date` (work item 140)
 
 ---
@@ -55,6 +57,33 @@ internal ids, and the cover letter carried a date the run could not have produce
     (char 0)` after 2 attempts, call `generate`. Not examined; no handle or date claim rests on it.
   - The `corpus` directory under `evals/fixtures/synthetic/` is picked up as a fixture and fails to load
     (`Fixture load failed: corpus — … corpus\jd.txt`) in both runs. Pre-existing, unrelated to this item.
+
+- **Baseline run 2, instrument commit `a970033` (each finding now carries a snippet), prompts unchanged,
+  `PROMPT_VERSION` `2026-08-14.1`.** Same commands and seed as run 1. Results:
+  `evals/results/20261017_092238Z.jsonl` (generate) and `evals/results/20261017_092642Z.jsonl` (assemble). Cost from
+  the records' `cost_usd`: `$0.400` and `$0.367`; the three live baseline runs so far total `$1.252`.
+  - **The findings are real handle mentions, not detector false positives.** Audited from the snippets, for example:
+    `analysis.comparison.strengths[1]` "e102 bullet b304 describes building a streaming pipeline…";
+    `analysis.comparison.gaps[2]` "…b303 (incident review process) and b305 (on-call rotation ownership)…";
+    `analysis.suggestions[2].section` "Experience – Calder Analytics (b304)";
+    `clarify.questions[1].text` "That 18-hour-to-5-minute pipeline in e102: did you analyze…" (question text a user reads);
+    `proofread_notes[1]` "Checked bullet text b301, b302, b303, b304, b305, b306 reproduced verbatim".
+  - **By section** (first-occurrence records per fixture): generate mode `analysis` 49, `clarify` 14, `changes_made`
+    2, `proofread_notes` 6; assemble mode `analysis` 38, `clarify` 6. **By kind:** generate `b` 53, `e` 12, `q` 5,
+    `t` 1; assemble `b` 39, `q` 5. Every one of the 6 fixture-runs has findings in `analysis`, including the paths the
+    UI's "Where to focus" list is built from (`analysis.comparison.gaps[...]`, `static/app.js:1244-1249`, read).
+  - **The `q` findings are all in `clarify.reasoning` of one fixture** (`pm-senior`: "(q1, q2) … (q3) … (q4) … (q5)").
+    That is the response referring to its own question ids, not an input handle leaking. It is counted by the metric but
+    is not the defect; the C3 guard must not treat a clarify response's own `q` ids as leaks.
+  - **No cover letter carried a handle.** `letter_carriers` was `{}` for all 6 fixture-runs here (and all 5 in run 1).
+    The original "Earlier, at b180" letter has not reproduced in 11 letters.
+  - **Letter date:** across both baselines, 6 letters carried a date in their first lines
+    (`October 2024`, `February 2025`, `April 2025`, `October 2024`, `June 2024`, `November 2025`); **all 6 differ from the
+    run date `October 2026`.** One letter (`pm-senior`, assemble, run 2) opens "I need to flag a mismatch rather than
+    force a fit." — a different behaviour, not examined.
+- **Letter-date mechanism, still read not observed:** the letter prompt contains no date and no clock call exists
+  outside telemetry (above); six wrong dates fit "the model writes one because FORMAT asks for one", but no run has yet
+  shown the date disappearing when it is supplied. That is what the candidate run tests.
 
 ---
 
