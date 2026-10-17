@@ -163,55 +163,92 @@ internal ids, and the cover letter carried a date the run could not have produce
 
 ---
 
+- **Screenshot recapture, 2026-10-17** (`python -m scripts.capture_screenshots --headless --keep-user` against
+  `python app.py`, prompts at `2026-10-17.2`):
+  - `readme_hero_wizard-step1-filled.png` **recaptured and read**: its "Where to Focus" list is plain language
+    ("Consumer-lag debugging is mentioned in only a few corpus bullet variants…"), with no id. That demo corpus ships
+    `b173`…`b180`, the very ids in the original symptom (59 handles). The kept run context
+    (`output/demo/context_20261017_063211.json`, since removed) scanned offline with `find_leaked_handles`:
+    0 leaking leaves across `llm_analysis` and `clarification_questions`. n=1 real run, which itself needed one
+    `analyze_extraction_retry`.
+  - **`walkthrough_coverletter_first-generation.png` NOT recaptured.** The script stopped at step 9
+    (`WizardTemplatePage.continue_to_generate` → `wait_for_selector(Wizard.PANEL_GENERATE)` timed out;
+    `scripts/capture_screenshots.py:529`, `ui_pages/wizard_template.py:46`). `logs/llm_calls.jsonl` for the window shows
+    analyze, clarify, recommend and draft_summary all `ok` and **no `generate` call**, and the kept context holds an
+    `approved_composition`: the failure is in the UI step between Template and Generate, not in an LLM call. **Cause not
+    established.** The committed image still shows `b180` and `March 2025`.
+  - The seven other PNGs that run overwrote were restored with `git checkout` (they were captured against an existing
+    `demo` corpus: the script printed "corpus already has 3 experiences; skipping import", so
+    `walkthrough_setup_corpus-empty.png` showed a full corpus).
+  - The `demo` candidate (id 5, created `2026-05-26`, 16 applications before this run, now 17) predates this session; its
+    experiences carry month dates (`2023-01`, `2019-01`, `2017-01`), so the month-gate explanation I first guessed for
+    the failure does not fit (see Falsified). The server's own logger went silent after the Alembic migration at
+    start-up, so the server log gave no evidence either way.
+  - Cost of the capture, telemetry window `13:31`–`13:33Z`: 6 calls (`analyze_extraction` ×2 incl. retry,
+    `analyze_synthesis`, `clarify`, `recommend`, `draft_summary`); cumulative with the evals about `$3.3`.
+
+---
+
 ## Falsified
 
-_(Nothing yet.)_
+- **"The capture failure is the item 139 stale-demo-rows / month gate problem."** Written down as a guess before
+  checking; the demo experiences have `YYYY-MM` start dates, so the month gate does not apply. Not the cause. The real
+  cause is open.
+- **"The first baseline's 12–29 findings per fixture may be detector false positives."** Checked against the snippets in
+  run 2: they are genuine handle mentions.
+- **Hypothesis B, as a test:** not falsified and not confirmed. The baselines produced no letter carrying a handle (0 of
+  15), so `letter_carriers` never had a case to map.
 
 ---
 
 ## Inferred
 
-**Hypothesis A (unproven):** the analyze synthesis step, asked to cite items "by name", has only ids as names for
-corpus bullets, so it writes them into `comparison.gaps` / `suggestions` (the "Where to focus" source).
+**Hypothesis B (still unproven):** the original `b180` reached the letter through the analysis prose it is given
+(`<analysis>` `overall_strategy`), which was itself written under hypothesis A. It never reproduced, so this is the one
+claim here that rests on elimination alone. The guard covers the letter regardless (a leak in `cover_letter_content` is
+a hard error).
 
-**Hypothesis B (unproven, by elimination):** the cover letter did not see the corpus block, so `b180` reached it
-through `<analysis>` — most likely `overall_strategy` — which was itself written under Hypothesis A. Rival carriers
-not excluded: `last_generated_resume` content, a prior letter draft, clarification answers.
+**Mechanism of the extraction-retry cost (read, then supported by 3 snippets and a drop from 3 retry calls to 1):** the
+extraction schema asked for a "bullet area" while naming bullets only by id. The reworded schema cut guard retries; the
+sample is two analyses.
 
-**Hypothesis C (unproven):** the invented date is the model satisfying a FORMAT rule that asks for a date and gives
-none.
-
-**The gap:** nothing in A or B has been seen in a captured response. I would have to SEE the upstream field that
-holds `b180` to know B.
+**Why `data-scientist-junior` scores fell (unknown):** see Observed. Not claimed.
 
 ---
 
 ## Falsification
 
-**Instrument first (C1):** a deterministic scan, `hardening.find_leaked_handles`, wired into the eval runner as a
-sibling record key `leaked_handles`. It scans every string leaf of the analysis, the clarify output, the generated
-résumé and letter, and (assemble mode) the recommend outputs — all handle kinds, not just `b`-ids and not just the
-letter. It records `letter_carriers`: for each handle in the letter, which upstream fields also contain it.
-
-**Baseline (C2):** run the generate and assemble modes against the corpus seed on HEAD of the instrument commit.
-
-- **If a letter handle appears and an upstream field also holds it:** B is supported for that handle.
-- **If a letter handle appears and NO upstream field holds it:** B is **false**. The carrier is something else
-  (prior draft, résumé content, clarification). Stop; widen the instrument; do not apply the prompt fix as a
-  cure for that path.
-- **If no handle appears anywhere in the baseline:** the leak did not reproduce at n=1. That does not show the
-  prompt rule works; the validator is then the guarantee and the run only shows no regression. Say so plainly.
-- **Date:** if the baseline letter carries a date that differs from the run date, C is supported. If it carries
-  none or the right one, C did not reproduce.
+**What was run, in order:** the instrument (`6f00573`, then `a970033` adding snippets); baseline runs 1 and 2 on
+unchanged prompts; the candidate run; the verification run after the failure-mode change; the targeted run after the
+schema rewording. Each outcome is under Observed. Confirmed by observation: hypothesis A (every baseline fixture-run)
+and hypothesis C (6 of 6 dated baseline letters wrong; 10 of 10 correct once `<letter_date>` was supplied, plus the
+two in the last targeted run). Not testable at this n: hypothesis B.
 
 ---
 
 ## The fix
 
-_Not yet. Only after the baseline has run._
+- **Prompt rule** (`_NO_HANDLES_IN_PROSE_RULE`, `analyzer.py`): never write an id in prose, with an OK/NOT OK pair, on the
+  14 personas shown ids or analysis prose. The critique prompt's `source bullet b41` example, which taught the leak, was
+  reworded.
+- **Schemas** (`PROMPT_VERSION 2026-10-17.2`): the analyze extraction and synthesis schemas no longer ask for a "bullet
+  area" without a way to name it; they say company and role or a quote, never an id.
+- **Runtime guard** (`_LLMResponse.reject_handle_leaks`, `_parse_or_retry*`): a prose handle the prompt shipped makes the
+  call retry once. If it persists, it raises `LLMResponseError` only when the leak is in `resume_content` /
+  `cover_letter_content`; elsewhere the response is accepted with a logged warning (owner decision after the candidate
+  run's 1-in-6 hard error). Wired into every call that ships ids; four that ship none are exempt with a reason; a test
+  fails any new `_parse_or_retry*` call that is neither (C-11).
+- **Letter date**: both cover-letter prompts carry `<letter_date>` from one clock seam, in the user prompt only.
+- **Instrument** (kept): `leaked_handles` per record in `evals/runner.py`, with snippets.
 
 ---
 
 ## Acceptance bar
 
-_To be filled with the baseline and candidate result files._
+Met, with the sample sizes stated: no b/e/t handle in 4 of 4 completed candidate fixture-runs, 5 of 6 verification
+runs (the sixth is one soft acceptance), and 2 of 2 targeted runs; letters carry the run date in every dated letter after
+the change (12 of 12 across the three post-change runs, against 0 of 6 before). The result files are cited under
+Observed.
+
+**Not met, stated plainly:** (1) `walkthrough_coverletter_first-generation.png` is not recaptured (cause of the
+capture failure open); (2) the `data-scientist-junior` score drop is unexplained; (3) hypothesis B is untested.
