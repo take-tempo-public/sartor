@@ -1,0 +1,1 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/llm-handle-leak-and-letter-date.md", "session": "c2815a66-d724-4285-b394-fd1942227c5b", "branch": "fix/capture-generate-stall", "commit": "3bb2674", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5-5", "ts": "2026-10-17T21:57:57Z", "fingerprint": "cf3d8af20420"}
