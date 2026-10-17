@@ -3,18 +3,28 @@ schema = 1
 id = 172
 kind = "item"
 title = "Whole-tree gate tests scan linked worktrees under .claude/worktrees and fail the main checkout's gate"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["chore/dependabot-triage-item"]
+branches = ["chore/dependabot-triage-item", "fix/gate-skips-linked-worktrees"]
 refs = [
-  "tests/test_egress_allowlist.py:167",
-  "tests/test_egress_allowlist.py:201",
+  "tests/test_egress_allowlist.py",
   "tests/test_docstring_coverage_gate.py",
   "tests/test_ux_toast_wait_gate.py",
+  "tests/test_call_kind_telemetry.py",
+  "tests/_repo_files.py",
+  "docs/dev/diagnosis/gate-skips-linked-worktrees.md",
   "docs/dev/handoffs/data-root.md",
   "docs/dev/work/items/0171-dependabot-merge-policy-and-major-bumps.md",
 ]
 summary = "A harness worktree under .claude/worktrees fails 3 whole-tree gate tests in the main checkout; hooksPath also changed."
+resolution = "2026-10-16, fix/gate-skips-linked-worktrees: reproduced first (3 of 5 whole-tree scans failed with a worktree at .claude/worktrees/repro-172, all passed without; ruff, mypy and collection were unaffected). The egress, call_kind and toast scans now take their files from tests/_repo_files.repo_files() (git ls-files; a nested checkout is never listed, ignored or not; ~65 ms against a 1.3-2.3 s walk) and .claude joined [tool.interrogate].exclude. tests/test_tree_walk_gate.py fails any recursive walk in tests/ or scripts/ that is not listed with its reason. Same worktree after the fix: 46 passed. The hooksPath change is NOT explained: plain git worktree add/remove left core.hooksPath at .githooks, so the cause in the original incident (the harness, or something else) is still unknown."
+verified_by = [
+  "tests/test_repo_files.py::test_linked_worktrees_are_excluded_ignored_or_not",
+  "tests/test_tree_walk_gate.py::test_every_walk_in_tests_and_scripts_is_listed_with_its_exact_count",
+  "tests/test_egress_allowlist.py::test_static_egress_allowlist",
+  "tests/test_ux_toast_wait_gate.py::test_toast_sites_equal_the_allowlist",
+  "tests/test_docstring_coverage_gate.py::test_docstring_coverage_meets_floor",
+]
 ```
 
 **Filed by the session that caused it, 2026-10-16.** That session called the harness's
@@ -80,3 +90,14 @@ Filed from the item-171 session after reading the other agent's handoff. That se
 was removed from inside the repo directory as soon as its work was committed (see item 171).
 Open question for the owner: should `EnterWorktree` be used at all in this repo until this item is
 fixed, or only with a path outside the tree.
+
+### 2026-10-16 - fixed on fix/gate-skips-linked-worktrees
+
+Evidence is in `docs/dev/diagnosis/gate-skips-linked-worktrees.md`. Two facts that differ from the filing:
+five scans were walk-exposed, not three (`test_call_kind_telemetry.py` also walks the repo root but passed,
+because it unions literals into a set and a same-commit copy adds nothing; `test_xfail_controls_gate.py` roots at
+`tests/` and is not exposed), and the old egress and call_kind scans also read five vendored
+`docs-site/node_modules/katex` files that the git-listed set drops. Candidate fix 2 was taken and measured
+(60-70 ms), plus the C-11 gate the item asked for. **Left open on purpose:** what changed `core.hooksPath` in the
+original incident (O7: plain git did not); and the owner's question above, whether `EnterWorktree` may be used
+in this repo. The tool-side walk of `interrogate` is covered by a config exclude, not by the walk gate.
