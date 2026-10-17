@@ -117,6 +117,29 @@ internal ids, and the cover letter carried a date the run could not have produce
     seed is a platform engineer and the fixture a junior data scientist, so low generate-mode scores are expected
     for that pairing; assemble mode read 4.8, 4.8, 4.8. n=1 per arm: not attributed to the change either way.
 
+- **Verification run, commit `2f4126b`** (same prompts as the candidate; the failure-mode change: a repeated leak is a
+  hard error only in `resume_content` / `cover_letter_content`). Same commands and seed. Results:
+  `evals/results/20261017_104737Z.jsonl` (generate) and `evals/results/20261017_105248Z.jsonl` (assemble). Cost from
+  telemetry: `$0.818` (estimate was `~$0.65`); cumulative `$2.831`.
+  - **No pipeline errors from the validator.** All six analyses completed. `pm-senior` generate hit the unrelated
+    `Expecting value … (char 0)` empty-response failure on attempt 1 and recovered on the retry this time.
+  - **One soft acceptance:** `sre-mid-level` assemble, `analyze_extraction`: attempt 2 still leaked (`b303, b302, b305`
+    in `keyword_placement`), was accepted with the logged warning `Accepting response after 2 attempts: handle leak in
+    a non-shipped field only`, and its 5 findings are exactly those b-ids in `keyword_placement[*].suggested_location`
+    and `.how` (for example "Expand b303 (incident review process) bullet at Meridian Frei…").
+  - **Letter date:** all six letters carry `October 2026` (cumulative with the candidate run: 10 of 10 dated letters
+    correct, against 0 of 6 in the baselines). **No letter carried a handle** (`letter_carriers {}` throughout).
+  - **Handles elsewhere:** 0 b/e/t handles in five of the six fixture-runs; the sixth is the soft acceptance above; the
+    remaining `q` findings are the clarify self-references recorded earlier.
+  - **The retry cost, measured from `logs/llm_calls.jsonl` (`*_retry` rows of the two analyze personas):** verification
+    run 6 retry calls, `$0.132` = 16% of `$0.818`, +112 s of call latency across 6 analyses (4 extraction, 2 synthesis);
+    candidate run 3 retry calls, `$0.065` = 11%, +58 s. **4 of the 6 analyses in the verification run needed at least
+    one guard retry.**
+  - **Where the extraction retries come from (read, then supported by the snippets):** the extraction schema asks for
+    `"suggested_location": "Where in the résumé to add it (section / bullet area)"` (`analyzer.py:2029`) while the
+    prompt gives the model bullets only as `id="b303"` markup, so "bullet area" is answered with the id. The synthesis
+    prompt likewise asks the model to "cite … by name" (`analyzer.py:~1868`). The shared rule alone did not stop it.
+
 ---
 
 ## Falsified
