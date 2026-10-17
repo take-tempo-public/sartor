@@ -357,8 +357,10 @@ indent-style = "space"
 fail-under = 99
 # Production-only scope: the KIT-7 exempt set (tests/ evals/ scripts/ db/migrations) excluded,
 # plus data/build noise (mirrors [tool.ruff] extend-exclude above). `ui_pages/**` stays IN scope
-# to match the surface the ruff-`D` family covers (ratchet unit 8).
-exclude = ["tests", "evals", "scripts", "db/migrations", "configs", "resumes", "output", "logs", "build", ".venv", "__pycache__", "setup.py", "docs-site"]
+# to match the surface the ruff-`D` family covers (ratchet unit 8). `.claude` keeps a harness
+# worktree at .claude/worktrees/<name> out of scope: interrogate walks the tree itself, so the
+# git-listed file set the test scans use (tests/_repo_files.py) cannot cover it (item 172).
+exclude = ["tests", "evals", "scripts", "db/migrations", "configs", "resumes", "output", "logs", "build", ".venv", "__pycache__", "setup.py", "docs-site", ".claude"]
 # Coherence with the ruff-`D` google scope: google omits module docstrings (no D100) and does not
 # treat magics/privates as public API. `@property` accessors are COUNTED
 # (ignore-property-decorators = false) to match the D102 treatment of config.py's derived-root

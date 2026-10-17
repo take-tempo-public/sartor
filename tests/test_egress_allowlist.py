@@ -34,6 +34,7 @@ import pytest_socket
 import requests
 
 import scraper
+from tests._repo_files import repo_files
 
 # Repo root: tests/test_egress_allowlist.py -> parents[1].
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -197,13 +198,11 @@ def _module_imports_egress(tree: ast.AST) -> bool:
 
 
 def _production_py_files() -> list[Path]:
-    out: list[Path] = []
-    for path in REPO_ROOT.rglob("*.py"):
-        rel_parts = path.relative_to(REPO_ROOT).parts
-        if any(part in _SCAN_EXCLUDE_PARTS for part in rel_parts):
-            continue
-        out.append(path)
-    return out
+    return [
+        path
+        for path in repo_files(".py", root=REPO_ROOT)
+        if not any(part in _SCAN_EXCLUDE_PARTS for part in path.relative_to(REPO_ROOT).parts)
+    ]
 
 
 def test_static_egress_allowlist():

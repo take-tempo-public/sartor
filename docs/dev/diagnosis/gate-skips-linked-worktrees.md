@@ -126,9 +126,25 @@ ignored or not) and `tests/test_tree_walk_gate.py` (no repo-root walker outside 
 
 ## The fix
 
-Planned, not started: a shared `tests/_repo_files.py` giving the git-listed file set, the three exposed scans (plus
-`test_call_kind_telemetry.py`) migrated onto it, `.claude` added to `[tool.interrogate].exclude`, and an AST gate
-that fails on any new repo-root walker.
+A shared `tests/_repo_files.py` giving the git-listed file set; `test_egress_allowlist.py`,
+`test_ux_toast_wait_gate.py` and (exposed, though it passed in O2) `test_call_kind_telemetry.py` migrated onto it;
+`.claude` added to `[tool.interrogate].exclude` (`pyproject.toml`), since interrogate walks the tree itself; an AST
+gate (`tests/test_tree_walk_gate.py`) that fails on any recursive walk not listed with its reason.
+
+**After the fix (same worktree path, `HEAD` = `13ea71b` plus the working tree, `-p no:randomly`):**
+```
+collected 46 items  ...  ============================= 46 passed in 14.93s =============================
+```
+(the five scans from O1 plus `test_repo_files.py` and `test_tree_walk_gate.py`, with `.claude/worktrees/repro-172`
+holding 438 `.py` files). Before the fix the same worktree failed three of them (O2).
+
+**File-set equality check** (old walk vs `repo_files`, per test, `sets.py` in the session scratchpad): egress 165 to
+160 and call_kind 165 to 160, the five removed being the `docs-site/node_modules/katex/**` files (vendored code the
+old egress and call_kind scans were reading); toast 438 to 438, no difference.
+
+**Gate mutation check:** a scratch `tests/_scratch_mutation.py` with `REPO_ROOT.rglob("*.py")` made
+`test_every_walk_in_tests_and_scripts_is_listed_with_its_exact_count` fail with
+`unlisted or wrong count: {'tests/_scratch_mutation.py': 1}`; it passed again once the file was removed.
 
 ---
 
