@@ -34,9 +34,13 @@ and **b173**", and the cover letter said "Earlier, at **b180**, I led…" under 
   rationale or note is accepted and logged. **Cost:** the re-ask is an extra model call. In the last check, 4 of
   6 analyses needed one before the analysis prompts were reworded (about 16% of that run's spend and 20 seconds
   per analysis); after the rewording, 1 call across the 2 analyses re-run.
-- **Not fixed:** `docs/screenshots/walkthrough_coverletter_first-generation.png` still shows the old text. The
-  capture script stopped before the cover letter step and the cause is not established. The README hero
-  screenshot was recaptured and shows no ids.
+- **Fixed: the cover letter screenshot.** `docs/screenshots/walkthrough_coverletter_first-generation.png` is
+  recaptured; it shows today's date and no id, as do the README hero screenshot and the résumé screenshot. The
+  capture script had stopped before it: it clicked "Save and continue" while Compose was still drafting your
+  positioning summary, the draft landed after the approval, and Generate refused to open. It now waits for Compose
+  to settle first (`fix/capture-generate-stall`). **Not changed:** the app itself still behaves that way for a person
+  who clicks "Save and continue" inside the same few seconds; that is recorded for the owner to decide
+  (`docs/dev/diagnosis/capture-generate-stall.md`).
 - **Not explained:** the grounding score of one eval fixture (a deliberately mismatched corpus) dropped after
   these prompt changes; whether that is the change or run-to-run variance is not established
   (`docs/dev/diagnosis/llm-handle-leak-and-letter-date.md`).
