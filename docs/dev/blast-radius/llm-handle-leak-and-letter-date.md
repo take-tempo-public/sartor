@@ -63,6 +63,9 @@ written, recorded under Deferred).
 | 7 | `blueprints/applications.py` (19), `generation.py` (5), `analysis.py` (5), `corpus/skills.py` (3), `corpus/proposals.py` (3) | no change | they already map `LLMResponseError` to an error response; a repeated leak now reaches them, which the owner accepted |
 | 8 | `static/app.js:1151`, `:1884` | no change | already render `payload.reason`; the validator's message is written to be user-readable |
 | 9 | 14 persona constants | update (append `_NO_HANDLES_IN_PROSE_RULE`) | owner-decided scope: all nine builders |
+| 9a | `critique_proposal`, `check_refinement_scope`, `promote_clarification_to_bullet`, `draft_positioning_summary` parser calls | no guard (exempt, listed in `tests/test_handle_guard.py` `EXEMPT_CALL_KINDS` with a reason) | read, not assumed: an AST count of `id="` attributes in each function's source returned 0, and none calls an id-block helper. Critique still gets the prompt fix (its `source bullet b41` example) |
+| 9b | `onboarding/extract_experiences.py:165` | exempt (`EXEMPT_CALLER_FILES`) | extracts experiences from an uploaded résumé; nothing shipped to leak |
+| 9c | any future `_parse_or_retry*` call | fails `TestEveryCallForwardsAGuard` until it forwards `validation_context` or is listed with a reason | the fail-closed mechanism (C-11); it checks forwarding, not that the handle set is right (C-0) |
 | 10 | `_BASE_SYSTEM_PROMPTS` registry / `tests/test_prompt_overrides.py:135` | no change to the registry; new constant must not end in `SYSTEM_PROMPT` | the drift test would otherwise demand registration |
 | 11 | `_COVER_LETTER_RULES_BLOCK` (`generate()` and `generate_cover_letter_against_resume`) | update (FORMAT date line) | single source of truth for both letter paths |
 | 12 | `tests/test_corpus_mode_prompt.py` `TestCoverLetterWorkedExamples` | no change expected | counts `NOT OK:`/`OK:` as `>=`; re-checked in C4 |

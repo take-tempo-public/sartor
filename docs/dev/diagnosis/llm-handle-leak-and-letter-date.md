@@ -61,7 +61,7 @@ internal ids, and the cover letter carried a date the run could not have produce
 - **Baseline run 2, instrument commit `a970033` (each finding now carries a snippet), prompts unchanged,
   `PROMPT_VERSION` `2026-08-14.1`.** Same commands and seed as run 1. Results:
   `evals/results/20261017_092238Z.jsonl` (generate) and `evals/results/20261017_092642Z.jsonl` (assemble). Cost from
-  the records' `cost_usd`: `$0.400` and `$0.367`; the three live baseline runs so far total `$1.252`.
+  the records' `cost_usd`: `$0.400` and `$0.367`; the four live baseline runs (two modes, run twice: `$0.243 + $0.242 + $0.400 + $0.367`) total `$1.252`.
   - **The findings are real handle mentions, not detector false positives.** Audited from the snippets, for example:
     `analysis.comparison.strengths[1]` "e102 bullet b304 describes building a streaming pipeline…";
     `analysis.comparison.gaps[2]` "…b303 (incident review process) and b305 (on-call rotation ownership)…";
