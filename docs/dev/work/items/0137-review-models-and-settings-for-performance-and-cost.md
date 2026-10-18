@@ -66,3 +66,14 @@ every cost comparison depends on it; (2) decide the `thinking` policy per model 
 should see them; (4) the candidate A/B, one swap per branch with the judge held fixed (**needs the owner's spend approval;
 none is given**), at an N chosen in advance because the `data-scientist-junior` fixture is bimodal; (5) the subagent pins,
 last. `analyzer.py` and `hardening.py` are C-10 gated: a consumer dossier first.
+
+### 2026-10-17 - pricing fixed (item 174); call provenance filed (item 175), a prerequisite for any model swap
+
+- **Item 174 is fixed** on `fix/model-pricing-rates`: `hardening.MODEL_PRICING` now carries the pricing page's rates for Sonnet 5
+  (`$2 / $10`) and Haiku 4.5 (`$1 / $5`). Cost comparisons for the 5.5 candidates can start from this table. Keys for the 5.5
+  models, and Haiku 5.5's prompt-length tiers (a `compute_call_cost` change), are still this item's.
+- **Item 175 is filed** at the owner's instruction (2026-10-17): the call log must record the model version that answered and the
+  exact settings sent (thinking, max_tokens, effort, request id, thinking tokens), for product and eval-judge calls, "so we can
+  trace every decision to the model that made it and the settings for that model." Today the thinking setting is only
+  inferable from `model == SONNET_MODEL`, which breaks the moment this item changes the pin. **Suggested order: 175 before any
+  candidate A/B**, so the A/B rows say what ran. No spend is approved by this note.
