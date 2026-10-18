@@ -284,3 +284,27 @@ KEEP (7): pytest-exit-through-pipe, substrate-projection-layering, taskoutput-no
 FOLD (14): prescription-metrics-can-restale->AFP 5e line; preserve-cross-item-evidence, pytest-in-process-loop-and-mutation-plugins, sandbox-ux-walkthrough-method (needs rewrite around SARTOR_HOME), tests-package-conftest-import -> engineering-recipes.md Testing recipes; rerun-masking-chronic-flake->flake-rates/README.md; review-charter-clause-location->charter.md "What this is"; subagent-pretooluse-agent-id->item 0169 Updates (peer hand-backs still arm witness, seen 3x 2026-10-16); user-docs-verify-against-live-labels->skills/doc-writing/SKILL.md; wiki-auditor-has-no-bash + wiki-scribe-cannot-create-pages + wiki-scribe-head-vs-working-tree -> commands/wiki-self-update.md gotchas block; wiki-checkpoint-ratchet-defect->item 0098 (unchosen option); wiki-freshness-detect-vs-correct->item 0065 Updates
 TRIM (8): self-documenting-wiki-built(~80%), shared-machine-oom-kills-bg-runs(~55%), spolia-board-comparison(~40%), subagent-background-wait-gotcha(~40%), ux-flake-ci-runner-not-local-load(~60%), windows-console-unicode-print-crash(~35%), witness-pause-stale-plan-approval(~50%), workflow-subagent-gotchas(~55%)
 Note: many repo files cite memory stems (handoffs, 5 diagnosis dossiers, items 0030/0062/0079/0098/0143, block_subagent_git_stash.py:22) -> dangling on delete.
+
+### 2026-10-18 - owner decisions on the approval table; batch A applied
+
+**Owner decisions (chat, 2026-10-18):** (1) **Batch A: delete**, with fixes from the sweep's findings. (2) **Batch B: not yet deleted**; first a close adversarial
+read "so we optimize without lossiness to useful memory; but bad memories are worse than no memories because we act as if we already know the state instead of
+investigating". (3) **Batches C and D: review for accuracy; no deletions unless an inaccuracy is found.** Also chosen: **trim only the large files** (plus the 8 merges,
+done additively) and **defer the 44 fold-ins** to one follow-up item; those 44 files stay as they are.
+
+**Batch A applied (16 files deleted from the memory directory; the pre-change copy is the sibling `memory-backup-2026-10-18`):** `reference-kit-phase1-pydantic-mypy-built`,
+`reference-app-blueprints-design`, `project-2026-07-unusable-remediation`, `project-2026-07-ux-review`, `project-bigpush-opus-handoff`, `project-config-drift-batch-px47`,
+`project-context-write-lost-update-gap`, `project-diagnostics-run-cancel-landed`, `project-handoff-pointer-verification`, `project-hook-dispatcher-px37`,
+`project-scrub-local-eval-paths-parked`, `project-v108-walkthrough-epic`, `project-v108-window-8.5-to-8.6`, `project-v110-compose-frozen-composition`,
+`project-v110-css-cascade-collapse`, `project-large-corpus-scalability`. Fixes applied with it: 18 inbound `[[links]]` in 14 kept files were **repointed to the deleted
+file's repo home** (not left dead and not just un-bracketed); the `MEMORY.md` lines naming them were edited (`app-blueprints-design` line removed; the sibling mentions of
+`handoff-pointer-verification` and `project-large-corpus-scalability` removed); the stale `v11-final-march` index line ("D on `epic/d-docs-ia`", but Epic D merged) was
+rewritten to say epics A to D merged and to point at `BOARD.md`. `project-hook-dispatcher-px37`'s two facts that have no repo home live in kept memories
+(`reference-hook-manual-testing` Gotcha 3, the `/c/` path false-ALLOW; `feedback-consume-handoff-dont-reconstruct`), so those two stay. **Left alone on purpose:** dated
+repo records that cite deleted stems by name (e.g. `RELEASE_CHECKLIST.md:2175`, `handoffs/chore-merge-channel-alignment.md:179`, `handoffs/fix-handoff-pointer-verification.md:69`). After:
+**250 entries (249 memory files + `MEMORY.md`), 0 broken `[[links]]`, 0 `MEMORY.md` links to missing files.**
+The batch A homes rest on the first Explore pass's cites plus the orchestrator's sample; batch A was not put through the adversarial read below.
+
+**Adversarial read (batch B, 78 files) and accuracy audit (batches C and D, 24 files): launched.** Five refuter agents try to prove each B delete loses a fact or that the memory is
+wrong; two auditors check every claim in C and D against the current repo. Every cite must carry a verbatim quote, and a script (`verify_quotes.py` in the session scratchpad)
+checks each quote appears in the cited file within three lines. A fabricated or paraphrased quote fails mechanically.
