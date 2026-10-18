@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 20 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 90
+**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 90
 
 ## Open
 
@@ -24,6 +24,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Fix built, measured, screenshots recaptured; score drop not specific to the change; carrier hypothesis never reproduced.
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
+- **173** -- Evaluate the Claude 5.5 generation (Sonnet, Haiku, Opus) against the models the product and its subagents pin (`agent`) -- No 5.5-generation model (Sonnet, Haiku, Opus) has been evaluated; the product pins Sonnet 5 and Haiku 4.5.
 
 ## Blocked
 
