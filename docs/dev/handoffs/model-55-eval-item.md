@@ -1,45 +1,66 @@
 <!-- provenance: schema=1 session=e10f95b5-8b5a-4079-b6c4-62d8c42e6621 branch=docs/model-55-eval-item commit=e490683 actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-17 -->
 
-# Agent handoff — item 173 filed (the Claude 5.5 model evaluation); item 140 part (b)'s handoff reviewed and carried forward intact; branch `docs/model-55-eval-item` → owner's next pick (items 140 and 173 stay open)
+# Agent handoff — item 173 filed, its first step run, then absorbed into item 137 (Claude 5.5 model evaluation); item 174 filed (pricing table wrong); item 140 part (b)'s handoff carried forward intact; branch `docs/model-55-eval-item` → owner's next pick (items 137, 140 and 174 stay open)
 
 **Branch to create:** none chosen. The owner picks the next item. The candidates, with an agent
 recommendation (not a decision), are under "What this branch should build". Do not start one unprompted.
 **Base branch:** `main`
 
-> **This session (`e10f95b5`) filed item 173 and wrote this continuation. It changed no production code, made no API
-> call and spent nothing.** It began as a read-only Q&A session while another agent worked; the first question was
+> **This session (`e10f95b5`) filed item 173, ran its authorized free first step, recorded the owner's decision that item
+> 137 absorbs it, filed item 174, and wrote this continuation. It changed no production code. It made six minimal live API
+> calls (about `$0.0004` by hand at the documented rates; not in `logs/llm_calls.jsonl`, because they bypassed `analyzer`)
+> and read the Models API, the pricing page and the deprecations page. Everything else was documentation.** It began as a
+> read-only Q&A session while another agent worked; the first question was
 > *"have we evaluated updates to the opus, sonnet, and haiku models we use (all in the 5.5 generation)?"* **The answer is
 > no** (full record: `docs/dev/work/items/0173-evaluate-claude-5-5-generation-models.md`). When the other agent's handoff
 > arrived the owner asked for two things, both done on this branch: (1) file the 5.5 evaluation as a tracked work item
 > **including the entire list of proposals**; (2) review the other agent's handoff and write a new one continuing its
 > thread, **losing none of its information**.
-> - **Item 173 (new, open, `decision_owner = agent`):** the 5.5 evaluation. Observed facts with `path:line`, an explicit
->   "Not verified" list (the 5.5 API IDs, prices, `thinking` defaults, whether Haiku 5.5 accepts `thinking: disabled`),
->   **17 proposals** (6 as made to the owner, 11 added by the filing session, each marked), the done-means, and an open
->   question. **Nothing about the 5.5 generation was verified against documentation or a live call**; the model IDs in the
->   item come from this session's own system context, not from a source it read.
-> - **Item 137 already existed and overlaps.** It is the owner's 2026-10-01 "short review" of whether the pinned models and
->   call settings are the best fit, `open`, with a note-only record. **The session that answered the owner's question did
->   not find it first; that is a miss, declared.** 173 cross-links to it and 137 now has an `## Updates` block pointing at
->   173. **Whether 137 absorbs 173 is the owner's call** (173's "Open question"; the filing session recommends keeping
->   them separate until the free verification step is done).
+> - **Item 173 (filed, then CLOSED as absorbed):** the 5.5 evaluation. Observed facts with `path:line`, 17 proposals (6 as
+>   made to the owner, 11 added, each marked), the done-means. **The owner decided "137 absorbs 173" and "authorize first
+>   step" in chat, 2026-10-17.** 173 is `closed` with an owner-named `closure_exception` (it is a merge of a duplicate, not a
+>   completed evaluation); its `## Updates` block of 2026-10-17 holds the first-step results with request ids and sources.
+> - **Item 137 (open) now carries the 5.5 evaluation.** It is the owner's 2026-10-01 review of whether the pinned models and
+>   call settings are the best fit. **The session that answered the owner's question did not find it first; that is a miss,
+>   declared.** Its frontmatter `refs` were corrected to the current line numbers, its `summary` and `branches` updated, and
+>   its `## Updates` records the absorption and a suggested order. **No candidate A/B was run and no spend beyond the
+>   `$0.0004` is approved.**
+> - **First-step results (full table in 173's Updates; sources are the Models API, six live calls, the pricing and
+>   deprecations pages, and this machine's telemetry):**
+>   - All three 5.5 IDs resolve (`claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5-5`), 1,000,000 input and 128,000
+>     output tokens (Haiku 4.5: 200,000 and 64,000).
+>   - **`thinking: {"type":"disabled"}` returns `400` on Sonnet 5.5** (`req_011Cg8zS7hnP7Mczg2F24b1H`); `between_tools` is
+>     accepted. `analyzer.py:1594-1595` sends `disabled` on the Sonnet path, so **swapping `SONNET_MODEL` alone would fail
+>     every heavy call.** Haiku 5.5 accepts `disabled`. The product's Haiku path sends no `thinking` argument and Haiku 5.5
+>     supports `adaptive` where Haiku 4.5 does not; whether it thinks by default on real prompts is **not measured** (the
+>     one-word probes showed zero thinking tokens).
+>   - **`MODEL_PRICING` disagrees with the pricing page for both live pins** (Sonnet 5: table `$3/$15`, page `$2/$10`; Haiku
+>     4.5: table `$0.80/$4`, page `$1/$5`, which equals the page's Haiku 3.5 row). Filed as **item 174** (open). Not fixed here.
+>   - **`claude-haiku-4-5-20251001` is Active but past its earliest retirement date** ("not sooner than October 15, 2026",
+>     no notice listed; the page promises 60 days' notice). It is also the eval judge. Raises item 137's priority.
+>   - Prices for the 5.5 models and the Haiku 5.5 over-100,000-token tier: in 173's Updates. No Haiku call in this machine's
+>     1,564-record telemetry exceeded 12,506 prompt tokens.
+>   - `logs/llm_calls.jsonl` has no thinking-tokens field, though the API's `usage` now returns one.
 > - **Review of the previous handoff, against the repo at `main` `e490683`:**
 >   - *Verified:* the pointer check passes. **PR #183 is MERGED** (merge commit `e490683`, `mergedAt` 2026-10-18T02:14:52Z);
 >     the branch `fix/ds-junior-score-drop` is gone locally and on the remote. So the previous file's statements that
 >     "nothing is pushed and no PR exists yet" and that its merge state "is not recorded" are **out of date**; they were
 >     true when it was written and are kept below unchanged, labelled as carried.
 >   - *Verified:* the ledger counts match the previous file's generator line (`open 18, blocked 5, deferred 9, watching
->     47`, 3 epics, 90 closed); 173 makes it `open 19`, and `BOARD.md` now reads **Open 21 / 10 ceiling -- OVER** (it counts
->     the two open epics).
+>     47`, 3 epics, 90 closed); item 174 makes it `open 19` (173 was filed and closed in the same branch), and `BOARD.md`
+>     reads **Open 21 / 10 ceiling -- OVER** (it counts the two open epics; closed is now 91).
 >   - *Found inconsistent inside the previous file:* the wiki freshness figure appears as both "64 of 75" and "65 of 75".
 >     **The live value, read this session, is 65 files changed since the last ingest (< 75 block threshold).**
 >   - *Not re-verified (carried as stated):* every measurement and result in the item 140b record (the 8-run A/B, the
 >     `$0.6678` spend, the bimodal scores), its gate result (read at HEAD `5fcc546`, not on the merged tree), and the
->     "declared, not filed" bullets it carried from earlier handoffs. This session re-ran nothing and spent nothing.
+>     "declared, not filed" bullets it carried from earlier handoffs. This session re-ran none of the item 140b work and spent
+>     nothing on it (its only spend is the `$0.0004` above).
 > - **Carried work still owed:** nothing was started on any of it. Item 140 still needs the owner's closure decision.
-> - **Branch state:** this branch holds the commit(s) adding items 173/137, `BOARD.md`, the consumed-event ledger file and
->   this file. **Nothing is pushed and no PR exists; the push needs the owner's confirmation, and a separate confirmation for
->   any merge.** Check `gh pr list` and `git branch -a` before assuming either.
+> - **Branch state:** the branch holds the commits adding items 173, 174 and the 137 changes, `BOARD.md`, the consumed-event
+>   ledger file and this file. **It was pushed on the owner's instruction ("push it and open the PR") and PR #184 is open.
+>   The owner then instructed "merge and prune when ci is green".** This file is committed before that merge, so it
+>   **does not record whether the merge or the prune happened**: check `gh pr view 184`, `gh pr list` and `git branch -a`
+>   first.
 > - **Model note:** this session ran on Sonnet 5.5, then Opus 5.5 for a stretch (the plan was written there), then Sonnet 5.5
 >   again. The consumed event and this file's stamp name `claude-sonnet-5-5`; the plan file names Opus 5.5 as the stamp, which
 >   is why the stamp differs from the plan.
@@ -125,17 +146,19 @@ recommendation (not a decision), are under "What this branch should build". Do n
 - `fix/ds-junior-score-drop` ✓ (#183, merge `e490683`, MERGED, branch pruned locally and on the remote): item 140 part (b), a
   measurement with no product change. *(The previous handoff recorded this as "the push and merge state are not recorded
   here"; verified merged this session.)* The record is `docs/dev/handoffs/ds-junior-score-drop.md`, carried below.
-- **`docs/model-55-eval-item`** ← this branch: files item 173 (the 5.5 model evaluation), cross-links item 137, and writes
-  this continuation. Docs only. Its push and merge state are **not recorded here**.
+- **`docs/model-55-eval-item`** ← this branch (PR #184): files item 173 (the 5.5 model evaluation) and runs its free first
+  step, records the owner's decision that item 137 absorbs it, files item 174 (the pricing table is wrong), and writes this
+  continuation. Docs only, no production code. The owner ordered "merge and prune when ci is green"; whether that happened is
+  **not recorded here** (this file is committed before the merge).
 - **Next: the owner's pick.** Item 145's branch 2 (`feat/launcher`) and 3 (`feat/pushbuttons`) are not started; item 171
   waits on four owner answers.
 
 **Do not start the cut, the version bump or the CHANGELOG cut.** Item 10 still depends on 3, 7 and 19, and on the
 owner's alpha approval. **Do not build item 171's workflow before the owner answers its four questions.** **Do not
 start item 145's branch 2 or 3 on this branch.** **Do not run a further paid eval or capture without the owner's spend
-approval.** **That includes item 173's candidate A/B. Its first step (proposal 7: read the current model documentation
-and make one cheap live call per model) is the only part to propose without a separate spend approval, and even that
-call is the owner's to authorize.**
+approval.** **That includes the candidate A/B now carried by item 137. Its free first step (proposal 7 of item 173) was
+authorized by the owner and is done; every later step that calls the API on the eval fixtures needs a new, explicit spend
+approval. None is given.**
 
 ---
 
@@ -160,13 +183,14 @@ were under the old prompts); then the commit that adds this file. **No productio
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
 The authoritative home is `docs/dev/work/BOARD.md`. **Header: "Open 21 / 10 ceiling -- OVER"** (19 items and the 2 open
-epics, 19 and 36; this branch **closed 0**: items 140 and 173 stay open; **item 173 is new this session**, which is the
-one change from the previous handoff's 18 items and header `Open 20`). The owner's drawdown direction stands: down to 0 if
+epics, 19 and 36; item 140 stays open). **Changes from the previous handoff's 18 items and header `Open 20`:** item 174 is new
+and open; item 137's summary changed (it absorbed 173); item 173 was filed and closed within this branch (closed total 90 →
+91), so the item count is 19 and the header 21. The owner's drawdown direction stands: down to 0 if
 possible, before alpha staging. Still twice the ~8 to 10 reduction-sprint threshold. Owner-decision items are marked
 *(owner)*. The lists below are **generated from the item files at this commit** (`structural_errors()` in
 `scripts/work_items.py`; not retyped), grouping every non-epic item by status and listing the epics separately (to
 reproduce: load the items with `structural_errors(_ITEMS_DIR)` and group `kind == "item"` by `status`); the board prints an
-epic's children under the epic (item 82), so its header counts differ by design. Generator output: `META open_all=21 counts={'open': 19, 'blocked': 5, 'deferred': 9, 'watching': 47} epics_not_closed=3 closed_items_and_epics=90` (previous handoff: `open_all=20`, `open: 18`; all other counts unchanged).
+epic's children under the epic (item 82), so its header counts differ by design. Generator output: `META open_all=21 counts={'open': 19, 'blocked': 5, 'deferred': 9, 'watching': 47} epics_not_closed=3 closed_items_and_epics=91` (previous handoff, session c2815a66: `open_all=20`, `open: 18`, `closed_items_and_epics=90`).
 
 `## Open` (19):
 - **50** *(owner)*: C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
@@ -181,13 +205,13 @@ epic's children under the epic (item 82), so its header counts differ by design.
 - **133** *(owner)*: No route, UI or script removes a user. Product decision: wanted, and when?
 - **134**: Tuning smoke says ~$0.20 for TWO suite runs; Quality smoke says ~$0.35-0.40 for ONE. At most one is right.
 - **135** *(owner)*: Template close-out step 1 says ruff+mypy+pytest (gate runs 6); charter:206 cites step 4 for a step-5 rule.
-- **137**: Short review: are the pinned models and call settings (thinking, caching, routing) still the best performance/cost fit?
+- **137**: Review pinned models and call settings, now including the Claude 5.5 candidate evaluation (absorbs item 173).
 - **138** *(owner)*: _initHelp attaches only to .cb-panel; Settings is a drawer, so it gets no (i) bubble or Learn more link.
 - **139**: cleanup() runs only on success; demo DB rows are never removed, so a stale import blocks later runs.
 - **140**: Fix built, measured, screenshots recaptured; score drop not specific to the change; carrier hypothesis never reproduced.
 - **145**: Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **171** *(owner)*: 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
-- **173**: No 5.5-generation model (Sonnet, Haiku, Opus) has been evaluated; the product pins Sonnet 5 and Haiku 4.5.
+- **174**: MODEL_PRICING has Sonnet 5 at $3/$15 and Haiku 4.5 at $0.80/$4; the pricing page reads $2/$10 and $1/$5.
 
 `## Blocked` (5):
 - **3** *(owner)*: Repo rename to take-tempo-public/sartor gates PyPI Trusted Publisher + GHCR visibility; enforce_admins still false. [blocked on: owner-only GitHub settings actions, no repo file changes; enforce_admins is a standing open decision]
@@ -298,16 +322,24 @@ epic's children under the epic (item 82), so its header counts differ by design.
   (nothing is published).
 - **Item 10 and the alpha:** item 3 (GitHub toggles), item 7 (the memory keep/consolidate/delete list), and the owner's
   alpha approval.
-- **Item 173 (new), does it absorb into item 137 or stand alone?** 137 is the owner's 2026-10-01 broad review of the
-  pinned models and call settings (open, no finding written); 173 is the specific 5.5-generation candidate list. The filing
-  session recommends keeping them separate until the free verification step is done. A recommendation, not a decision.
-- **Item 173 (new), spend and verification authority:** the first step is free or near-free (read the current model
-  documentation, one cheap live call per model to confirm the ID, price, `thinking` default and usage fields). Everything
-  after it spends: a candidate A/B per model, one swap at a time, judge held fixed. **No spend is approved.** Item 140b's
-  telemetry put one assemble-mode run at about `$0.0835`; the 5.5 prices are unknown, so no estimate for 173 is made here.
-- **Item 173 (new), which candidates to include:** Sonnet 5.5 for the heavy calls and Haiku 5.5 for the structured calls
-  are the product candidates. The Opus pin on `n1-judge` is dev tooling only (the product has no Opus call); whether to
-  move the subagent pins, and when, is separate (proposal 15 in the item).
+- **DECIDED this session (owner, chat, 2026-10-17), recorded in the items:** "137 absorbs 173" (173 closed as absorbed,
+  137 carries the scope) and "authorize first step" (done). **Both were open owner decisions in the earlier draft of this
+  handoff; they are no longer owed.**
+- **Item 137 (now carrying the 5.5 evaluation), spend approval for the candidate A/B.** Sonnet 5.5 for the heavy calls and
+  Haiku 5.5 for the structured calls are the product candidates, one swap per branch, judge held fixed, N per arm chosen in
+  advance (the `data-scientist-junior` fixture is bimodal). Item 140b's telemetry put one assemble-mode run at about
+  `$0.0835` under the **old, wrong** rates (see item 174); the 5.5 prices are now known (173's Updates), so an estimate can
+  be made once item 174 is fixed. **No spend is approved.**
+- **Item 137, the `thinking` policy per model (owner or agent, before any swap):** Sonnet 5.5 must use `between_tools`
+  (verified: `disabled` is a `400`). For Haiku 5.5, hold today's behavior with an explicit `disabled` (verified accepted), or
+  adopt `adaptive` as its own eval-gated change.
+- **Item 137, how soon to move off Haiku 4.5:** it is Active but past its earliest retirement date and is the eval judge
+  too; no notice is listed. Whether to move on a schedule or wait for a notice (60 days' lead) is the owner's call.
+- **Item 174, the pricing fix:** an agent can take it (a `fix/*` branch, `hardening.py` is C-10 gated, so a consumer dossier
+  and a C-7 `## Observed` first). Whether figures already published with the old rates (item 140b's `$0.6678`, TUNING_LOG
+  lines) get restated or left as dated records is the owner's call; the filing session leaves them as dated records.
+- **The Opus pin on `n1-judge`** is dev tooling only (the product has no Opus call); whether to move the subagent pins, and
+  when, is separate (proposal 15 in item 173).
 - **The *(owner)* items in `## Open`:** 50, 128, 129, 133, 135, 138, 171. The *(owner)* items in Blocked, Deferred and
   Watching are flagged in the generated lists above.
 - **Declared by the data-root agent as the owner's call (carried):** whether `sartor --doctor` should print the key path;
@@ -343,29 +375,40 @@ to matter next:
 
 **This session (`e10f95b5`):**
 
-- **Item 173 exists and nothing about the 5.5 generation is verified.** The IDs (`claude-sonnet-5-5`, `claude-opus-5-5`,
-  `claude-haiku-5-5`), prices, `thinking` defaults and limits are all listed under "Not verified" in the item. The IDs came
-  from this session's system context. The comment at `analyzer.py:1043` ("still the latest Haiku — no Haiku 5") is dated
-  July and is stale on the owner's account; the fix is proposal 4 in the item and was **not** made (no production code
-  changed here).
-- **Three observed code facts that make a model swap riskier than it looks** (all in 173 with `path:line`): the thinking-off
-  setting is scoped by `effective_model == SONNET_MODEL` and the Haiku path sends no `thinking` at all
-  (`analyzer.py:1594-1595`); `compute_call_cost` returns `0.0` for a model with no `MODEL_PRICING` key, so an unpriced swap
-  zeroes cost and the telemetry-window spend caps that item 140b relied on (`hardening.py:1710-1727`); the eval judge is
+- **The 5.5 generation is now partly verified, not fully.** Verified this session (sources and request ids in item 173's
+  Updates): the three IDs exist; their context and output limits; which `thinking` types each supports (Models API); the
+  `disabled` `400` on Sonnet 5.5 and the accepted settings (live); prices and retirement dates (documentation pages, read
+  as page text, **not checked against an invoice**). **Not verified:** eval scores on any fixture, the default `thinking`
+  behavior on real prompts, latency and cache-hit differences, whether `between_tools` changes output on the structured-JSON
+  calls. The comment at `analyzer.py:1043` ("still the latest Haiku — no Haiku 5") is stale; the fix was **not** made (no
+  production code changed here).
+- **Observed code facts that make a model swap riskier than it looks** (all in 173 with `path:line`): the thinking-off
+  setting is scoped by `effective_model == SONNET_MODEL` and sends `disabled`, which Sonnet 5.5 rejects, while the Haiku path
+  sends no `thinking` at all (`analyzer.py:1594-1595`); `compute_call_cost` returns `0.0` for a model with no
+  `MODEL_PRICING` key (`hardening.py:1710-1727`), and cannot express Haiku 5.5's prompt-length tiers; the eval judge is
   Haiku 4.5, the same pin as the candidate to replace (`evals/runner.py:112-117`).
-- **`analyzer.py` and `hardening.py` are C-10 gated surfaces** (`scripts/enforcement/blast_radius.py:199-204`). The model
-  swap branch needs `docs/dev/blast-radius/<branch-slug>.md` first.
-- **Item 137 was missed in the first answer** and is cross-linked (see the opening note). 137's `refs` line numbers are stale
-  (`analyzer.py:850-851` and `:827-831` are now `:1042-1043` and `:1573-1595`); recorded in 137's `## Updates`, the `refs`
-  list itself was **not** edited (the description is append-only).
-- **Wiki-relevance check for this branch: none of the five changed paths is wiki-relevant** (`is_wiki_relevant()` returned
-  `False` for `BOARD.md`, items 0137 and 0173, this handoff and the ledger file). No wiki edit, no `docs/wiki/log.md` entry
+- **Item 174 is a real defect found by this work and independent of it:** `hardening.py:446-465` prices Sonnet 5 at
+  `$3/$15` and Haiku 4.5 at `$0.80/$4`; the pricing page says `$2/$10` (footnote 3: the increase "will not occur") and
+  `$1/$5`. Every cost figure the repo computed from these rates is off in opposite directions (Sonnet 1.5x high, Haiku 20%
+  low), including item 140b's `$0.6678`. **None was recomputed and nothing was fixed.**
+- **`analyzer.py` and `hardening.py` are C-10 gated surfaces** (`scripts/enforcement/blast_radius.py:199-204`). The pricing
+  fix and any model-swap branch need `docs/dev/blast-radius/<branch-slug>.md` first.
+- **Item 137 was missed in the first answer** and is now the home of the 5.5 evaluation (see the opening note). Its `refs`
+  frontmatter was corrected (frontmatter is mutable); its description was not rewritten.
+- **The live calls and the pages are the only paid or external actions.** The driver scripts (`probe_models.py`,
+  `prompt_sizes.py`, the ledger generator and splicers) are in the session scratchpad and **not committed**; their
+  results are recorded in 173 and above. The probes ran through `web_infra.clients._get_client`, so the key was read only by
+  that factory inside the probe process and was never printed or written anywhere.
+- **Wiki-relevance check for this branch: none of the six changed paths is wiki-relevant** (`is_wiki_relevant()` returned
+  `False` for `BOARD.md`, items 0137, 0173 and 0174, this handoff and the ledger file; re-run after the last edit). No wiki edit, no `docs/wiki/log.md` entry
   needed by that rule. `wiki_freshness` read 65 files before this branch; the checkpoint-advancing pass is still owed.
 - **Process.** The handoff was built by copying the previous one and editing it, so the previous handoff's text, including
   its verbatim sections, is carried byte-for-byte except where a labelled correction was added. The regenerated ledger lists
   came from `structural_errors()`; **the first run wrote cp1252 through the Windows console and a later read failed on the
-  byte `0x97`**, caught before anything was spliced; it was regenerated with `python -X utf8`. The driver scripts are in
-  the session scratchpad and are not committed.
+  byte `0x97`**, caught before anything was spliced; it was regenerated with `python -X utf8`. **A background gate re-run
+  was stopped by me** (`taskkill /T` on the gate's process tree, because edits to tracked files were about to invalidate it);
+  every PID was confirmed gone afterwards, and the only python processes left on the machine are the isidium MCP servers,
+  not mine. The final gate result is cited in the commit and the PR, not here (the handoff precedes it).
 - **`ExitPlanMode` was not called when it should have been** (the plan was written, then the turn ended with the approval
   prompt still owed; the owner noticed). See "Recurrences". Then `ExitPlanMode` refused with "You are not in plan mode",
   so `EnterPlanMode` had to be called first.
@@ -405,7 +448,7 @@ below mean that session):**
 ## Recurrences observed this session → guardrail authored
 
 **Rows 1 to 4 are carried verbatim from the previous handoff (session `c2815a66`; "this session" and "I" in them mean that
-session). Rows 5 to 9 are this session's (`e10f95b5`).** No row below has a mechanism authored on this branch except where
+session). Rows 5 to 10 are this session's (`e10f95b5`).** No row below has a mechanism authored on this branch except where
 it says "mechanism exists".
 
 1. **The interrogative witness paused the first `Write` after the plan-mode prompt** (item 164's class; every handoff's last
@@ -452,6 +495,14 @@ it says "mechanism exists".
    recurrence of the memory class `windows-shell-gotchas` (cp1252 print crash). Loud failure, caught before anything was
    spliced into the handoff, and fixed by regenerating with `python -X utf8`. **No mechanism authored**: the driver scripts
    are scratchpad-only and not committed, so there is nothing in the repo to put a guard in. **Unenforced.**
+10. **A hand-maintained external number went stale and its stated premise was falsified:** `MODEL_PRICING`'s comment calls
+    `$3/$15` "the durable rate" for Sonnet 5 and dates the table "2026-07-05"; the pricing page now says the increase "will
+    not occur", and the Haiku 4.5 entries equal the page's Haiku 3.5 row (item 174). Recognized as a recurrence of the
+    memory class `reference-prescription-metrics-can-restale` (the July bump itself cited it) and of the rule that a
+    hand-maintained list rots (C-10 text). **No mechanism authored, and none is possible offline:** the source is an external
+    web page, so no committed test can fail when it changes. What is possible and **not built**: a test that every model
+    constant has a `MODEL_PRICING` key and that the table carries a dated source line (proposal 8 in item 173); that checks
+    presence, not truth. **Filed as item 174, which is a record and not a mechanism. Unenforced. Surfaced to the owner here.**
 
 ---
 
@@ -483,19 +534,27 @@ the closing agent's **recommendation for order, not a decision**. Do not expand 
    131 (a retired application cannot be found again), 107 (no account-naming step at first run), 134 (contradicting
    smoke-cost estimates), 139 (`capture_screenshots` leaves its demo user), 98 (wiki freshness measures
    checkpoint-staleness), 99 (`install.md` documents unpublished paths; depends on 3), 137 (a models and call-settings
-   review; **overlaps the new item 173**, see 13).
+   review; **now also the 5.5 evaluation, absorbing item 173**, see 13 and 14).
 10. **Remaining container checks and H2** if the owner picks them; the method is in
     `docs/dev/blast-radius/data-root.md` O10 to O13.
 11. **Reopening item 164** if the owner picks it: instrument first.
 12. **The *(owner)* items**, which need a decision before any branch.
-13. **Item 173, the 5.5 model evaluation (new this session; added after the carried list, so the numbering above is
-    unchanged).** If the owner wants the 5.5 question answered, it ranks right after landing this branch. The first move on it
-    is **proposal 7 in the item**: read the current model documentation and make one cheap live call per model to confirm
-    the ID, price, `thinking` default and usage fields, and record the result under the item's `## Updates` with the source.
-    **That call needs the owner's authorization; nothing paid beyond it without the owner's spend approval.** Settle the 137
-    question first (does 137 absorb 173?). The implementation branch for any swap is `analyzer.py` + `hardening.py`, both C-10
-    gated: `docs/dev/blast-radius/<branch-slug>.md` first. One swap per branch, judge held fixed, pricing keys added in the
-    same commit as any constant change, `PROMPT_VERSION` unchanged for a model-only change.
+13. **Item 174, the pricing fix (new this session; items 13 and 14 are added after the carried list, so the numbering above
+    is unchanged).** The recommended first branch if the owner wants the 5.5 work to go on, because every cost comparison
+    depends on it. A `fix/*` branch: the C-7 `## Observed` first (re-run the table in the item against a real telemetry
+    record), and `hardening.py` is C-10 gated, so a consumer dossier before the first edit. Keep every existing
+    `MODEL_PRICING` key; correct the two entries; update the comment's date and source; add a test that every model constant
+    has a pricing key. Do **not** edit `CHANGELOG.md:5468` (a dated record). Haiku 5.5's prompt-length tiers need a
+    `compute_call_cost` change, which belongs to the 5.5 branch, not this one.
+14. **Item 137, now carrying the 5.5 evaluation (the owner decided "137 absorbs 173").** The first step (proposal 7 of item
+    173) is done; read 173's `## Updates` of 2026-10-17 and 137's block of the same date first. The order the filing session
+    suggests (a recommendation): (1) item 174; (2) settle the `thinking` policy per model (Sonnet 5.5 must use
+    `between_tools`; Haiku 5.5 `disabled` to hold behavior, or `adaptive` as its own eval-gated change); (3) add a
+    thinking-tokens field to the telemetry if the A/B should see it; (4) the candidate A/B, one swap per branch, judge held
+    fixed, N per arm chosen in advance, pricing keys in the same commit as any constant change, `PROMPT_VERSION` unchanged for
+    a model-only change (**needs a new, explicit spend approval; none is given**); (5) the subagent pins last. Item 137's
+    own original questions (routing per call kind, cache hit rate, output limits) are still open. The implementation
+    branches touch `analyzer.py` and `hardening.py`: `docs/dev/blast-radius/<branch-slug>.md` first.
 
 Scope is bounded to what the owner names from this list. Do not expand beyond it.
 

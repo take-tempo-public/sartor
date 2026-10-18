@@ -3,11 +3,14 @@ schema = 1
 id = 173
 kind = "item"
 title = "Evaluate the Claude 5.5 generation (Sonnet, Haiku, Opus) against the models the product and its subagents pin"
-status = "open"
+status = "closed"
 decision_owner = "agent"
+resolution = "2026-10-17: absorbed into item 137 by the owner's decision. The 5.5 candidate evaluation itself was NOT run; only its free first step was (results in this file's Updates). 137 carries the scope, the 17 proposals and the findings."
+closure_exception = "Owner (amodal1), 2026-10-17, in chat: '137 absorbs 173; authorize first step'. A merge of a duplicate item, not a completed evaluation; no falsifiable artifact exists because the work it describes is still open under item 137."
 branches = ["docs/model-55-eval-item"]
 refs = [
   "docs/dev/work/items/0137-review-models-and-settings-for-performance-and-cost.md",
+  "docs/dev/work/items/0174-model-pricing-disagrees-with-pricing-page.md",
   "analyzer.py:1042-1043",
   "analyzer.py:1573-1595",
   "hardening.py:439-465",
@@ -20,7 +23,7 @@ refs = [
   "CHANGELOG.md:5468",
   "scripts/enforcement/blast_radius.py:199-204",
 ]
-summary = "No 5.5-generation model (Sonnet, Haiku, Opus) has been evaluated; the product pins Sonnet 5 and Haiku 4.5."
+summary = "Absorbed into item 137 (owner, 2026-10-17). No 5.5 A/B was run; the free first step was, and found real issues."
 ```
 
 **Filed 2026-10-17 from the owner's question in a read-only session:** "have we evaluated updates to the
@@ -214,3 +217,95 @@ Filed from the owner's question in a read-only session, then written up by the s
 thread. The facts above were read at `main` `e490683`. Nothing was run against the API; no model ID,
 price or `thinking` behavior for the 5.5 generation was verified (see "Not verified"). Item 137 is
 cross-referenced in its own `## Updates`.
+
+### 2026-10-17 - owner decisions, and the first step run (docs/model-55-eval-item)
+
+**Decisions (owner, in chat, 2026-10-17):** "137 absorbs 173" and "authorize first step" (proposal 7). This item is
+therefore **closed as absorbed** (see `closure_exception`); the open work continues under item 137. The "Not verified"
+list above is superseded by what follows; the filing text is kept as written.
+
+**Sources.** (a) The Models API, `models.retrieve` for six IDs (free). (b) Six minimal live calls ("Reply with the
+single word: ok", `max_tokens` 1024) through the project's own client factory, `web_infra.clients._get_client`; they bypass
+`analyzer`, so `logs/llm_calls.jsonl` has no rows for them. Cost computed by hand from `usage` at the documented
+rates: about `$0.0004` in total. (c) The pricing and model-deprecations pages, `platform.claude.com/docs/en/about-claude/pricing`
+and `.../model-deprecations`, fetched with `WebFetch` on 2026-10-17 (the pricing page's full text was saved to a file and read
+from it). (d) The local `logs/llm_calls.jsonl` (1,564 records, one machine, a mix of dev and eval runs; numbers only).
+The driver scripts are in the session scratchpad and are **not committed**.
+
+**Verified: the IDs exist.** `models.retrieve` returned all six:
+
+| id | display name | created | max input | max output | thinking `adaptive` / `enabled` / `disabled` / `between_tools` |
+|---|---|---|---|---|---|
+| `claude-sonnet-5-5` | Claude Sonnet 5.5 | 2026-09-28 | 1,000,000 | 128,000 | yes / no / **no** / **yes** |
+| `claude-haiku-5-5` | Claude Haiku 5.5 | 2026-10-07 | 1,000,000 | 128,000 | yes / no / yes / no |
+| `claude-opus-5-5` | Claude Opus 5.5 | 2026-09-21 | 1,000,000 | 128,000 | yes / no / no / no |
+| `claude-sonnet-5` (pinned) | Claude Sonnet 5 | 2026-06-29 | 1,000,000 | 128,000 | yes / no / yes / no |
+| `claude-haiku-4-5-20251001` (pinned) | Claude Haiku 4.5 | 2025-10-15 | 200,000 | 64,000 | **no** / yes / yes / no |
+| `claude-opus-5` (subagent pin) | Claude Opus 5 | 2026-07-24 | 1,000,000 | 128,000 | yes / no / yes / no |
+
+All three 5.5 models list `effort` levels `low`, `medium`, `high`, `xhigh`, `max`; Haiku 4.5 lists none.
+
+**Verified: the live `thinking` behavior** (request ids in parentheses):
+- Sonnet 5.5, `thinking` omitted: `200`, one `text` block, `thinking_tokens` 0 (`req_011Cg8zS4cjpJhXdapP8Y5PX`).
+- **Sonnet 5.5, `thinking={"type":"disabled"}`: `400 invalid_request_error`**, "To turn thinking off on this model, send
+  \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. ..." (`req_011Cg8zS7hnP7Mczg2F24b1H`).
+- Sonnet 5.5, `thinking={"type":"between_tools"}`: `200` (`req_011Cg8zS8KzCfmiJiVKyEh2Q`).
+- Haiku 5.5, `thinking` omitted: `200`, `thinking_tokens` 0 (`req_011Cg8zSBgdvj4nfkJVGeAth`); `thinking={"type":"disabled"}`:
+  `200` (`req_011Cg8zSDoPtQwJFC1P9kYXs`).
+- Opus 5.5, `thinking` omitted: `200`, `thinking_tokens` 0 (`req_011Cg8zSFfkyXt2F3gpGRx7X`).
+- **Limit:** all default-thinking calls were a one-word reply, so zero thinking tokens there does **not** show what
+  the default does on the product's real prompts. That is still unmeasured.
+- `usage` now carries `output_tokens_details.thinking_tokens`, `inference_geo`, `speed`, `service_tier` and a
+  `cache_creation` breakdown by TTL. **`logs/llm_calls.jsonl` has no thinking-tokens field** (grep over its keys), so a
+  model A/B cannot see thinking spend separately unless the telemetry gains it; `output_tokens` is the only figure.
+
+**Verified from the pricing page (page text, not an invoice):**
+
+| model | input | output | 5m cache write | cache read |
+|---|---|---|---|---|
+| Sonnet 5.5 | $2 | $10 | $2.50 | $0.10 (0.05x base, footnote 2) |
+| Sonnet 5 | $2 (footnote 3) | $10 | $2.50 | $0.20 |
+| Haiku 5.5, prompts up to 100,000 tokens | $0.10 | $0.50 | $0.125 | $0.01 |
+| Haiku 5.5, prompts over 100,000 tokens | $0.50 | $2.50 | $0.625 | $0.05 |
+| Haiku 4.5 | $1 | $5 | $1.25 | $0.10 |
+| Opus 5.5 | $4 | $20 | $5 | $0.20 (0.05x base, footnote 2) |
+| Opus 5 | $5 | $25 | $6.25 | $0.50 |
+
+Prices per million tokens. A request's prompt length for the Haiku 5.5 tiers counts cache reads and writes.
+
+**Verified from the deprecations page:** `claude-haiku-4-5-20251001` is **Active**, tentative retirement "Not sooner than
+October 15, 2026" (a date that has now passed; no deprecation notice is listed, and the page promises at least 60 days'
+notice before a public model is retired). `claude-sonnet-5`: not sooner than June 30, 2027. `claude-sonnet-5-5`: September
+28, 2027. `claude-haiku-5-5`: October 7, 2027. `claude-opus-5-5`: September 22, 2027. `claude-opus-5`: July 24, 2027.
+
+**Measured: prompt sizes (this machine's `logs/llm_calls.jsonl`).** Total prompt tokens (input plus cache writes plus cache reads),
+per record: `claude-haiku-4-5-20251001` n=620, median 2,358, p90 5,162, p99 9,251, max 12,506, **none over 100,000**;
+`claude-sonnet-5` n=237, median 5,270, max 21,181. So Haiku 5.5's over-100K tier did not apply to any recorded Haiku
+call. One machine, not the large-corpus case; the tier can still matter there.
+
+**Findings that change the plan** (each is an observation above plus a consequence; the consequences are inferences):
+1. **A Sonnet swap is not a one-line constant change.** `analyzer.py:1594-1595` sends `thinking={"type":"disabled"}` on
+   the Sonnet path; on `claude-sonnet-5-5` that request returns `400`. Pointing `SONNET_MODEL` at 5.5 without changing the
+   setting would fail every heavy call. The replacement is `between_tools` (per the API message; the `claude-api` skill's cached
+   notes add that it takes no other field, is accepted only at effort `high` or below, and forbids per-message effort changes, **not
+   re-verified live**).
+2. **Haiku 5.5 changes the Haiku path's default.** Haiku 4.5 does not support `adaptive`; Haiku 5.5 does, and the product's
+   Haiku path sends no `thinking` argument. The skill's cached notes say Haiku 5.5 runs adaptive by default; the
+   one-word probe did not show it thinking. A decision is needed: send `disabled` explicitly (accepted, verified) to hold
+   today's behavior, or adopt adaptive as a separate eval-gated change.
+3. **Pricing is wrong for the current pins**, independent of 5.5: filed as item 174.
+4. **Haiku 4.5 is past its earliest retirement date and is also the eval judge and two subagent pins.** Nothing is
+   scheduled, but the 60-day notice means the move off it may come with little lead time. This raises the priority of item
+   137.
+5. **Cache reads on Sonnet 5.5 and Opus 5.5 are priced at 0.05x base** (half Sonnet 5's per-token read price). The product
+   leans on prompt caching, so a Sonnet 5.5 cost advantage is plausible; **unmeasured**.
+6. **Haiku 5.5's prompt-length tiers cannot be expressed in `MODEL_PRICING`'s flat per-model rates**; adding the 5.5 keys
+   needs a change to `compute_call_cost`, not only new entries (also in item 174).
+
+**Still not verified:** how Sonnet 5.5, Haiku 5.5 and Opus 5.5 score on the eval fixtures; whether the default `thinking` on real
+prompts truncates the 8192-token `MAX_TOKENS` budget; the latency and cache-hit differences; whether `between_tools` changes
+output quality or length on the structured-JSON calls; the platform availability for this account beyond these six calls.
+
+**Proposals status after the first step:** 1 (file the item): done. 3 (does the `thinking` default carry over): answered
+for the `disabled` setting (it does not on Sonnet 5.5), not for the default on real prompts. 6 and 7: done, results above. 2,
+4, 5, 8 to 17: open, now under item 137. Proposal 4 (the stale "no Haiku 5" comment) is still unmade.
