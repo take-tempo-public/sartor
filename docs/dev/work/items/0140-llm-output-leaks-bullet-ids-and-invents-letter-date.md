@@ -94,7 +94,8 @@ allows. The full record, with the per-run table, is `docs/dev/diagnosis/ds-junio
 - **Re-replicated on this fixture:** `b` handles in the analysis in 4 of 4 old-arm runs and 0 of 4 new-arm runs; letter
   date correct 0 of 4 vs 4 of 4. No letter carried a handle in any of the 8.
 - **Spend** `$0.6678` by telemetry (cap `$2.50`); stage 2 was not needed by the rule.
-- **Still open on this item:** hypothesis B, the original `b180` carrier. It has not reproduced in 31 letters (23 under the
-  new prompts, 8 here), and the guard covers it regardless (a handle in `cover_letter_content` is a hard error). Nothing
+- **Still open on this item:** hypothesis B, the original `b180` carrier. It has not reproduced in 31 letters: the 23 from
+  the first item-140 session (11 under the old prompts, 12 under the new) and the 8 here (4 and 4), so 15 of the 31 were
+  written under the old prompts that produced the original. The guard covers it regardless (a handle in `cover_letter_content` is a hard error). Nothing
   to build. Closing the item needs a named `closure_exception` or a `verified_by`; that is the owner's call and the item
   stays `open` until they make it.
