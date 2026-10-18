@@ -104,3 +104,20 @@ edits plus the new `docs/dev/` reference for the 15 fold-ins. It is not applied 
 **Step one of that branch:** re-grep every DELETE row's evidence, because a spot-check found one
 "not in the repo" claim was wrong. Then fold, merge, delete, and shrink the index, in that
 order. Status stays `deferred` until that branch starts; the `blocked_on` sign-off is now given.
+
+### 2026-10-17 - owner directed it in chat; deliberately not started on `fix/model-pricing-rates`
+
+**Status: still not approved for any deletion; nothing applied.** While closing item 174 the owner said: "capture whatever is in
+memory that is still useful into durable locations before doing the compaction and do so so that you can compact the memory
+more significantly". Asked where and how far, the owner chose **the next session** (not on the pricing branch: one branch per
+session, and the capture is a different item) and **"fold the index, delete only approved rows"**.
+
+- **What the owner chose:** (1) move durable recipes into repo docs first; (2) compact `MEMORY.md` hard, one line per theme,
+  leaving details in their files; (3) delete a memory **file** only for a row of the draft list that the owner approves after
+  every DELETE row is re-grepped (the 2026-10-02 draft already had one wrong "not in the repo" claim).
+- **Measured 2026-10-17, this machine:** 266 files in the memory directory (47 `feedback`, 43 `project`, 174 `reference`, plus
+  `MEMORY.md` and one other), 1.66 MB total, `MEMORY.md` 20,458 bytes. The hook that flagged it reported a 24.4 KB read limit
+  and a 17.1 KB target; **those two figures are the hook's message, not something I checked.** The count was 244 on 2026-10-02.
+- **Why the next session starts here, not from scratch:** the 2026-10-02 draft list above is the starting point, not a
+  decision. Re-derive the counts fresh, re-grep every DELETE row, then show the owner the rows before any file is deleted.
+  The index compaction and the capture into docs are additive and reversible; a file deletion is not.
