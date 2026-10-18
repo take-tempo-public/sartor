@@ -180,3 +180,107 @@ a new loose `docs/dev/*.md` must be classified in `scripts/wiki_relevance.py`
 
 **Not verified:** that the 1.66 MB figure is on-disk size (inferred from `du -sh` 1.7M vs `du -cb` 1,034,153 B); the
 clean-lint recipe's obsolescence; the full CHANGELOG seam entries for 8.3c to 8.3h.
+
+### 2026-10-18 - capture steps done on `chore/memory-consolidation` (still no deletion)
+
+- **Backup:** the whole memory directory was copied to a sibling directory outside the one the harness loads
+  (`memory-backup-2026-10-18`, 266 entries, 1,034,153 B of `.md`; `diff -rq` against the live directory read identical at the time).
+  Every delete below is reversible from it until the owner removes it.
+- **Capture into the repo:** `docs/dev/engineering-recipes.md` (new, registered, indexed from `docs/dev/README.md`) holds the
+  re-verified, still-true parts of the 15 FOLD rows: the add-or-move-a-route steps and the typing/docstring floor steps. Each rule
+  cites the test or config that enforces it (`tests/test_ux_stub_coverage.py`, `tests/test_mypy_strict_roster_gate.py`,
+  `tests/test_docstring_coverage_gate.py`, `tests/test_egress_allowlist.py`, `tests/test_route_containment_gate.py`,
+  `tests/test_web_infra_is_leaf.py`). **Not carried, deliberately:** the migration-era steps (Option X, transitional helper copies,
+  per-seam fixture rewrites; `app.py` has no routes left), `ruff==0.15.12` and the D205-autofix counts (version-specific), and the
+  interrogate `tomllib`/`S603` test-writing gotchas (the test already exists). The ruff-pin rationale already lives at
+  `pyproject.toml:106-113`. Consumer enumeration for the one gated edit (`scripts/wiki_relevance.py`): `docs/dev/blast-radius/chore-memory-consolidation.md`.
+- **MERGE rows applied additively (merged files NOT deleted):** unique, still-true text of `feedback_git_merge_confirm`,
+  `reference-style-css-duplicate-cascade-rules`, `project-route-security-lint-scope`, `project-plan-approval-hook-scope` and
+  `reference-recover-interrupted-session-from-transcript` was appended to their five survivors, each section stating its source and date.
+- **Broken `[[links]]` repaired:** 31 links across 21 files (the Explore pass's "30" was a count of 12 + 2 + 16 = 30 plus one `.md`-suffixed
+  link it had not listed; six items it listed turned out to be literal text, not links: `[[slug]]`, `[[backlinks]]`, `[[Application]]`,
+  the TOML header `[[tool.mypy.overrides]]`, and were left alone). 25 renamed or repointed, 6 had no target anywhere and were un-bracketed
+  (`roadmap-v1.0.2-v1.1.0`, `v1.0.1-real-release`, `ui-redesign-planned`, `sartor-governance-migration-pending`,
+  `reference-px-band-sequencing-authority`, `reference-scroll-spy-settle-gate-audit`). After: **0 broken links, 0 MEMORY.md lines naming a missing file**.
+- **Still owed:** the sweep of the other ~222 files, the approval table, the approved deletes, the `MEMORY.md` compaction.
+
+### 2026-10-18 - full sweep of the other 222 memory files: verdicts recorded (nothing applied)
+
+**Method.** Five read-only Explore agents each read every file of a slice in full (45 / 25 / 50 / 50 / 52 files; S1 feedback, S2 project, S3 to S5
+reference) and gave one verdict per file with `path:line` cites per fact for every delete. **The agents' cites are hypotheses until checked.**
+The orchestrator then re-read about 15 cites behind 12 delete verdicts (across all five slices: `tests/_controls.py` and its gate test,
+`single-instance-and-quit.md:52-54` and `instance.py:73-76`, `charter.md` D-7 and C-8, `AGENTS.md:96-100` and `:203-207`, `doc-style-guide.md`
+section 1 and 2, `blast_radius.py:61`, `plan_gate.py:93`, the mermaid checker, `scripts/gate.py:39-40`, items 0175 and `maintainer-lane.md:78`,
+`ci_wait.py` exit codes, the avatar tests): **all existed and matched; none was contradicted.** Not checked: the many remaining per-fact cites.
+The agents' own header tallies were wrong twice (S2 and the draft-list pass); the per-file labels below are what is recorded.
+
+**Totals (222 files):** DELETE-CANDIDATE 102 (S1 11, S2 10, S3 27, S4 31, S5 23), FOLD 44, TRIM 34, MERGE 8, KEEP 34. Verdict names are the memory file
+stems; `reference-`, `feedback-` and `project-` prefixes are kept where the agent kept them.
+
+**Compaction fact to weigh before approving deletions.** Only `MEMORY.md` (20,458 B, the index) is loaded every session; the 265 files are read
+on demand. Deleting a file saves disk, not context; the index lines, and the few very large files (`project-ux-scroll-flake-chip0` 34,859 B,
+`feedback-schedulewakeup-not-for-background-bash` 29,057 B), are what cost context.
+
+**Tentative batches for the approval table** (proposed, not approved):
+- **A (16):** the draft list's SAFE-DELETE rows (listed in the 2026-10-18 entry above).
+- **B (78):** sweep DELETE-CANDIDATEs minus batch C and minus every `feedback-*` / `feedback_*` file.
+- **C (13), lower confidence, agent- or orchestrator-flagged:** `project-dependabot-docs-site-alerts`, `reference-append-order-vs-timestamp-detects-backdated-log-import`,
+  `reference-eval-runner-judge-payload-trap`, `reference-atomic-context-write-windows`, `reference-epic-a-chain-orchestration-design`,
+  `reference-grounding-source-union-prompt-vs-metric`, `reference-hook-receipts-spool-on-trunk`, `reference-long-run-log-lies-tee-and-pid-checks`,
+  `reference-flush-stale-plan-stamp-on-branch-not-main`, `reference-plan-approval-hook-global-scope`, `reference-skill-corpus-item-dual-path`,
+  `reference-ux-smart-landing-tab`, `reference-process-wide-run-slot-test-drain`.
+- **D (11), the owner's own behavioural feedback, homed but kept by default:** the 11 S1 DELETE-CANDIDATEs.
+
+**Conflict found between slices:** S3 says merge `reference-dashboard-education-ported-help` into `reference-help-opener-dedup-built`; S4 says
+`reference-help-opener-dedup-built` is itself a delete (all facts in `static/help-modal.js` comments). If the survivor goes, the merged file's two
+unique lines (the shared `#helpModal` id; per-tab help fires on click plus one load-time call) are unverified and should be checked before either goes.
+
+**Repo defects and gaps the sweep found (to file or fix, none fixed here):** `scripts/gate.py:39-40` cites a nonexistent item file
+(`0108-gate-memory-preflight-refusal.md`; the real file is `0108-gate-preflight-resource-check.md`); `evals/README.md:97,153` say per-fixture `min_*_score`
+thresholds exist but `evals/runner.py` never reads them (tracked nowhere); `reference-workflow-relays-triggering-prompt` names a C-11 guardrail owed with no
+work item; tracked files still mention `sartor-e2e` (`RELEASE_ARC.md:1351`, `RELEASE_CHECKLIST.md:718,2623,2633`, `handoffs/chore-scrub-local-eval-paths.md:85`) against a memory
+rule that nothing committed may reference it; `AGENTS.md:44` still points at a charter section that does not exist (`project-sartor-10p-backbone-pointer-stale`);
+`MEMORY.md` lines for `v11-final-march`, `concurrent-agents-worktree` and `doc-style-guide` are stale; `AGENT_HANDOFF_TEMPLATE.md:228` names `feedback_hook_discipline`
+and `CLAUDE.local.md:30` names `feedback-interrogative-is-not-a-work-order` by path, so neither may be deleted without rewording.
+
+#### Per-slice verdict lists (agent reports, condensed by the orchestrator; cites live in the agents' reports and the memory files' repo homes)
+
+#### S1 feedback-* (45 files) - agent report, UNVERIFIED until spot-checked
+DELETE-CANDIDATE (11): feedback-consume-handoff-dont-reconstruct (CAUTION: 0007 says project-hook-dispatcher-px37 SAFE label depends on it), feedback-cumulative-open-ledger, feedback-doc-style-guide, feedback-durable-before-deep (minor unhomed corollaries), feedback-handoff-process, feedback-instrument-before-fixing (28 inbound links), feedback-maintain-durable-docs-inline, feedback-no-waves-until-reliable, feedback-verify-completeness-before-done, feedback-verify-hash-before-citing-in-handoff-pointer, feedback_hook_discipline (TPL:228 names it by name; owner quotes lost; 142 tracked files cite the name)
+FOLD (12): ab-fix, attribute-the-subject, measure-the-ordinary-case, trace-fix-design, check-for-superseding, trace-stated-mechanism, verify-handoffs-sequencing, verify-rollup -> ONE new AGENT_FAILURE_PATTERNS.md section (e.g. 5g); enumerate-by-class -> blast-radius/TEMPLATE.md; corpus-mode-eval-coverage -> evals/README.md (re-verify premise first); no-baked-in-absolute-paths -> CONTRIBUTING.md; project-docs-not-personal -> doc-style-guide.md
+TRIM (5): cleanup-own-processes(~40%), concurrent-agents-worktree(~45% + fold mode-3 into work/SCHEMA.md), dont-trust-self-context-judgment(~45%), interrogative-is-not-a-work-order(~55%; CLAUDE.local.md:30 points to it by path), schedulewakeup-not-for-background-bash(~92%, 29KB->2KB)
+MERGE (4): answer-before-acting + dont-announce-and-act-same-breath -> interrogative-is-not-a-work-order; design-sprint-interactive-elicitation -> dont-overcommit-to-time-based-decisions; instrument-hooks-against-throwaway-repo -> reference-hook-manual-testing
+KEEP (13): adversarial-review-before-pivoting-scope, be-other-than-default, dev-content-in-dev-docs, dont-overcommit..., external-ventures-out-of-scope, form-finding-vs-tending, narrate-findings-before-decision-questions, never-suggest-wsl-shutdown, performance-metrics-docs, scope-is-quoted-never-derived, solve-dont-chunk-workaround, verify-against-durable-docs, verify-existence-before-asserting-absence
+Notes: feedback files are small; largest wins are the TRIMs. MEMORY.md lines to fix: concurrent-agents-worktree, doc-style-guide.
+
+#### S2 project-* (25 files) - agent report, UNVERIFIED until spot-checked
+DELETE-CANDIDATE (10): project-2026-06-excellence-review, project-2026-07-efficiency-review, project-autonomous-drawdown-2026-10-03-uncommitted, project-avatar-voice-tone-guidance, project-dependabot-docs-site-alerts, project-deterministic-ci-wait-governance, project-epic-a-authorization-envelope, project-llm-call-provenance-requirement, project-v110-fork-owner-gated, project-verify-dont-assume-enforcement-gap
+KEEP (6): project-context-mode-revisit, project-dx-install-test-macos12, project-e2e-instance-location, project-laptop-memory-pressure-is-transitional, project-robert-job-search-positioning, project-sartor-10p-backbone-pointer-stale
+TRIM (6): project-chain-execution-experiment-and-vectoring-directives(~85%), project-go-public-ci-state(~85%, keep gh MSYS gotcha), project-item97-design-sprint-decisions(~90%, keep spolia-naming rule), project-launch-requirements-launcher-pushbutton(~80%, keep WSL2/ext4 decision), project-ux-scroll-flake-chip0(~93%), project-v11-final-march(~85%, keep /model-print convention)
+FOLD (2): project-ci-infrastructure-sprint-sequence -> item 0003 Updates (enforce_admins rationale); project-handoff-integrity-kit -> AGENT_HANDOFF_TEMPLATE.md (no markdown links inside verbatim sections)
+MERGE (1): project-enforcement-first-governance -> feedback-be-other-than-default (owner-trust tone paragraph)
+Other findings: scripts/gate.py:39-40 cites nonexistent item file 0108-gate-memory-preflight-refusal.md (real: 0108-gate-preflight-resource-check.md); tracked files still mention sartor-e2e (RELEASE_ARC.md:1351 etc); MEMORY.md:142 stale "D on epic/d-docs-ia"
+Index fallout of the 10 deletes: MEMORY.md lines 155,159,114,150,147,145,148,153,149 need editing.
+
+#### S3 reference_a (50 files) - agent report, UNVERIFIED until spot-checked
+DELETE-CANDIDATE (27): alembic-batch-parent-fk-cascade, append-order-vs-timestamp (low conf; dated handoff links slug), assistant-wiki-coverage-built, atomic-context-write-windows (bgDraftFiring "reverted" claim unverified), avatar-citation-format-built, bash-to-python3-path-gotchas-windows, compose-bare-reload-race-free, compose-bullet-edit-not-refrozen, compose-composition-save-clobbering, compose-settle-bg-reload-built, consumer-enumeration-gate-c10, context-transaction-delta-trap, corpus-import-curation-ux, cover-letter-tone-tuning-built, deterministic-generate-built, diagnosis-doc-slug-strips-fix-prefix, doc-assistant-built, doc-assistant-vector-built, doc-registry-and-move-policy, docs-site-build-check, documentation-architecture, driving-the-app-outside-the-ux-suite, egress-allowlist-gate, epic-a-chain-orchestration-design (Epic A merged #117), eval-results-dir-heterogeneous-files, eval-runner-judge-payload-trap (medium conf: test pins jd_label only), f01-keyword-cleaning-built
+FOLD (8): alembic-downgrade-then-seed-needs-stamp, app-loggers-silent-under-pytest, cpu-saturation-flake-repro, deterministic-capability-probes-for-rival-hypotheses -> engineering-recipes.md (needs header edit: currently "authoritative for the two recipes"); capture-screenshots-demo-state -> screenshot-capture.md; claude-allow-main-edits-scope -> AGENTS.md:201 (+CLAUDE.md:104); dark-factory-research -> item 0097 Updates or archive appendix; eval-harness-auth-and-cost -> evals/README.md cost section
+TRIM (8): agent-worktree-autoclean-trap(~30%), avatar-voice-tuning-built(~65%), axe-a11y-gate(~55%), background-bash-kill-ceiling(~80%), background-task-exit-code-unreliable(~65%), codeql-path-injection-chokepoint(~75%), compliance-witness-built(~85%), eval-smoke-gate-exit2-contract(~75%; keeps unfiled README min_* doc gap)
+MERGE (2): conductor-tip-gate-worktree-hygiene -> conductor-verify-lanes; dashboard-education-ported-help -> help-opener-dedup-built (but help-opener-dedup-built is a DELETE in S4 -> conflict, resolve)
+KEEP (5): bash-tool-no-coreutils-monitor-busyloop, bypass-permissions-session-binding, conductor-verify-lanes, enforcing-test-tighten-on-removal, fake-client-tests-must-redirect-telemetry (diagnosis doc defers destructive-delete rule to this memory)
+CONFLICT NOTE: S3 #32 merges dashboard-education-ported-help into help-opener-dedup-built, but S4 marks help-opener-dedup-built DELETE (all homed in static/help-modal.js comments) -> then both are delete; dashboard-education unique line is unverified.
+
+#### S4 reference_b (50 files) - agent report, UNVERIFIED until spot-checked
+DELETE-CANDIDATE (31): flask-reloader-browser-open, flush-stale-plan-stamp-on-branch-not-main (rests on item 0056 "watching"), frozen-composition-mechanics, gap-fill-bullets-built, gate-memory-preflight-built, gate-result-file-and-hookspath, gh-actions-log-parsing-gotchas (mirror of flake_rates.py docstring), git-grep-self-match-test-gotcha, github-status-incident-diagnosis, grounding-source-union-prompt-vs-metric (LOW confidence: doc-coupling point 4 unhomed), help-opener-dedup-built, help-pattern-primitive, hook-receipts-spool-on-trunk (-k trap + ls-files trap only instance-homed), hooks-python-direct, keep-ledger-guards-built, kw3-tour-and-education-help, list-applications-n-plus-1, long-run-log-lies-tee-and-pid-checks (repo cites stem at epic-a-chain-design-corrections.md:755), maintained-classification-list-pattern, march-session-model-rules-drift, mermaid-parse-needs-dom, minicheck-grounding-loop-drift, monitor-silence-is-not-success, native-checkbox-css-gotcha, npm-override-vs-bump-and-ts-esm-detection, per-session-hook-state-kills-orchestrated-runs, plan-approval-hook-global-scope (stem cited at diagnosis/plan-approval-hook-scope.md:13), plan-approval-retire-timeout-and-epic-prune, playwright-beforeunload-and-drawer-stacking, playwright-capability-probe-mechanics, playwright-networkidle-order-dependence
+FOLD (8): flask-test-client-sse-drain-required + function-local-import-defeats-module-patch + model-upgrade-playbook -> engineering-recipes.md (Test-writing traps / Bump a model pin); gate-from-powershell-hits-wsl-bash -> CONTRIBUTING.md Quick start; handoff-template-verbatim-drift-found -> AGENT_HANDOFF_TEMPLATE.md header; hook-manual-testing -> tooling.md "Hand-testing a guard"; n1-pipeline-no-review-only-stage -> n1-baseline-pipeline.md; openssf-scorecard-hardening -> doc-style-guide.md:122-125
+TRIM (7): flask-stream-teardown-and-reloader-watch(~60%), gitattributes-pin-stale-worktree(~45%), governance-extraction-design(~70%), heredoc-escaping-and-first-match-anchors(~60%), merge-commit-parent-order-gotcha (headline WRONG vs its own evidence -> ~4 lines), n1-baseline-pipeline-built(~85%), plugin-activation(~65%; repo cites stem keep-ledger.md:135; many stale names callback->sartor)
+MERGE (1): git-diff-trailing-slash-quoting -> git-bash-leading-slash-arg-rewrite (claim NOT reproducible today)
+KEEP (3): git-bash-leading-slash-arg-rewrite (reproduced today), hpiq-case-study-artifact, isidium-tracking-part-bdd-fit
+Stem cited from live repo docs (would dangle on delete): plan-approval-hook-global-scope, long-run-log-lies-tee, plugin-activation, model-upgrade-playbook (items/0173:72), openssf-scorecard-hardening (items/0171:94)
+
+#### S5 reference_c (52 files) - agent report, UNVERIFIED until spot-checked
+DELETE-CANDIDATE (23): process-wide-run-slot-test-drain, profile-text-vs-online-profile, recall-skeleton-built (no index line), release-versioning-d7, sartor-rename-recruiting-pun, scroll-anchoring-dy-equals-dh, scroll-spy-hardening-mechanics, scroll-spy-settle-gate-leak, self-documenting-loop-design, settle-wait-vs-deliberate-racers, skill-corpus-item-dual-path (medium), smooth-scroll-survives-navigation, sse-disconnect-simulation-technique, stream-route-needs-generate-streaming-stub, ux-compose-ready-wait, ux-copy-assertions, ux-generate-drive-and-scroll-spy, ux-select-option-attached (no index line), ux-smart-landing-tab (medium), wiki-freshness-single-branch-threshold, windows-port-double-bind-and-probe-cost, work-item-tracking-system, xfail-strict-masks-broken-controls
+KEEP (7): pytest-exit-through-pipe, substrate-projection-layering, taskoutput-nonblocking-stale-preview, tending-pass-method (path stale: now C:\Dev\lichen\methodology\tending-pass.md), webfetch-quotes-are-summarized, werkzeug-reloader-orphan-child, workflow-relays-triggering-prompt (guardrail owed C-11, no work item -> recommend filing)
+FOLD (14): prescription-metrics-can-restale->AFP 5e line; preserve-cross-item-evidence, pytest-in-process-loop-and-mutation-plugins, sandbox-ux-walkthrough-method (needs rewrite around SARTOR_HOME), tests-package-conftest-import -> engineering-recipes.md Testing recipes; rerun-masking-chronic-flake->flake-rates/README.md; review-charter-clause-location->charter.md "What this is"; subagent-pretooluse-agent-id->item 0169 Updates (peer hand-backs still arm witness, seen 3x 2026-10-16); user-docs-verify-against-live-labels->skills/doc-writing/SKILL.md; wiki-auditor-has-no-bash + wiki-scribe-cannot-create-pages + wiki-scribe-head-vs-working-tree -> commands/wiki-self-update.md gotchas block; wiki-checkpoint-ratchet-defect->item 0098 (unchosen option); wiki-freshness-detect-vs-correct->item 0065 Updates
+TRIM (8): self-documenting-wiki-built(~80%), shared-machine-oom-kills-bg-runs(~55%), spolia-board-comparison(~40%), subagent-background-wait-gotcha(~40%), ux-flake-ci-runner-not-local-load(~60%), windows-console-unicode-print-crash(~35%), witness-pause-stale-plan-approval(~50%), workflow-subagent-gotchas(~55%)
+Note: many repo files cite memory stems (handoffs, 5 diagnosis dossiers, items 0030/0062/0079/0098/0143, block_subagent_git_stash.py:22) -> dangling on delete.
