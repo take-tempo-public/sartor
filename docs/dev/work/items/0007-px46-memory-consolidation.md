@@ -6,7 +6,7 @@ title = "PX-46 selective memory consolidation"
 status = "open"
 decision_owner = "user"
 refs = ["RELEASE_ARC.md step 13", "docs/dev/reviews/2026-07-efficiency/prescriptions.md:53"]
-summary = "Selective, not wholesale, memory consolidation - present the list, act only after explicit approval."
+summary = "Memory consolidation: 85 deleted, 16 trimmed, 12 merged, index rebuilt; further deletions await owner approval."
 ```
 
 Prescription: fold the ≥3 unique-recipe memories into a durable `docs/dev/`
@@ -308,3 +308,100 @@ The batch A homes rest on the first Explore pass's cites plus the orchestrator's
 **Adversarial read (batch B, 78 files) and accuracy audit (batches C and D, 24 files): launched.** Five refuter agents try to prove each B delete loses a fact or that the memory is
 wrong; two auditors check every claim in C and D against the current repo. Every cite must carry a verbatim quote, and a script (`verify_quotes.py` in the session scratchpad)
 checks each quote appears in the cited file within three lines. A fabricated or paraphrased quote fails mechanically.
+
+### 2026-10-18 - batches B, C and D executed; MEMORY.md rebuilt (memory counts below)
+
+**How batch B was read.** Five refuter agents, each told to prove a delete loses something or that the memory is wrong, produced
+JSONL with a verbatim quote per cited home. A script (`verify_quotes.py`, session scratchpad) checked every quote against the
+cited file: **844 file-quote citations across the five outputs (319 + 156 + 181 + 188, B1 and B4 counted together), 0 fabricated, 0 missing**. (Three refuters, B1, B2 and B4, generated their JSONL with builder scripts, and B4 says its script corrected cited line numbers to the quote's real line, so for those the position check may pass trivially; the quotes still prove the text exists in the file.) The orchestrator then read every fact-to-quote pair for all 78 files and the memory's wrong-in-memory list. Quotes
+prove text exists, not that it supports the fact; that second check was the orchestrator's read.
+
+**Batch B result: 69 deleted, 9 trimmed, 0 left as they were.** Seventy-eight files were read; 69 were deleted
+(68 DELETE-CONFIRMED, plus `reference-gate-memory-preflight-built`, which a refuter would have trimmed to an unsourced
+"55 min" figure that contradicts `scripts/gate.py:113-116`). **Nine files had a real remainder and were rewritten to it instead
+of deleted:** `project-verify-dont-assume-enforcement-gap`, `reference-docs-site-build-check`, `reference-help-pattern-primitive`,
+`reference-march-session-model-rules-drift`, `project-deterministic-ci-wait-governance`, `reference-native-checkbox-css-gotcha`,
+`reference-npm-override-vs-bump-and-ts-esm-detection`, `reference-f01-keyword-cleaning-built`, `reference-sartor-rename-recruiting-pun`.
+Sixty-three inbound `[[links]]` in 54 kept files were repointed to each deleted file's primary repo home. **The still-unhomed
+leftover lines of the deleted files (26) are preserved verbatim in work item 176**, so nothing was dropped silently.
+
+**Bad memories removed or corrected.** The refuters found claims in files marked for deletion that were false today, so deleting
+them removed false beliefs as well as redundancy: `reference-per-session-hook-state-kills-orchestrated-runs` said `agent_id` was
+never observed (item 94 observed it); `reference-ux-compose-ready-wait` gave a `networkidle`-first rule that had been superseded;
+`reference-egress-allowlist-gate` said "exactly 8 files incl. app.py" (the test lists 15); `reference-mermaid-parse-needs-dom`
+said real rendering happens in the docs-site build (the build cannot catch a broken diagram); `reference-doc-assistant-built`
+said the blueprint inline-copies helpers that now live in `web_infra`.
+
+**Batches C and D (24 files): audited for accuracy, none deleted.** Two auditors checked every claim against the repo and
+machine. **9 accurate, 15 corrected in place, 0 with a false central claim, so by the owner's rule none was deleted.** Fifteen
+files received exact-substring replacements (each `old` text matched exactly once). Notable corrections: `feedback-handoff-process`
+(the handoff is now written on the branch before the merge); `reference-grounding-source-union-prompt-vs-metric` (the metric union
+is five sources, not three); `reference-skill-corpus-item-dual-path` (the "pending skills excluded from the prompt" claim is false
+for the no-recommendation baseline path); `project-dependabot-docs-site-alerts` (the six alerts were fixed; 23 different ones are
+open, confirmed with a read-only `gh api` call); `reference-atomic-context-write-windows` (its "production is single-threaded"
+claim is marked UNVERIFIED, because Flask 3.1.3's `run()` does `setdefault("threaded", True)`; filed as item 177 point 1, **a
+possible product-impacting contradiction in `hardening.py:1992`**). Where an incidental detail was stale the file was
+corrected rather than deleted; this reads the owner's "no deletions unless you find inaccuracies" as "delete only a file whose
+central claim is false".
+
+**MEMORY.md rebuilt**, not patched: 35 lines pointed at deleted files; it is now pure pointers, states no current state (no
+"BUILT", "RESOLVED" or dated status), lists every kept file by name (the six per-seam files by brace shorthand), and points
+to `BOARD.md` for status. **20,458 B to 16,127 B**, under the hook's 17.1 KB target.
+
+**Follow-ups filed:** item 176 (the 44 deferred fold-ins, the 26 unhomed leftover lines, the 9 trimmed files) and item 177 (11
+repo defects and gaps found by the sweep).
+
+**Still open on this item at this point:** the sweep's large trims and its 8 MERGE rows (owner chose "trim only the large ones"
+and "the 8 merges done additively"); the 15 draft-list FOLD files and 5 draft-list merged files, which were folded or merged
+additively but not deleted (no approval for those deletions was given); the two PARTIAL draft rows; and the close-out.
+
+### 2026-10-18 - large trims and sweep merges applied; final counts; what is still the owner's
+
+**Large trims (7 files), planned by two more independent agents and checked the same way** (123 verbatim quotes verified, 85 for the first planner and 38 for the second, 0
+fabricated; kept text copied by line range from the pre-change backup, new text marked "as of 2026-10-18"):
+`project-ux-scroll-flake-chip0` 34,859 B to 2,940 B; `feedback-schedulewakeup-not-for-background-bash` 29,057 B to 3,799 B;
+`project-item97-design-sprint-decisions` 18,058 B to 2,883 B (its decisions are homed in the **sister repo** `C:/Dev/the-factory`, so that
+pointer breaks if the sister repo moves; stated in the file); `reference-background-bash-kill-ceiling` 16,534 B to 7,333 B;
+`project-chain-execution-experiment-and-vectoring-directives` 16,505 B to 4,458 B; `reference-n1-baseline-pipeline-built` 15,993 B to
+1,381 B; `feedback-interrogative-is-not-a-work-order` 13,948 B to 6,054 B (kept the rules, the 2026-08-12 incident in the owner's own
+words, and the owner's causal framing; `CLAUDE.local.md:30` names this file by path). Each trim also **corrects** what the audit
+found false: the kill-ceiling note's "35-40 min `run_in_background` works reliably" is marked an overclaim (OOM kills and the
+`nohup` finding are real); the `ScheduleWakeup` note's claim that the call "can kill that task" is marked retracted; the chain note's
+"NOT yet executed" is narrowed (only directive 1, a charter-level grammar, is unexecuted).
+
+**Merges (12), all additive, merged files NOT deleted:** the 5 draft-list pairs (earlier entry) and 7 sweep pairs: `feedback-answer-before-acting`
+and `feedback-dont-announce-and-act-same-breath` into `feedback-interrogative-is-not-a-work-order`;
+`feedback-design-sprint-interactive-elicitation` into `feedback-dont-overcommit-to-time-based-decisions`;
+`feedback-instrument-hooks-against-throwaway-repo` into `reference-hook-manual-testing`; `reference-conductor-tip-gate-worktree-hygiene` into
+`reference-conductor-verify-lanes`; `reference-git-diff-trailing-slash-quoting` into `reference-git-bash-leading-slash-arg-rewrite` (the
+trailing-slash mechanism **did not reproduce** on 21 commit pairs and is carried only as a "run a control" warning);
+`project-enforcement-first-governance` into `feedback-be-other-than-default`. A planned eighth merge (`reference-dashboard-education-ported-help`
+into `reference-help-opener-dedup-built`) was dropped because the survivor was deleted in batch B.
+
+**New memories written (pre-close sweep):** `feedback-bad-memory-is-worse-than-none` (the owner's principle) and
+`feedback-explain-tradeoffs-before-batch-approval` (how the owner wants multi-batch approvals presented). Work item 0169 gained a
+dated note: the interrogative witness paused five `Write`/`Edit` calls this session right after peer hand-backs arrived.
+
+**Final numbers (`ls`, `du -cb` over the memory directory, 2026-10-18):**
+
+| | before | after |
+|---|---|---|
+| entries (files + `MEMORY.md`) | 266 | 183 |
+| bytes of `.md` | 1,034,153 | 648,462 |
+| `MEMORY.md` bytes | 20,458 | 16,427 |
+| broken `[[links]]` (real ones; 6 literal `[[...]]` texts excluded) | 31 | 0 |
+| `MEMORY.md` lines naming a missing file | 0 | 0 |
+
+Totals: **85 deleted** (16 batch A + 69 batch B), **16 trimmed** (9 to their unhomed remainder, 7 large), **12 merged additively**, 0 deleted for
+inaccuracy (24 files in C and D audited; none had a false central claim), 2 new memories written. The undo for any step is
+the sibling `memory-backup-2026-10-18` directory (266 entries); **it is outside the repo and the owner should delete it when satisfied**.
+
+**What is still the owner's (nothing below was done):**
+1. Whether to delete the **12 merged files** whose text now sits in survivors (5 draft-list, 7 sweep).
+2. Whether to delete the **15 draft-list FOLD files** (the app-factory and seam records and the ruff/mypy/interrogate ratchet records). Their
+   surviving how-to is `docs/dev/engineering-recipes.md`; the rest is migration history. They are listed in the index by brace shorthand.
+3. The **2 PARTIAL draft rows** (`excellence-walk-llm-wiki`, `project-v110-close-out-sequence`), each with one unhomed fact.
+4. Batches C and D (24 files) stay, corrected where wrong.
+5. The **44 FOLD files** are deferred to item 176; the sweep's STALE flags on the other kept files (path and count drift) were reported but
+   **not applied** (this session corrected the 24 files in C and D and the batch-B trims only). Applying them is the next pass if you want it.
+6. Closing this item needs a falsifiable `verified_by` artifact or an owner-named `closure_exception`; I left it `open`.

@@ -6,7 +6,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 
 ## Open
 
-- **7** -- PX-46 selective memory consolidation (`user`) -- Selective, not wholesale, memory consolidation - present the list, act only after explicit approval.
+- **7** -- PX-46 selective memory consolidation (`user`) -- Memory consolidation: 85 deleted, 16 trimmed, 12 merged, index rebuilt; further deletions await owner approval.
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **98** -- Wiki freshness measures checkpoint-staleness, not page-staleness: scoped close-outs never credit the checkpoint, and agents report commit counts instead of the gate's figure (`agent`) -- Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
 - **99** -- install.md documents two distribution paths that have never been published (`agent`) -- install.md documents a GHCR image and a PyPI wheel that have never been published; every documented path fails. [depends on: 3]
