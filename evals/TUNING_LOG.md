@@ -3277,6 +3277,8 @@ Live spend by telemetry: `$2.013` (baselines + candidate), `$0.818` (verificatio
 `2.1`, `3.2` → `1.2`, `1.2`; assemble `4.8` ×4 → `1.2` once). The judge reads that fixture as a corpus/fixture
 mismatch in every run and flags the same fabrication kind in old-prompt runs, but the drop follows the prompt
 changes and **is not explained**; see `docs/dev/diagnosis/llm-handle-leak-and-letter-date.md`.
+**Follow-up, 2026-10-18:** an A/B of the old code against the new on this fixture found low scores under the old code
+too (2 of 4 each); see the entry "`data-scientist-junior` score A/B" at the end of this file.
 
 **What did we learn?**
 
@@ -3296,3 +3298,43 @@ changes and **is not explained**; see `docs/dev/diagnosis/llm-handle-leak-and-le
   letter paths. It does not exercise `suggest_skills` (both), `draft_gap_fill`, `recommend_experience_summaries`,
   `recommend_skills`, `draft_experience_summaries`, `draft_surgical_refinement` or critique: for those the guard and
   unit tests are the only protection.
+
+## `data-scientist-junior` score A/B — 2026-10-18 — `fix/ds-junior-score-drop` (item 140, part b) — no prompt change (`2026-08-14.1` vs `2026-10-17.2`)
+
+**What changed?** Nothing in the product. A measurement: the old code (`a970033`, `PROMPT_VERSION 2026-08-14.1`, no
+guard, no letter date) against `main` (`2026-10-17.2`), on one fixture, assemble mode, grounding rubric only. The old code
+ran from a detached worktree outside the repo with `SARTOR_HOME` pointing at this repo's data root, so no key was copied;
+each arm's `analyzer.__file__` and `PROMPT_VERSION` were printed before any paid call (an editable install of this repo
+could have shadowed the old code, and did not).
+
+**Why?** Item 140's prompt changes were followed by lower `data-scientist-junior` grounding scores (assemble `4.8` x4
+then `1.2` once) and nobody knew whether the change or run-to-run variance did it. `--prompt-overrides` could not answer
+it: three of the four changes (schemas, `<letter_date>`, guard) are not persona constants.
+
+**What was the result?** Design registered before any run (`docs/dev/diagnosis/ds-junior-score-drop.md`): interleaved A/B,
+"low" = grounding `< 3.0`, stage 1 N = 4 per arm, a written decision rule, a `$2.50` telemetry cap.
+
+| arm | scores (runs 1 to 4) | lows | `b` handles in the analysis | letters with the run date |
+|---|---|---|---|---|
+| A, old code | `1.2`, `0.0`, `4.8`, `5.0` | 2 of 4 | 4 of 4 runs (6 to 11 each) | 0 of 4 |
+| B, new code | `0.0`, `4.9`, `0.0`, `5.0` | 2 of 4 | 0 of 4 runs | 4 of 4 |
+
+Rule applied: lows under the old code (`a = 2 >= 1`), so the `1.2` is **not evidence of a regression at this n;
+consistent with variance**. Exact 95% interval for 2 of 4: `[0.068, 0.932]` on each side; Fisher exact p = 1.000. Spend by
+telemetry `$0.6678` for 8 runs (mean `$0.0835`, against the `$0.15` estimate).
+
+**What did we learn?**
+
+- The outcome is **bimodal** (`0.0` or `1.2` against `4.8` to `5.0`, nothing between) in both arms. The earlier "`4.8` x4
+  under the old prompts" was four high draws, not a level. Judge a prompt change on this fixture by a rate over many runs,
+  never by one or two scores.
+- **Not established:** that the new prompts leave the low-score rate unchanged (the interval is too wide), that this is
+  judge and not generator variance (no generated text is kept), or anything about other fixtures or generate mode.
+- A second low mechanism showed up in the new arm: `0.0` with `fundamental_domain_mismatch` and
+  `candidate_self_disqualifies_in_cover_letter` (the letter says the candidate does not fit). Not interpreted.
+- The handle fix and the letter date re-replicated independently on this fixture: `b` handles 4 of 4 runs under the old
+  code, 0 of 4 under the new; the new arm's remaining findings are the clarify response's own `q1..q5`. No letter carried a
+  handle in any of the 8, so the original `b180` carrier hypothesis was not observed again.
+- **Method for the next tuner:** to A/B code that `--prompt-overrides` cannot reach, check out the old commit as a
+  detached worktree OUTSIDE the repo (never under `.claude/worktrees`), run it with `SARTOR_HOME` set to the data root, and
+  assert `prompt_version` per record; take cost from a telemetry window (`hardening.compute_call_cost`), not the record.
