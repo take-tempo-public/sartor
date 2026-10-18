@@ -3130,3 +3130,25 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Freshness:** `python scripts/wiki_freshness.py` reads 65 files changed since the last ingest, under the 75 block
   threshold (64 at the 2026-10-17 entry above; this branch added one). A checkpoint-advancing pass is still owed.
 - **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.
+
+## 2026-10-17 — wiki-relevance check, verified no-edit (`fix/model-pricing-rates`, item 174)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged). No spend.
+- **Wiki-relevant changes in the diff (3):** `hardening.py`, `analyzer.py` and `evals/TUNING_LOG.md`, per
+  `is_wiki_relevant()` over `git diff --name-only dbc6f02 HEAD` (11 files changed; the other eight classed not relevant).
+  The product edits are the two `MODEL_PRICING` entries, a rewritten comment above the table, and two comments in
+  `analyzer.py`; no function body changed.
+- **Verified no-edit:**
+  - No wiki page cites `hardening.py` or `analyzer.py` by line (`grep -rnoE "(hardening|analyzer)\.py:[0-9]+" docs/wiki/pages`
+    returns nothing), so the comment growth (6 lines in `hardening.py`, 1 in `analyzer.py`) moved no cite.
+  - `docs/wiki/pages/deterministic-llm-boundary.md:99-100,126-128` says the one `anthropic` mention in `hardening.py` is the
+    pricing-table comment. Still true: a case-insensitive grep for `anthropic` in `hardening.py` returns one line (439, the
+    rewritten comment, now naming "the Anthropic pricing page").
+  - `docs/wiki/pages/eval-harness.md:121` cites `hardening.py:compute_call_cost` by symbol; the function is unchanged. No
+    page states a price (`grep -rnE "MODEL_PRICING|[$]3|[$]15|0[.]80" docs/wiki` returns only those two pages' mentions of the
+    table and function). `eval-harness.md:218` cites `TUNING_LOG.md` by path; the new entry is a dated note on cost rates.
+- **Cite check** (`python -m scripts.wiki_cites --base dbc6f02 --strict-removed`): OK, 0 violations, 0 removed cites.
+- **Freshness:** `python scripts/wiki_freshness.py` reads 65 files changed since the last ingest, under the 75 block
+  threshold (before this branch's own files). A checkpoint-advancing pass is still owed.
+- **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.
