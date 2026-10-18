@@ -93,6 +93,16 @@ Correct the two entries (Sonnet 5 → `2.00 / 10.00 / 2.50 / 0.20`; Haiku 4.5 �
 key; rewrite the comment (date, source, 5-minute cache-write); correct the two stale comments in `analyzer.py`
 (`:1017-1018` price sentence, `:1043` "no Haiku 5"); add the coverage test; `CHANGELOG.md` `[Unreleased]`.
 
+## Result (run on this branch)
+
+- **On HEAD (table unchanged), updated tests:** `2 failed, 5 passed` in `TestCallCost` —
+  `test_known_sonnet5_record`: `assert 3.0 == 2.0`; `test_haiku_with_cache`: `assert 0.08 == 0.1`. The coverage test passed.
+  Hypothesis confirmed; the fix was then built.
+- **After the fix:** `python -m pytest tests/test_hardening.py tests/test_call_kind_telemetry.py tests/test_dashboard_routes.py
+  tests/test_analyzer_model_selection.py` → `211 passed`; `python -m ruff check` on the three edited Python files clean; the two
+  telemetry rows above now cost `0.0336` and `0.008` through `compute_call_cost`, equal to the by-hand figures.
+- The full gate result is cited in the commit/PR, not here.
+
 ## Acceptance bar
 
 `pytest tests/test_hardening.py::TestCallCost` passes on the fixed tree and its updated assertions fail on HEAD (output

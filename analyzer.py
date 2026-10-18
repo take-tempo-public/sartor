@@ -1014,8 +1014,9 @@ Rules you follow without exception:
 #   - Sonnet 5 for analyze() and generate(): the work needs reasoning depth
 #     for JD analysis and instruction-following on the long generate prompt
 #     (~3K tokens of resume_rules + cover_letter_rules + output_format).
-#     Same standard per-token price as Sonnet 4.6 ($3/$15 in/out; an intro
-#     discount of $2/$10 runs through 2026-08-31), with better coding/agentic
+#     Cheaper than Sonnet 4.6 ($2/$10 in/out vs $3/$15; the pricing page says
+#     the announced rise to $3/$15 will not occur — see hardening.MODEL_PRICING),
+#     with better coding/agentic
 #     and structured-output behavior. Sonnet 5 turns adaptive thinking ON by
 #     default when `thinking` is omitted (4.6 ran thinking-off); the streaming
 #     call below sends `thinking={"type": "disabled"}` on the Sonnet path to
@@ -1040,7 +1041,7 @@ Rules you follow without exception:
 #     proportional win on this workload. Reserve for future debugging
 #     sessions if grounding regressions resist prompt-tightening.
 SONNET_MODEL = "claude-sonnet-5"
-HAIKU_MODEL = "claude-haiku-4-5-20251001"  # still the latest Haiku — no Haiku 5
+HAIKU_MODEL = "claude-haiku-4-5-20251001"  # Haiku 5.5 exists; evaluating it is work item 137
 # Backward-compat alias — historical code uses MODEL as the default Sonnet handle.
 # New code should reference SONNET_MODEL / HAIKU_MODEL explicitly.
 MODEL = SONNET_MODEL
