@@ -17,6 +17,7 @@ import pytest
 from hardening import (
     _REPLACE_ATTEMPTS,
     _REPLACE_BACKOFF_S,
+    MODEL_PRICING,
     assemble_source_union,
     check_ats_format,
     compute_call_cost,
@@ -760,8 +761,8 @@ class TestCallCost:
             "cache_creation_input_tokens": 0,
             "cache_read_input_tokens": 0,
         }
-        # 1M input @ $3/M = $3.00
-        assert compute_call_cost(record) == 3.0
+        # 1M input @ $2/M = $2.00 (pricing page, 2026-10-17; item 174)
+        assert compute_call_cost(record) == 2.0
 
     def test_haiku_with_cache(self):
         record = {
@@ -771,8 +772,33 @@ class TestCallCost:
             "cache_creation_input_tokens": 0,
             "cache_read_input_tokens": 1_000_000,
         }
-        # 1M cache_read @ $0.08/M = $0.08
-        assert compute_call_cost(record) == 0.08
+        # 1M cache_read @ $0.10/M = $0.10 (pricing page, 2026-10-17; item 174)
+        assert compute_call_cost(record) == 0.1
+
+    def test_every_model_pin_has_complete_pricing(self):
+        """Every model id the code can call is priced, so compute_call_cost
+        never silently returns 0.0 for a pinned model (item 174).
+
+        Checks presence of all four rate fields, not that the numbers are
+        true: the source is an external web page, so no offline test can.
+        """
+        import analyzer
+        from evals import runner
+
+        pins = {
+            analyzer.SONNET_MODEL,
+            analyzer.HAIKU_MODEL,
+            runner.JUDGE_MODEL,
+            *runner.MODEL_SNAPSHOTS.values(),
+        }
+        for model in sorted(pins):
+            assert model in MODEL_PRICING, f"{model} has no MODEL_PRICING entry"
+            assert set(MODEL_PRICING[model]) == {
+                "in",
+                "out",
+                "cache_write",
+                "cache_read",
+            }, model
 
     def test_unknown_model_returns_zero(self, caplog):
         record = {

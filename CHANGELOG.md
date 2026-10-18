@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the price table behind every cost figure (`fix/model-pricing-rates`, item 174)
+
+Sartor's cost numbers (the dashboard, and the `cost_usd` on eval results) come from a price table that did not match
+the published pricing page for the two models the app runs on.
+
+- **Fixed: Sonnet 5 and Haiku 4.5 rates.** Sonnet 5 is now `$2 / $10` per million input and output tokens (it was
+  `$3 / $15`: the page says the announced September 2026 rise "will not occur"), and Haiku 4.5 is now `$1 / $5` (it was
+  `$0.80 / $4`, the figures for an older Haiku). Cache rates follow the page. Costs shown for new runs are Sonnet 5
+  one third lower and Haiku 4.5 25 percent higher than before. Earlier figures in the logs and docs were computed at the old
+  rates and are left as dated records. The rates come from the page text, not an invoice.
+- **Added: a test that every model the code can call has a price.** A model missing from the table would otherwise cost
+  `$0.00` without any error. The test checks that the entry exists, not that the number is right.
+
 ### Fixed: internal ids in your analysis and cover letter, and a made-up letter date (`fix/llm-handle-leak-and-letter-date`, item 140)
 
 Two things showed up in a live run of the README walkthrough: the analysis said "…implied by company name

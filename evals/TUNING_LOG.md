@@ -3338,3 +3338,15 @@ telemetry `$0.6678` for 8 runs (mean `$0.0835`, against the `$0.15` estimate).
 - **Method for the next tuner:** to A/B code that `--prompt-overrides` cannot reach, check out the old commit as a
   detached worktree OUTSIDE the repo (never under `.claude/worktrees`), run it with `SARTOR_HOME` set to the data root, and
   assert `prompt_version` per record; take cost from a telemetry window (`hardening.compute_call_cost`), not the record.
+
+---
+
+## Cost figures before 2026-10-17 used the wrong rates — 2026-10-17 — `fix/model-pricing-rates` (item 174) — no prompt change
+
+`hardening.MODEL_PRICING` priced `claude-sonnet-5` at `$3 / $15` and `claude-haiku-4-5-20251001` at `$0.80 / $4` per
+million tokens; the pricing page lists `$2 / $10` and `$1 / $5`. Every `cost_usd`, telemetry-window spend and cost figure in
+this log, `evals/results/`, `docs/dev/perf/` and the handoffs before this change was computed at the old rates:
+**Sonnet 5 cost 1.5 times too high, Haiku 4.5 cost 20 percent too low** (so a run that mixes both, such as item 140b's
+`$0.6678`, is off by an amount that depends on its mix). They are left as dated records. To re-cost a past run, take its
+window of `logs/llm_calls.jsonl` and run each record through `hardening.compute_call_cost` on a tree at or after this
+change. Evidence and the correction: `docs/dev/diagnosis/model-pricing-rates.md`. No prompt changed; no `PROMPT_VERSION` bump.

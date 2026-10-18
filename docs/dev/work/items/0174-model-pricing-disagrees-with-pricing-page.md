@@ -3,16 +3,23 @@ schema = 1
 id = 174
 kind = "item"
 title = "MODEL_PRICING disagrees with the published pricing page for two live pins, claude-sonnet-5 and claude-haiku-4-5"
-status = "open"
+status = "closed"
 decision_owner = "agent"
-branches = ["docs/model-55-eval-item"]
+resolution = "2026-10-17: fixed on fix/model-pricing-rates. Sonnet 5 now 2/10 (cache 2.50/0.20) and Haiku 4.5 1/5 (cache 1.25/0.10) in hardening.MODEL_PRICING, per the pricing page rows read 2026-10-17; the updated assertions failed on HEAD first (docs/dev/diagnosis/model-pricing-rates.md). A new test requires every model pin to have a complete entry. Published figures computed at the old rates are left as dated records (owner decision); the 5.5 keys and Haiku 5.5's prompt-length tiers belong to item 137."
+verified_by = [
+  "tests/test_hardening.py::TestCallCost::test_known_sonnet5_record (failed on HEAD with 3.0 == 2.0, passes on the fixed tree)",
+  "tests/test_hardening.py::TestCallCost::test_haiku_with_cache (failed on HEAD with 0.08 == 0.1, passes on the fixed tree)",
+  "tests/test_hardening.py::TestCallCost::test_every_model_pin_has_complete_pricing",
+]
+branches = ["docs/model-55-eval-item", "fix/model-pricing-rates"]
 refs = [
   "hardening.py:439-465",
-  "hardening.py:1710-1727",
-  "CHANGELOG.md:5468",
+  "hardening.py:1710-1740",
+  "CHANGELOG.md:5487-5491",
+  "docs/dev/diagnosis/model-pricing-rates.md",
   "docs/dev/work/items/0173-evaluate-claude-5-5-generation-models.md",
   "docs/dev/work/items/0137-review-models-and-settings-for-performance-and-cost.md",
-  "scripts/enforcement/blast_radius.py:204",
+  "scripts/enforcement/blast_radius.py:199-208",
 ]
 summary = "MODEL_PRICING has Sonnet 5 at $3/$15 and Haiku 4.5 at $0.80/$4; the pricing page reads $2/$10 and $1/$5."
 ```
@@ -82,3 +89,18 @@ change, not only a new key.
 ### 2026-10-17 - filed during docs/model-55-eval-item
 
 Found while running item 173's first step. Nothing changed in `hardening.py`; no code was edited on this branch.
+
+### 2026-10-17 - fixed on fix/model-pricing-rates
+
+- **Done:** the two entries are corrected, the comment rewritten (source, date read, 5-minute cache-write), the two stale
+  price/"no Haiku 5" comments in `analyzer.py` corrected (comments only, no `PROMPT_VERSION` bump), `CHANGELOG.md`
+  `[Unreleased]` entry added. The record is `docs/dev/diagnosis/model-pricing-rates.md`; it holds the page rows, two real
+  telemetry rows costed both ways (Sonnet `0.0504` -> `0.0336`, Haiku `0.0064` -> `0.008`) and the failing-on-HEAD run.
+- **Two statements in this item as filed were wrong, corrected in the frontmatter `refs`:** `hardening.py` is **not** a
+  C-10 gated surface (`hardening.py` and `analyzer.py` are in `ACKNOWLEDGED_NOT_GATED`, `scripts/enforcement/blast_radius.py:199-208`);
+  and the Sonnet 5 pricing entry is `CHANGELOG.md:5487-5491`, not `:5468`. The body above is kept as filed. Item 173 repeats
+  the gated claim in its own record; not edited.
+- **Not done, on purpose:** figures already published at the old rates are left as dated records (owner, 2026-10-17); a
+  dated note in `evals/TUNING_LOG.md` says which rates they used. `evals/README.md:977-986` estimates belong to item 134.
+- **Still open elsewhere:** keys for the 5.5 models and Haiku 5.5's prompt-length tiers (a `compute_call_cost` change) are
+  item 137's.

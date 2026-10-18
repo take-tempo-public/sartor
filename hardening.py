@@ -436,19 +436,24 @@ METRIC_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Pricing per million tokens (USD). Source: anthropic.com pricing as of
-# 2026-07-05. Update via PR (and bump CHANGELOG.md) when prices change.
+# Pricing per million tokens (USD). Source: the Anthropic pricing page
+# (platform.claude.com/docs/en/about-claude/pricing), rows read 2026-10-17 —
+# page text, not an invoice. Update via PR (and bump CHANGELOG.md) when prices
+# change; tests/test_hardening.py checks that every model pin HAS an entry,
+# not that the numbers are true (the source is an external page).
+# "cache_write" is the 5-minute write rate: the product only sends
+# cache_control "ephemeral" and telemetry keeps one creation count, so a
+# 1-hour write rate cannot be expressed here.
 # Sonnet 4.6 is retained because historical llm_calls.jsonl records reference
 # it and compute_call_cost() looks pricing up per-record by model name.
-# Sonnet 5 uses standard $3/$15 (identical to 4.6); an intro discount of
-# $2/$10 in/out runs through 2026-08-31 — the durable rate is used here to
-# keep cost tracking stable and conservative rather than re-staling on Sept 1.
+# Sonnet 5: $2/$10 is the standard price — the page's footnote says the
+# announced rise to $3/$15 on 2026-09-01 "will not occur".
 MODEL_PRICING: dict[str, dict[str, float]] = {
     "claude-sonnet-5": {
-        "in": 3.00,
-        "out": 15.00,
-        "cache_write": 3.75,
-        "cache_read": 0.30,
+        "in": 2.00,
+        "out": 10.00,
+        "cache_write": 2.50,
+        "cache_read": 0.20,
     },
     "claude-sonnet-4-6": {
         "in": 3.00,
@@ -457,10 +462,10 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
         "cache_read": 0.30,
     },
     "claude-haiku-4-5-20251001": {
-        "in": 0.80,
-        "out": 4.00,
-        "cache_write": 1.00,
-        "cache_read": 0.08,
+        "in": 1.00,
+        "out": 5.00,
+        "cache_write": 1.25,
+        "cache_read": 0.10,
     },
 }
 
