@@ -2,10 +2,11 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 21 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 92
+**Open 22 / 10 ceiling -- OVER** | Blocked 4 | Deferred 8 | Watching 44 | Epics 6 | Closed 92
 
 ## Open
 
+- **7** -- PX-46 selective memory consolidation (`user`) -- Selective, not wholesale, memory consolidation - present the list, act only after explicit approval.
 - **50** -- C-7 and C-10 are enforced by Claude Code hooks only - the clauses do not travel to other agents or an extracted governance package (`user`) -- C-7 and C-10's guards are not routed by git_hook.py, so only Claude Code enforces them; prose binds other agents.
 - **98** -- Wiki freshness measures checkpoint-staleness, not page-staleness: scoped close-outs never credit the checkpoint, and agents report commit counts instead of the gate's figure (`agent`) -- Drift only grows between full ingests; agents report commits, not the gate. Build: coverage ledger + generated figure.
 - **99** -- install.md documents two distribution paths that have never been published (`agent`) -- install.md documents a GHCR image and a PyPI wheel that have never been published; every documented path fails. [depends on: 3]
@@ -36,7 +37,6 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 ## Deferred
 
 - **4** -- In-app rendered citation viewer (`user`) -- Avatar citations link out to GitHub; an in-app viewer needs a new route + sanitizer, deliberately not built yet. [blocked on: no friction signal yet; owner reaffirmed 2026-07-23, build only if friction warrants]
-- **7** -- PX-46 selective memory consolidation (`user`) -- Selective, not wholesale, memory consolidation - present the list, act only after explicit approval. [blocked on: owner sign-off on the keep/consolidate/delete list required first - judged irreversible if botched]
 - **24** -- Template-preview fidelity spike (T2) - multi-column/paging out of reach (`user`) -- In-app preview is single-column (python-docx limit); multi-column/paging fidelity needs a spike, never scheduled. [blocked on: not yet scheduled; needs a product-priority decision on investing in the spike before any code work starts]
 - **25** -- app.run(threaded=True) governance decision - deliberately deferred (`user`) -- Single-threaded app.run() freezes the app during a diagnostics run; making it threaded is an owner-gated C-1 call. [blocked on: owner governance call not yet made; touches the C-1-sensitive loopback-bind area, deliberately kept out of the diagnostics epic and every branch since]
 - **41** -- Domain-vocabulary library for Compose drafting (`user`) -- Local lexicons (design, SWE, business, startup) so Compose drafting uses the JD domain's language and conventions. [blocked on: post-1.1.0 - owner scheduled this for 1.1.x investigation, not the Final March]
