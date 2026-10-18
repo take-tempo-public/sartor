@@ -3104,3 +3104,29 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   headline half. All were caught by the auditor and most by review, none by the cite check. No mechanism
   authored (C-11 stated): nothing deterministic can check whether a sentence about a branch is true, so this stays
   with the auditor and the review, which is prose and unenforced.
+
+## 2026-10-18 — wiki-relevance check, verified no-edit (`fix/ds-junior-score-drop`, item 140 part b)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged). No spend was needed: the one wiki-relevant path was checked by grep and by reading the
+  one page that cites it.
+- **Wiki-relevant changes in the diff (1):** `evals/TUNING_LOG.md`, per `is_wiki_relevant()` over
+  `git diff --name-only 7807c81 HEAD` (4 files changed at the time of the check: the new dossier
+  `docs/dev/diagnosis/ds-junior-score-drop.md`, item 140's file, `docs/dev/work/BOARD.md` and `evals/TUNING_LOG.md`; the
+  other three classed not relevant). The branch changed no product code: it is a measurement.
+- **Verified no-edit:**
+  - `docs/wiki/pages/eval-harness.md:218-219` is the only page citing `TUNING_LOG.md` (`grep -rl TUNING_LOG docs/wiki`
+    returns it and this log). It cites the file by path as "the same home prompt-tuning results already use", for the
+    role-intro probe. The new entry adds a measurement and edits nothing that sentence states.
+  - No page cites `TUNING_LOG.md` by line (`grep -rnE "TUNING_LOG\.md[:#]L?[0-9]" docs/wiki` returns nothing), so the
+    two lines added inside the item-140 entry moved nothing.
+  - No page states the `data-scientist-junior` scores or the score drop
+    (`grep -rniE "data-scientist-junior|score drop|grounding score" docs/wiki` returns `eval-harness.md:38`, a list of the
+    three fixture names, and `non-dependency-downloads.md:49`, about the offline grounding scorers).
+  - The `leaked_handles` paragraph in `eval-harness.md` and the handle-guard and `<letter_date>` text in
+    `llm-call-catalog.md` and `generation-and-grounding.md` describe what the 2026-10-17 pass wrote. The A/B re-observed
+    that behavior on one more fixture and changed none of it.
+- **Cite check** (`python -m scripts.wiki_cites --base 7807c81 --strict-removed`): OK, 0 violations, 0 removed cites.
+- **Freshness:** `python scripts/wiki_freshness.py` reads 65 files changed since the last ingest, under the 75 block
+  threshold (64 at the 2026-10-17 entry above; this branch added one). A checkpoint-advancing pass is still owed.
+- **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.
