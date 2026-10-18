@@ -48,3 +48,13 @@ succeeded on re-run, as designed.
 this is one observation, and it is consistent with the hand-back message being treated as a
 prompt. The instrument that shows the payload is the one `fix/recurrence-guardrails` built and
 removed (`git show d3e5296 a2bdc9c`). The item's rule stands: no tag is guessed from the transcript.
+
+### 2026-10-18 — five more instances, on `chore/memory-consolidation` (item 7)
+
+During a session that delegated work to background agents, five `Write` calls were paused by the interrogative witness
+immediately after a "[Subagent hand-back]" message arrived while the agent was working, each when the owner's last typed
+message was a directive. Each identical re-run succeeded. (Two further pauses, on the first `Write` after each of the owner's
+own messages, are the designed behaviour and are not counted.) The count is from the session's own tool results; the
+`UserPromptSubmit` payload was again **not captured**, so which shape armed the pause is still unverified. This matches the
+2026-10-14 observation above and the sibling memory `reference-subagent-pretooluse-agent-id` ("peer hand-backs still do").
+Cost in this session: five avoidable refusals and re-runs, no lost work. The item's rule stands: no tag is guessed.

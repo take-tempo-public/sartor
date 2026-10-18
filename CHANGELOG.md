@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: a how-to for adding a route and keeping the typing floors green (`chore/memory-consolidation`, item 7)
+
+A new contributor page, [`docs/dev/engineering-recipes.md`](docs/dev/engineering-recipes.md), carries the steps that no single
+test or config comment states: adding or moving a route on a blueprint, and keeping a new module inside the typing and
+docstring floors. Each rule points at the test or config that enforces it. It is listed in the dev index
+([`docs/dev/README.md`](docs/dev/README.md)) and published with the docs site.
+
+- **Added:** the page, registered in the doc registry; the registered-doc count in the lint docstring now reads 40.
+- **No product change.** No prompt, route, dependency or version changed; `PROMPT_VERSION` is untouched.
+
 ### Fixed: the price table behind every cost figure (`fix/model-pricing-rates`, item 174)
 
 Sartor's cost numbers (the dashboard, and the `cost_usd` on eval results) come from a price table that did not match

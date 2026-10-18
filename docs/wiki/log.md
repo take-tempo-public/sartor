@@ -3152,3 +3152,25 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Freshness:** `python scripts/wiki_freshness.py` reads 65 files changed since the last ingest, under the 75 block
   threshold (before this branch's own files). A checkpoint-advancing pass is still owed.
 - **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.
+
+## 2026-10-18 — wiki-relevance check, verified no-edit (`chore/memory-consolidation`, item 7)
+
+- **Mode:** a branch close-out check, with no scribe or auditor run. The checkpoint is **not** advanced
+  (`.last_ingest_sha` unchanged). No spend.
+- **Wiki-relevant changes in the diff (3):** `docs/dev/README.md` (two index links), `scripts/doc_registry.py` (one new
+  `PUBLISHED` entry) and `scripts/doc_lints.py` (the registered-doc count in a docstring, 39 to 40), per
+  `is_wiki_relevant()` over `git diff --name-only main...HEAD` (11 files changed when checked; the other eight classed not relevant,
+  including the new `docs/dev/engineering-recipes.md`, which is classified in `IRRELEVANT_FILES`; `CHANGELOG.md` and this
+  log, added afterwards, are also classed not relevant).
+- **Verified no-edit:**
+  - No wiki page cites `doc_registry.py` or `doc_lints.py` by line (`git grep -E "(doc_registry|doc_lints)\.py:[0-9]+" docs/wiki`
+    returns nothing), so the added entry and the docstring edit moved no cite.
+  - No wiki page states a count of registered or published docs (`git grep` for 39 or 40 beside "registered", "published" or
+    "docs" in `docs/wiki` returns nothing).
+  - `docs/wiki/pages/code-module-map.md:152` describes `PUBLISHED` and `RECORD_PREFIXES` by symbol; both still exist and
+    behave as described. `docs/wiki/pages/docs-information-architecture.md:37` links `docs/dev/README.md` for the dev
+    ladder; the ladder is unchanged (only two links were added to its index).
+- **Cite check** (`python -m scripts.wiki_cites --base main --strict-removed`): OK, 0 violations, 0 removed cites.
+- **Freshness:** `python -m scripts.wiki_freshness` reads 67 files changed since the last ingest, under the 75 block
+  threshold. A checkpoint-advancing pass is still owed.
+- **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.

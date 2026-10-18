@@ -22,7 +22,7 @@ gate step of its own.
 link and anchor checks are `check_doc_links.py`.
 
 **Scope is filtered before any body is read** (lazy by scope, §5 intro). The user-tier lints
-read the 10 user-tier docs; the registry lints read the 39 registered docs. Only 5.5 and
+read the 10 user-tier docs; the registry lints read the 40 registered docs. Only 5.5 and
 5.8 read every live doc, because an enumeration or a wikilink can sit in any of them; they
 share the one cached read.
 
