@@ -95,6 +95,10 @@ IRRELEVANT_FILES = frozenset(
         # screenshot-capture runbook, moved from docs/ux/ (an irrelevant prefix) by Epic D
         # D2 — keeps the classification it had there. docs/dev/blast-radius/docs-split.md
         "docs/dev/screenshot-capture.md",
+        # maintainer how-to for adding a route and keeping the typing/docstring floors green
+        # (item 7) — a runbook of the same character as the two entries above, never cited by
+        # a wiki page. Consumer enumeration: docs/dev/blast-radius/chore-memory-consolidation.md
+        "docs/dev/engineering-recipes.md",
         # machine-read old -> new path map written by scripts/docs_move.py (Epic D D2)
         "docs/dev/moved-paths.json",
     }

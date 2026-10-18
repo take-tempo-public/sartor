@@ -26,7 +26,7 @@ request.
 | You want to change… | It lives in | Read first |
 |---|---|---|
 | a prompt or an LLM call | `analyzer.py`: every LLM call; the persona constants such as `SYSTEM_PROMPT` | AGENTS.md "LLM prompts" (the `PROMPT_VERSION` bump rule) |
-| a route | `blueprints/`, one module per domain | AGENTS.md "Security" (`_safe_username` + `_within` on every filesystem route) |
+| a route | `blueprints/`, one module per domain | AGENTS.md "Security" (`_safe_username` + `_within` on every filesystem route); [engineering recipes](engineering-recipes.md) |
 | deterministic processing | `hardening.py`, `parser.py`, `generator.py` and the rest of AGENTS.md's deterministic list | AGENTS.md "Architecture at a glance": no LLM calls there |
 | the corpus schema | `db/models.py` + a new `db/migrations/` revision | [architecture](architecture.md) "Persistence model"; the `require-consumer-enumeration` guard ([tooling](tooling.md)) |
 | a résumé template | `personas/bundled/` | [bundled templates](bundled-templates.md) |
@@ -56,6 +56,7 @@ request.
 - [docs-site deploy](docs-site-deploy.md): the hosted docs site and its CI deploy
 - [screenshot capture](screenshot-capture.md): regenerating the documentation screenshots
 - [bundled templates](bundled-templates.md): changing or adding a bundled résumé template
+- [engineering recipes](engineering-recipes.md): adding a route, and keeping the typing and docstring floors green
 - [maintainer lane](maintainer-lane.md): starting and closing a branch in the owner's lane
 
 **Plans and designs** (the plan of record, plus designs that are still live specs):
