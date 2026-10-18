@@ -405,3 +405,14 @@ the sibling `memory-backup-2026-10-18` directory (266 entries); **it is outside 
 5. The **44 FOLD files** are deferred to item 176; the sweep's STALE flags on the other kept files (path and count drift) were reported but
    **not applied** (this session corrected the 24 files in C and D and the batch-B trims only). Applying them is the next pass if you want it.
 6. Closing this item needs a falsifiable `verified_by` artifact or an owner-named `closure_exception`; I left it `open`.
+
+### 2026-10-18 - first gate attempt on this branch did NOT finish (no green gate yet)
+
+`python -m scripts.gate` was started at `58bd7ef` (free memory 2.24 GB, above the 1.0 GB floor) with output redirected. The harness stopped it
+because the machine ran critically low on memory, at about 62% of `pytest -m "not ux" -n auto`. The log ends with `[gw0] node down: Not properly
+terminated`, one test marked FAILED (`tests/test_llm_call_error_capture.py::TestRedactErrorMessage::test_masks_quoted_key_and_basic_auth_forms[...]`),
+and `gate: FAILED at pytest -m "not ux" -n auto (exit 1)`. That is the signature `scripts/gate.py:40-44` documents for an xdist worker killed
+under memory pressure. **Evidence it is not a code failure:** the named test file passes alone (`pytest tests/test_llm_call_error_capture.py`: 20
+passed in 6.5 s), and this branch changes no Python behaviour (docs, three registry edits). **It is also not a pass:** `python -m scripts.gate
+--result` reports STALE (the last green run is from `c5a5560`). A clean full run is still owed before the PR; per the harness notice it is not
+restarted without the owner asking. No orphaned pytest, browser or bash processes remained afterwards (checked by command line).
