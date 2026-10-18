@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 22 / 10 ceiling -- OVER** | Blocked 4 | Deferred 8 | Watching 44 | Epics 6 | Closed 92
+**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 44 | Epics 6 | Closed 92
 
 ## Open
 
@@ -26,6 +26,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
 - **175** -- Record, for every product and eval-judge LLM call, the model version that answered and the exact settings sent, so any decision traces to its model (`agent`) -- The call log keeps the model id asked for, not the answering version, settings or request id; judge calls log none.
+- **177** -- Repo defects and gaps found while sweeping memory for item 7 (`agent`) -- Sweep found a threaded-server contradiction, a wrong gate.py item path, README min_* claims and stale counts.
 
 ## Blocked
 
@@ -44,6 +45,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **43** -- Approved-fonts list expansion beyond Arial/Calibri/Georgia (`user`) -- v1.1.0 ships an approved-fonts list of Arial, Calibri, Georgia (sprint B2); verified additions considered later. [blocked on: post-1.1.0 - additions only after per-font ATS verification, owner-gated]
 - **113** -- Triage the 18 out-of-scope findings from the pre-Epic-C console UX audit (UX-23, UX-25..UX-41) (`user`) -- 18 console UX findings outside Epic C (6 major, 12 minor) await triage; UX-22 is item 112; UX-24 joined C1b. [blocked on: owner triage after Epic C lands: which findings become items, which fold into a later epic, which are dropped]
 - **114** -- commands/bench.md doesn't explicitly call out the new error_message/error_type fields (`agent`) -- bench.md already summarizes error rows generically; naming error_message/error_type explicitly is a nice-to-have. [blocked on: low value until logs/llm_calls.jsonl accumulates real status="error" rows with the new fields; revisit once there is real data to summarize]
+- **176** -- Fold the still-useful facts from memory that have no repo home into the docs that should hold them (`user`) -- 44 memory files hold facts with no repo home, plus leftovers of 69 deleted ones; fold them into docs. [blocked on: owner chose on 2026-10-18 to defer these 44 fold-ins to a later session; nothing here is started]
 
 ## Watching
 
