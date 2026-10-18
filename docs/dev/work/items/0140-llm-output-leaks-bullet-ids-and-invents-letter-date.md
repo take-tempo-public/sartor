@@ -5,17 +5,18 @@ kind = "item"
 title = "LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date"
 status = "open"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement", "fix/llm-handle-leak-and-letter-date", "fix/capture-generate-stall"]
+branches = ["feat/docs-assets-enforcement", "fix/llm-handle-leak-and-letter-date", "fix/capture-generate-stall", "fix/ds-junior-score-drop"]
 refs = [
   "analyzer.py:_corpus_block",
   "analyzer.py:generate_cover_letter_against_resume",
   "docs/dev/diagnosis/llm-handle-leak-and-letter-date.md",
   "docs/dev/diagnosis/capture-generate-stall.md",
+  "docs/dev/diagnosis/ds-junior-score-drop.md",
   "docs/dev/blast-radius/llm-handle-leak-and-letter-date.md",
   "docs/screenshots/readme_hero_wizard-step1-filled.png",
   "docs/screenshots/walkthrough_coverletter_first-generation.png",
 ]
-summary = "Fix built and measured; screenshots recaptured; open: one fixture score drop unexplained, hypothesis B untested."
+summary = "Fix built, measured, screenshots recaptured; score drop not specific to the change; carrier hypothesis never reproduced."
 ```
 
 **Observed (2026-10-01, D4 screenshot capture, live Sonnet 5 run, synthetic Priya fixture).**
@@ -81,3 +82,19 @@ is `docs/dev/diagnosis/capture-generate-stall.md`.
 - **Declared, not fixed (the owner's call):** a real user who clicks Save and continue while an arrival draft is in flight
   hits the same lock, with a message saying they changed something they did not. `TestDraftLandingAfterTheFreeze`
   pins today's behavior and says it is not a statement that it is right.
+
+**2026-10-18, `fix/ds-junior-score-drop`.** Open 2 (the `data-scientist-junior` score drop) is settled as far as this n
+allows. The full record, with the per-run table, is `docs/dev/diagnosis/ds-junior-score-drop.md`.
+
+- **Measured:** an interleaved A/B of the old code (`a970033`, `2026-08-14.1`) against `main` (`2026-10-17.2`), assemble
+  mode, grounding rubric, N = 4 per arm, design and decision rule registered before any run. Old arm scores `1.2`, `0.0`,
+  `4.8`, `5.0`; new arm `0.0`, `4.9`, `0.0`, `5.0`. **Low (`< 3.0`) in 2 of 4 runs under BOTH.** By the registered rule, the
+  `1.2` is not evidence of a regression; consistent with variance. Exact 95% interval for 2 of 4 is `[0.068, 0.932]`, so
+  this does **not** show the rates are equal; the outcome is bimodal and the earlier "`4.8` x4" was four high draws.
+- **Re-replicated on this fixture:** `b` handles in the analysis in 4 of 4 old-arm runs and 0 of 4 new-arm runs; letter
+  date correct 0 of 4 vs 4 of 4. No letter carried a handle in any of the 8.
+- **Spend** `$0.6678` by telemetry (cap `$2.50`); stage 2 was not needed by the rule.
+- **Still open on this item:** hypothesis B, the original `b180` carrier. It has not reproduced in 31 letters (23 under the
+  new prompts, 8 here), and the guard covers it regardless (a handle in `cover_letter_content` is a hard error). Nothing
+  to build. Closing the item needs a named `closure_exception` or a `verified_by`; that is the owner's call and the item
+  stays `open` until they make it.

@@ -1,7 +1,8 @@
 # Diagnosis — `data-scientist-junior` grounding score fell after item 140's prompt changes (item 140, part b)
 
-> **Status:** hypothesis only. Nothing in this branch has been run yet; the design below is registered BEFORE any paid
-> call so the result cannot move the goalposts.
+> **Status:** stage 1 run and the registered rule applied: low scores occur under the OLD code too (2 of 4 each arm), so
+> the item-140 `1.2` is not evidence of a regression at this n. Consistent with variance; NOT proven to be variance. The
+> design was registered before any paid call.
 > **Branch:** `fix/ds-junior-score-drop`
 
 ---
@@ -61,11 +62,53 @@ driver (scratchpad, not committed) was checked offline against known data: `wind
 window returns `0.1917` with 7 calls, equal to the earlier hand measurement for that window, and the record parser reads
 `evals/results/20261017_132814Z.jsonl` as `grounding 1.2/5.0 prompt_version 2026-10-17.2 assemble`.
 
+### Stage 1 result (2026-10-18 00:14:33Z to 00:24:11Z UTC; 8 runs, 8 scored)
+
+Driver: scratchpad `ab_driver.py` (not committed), `--first 1 --last 4`, runs strictly sequential, A/B order alternating
+each pair. Every record's `prompt_version` matched its arm (`pv_ok True` x8). Per-run rows (`score` is the grounding
+rubric, 0 to 5; `rc 2` is the runner's smoke-gate exit for a low score, not a pipeline failure):
+
+```text
+arm run score  rc  handles(b/q)  letter date         telemetry$  failed_rules
+A   1   1.2    2   9 / 5         April 2024   (x)    0.0894      jd_pandering, scope_inflation
+A   2   0.0    2   6 / 5         May 2024     (x)    0.0715      invented_credential, invented_metric, invented_role, scope_inflation, jd_pandering
+A   3   4.8    0   9 / 5         April 2024   (x)    0.0802      -
+A   4   5.0    0   11 / 5        February 2025 (x)   0.0995      -
+B   1   0.0    2   0 / 5         October 2026 (ok)   0.0813      fundamental_domain_mismatch, missing_essential_skills_across_corpus, zero_supporting_evidence_for_required_tools, candidate_self_disqualifies_in_cover_letter
+B   2   4.9    0   0 / 5         October 2026 (ok)   0.0911      -
+B   3   0.0    2   0 / 0         October 2026 (ok)   0.0759      invented_credential, invented_role, scope_inflation, jd_pandering
+B   4   5.0    0   0 / 5         October 2026 (ok)   0.0789      -
+```
+
+- **Registered rule, applied:** `a` (lows in the old arm) = **2 of 4**; `b` = **2 of 4**. `a >= 1`, so the rule says
+  stop: low scores occur under the old code, and the `1.2` is **not evidence of a regression**.
+- **Counts with their uncertainty:** old arm lows 2/4, exact 95% Clopper-Pearson `[0.068, 0.932]`; new arm 2/4, the same
+  interval; Fisher exact two-sided p for 2/4 vs 2/4 = `1.000`. n = 4 per arm cannot show the rates are equal; it shows
+  that lows are common under BOTH.
+- **The scores are bimodal in both arms**, `0.0` or `1.2` against `4.8` to `5.0`, with nothing between. The earlier
+  "`4.8` x4 under the old prompts" was four high draws, not a stable level.
+- **A different kind of low appeared:** new-arm run 1 scored `0.0` with `fundamental_domain_mismatch` and
+  `candidate_self_disqualifies_in_cover_letter` (the letter itself says the candidate does not fit), not with an invented
+  claim. Not interpreted here.
+- **Handles (re-observed on this fixture):** the old arm put `b` handles in the analysis in **4 of 4** runs (6 to 11
+  each); the new arm in **0 of 4** (its only findings are 5 `q` self-references per run, the clarify response numbering
+  its own questions, the same pattern recorded in item 140's dossier). No letter carried a handle in any of the 8
+  (`letter_carriers {}`), so the original `b180` carrier hypothesis was not observed again, now 8 more letters under
+  old-and-new code.
+- **Letter date (re-observed):** old arm **0 of 4** carried the run date (April 2024, May 2024, April 2024, February
+  2025); new arm **4 of 4** read "October 2026".
+- **Spend, by `compute_call_cost` over each run's telemetry window:** `$0.6678` for 8 runs (5 or 6 calls each), mean
+  `$0.0835` per run against the `$0.15` estimate; cap `$2.50`.
+- **Not run:** stage 2 (the rule did not call for it) and anything in generate mode.
+
 ---
 
 ## Falsified
 
-_(Nothing new on this branch yet.)_
+- **"The `1.2` shows the item-140 prompt change lowered this fixture's grounding score."** Not supported at this n: the
+  old code produced the same kind of low in 2 of 4 runs (`1.2` and `0.0`, with `jd_pandering` and `scope_inflation`, and
+  in run 2 `invented_credential` and `invented_metric`), so a low score is not a signature of the new prompts.
+  (Stage 1, above.) This does not show the change had no effect on the rate.
 
 ---
 
@@ -115,6 +158,15 @@ the new (explanation 2 or 3, which this experiment cannot tell apart; bisecting 
   separated from the generator's (no generated text is kept to re-judge). Even a difference between A and B does not say
   which of the three explanations holds.
 
+**Outcome (stage 1, n = 4 per arm):** `a = 2`, `b = 2`. By the registered rule (`a >= 1`): not attributable to the change
+at this n; consistent with variance; stop. **What this does and does not establish.** It establishes that a low grounding
+score on this fixture is NOT specific to the new prompts: the old code produced `1.2` and `0.0` in 2 of 4 runs. It does
+not establish that the new prompts leave the rate unchanged: 2/4 vs 2/4 has an exact 95% interval of `[0.068, 0.932]` on
+each side, so a large difference in either direction is still possible. It does not separate generator variance from judge
+variance (no generated text is kept), and it says nothing about the other fixtures or about generate mode. The earlier
+reading of "`4.8` x4" as the old level is withdrawn: those were high draws from a bimodal outcome. Stage 2 was not run
+because the rule did not call for it; a larger sample is available on request, not needed by the rule.
+
 ---
 
 ## The fix
@@ -127,4 +179,5 @@ None. This branch changes no production code; its output is a measurement.
 
 The registered rule has been applied to the recorded runs, the per-run table (arm, run id, score, failed rules, handles,
 date correctness, telemetry cost) is in this file, the spend is reported from telemetry, and the stated limits are
-repeated beside the conclusion.
+repeated beside the conclusion. **Met for stage 1** (see Stage 1 result and the Outcome paragraph under Falsification).
+Spend `$0.6678`. Not met, by design: no claim that the new prompts leave the low-score rate unchanged.
