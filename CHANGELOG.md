@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: tests no longer write stub eval runs into the real `evals/results/` (`fix/eval-results-test-leak`, item 179)
+
+337 of the 425 `2026*.jsonl` files in a developer's `evals/results/` were output of one stubbed test (the same 6 rows, grounding
+4.5, cost 0), written since 2026-07-09 and read as real runs by the regression check and the dashboard. **No prompt change (no
+`PROMPT_VERSION` bump), no new dependency, no behavior change in production.**
+
+- **`evals.runner.run_suite(out_dir=None)`** now resolves the default to the module's `RESULTS_DIR` when it is called, not when
+  the function is defined. The diagnostics routes pass no `out_dir`, so a test's `RESULTS_DIR` patch never reached them.
+- **`tests/conftest.py`**: an autouse per-test `RESULTS_DIR`/`BASELINE_JSON` redirect (about 0.6 s of import per pytest process,
+  measured), and a session check that fails pytest, naming the files, if the real `evals/results/` gains one. The check cannot
+  tell a test from a real eval run started in another terminal while pytest runs.
+- Existing stub files in a developer's directory are not touched by the repo; the diagnosis dossier
+  (`docs/dev/diagnosis/eval-results-test-leak.md`) records the selector used to quarantine them locally.
+
 ### Added: a model override for candidate eval runs, and candidate runs that really are kept out of the baseline (`feat/model-override-candidate-quarantine`, item 137)
 
 Answers item 173 proposal 16 ("can a candidate model run without editing the pins?"): it could not, now it can. **No pin moves, no

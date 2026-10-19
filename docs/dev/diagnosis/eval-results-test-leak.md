@@ -106,3 +106,15 @@ Falsification steps 1 and 2 both ran (Observed, above), so the hypothesis holds 
 The regression test passes and fails on the old code; the session sentinel fails the session when the old runner is used with
 the new conftest; `python -m scripts.gate --result` reads PASSED on the final tree with no `RERUN` markers; the file list of the
 real `evals/results/` is identical before and after the gate run.
+
+## Quarantine of the existing files (owner-approved, local only)
+
+Selector, run with a script outside the repo: top-level `evals/results/*.jsonl` whose text contains `led a project` AND whose
+every row has `cost_usd` 0 or missing. Dry run printed `selected 337 of 426 jsonl files`, first `20260709_181839Z.jsonl`, last
+`20261019_190655Z.jsonl` (the 426 includes `vector_before_after_20260623_155130Z.jsonl`). `--move` printed
+`moved 337 files to evals\results\_test_stubs_quarantine`; afterwards `ls evals/results | grep -c '^2026.*jsonl$'` printed 88
+and the quarantine folder held 337. The runner and the dashboard read only top-level `*.jsonl`
+(`evals/runner.py:619`, `dashboard/routes.py:119`), so the moved files leave both. The folder is gitignored with its parent;
+delete it whenever the stubs are not wanted.
+
+The 88 remaining files are NOT verified to be real paid runs: they lack the stub text, nothing more.

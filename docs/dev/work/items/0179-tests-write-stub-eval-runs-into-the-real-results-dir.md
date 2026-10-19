@@ -35,3 +35,16 @@ the next one, so the plan adds a session sentinel that fails closed.
 
 Owner decisions (chat): fix the leak on its own `fix/` branch before item 137's review/A-B; move the existing stub files to
 `evals/results/_test_stubs_quarantine/` afterwards (local, gitignored files).
+
+### 2026-10-19 — built on `fix/eval-results-test-leak`; owner closes
+
+Reproduced (the suspect test alone writes the stub signature), fixed (`run_suite(out_dir=None)` resolved at call time), guarded
+(autouse per-test redirect plus a session check that fails pytest when the real directory gains a file; proved to fail closed
+against the old runner), and the 337 existing stub files moved to `evals/results/_test_stubs_quarantine/`. Evidence:
+`docs/dev/diagnosis/eval-results-test-leak.md`. Closing needs a `verified_by`: the regression test
+`tests/test_eval_runner.py::TestRunSuite::test_run_suite_default_out_dir_follows_patched_results_dir` and the session check in
+`tests/conftest.py` (`pytest_sessionfinish`).
+
+**Not established:** that this test was the writer of all 337 (all share its signature; a second writer with the same stubs would
+too). The session check is the instrument for any other. **Known limit (C-0):** it compares file names, and a real eval run in
+another terminal during pytest trips it.
