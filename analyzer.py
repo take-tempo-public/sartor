@@ -1133,8 +1133,8 @@ Rules you follow without exception:
 #     with better coding/agentic
 #     and structured-output behavior. Sonnet 5 turns adaptive thinking ON by
 #     default when `thinking` is omitted (4.6 ran thinking-off); the streaming
-#     call below sends `thinking={"type": "disabled"}` on the Sonnet path to
-#     preserve the pipeline's established thinking-off behavior — see the note
+#     call below sends the model's THINKING_POLICY value (`disabled` for Sonnet 5)
+#     to preserve the pipeline's established thinking-off behavior — see the note
 #     there. Adopting adaptive thinking is a separate, eval-gated change.
 #   - clarify() uses Haiku 4.5 as of 2026-06-01 (r1/clarify-model-trial). The
 #     prior note parked it on Sonnet "until the rubrics clear 4.0 stably";
@@ -1156,11 +1156,47 @@ Rules you follow without exception:
 #     sessions if grounding regressions resist prompt-tightening.
 SONNET_MODEL = "claude-sonnet-5"
 HAIKU_MODEL = "claude-haiku-4-5-20251001"  # Haiku 5.5 exists; evaluating it is work item 137
+
+# The `thinking` request value each model is sent. `None` = the field is not sent, so the
+# model runs its own default. Every model a call can name must be listed: `thinking_setting`
+# refuses an unlisted one, because sending nothing to a model that thinks by default
+# (adaptive thinking spends the MAX_TOKENS budget and can truncate the JSON payload) is the
+# silent change this table exists to prevent. The 5.5 rows are priced in
+# hardening.MODEL_PRICING; neither is a pin — SONNET_MODEL / HAIKU_MODEL above still are
+# (the candidate A/B is item 137). Adopting adaptive thinking is a separate, eval-gated change.
+THINKING_POLICY: dict[str, dict[str, str] | None] = {
+    "claude-sonnet-5": {"type": "disabled"},
+    # `disabled` returns 400 on Sonnet 5.5; the API names `between_tools` as the off switch
+    # (observed, req_011Cg8zS7hnP7Mczg2F24b1H; docs/dev/work/items/0173-...md).
+    "claude-sonnet-5-5": {"type": "between_tools"},
+    # Haiku 4.5 has no adaptive mode, so its default is already thinking-off.
+    "claude-haiku-4-5-20251001": None,
+    # Haiku 5.5 accepts `disabled` (req_011Cg8zSDoPtQwJFC1P9kYXs); sent explicitly so the
+    # Haiku path keeps today's thinking-off behavior if the pin moves.
+    "claude-haiku-5-5": {"type": "disabled"},
+}
+
+
+def thinking_setting(model: str) -> dict[str, str] | None:
+    """Return the `thinking` value to send to ``model``, or ``None`` to omit the field.
+
+    Raises `LLMConfigurationError` for a model with no `THINKING_POLICY` entry, so a new
+    model cannot reach the API with an unchosen thinking mode.
+    """
+    try:
+        return THINKING_POLICY[model]
+    except KeyError:
+        raise LLMConfigurationError(
+            f"model {model!r} has no THINKING_POLICY entry in analyzer.py, so its thinking "
+            "mode was not chosen; add it there (and a price in hardening.MODEL_PRICING)"
+        ) from None
+
+
 # Backward-compat alias — historical code uses MODEL as the default Sonnet handle.
 # New code should reference SONNET_MODEL / HAIKU_MODEL explicitly.
 MODEL = SONNET_MODEL
 # Per-call output cap. analyze() returns a comprehensive JSON with 10+ keyed
-# sections; Sonnet 5 (thinking disabled, per SONNET_MODEL note) routinely
+# sections; Sonnet 5 (thinking disabled, per THINKING_POLICY) routinely
 # uses 4–6K tokens on detail-rich real inputs. 8192 leaves headroom without
 # inviting runaway output. _call_llm logs a warning on stop_reason="max_tokens"
 # so truncation surfaces as a clear telemetry signal, not a silent JSON parse
@@ -1697,13 +1733,16 @@ def _call_llm_streaming(
     try:
         # Claude Sonnet 5 enables adaptive thinking by default when `thinking`
         # is omitted (Sonnet 4.6 ran thinking-off). Preserve the pipeline's
-        # thinking-off behavior explicitly on the Sonnet path: adaptive thinking
-        # would spend part of the MAX_TOKENS budget on reasoning (risking a
-        # max_tokens truncation of the JSON payload), add latency before the
-        # streamed resume reaches the user, and drift eval scores. Haiku calls
-        # are unaffected (Haiku 4.5's default is unchanged), so the param is not
-        # sent there. Toggling `thinking` invalidates only the messages cache
-        # tier, and the value is constant per call, so prompt caching is intact.
+        # thinking-off behavior explicitly: adaptive thinking would spend part of
+        # the MAX_TOKENS budget on reasoning (risking a max_tokens truncation of
+        # the JSON payload), add latency before the streamed resume reaches the
+        # user, and drift eval scores. What each model is sent is THINKING_POLICY;
+        # Haiku 4.5 has no adaptive mode, so its value is `None` and the param is
+        # not sent. Looked up before the request is built, so a model with no
+        # policy fails here (one error row, nothing sent). Toggling `thinking`
+        # invalidates only the messages cache tier, and the value is constant per
+        # model, so prompt caching is intact.
+        thinking = thinking_setting(effective_model)
         stream_kwargs: dict[str, Any] = {
             "model": effective_model,
             "max_tokens": max_tokens,
@@ -1716,8 +1755,8 @@ def _call_llm_streaming(
             ],
             "messages": [{"role": "user", "content": user_content}],
         }
-        if effective_model == SONNET_MODEL:
-            stream_kwargs["thinking"] = {"type": "disabled"}
+        if thinking is not None:
+            stream_kwargs["thinking"] = thinking
         sent_kwargs = stream_kwargs
         # Inside the try (not above it) on purpose: the `finally` below still
         # emits the one `status="error"` telemetry row a failed call has always

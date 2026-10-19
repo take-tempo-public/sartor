@@ -114,6 +114,38 @@ def test_judge_row_mirrors_every_request_kwarg(rows, rubric):
     assert all(settings[k] == sent[k] for k in settings)
 
 
+def test_judge_request_carries_no_thinking_for_haiku_4_5(rows, rubric):
+    """Today's judge is Haiku 4.5, whose policy is "not sent": the request is unchanged (item 137)."""
+    client = _Client(_Message('{"score": 4, "reasons": [], "failed_rules": []}'))
+
+    _grade(client, rubric, {}, "fx")
+
+    assert "thinking" not in client.messages.captured[0]
+    assert "thinking" not in rows[0]["request_settings"]
+
+
+def test_judge_request_carries_the_policy_value_when_the_judge_moves(monkeypatch, rows, rubric):
+    monkeypatch.setattr(runner, "JUDGE_MODEL", "claude-haiku-5-5")
+    client = _Client(_Message('{"score": 4, "reasons": [], "failed_rules": []}'))
+
+    _grade(client, rubric, {}, "fx")
+
+    assert client.messages.captured[0]["thinking"] == {"type": "disabled"}
+    assert rows[0]["request_settings"]["thinking"] == {"type": "disabled"}
+
+
+def test_judge_with_no_thinking_policy_is_refused_and_logged(monkeypatch, rows, rubric):
+    monkeypatch.setattr(runner, "JUDGE_MODEL", "claude-unlisted-9")
+    client = _Client(_Message('{"score": 4, "reasons": [], "failed_rules": []}'))
+
+    with pytest.raises(analyzer.LLMConfigurationError, match="claude-unlisted-9"):
+        _grade(client, rubric, {}, "fx")
+
+    assert client.messages.captured == []  # no request left the process
+    assert [r["status"] for r in rows] == ["error"]
+    assert rows[0]["error_type"] == "LLMConfigurationError"
+
+
 def test_judge_row_never_carries_the_judged_text(rows, rubric):
     client = _Client(_Message('{"score": 4, "reasons": [], "failed_rules": []}'))
 

@@ -437,10 +437,11 @@ METRIC_RE = re.compile(
 )
 
 # Pricing per million tokens (USD). Source: the Anthropic pricing page
-# (platform.claude.com/docs/en/about-claude/pricing), rows read 2026-10-17 —
-# page text, not an invoice. Update via PR (and bump CHANGELOG.md) when prices
-# change; tests/test_hardening.py checks that every model pin HAS an entry,
-# not that the numbers are true (the source is an external page).
+# (platform.claude.com/docs/en/about-claude/pricing), rows read 2026-10-17 and
+# the 5.5 rows re-read 2026-10-19 — page text, not an invoice. Update via PR
+# (and bump CHANGELOG.md) when prices change; tests/test_hardening.py checks
+# that every model pin HAS an entry, not that the numbers are true (the source
+# is an external page).
 # "cache_write" is the 5-minute write rate: the product only sends
 # cache_control "ephemeral" and telemetry keeps one creation count, so a
 # 1-hour write rate cannot be expressed here.
@@ -467,6 +468,33 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
         "cache_write": 1.25,
         "cache_read": 0.10,
     },
+    # Sonnet 5.5: cache reads are 0.05x base (the page's footnote 2), half Sonnet 5's rate.
+    "claude-sonnet-5-5": {
+        "in": 2.00,
+        "out": 10.00,
+        "cache_write": 2.50,
+        "cache_read": 0.10,
+    },
+    # Haiku 5.5: these are the rates for prompts up to 100,000 tokens; the higher tier is
+    # MODEL_PRICING_TIERS below.
+    "claude-haiku-5-5": {
+        "in": 0.10,
+        "out": 0.50,
+        "cache_write": 0.125,
+        "cache_read": 0.01,
+    },
+}
+
+# Prompt-length tiers: model -> (threshold, rates used when a request's prompt is OVER it).
+# Kept apart from MODEL_PRICING so that table stays one flat four-rate row per model. The
+# page's rule ("Long context pricing"): a request's prompt length counts ALL its input
+# tokens including cache reads and writes, each request is priced on its own, and a request
+# over the threshold pays the higher prices for every token type, not only the excess.
+MODEL_PRICING_TIERS: dict[str, tuple[int, dict[str, float]]] = {
+    "claude-haiku-5-5": (
+        100_000,
+        {"in": 0.50, "out": 2.50, "cache_write": 0.625, "cache_read": 0.05},
+    ),
 }
 
 
@@ -1723,6 +1751,9 @@ def compute_call_cost(record: dict[str, Any]) -> float:
           + output * out_rate
           + cache_creation * cache_write_rate
           + cache_read * cache_read_rate) / 1_000_000
+
+    A model in `MODEL_PRICING_TIERS` whose prompt (input + cache writes + cache reads)
+    is over its threshold is priced at the tier's rates for every token type.
     """
     model = record.get("model", "")
     pricing = MODEL_PRICING.get(model)
@@ -1735,6 +1766,10 @@ def compute_call_cost(record: dict[str, Any]) -> float:
     out_tok = record.get("output_tokens") or 0
     cache_w = record.get("cache_creation_input_tokens") or 0
     cache_r = record.get("cache_read_input_tokens") or 0
+
+    tier = MODEL_PRICING_TIERS.get(model)
+    if tier is not None and in_tok + cache_w + cache_r > tier[0]:
+        pricing = tier[1]
 
     cost = (
         in_tok * pricing["in"]

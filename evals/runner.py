@@ -55,6 +55,7 @@ from analyzer import (  # noqa: E402
     prompt_overrides,
     recommend_bullets,
     recommend_summaries,
+    thinking_setting,
 )
 
 # F-11 (2026-07 UX review) — the "assemble" eval mode drives the SAME
@@ -427,10 +428,17 @@ def _judge_create(
     and ``eval:<fixture_name>`` so the spend is in the telemetry window; `_eval_cost_since`
     skips ``judge_*`` rows so a fixture's ``cost_usd`` stays generation-only. A failed call
     logs its error row and re-raises.
+
+    The judge model's `thinking` value comes from the product's `THINKING_POLICY` (item 137), so
+    moving ``JUDGE_MODEL`` cannot silently switch a judge to adaptive thinking; a model with no
+    policy is refused here, before anything is sent, with its error row.
     """
     t0 = time.perf_counter()
     username = f"eval:{fixture_name}" if fixture_name else "eval"
     try:
+        thinking = thinking_setting(request["model"])
+        if thinking is not None:
+            request["thinking"] = thinking
         msg = client.messages.create(**request)
     except Exception as exc:
         log_judge_call(

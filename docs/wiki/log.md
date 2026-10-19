@@ -3304,3 +3304,25 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
   `docs/dev/diagnosis/b1-education-render.md:247-253` for "both fields shown, neither reordered", but that passage discusses only `classic.html` and
   `spacious.html`; found in passing by a re-auditor, predates this pass, **not changed**. (5) Item 65's class is not fixed: the counter will
   re-diverge on the next scoped pass. (6) The 33-merge window was not re-derived by commit; it was derived from the first-parent merge list.
+
+---
+
+## 2026-10-19 — scoped close-out relevance check (`feat/thinking-policy-55-pricing`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): 3** — `analyzer.py`, `hardening.py` and `evals/runner.py`.
+Classifier run over the working diff, not eyeballed. (`CHANGELOG.md`, `tests/`, `docs/dev/blast-radius/`, `docs/dev/work/` and
+`docs/dev/ledger/` classify irrelevant.) `python -m scripts.wiki_cites` read clean (0 violations); no page cites a line of these three
+files below the inserted lines (`git grep` over `docs/wiki/pages` for `analyzer.py:`, `hardening.py:` and `evals/runner.py:` line cites
+found none).
+
+**Pages edited (0). Pages verified no-edit:** the diff adds `analyzer.THINKING_POLICY` + `thinking_setting`, two `MODEL_PRICING` keys +
+`MODEL_PRICING_TIERS`, and a policy lookup in `_judge_create`. A `git grep -i` over `docs/wiki/pages` and `docs/dev/architecture.md` for
+`MODEL_PRICING`, `compute_call_cost`, `_judge_create`, `thinking`, `adaptive`, `JUDGE_MODEL` and `SONNET_MODEL` found no sentence stating
+the old rule (that `thinking: disabled` is sent iff the model is `SONNET_MODEL`) or a price table. The matching lines were read in the
+grep output (`llm-call-catalog`, `deterministic-llm-boundary`, `eval-harness`, `diagnostics-console`, `code-module-map`); the judge
+paragraph in `eval-harness` (lines 88-100) was read in full. They state the recorded `thinking_tokens` field, `request_settings` as "every
+kwarg actually sent" (still true), and `effective_model = model or SONNET_MODEL` (unchanged). **Not done:** the pages were not read end
+to end, and no auditor was run, because nothing was edited. A new sentence on the thinking policy in `llm-call-catalog` would be new
+coverage, not a correction; not written.

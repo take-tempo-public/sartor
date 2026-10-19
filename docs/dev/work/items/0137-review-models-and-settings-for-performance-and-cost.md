@@ -67,6 +67,21 @@ should see them; (4) the candidate A/B, one swap per branch with the judge held 
 none is given**), at an N chosen in advance because the `data-scientist-junior` fixture is bimodal; (5) the subagent pins,
 last. `analyzer.py` and `hardening.py` are C-10 gated: a consumer dossier first.
 
+### 2026-10-19 - thinking policy and 5.5 prices built (feat/thinking-policy-55-pricing); the A/B is still unapproved
+
+Built, no pin moved, no paid call made: `analyzer.THINKING_POLICY` + `thinking_setting()` (Sonnet 5.5 `between_tools`, Haiku 5.5
+`disabled`, an unlisted model refused with `LLMConfigurationError`), the judge path on the same table, `MODEL_PRICING` keys for
+`claude-sonnet-5-5` and `claude-haiku-5-5`, and `MODEL_PRICING_TIERS` for Haiku 5.5's over-100,000-token prices. Consumer dossier:
+`docs/dev/blast-radius/thinking-policy-55-pricing.md`. **Sources:** the pricing page re-read 2026-10-19 (all twelve rates match item
+173's table; the tier rule is "a request whose prompt is over 100,000 tokens pays higher prices", counting cache reads and writes, per
+request); the 400 and 200 behavior is item 173's recorded probe, not re-run. **Correction to item 173:** it called `analyzer.py` and
+`hardening.py` "C-10 gated"; `scripts/enforcement/blast_radius.py:198-209` lists both under `ACKNOWLEDGED_NOT_GATED`, so the hook does not
+fire on them (the dossier was written anyway).
+
+**Still open under this item:** the candidate A/B (needs the owner's spend approval; none given), a model-override mechanism for
+candidate runs (173 proposal 16), the routing review per call kind, cache hit rate and output limits, the subagent pins, Opus 5.5
+pricing (no product call), and the stale "no Haiku 5" wording in `CHANGELOG.md`'s 2026-07-05 entry (historical, not edited).
+
 ### 2026-10-17 - pricing fixed (item 174); call provenance filed (item 175), a prerequisite for any model swap
 
 - **Item 174 is fixed** on `fix/model-pricing-rates`: `hardening.MODEL_PRICING` now carries the pricing page's rates for Sonnet 5
