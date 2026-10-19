@@ -99,7 +99,8 @@ predicate, `hardening.is_candidate_record`, used for both candidate kinds; docs 
 **Still open under this item:** the candidate A/B itself (needs the owner's spend approval; none given), the routing review per call
 kind, cache hit rate and output limits, the subagent pins, Opus 5.5 price and policy (no product call), the stale "no Haiku 5" wording
 in `CHANGELOG.md`'s 2026-07-05 entry. New, not done: the console route `/api/tune/run` takes no model override (CLI only), and
-`_load_baseline_scores` still ignores `eval_mode`.
+`_load_baseline_scores` still ignores `eval_mode`. Unenforced gap (C-11, owner's call): nothing enumerates the dashboard's baseline
+aggregations, so a NEW view that forgets `hardening.is_candidate_record` would pass every test; a test that walks them is possible, not built.
 
 ### 2026-10-17 - pricing fixed (item 174); call provenance filed (item 175), a prerequisite for any model swap
 
