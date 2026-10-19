@@ -1914,6 +1914,7 @@ def _parse_or_retry(
                 run_id=run_id,
                 system_prompt=system_prompt,
                 model=model,
+                max_tokens=max_tokens,
             )
     raise LLMResponseError(raw, "exhausted retries")
 

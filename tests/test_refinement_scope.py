@@ -175,14 +175,11 @@ def test_parse_or_retry_exhaustion_is_llm_response_error_not_leaked(_telemetry):
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="item 175 gap 4: _parse_or_retry's retry drops max_tokens (analyzer.py retry _call_llm)",
-)
 def test_retry_keeps_the_callers_max_tokens_cap():
     """The cap exists so a degenerate reply fails fast; the retry must honour it too.
 
-    Observed on HEAD: attempt 1 sends max_tokens=128, the `_retry` attempt sends 8192.
+    Item 175 gap 4. Before the fix the first attempt sent max_tokens=128 and the `_retry`
+    attempt 8192 (`docs/dev/diagnosis/llm-call-provenance.md`, observation 1).
     """
     client = _QueuedFakeClient(["not json at all", "still not json"])
 
