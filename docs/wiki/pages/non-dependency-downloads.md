@@ -31,7 +31,7 @@
    normal use.** It renders every PDF and the live in-browser preview, so output matches
    the preview byte-for-byte. Lives in the OS user cache, not the repo. *(The pip package
    `playwright` is a declared dependency; the browser binary it pulls is not — hence the
-   separate step.)* **Internally, a Chromium install downloads five artifacts:** `chromium-<rev>`, `chromium_headless_shell-<rev>`, `ffmpeg-<rev>` (twice), and `winldd-<rev>` (`preflight.py:_parse_browsers_json`). PDF rendering specifically needs the **headless shell**, not the headed binary (`pdf_render.py:render_pdf`); each artifact carries an `INSTALLATION_COMPLETE` sentinel to distinguish complete from interrupted installs (`preflight.py:_INSTALL_MARKER`). **On macOS 12 and earlier, PDF output is unavailable** — current Playwright releases ship no Chromium build for that OS (`preflight.py:MACOS_CHROMIUM_FLOOR`). `[synthesis]` **`sartor --doctor` reports whether both PDF-critical artifacts are installed, without downloading anything** (`preflight.py:chromium_capability`).
+   separate step.)* **Internally, a Chromium install downloads five artifacts:** `chromium-<rev>`, `chromium_headless_shell-<rev>`, `ffmpeg-<rev>` (twice), and `winldd-<rev>` (`preflight.py:chromium_capability` names the five-artifact install; `preflight.py:_parse_browsers_json` reads only the first two revisions). PDF rendering specifically needs the **headless shell**, not the headed binary (`pdf_render.py:render_pdf`); each artifact carries an `INSTALLATION_COMPLETE` sentinel to distinguish complete from interrupted installs (`preflight.py:_INSTALL_MARKER`). **On macOS 12 and earlier, PDF output is unavailable** — current Playwright releases ship no Chromium build for that OS (`preflight.py:MACOS_CHROMIUM_FLOOR`). `[synthesis]` **`sartor --doctor` reports whether both PDF-critical artifacts are installed, without downloading anything** (`preflight.py:chromium_capability`).
 4. **An Anthropic API key** — a *credential*, not a download, but required: all AI writing
    goes to Claude. `ANTHROPIC_API_KEY` env var or a `.api_key` file in the data root
    (`preflight.api_key_path` resolves it to `sartor_home.base_dir()`).
@@ -44,9 +44,9 @@
 The dev extras (`pip install -e ".[dev]"` → pytest / ruff / mypy / pyyaml /
 types-requests / **interrogate**) are pip, so just the *trigger* — `interrogate` is the
 kit-adoption docstring-coverage floor-lock gate, and `ruff` is now EXACT-pinned
-(`==0.15.12`, not a range) so local and CI format identically. The Playwright UX test
+(`==0.15.22`, not a range) so local and CI format identically. The Playwright UX test
 tier reuses the Chromium binary from (a)#3. The real non-pip weight is the **offline
-grounding scorers** — *dev-only, never in the shipped app* (they grade whether the AI
+grounding scorers** — *dev-only: reached through the eval routes in `blueprints/diagnostics.py`, not the résumé wizard* (they grade whether the AI
 invented anything):
 
 7. **`torch`** (~200 MB CPU wheel, larger for CUDA) — installed **first**, from a
@@ -72,8 +72,8 @@ invented anything):
 
 - **The heavy stuff is about honesty, not features.** Chromium makes the output *exact*;
   `torch` + the two model families are *graders* that measure whether the AI fabricated
-  anything — and they run **only in the eval harness**, never in the app an end user
-  launches `[synthesis]`.
+  anything — and they run **only through the eval harness and the eval routes in
+  `blueprints/diagnostics.py`**, not in the résumé flow an end user walks through `[synthesis]`.
 - **The pip-vs-fetch split is deliberate.** Anything platform-specific (Chromium, the
   `torch` wheel) or licensing-sensitive (MiniCheck) is kept *out* of the dependency list,
   so a plain `pip install -e .` stays clean, fast, fully-permissive (MIT), and
@@ -103,7 +103,7 @@ walk's 2026-06-07 verification); every other row is unchanged since that date
 `[synthesis]`.
 
 **The core "no runtime deps for downloads" claim still holds.** `pyproject.toml`'s
-`[project.dependencies]` still declares `platformdirs` (`pyproject.toml:81`), but no runtime
+`[project.dependencies]` still declares `platformdirs` (`pyproject.toml:platformdirs`), but no runtime
 module imports it any more: the per-user data directory is computed by the stdlib-only
 `sartor_home.py:platform_data_dir`, and
 `tests/test_data_root.py:test_platform_data_dir_matches_platformdirs_on_this_os` compares the
@@ -111,7 +111,7 @@ two `[synthesis]`; the packaging/wheel setuptools fix widens `[tool.setuptools]`
 `package-data` so an installed wheel ships modules + static assets previously missing
 (`pyproject.toml:py-modules`, `pyproject.toml:packages.find`, `pyproject.toml:package-data`)
 `[synthesis]`.
-New `[project.optional-dependencies]` additions — `packaging` (release versioning; `pyproject.toml:92`),
+New `[project.optional-dependencies]` additions — `packaging` (release versioning; `pyproject.toml:packaging`),
 `interrogate` (kit-adoption `dev` extra), and `accelerate` + `nltk` (`[eval-grounding]`
 extra) — are ordinary pip packages, and none is a non-pip download in its own right except
 that `nltk` fetches its `punkt_tab` tokenizer data on first use (item 8). They add

@@ -28,7 +28,7 @@ the routes layer on (`class ContextSet(_ContextSetRequired, total=False)`).
 [`hardening.py:_ContextSetRequired`](../../../hardening.py) names exactly six fields,
 all present from the first build: `timestamp`, `candidate`
 ([`CandidateInfo`](../../../hardening.py): name/email/phone/linkedin_url/website_url/
-skills/certifications/education_summary/notes/profile_text), `resume`
+skills/certifications/education_summary/notes/profile_text/online_profile_text), `resume`
 ([`ResumeInfo`](../../../hardening.py): format/sections/text/filename/path),
 `supplemental_resumes` (list of [`SupplementalResume`](../../../hardening.py)),
 `job_description`, and `deterministic_analysis`

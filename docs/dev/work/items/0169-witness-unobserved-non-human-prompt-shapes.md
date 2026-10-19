@@ -58,3 +58,12 @@ own messages, are the designed behaviour and are not counted.) The count is from
 `UserPromptSubmit` payload was again **not captured**, so which shape armed the pause is still unverified. This matches the
 2026-10-14 observation above and the sibling memory `reference-subagent-pretooluse-agent-id` ("peer hand-backs still do").
 Cost in this session: five avoidable refusals and re-runs, no lost work. The item's rule stands: no tag is guessed.
+
+### 2026-10-19 — more instances, on `chore/wiki-checkpoint-pass`
+
+While 18 and then 14 background audit agents ran, the pause refused `Edit`/`Write` calls more than eight times in a row after
+"[Subagent hand-back]" messages and `<task-notification>` events arrived, each time the owner's last typed message was a directive. The
+batch form ("sibling of a paused call") refused up to five calls issued together and let later ones through, so several edits needed two
+or three attempts. The count is from the session's own tool results, by hand; the `UserPromptSubmit` payload was **not captured**, so which shape
+armed the pause is still unverified (the `<task-notification>` exemption was in force and the pauses still occurred; why is not established).
+No work was lost. The item's rule stands: no tag is guessed.

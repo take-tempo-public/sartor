@@ -218,7 +218,8 @@ because its lock is a flow requirement, not a missing analysis `[synthesis]`.
 
 `#composeList` holds one card per experience, plus a skills card. The card renderer adds
 the **B.4 role-intros toggle** ([`app.js:_renderRoleIntrosToggle`](../../../static/app.js))
-when any role has summary variants — an opt-in `composeRoleIntrosToggle` checkbox; when on,
+once any experience exists (Epic A sprint A3 removed the gate on already having
+variants; see below) — an opt-in `composeRoleIntrosToggle` checkbox; when on,
 each role section (`.compose-role-intro[data-exp-id]`) exposes a per-role intro picker. The
 **B.5 skills card** ([`app.js:_renderSkillsCard`](../../../static/app.js)) carries pin/drop
 rows plus a recommend-skills (Haiku ordering) and a grounded suggest-skills review lane.
@@ -311,8 +312,9 @@ immediately before* whichever DOM mutation makes `SETTLED` observable, so a read
 that observes `SETTLED` can never also observe the overlay still up. Widening
 `SETTLED` to include the banner was considered and rejected in writing — it would
 invert the contract and break `test_20260722_compose_bare_reload_settle.py`, which
-observes an unsettled state on purpose (`ui_pages/selectors.py`'s own comment records
-this) `[synthesis]`.
+observes an unsettled state on purpose (recorded in
+`docs/dev/blast-radius/compose-wait-ux.md`, which `ui_pages/selectors.py`'s comment
+points to) `[synthesis]`.
 
 Three details are load-bearing and easy to get wrong:
 

@@ -48,8 +48,11 @@ off the same context file so the surfaces never disagree `[synthesis]`:
    returns the frozen `approved_composition` when the context qualifies (see
    "One predicate" below);
    [`blueprints/generation.py:_assemble_from_frozen_composition`](../../../blueprints/generation.py)
-   renders it straight through `generator.py:generate_resume_from_json_resume`
-   (no markdown round-trip) `[synthesis]`.
+   builds the result dict from it, and the route
+   (`blueprints/generation.py:run_generation`, and its streaming twin
+   `run_generation_stream`) renders it straight through
+   `generator.py:generate_resume_from_json_resume` (no markdown round-trip)
+   `[synthesis]`.
 3. **Generated download, legacy LLM-apply branch** (file-based contexts, or
    corpus contexts predating the freeze — byte-identical to pre-Phase-4
    behavior) — the curation is folded into `context_set` *before the LLM sees
@@ -257,7 +260,7 @@ Inside `build_json_resume_from_corpus`:
   renders only when its id is in this application's `accepted_experience_summary_ids`
   ledger — the A3 pending-leak guard described above.
 - **Bullets**: active bullets sorted by `(display_order, id)`, then the effective
-  set is `(recommended ∪ added ∪ pinned) − excluded`; with no
+  set is `(recommended ∪ added ∪ pinned ∪ accepted_generated) − excluded`; with no
   `llm_recommendations` for that experience it degrades to all-active-minus-excluded
   ([`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py)).
 - **Skills** ([`_collect_skills`](../../../corpus_to_json_resume.py)): the universe

@@ -18,8 +18,8 @@
 
 "Layer B" of the kit-adoption spectree wiring adds machine-readable OpenAPI
 documentation over a deliberately small slice of the route surface — **five**
-read-only `GET` routes out of **120** total (`grep -rE "@[a-zA-Z_]+\.route\("
-blueprints/ dashboard/ app.py` `[synthesis]`) — without touching the other 115
+read-only `GET` routes out of **124** total (`grep -rE "@[a-zA-Z_]+\.route\("
+blueprints/ dashboard/ app.py` `[synthesis]`) — without touching the other 119
 routes or adding request-side validation anywhere. Every decorated route also
 passes
 `skip_validation=True`
@@ -39,7 +39,7 @@ Two config choices matter:
 
 - **`mode="strict"`** — spectree's default ("normal") mode would also collect
   every *undecorated* route with an empty/schema-less entry, misrepresenting
-  the other 115 routes as "documented" (the module docstring's own estimate,
+  the other 119 routes as "documented" (the module docstring's own estimate,
   written when the route count was lower, says "~85" — the wiki cites the
   live-verified count instead `[synthesis]`). `strict` mode restricts spec
   collection to only the routes this `spec` instance actually decorates
@@ -86,8 +86,10 @@ not a contract `[synthesis]`. `ExperienceSummaryItem` (the response model for
 field ([`web_infra/openapi.py:ExperienceSummaryItem`](../../../web_infra/openapi.py))
 that mirrors the role's soft-retire status from
 [`blueprints/corpus/_shared.py:_experience_summary_dict`](../../../blueprints/corpus/_shared.py)
-`[synthesis]`. The model also includes a `needs_month: bool = False` field ([`web_infra/openapi.py:138`](../../../web_infra/openapi.py)) that signals when either stored date is ISO year-only; the corpus "MONTH NEEDED" badge and generate-time month block key off this field `[synthesis]`. Every decorated route still runs its normal `_safe_username` /
-`_within` security gate unchanged (see [[route-surface]]) — spectree decoration
+`[synthesis]`. The model also includes a `needs_month: bool = False` field ([`web_infra/openapi.py:ExperienceSummaryItem`](../../../web_infra/openapi.py)) that signals when either stored date is ISO year-only; the corpus "MONTH NEEDED" badge and generate-time month block key off this field `[synthesis]`. Each decorated route keeps whatever guard its body already had —
+`_safe_username` where a username addresses corpus data, `secure_filename` in
+`get_config`, none in `list_users` (it takes no username) — and decoration
+changes none of it (see [[route-surface]]). Spectree decoration
 is additive and does not touch the request-handling body, by design (the module
 docstring calls out that adding request-side validation would require rewriting
 route bodies to read `request.context.json` instead of `request.json` — "the

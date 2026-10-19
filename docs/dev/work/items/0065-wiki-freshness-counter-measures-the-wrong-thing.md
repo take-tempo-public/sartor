@@ -64,3 +64,13 @@ under the Epic A authorization envelope (`docs/dev/epic-a-chain-design-correctio
 Filed by the A2 closer, per §11.11's own "to file as a work item" instruction. The
 checkpoint advance to `2a0b37a` landed on this branch; this item tracks the structural
 question that advance does not answer.
+
+### 2026-10-19 — a window-wide pass ran on `chore/wiki-checkpoint-pass`
+
+A pass over the whole `3798e2d`→`619549a` window advanced `.last_ingest_sha`; `wiki_freshness` went from 71 to 0. **This fixed the
+instance, not the class**, as the 2026-08-09 pass did. What it measured: 33 merges in the window, 23 with their own wiki record, and
+18 of 42 pages with a cited symbol touched by a merge whose record did not name the page (by a symbol-overlap method, `log.md`
+entry "checkpoint-advancing pass"). That is close to option 1 above: a count built from the pages' own cites (18 pages) rather than from commit
+distance (71 files), though it is not the same definition. **The method lives only in that session's scratch script and is not committed.**
+The 24 pages the method did not flag rest on the per-branch records; for JS and HTML the method sees a change only by word match.
+No mechanism was authored here (C-11); the redesign stays the owner's call.
