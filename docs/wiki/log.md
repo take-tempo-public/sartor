@@ -3235,7 +3235,9 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 
 - **Mode:** diff, window `3798e2d` → `619549a` (HEAD of this branch; `855b551` is `main`'s tip, and `619549a` adds only the
   provenance-ledger file). **Checkpoint advanced** to `619549af1e7a4ffb4fb54c3c76c67ad2630565e0`; `python scripts/wiki_freshness.py`
-  reads 0 files changed (it read 71). Owner authorized the spend: 18 audit passes, then 14 re-audits (32 Sonnet 5 calls, on the
+  read 0 files changed at that commit (it read 71). **Correction, made after the commits:** on the branch tip it reads **1**, because this
+  pass's own edit to `scripts/wiki_cites.py` (the allowance shrink above) landed after the checkpoint commit. It needs no page edit. The commit
+  message of the wiki-pass commit and the handoff both say "0"; the handoff is frozen, so this line is the correction. Owner authorized the spend: 18 audit passes, then 14 re-audits (32 Sonnet 5 calls, on the
   Claude Code session, no `.api_key` spend). No scribe ran: every correction was a narrow edit the orchestrator checked against source first.
 
 - **Window:** `3798e2d` → `855b551` (33 merged PRs; 71 wiki-relevant files). Owner-approved scope: **auditor-first over the 18 pages
