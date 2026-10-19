@@ -173,13 +173,17 @@ user-data folder for an installed wheel. Everything below, including the
   iteration history
 - `logs/llm_calls.jsonl` — LLM call telemetry: per-call metadata (model,
   token counts, latency, username, `prompt_version`, status — 13 fields on
-  every row), plus, on failed calls only (`status: "error"`), two more:
+  every row), plus six provenance fields (item 175): the model that answered,
+  the API request id, the request settings (`max_tokens`, `thinking`, …), how
+  the call was served, thinking tokens and the attempt number, plus, on failed calls only (`status: "error"`), two more:
   `error_type` and a free-text `error_message`. That message is the
   exception's own text — for an Anthropic API error, the server's error
   response — with whitespace collapsed, `sk-ant-…` key shapes and
   `x-api-key`/`Authorization` header values masked, and a 500-character cap
-  (`analyzer.py`'s `_redact_error_message`). No request or response content
-  (prompts, résumé text, model output) is written. The record is built in
+  (`analyzer.py`'s `_redact_error_message`). The eval judges write rows too,
+  under `judge_grade` / `judge_distinctiveness`. No request or response content
+  (prompts, résumé text, model output) is written: the request settings are
+  every request parameter except `system` and `messages`. The record is built in
   `analyzer.py`'s `_call_llm_streaming` and written by `_emit_call_log`.
 
 All of these directories are gitignored. **Do not commit them.**

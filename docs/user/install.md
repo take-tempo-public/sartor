@@ -651,8 +651,9 @@ network blip (retry), rate-limit hit (wait a minute), invalid API
 key (re-check `.api_key` or `$ANTHROPIC_API_KEY`), or your
 Anthropic billing cap being exceeded (raise it in the
 [Anthropic Console](https://console.anthropic.com/settings/limits)).
-The `logs/llm_calls.jsonl` file records every attempt with the
-status code, so you can see exactly which call failed.
+The `logs/llm_calls.jsonl` file records every attempt with its
+status (and, for a failed call, the error type and message), so you can see
+exactly which call failed.
 
 **"Chromium not found" when trying to generate PDF, or the PDF button is greyed out.**
 Run `sartor --doctor` first — it says whether Chromium is actually installed and

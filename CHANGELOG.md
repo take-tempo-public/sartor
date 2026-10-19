@@ -13,6 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: every LLM call row records what answered it and the settings sent (`fix/llm-call-provenance`, item 175)
+
+A `logs/llm_calls.jsonl` row used to name only the model id the code asked for. It now also records, from the real call:
+
+- **`answered_model`, `api_request_id`, `request_settings`, `served_as`, `thinking_tokens`, `attempt`.** `request_settings` is every
+  request parameter except `system` and `messages`, so a setting added later is recorded without a field list and no prompt text is
+  logged. `model` still means "the id requested" (pricing and the dashboard key on it). Observed live first: the API echoes the
+  alias in `answered_model`, so the request id is the per-call trace to the answering model; the streamed usage carried no thinking field
+  on the two probed calls, so `thinking_tokens` is `null` until a thinking call is seen.
+- **Eval-judge calls are logged** as `judge_grade` / `judge_distinctiveness` rows, and each eval record carries `judge_request_id`.
+  Eval `cost_usd` stays generation-only (judge rows are skipped), but the dashboard's spend totals now include judge spend.
+- **`MODEL_SNAPSHOTS` is derived** from the analyzer's model constants; avatar rows are stamped with `AVATAR_PROMPT_VERSION`; an
+  `ApplicationRun` records the effective prompt version (a candidate-override run is no longer recorded as the shipped one).
+- **`tests/test_call_provenance.py` fails closed** if a kwarg sent to `messages.stream` is missing from `request_settings`.
+- **`scripts/probe_call_provenance.py`**: two sub-cent live calls that print the logged row beside the raw SDK facts.
+
+### Fixed: `_parse_or_retry`'s retry ran at 8192 tokens instead of the caller's cap (`fix/llm-call-provenance`, item 175)
+
+`check_refinement_scope` caps its reply at 128 tokens; its `_retry` attempt dropped the cap. The retry now keeps it, so a degenerate
+reply fails fast on both attempts. `check_refinement_scope_retry`'s truncation rate on the dashboard may change.
+
 ### Fixed: the docs and docstring that said the server is single-threaded (`fix/threaded-server-claim`, item 177)
 
 Several records said `python app.py` runs a single-threaded server. It does not: Flask's `run()` serves each request on its own

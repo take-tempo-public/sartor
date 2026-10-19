@@ -5,7 +5,7 @@ kind = "item"
 title = "Record, for every product and eval-judge LLM call, the model version that answered and the exact settings sent, so any decision traces to its model"
 status = "open"
 decision_owner = "agent"
-branches = ["fix/model-pricing-rates"]
+branches = ["fix/model-pricing-rates", "fix/llm-call-provenance"]
 refs = [
   "analyzer.py:741-749",
   "analyzer.py:1496-1655",
@@ -21,7 +21,7 @@ refs = [
   "docs/dev/work/items/0173-evaluate-claude-5-5-generation-models.md",
   "docs/dev/diagnosis/model-pricing-rates.md",
 ]
-summary = "The call log keeps the model id asked for, not the answering version, settings or request id; judge calls log none."
+summary = "Built (fix/llm-call-provenance): rows record answering model, request id, settings; judge calls logged. Owner closes."
 ```
 
 **Filed 2026-10-17 on `fix/model-pricing-rates` from the owner's instruction, given when they chose item 174:** *"be sure that
@@ -107,3 +107,23 @@ running a call and reading the row**, so the branch's first commit is that obser
 ### 2026-10-17 - filed during fix/model-pricing-rates
 
 Filed with the owner's scope decision above. Nothing built; no production code changed for this item.
+
+### 2026-10-19 - built on fix/llm-call-provenance (not closed; the owner closes)
+
+Scope the owner chose: gaps 1-7 (gap 8 stays out). Judge calls: telemetry rows with `judge_*` kinds, excluded from eval `cost_usd`.
+Record: `docs/dev/diagnosis/llm-call-provenance.md` (observations 1, 4, 5), `docs/dev/blast-radius/llm-call-provenance.md`.
+
+- **Observed first** (two sub-cent live calls, $0.005324 each run): the row had no settings and no request id, while the SDK had both.
+  **Gap 1's mechanism was falsified:** `final.model` echoes the requested alias (`claude-sonnet-5`), so the response never names a dated
+  version. `answered_model` is logged anyway (it will show a change if the API ever returns one) but **the API request id is the only
+  per-call handle to the answering model.** Whether any response header names a version was not investigated.
+- **Built:** `answered_model`, `api_request_id`, `request_settings` (derived from the kwargs sent, minus `system`/`messages`), `served_as`
+  (`service_tier`, `speed`, `inference_geo`: not in the original list, added because `speed` and tier change price), `thinking_tokens`,
+  `attempt`; judge rows via `analyzer.log_judge_call`; `judge_request_id` on eval records; `MODEL_SNAPSHOTS` derived; avatar rows stamped
+  with `AVATAR_PROMPT_VERSION`; `ApplicationRun.prompt_version` is the effective version; the retry keeps `max_tokens` (gap 4).
+- **Fail-closed test:** `tests/test_call_provenance.py` (mutation-checked) and its judge twin `tests/test_judge_call_provenance.py`.
+- **Not verified live:** a judge row (fakes only); `thinking_tokens` on a call that thinks (null on both probed calls; the streamed `usage`
+  carried no `output_tokens_details`). **Not changed:** `_parse_or_retry_streaming` still has no `max_tokens` parameter (three callers, all 8192).
+- **Disclosed meaning change:** dashboard spend totals now include judge spend; eval `cost_usd` does not.
+- **Left for the owner:** close this item (needs a falsifiable `verified_by`: the probe re-run plus the two new test files, or a
+  `closure_exception` for the unobserved parts), and whether to file the unobserved parts as their own watch item.

@@ -27,7 +27,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from analyzer import PROMPT_VERSION
+from analyzer import effective_prompt_version
 from db.models import (
     Application,
     ApplicationRun,
@@ -178,7 +178,7 @@ def build_context_set_from_db(
         iteration=0,
         parent_run_id=None,
         run_id=run_id,
-        prompt_version=PROMPT_VERSION,
+        prompt_version=effective_prompt_version(),
         persona_template_id=None,
         corpus_snapshot_json=snapshot,
     )

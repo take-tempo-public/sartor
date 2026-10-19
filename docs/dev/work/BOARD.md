@@ -25,7 +25,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Fix built, measured, screenshots recaptured; score drop not specific to the change; carrier hypothesis never reproduced.
 - **145** -- Stdlib launcher (doctor/install/up/down/status/logs/update/open) + per-OS pushbutton wrappers (`agent`) -- Owner pre-launch requirement (2026-08-16), unfiled till now: stdlib launcher, two backends, per-OS one-click wrappers.
 - **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
-- **175** -- Record, for every product and eval-judge LLM call, the model version that answered and the exact settings sent, so any decision traces to its model (`agent`) -- The call log keeps the model id asked for, not the answering version, settings or request id; judge calls log none.
+- **175** -- Record, for every product and eval-judge LLM call, the model version that answered and the exact settings sent, so any decision traces to its model (`agent`) -- Built (fix/llm-call-provenance): rows record answering model, request id, settings; judge calls logged. Owner closes.
 - **177** -- Repo defects and gaps found while sweeping memory for item 7 (`agent`) -- Sweep found a threaded-server contradiction, a wrong gate.py item path, README min_* claims and stale counts.
 
 ## Blocked

@@ -17,6 +17,7 @@ Read the LLM telemetry log and print a summary table.
    - sum of `input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`
    - cache hit ratio = `sum(cache_read) / (sum(cache_read) + sum(cache_creation))` — undefined when both are zero
    - rough cost estimate using current Anthropic pricing (state the assumed rates in the output so the user can verify)
+   - rows also carry `answered_model`, `api_request_id`, `request_settings`, `served_as`, `thinking_tokens` and `attempt` (not aggregated here); `judge_grade` / `judge_distinctiveness` are eval-judge calls, so read them as their own groups
 3. Print the table sorted by `count` descending.
 4. After the table, surface any anomalies:
    - Cache hit ratio < 30% on `generate` calls (caching may not be working — likely the system block isn't structured correctly)

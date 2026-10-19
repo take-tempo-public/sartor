@@ -175,6 +175,19 @@ def test_parse_or_retry_exhaustion_is_llm_response_error_not_leaked(_telemetry):
         )
 
 
+def test_retry_keeps_the_callers_max_tokens_cap():
+    """The cap exists so a degenerate reply fails fast; the retry must honour it too.
+
+    Item 175 gap 4. Before the fix the first attempt sent max_tokens=128 and the `_retry`
+    attempt 8192 (`docs/dev/diagnosis/llm-call-provenance.md`, observation 1).
+    """
+    client = _QueuedFakeClient(["not json at all", "still not json"])
+
+    check_refinement_scope(client, "make it punchier")
+
+    assert [kw["max_tokens"] for kw in client.captured] == [128, 128]
+
+
 def test_demo_mode_short_circuits_before_any_client_call(monkeypatch):
     monkeypatch.setenv("SARTOR_DEMO", "1")
 
