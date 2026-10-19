@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 23 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 92
+**Open 24 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 92
 
 ## Open
 
@@ -27,6 +27,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **171** -- Dependabot PRs pile up unmerged: design a merge policy per update class, majors included (`user`) -- 16 Dependabot PRs open, oldest 2026-07-13; nothing acts on green ones. Design the per-class merge policy.
 - **175** -- Record, for every product and eval-judge LLM call, the model version that answered and the exact settings sent, so any decision traces to its model (`agent`) -- Built (fix/llm-call-provenance): rows record answering model, request id, settings; judge calls logged. Owner closes.
 - **177** -- Repo defects and gaps found while sweeping memory for item 7 (`agent`) -- Sweep found a threaded-server contradiction, a wrong gate.py item path, README min_* claims and stale counts.
+- **179** -- A test writes stub eval runs into the real evals/results/: 337 of 425 files, so the regression baseline and the dashboard read test output (`agent`) -- run_suite's out_dir default binds RESULTS_DIR at def time, so a test's patch misses it; 337 stub files in the real dir.
 
 ## Blocked
 
