@@ -1,0 +1,1 @@
+{"event": "consumed", "doc": "docs/dev/handoffs/llm-call-provenance.md", "session": "75ba735f-a3e7-4bd9-8a39-68e9538e0555", "branch": "main", "commit": "855b551", "actor": "amodal1", "agent": "anthropic/claude-sonnet-5-5", "ts": "2026-10-19T04:38:44Z", "fingerprint": "eedd0f175452"}
