@@ -749,6 +749,67 @@ def _emit_call_log(record: dict[str, Any]) -> None:
         logger.warning("LLM telemetry write failed: %s", exc)
 
 
+# --- Item 175: call provenance. The row names the model REQUESTED in `model` (pricing and the
+# dashboard key on it); these fields say what actually answered and with what settings. Every
+# SDK-derived value is type-guarded: a test double's auto-attribute (a MagicMock) would otherwise
+# reach `json.dumps` inside `_emit_call_log` and leave an empty log file (the file is opened first).
+_CONTENT_KWARGS = ("system", "messages")
+
+
+def _str_or_none(value: object) -> str | None:
+    """``value`` if it is a ``str``, else ``None``."""
+    return value if isinstance(value, str) else None
+
+
+def _int_or_none(value: object) -> int | None:
+    """``value`` if it is a real ``int`` (not a ``bool``), else ``None``."""
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _thinking_tokens(usage: object) -> int | None:
+    """Thinking tokens from ``usage.output_tokens_details`` (object or dict form), else ``None``."""
+    details = getattr(usage, "output_tokens_details", None)
+    raw = (
+        details.get("thinking_tokens")
+        if isinstance(details, dict)
+        else getattr(details, "thinking_tokens", None)
+    )
+    return _int_or_none(raw)
+
+
+def _provenance_fields(
+    request_kwargs: Mapping[str, Any] | None,
+    *,
+    answered_model: object,
+    api_request_id: object,
+    usage: object,
+    attempt: int,
+) -> dict[str, Any]:
+    """The item-175 telemetry fields for one call, shared by product and judge rows.
+
+    ``request_settings`` is every request kwarg except the prompt content (``system`` /
+    ``messages``), taken from the kwargs actually sent, so a setting added later is recorded
+    without anyone updating a field list, and no prompt or résumé text reaches the log.
+    Unknown values are ``None``, never a guess.
+    """
+    settings: dict[str, Any] | None = None
+    if request_kwargs is not None:
+        kept = {k: v for k, v in request_kwargs.items() if k not in _CONTENT_KWARGS}
+        settings = json.loads(json.dumps(kept, default=repr))
+    served = {
+        key: _str_or_none(getattr(usage, key, None))
+        for key in ("service_tier", "speed", "inference_geo")
+    }
+    return {
+        "answered_model": _str_or_none(answered_model),
+        "api_request_id": _str_or_none(api_request_id),
+        "request_settings": settings,
+        "served_as": served if any(v is not None for v in served.values()) else None,
+        "thinking_tokens": _thinking_tokens(usage),
+        "attempt": attempt,
+    }
+
+
 # --- C1c: error-capture redaction/size policy (docs/dev/handoffs/epic-c-c1c-brief.md) ---
 #
 # `_redact_error_message` is the ONLY place `error_message` text reaches
@@ -1505,6 +1566,8 @@ def _call_llm_streaming(
     system_prompt: str = "",
     model: str | None = None,
     max_tokens: int = MAX_TOKENS,
+    attempt: int = 1,
+    prompt_version: str | None = None,
 ) -> Iterator[str | _StreamDone]:
     """Streaming generator yielding text deltas, then a final `_StreamDone`.
 
@@ -1539,6 +1602,10 @@ def _call_llm_streaming(
     response well below the shared MAX_TOKENS ceiling, so a degenerate
     response fails fast instead of running to the analyze()-sized default.
     Defaults to MAX_TOKENS — identical to every existing call site.
+
+    ``attempt`` (1 for a first pass, 2 for the `_retry` pass) and the provenance fields built
+    by `_provenance_fields` ride on the row (item 175); ``prompt_version`` overrides the
+    résumé pipeline's effective version for a subsystem with its own (the avatar).
     """
     effective_model = model or SONNET_MODEL
     user_content: list[dict[str, Any]] = []
@@ -1570,6 +1637,10 @@ def _call_llm_streaming(
     chunks: list[str] = []
     error_type: str | None = None
     error_message: str | None = None
+    # Bound before the `try`: `stream` exists only inside the `with`, and the `finally` must
+    # not reference an unbound name on a refused or failed call (item 175).
+    sent_kwargs: dict[str, Any] | None = None
+    api_request_id: object = None
     try:
         # Claude Sonnet 5 enables adaptive thinking by default when `thinking`
         # is omitted (Sonnet 4.6 ran thinking-off). Preserve the pipeline's
@@ -1594,11 +1665,14 @@ def _call_llm_streaming(
         }
         if effective_model == SONNET_MODEL:
             stream_kwargs["thinking"] = {"type": "disabled"}
+        sent_kwargs = stream_kwargs
         # Inside the try (not above it) on purpose: the `finally` below still
         # emits the one `status="error"` telemetry row a failed call has always
         # emitted, so this changes the failure's TYPE, not its observability.
         _assert_client_has_credential(client, call_kind)
         with client.messages.stream(**stream_kwargs) as stream:
+            # Read as soon as the stream opens, so a call that fails mid-stream still logs it.
+            api_request_id = getattr(stream, "request_id", None)
             for delta in stream.text_stream:
                 chunks.append(delta)
                 yield delta
@@ -1638,7 +1712,7 @@ def _call_llm_streaming(
             "run_id": run_id,
             "call": call_kind,
             "model": effective_model,
-            "prompt_version": effective_prompt_version(),
+            "prompt_version": prompt_version or effective_prompt_version(),
             "input_tokens": getattr(usage, "input_tokens", 0),
             "output_tokens": getattr(usage, "output_tokens", 0),
             "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0),
@@ -1646,6 +1720,13 @@ def _call_llm_streaming(
             "latency_ms": elapsed_ms,
             "stop_reason": stop_reason,
             "status": status,
+            **_provenance_fields(
+                sent_kwargs,
+                answered_model=getattr(final, "model", None),
+                api_request_id=api_request_id,
+                usage=usage,
+                attempt=attempt,
+            ),
         }
         # C1c: error_type/error_message ride ONLY on status="error" rows — ok
         # rows stay byte-identical to every pre-existing row (readers already
@@ -1688,6 +1769,7 @@ def _call_llm(
     system_prompt: str = "",
     model: str | None = None,
     max_tokens: int = MAX_TOKENS,
+    attempt: int = 1,
 ) -> str:
     """Non-streaming wrapper — drain `_call_llm_streaming` and return the accumulated text.
 
@@ -1705,6 +1787,7 @@ def _call_llm(
         system_prompt=system_prompt,
         model=model,
         max_tokens=max_tokens,
+        attempt=attempt,
     ):
         if isinstance(item, _StreamDone):
             final_text = item.text
@@ -1774,6 +1857,7 @@ def _parse_or_retry_streaming(
             run_id=run_id,
             system_prompt=system_prompt,
             model=model,
+            attempt=attempt + 1,
         ):
             if isinstance(item, _StreamDone):
                 accumulated = item.text
@@ -1915,6 +1999,8 @@ def _parse_or_retry(
                 system_prompt=system_prompt,
                 model=model,
                 max_tokens=max_tokens,
+                attempt=attempt
+                + 2,  # the first call ran before the loop, so loop index 0 -> retry #2
             )
     raise LLMResponseError(raw, "exhausted retries")
 
@@ -2309,6 +2395,8 @@ def avatar_answer_streaming(
         run_id=run_id,
         system_prompt=AVATAR_SYSTEM_PROMPT,
         model=HAIKU_MODEL,
+        # Its own subsystem version (the persona is outside the override registry, so no candidate hash applies).
+        prompt_version=AVATAR_PROMPT_VERSION,
     ):
         if isinstance(item, _StreamDone):
             break

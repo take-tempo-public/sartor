@@ -130,6 +130,14 @@ def test_avatar_uses_haiku_and_own_call_kind(monkeypatch):
     assert captured["kwargs"]["system_prompt"] == analyzer.AVATAR_SYSTEM_PROMPT
 
 
+def test_avatar_rows_are_stamped_with_the_avatar_prompt_version(monkeypatch):
+    # Item 175 gap 7: the avatar's telemetry row names its own version, not the résumé PROMPT_VERSION.
+    captured: dict = {}
+    _install_stub(monkeypatch, captured)
+    list(analyzer.avatar_answer_streaming(None, "q", _ctx(_two_units())))
+    assert captured["kwargs"]["prompt_version"] == analyzer.AVATAR_PROMPT_VERSION
+
+
 def test_empty_context_renders_fallback(monkeypatch):
     captured: dict = {}
     _install_stub(monkeypatch, captured)

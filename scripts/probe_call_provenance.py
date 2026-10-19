@@ -31,6 +31,9 @@ from web_infra.clients import _get_client
 
 PROBE_PROMPT = "Reply with the single word: ok"
 PROBE_USER = "probe:175"
+# A constant, not a `call_kind="..."` literal: tests/test_call_kind_telemetry.py inventories those
+# as PRODUCTION call kinds, and this probe's rows stay in memory (never in logs/llm_calls.jsonl).
+PROBE_CALL_KIND = "probe_175"
 PROBE_MAX_TOKENS = 16
 
 #: Request kwargs that carry prompt content; never echoed.
@@ -112,7 +115,7 @@ def _probe_one(model: str | None, label: str) -> dict[str, Any]:
         text = analyzer._call_llm(
             client,  # type: ignore[arg-type]
             PROBE_PROMPT,
-            call_kind="probe_175",
+            call_kind=PROBE_CALL_KIND,
             username=PROBE_USER,
             model=model,
             max_tokens=PROBE_MAX_TOKENS,
