@@ -52,7 +52,7 @@ columns** so they share one recommend / pin / drop / curate / tag machinery
 | Column | Meaning |
 |---|---|
 | `is_active` | soft-retire flag (`1`=live); rows are never hard-deleted when referenced — retire instead. |
-| `is_pending_review` | `1` = LLM-proposed, awaiting the human approve/deny gate. |
+| `is_pending_review` | `1` = awaiting the human approve/deny gate (LLM-proposed or freshly imported rows). |
 | `source` | provenance string; CHECK `IN ('manual','imported','llm_proposed')` on the three new items. |
 | `display_order` | stable per-parent ordering integer. |
 
@@ -143,7 +143,7 @@ the item rows**; the legacy columns survive for code that reads them directly
 projection from corpus rows into the `context_set` the LLM consumes. The
 lifecycle columns are the filter: [`_build_career_corpus_payload`](../../../db/build_context.py)
 emits only `b.is_active` bullets, and [`eligible_titles_for`](../../../db/build_context.py)
-keeps a title only when `is_official OR truthful_enough_to_use`. Pending-review
+keeps a title only when it is `is_active` AND (`is_official` OR `truthful_enough_to_use`). Pending-review
 rows are *included* in the synthesized résumé so a freshly-imported user can run
 the pipeline before reviewing (the docstring frames review as a UI concern, not a
 pipeline gate) — but for the newer LLM-proposed items the approve/deny gate is

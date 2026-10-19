@@ -3,7 +3,7 @@
 > **Audience:** `dev`
 > **Concept:** how an education entry's degree and field of study travel from
 > the corpus to a rendered résumé line, and why both fields are shown together
-> with a single canonical separator across all output formats.
+> with a single canonical separator in every format except the Modern persona.
 > **Sources:** [`corpus_to_json_resume.py`](../../../corpus_to_json_resume.py),
 > [`json_resume.py`](../../../json_resume.py),
 > [`generator.py`](../../../generator.py),
@@ -17,7 +17,7 @@
 The corpus stores three discrete education fields: `institution`, `degree`, and
 `field` of study. When building a JSON Resume document,
 [`corpus_to_json_resume.py:_collect_education`](../../../corpus_to_json_resume.py)
-maps them as follows (lines 939–941):
+maps them as follows:
 
 - `Education.degree` → JSON Resume `area`
 - `Education.field` → JSON Resume `studyType`
@@ -25,13 +25,14 @@ maps them as follows (lines 939–941):
 
 **This mapping reverses the JSON Resume convention**, where `studyType` is
 defined as the degree and `area` as the field of study
-([`corpus_to_json_resume.py:914-915`](../../../corpus_to_json_resume.py)). The
+(the `_collect_education` docstring in
+[`corpus_to_json_resume.py:_collect_education`](../../../corpus_to_json_resume.py)). The
 reversal is deliberate and **not flipped**: the canonical comment explains that
 answering which column *really* holds which would require a data audit of stored
 `Education` rows (owner constraint, per
-[`corpus_to_json_resume.py:916-917`](../../../corpus_to_json_resume.py)).
-Instead, every renderer shows **both** fields joined by a single canonical
-separator `[synthesis]`.
+[`corpus_to_json_resume.py:_collect_education`](../../../corpus_to_json_resume.py)).
+Instead, every renderer shows **both** fields; all but the Modern persona join
+them with a single canonical separator `[synthesis]`.
 
 ## The canonical joiner: `education_position_text`
 
@@ -56,7 +57,7 @@ This is the same "one canonical helper at the presentation boundary" arrangement
 that `format_date_range` already follows — and for the same historical reason:
 before `fix/b1-education-render` (2026-08-13), Classic, Spacious, the `.docx`
 writer, and the markdown round-trip had each silently dropped `studyType`
-entirely; Modern and Tech had not (`corpus_to_json_resume.py:920-922`)
+entirely; Modern and Tech had not (`corpus_to_json_resume.py:_collect_education`)
 `[synthesis]`.
 
 The inverse helper [`json_resume.py:split_education_position`](../../../json_resume.py)
@@ -75,14 +76,16 @@ education line is the same string the preview and `.md` render
 emits education entries as `"Institution, Area — StudyType"` with the em-dash
 join (lines 784–785, per diagnosis F1
 [`docs/dev/diagnosis/b1-education-render.md`](../../dev/diagnosis/b1-education-render.md)).
-The parser [`json_resume.py:_entry_from_chunk`](../../../json_resume.py) (lines
-389–394) splits the h3 header back apart, so `studyType` survives the
-round-trip `[synthesis]`.
+The parser [`json_resume.py:_entry_from_chunk`](../../../json_resume.py) (its
+`education` branch calls `split_education_position`) splits the h3 header back
+apart, so `studyType` survives the round-trip `[synthesis]`.
 
 **Bundled personas (HTML/PDF).** The persona Jinja2 templates (`classic.html`,
-`spacious.html`, `modern.html`, `tech.html`) render `area` and `studyType`
-inline, mirroring the em-dash separator (which cannot be imported like
-`education_position_text` can). Both fields are shown; neither is reordered
+`spacious.html`, `modern.html`, `tech.html`) render `area` and `studyType`.
+`classic.html`, `spacious.html` and `tech.html` put them inline, mirroring the
+em-dash separator (which cannot be imported like `education_position_text`
+can); `modern.html` puts `studyType` in its own paragraph under the header,
+with no separator. Both fields are shown; neither is reordered
 ([`docs/dev/diagnosis/b1-education-render.md:247-253`](../../dev/diagnosis/b1-education-render.md))
 `[synthesis]`.
 
@@ -99,7 +102,7 @@ forms today (the corpus rejects empty `institution` at create/edit per
 `blueprints/corpus/career_assets.py:104-106`), and fixing it would require
 changing `_split_h3_header`'s shared fallback, which serves `work`/`project`
 entries too — deliberately left for a separate work item per diagnosis lines
-357–360 `[synthesis]`.
+355–360 `[synthesis]`.
 
 ## Related
 

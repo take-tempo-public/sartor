@@ -215,10 +215,11 @@ resolved by
 which generates the companion lazily when absent AND regenerates it when a
 sidecar-stamped `skeleton_version` shows it predates the currently-shipped HTML
 skeleton (a pre-2026-07-09 imported template otherwise froze at its clone-time
-skeleton forever — B1a, `docs/dev/diagnosis/b1-stale-template-companions.md`); the
-lower-level [`pdf_render.py:html_template_path_for`](../../../pdf_render.py) is now
-an internal existence check `resolve_companion_html` calls, not the resolution
-entry point itself. `_render_pdf_from_json` falls back to bundled `classic.html` and
+skeleton forever — B1a, `docs/dev/diagnosis/b1-stale-template-companions.md`); it
+replaced the old `html_template_path_for(...)` → `if None: generate_companion(...)`
+pair at its call sites, and does its own existence check rather than calling the
+lower-level [`pdf_render.py:html_template_path_for`](../../../pdf_render.py), which
+remains a separate pure resolver, not the resolution entry point. `_render_pdf_from_json` falls back to bundled `classic.html` and
 raises `FileNotFoundError` if none exists [`generator.py`](../../../generator.py).
 Playwright (not WeasyPrint) was chosen because the same HTML+CSS feeds the in-app
 live preview ([`pdf_render.py:render_html_string`](../../../pdf_render.py)) — true

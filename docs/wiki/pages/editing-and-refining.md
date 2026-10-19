@@ -25,8 +25,8 @@ The preview is editable. Click into it (or open the edit drawer) and fix wording
 directly. As you type, the styled page preview alongside it updates too, so what you
 see there tracks what Download would actually produce — it no longer waits for a
 refine or an explicit save to catch up `[synthesis]`. Your edits become the **starting
-point for the next version**, so nothing you change is lost when you regenerate or
-refine. **Editing here changes the document text only — it does not change your
+point for the next version**, so your changes carry forward when you regenerate or
+refine — and if something you typed would be replaced, sartor asks you first. **Editing here changes the document text only — it does not change your
 [[career-corpus]].**
 
 ## Asking sartor to refine
@@ -37,12 +37,13 @@ to add a number or a claim that isn't already true about you), a small dialog ex
 the concern and lets you **cancel** or **proceed anyway** — this never silently blocks
 a correction you actually want to make `[synthesis]`.
 
-Once through that check, sartor doesn't rewrite the whole résumé — it drafts **one
+Once through that check, for an application you're composing, sartor doesn't rewrite the whole résumé — it drafts **one
 targeted change** (a sharpened bullet, or a new positioning summary) grounded in your
 real history, and takes you back to **Compose** to **accept** or **retire** it. Accepting
-folds the change into your approved content the same way any Compose edit does; from
-there, generating again rebuilds the document from your approved composition
-`[synthesis]`. You can also ask **follow-up questions** to draw out more detail, the
+folds the change into your approved content the same way any Compose edit does. Because
+that changes what you approved, Compose asks you to **Save and continue** again before
+you can generate, and generating then rebuilds the document from your approved
+composition `[synthesis]`. You can also ask **follow-up questions** to draw out more detail, the
 same way Clarify did earlier; those answers are kept in your [[candidate-memory]].
 
 ## Refreshing suggested bullets in Compose

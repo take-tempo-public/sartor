@@ -35,3 +35,12 @@ at next. If it does not, record the cost as accepted.
 
 Filed while closing item 166, so the unmeasured half of that decision is on the board and not
 only in a log entry. No pass has run with the Sonnet auditor yet.
+
+### 2026-10-19 — first full-window data, `chore/wiki-checkpoint-pass`
+
+The checkpoint pass ran 18 Sonnet 5 audits (auditor-first, owner-approved, before any scribe) and 14 re-audits, about 32 calls. Counts, kept
+apart, are in the `docs/wiki/log.md` entry "checkpoint-advancing pass": auditor DRIFTED 10 and UNSUPPORTED 22 on 14 of 18 pages; three pages
+clean; re-audit 13 clean and 1 UNSUPPORTED, an error in the orchestrator's own correction. **What this does not show:** whether the
+auditor catches what review would catch, because no scribe ran and review was not run blind to the auditors' reports. It is a catch count
+for one model, with no Haiku comparison, so the item stays open. Cost: no per-call spend was captured (the calls run on the session, not
+`.api_key`), so cost per pass is still unmeasured.

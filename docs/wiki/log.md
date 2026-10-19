@@ -3230,3 +3230,77 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Not audited:** anything on the six pages outside the changed passages named in each brief (the auditors were scoped to them, and
   said so). The wiki edits themselves have had the independent audit above; the fix pass after it (the `served_as`, funnel,
   `_score_distinctiveness`, schema-list and line 67 rewrites) was checked by the cite check and my own read, **not** re-audited.
+
+## 2026-10-19 — checkpoint-advancing pass (`chore/wiki-checkpoint-pass`)
+
+- **Mode:** diff, window `3798e2d` → `619549a` (HEAD of this branch; `855b551` is `main`'s tip, and `619549a` adds only the
+  provenance-ledger file). **Checkpoint advanced** to `619549af1e7a4ffb4fb54c3c76c67ad2630565e0`; `python scripts/wiki_freshness.py`
+  read 0 files changed at that commit (it read 71). **Correction, made after the commits:** on the branch tip it reads **1**, because this
+  pass's own edit to `scripts/wiki_cites.py` (the allowance shrink above) landed after the checkpoint commit. It needs no page edit. The commit
+  message of the wiki-pass commit and the handoff both say "0"; the handoff is frozen, so this line is the correction. Owner authorized the spend: 18 audit passes, then 14 re-audits (32 Sonnet 5 calls, on the
+  Claude Code session, no `.api_key` spend). No scribe ran: every correction was a narrow edit the orchestrator checked against source first.
+
+- **Window:** `3798e2d` → `855b551` (33 merged PRs; 71 wiki-relevant files). Owner-approved scope: **auditor-first over the 18 pages
+  whose cited symbols a merge touched without that merge's own pass naming the page**, ahead of any scribe (the reverse of the loop's
+  written order), cap raised to 18. Exposure method: `scripts.wiki_cites.extract_cites` per page; a cite counts as exposed when the
+  merge's diff hunks overlap its Python def/assign range or a changed line names the symbol; a line cite into a changed file always counts.
+  **Limit:** for JS/HTML it is word-match only, so a body change in `static/app.js` that names no cited symbol is not seen. The other 24
+  pages rest on the per-branch records, not on this audit.
+- **Not relevant to any page:** PR #180's only wiki-relevant file is `pyproject.toml` (`.claude` added to interrogate's `exclude`); no page cites it.
+- **Cite check before the audit:** OK, but it checks a line cite only against end of file. Reading all 7 line cites into files the window
+  changed found 4 drifted (`openapi.py:138`; `corpus_to_json_resume.py:914-915`, `:916-917`, `:920-922`) plus a prose "lines 939–941".
+  Re-anchored to symbols; the ratchet then forced `ALLOWED_LINE_CITES` down (`openapi-api-reference` deleted, `education-degree-field-rendering` 12 → 8).
+- **Auditor results, 18 Sonnet 5 passes (SUPPORTED / DRIFTED / UNSUPPORTED):** clean — `keyless-client-refusal` 17/0/0,
+  `machine-capability-preflight` 24/0/0, `prompt-version-discipline` 29/0/0. DRIFTED only or with UNSUPPORTED — `openapi-api-reference` 20/1/1,
+  `education-degree-field-rendering` 11/2/2, `non-dependency-downloads` 17/4/1, `generation-and-grounding` ~34/1/1,
+  `iteration-audit-chain` 27/1/0, `corpus-to-output-reach` ~34/1/1. UNSUPPORTED only — `corpus-data-model` 41/0/2, `context-set-contract` 25/0/1,
+  `pipeline-stages` ~39/0/1, `document-rendering` 34/0/1, `llm-call-catalog` 38/0/3, `application-audit-chain` 26/0/2, `code-module-map` 70/0/1,
+  `frontend-wizard` ~45/0/2, `editing-and-refining` 24/0/3. **Totals: DRIFTED 10, UNSUPPORTED 22, on 14 of 18 pages** (the 4 line cites found before the audit are counted separately, above).
+- **DRIFTED fixed (10), each checked against source by the orchestrator before the edit:** the route count (`openapi-api-reference`, grep at
+  HEAD reads 124, was 120/115; two sites); `json_resume.py:_entry_from_chunk` line range and `b1-education-render.md` line range
+  (`education-degree-field-rendering`); `ruff==0.15.12` → `0.15.22`, the "five artifacts" cite re-anchored to `preflight.py:chromium_capability`
+  (it names the five; `_parse_browsers_json` reads two), two bare `pyproject.toml` line cites → symbols (`non-dependency-downloads`;
+  allowance deleted); `(D5)` → `(charter C-6)` (`generation-and-grounding`); `_clear_run_edits` → `_clear_consumed_run_edits`, the call the routes
+  make, with `_clear_run_edits` kept as the low-level writer (`iteration-audit-chain`); the `generate_resume_from_json_resume` call sits in
+  `run_generation`/`run_generation_stream`, not in `_assemble_from_frozen_composition` (`corpus-to-output-reach`).
+- **UNSUPPORTED (22), listed as the auditors found them. The owner chose "correct, then re-audit"; every one was checked against source
+  by the orchestrator before its edit and is now applied (see "Re-audit" below):**
+  1. `openapi-api-reference` — "every decorated route runs `_safe_username`/`_within`": `_within` runs on none of the 5, `_safe_username` on 3.
+  2. `corpus-data-model` — `is_pending_review=1` is described as LLM-proposed only (imports set it too); `eligible_titles_for` condition omits `is_active`.
+  3. `education-degree-field-rendering` — "single em-dash separator in every renderer": `modern.html` puts `studyType` in its own `<p>`; also true of two echoes (frontmatter, line 34).
+  4. `context-set-contract` — `CandidateInfo` field list omits `online_profile_text`.
+  5. `pipeline-stages` — Step 5 omits the stale-composition 409 gate PR #165 added (`composition_is_stale` → `_stale_composition_response`).
+  6. `non-dependency-downloads` — "never in the shipped app" (2 sites): the grounding scorer is reachable through `blueprints/diagnostics.py`.
+  7. `document-rendering` — says `resolve_companion_html` calls `html_template_path_for`; it does its own existence check (an earlier scoped pass wrote this).
+  8. `llm-call-catalog` — "against the frozen `approved_composition`" (rebuilt when stale); "exception re-raised unchanged" (the no-credential branch re-labels it); "~5 s median per architecture.md" (that section carries no latency figure).
+  9. `generation-and-grounding` — "all of the above" ride on every eval record, but `compute_date_grounding` is not in `_post_generation_metrics`.
+  10. `corpus-to-output-reach` — bullets union omits `accepted_generated`.
+  11. `application-audit-chain` — `run_id` "threaded through the prompt cache" (telemetry only); `_owned_experience_ids` backs one of three lookups.
+  12. `code-module-map` — "the only module that opens the raw Anthropic client": `evals/runner.py` calls `client.messages.create` for the judges.
+  13. `frontend-wizard` — role-intros toggle is no longer gated on existing variants (A3 removed it); the SETTLED rationale is cited to `selectors.py` but recorded in `docs/dev/blast-radius/compose-wait-ux.md`.
+  14. `editing-and-refining` — "nothing you change is lost" (a discard path exists, with a confirm); "doesn't rewrite the whole résumé" (legacy file mode does); "generating again rebuilds" (a stale composition returns 409 until Save and continue).
+- **Re-audit (14 fresh Sonnet 5 passes, one per edited page, each given only that page's diff):** 13 clean (SUPPORTED 1–11 each).
+  One UNSUPPORTED: on `generation-and-grounding` my own correction said `compute_date_grounding` runs on `run_generation` only; it also runs
+  from `run_generation_stream` (both call `_check_date_grounding`, `blueprints/generation.py:1374` and `:1719`). Fixed to name both routes.
+  **That one fix has had no independent re-audit** (checked by me against the two call sites). `iteration-audit-chain`, whose only edit was a
+  cite re-anchor, was not re-audited either; it is covered by the cite check and my read.
+- **Catches, kept apart:**
+  - **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): 2 E1 on the first run after my re-anchors (allowances for
+    `openapi-api-reference` and `non-dependency-downloads` had to be deleted, `education-degree-field-rendering` lowered 12 → 8; all three are in
+    `ALLOWED_LINE_CITES`, an enforcement script outside the plan, disclosed) and 1 E4 (I replaced `_clear_run_edits` with
+    `_clear_consumed_run_edits`; restored it as the low-level writer rather than log the removal). Final run: OK, 0 violations.
+    It had passed before the audit with 4 line cites already wrong, because it checks a line cite only against end of file.
+  - **Auditor** (18 passes): DRIFTED 10, UNSUPPORTED 22, on 14 pages (above).
+  - **Re-audit** (14 passes): caught 1 error introduced by the orchestrator's own correction (the stream route).
+  - **Orchestrator review** (unenforced prose): checked every one of the 32 auditor findings against source before editing. The
+    `editing-and-refining` correction on "doesn't rewrite the whole résumé" was scoped to "an application you're composing" because
+    the legacy branch's reachability is unestablished (`get_config`'s docstring says the file-based path was removed; `submitRefinement` still
+    has the branch).- **Lint** (`/wiki-lint` checks, deterministic, read-only): 42 pages; ERROR 0 (no dangling `[[link]]`, index and `pages/` agree);
+  WARN 0 (no orphans, no pages under 15 lines). `wiki_freshness`: 0 files changed since the checkpoint.
+- **Not audited, declared (C-12):** (1) the other 24 pages, which rest on the per-branch records (23 of 33 merges have a wiki entry; PR #180's one
+  file, `pyproject.toml`, is cited by no page). (2) The exposure method sees JS/HTML changes by word match only, so a body change in
+  `static/app.js` or `templates/index.html` that names no cited symbol is not seen. (3) Text on the 18 pages outside the briefed passages was audited
+  only for the symbols and cites the exposure method flagged. (4) `education-degree-field-rendering` still cites
+  `docs/dev/diagnosis/b1-education-render.md:247-253` for "both fields shown, neither reordered", but that passage discusses only `classic.html` and
+  `spacious.html`; found in passing by a re-auditor, predates this pass, **not changed**. (5) Item 65's class is not fixed: the counter will
+  re-diverge on the next scoped pass. (6) The 33-merge window was not re-derived by commit; it was derived from the first-parent merge list.

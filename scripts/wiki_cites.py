@@ -63,10 +63,8 @@ WIKI_DIR = "docs/wiki"
 ALLOWED_LINE_CITES: dict[str, int] = {
     "docs/wiki/pages/diagnostics-console.md": 2,
     "docs/wiki/pages/document-rendering.md": 3,
-    "docs/wiki/pages/education-degree-field-rendering.md": 12,
+    "docs/wiki/pages/education-degree-field-rendering.md": 8,
     "docs/wiki/pages/governance-extraction.md": 2,
-    "docs/wiki/pages/non-dependency-downloads.md": 2,
-    "docs/wiki/pages/openapi-api-reference.md": 1,
     "docs/wiki/pages/route-surface.md": 2,
 }
 

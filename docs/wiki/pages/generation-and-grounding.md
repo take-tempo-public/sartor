@@ -172,8 +172,13 @@ into the dashboard's score-over-time chart, attributable by `prompt_version`.
 `_enrich_groundedness` later layers in the eval-only L1/L2 (NLI + MiniCheck)
 signals when `--grounding-signals` runs; default runs stay honest L0-only
 ([`evals/runner.py:_enrich_groundedness`](../../../evals/runner.py)).
-`_post_generation_metrics` is where all of the above ride along on every eval
-record ([`evals/runner.py:_post_generation_metrics`](../../../evals/runner.py)).
+`_post_generation_metrics` is where every metric above except
+`compute_date_grounding` rides along on every eval record
+([`evals/runner.py:_post_generation_metrics`](../../../evals/runner.py));
+`compute_date_grounding` runs only on the live generate routes, through
+`blueprints/generation.py:_check_date_grounding` (called from both
+`blueprints/generation.py:run_generation` and
+`blueprints/generation.py:run_generation_stream`).
 
 ## The recursion worth naming
 
@@ -183,7 +188,7 @@ output: synthesis may select, condense, and reframe, but never invent past the
 source. `generate()`'s GROUNDING CHECK is to a tailored bullet what this wiki's
 grounding contract is to a synthesized page `[synthesis]`. These metrics are
 deterministic by mandate — the no-LLM boundary AGENTS.md draws around
-`hardening.py` — referenced here, not restated (D5).
+`hardening.py` — referenced here, not restated (charter C-6).
 
 ## Related
 

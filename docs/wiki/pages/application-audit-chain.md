@@ -50,7 +50,7 @@ audit trail are kept, never hard-deleted `[synthesis]`.
 chain. Key columns:
 
 - `run_id` — a unique 12-hex correlation primitive (`unique=True`); the same
-  token threaded through telemetry and the prompt cache.
+  token threaded through telemetry, correlating a run's analyze, generate and eval calls.
 - `iteration` + `parent_run_id` (self-FK, `ondelete="SET NULL"`) — set once at
   creation (`iteration=0, parent_run_id=None`, in
   [`db/build_context.py:build_context_set_from_db`](../../../db/build_context.py))
@@ -104,8 +104,9 @@ repeated within one result or a second title for an already-titled experience
 would violate the run's unique keys and is skipped, counted in
 `PersistReport.duplicate_selections_skipped`. Hallucinated or cross-candidate IDs
 are also recorded in the `PersistReport` and skipped `[synthesis]`. Lookups use
-one `IN` query per kind (experiences, titles, bullets) via
-`_owned_experience_ids` so the statement count is constant, and `position` is
+one `IN` query per kind (experiences, titles, bullets — `_owned_experience_ids`
+for experiences, direct `ExperienceTitle.id.in_` / `Bullet.id.in_` filters for
+the other two) so the statement count is constant, and `position` is
 counted per experience so multi-experience selections preserve their per-exp
 order `[synthesis]`.
 
