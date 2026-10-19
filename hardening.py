@@ -1780,6 +1780,23 @@ def compute_call_cost(record: dict[str, Any]) -> float:
     return round(cost, 6)
 
 
+# --- Candidate runs (item 137) ---------------------------------------------------------------
+# An eval run under a prompt override is stamped `prompt_version="candidate:<hash>"`
+# (`analyzer.effective_prompt_version`); one under a model override carries `model_overrides` on
+# every record. This is the one definition of "not a baseline record": the eval runner's
+# regression baseline and the dashboard's baseline views both skip such records. It lives here
+# (packaged, deterministic) rather than in `evals/`, which the wheel does not ship.
+CANDIDATE_VERSION_PREFIX = "candidate:"
+
+
+def is_candidate_record(record: Mapping[str, Any]) -> bool:
+    """True for an eval record produced under a prompt override or a model override."""
+    version = record.get("prompt_version")
+    if isinstance(version, str) and version.startswith(CANDIDATE_VERSION_PREFIX):
+        return True
+    return bool(record.get("model_overrides"))
+
+
 _URL_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://")
 
 

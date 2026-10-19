@@ -27,6 +27,7 @@ import demo_fixtures
 import sartor_home
 from demo_fixtures import is_demo_mode as _demo_mode_active
 from hardening import (
+    CANDIDATE_VERSION_PREFIX,
     MODEL_PRICING,
     ContextSet,
     CorpusExperience,
@@ -731,7 +732,7 @@ def effective_prompt_version() -> str:
         return PROMPT_VERSION
     canonical = json.dumps(overrides, sort_keys=True, ensure_ascii=False)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:12]
-    return f"candidate:{digest}"
+    return f"{CANDIDATE_VERSION_PREFIX}{digest}"
 
 
 # --- Model-override primitive (item 137 / 173 proposal 16) -------------------

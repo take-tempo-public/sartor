@@ -46,12 +46,14 @@ import sartor_home  # noqa: E402
 from analyzer import (  # noqa: E402
     HAIKU_MODEL,
     SONNET_MODEL,
+    active_model_overrides,
     analyze,
     clarify,
     clarify_iteration,
     effective_prompt_version,
     generate,
     log_judge_call,
+    model_overrides,
     prompt_overrides,
     recommend_bullets,
     recommend_summaries,
@@ -96,6 +98,7 @@ from hardening import (  # noqa: E402
     extract_keywords,
     find_leaked_handles,
     handle_snippet,
+    is_candidate_record,
     iter_prose_leaves,
     source_handle_tokens,
 )
@@ -122,6 +125,27 @@ MODEL_SNAPSHOTS = {
     "haiku": HAIKU_MODEL,
     "haiku_judge": JUDGE_MODEL,
 }
+
+
+def _model_provenance_fields() -> dict[str, Any]:
+    """The model fields every eval record carries: what ran, and (candidate runs only) why it differs.
+
+    With no `model_overrides()` active this is exactly ``{"model_snapshots": MODEL_SNAPSHOTS}``, the
+    record shape every earlier run wrote. Under an override, ``model_snapshots`` names the models
+    actually sent (the judge stays ``JUDGE_MODEL``) and ``model_overrides`` records the pin -> candidate
+    mapping, which `hardening.is_candidate_record` reads to keep the run out of baseline views.
+    """
+    overrides = active_model_overrides()
+    if not overrides:
+        return {"model_snapshots": MODEL_SNAPSHOTS}
+    snapshots = dict(MODEL_SNAPSHOTS)
+    if "SONNET_MODEL" in overrides:
+        snapshots["sonnet"] = overrides["SONNET_MODEL"]
+    if "HAIKU_MODEL" in overrides:
+        snapshots["haiku"] = overrides["HAIKU_MODEL"]
+    return {"model_snapshots": snapshots, "model_overrides": overrides}
+
+
 PASS_THRESHOLD = 4.0
 SCORE_MAX = 5.0
 # Bumped when the eval-result JSONL shape changes. Old records (no field) are
@@ -559,7 +583,10 @@ def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict[str, Any
 
     Seeds from baseline_v1.json (schema_version 3) when present, so the alerter
     compares against the stable 5-run aggregate mean rather than the noisiest
-    single prior run. Real JSONL records (timestamp > "0000…") always win.
+    single prior run. Real JSONL records (timestamp > "0000…") always win —
+    except candidate records (a prompt or model override, `is_candidate_record`),
+    which are skipped: a candidate run must never become the next run's "prior
+    run", or its scores would seed (or hide) regression alerts for a baseline run.
     """
     if not RESULTS_DIR.exists():
         return {}
@@ -605,7 +632,7 @@ def _load_baseline_scores(out_path: Path) -> dict[tuple[str, str], dict[str, Any
                     fixture = rec.get("fixture")
                     rubric = rec.get("rubric")
                     score = rec.get("score")
-                    if not fixture or not rubric or score is None:
+                    if not fixture or not rubric or score is None or is_candidate_record(rec):
                         continue
                     key = (fixture, rubric)
                     prev = baseline.get(key)
@@ -1172,6 +1199,7 @@ def run_suite(
     seed_data: dict[str, Any] | None = None,
     mode: str = "generate",
     prompt_overrides_map: dict[str, str] | None = None,
+    model_overrides_map: dict[str, str] | None = None,
     grounding_signals: bool = False,
     out_dir: str | Path = RESULTS_DIR,
     client: anthropic.Anthropic | None = None,
@@ -1196,7 +1224,13 @@ def run_suite(
     ``seed_data`` is an already-loaded + validated corpus seed (the caller owns the
     file I/O, so a bad path fails before any paid call). ``prompt_overrides_map`` is
     the already-parsed name→text mapping; an unknown prompt-constant name raises
-    ``ValueError`` here, before the fixture loop. An unknown ``--fixture`` raises
+    ``ValueError`` here, before the fixture loop. ``model_overrides_map`` is the
+    already-parsed pin-name→candidate-model-id mapping (``{"SONNET_MODEL": "claude-sonnet-5-5"}``);
+    `analyzer.model_overrides` validates it here, before any paid call, and every record
+    the run writes then carries ``model_overrides`` and the models actually sent in
+    ``model_snapshots``. The judge model is never overridden. A run under either override
+    is a candidate run: `hardening.is_candidate_record` keeps it out of the regression
+    baseline and the dashboard's baseline views. An unknown ``--fixture`` raises
     ``FileNotFoundError``. ``progress`` (optional) is invoked with
     ``(event, payload)`` at coarse milestones so a caller can stream progress; it
     never alters the result. ``cancel_check`` (optional) is polled before each
@@ -1253,6 +1287,20 @@ def run_suite(
             "prompt_version=%s (quarantined from score-over-time).",
             sorted(overrides),
             candidate_version,
+        )
+    # Candidate MODELS: same fail-before-spend rule. Entering the manager once validates every
+    # entry (unknown pin, no-op swap, no THINKING_POLICY or MODEL_PRICING entry -> ValueError);
+    # the real context is entered around the fixture loop below.
+    model_overrides_in_effect: dict[str, str] = dict(model_overrides_map or {})
+    if model_overrides_in_effect:
+        with model_overrides(model_overrides_in_effect):
+            pass
+        logger.warning(
+            "MODEL OVERRIDES ACTIVE — %s; every record is stamped with model_overrides "
+            "(kept out of the regression baseline and the dashboard's baseline views). "
+            "The judge stays on %s.",
+            model_overrides_in_effect,
+            JUDGE_MODEL,
         )
 
     # Load static baseline data once for baseline_comparison fields on JSONL records.
@@ -1314,6 +1362,7 @@ def run_suite(
     # candidate prompt and stamps the candidate:<hash> version. No-op when empty.
     with ExitStack() as stack:
         stack.enter_context(prompt_overrides(overrides))
+        stack.enter_context(model_overrides(model_overrides_in_effect))
         out = stack.enter_context(out_path.open("a", encoding="utf-8"))
         # Seed mode: one shared in-memory corpus DB for the entire fixture loop.
         # build_context_set_from_db mints a fresh application/run per call (unique
@@ -1467,7 +1516,7 @@ def run_suite(
                             "suite": suite,
                             "fixture_hash": fixture["hash"],
                             "rubric_version": None,
-                            "model_snapshots": MODEL_SNAPSHOTS,
+                            **_model_provenance_fields(),
                             "baseline_comparison": None,
                             "phase_latencies_ms": None,
                             "eval_mode": mode,
@@ -1679,7 +1728,7 @@ def run_suite(
                                 "suite": suite,
                                 "fixture_hash": fixture["hash"],
                                 "rubric_version": rubric_versions.get(rubric_path),
-                                "model_snapshots": MODEL_SNAPSHOTS,
+                                **_model_provenance_fields(),
                                 "baseline_comparison": None,
                                 "phase_latencies_ms": phase_latencies_ms,
                                 "grounding_signals": grounding_signals_data,
@@ -1739,7 +1788,7 @@ def run_suite(
                             "suite": suite,
                             "fixture_hash": fixture["hash"],
                             "rubric_version": rubric_versions.get(rubric_path),
-                            "model_snapshots": MODEL_SNAPSHOTS,
+                            **_model_provenance_fields(),
                             "baseline_comparison": iter_baseline_comparison,
                             "phase_latencies_ms": phase_latencies_ms,
                             "grounding_signals": grounding_signals_data,
@@ -1839,7 +1888,7 @@ def run_suite(
                     "suite": suite,
                     "fixture_hash": fixture["hash"],
                     "rubric_version": rubric_versions.get(rubric_path),
-                    "model_snapshots": MODEL_SNAPSHOTS,
+                    **_model_provenance_fields(),
                     "baseline_comparison": baseline_comparison,
                     "phase_latencies_ms": phase_latencies_ms,
                     "grounding_signals": grounding_signals_data,
@@ -1936,7 +1985,7 @@ def run_suite(
                         "anchor_version": anchor_version,
                         "suite": suite,
                         "fixture_hash": fixture["hash"],
-                        "model_snapshots": MODEL_SNAPSHOTS,
+                        **_model_provenance_fields(),
                         "phase_latencies_ms": phase_latencies_ms,
                         "eval_mode": mode,
                     }
@@ -2083,6 +2132,21 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     ap.add_argument(
+        "--model-override",
+        action="append",
+        default=[],
+        metavar="PIN=MODEL_ID",
+        help=(
+            "Send a CANDIDATE model in place of a pin for THIS run only, e.g. "
+            "SONNET_MODEL=claude-sonnet-5-5 (repeatable; pins: SONNET_MODEL, HAIKU_MODEL). "
+            "analyzer.py is never edited and the judge stays on its own model. The target must "
+            "already have a THINKING_POLICY and a MODEL_PRICING entry or the run is refused "
+            "before any paid call. Every record carries model_overrides, and the run is kept "
+            "out of the regression baseline and the dashboard's baseline views. Omit for the "
+            "byte-identical default path."
+        ),
+    )
+    ap.add_argument(
         "--seed",
         metavar="PATH",
         help=(
@@ -2133,6 +2197,19 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         overrides = loaded
 
+    # --model-override PIN=ID (repeatable): shape-check here; the pin NAME and the target's
+    # policy/price are validated once inside run_suite, before any paid call.
+    model_override_map: dict[str, str] = {}
+    for item in args.model_override:
+        pin, sep, target = item.partition("=")
+        if not sep or not pin.strip() or not target.strip():
+            logger.error("--model-override must look like PIN=MODEL_ID (got %r)", item)
+            return 1
+        if pin.strip() in model_override_map:
+            logger.error("--model-override given twice for %s", pin.strip())
+            return 1
+        model_override_map[pin.strip()] = target.strip()
+
     # --seed: eager-load + validate the corpus seed (bad path / JSON / schema → 1)
     # before any paid LLM call. Absent → seed_data=None and the file-based path is
     # byte-identical.
@@ -2159,6 +2236,7 @@ def main(argv: list[str] | None = None) -> int:
             seed_data=seed_data,
             mode=args.mode,
             prompt_overrides_map=overrides,
+            model_overrides_map=model_override_map,
             grounding_signals=args.grounding_signals,
             out_dir=args.out_dir,
         )

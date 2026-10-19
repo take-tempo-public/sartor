@@ -1553,3 +1553,169 @@ class TestJdLabelOnRecords:
         h.update((fixture_dir / "resume.md").read_bytes())
         h.update((fixture_dir / "expected.json").read_bytes())
         assert loaded["hash"] == h.hexdigest()
+
+
+class TestCandidateRuns:
+    """Item 137: a run under a model override is a candidate run.
+
+    Its records say which models actually ran (`model_snapshots`) and why (`model_overrides`); the
+    regression baseline skips candidate records of BOTH kinds (a prompt override stamps
+    `candidate:<hash>`); a bad override is refused before any paid call. Offline: every LLM hop is
+    stubbed, as in TestRunSuite.
+    """
+
+    CAND = "claude-sonnet-5-5"
+
+    @staticmethod
+    def _records(result):
+        assert result.out_path is not None
+        return [
+            json.loads(ln)
+            for ln in result.out_path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
+
+    def test_baseline_skips_prompt_and_model_candidates(self, tmp_path, monkeypatch):
+        from evals.runner import _load_baseline_scores
+
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        monkeypatch.setattr("evals.runner.RESULTS_DIR", results_dir)
+        monkeypatch.setattr("evals.runner.BASELINE_JSON", tmp_path / "none.json")
+
+        def line(score, ts, **extra):
+            rec = {"fixture": "a", "rubric": "grounding", "score": score, "timestamp": ts}
+            return json.dumps({**rec, **extra}) + "\n"
+
+        (results_dir / "20260501_000000Z.jsonl").write_text(
+            line(4.5, "2026-05-01T00:00:00Z", prompt_version="2026-10-17.2"), encoding="utf-8"
+        )
+        # Both candidate kinds are NEWER than the real record and must still lose.
+        (results_dir / "20260507_000000Z.jsonl").write_text(
+            line(1.0, "2026-05-07T00:00:00Z", prompt_version="candidate:0123456789ab")
+            + line(
+                2.0,
+                "2026-05-08T00:00:00Z",
+                prompt_version="2026-10-17.2",
+                model_overrides={"SONNET_MODEL": self.CAND},
+            ),
+            encoding="utf-8",
+        )
+        current = results_dir / "20260509_000000Z.jsonl"
+        current.write_text("", encoding="utf-8")
+
+        baseline = _load_baseline_scores(current)
+
+        assert baseline[("a", "grounding")]["score"] == 4.5
+
+    def test_default_run_records_are_unchanged(self, tmp_path, monkeypatch):
+        import evals.runner as runner
+
+        TestRunSuite()._stub_pipeline(runner, monkeypatch, tmp_path)
+        result = runner.run_suite(
+            suite="synthetic", subset="smoke", out_dir=tmp_path, client=MagicMock()
+        )
+
+        recs = self._records(result)
+        assert recs
+        for rec in recs:
+            assert rec["model_snapshots"] == runner.MODEL_SNAPSHOTS
+            assert "model_overrides" not in rec
+
+    def test_model_override_run_stamps_every_record(self, tmp_path, monkeypatch):
+        import analyzer
+        import evals.runner as runner
+
+        TestRunSuite()._stub_pipeline(runner, monkeypatch, tmp_path)
+        result = runner.run_suite(
+            suite="synthetic",
+            subset="smoke",
+            out_dir=tmp_path,
+            client=MagicMock(),
+            model_overrides_map={"SONNET_MODEL": self.CAND},
+        )
+
+        recs = self._records(result)
+        assert recs
+        for rec in recs:
+            assert rec["model_overrides"] == {"SONNET_MODEL": self.CAND}
+            assert rec["model_snapshots"]["sonnet"] == self.CAND
+            assert rec["model_snapshots"]["haiku"] == analyzer.HAIKU_MODEL  # not overridden
+            assert rec["model_snapshots"]["haiku_judge"] == runner.JUDGE_MODEL  # judge fixed
+            assert rec["prompt_version"] == analyzer.PROMPT_VERSION  # a model run keeps the label
+            assert runner.is_candidate_record(rec)
+        assert analyzer.active_model_overrides() == {}  # the context closed with the run
+
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            {"OPUS_MODEL": "claude-sonnet-5-5"},
+            {"SONNET_MODEL": "claude-opus-5-5"},  # no THINKING_POLICY / price entry today
+        ],
+    )
+    def test_bad_override_is_refused_before_any_client_or_record(self, tmp_path, monkeypatch, bad):
+        import evals.runner as runner
+
+        def no_client():
+            raise AssertionError("a client was created before the override was validated")
+
+        monkeypatch.setattr(runner, "_get_client", no_client)
+
+        with pytest.raises(ValueError, match="override"):
+            runner.run_suite(
+                suite="synthetic", subset="smoke", out_dir=tmp_path, model_overrides_map=bad
+            )
+
+        assert list(tmp_path.glob("*.jsonl")) == []
+
+    def test_cli_forwards_the_parsed_map(self, monkeypatch):
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        captured: dict = {}
+
+        def fake_run_suite(**kwargs):
+            captured.update(kwargs)
+            return EvalRunResult(0, None, 0, 0, [], [])
+
+        monkeypatch.setattr(runner, "run_suite", fake_run_suite)
+
+        rc = runner.main(
+            ["--model-override", f"SONNET_MODEL={self.CAND}", "--model-override", "HAIKU_MODEL=h"]
+        )
+
+        assert rc == 0
+        assert captured["model_overrides_map"] == {"SONNET_MODEL": self.CAND, "HAIKU_MODEL": "h"}
+
+    def test_cli_default_forwards_an_empty_map(self, monkeypatch):
+        import evals.runner as runner
+        from evals.runner import EvalRunResult
+
+        captured: dict = {}
+        monkeypatch.setattr(
+            runner,
+            "run_suite",
+            lambda **kw: captured.update(kw) or EvalRunResult(0, None, 0, 0, [], []),
+        )
+
+        assert runner.main([]) == 0
+        assert captured["model_overrides_map"] == {}
+
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["--model-override", "SONNET_MODEL"],
+            ["--model-override", "=claude-sonnet-5-5"],
+            ["--model-override", "SONNET_MODEL="],
+            ["--model-override", "SONNET_MODEL=a", "--model-override", "SONNET_MODEL=b"],
+        ],
+    )
+    def test_cli_malformed_override_exits_1_without_running(self, monkeypatch, argv):
+        import evals.runner as runner
+
+        def boom(**kwargs):
+            raise AssertionError("run_suite must not be reached")
+
+        monkeypatch.setattr(runner, "run_suite", boom)
+
+        assert runner.main(argv) == 1
