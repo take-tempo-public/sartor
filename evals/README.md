@@ -889,13 +889,14 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 | `deterministic_metrics.verb_diversity` | Unique leading verbs / total bullets in generated resume. See `hardening.compute_verb_diversity`. |
 | `deterministic_metrics.specificity_density` | Fraction of bullets containing at least one quantifier. See `hardening.compute_specificity_density`. |
 | `deterministic_metrics.grounding_overlap` | 3-gram overlap between generated and source. **`missing_samples`** is the actionable signal for fabrication detection, not the ratio. See `hardening.compute_grounding_overlap`. |
-| `cost_usd` | Sum of all `analyze` + `generate` calls for this fixture, derived from `logs/llm_calls.jsonl` via `hardening.compute_call_cost`. |
+| `cost_usd` | Sum of all `analyze` + `generate` calls for this fixture, derived from `logs/llm_calls.jsonl` via `hardening.compute_call_cost`. Generation only: the eval-judge calls (`judge_*` rows) are excluded. |
 | `pipeline_latency_ms` | End-to-end pipeline time excluding judge calls. |
 | `anchor_version` | Which `evals/anchors/` snapshot this run graded against (`suite="anchor"` runs only carry a real value; otherwise the current fixture tree). |
 | `suite` | `"synthetic"`, `"real"`, `"anchor"`, or `"exploration"` — which fixture tree produced this fixture. |
 | `fixture_hash` | sha256 of `jd.txt` + resume file + `expected.json` bytes — pins exactly which fixture content this record graded. Never includes `jd_label` (label derivation must not change what a rerun would hash). |
 | `rubric_version` | The rubric file's own version marker, if the rubric declares one; `null` otherwise. |
-| `model_snapshots` | The Sonnet/Haiku model IDs in effect for this run — `hardening.MODEL_PRICING`'s keys, so a cost figure can always be traced to the pricing that produced it. |
+| `model_snapshots` | The Sonnet, Haiku and judge model IDs in effect for this run, read from `analyzer.SONNET_MODEL` / `HAIKU_MODEL` and `JUDGE_MODEL` (all `hardening.MODEL_PRICING` keys), so a cost figure can always be traced to the pricing that produced it. |
+| `judge_request_id` | The API request id of the judge call that produced this score; join it to the `judge_grade` row's `api_request_id` in `logs/llm_calls.jsonl` for the judge's model, settings and tokens. `null` when the call failed. |
 | `baseline_comparison` | `null` for `assemble` mode or when no prior baseline exists; otherwise `{prev_score, delta, is_regression, is_improvement}` against `baseline_v1.json`. |
 | `phase_latencies_ms` | Per-phase wall-clock breakdown (`analyze`/`clarify`/`generate`/…) of `pipeline_latency_ms`. |
 | `grounding_signals` | `null` unless the run used `--grounding-signals`; otherwise the MiniCheck/NLI scorer output for this fixture. |
@@ -911,7 +912,7 @@ These ride along on every eval result's `deterministic_metrics` block. They're c
 | `verb_diversity.diversity_ratio` | ≥ 0.6 | < 0.5: inspect `top_repeated`. SYSTEM_PROMPT already discourages verb repetition; if it persists, strengthen with a worked example like the grounding one. |
 | `specificity_density.density` | 0.30–0.80 | < 0.30: LLM under-quantified — likely paraphrasing real numbers from source into qualitative language. > 0.80: number-stuffing risk — cross-check grounding score. |
 | `grounding_overlap.overlap_ratio` | 0.20–0.50 | The ratio alone is NOT a pass/fail signal. Always read `missing_samples` for items containing technology names, domain nouns, or company-specific phrases — those are the fabrication candidates. Pure-stopword n-grams are filtered out automatically. |
-| `cost_usd` (per fixture) | $0.10–$0.15 (Sonnet 5 + 1× Haiku judge call) | A spike usually means a longer-than-usual generation — check `pipeline_latency_ms` and the corresponding `logs/llm_calls.jsonl` entry's `output_tokens`. |
+| `cost_usd` (per fixture) | $0.10–$0.15 (Sonnet 5 generation; judge calls excluded) | A spike usually means a longer-than-usual generation — check `pipeline_latency_ms` and the corresponding `logs/llm_calls.jsonl` entry's `output_tokens`. |
 
 ### How to read the dashboard
 

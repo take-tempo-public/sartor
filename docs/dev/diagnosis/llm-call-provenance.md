@@ -1,7 +1,7 @@
 # Diagnosis — the call log cannot say which model version answered, with what settings (item 175)
 
-> **Status:** gaps 2, 3 and 4 PROVEN (observations 1 and 4); gap 1's mechanism ("`final.model` shows the version")
-> FALSIFIED; gaps 5-7 are read from code and still unobserved (judge calls were not probed live).
+> **Status:** gaps 2, 3 and 4 PROVEN before the fix (observations 1 and 4) and observed fixed (1 and 5); gap 1's mechanism
+> ("`final.model` shows the version") FALSIFIED; gaps 5-7 built and tested offline only (no judge call was probed live).
 > **Branch:** `fix/llm-call-provenance`
 
 ---
@@ -71,6 +71,24 @@ that answered, the settings sent, the API request id or thinking tokens; the eva
    - **The streamed `usage` carried no `output_tokens_details` / thinking-token field** on either call (neither call
      was configured to think).
    - **`usage` carried three served-as facts the row drops:** `service_tier`, `speed` and `inference_geo`.
+
+5. **The same probe after the change** (2026-10-19, HEAD `2ae0dd7`), `python -m scripts.probe_call_provenance --yes`, exit 0,
+   `total cost from rows: $0.005324` (so $0.010648 across both runs; the approved ceiling was $0.02). The rows as logged:
+
+   ```
+   sonnet: model "claude-sonnet-5", answered_model "claude-sonnet-5", api_request_id "req_011CgAmLxXEiYMJm7C6fpnbV",
+     request_settings {"model": "claude-sonnet-5", "max_tokens": 16, "thinking": {"type": "disabled"}},
+     served_as {"service_tier": "standard", "speed": "standard", "inference_geo": "global"},
+     thinking_tokens null, attempt 1, status "ok"       (SDK request_id: req_011CgAmLxXEiYMJm7C6fpnbV)
+   haiku:  model "claude-haiku-4-5-20251001", answered_model "claude-haiku-4-5-20251001",
+     api_request_id "req_011CgAmM4cMXN2YtL1aUnY11", request_settings {"model": "claude-haiku-4-5-20251001", "max_tokens": 16},
+     served_as {"service_tier": "standard", "speed": "standard", "inference_geo": "not_available"},
+     thinking_tokens null, attempt 1, status "ok"       (SDK request_id: req_011CgAmM4cMXN2YtL1aUnY11)
+   ```
+
+   Each row's `api_request_id` equals the SDK's `request_id` for that call; the Sonnet row shows `thinking: disabled`, the Haiku
+   row shows no `thinking` key. **Not observed live:** a judge row (fakes only); `thinking_tokens` on a thinking call (null on
+   both, neither thinks).
 
 ---
 
