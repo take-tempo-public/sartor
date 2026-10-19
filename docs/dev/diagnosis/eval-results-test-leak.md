@@ -79,9 +79,27 @@ prior session, a different test file). Other tests that call `run_suite` without
 2. Regression test (`tests/test_eval_runner.py`): with `runner.RESULTS_DIR` patched to `tmp_path` and the LLM calls stubbed,
    `run_suite(...)` with no `out_dir` must write under `tmp_path`. It must fail on `main`.
 
+- **Sentinel fails closed.** Worktree at `main` (old `evals/runner.py`) with only the new `tests/conftest.py` copied in;
+  `PYTHONPATH=... python -m pytest tests/test_annotation_routes.py -k test_grounding_scorer_failure_streams_warning_not_error -q`
+  → test line `.` (passed), then `FAILED (item 179): this pytest session added 1 file(s) to the real evals/results/:
+  20261019_205309Z.jsonl.`, `1 passed`, **pytest exit status 1**. The checkout's real `evals/results/` was unchanged.
+- **Eager-import cost** (`python -c "import analyzer, hardening"` vs. the same plus `evals.runner`, best of 3): 1.155 s vs
+  1.777 s, delta 0.622 s per pytest process; `python -c "import app"` does not load `evals.runner`.
+- **After the fix**, on this branch: `python -m pytest tests/test_eval_runner.py tests/test_annotation_routes.py
+  tests/test_dashboard_routes.py -n 4 -q` → `225 passed`; real `evals/results/` listing identical before and after.
+
 ## The fix
 
-_(Only after step 1 and 2 above have run; recorded here as they happen.)_
+Falsification steps 1 and 2 both ran (Observed, above), so the hypothesis holds for the writer.
+
+- `evals/runner.py` `run_suite`: `out_dir: str | Path | None = None`, resolved to the module's `RESULTS_DIR` at call time.
+  Callers (grep `run_suite(` over non-test `*.py`): `evals/runner.py:2233` (`main`, always passes `args.out_dir`),
+  `blueprints/diagnostics.py:1118` and `:1306` (omit it: same directory in production, patched directory under test).
+  Tests: pass `out_dir=tmp_path` or patch `RESULTS_DIR`; both unchanged in meaning.
+- `tests/conftest.py`: autouse `_default_eval_results_dir` (per-test tmp `RESULTS_DIR` and `BASELINE_JSON`), and
+  `pytest_sessionstart` / `pytest_sessionfinish` that fail the session when the real `evals/results/` gains a file.
+  Controller only (skipped on xdist workers). Known limit (C-0): a real eval run in another terminal during pytest trips it, and
+  it compares names, so an edit to an existing file is not seen.
 
 ## Acceptance bar
 

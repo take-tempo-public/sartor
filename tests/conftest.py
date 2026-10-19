@@ -49,6 +49,74 @@ def _default_gate_result_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
 
 @pytest.fixture(autouse=True)
+def _default_eval_results_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redirect `evals.runner.RESULTS_DIR` to a per-test tmp dir, for every test (item 179;
+    same shape as `_default_llm_log_path` above).
+
+    `run_suite` writes `<RESULTS_DIR>/<timestamp>.jsonl`. The diagnostics routes pass no
+    `out_dir`, so a test that drove one wrote a stub run into the developer's real
+    `evals/results/`: 337 of its 425 files, read by the regression check and the dashboard as
+    real runs. Tests that need their own dir patch it afterward and simply win.
+
+    Eager import, deliberately: a "patch only if already imported" version misses the test that
+    imports the runner after this fixture ran, the failure this closes. Measured cost
+    (2026-10-19, `python -c "import analyzer, hardening"` vs. the same plus `evals.runner`,
+    best of 3): about 0.6 s once per pytest process (1.16 s vs 1.78 s); `import app` does not
+    load the runner, so the other tests pay it too. `pytest_sessionfinish` below is the backstop
+    for a writer this redirect misses.
+    """
+    import evals.runner as runner
+
+    monkeypatch.setattr(runner, "RESULTS_DIR", tmp_path / "eval_results")
+    monkeypatch.setattr(runner, "BASELINE_JSON", tmp_path / "eval_results" / "baseline_v1.json")
+
+
+_REAL_EVAL_RESULTS = PROJECT_ROOT / "evals" / "results"
+
+
+def _real_eval_results_names() -> set[str]:
+    try:
+        return {p.name for p in _REAL_EVAL_RESULTS.iterdir()}
+    except OSError:
+        return set()
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Snapshot the real eval results dir once, on the controller (not on xdist workers)."""
+    if not hasattr(session.config, "workerinput"):
+        session.config._real_eval_results_before = _real_eval_results_names()  # type: ignore[attr-defined]
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Fail the session if it left a new file in the real `evals/results/` (item 179).
+
+    The autouse redirect above covers the writers known today; this is the check that fails
+    closed for the next one. Two directory listings per session. Known limit (C-0): it cannot
+    tell a test from a real eval run started in another terminal while pytest runs, so such a run
+    trips it; and it sees names only, not an edit to an existing file.
+    """
+    before = getattr(session.config, "_real_eval_results_before", None)
+    if before is None:
+        return
+    added = sorted(_real_eval_results_names() - before)
+    if not added:
+        return
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    message = (
+        f"FAILED (item 179): this pytest session added {len(added)} file(s) to the real "
+        f"evals/results/: {', '.join(added[:5])}{' ...' if len(added) > 5 else ''}. A test wrote "
+        "where the developer's eval runs live; redirect it (see _default_eval_results_dir in "
+        "tests/conftest.py). A real eval run in another terminal during this session also trips this."
+    )
+    if reporter is not None:
+        reporter.write_line(message, red=True)
+    else:
+        print(message)
+    if session.exitstatus == 0:
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+@pytest.fixture(autouse=True)
 def _isolated_witness_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Point the interrogative-witness state dir at a per-test tmp dir, for every
     test in the suite (work item 87; same shape as `_default_llm_log_path` above).
