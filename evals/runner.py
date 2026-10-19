@@ -44,11 +44,14 @@ if str(PROJECT_ROOT) not in sys.path:
 import preflight  # noqa: E402
 import sartor_home  # noqa: E402
 from analyzer import (  # noqa: E402
+    HAIKU_MODEL,
+    SONNET_MODEL,
     analyze,
     clarify,
     clarify_iteration,
     effective_prompt_version,
     generate,
+    log_judge_call,
     prompt_overrides,
     recommend_bullets,
     recommend_summaries,
@@ -109,12 +112,15 @@ RESULTS_DIR = EVALS_DIR / "results"
 ANCHOR_DIR = EVALS_DIR / "anchors" / "anchor-v1"
 WEIGHTS_PATH = EVALS_DIR / "callback_weights.json"
 
-MODEL_SNAPSHOTS = {
-    "sonnet": "claude-sonnet-5",
-    "haiku_judge": "claude-haiku-4-5-20251001",
-}
-
 JUDGE_MODEL = "claude-haiku-4-5-20251001"
+
+# Derived from the analyzer's pins, not hand-copied, so a model swap cannot leave the eval
+# records naming the old model (item 175 gap 6). `sonnet` / `haiku_judge` keep their keys.
+MODEL_SNAPSHOTS = {
+    "sonnet": SONNET_MODEL,
+    "haiku": HAIKU_MODEL,
+    "haiku_judge": JUDGE_MODEL,
+}
 PASS_THRESHOLD = 4.0
 SCORE_MAX = 5.0
 # Bumped when the eval-result JSONL shape changes. Old records (no field) are
@@ -408,10 +414,51 @@ def _leak_report(
     }
 
 
+def _judge_create(
+    client: anthropic.Anthropic,
+    *,
+    call_kind: str,
+    fixture_name: str,
+    **request: Any,
+) -> tuple[Any, str | None]:
+    """``client.messages.create`` for an eval judge, with its telemetry row (item 175 gap 5).
+
+    Returns ``(message, api_request_id)``. The row is written under ``call_kind`` (``judge_*``)
+    and ``eval:<fixture_name>`` so the spend is in the telemetry window; `_eval_cost_since`
+    skips ``judge_*`` rows so a fixture's ``cost_usd`` stays generation-only. A failed call
+    logs its error row and re-raises.
+    """
+    t0 = time.perf_counter()
+    username = f"eval:{fixture_name}" if fixture_name else "eval"
+    try:
+        msg = client.messages.create(**request)
+    except Exception as exc:
+        log_judge_call(
+            call_kind=call_kind,
+            username=username,
+            model=JUDGE_MODEL,
+            request_kwargs=request,
+            response=None,
+            elapsed_ms=int((time.perf_counter() - t0) * 1000),
+            error=exc,
+        )
+        raise
+    request_id = log_judge_call(
+        call_kind=call_kind,
+        username=username,
+        model=JUDGE_MODEL,
+        request_kwargs=request,
+        response=msg,
+        elapsed_ms=int((time.perf_counter() - t0) * 1000),
+    )
+    return msg, request_id
+
+
 def _score_distinctiveness(
     client: anthropic.Anthropic,
     generated_resume: str,
     job_description: str,
+    fixture_name: str = "",
 ) -> dict[str, Any]:
     """Lightweight Haiku call scoring how distinctive/memorable the résumé is.
 
@@ -436,8 +483,12 @@ def _score_distinctiveness(
         "Output ONLY valid JSON with keys 'score' (float 1.0–5.0, one decimal) "
         "and 'summary' (one sentence). No prose outside the JSON."
     )
+    request_id: str | None = None
     try:
-        msg = client.messages.create(
+        msg, request_id = _judge_create(
+            client,
+            call_kind="judge_distinctiveness",
+            fixture_name=fixture_name,
             model=JUDGE_MODEL,
             max_tokens=128,
             system="You are a strict, terse grader. Output only valid JSON.",
@@ -452,15 +503,16 @@ def _score_distinctiveness(
         result = cast("dict[str, Any]", json.loads(raw))
         if result.get("score") is not None:
             result["score"] = float(result["score"])
+        result["judge_request_id"] = request_id
         return result
     except Exception as exc:
         logger.warning("_score_distinctiveness failed: %s", exc)
-        return {"score": None, "summary": "judge_error"}
+        return {"score": None, "summary": "judge_error", "judge_request_id": request_id}
 
 
 def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
-    """Sum costs of every llm_calls.jsonl record written for this fixture
-    since the eval run started. Best-effort: missing log → 0.0."""
+    """Sum costs of every generation-side llm_calls.jsonl record written for this fixture
+    since the eval run started (the `judge_*` rows are excluded). Best-effort: missing log → 0.0."""
     if not LLM_LOG_PATH.exists():
         return 0.0
     needle = f"eval:{fixture_name}"
@@ -476,6 +528,10 @@ def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
                 except json.JSONDecodeError:
                     continue
                 if rec.get("username") != needle:
+                    continue
+                # Eval judges log under `judge_*` kinds (item 175); cost_usd stays generation-only,
+                # whatever order the rollup runs in relative to the judge calls.
+                if str(rec.get("call", "")).startswith("judge_"):
                     continue
                 ts = rec.get("timestamp", "")
                 if ts < t0_iso:
@@ -612,9 +668,16 @@ def _detect_regression(
 
 
 def _grade(
-    client: anthropic.Anthropic, rubric_path: Path, payload: dict[str, Any]
+    client: anthropic.Anthropic,
+    rubric_path: Path,
+    payload: dict[str, Any],
+    fixture_name: str = "",
 ) -> dict[str, Any]:
-    """Send one (rubric × payload) to Haiku and parse the JSON verdict."""
+    """Send one (rubric × payload) to Haiku and parse the JSON verdict.
+
+    The verdict carries ``judge_request_id`` (the API request id of that call), so a score
+    joins to its `judge_grade` row in `logs/llm_calls.jsonl`.
+    """
     rubric = rubric_path.read_text(encoding="utf-8")
     user_msg = (
         f"{rubric}\n\n"
@@ -622,7 +685,10 @@ def _grade(
         f"```json\n{json.dumps(payload, indent=2)}\n```\n\n"
         "Output the JSON verdict now. No prose outside the JSON."
     )
-    msg = client.messages.create(
+    msg, request_id = _judge_create(
+        client,
+        call_kind="judge_grade",
+        fixture_name=fixture_name,
         model=JUDGE_MODEL,
         max_tokens=1024,
         system="You are a strict, terse grader. Output only valid JSON matching the rubric's schema.",
@@ -648,6 +714,7 @@ def _grade(
             "reasons": ["judge response was not valid JSON"],
             "raw": raw,
             "status": "judge_error",
+            "judge_request_id": request_id,
         }
     # Force-float at the boundary: rubrics now allow fractional scores
     # (0.0–5.0, one decimal), but Haiku still occasionally emits an integer.
@@ -657,6 +724,7 @@ def _grade(
             grade["score"] = float(grade["score"])
         except (TypeError, ValueError):
             grade["score"] = 0.0
+    grade["judge_request_id"] = request_id
     return grade
 
 
@@ -925,7 +993,7 @@ def _run_iteration_phase(
         prior_clarifications=prior_clarifications,
     )
     try:
-        grade = _grade(client, rubric_path, payload)
+        grade = _grade(client, rubric_path, payload, fixture_name=fixture["name"])
         grade.setdefault("status", "ok")
     except Exception as exc:
         grade = {"score": None, "reasons": [str(exc)], "status": "judge_error"}
@@ -942,6 +1010,7 @@ def _run_iteration_phase(
         "reasons": grade.get("reasons", []),
         "failed_rules": grade.get("failed_rules", []),
         "status": grade.get("status", "ok"),
+        "judge_request_id": grade.get("judge_request_id"),
         "prompt_version": effective_prompt_version(),
         "run_id": run_id,
         "deterministic_metrics": det_metrics,
@@ -1458,6 +1527,7 @@ def run_suite(
                 client,
                 result.get("resume_content", ""),
                 context["job_description"],
+                fixture_name=fixture["name"],
             )
             cost_usd = _eval_cost_since(t0_iso, fixture["name"])
             logger.info(
@@ -1711,7 +1781,7 @@ def run_suite(
                     "clarification_reasoning": clarify_reasoning,
                 }
                 try:
-                    grade = _grade(client, rubric_path, payload)
+                    grade = _grade(client, rubric_path, payload, fixture_name=fixture["name"])
                     grade.setdefault("status", "ok")
                 except Exception as exc:
                     logger.error(
@@ -1750,6 +1820,7 @@ def run_suite(
                     "reasons": grade.get("reasons", []),
                     "failed_rules": grade.get("failed_rules", []),
                     "status": grade.get("status", "ok"),
+                    "judge_request_id": grade.get("judge_request_id"),
                     "prompt_version": effective_prompt_version(),
                     "run_id": run_id,
                     "deterministic_metrics": det_metrics,

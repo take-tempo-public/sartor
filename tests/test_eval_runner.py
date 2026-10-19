@@ -931,7 +931,7 @@ class TestAssembleMode:
 
         captured_payloads: list[dict] = []
 
-        def _capture_grade(client, rubric_path, payload):
+        def _capture_grade(client, rubric_path, payload, **k):
             captured_payloads.append(payload)
             return {"score": 4.5, "reasons": [], "failed_rules": [], "status": "ok"}
 

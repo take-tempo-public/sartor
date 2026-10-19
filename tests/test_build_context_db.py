@@ -345,6 +345,37 @@ class TestApplicationTitleIsRoleOnly:
         assert app.title == "Untitled application"
 
 
+class TestRunIsStampedWithTheEffectivePromptVersion:
+    """Item 175 gap 7: `ApplicationRun.prompt_version` is the version in effect, so a run made
+    under a `prompt_overrides` candidate is not recorded as the shipped `PROMPT_VERSION`."""
+
+    def test_default_path_stamps_the_shipped_version(self, db_session):
+        import analyzer
+
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        _ctx, _app, run = build_context_set_from_db(
+            db_session, candidate_username="casey", jd_text="Backend Engineer", run_id="pv_default"
+        )
+        assert run.prompt_version == analyzer.PROMPT_VERSION
+
+    def test_candidate_override_stamps_the_candidate_hash(self, db_session):
+        import analyzer
+
+        _seed_full_candidate(db_session)
+        db_session.commit()
+        with analyzer.prompt_overrides({"SYSTEM_PROMPT": "candidate text"}):
+            expected = analyzer.effective_prompt_version()
+            _ctx, _app, run = build_context_set_from_db(
+                db_session,
+                candidate_username="casey",
+                jd_text="Backend Engineer",
+                run_id="pv_candidate",
+            )
+        assert expected.startswith("candidate:")
+        assert run.prompt_version == expected != analyzer.PROMPT_VERSION
+
+
 class TestSummarizeEducations:
     def test_joins_with_semicolons(self):
         eds = [

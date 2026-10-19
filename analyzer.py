@@ -810,6 +810,59 @@ def _provenance_fields(
     }
 
 
+def log_judge_call(
+    *,
+    call_kind: str,
+    username: str,
+    model: str,
+    request_kwargs: Mapping[str, Any],
+    response: object,
+    elapsed_ms: int,
+    error: BaseException | None = None,
+) -> str | None:
+    """Append the telemetry row for one non-streaming eval-judge call; return its API request id.
+
+    The eval judges (`evals/runner.py`) call `client.messages.create` directly, so they never
+    reached `_call_llm_streaming` and left no row (item 175 gap 5). Same row shape and
+    provenance fields as a product call, under a `judge_*` ``call_kind`` so
+    `evals.runner._eval_cost_since` can keep eval ``cost_usd`` generation-only. ``response`` is
+    ``None`` when the call raised (``error`` then fills `error_type` / `error_message`, redacted
+    exactly as for product calls). Best-effort like `_emit_call_log`: it never raises.
+    """
+    usage = getattr(response, "usage", None)
+    request_id = _str_or_none(getattr(response, "_request_id", None))
+    record: dict[str, Any] = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "username": username,
+        "run_id": "",
+        "call": call_kind,
+        "model": model,
+        "prompt_version": effective_prompt_version(),
+        "input_tokens": _int_or_none(getattr(usage, "input_tokens", 0)) or 0,
+        "output_tokens": _int_or_none(getattr(usage, "output_tokens", 0)) or 0,
+        "cache_creation_input_tokens": _int_or_none(
+            getattr(usage, "cache_creation_input_tokens", 0)
+        )
+        or 0,
+        "cache_read_input_tokens": _int_or_none(getattr(usage, "cache_read_input_tokens", 0)) or 0,
+        "latency_ms": elapsed_ms,
+        "stop_reason": _str_or_none(getattr(response, "stop_reason", None)),
+        "status": "error" if error is not None else "ok",
+        **_provenance_fields(
+            request_kwargs,
+            answered_model=getattr(response, "model", None),
+            api_request_id=request_id,
+            usage=usage,
+            attempt=1,
+        ),
+    }
+    if error is not None:
+        record["error_type"] = type(error).__name__
+        record["error_message"] = _redact_error_message(_safe_exc_str(error))
+    _emit_call_log(record)
+    return request_id
+
+
 # --- C1c: error-capture redaction/size policy (docs/dev/handoffs/epic-c-c1c-brief.md) ---
 #
 # `_redact_error_message` is the ONLY place `error_message` text reaches
