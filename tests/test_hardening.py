@@ -800,6 +800,70 @@ class TestCallCost:
                 "cache_read",
             }, model
 
+    def test_every_pin_has_a_thinking_policy_and_every_policy_is_priced(self):
+        """Adding a model means pricing it AND choosing its `thinking` value (item 137).
+
+        The policy table is what `_call_llm` sends; a pin missing from it would raise at
+        the first call, and a policy for an unpriced model would cost 0.0 in every report.
+        """
+        import analyzer
+        from evals import runner
+
+        pins = {
+            analyzer.SONNET_MODEL,
+            analyzer.HAIKU_MODEL,
+            runner.JUDGE_MODEL,
+            *runner.MODEL_SNAPSHOTS.values(),
+        }
+        for model in sorted(pins):
+            assert model in analyzer.THINKING_POLICY, f"{model} has no THINKING_POLICY entry"
+        for model in sorted(analyzer.THINKING_POLICY):
+            assert model in MODEL_PRICING, f"{model} has a thinking policy but no price"
+
+    def test_known_sonnet55_record(self):
+        # Pricing page, re-read 2026-10-19 (item 137): $2 in / $10 out / $2.50 write / $0.10 read.
+        record = {
+            "model": "claude-sonnet-5-5",
+            "input_tokens": 1_000_000,
+            "output_tokens": 1_000_000,
+            "cache_creation_input_tokens": 1_000_000,
+            "cache_read_input_tokens": 1_000_000,
+        }
+        assert compute_call_cost(record) == 14.6
+
+    def test_haiku55_at_the_threshold_uses_the_base_rates(self):
+        # 60,000 + 20,000 + 20,000 = 100,000 prompt tokens, which is NOT over the threshold.
+        # 60000*0.10 + 20000*0.125 + 20000*0.01 + 1000*0.50 = 9200 / 1M
+        record = {
+            "model": "claude-haiku-5-5",
+            "input_tokens": 60_000,
+            "output_tokens": 1_000,
+            "cache_creation_input_tokens": 20_000,
+            "cache_read_input_tokens": 20_000,
+        }
+        assert compute_call_cost(record) == 0.0092
+
+    def test_haiku55_over_the_threshold_prices_every_token_type_at_the_higher_tier(self):
+        # 100,001 prompt tokens: the WHOLE request is billed at the higher tier, including the
+        # cache reads and writes that count toward the length (pricing page, "Long context pricing").
+        # 60001*0.50 + 20000*0.625 + 20000*0.05 + 1000*2.50 = 46000.5 / 1M
+        record = {
+            "model": "claude-haiku-5-5",
+            "input_tokens": 60_001,
+            "output_tokens": 1_000,
+            "cache_creation_input_tokens": 20_000,
+            "cache_read_input_tokens": 20_000,
+        }
+        assert compute_call_cost(record) == pytest.approx(0.0460005, abs=1e-6)
+
+    def test_a_model_without_tiers_is_unaffected_by_prompt_length(self):
+        record = {
+            "model": "claude-haiku-4-5-20251001",
+            "input_tokens": 150_000,
+            "output_tokens": 0,
+        }
+        assert compute_call_cost(record) == 0.15
+
     def test_unknown_model_returns_zero(self, caplog):
         record = {
             "model": "claude-opus-9000",

@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: a per-model `thinking` policy, and prices for the 5.5 models (`feat/thinking-policy-55-pricing`, item 137)
+
+Groundwork for the Claude 5.5 candidate evaluation. **No pin moves**: `SONNET_MODEL`, `HAIKU_MODEL` and `JUDGE_MODEL` are unchanged, and
+every request sent today is byte-identical (Sonnet 5 still gets `thinking: disabled`; Haiku 4.5 still gets no `thinking` field).
+
+- **`analyzer.THINKING_POLICY`** replaces the `effective_model == SONNET_MODEL` test that decided whether `thinking: disabled` was sent.
+  Sonnet 5.5 maps to `between_tools` (`disabled` is a `400` there) and Haiku 5.5 to `disabled`. A model with **no entry is refused**
+  with `LLMConfigurationError` before anything is sent, instead of silently running its default adaptive thinking. The eval judge
+  (`evals/runner.py::_judge_create`) uses the same table.
+- **`hardening.MODEL_PRICING`** gains `claude-sonnet-5-5` and `claude-haiku-5-5` (rates re-read from the pricing page 2026-10-19), and
+  **`MODEL_PRICING_TIERS`** carries Haiku 5.5's over-100,000-token prices. `compute_call_cost` applies a tier to the whole request
+  when input + cache writes + cache reads exceed the threshold; its signature and every caller are unchanged. Opus 5.5 is not priced:
+  the product makes no Opus call.
+- **Tests fail closed** if a pin lacks a policy or a policy lacks a price (`tests/test_hardening.py`); `tests/test_call_provenance.py`
+  and `tests/test_judge_call_provenance.py` pin the value sent per model and the refusal of an unlisted one.
+- No prompt text changed, so `PROMPT_VERSION` is not bumped. No new dependency.
+
 ### Added: every LLM call row records what answered it and the settings sent (`fix/llm-call-provenance`, item 175)
 
 A `logs/llm_calls.jsonl` row used to name only the model id the code asked for. It now also records, from the real call:

@@ -115,9 +115,43 @@ def test_every_request_kwarg_is_recorded(_rows, model):
     assert set(settings) == set(sent) - {"system", "messages"}
     for key, value in settings.items():
         assert value == sent[key]
-    # Sonnet is sent `thinking`, Haiku is not: the row shows which.
-    assert ("thinking" in settings) == ((model or SONNET_MODEL) == SONNET_MODEL)
+    # `thinking` is sent exactly when the model's policy has a value: the row shows which.
+    assert ("thinking" in settings) == (analyzer.THINKING_POLICY[model or SONNET_MODEL] is not None)
     assert settings["max_tokens"] == 64
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        (SONNET_MODEL, {"type": "disabled"}),  # today's behavior, unchanged
+        (HAIKU_MODEL, None),  # today's behavior, unchanged: the field is not sent
+        ("claude-sonnet-5-5", {"type": "between_tools"}),  # `disabled` is a 400 on this model
+        ("claude-haiku-5-5", {"type": "disabled"}),  # holds thinking-off explicitly
+    ],
+)
+def test_thinking_value_sent_follows_the_models_policy(_rows, model, expected):
+    client = _Client([_rich_stream()])
+
+    analyzer._call_llm(client, "p", call_kind="t", model=model)
+
+    sent = client.captured[0]
+    assert sent.get("thinking") == expected
+    assert ("thinking" in sent) == (expected is not None)
+    assert _rows[0]["request_settings"].get("thinking") == expected
+
+
+def test_model_without_a_thinking_policy_is_refused_before_the_request(_rows):
+    """Fail closed: guessing would silently turn adaptive thinking on (item 137)."""
+    client = _Client([_rich_stream()])
+
+    with pytest.raises(analyzer.LLMConfigurationError, match="claude-unlisted-9"):
+        analyzer._call_llm(client, "p", call_kind="t", model="claude-unlisted-9")
+
+    assert client.captured == []  # no request left the process
+    assert len(_rows) == 1
+    assert _rows[0]["status"] == "error"
+    assert _rows[0]["error_type"] == "LLMConfigurationError"
+    assert _rows[0]["request_settings"] is None  # nothing was sent, so nothing is claimed
 
 
 def test_prompt_text_never_reaches_the_row(_rows):
