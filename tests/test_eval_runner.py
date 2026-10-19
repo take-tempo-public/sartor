@@ -467,6 +467,23 @@ class TestRunSuite:
         # Default (no-override) path stamps the real PROMPT_VERSION, not candidate:<hash>.
         assert all(not str(r["prompt_version"]).startswith("candidate:") for r in grounding)
 
+    def test_run_suite_default_out_dir_follows_patched_results_dir(self, tmp_path, monkeypatch):
+        """With no ``out_dir``, ``run_suite`` writes under the module's CURRENT ``RESULTS_DIR``.
+
+        Item 179: the default was bound at def time, so a test (or any caller) that patched
+        ``RESULTS_DIR`` was ignored by the diagnostics routes, which pass no ``out_dir``, and 337
+        stub runs landed in the developer's real ``evals/results/``.
+        """
+        import evals.runner as runner
+        from evals.runner import run_suite
+
+        results = tmp_path / "patched_results"
+        self._stub_pipeline(runner, monkeypatch, tmp_path)
+        monkeypatch.setattr(runner, "RESULTS_DIR", results)
+        result = run_suite(suite="synthetic", subset="smoke", client=MagicMock())
+        assert result.out_path is not None
+        assert result.out_path.parent == results
+
     def test_run_suite_progress_sartor_fires(self, tmp_path, monkeypatch):
         """The optional progress sartor is invoked with (event, payload) at the
         documented milestones; the default (None) path stays a no-op."""

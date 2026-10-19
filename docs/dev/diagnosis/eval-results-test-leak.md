@@ -40,6 +40,19 @@ All on `main` at `18dbc26`, 2026-10-19, read-only.
 - Prior sighting: `docs/dev/diagnosis/llm-handle-leak-and-letter-date.md:161` records ONE stray file,
   `evals/results/20261017_093904Z.jsonl`, "from a pytest run (`test_eval_runner`, stubbed)", as a one-off.
 
+- **Reproduction (2026-10-19).** `git worktree add --detach /c/Dev/sartor-leak-repro main`, then there
+  `PYTHONPATH=/c/Dev/sartor-leak-repro python -m pytest tests/test_annotation_routes.py -k
+  test_grounding_scorer_failure_streams_warning_not_error -p no:cacheprovider -q` → `1 passed`. The worktree's
+  `evals/results/` went from 1 entry (`baseline_v1.json`) to 2: new file `20261019_204936Z.jsonl`, 6 rows, contains
+  `led a project`, fixtures `data-scientist-junior`/`pm-senior`/`sre-mid-level`, grounding `[4.5]`, `cost_usd` 0.0,
+  `distinctiveness` `{"score": 4.0, "summary": "ok"}`: the 337-file signature. The real `evals/results/` listing was
+  identical before and after (`diff` of `ls`, printed `REAL_DIR_UNCHANGED`), so the lone test writes to the checkout it runs from.
+- **Regression test fails on unchanged code.** `tests/test_eval_runner.py::TestRunSuite::test_run_suite_default_out_dir_follows_patched_results_dir`
+  copied into the same worktree: `1 failed`, `AssertionError: assert WindowsPath('C:/Dev/sartor-leak-repro/evals/results')
+  == WindowsPath('C:/Users/iam/AppData/Local/Temp/pytest-of-iam/pytest-7129/test_run_suite_default_out_dir0/patched_results')`
+  (`result.out_path` was `.../evals/results/20261019_205006Z.jsonl`). Real dir again unchanged. (The log also shows
+  `Fixture load failed: corpus ... jd.txt` in the worktree: a gitignored fixture absent from a fresh checkout, unrelated.)
+
 ## Falsified
 
 _(Nothing yet.)_
@@ -48,7 +61,9 @@ _(Nothing yet.)_
 
 ## Inferred
 
-**Hypothesis, not fact.** `test_grounding_scorer_failure_streams_warning_not_error` is the writer of all 337 files: its
+**Partly confirmed (see the Reproduction bullet): that test alone writes a file with the signature.** Still only inferred:
+that it wrote all 337 (every one has the signature, but a second test with the same stubs would too) and that no other
+writer exists. The session sentinel in the fix is the instrument for the second. Original hypothesis, kept: that test is the writer of all 337 files: its
 `RESULTS_DIR` patch rebinds the module global, but `run_suite`'s default was bound at definition time, and the route passes no
 `out_dir`, so the run writes to the real directory. The stub signature matches this test. What is not seen: a file produced by
 running that test alone, and the absence of any second writer (the 20261017 file is attributed to `test_eval_runner` by a
