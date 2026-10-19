@@ -82,6 +82,26 @@ fire on them (the dossier was written anyway).
 candidate runs (173 proposal 16), the routing review per call kind, cache hit rate and output limits, the subagent pins, Opus 5.5
 pricing (no product call), and the stale "no Haiku 5" wording in `CHANGELOG.md`'s 2026-07-05 entry (historical, not edited).
 
+### 2026-10-19 - model override built (feat/model-override-candidate-quarantine); candidate runs now really excluded
+
+**Item 173 proposal 16 answered.** Searched this session (non-test `*.py`): no env var, flag or helper changed the analyzer's model;
+`prompt_overrides()` covered system prompts only. Built: `analyzer.model_overrides()` and `evals/runner.py --model-override PIN=ID`
+(pins `SONNET_MODEL`, `HAIKU_MODEL`), resolved by value at the one product send site so the judge stays on `JUDGE_MODEL`; a target
+without a `THINKING_POLICY` and a `MODEL_PRICING` entry (Opus 5.5 today) is refused before any paid call. Records carry
+`model_overrides`; overridden call-log rows carry `pinned_model`. **No pin moved, no spend.** Consumer dossier:
+`docs/dev/blast-radius/model-override-candidate-quarantine.md`.
+
+**Finding (read from the code, not reproduced as a user-visible bug):** the documented "candidate runs never pollute score-over-time"
+was not true. `_load_baseline_scores` and the dashboard's baseline views excluded nothing, so a prompt-override candidate was the
+heatmap cell, flipped the baseline-health badge and seeded the next run's regression comparison. Fixed on the same branch with one
+predicate, `hardening.is_candidate_record`, used for both candidate kinds; docs and help text corrected.
+
+**Still open under this item:** the candidate A/B itself (needs the owner's spend approval; none given), the routing review per call
+kind, cache hit rate and output limits, the subagent pins, Opus 5.5 price and policy (no product call), the stale "no Haiku 5" wording
+in `CHANGELOG.md`'s 2026-07-05 entry. New, not done: the console route `/api/tune/run` takes no model override (CLI only), and
+`_load_baseline_scores` still ignores `eval_mode`. Unenforced gap (C-11, owner's call): nothing enumerates the dashboard's baseline
+aggregations, so a NEW view that forgets `hardening.is_candidate_record` would pass every test; a test that walks them is possible, not built.
+
 ### 2026-10-17 - pricing fixed (item 174); call provenance filed (item 175), a prerequisite for any model swap
 
 - **Item 174 is fixed** on `fix/model-pricing-rates`: `hardening.MODEL_PRICING` now carries the pricing page's rates for Sonnet 5

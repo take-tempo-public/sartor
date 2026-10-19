@@ -1250,3 +1250,167 @@ class TestRunDetailRoute:
         err = body["errors"][0]
         assert err["error_type"] is None
         assert err["error_message"] is None
+
+
+CAND_PV = "candidate:0123456789ab"
+MODEL_CAND = {"SONNET_MODEL": "claude-sonnet-5-5"}
+
+
+def _as_prompt_candidate(rec: dict) -> dict:
+    return {**rec, "prompt_version": CAND_PV}
+
+
+def _as_model_candidate(rec: dict) -> dict:
+    return {**rec, "model_overrides": dict(MODEL_CAND)}
+
+
+@pytest.fixture(params=[_as_prompt_candidate, _as_model_candidate], ids=["prompt", "model"])
+def to_candidate(request):
+    """Both candidate kinds must be kept out of every baseline view (item 137)."""
+    return request.param
+
+
+class TestCandidateRecordsAreNotBaseline:
+    """A candidate run (prompt override or model override) is labelled AND excluded.
+
+    Before item 137 the dashboard only labelled `candidate:<hash>` in a tooltip, so a losing
+    candidate became the heatmap cell, flipped the baseline-health badge, lowered the pass rate and
+    sat on the same score-over-time line as the baseline.
+    """
+
+    @staticmethod
+    def _graded(score, ts, **extra):
+        return {
+            "rubric": "grounding",
+            "fixture": "pm-senior",
+            "score": score,
+            "prompt_version": "v1",
+            "timestamp": ts,
+            "run_id": f"run-{ts}",
+            **extra,
+        }
+
+    def test_pass_rate_ignores_candidates(self, to_candidate):
+        recs = [
+            self._graded(5.0, "2026-05-01T00:00:00Z"),
+            to_candidate(self._graded(1.0, "2026-05-02T00:00:00Z")),
+        ]
+
+        out = _per_rubric_pass_rate(recs)
+
+        assert out[0]["total"] == 1
+        assert out[0]["pass_count"] == 1
+
+    def test_score_over_time_ignores_candidates_and_counts_them_apart(self, to_candidate):
+        recs = [
+            self._graded(4.5, "2026-05-01T00:00:00Z"),
+            to_candidate(self._graded(1.0, "2026-05-02T00:00:00Z")),
+            {**self._graded(3.0, "2026-05-03T00:00:00Z"), "prompt_version": ""},
+        ]
+
+        out = _score_over_time(recs)
+
+        points = [pt for ds in out["datasets"] for pt in ds["data"]]
+        assert [pt["y"] for pt in points] == [4.5]
+        # `filtered_records` keeps its old meaning (untagged, pre-tagging records) ...
+        assert out["filtered_records"] == 1
+        # ... and the candidate record is reported separately.
+        assert out["candidate_records"] == 1
+
+    def test_heatmap_cell_is_the_latest_baseline_record(self, to_candidate):
+        recs = [
+            self._graded(4.5, "2026-05-01T00:00:00Z"),
+            to_candidate(self._graded(1.0, "2026-05-09T00:00:00Z")),  # newer, must not win
+        ]
+
+        out = _rubric_fixture_heatmap(recs)
+
+        assert out["rows"][0]["cells"][0]["score"] == 4.5
+
+    def test_failure_modes_ignore_candidates(self, to_candidate):
+        recs = [
+            self._graded(4.5, "2026-05-01T00:00:00Z", failed_rules=["a"]),
+            to_candidate(self._graded(1.0, "2026-05-02T00:00:00Z", failed_rules=["b", "b"])),
+        ]
+
+        assert _failure_mode_frequency(recs) == [{"slug": "a", "count": 1}]
+
+    def test_baseline_health_is_not_flipped_by_a_losing_candidate(self, to_candidate):
+        baseline = {"fixtures": {"pm-senior": {"grounding": {"mean": 4.5}}}}
+        recs = [
+            self._graded(4.5, "2026-05-01T00:00:00Z"),
+            to_candidate(self._graded(1.0, "2026-05-09T00:00:00Z")),
+        ]
+
+        out = _baseline_health(recs, baseline)
+
+        assert out["overall"] == "ok"
+        assert out["counts"] == {"ok": 1, "watch": 0, "regressed": 0}
+
+    def test_groundedness_ignores_candidates(self, to_candidate):
+        recs = [
+            _make_grounded("r-base", 4.8, timestamp="2026-06-06T00:00:00Z"),
+            to_candidate(_make_grounded("r-cand", 1.0, timestamp="2026-06-07T00:00:00Z")),
+        ]
+
+        trend = _groundedness_trend(recs)
+        detail = _latest_groundedness_detail(recs)
+
+        assert [p["y"] for p in trend["datasets"][0]["data"]] == [4.8]
+        assert detail["score"] == 4.8  # the candidate is newer but is not "the latest run"
+
+    def test_only_candidates_leaves_the_baseline_views_empty(self, to_candidate):
+        recs = [to_candidate(self._graded(1.0, "2026-05-02T00:00:00Z"))]
+
+        assert _score_over_time(recs)["datasets"] == []
+        assert _per_rubric_pass_rate(recs) == []
+        assert _rubric_fixture_heatmap(recs)["rubrics"] == []
+
+
+class TestParetoLabelsCandidates:
+    def _runs(self):
+        return [
+            _make_composite(prompt_version="v1", run_id="r1", timestamp="2026-05-01T00:00:00Z"),
+            _make_composite(prompt_version="v2", run_id="r2", timestamp="2026-05-05T00:00:00Z"),
+            # The candidate runs LAST, so before this change it was "the newest version".
+            _make_composite(
+                prompt_version=CAND_PV, run_id="r3", timestamp="2026-05-10T00:00:00Z", score=1.0
+            ),
+            {
+                **_make_composite(
+                    prompt_version="v2", run_id="r4", timestamp="2026-05-11T00:00:00Z"
+                ),
+                "model_overrides": dict(MODEL_CAND),
+            },
+        ]
+
+    def test_candidates_are_their_own_labelled_series(self):
+        out = _pareto_data(self._runs())
+
+        labels = [ds["label"] for ds in out["scatter_datasets"]]
+        assert labels[:2] == ["v1", "v2"]  # baseline series keep their plain version label
+        assert CAND_PV in labels
+        # A model candidate shares the real prompt version, so its label must say what differs
+        # or its points would merge into the baseline "v2" series.
+        model_label = next(lbl for lbl in labels if "SONNET_MODEL" in lbl)
+        assert model_label.startswith("v2")
+        assert "claude-sonnet-5-5" in model_label
+        by_label = {ds["label"]: ds for ds in out["scatter_datasets"]}
+        assert len(by_label["v2"]["data"]) == 1
+
+    def test_summary_trajectory_and_trends_use_baseline_versions_only(self):
+        out = _pareto_data(self._runs())
+
+        assert out["summary"]["v_prev"] == "v1"
+        assert out["summary"]["v_new"] == "v2"
+        assert [p["version"] for p in out["timeline_dataset"]["data"]] == ["v1", "v2"]
+        assert out["latency_trend"]["labels"] == ["v1", "v2"]
+        assert out["cost_trend"]["labels"] == ["v1", "v2"]
+
+    def test_only_candidate_runs_still_plot_without_a_trajectory(self):
+        out = _pareto_data([_make_composite(prompt_version=CAND_PV, run_id="r1")])
+
+        assert out["has_data"] is True
+        assert [ds["label"] for ds in out["scatter_datasets"]] == [CAND_PV]
+        assert out["timeline_dataset"]["data"] == []
+        assert out["summary"] is None

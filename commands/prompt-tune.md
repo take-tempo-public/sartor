@@ -12,8 +12,8 @@ A/B a candidate system-prompt edit against the eval suite using the
 **prompt-override primitive** (`analyzer.prompt_overrides` + the runner's
 `--prompt-overrides` flag). The candidate is injected at runtime, so `analyzer.py`
 is **not edited during the trial** and the candidate run is logged as
-`prompt_version=candidate:<hash>` (it never pollutes the dashboard's
-score-over-time). The constant is only edited at the very end, if you choose Keep.
+`prompt_version=candidate:<hash>` (the regression baseline and the dashboard's
+baseline views leave it out). The constant is only edited at the very end, if you choose Keep.
 
 1. Confirm the working tree is clean (`git status`). It no longer needs a revert
    path for the trial itself (the override never touches `analyzer.py`), but a

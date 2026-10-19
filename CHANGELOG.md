@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: a model override for candidate eval runs, and candidate runs that really are kept out of the baseline (`feat/model-override-candidate-quarantine`, item 137)
+
+Answers item 173 proposal 16 ("can a candidate model run without editing the pins?"): it could not, now it can. **No pin moves, no
+prompt text changes (no `PROMPT_VERSION` bump), no new dependency, and nothing paid was run.** The default path is byte-identical.
+
+- **`analyzer.model_overrides()`** and **`python evals/runner.py --model-override PIN=ID`** (repeatable; pins `SONNET_MODEL`,
+  `HAIKU_MODEL`) send a candidate model in place of a pin for one run. It is resolved by value at the one product send site, so
+  every call that names the pin is covered and the eval judge stays on `JUDGE_MODEL`. A target with no `THINKING_POLICY` or
+  `MODEL_PRICING` entry (so `claude-opus-5-5` today), a target equal to its pin, an unknown pin or a malformed value is refused
+  **before any paid call**. Eval records carry `model_overrides` and the models actually sent in `model_snapshots`; an overridden
+  call-log row carries `pinned_model`.
+- **Fixed: candidate runs were labelled, not quarantined.** `evals/README.md`, `AGENTS.md`, the dashboard help text and two slash
+  commands said a `candidate:<hash>` run "never pollutes score-over-time", but nothing excluded it: `_load_baseline_scores` took the
+  newest record per (fixture, rubric) whatever its version, and the dashboard plotted a candidate on the same rubric line, used it
+  as the heatmap cell and let it flip the baseline-health badge. `hardening.is_candidate_record` is now the one definition of "not
+  a baseline record" (a prompt override **or** a model override). The regression baseline and the dashboard's pass rate, score
+  over time, heatmap, failure modes, baseline health and groundedness views skip it; the Pareto scatter shows it as its own series,
+  and its trajectory, summary and trend lines use baseline versions only. The wording is corrected to match. Consumer dossier:
+  `docs/dev/blast-radius/model-override-candidate-quarantine.md`.
+- Tests: `tests/test_model_overrides.py`, `tests/test_candidate_records.py`, and new cases in `tests/test_eval_runner.py` and
+  `tests/test_dashboard_routes.py`.
+
 ### Added: a per-model `thinking` policy, and prices for the 5.5 models (`feat/thinking-policy-55-pricing`, item 137)
 
 Groundwork for the Claude 5.5 candidate evaluation. **No pin moves**: `SONNET_MODEL`, `HAIKU_MODEL` and `JUDGE_MODEL` are unchanged, and

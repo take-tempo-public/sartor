@@ -27,6 +27,8 @@ import demo_fixtures
 import sartor_home
 from demo_fixtures import is_demo_mode as _demo_mode_active
 from hardening import (
+    CANDIDATE_VERSION_PREFIX,
+    MODEL_PRICING,
     ContextSet,
     CorpusExperience,
     HandleSet,
@@ -683,8 +685,9 @@ AVATAR_PROMPT_VERSION = (
 # effective_prompt_version() returns PROMPT_VERSION verbatim, so the production
 # prompt cache and the dashboard's score-over-time attribution are untouched.
 # When an override IS active, every LLM call in that context logs a stable
-# `candidate:<hash>` version so the candidate run is quarantined from the
-# baseline. The name->constant registry (_BASE_SYSTEM_PROMPTS) and the call-site
+# `candidate:<hash>` version, which `hardening.is_candidate_record` reads to keep the
+# run out of the regression baseline and the dashboard's baseline views. The
+# name->constant registry (_BASE_SYSTEM_PROMPTS) and the call-site
 # resolver (_resolve_system_prompt) live at the end of this module, after every
 # persona constant is defined; the public entry points live here, next to the
 # version they shadow. Only the eval harness / the /prompt-tune skill enter the
@@ -723,14 +726,96 @@ def effective_prompt_version() -> str:
 
     `PROMPT_VERSION` on the default path (byte-identical); a stable
     `candidate:<hash>` (sha256 over the canonical override mapping) when overrides
-    are active, so candidate runs never pollute the score-over-time chart.
+    are active, so `hardening.is_candidate_record` keeps candidate runs out of the
+    regression baseline and the dashboard's baseline views.
     """
     overrides = _prompt_overrides.get()
     if not overrides:
         return PROMPT_VERSION
     canonical = json.dumps(overrides, sort_keys=True, ensure_ascii=False)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:12]
-    return f"candidate:{digest}"
+    return f"{CANDIDATE_VERSION_PREFIX}{digest}"
+
+
+# --- Model-override primitive (item 137 / 173 proposal 16) -------------------
+# The sibling of the prompt-override primitive above: lets an eval run send a CANDIDATE model
+# without editing SONNET_MODEL / HAIKU_MODEL. The mapping is pin NAME -> candidate model id, and it
+# is applied by VALUE at the one product send site (`_call_llm_streaming`), because
+# `evals/runner.py` and `onboarding/extract_experiences.py` hold import-time copies of the pin
+# strings that a reassignment of the module global would miss. The judge sends straight through
+# `client.messages.create` (evals/runner.py), never through that site, so it stays on JUDGE_MODEL.
+# The default (no-override) path is byte-identical: `_resolve_model` returns its argument and no
+# row carries `pinned_model`. Records of an overridden run are told apart by `model_overrides`
+# (eval records) and `pinned_model` (call-log rows), not by the prompt version.
+_MODEL_PIN_NAMES = ("SONNET_MODEL", "HAIKU_MODEL")
+_model_overrides: ContextVar[Mapping[str, str] | None] = ContextVar("model_overrides", default=None)
+
+
+def _validate_model_override(name: str, target: object) -> str:
+    """Return ``target`` if it is a legal override of pin ``name``, else raise `ValueError`.
+
+    Legal means: a known pin, a different model than the pin it replaces, and a model the product
+    can both configure (a `THINKING_POLICY` entry — otherwise `thinking_setting` would refuse every
+    call) and cost (a `MODEL_PRICING` entry — otherwise the candidate's spend is silently $0).
+    """
+    if name not in _MODEL_PIN_NAMES:
+        raise ValueError(
+            f"Unknown model override key {name!r}. Valid keys: {sorted(_MODEL_PIN_NAMES)}"
+        )
+    if not isinstance(target, str) or not target:
+        raise ValueError(f"Model override for {name} must be a non-empty model id, got {target!r}")
+    if target == globals()[name]:
+        raise ValueError(
+            f"{target!r} is already the pin {name}; an override that changes nothing would "
+            "label a baseline run as a candidate"
+        )
+    if target not in THINKING_POLICY:
+        raise ValueError(
+            f"Model override {name}={target!r} has no THINKING_POLICY entry in analyzer.py, so "
+            "its thinking mode was not chosen (an unchosen mode can 400 or silently turn adaptive "
+            "thinking on); add it there first"
+        )
+    if target not in MODEL_PRICING:
+        raise ValueError(
+            f"Model override {name}={target!r} has no MODEL_PRICING entry in hardening.py, so its "
+            "spend would be recorded as $0; add a price first"
+        )
+    return target
+
+
+@contextmanager
+def model_overrides(overrides: Mapping[str, str] | None) -> Iterator[None]:
+    """Send candidate models in place of the named pins for the duration of the `with` block.
+
+    ``overrides`` maps a pin name (``"SONNET_MODEL"`` / ``"HAIKU_MODEL"``) to a candidate model id.
+    Every entry is validated before any is activated (`_validate_model_override`), so a bad entry
+    raises `ValueError` with nothing in effect and nothing sent. An empty / None mapping is a no-op
+    (the default path).
+    """
+    clean = {
+        name: _validate_model_override(name, target) for name, target in (overrides or {}).items()
+    }
+    token = _model_overrides.set(clean)
+    try:
+        yield
+    finally:
+        _model_overrides.reset(token)
+
+
+def active_model_overrides() -> dict[str, str]:
+    """A copy of the pin-name -> candidate-id mapping in effect (empty on the default path)."""
+    return dict(_model_overrides.get() or {})
+
+
+def _resolve_model(model: str) -> str:
+    """The model to actually send for ``model``: its candidate if it is an overridden pin, else itself."""
+    overrides = _model_overrides.get()
+    if not overrides:
+        return model
+    for name, target in overrides.items():
+        if model == globals()[name]:
+            return target
+    return model
 
 
 # Telemetry is user data: it follows `SARTOR_HOME` (item 145), like the dashboard that reads it.
@@ -1696,7 +1781,10 @@ def _call_llm_streaming(
     by `_provenance_fields` ride on the row (item 175); ``prompt_version`` overrides the
     résumé pipeline's effective version for a subsystem with its own (the avatar).
     """
-    effective_model = model or SONNET_MODEL
+    requested_model = model or SONNET_MODEL
+    # A candidate model for the pin this call names, when `model_overrides()` is active (the eval
+    # harness only). The row records the model actually requested and, below, the pin it replaced.
+    effective_model = _resolve_model(requested_model)
     user_content: list[dict[str, Any]] = []
     if cached_user_prefix:
         user_content.append(
@@ -1820,6 +1908,10 @@ def _call_llm_streaming(
                 attempt=attempt,
             ),
         }
+        # Same rule for `pinned_model`: only a call whose model a candidate replaced carries it,
+        # so every ordinary row is byte-identical to before.
+        if effective_model != requested_model:
+            _call_log_record["pinned_model"] = requested_model
         # C1c: error_type/error_message ride ONLY on status="error" rows — ok
         # rows stay byte-identical to every pre-existing row (readers already
         # tolerate absence, since every row up to this branch lacks them).

@@ -2,9 +2,9 @@
 
 > **Audience:** `dev`
 > **Concept:** the offline eval system — suites/subsets, the Haiku rubric judges, the
-> static baseline + the frozen anchor, the corpus bootstrap engine, and prompt-override
-> A/B tuning. Eval-only: it ORCHESTRATES the product pipeline but is never on the request
-> hot path.
+> static baseline + the frozen anchor, the corpus bootstrap engine, and prompt- and
+> model-override A/B tuning primitives. Eval-only: it ORCHESTRATES the product pipeline
+> but is never on the request hot path.
 > **Sources:** [`evals/runner.py`](../../../evals/runner.py), [`evals/bootstrap.py`](../../../evals/bootstrap.py), [`evals/rubrics/`](../../../evals/rubrics), [`evals/results/baseline_v1.json`](../../../evals/results/baseline_v1.json), [`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
@@ -22,6 +22,9 @@ Result records are at **`schema_version 3`** — v2's float scores plus
 rewriting files ([`evals/README.md`](../../../evals/README.md) §"Interpreting results").
 Since item 175 the per-rubric and iteration records also carry `judge_request_id`, with no
 `schema_version` bump; it is absent from older records and from rows where no judge ran `[synthesis]`.
+When a model override is active, records additionally carry `model_overrides` (the pin → candidate
+mapping, e.g., `{"SONNET_MODEL": "claude-sonnet-5-5"}`), paired with the updated `model_snapshots`
+showing the models actually sent — this field is absent from baseline runs ([`evals/runner.py:_model_provenance_fields`](../../../evals/runner.py)) `[synthesis]`.
 The harness lives under `evals/` — **off the P1 hardening boundary** — so it may
 orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `clarify`,
 `generate`) rather than duplicating call logic, which still lives in `analyzer.py`
@@ -168,8 +171,10 @@ Two distinct artifacts, easy to conflate:
 - **Baseline** — `evals/results/baseline_v1.json` (`schema_version 3`) is a static 5-run
   aggregate (mean/stdev/min/max per fixture×rubric) at a fixed `prompt_version`. `_load_baseline_scores`
   seeds the regression alerter from it (so comparisons are against a stable mean, not the
-  noisiest prior run); real JSONL records with a later timestamp win
-  ([`evals/runner.py:_load_baseline_scores`](../../../evals/runner.py)). `_detect_regression`
+  noisiest prior run); real JSONL records with a later timestamp win, except
+  candidate-run records (a prompt or model override), which are skipped
+  ([`evals/runner.py:_load_baseline_scores`](../../../evals/runner.py),
+  [`hardening.py:is_candidate_record`](../../../hardening.py)) `[synthesis]`. `_detect_regression`
   flags any drop past `REGRESSION_DELTA` (default 0.5, sized for Haiku judge variance)
   ([`evals/runner.py:_detect_regression`](../../../evals/runner.py)). A non-zero
   `exit_code` (2) fires when any rubric fails OR a regression fires.
@@ -270,6 +275,18 @@ when `--prompt-overrides` supplies a name→text mapping
 ([`evals/runner.py:run_suite`](../../../evals/runner.py)); unknown constant names raise
 `ValueError` inside [`analyzer.py:prompt_overrides`](../../../analyzer.py) before any paid call.
 Override scope is the named system-prompt constants only, not the dynamic user-prompt builders.
+
+## Model-override A/B tuning
+
+A parallel mechanism for testing a **candidate model without pinning it**: [`analyzer.py:model_overrides`](../../../analyzer.py)
+is a context manager (like `prompt_overrides`) that accepts a mapping of pin names (e.g., `SONNET_MODEL`) to
+candidate model IDs (e.g., `claude-sonnet-5-5`), validates each entry (a known pin name, a target different from the pin) and that each target has both a `THINKING_POLICY` and a `MODEL_PRICING`
+entry in [`analyzer.py`](../../../analyzer.py) and [`hardening.py`](../../../hardening.py) respectively — else
+`ValueError` before any paid call — and routes the candidate model through `_call_llm_streaming` for the duration.
+The judge is never overridden ([`evals/runner.py:run_suite`](../../../evals/runner.py)). Every record written
+under a model override carries the actual models sent in `model_snapshots` and the override mapping in `model_overrides`;
+`hardening.is_candidate_record` reads this field to keep the run out of the regression baseline and the dashboard's
+baseline views `[synthesis]`, implementing the same quarantine as prompt overrides ([`hardening.py:is_candidate_record`](../../../hardening.py)).
 
 ## Two entry points, one core
 
