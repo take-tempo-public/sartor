@@ -307,6 +307,11 @@ file lock, and *that* is the moment to revisit — not before.)
 > going forward in `hardening.py`'s `context_transaction` docstring; full record in
 > `docs/dev/diagnosis/context-write-lost-update-gap.md`.
 
+> **Second erratum (2026-10-18, `fix/threaded-server-claim`):** the 2026-07-20 erratum above is itself wrong. The production server **is threaded**
+> (Flask's `Flask.run()` sets `threaded=True` by default; a request to the running `python app.py` was answered while another connection was
+> half-sent, `tests/test_production_server_concurrency.py`). The original "threaded server" sentence was right and the lock is load-bearing today,
+> not forward cover. See `docs/dev/diagnosis/threaded-server-claim.md`.
+
 **A bonus that falls out for free:** the transient staging keys (`jd_text`, `career_facts`, …) are
 not present on a fresh in-lock read, so every defensive `ctx.pop(transient)` and the whole
 "don't leak staging keys into the iteration chain" hazard disappear structurally rather than by

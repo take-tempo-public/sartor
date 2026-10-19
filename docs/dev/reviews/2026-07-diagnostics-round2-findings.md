@@ -171,6 +171,11 @@ during any diagnostics run. Making it threaded touches the **C-1-sensitive loopb
 area**, so it is its **own governance-signed decision**, deliberately kept out of the
 epic diagnostics UX work. Surfaced here for the owner; not scoped to a branch.
 
+> **Erratum (2026-10-18, `fix/threaded-server-claim`):** the premise here, and in the run-lifecycle paragraph above ("`app.run()` is never
+> `threaded=True` ... one request app-wide at a time"), is false: Flask's `Flask.run()` applies `threaded=True` by default, and the production entry
+> point answered a second request while another connection was half-sent (`tests/test_production_server_concurrency.py`). The cause of the freeze
+> reported in this review was not observed and is not explained by single-threading. See `docs/dev/diagnosis/threaded-server-claim.md`.
+
 ## Routing summary
 
 Everything here → **v1.0.9** (the UX Cohesion Epic's diagnostics-DX + hardening

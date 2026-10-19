@@ -48,6 +48,12 @@ Every entry below is a direct grep/read result, not a deduction.
 
 8. **Two documentation sites assert the deployment is threaded; the code says otherwise.** `hardening.py:1556-1559` and `docs/dev/diagnosis/compose-summary-draft-settle-hole.md:296` both state "the Dockerfile runs a single-process **threaded** server." Repo-wide `grep -rn "threaded\s*="` (excluding `.venv`) returns exactly one hit: `tests/ux/conftest.py:97`, a test-only `make_server(..., threaded=True)` fixture. `app.py:292` (`app.run(host=args.host, debug=debug_mode, port=args.port)`) has no `threaded` kwarg; the Dockerfile's `CMD ["sartor", "--host", "0.0.0.0"]` invokes the same call via the `sartor` console script (`pyproject.toml:137-140`).
 
+   > **Erratum (2026-10-18, `fix/threaded-server-claim`):** Observed 8 is wrong in its conclusion. The grep and the missing kwarg are real, but Flask's
+   > `Flask.run()` applies `threaded=True` by default, and a request to the running `python app.py` was answered while another connection was half-sent
+   > (`tests/test_production_server_concurrency.py`). The production server is threaded, so the lock this branch built is load-bearing today. The
+   > original claim ("threaded") was right and the 2026-07-20 correction was wrong. Left uncorrected here as a historical record; see
+   > `docs/dev/diagnosis/threaded-server-claim.md`.
+
 9. **This inaccuracy was not caught by the existing compliance-witness pass.** `docs/governance/compliance-log.md:91` shows `CW-111 (AFFIRM): "#15" + threaded=True citations exact at the sha` — but that check verified citations in the round2-findings review doc, not the `hardening.py` docstring or the diagnosis dossier, both of which assert the opposite fact.
 
 ---

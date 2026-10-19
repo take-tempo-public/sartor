@@ -310,10 +310,13 @@ threads can short-circuit their loops on cancellation `[synthesis]`. The
 worker checks `if not cancel_event.is_set()` before starting the expensive
 candidate run, so a disconnect during baseline skips the candidate entirely rather than
 launching a second full paid run the client gave up on `[synthesis]`. Cancellation is
-signalled by client disconnect rather than a separate `POST /cancel` route because
-`app.run()` has never been `threaded=True` — a single request handler cannot service a
-new cancel request while the original SSE connection is still open, so the connection
-close is the only reliable signalling mechanism `[synthesis]`. The frontend
+signalled by client disconnect rather than a separate `POST /cancel` route `[synthesis]`.
+An earlier version of this page gave the reason as a
+single-threaded server that could not service a second request while the SSE connection
+was open; that is false, because the production entry point is threaded (Flask's
+`run()` defaults `threaded=True`, observed in
+[`tests/test_production_server_concurrency.py`](../../../tests/test_production_server_concurrency.py)).
+The reason the design chose disconnect-as-cancel is therefore not established here. The frontend
 [`dashboard.html`](../../../dashboard/templates/dashboard.html) Cancel button shows
 "Cancelling…" on click but offers no server confirmation — once the fetch aborts, the
 client side cannot receive a message from a closed connection, making this an

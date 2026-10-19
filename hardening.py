@@ -1988,25 +1988,21 @@ def context_transaction(path: Path) -> Iterator[dict[str, Any]]:
       write site — and the whole "don't leak staging keys into the iteration chain"
       hazard — disappears structurally rather than by vigilance.
 
-    An in-process lock is the right scope **today, and for a documented reason** —
-    not because the server is threaded. It is not: `app.py`'s `app.run(...)` has no
-    `threaded=True` (Werkzeug defaults to `threaded=False`), and the Dockerfile's
-    `CMD ["sartor", "--host", "0.0.0.0"]` reaches the exact same call via the console
-    script. Repo-wide, `threaded=True` appears in exactly one place —
-    `tests/ux/conftest.py`'s test-only `live_server` fixture — never in production.
-    (A prior version of this docstring claimed otherwise; see
-    `docs/dev/diagnosis/context-write-lost-update-gap.md` Observed #8-9 for how that
-    was found and why it went uncaught through a compliance-witness pass.)
+    The server **is threaded**, so this lock is load-bearing today. `app.py`'s
+    `app.run(...)` passes no `threaded` argument, but Flask's `Flask.run()` does
+    `options.setdefault("threaded", True)` (Flask 3.0.0 through the installed 3.1.3),
+    and the Dockerfile's `CMD ["sartor", "--host", "0.0.0.0"]` reaches the same call via
+    the console script. Observed, not inferred:
+    `tests/test_production_server_concurrency.py` answers a full request while another
+    connection is half-sent, against `python app.py` itself. (An earlier version of this
+    docstring said the server is single-threaded because Werkzeug's `run_simple`
+    defaults to `threaded=False`; that was a grep for the kwarg, never a request to a
+    running server. Record: `docs/dev/diagnosis/threaded-server-claim.md`.)
 
-    Given that, an in-process lock is *already* sufficient on its own — every HTTP
-    request is serialized by the single-threaded server regardless. Its actual job is
-    forward cover: `threaded=True` is a deliberately deferred, owner-gated governance
-    decision (touches the C-1 loopback-bind security posture — see
-    `docs/dev/reviews/2026-07-diagnostics-round2-findings.md`), and if it is ever
-    flipped, this lock is what keeps every route sharing the `context_*.json`
-    namespace correct under real concurrency instead of silently reintroducing lost
-    updates. If the deployment ever becomes multi-*process* (not just multi-threaded)
-    this must become a file lock — that is the moment to revisit, not before.
+    Two requests that share a `context_*.json` can therefore run at the same time, which
+    is what this lock serializes. If the deployment ever becomes multi-*process* (not
+    just multi-threaded) this must become a file lock — that is the moment to revisit,
+    not before.
 
     Args:
         path: The context file. Must already exist — this is a read-modify-write, not

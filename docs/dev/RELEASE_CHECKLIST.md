@@ -2241,7 +2241,9 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       user request while landing `fix/context-write-lost-update-gap`. That branch found (and
       fixed) a factual error in `hardening.py`'s `context_transaction` docstring — it claimed the
       production server runs threaded; it does not (`threaded=True` appears nowhere outside a
-      test-only fixture) — that had gone uncaught since 2026-07-14 (`61ec8584`) through at least
+      test-only fixture) *[erratum 2026-10-18: it does run threaded, because `Flask.run()` defaults
+      `threaded=True`; the docstring was right and this correction was wrong,
+      `diagnosis/threaded-server-claim.md`]* — that had gone uncaught since 2026-07-14 (`61ec8584`) through at least
       one full compliance-witness pass. `docs/governance/compliance-log.md:91`'s CW-111 AFFIRMed
       "`#15` + `threaded=True` citations exact at the sha," but that check verified citations in
       the round2-findings review doc only, never the `hardening.py` docstring making the opposite
@@ -2602,7 +2604,8 @@ items — in `RELEASE_ARC.md` "v1.1.0 close-out — reconciliation"._
       duplicate-cascade collapse (`refactor/css-cascade-collapse`, 2026-07-18); the
       **run-cancel/abort endpoint** the owner explicitly opted into
       (`feat/diagnostics-run-cancel`, step 9, 2026-07-20 — disconnect-as-cancel over the
-      existing SSE connection, since `app.run()` stays single-threaded); and finally **this
+      existing SSE connection, since `app.run()` stays single-threaded *[erratum 2026-10-18: it is
+      threaded, `diagnosis/threaded-server-claim.md`]*); and finally **this
       branch's field-level `_DASH_HELP` authoring pass** (#2/#4/#5/#6/#16) — 9 new
       registry entries + 13 icon instances across Quality/Tuning/Annotate, superseding the
       small draft down-payment (a handful of native `title=` tooltips) that had landed on

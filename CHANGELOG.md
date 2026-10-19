@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: the docs and docstring that said the server is single-threaded (`fix/threaded-server-claim`, item 177)
+
+Several records said `python app.py` runs a single-threaded server. It does not: Flask's `run()` serves each request on its own
+thread unless told otherwise, and a new test confirms it against the real entry point.
+
+- **Added: `tests/test_production_server_concurrency.py`.** A request is answered while another connection sits half-sent, tested first
+  against a threaded and an unthreaded in-process server (so the probe is known to tell them apart), then against `python app.py`.
+  The debug-reloader case is opt-in (`SARTOR_PROBE_RELOADER=1`) because it adds about five seconds.
+- **Fixed: the `context_transaction` docstring** now says its lock is load-bearing today, and errata are appended to the records that repeated the claim.
+- **No product change.** `app.py` is untouched. Two consequences are filed in item 177 (points 12 and 13), not fixed.
+
 ### Added: a how-to for adding a route and keeping the typing floors green (`chore/memory-consolidation`, item 7)
 
 A new contributor page, [`docs/dev/engineering-recipes.md`](docs/dev/engineering-recipes.md), carries the steps that no single

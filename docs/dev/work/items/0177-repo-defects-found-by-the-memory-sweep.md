@@ -54,6 +54,15 @@ you work them.
 11. `docs/dev/AGENT_HANDOFF_TEMPLATE.md:228` names `feedback_hook_discipline`, and `CLAUDE.local.md:30` points at
     `feedback-interrogative-is-not-a-work-order.md` by path. Both are memory files outside the repo. If either file is ever
     deleted or renamed, these pointers dangle.
+12. **(added 2026-10-18, from point 1)** Item 156 (closed) left "the threaded UX `live_server` could expose a route's optimistic
+    read to the same Windows `PermissionError`" as out of scope because production was believed single-threaded
+    (`docs/dev/diagnosis/test-reliability.md`). Production is threaded, so a route's optimistic context read outside
+    `context_transaction` can race an `os.replace` there too. **Not observed in production**; nobody has audited which routes
+    read a context file outside the transaction.
+13. **(added 2026-10-18, from point 1)** `docs/dev/handoffs/diagnostics-run-cancel.md` (and the run-cancel code comments, if any)
+    justify disconnect-as-cancel by "a real `POST /cancel` couldn't be serviced" on a single-threaded server (`git grep` finds no
+    such comment in the code). That reason is false. Whether the design should change is a product question; the single-flight 409 slot in `blueprints/diagnostics.py`
+    is what actually stops a second paid run. Not examined further.
 
 ## Updates
 
@@ -61,3 +70,11 @@ you work them.
 
 Nothing is fixed here. Item 1 is the one with potential product impact (it bears on the lost-update lock's stated
 rationale and on item 25); the rest are one-line corrections.
+
+### 2026-10-18 - point 1 resolved, `fix/threaded-server-claim`
+
+**The production server is threaded** (Flask's `run()` default). Reproduced with `tests/test_production_server_concurrency.py`
+(positive and negative controls, then `python app.py` in both debug modes; 10 of 10 runs); record
+`docs/dev/diagnosis/threaded-server-claim.md`. Corrected: the `context_transaction` docstring in `hardening.py`, and errata appended to the
+dossiers and reviews that repeated the claim; item 25 got an Updates entry. The two consequences are new points 12 and 13 above.
+Points 2 to 11 are untouched. This item stays open for them.

@@ -329,6 +329,9 @@ each one got.
   that file. The production server is single-threaded (`context_transaction`'s docstring,
   `hardening.py`), so production can't reach it. Not observed; filed in the carry-forward ledger,
   not fixed here.
+  **Erratum (2026-10-18, `fix/threaded-server-claim`):** the production server is threaded
+  (`tests/test_production_server_concurrency.py`), so production **can** reach this exposure.
+  Still not observed in production. See `docs/dev/diagnosis/threaded-server-claim.md`.
 
 ---
 
