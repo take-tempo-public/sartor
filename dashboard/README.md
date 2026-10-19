@@ -49,6 +49,8 @@ Two record schemas live in `evals/results/*.jsonl`:
 
 The `score_over_time` chart filters out v1 records (no `prompt_version`); the heatmap and failure-mode table include them.
 
+**Candidate runs are not baseline results.** A record made under a prompt override (`prompt_version` = `candidate:<hash>`) or a model override (a `model_overrides` field) is skipped, via `hardening.is_candidate_record`, by every baseline view: the pass rate, score over time, heatmap, failure modes, baseline health and the groundedness trend and detail. The Pareto scatter plots it as its own series (`<prompt version> · SONNET_MODEL→<candidate>` for a model candidate); its trajectory, most-recent-change summary and trend lines use baseline versions only.
+
 ---
 
 ## Architecture
@@ -76,10 +78,10 @@ except `_load_baseline`, which reads the in-repo baseline file):
 | `_normalize_eval_record(r)` | Coerces a legacy or current record to uniform shape (incl. `deterministic_metrics` default) |
 | `_summarize_calls(records)` | LLM-call summary card data including total/mean cost |
 | `_per_rubric_pass_rate(records)` | List of `{rubric, total, pass_count, pass_rate}` |
-| `_score_over_time(records)` | Chart.js-shaped trend data with `prompt_version` per point |
+| `_score_over_time(records)` | Chart.js-shaped trend data with `prompt_version` per point; candidate runs are counted in `candidate_records`, not plotted |
 | `_rubric_fixture_heatmap(records)` | `{rubrics, fixtures, rows}` matrix with HSL cell colors |
 | `_failure_mode_frequency(records)` | Top-20 `failed_rules` slugs by record count (per-record dedup) |
-| `_pareto_data(records)` | Quality-vs-latency scatter + latency/cost trends + verdict |
+| `_pareto_data(records)` | Quality-vs-latency scatter (candidate runs as their own series) + baseline-only latency/cost trends + verdict |
 | `_dedup_by_run(records)` | First record per `run_id` (shared dedup primitive) |
 | `_groundedness_trend(records)` | L0 `groundedness.score` (0–5) over time by `prompt_version`, deduped by run |
 | `_latest_groundedness_detail(records)` | Latest run's `fabricated_specifics` evidence (flagged_samples + per_bullet) |

@@ -240,7 +240,7 @@ WARNING: Found 1 regression(s) ≥0.5 points.
 
 A regression **gates the run**: a drop past `REGRESSION_DELTA` against the baseline appends to `regressions`, and `exit_code = 0 if (n_fail == 0 and not regressions) else 2` — so a regression forces exit `2` (and fails the CI check) even when every rubric still scored above `PASS_THRESHOLD`. This is the "PR gate" behavior (added in commit `a60a008`); an earlier revision treated regressions as informational only. The default delta of 0.5 is calibrated for Haiku judge variance: tighter and you'll see noise; looser and you'll miss real drops. Override with `REGRESSION_DELTA=0.3` for stricter tracking during prompt iteration.
 
-Why the gate is meaningful in CI specifically: result JSONL are **not** committed (only `baseline_v1.json` is), so a fresh CI checkout has no prior run files — the regression comparison is against the stable committed five-run means, not a noisy single prior run. Locally, your most recent run does take precedence per `(fixture, rubric)`, so a `REGRESSION_DELTA` you've tightened can fire on ordinary judge variance between back-to-back local runs.
+Why the gate is meaningful in CI specifically: result JSONL are **not** committed (only `baseline_v1.json` is), so a fresh CI checkout has no prior run files — the regression comparison is against the stable committed five-run means, not a noisy single prior run. Locally, your most recent non-candidate run does take precedence per `(fixture, rubric)` (candidate runs, under a prompt or model override, are skipped), so a `REGRESSION_DELTA` you've tightened can fire on ordinary judge variance between back-to-back local runs.
 
 ### Candidate prompt overrides (`--prompt-overrides`)
 
@@ -272,9 +272,12 @@ What it does:
   prompt instead of the constant; `analyzer.py` is never touched.
 - The whole run is stamped `prompt_version=candidate:<hash>` (a stable sha256 of
   the override mapping) on both telemetry (`logs/llm_calls.jsonl`) and eval
-  result records — so a candidate run is **quarantined from the score-over-time
-  chart** and never mistaken for a baseline revision. The runner logs the
-  `candidate:<hash>` it chose at startup.
+  result records. `hardening.is_candidate_record` reads that label, so a candidate
+  run is **kept out of the regression baseline and the dashboard's baseline
+  views** (score-over-time, heatmap, baseline health, pass rate, failure modes,
+  groundedness) and never mistaken for a baseline revision; the Pareto panel
+  shows it as its own series. The runner logs the `candidate:<hash>` it chose
+  at startup.
 - **The default path (no flag) is byte-identical:** the resolver returns the
   identical constant object and records stamp the real `PROMPT_VERSION`, so the
   analyze→generate prompt cache and version attribution are unchanged.
@@ -284,6 +287,43 @@ bump `PROMPT_VERSION` in the same commit, and log the before/after in
 [`TUNING_LOG.md`](TUNING_LOG.md). The [`/prompt-tune`](../commands/prompt-tune.md)
 skill automates the whole baseline → candidate → diff → promote loop on top of
 this flag.
+
+### Candidate model overrides (`--model-override`)
+
+Run the suite on a **candidate model** without moving `SONNET_MODEL` or
+`HAIKU_MODEL`. The flag is repeatable and takes `PIN=MODEL_ID`:
+
+```bash
+python evals/runner.py --suite synthetic --subset smoke --model-override SONNET_MODEL=claude-sonnet-5-5
+```
+
+Valid pins are `SONNET_MODEL` and `HAIKU_MODEL`. The target must already have a
+`THINKING_POLICY` entry in `analyzer.py` (so its `thinking` mode was chosen, not
+defaulted) and a `MODEL_PRICING` entry in `hardening.py` (so its spend is not
+recorded as $0). An unknown pin, a target equal to the pin, a target missing
+either entry, or a malformed value exits non-zero *before* any paid LLM call;
+`claude-opus-5-5` is refused today because the product makes no Opus call and
+has no price or policy for it.
+
+What it does:
+
+- The swap is applied by value where the product sends a request
+  (`analyzer._call_llm_streaming`), so every call that names the pin is covered,
+  including code that imported the pin string. The **judge is never swapped**: it
+  stays on `JUDGE_MODEL`, so a candidate is graded by the same judge as the baseline.
+- Every result record carries `model_overrides` (the pin → candidate mapping) and
+  `model_snapshots` names the models actually sent. `prompt_version` keeps the real
+  `PROMPT_VERSION` (no prompt changed). Ordinary records carry no `model_overrides`.
+- Telemetry rows for an overridden call carry `model` (the candidate, so cost is
+  priced correctly) and `pinned_model` (the pin it replaced).
+- `hardening.is_candidate_record` treats the run as a candidate run, exactly like a
+  prompt override: it is kept out of the regression baseline and the dashboard's
+  baseline views and appears in the Pareto panel as its own series
+  (`<prompt version> · SONNET_MODEL→<candidate>`).
+- **The default path (no flag) is byte-identical.**
+
+A model override changes cost and latency as well as quality. Change one pin at a
+time, so a score movement has one explanation.
 
 ---
 
@@ -791,7 +831,7 @@ irreversible step that stays a human/agent's job:
    candidate (via [`analyzer.prompt_overrides()`](#candidate-prompt-overrides---prompt-overrides))
    — then renders the per-`(fixture, rubric)` delta with the LLM-free
    [`evals/tune.py`](#evalstunepy) helpers. The candidate run self-stamps
-   `prompt_version=candidate:<hash>`, so it is quarantined from score-over-time
+   `prompt_version=candidate:<hash>`, so it is kept out of the baseline views
    exactly like the `--prompt-overrides` CLI path. A 2×-cost `confirm()` gate (≈$0.70–0.80
    smoke / ≈$0.60 full) guards the two paid runs. It mirrors `/api/eval/run`'s input
    contract, including the optional corpus-seed mode (`slug` + `username` →
@@ -865,7 +905,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
   "suite": "synthetic",
   "fixture_hash": "9f8e7d6c5b4a3210…",
   "rubric_version": "2026-05-09.1",
-  "model_snapshots": {"sonnet": "claude-sonnet-5", "haiku_judge": "claude-haiku-4-5-20251001"},
+  "model_snapshots": {"sonnet": "claude-sonnet-5", "haiku": "claude-haiku-4-5-20251001", "haiku_judge": "claude-haiku-4-5-20251001"},
   "baseline_comparison": {"prev_score": 4.6, "delta": 0.2, "is_regression": false, "is_improvement": true},
   "phase_latencies_ms": {"analyze": 4200, "clarify": 2100, "generate": 5300},
   "grounding_signals": null,
@@ -883,7 +923,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 | `reasons` | Specific quoted evidence the judge cited. Each reason should reference a phrase from the generated artifact |
 | `failed_rules` | Machine-friendly slugs from the rubric's vocabulary. Useful for grepping across many runs |
 | `status` | `ok` (graded successfully), `judge_error` (judge response unparseable), `pipeline_error` (analyze/generate threw), `scenario_misaligned` (iteration_quality's scripted edit didn't land this run) |
-| `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. |
+| `prompt_version` | The `analyzer.PROMPT_VERSION` at run time. Lets the dashboard's score-over-time chart attribute regressions to a specific prompt revision. `candidate:<hash>` marks a run under `--prompt-overrides`, which the baseline views leave out. |
 | `eval_mode` | `"generate"` (default — `analyzer.generate()`, the LLM path) or `"assemble"` (F-11 — the deterministic Compose → freeze → assemble path). See [Assembled runs](#assembled-runs---mode-assemble-f-11). `assemble`-mode records always carry `baseline_comparison: null` and are excluded from the regression gate. |
 | `run_id` | 12-hex UUID shared by the analyze + generate calls that produced this output. Match against `logs/llm_calls.jsonl` to find the specific LLM calls behind any graded result. |
 | `deterministic_metrics.verb_diversity` | Unique leading verbs / total bullets in generated resume. See `hardening.compute_verb_diversity`. |
@@ -895,7 +935,8 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 | `suite` | `"synthetic"`, `"real"`, `"anchor"`, or `"exploration"` — which fixture tree produced this fixture. |
 | `fixture_hash` | sha256 of `jd.txt` + resume file + `expected.json` bytes — pins exactly which fixture content this record graded. Never includes `jd_label` (label derivation must not change what a rerun would hash). |
 | `rubric_version` | The rubric file's own version marker, if the rubric declares one; `null` otherwise. |
-| `model_snapshots` | The Sonnet, Haiku and judge model IDs in effect for this run, read from `analyzer.SONNET_MODEL` / `HAIKU_MODEL` and `JUDGE_MODEL` (all `hardening.MODEL_PRICING` keys), so a cost figure can always be traced to the pricing that produced it. |
+| `model_snapshots` | The Sonnet, Haiku and judge model IDs in effect for this run, read from `analyzer.SONNET_MODEL` / `HAIKU_MODEL` and `JUDGE_MODEL` (all `hardening.MODEL_PRICING` keys), so a cost figure can always be traced to the pricing that produced it. Under `--model-override` the Sonnet / Haiku entries name the candidate actually sent; the judge never changes. |
+| `model_overrides` | Present only on a candidate-model run: the `{pin name: candidate model id}` mapping given to `--model-override`. Absent on every ordinary record. With a `candidate:<hash>` `prompt_version` it is what `hardening.is_candidate_record` reads to keep the record out of the baseline views. |
 | `judge_request_id` | The API request id of the judge call that produced this score; join it to the `judge_grade` row's `api_request_id` in `logs/llm_calls.jsonl` for the judge's model, settings and tokens. `null` when the call failed. |
 | `baseline_comparison` | `null` for `assemble` mode or when no prior baseline exists; otherwise `{prev_score, delta, is_regression, is_improvement}` against `baseline_v1.json`. |
 | `phase_latencies_ms` | Per-phase wall-clock breakdown (`analyze`/`clarify`/`generate`/…) of `pipeline_latency_ms`. |

@@ -685,8 +685,9 @@ AVATAR_PROMPT_VERSION = (
 # effective_prompt_version() returns PROMPT_VERSION verbatim, so the production
 # prompt cache and the dashboard's score-over-time attribution are untouched.
 # When an override IS active, every LLM call in that context logs a stable
-# `candidate:<hash>` version so the candidate run is quarantined from the
-# baseline. The name->constant registry (_BASE_SYSTEM_PROMPTS) and the call-site
+# `candidate:<hash>` version, which `hardening.is_candidate_record` reads to keep the
+# run out of the regression baseline and the dashboard's baseline views. The
+# name->constant registry (_BASE_SYSTEM_PROMPTS) and the call-site
 # resolver (_resolve_system_prompt) live at the end of this module, after every
 # persona constant is defined; the public entry points live here, next to the
 # version they shadow. Only the eval harness / the /prompt-tune skill enter the
@@ -725,7 +726,8 @@ def effective_prompt_version() -> str:
 
     `PROMPT_VERSION` on the default path (byte-identical); a stable
     `candidate:<hash>` (sha256 over the canonical override mapping) when overrides
-    are active, so candidate runs never pollute the score-over-time chart.
+    are active, so `hardening.is_candidate_record` keeps candidate runs out of the
+    regression baseline and the dashboard's baseline views.
     """
     overrides = _prompt_overrides.get()
     if not overrides:

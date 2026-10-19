@@ -480,7 +480,7 @@
       <button class="tile" data-detail="scoretrend" data-title="Score over time by rubric">
         <span class="k">score trend</span>
         <span class="v">{{ score_trend.datasets|length }}</span>
-        <span class="sub">rubric lines charted{% if score_trend.filtered_records %} · {{ score_trend.filtered_records }} older record(s) left out{% endif %}</span>
+        <span class="sub">rubric lines charted{% if score_trend.filtered_records %} · {{ score_trend.filtered_records }} older record(s) left out{% endif %}{% if score_trend.candidate_records %} · {{ score_trend.candidate_records }} candidate-run record(s) kept off this chart{% endif %}</span>
         <span class="lay">Each rubric’s scores over time, so you can see which prompt change moved them.</span>
       </button>
       <button class="help-info" id="help-icon-dashTileScoreTrend" data-help="dashTileScoreTrend" type="button"
@@ -588,8 +588,8 @@
   <div class="scaffold-banner write">
     <strong>Read-write — localhost only.</strong> Runs <strong>two</strong> paid eval suites
     (baseline + candidate) and shows the per-(fixture, rubric) delta. The candidate run logs
-    <code class="short">prompt_version=candidate:&lt;hash&gt;</code> so it never pollutes
-    score-over-time. <strong>Promote stays manual</strong> — copy a winner into the
+    <code class="short">prompt_version=candidate:&lt;hash&gt;</code>, so the regression baseline and the
+    baseline charts leave it out. <strong>Promote stays manual</strong> — copy a winner into the
     <code class="short">analyzer.py</code> constant, bump <code class="short">PROMPT_VERSION</code>,
     log <code class="short">TUNING_LOG.md</code> by hand.
   </div>
@@ -1127,7 +1127,7 @@
 
   <div class="detail" data-detail="scoretrend">
     <div class="chart-box"><canvas id="chart-score-over-time" data-chart="score-over-time"></canvas></div>
-    <p class="legend">One line per rubric. Hover a point to see which prompt version produced it.{% if score_trend.filtered_records %} {{ score_trend.filtered_records }} older record(s) left out — they predate prompt-version tagging, so they can’t be attributed.{% endif %}</p>
+    <p class="legend">One line per rubric. Hover a point to see which prompt version produced it.{% if score_trend.filtered_records %} {{ score_trend.filtered_records }} older record(s) left out — they predate prompt-version tagging, so they can’t be attributed.{% endif %}{% if score_trend.candidate_records %} {{ score_trend.candidate_records }} candidate-run record(s) (a prompt or model override) are kept off this chart; they appear in the Pareto panel as their own series.{% endif %}</p>
   </div>
 
   <div class="detail" data-detail="heatmap">
@@ -1237,8 +1237,8 @@
   <div class="detail" data-detail="tuning">
     <p class="sub">The prompt-tuning loop A/Bs a candidate system prompt against the baseline
       <em>without editing the persona constants</em> (the <code class="short">analyzer.prompt_overrides()</code>
-      primitive). Candidate runs log <code class="short">prompt_version=candidate:&lt;hash&gt;</code> so they never
-      pollute score-over-time.</p>
+      primitive). Candidate runs log <code class="short">prompt_version=candidate:&lt;hash&gt;</code>, so the
+      regression baseline and the baseline charts leave them out.</p>
     <p class="sub">The A/B is now <strong>interactive on this tab</strong>: pick a constant, edit its text,
       and run candidate-vs-baseline in the browser. The irreversible <strong>promote</strong> (edit the
       <code class="short">analyzer.py</code> constant, bump <code class="short">PROMPT_VERSION</code>, log
@@ -1331,8 +1331,8 @@
         + 'analyzer.py: pick a persona constant, edit its text, and run it '
         + 'against the current baseline. Nothing you write here is saved to the '
         + 'codebase — the candidate run is logged as '
-        + 'prompt_version=candidate:<hash>, so it never shows up in the '
-        + 'score-over-time chart. Because it grades both the baseline and your '
+        + 'prompt_version=candidate:<hash>, so the score-over-time chart, the '
+        + 'heatmap and the baseline health badge leave it out. Because it grades both the baseline and your '
         + 'candidate, it costs about twice what a single Quality run does. If '
         + 'the candidate wins, promoting it is still a manual step: copy the '
         + 'winning text into analyzer.py, bump PROMPT_VERSION, and note the '
@@ -1678,8 +1678,8 @@
         + 'chosen prompt for this run only (through analyzer.prompt_overrides(), '
         + 'the same mechanism as the command line’s --prompt-overrides), so '
         + 'analyzer.py is never edited and there is nothing to undo. The '
-        + 'candidate’s results are tagged candidate:<hash>, so they never mix '
-        + 'into the score-over-time chart. Both runs are paid; the '
+        + 'candidate’s results are tagged candidate:<hash>, so the score-over-time '
+        + 'chart, the heatmap and the baseline health badge leave them out. Both runs are paid; the '
         + 'confirmation dialog shows the estimate before anything is spent.',
     },
     dashTileTuningLoop: {

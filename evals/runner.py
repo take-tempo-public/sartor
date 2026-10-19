@@ -1274,7 +1274,7 @@ def run_suite(
     # Candidate prompt overrides: the caller (CLI ``main`` / console route) has
     # already read + shape-validated the mapping; here we validate the prompt-NAMES
     # once (an unknown constant raises ValueError) and surface the candidate:<hash>
-    # tag the run is quarantined under — all before any paid LLM call. An empty map
+    # tag the run is kept out of the baseline under — all before any paid LLM call. An empty map
     # is a no-op, so the default path stays byte-identical. ``seed_data`` arrives
     # pre-loaded from the caller (file I/O + schema validation already done).
     overrides: dict[str, str] = dict(prompt_overrides_map or {})
@@ -1284,7 +1284,8 @@ def run_suite(
             candidate_version = effective_prompt_version()
         logger.warning(
             "PROMPT OVERRIDES ACTIVE — keys=%s; this run is logged as "
-            "prompt_version=%s (quarantined from score-over-time).",
+            "prompt_version=%s (kept out of the regression baseline and the dashboard's "
+            "baseline views).",
             sorted(overrides),
             candidate_version,
         )
@@ -2127,8 +2128,8 @@ def main(argv: list[str] | None = None) -> int:
             "(e.g. SYSTEM_PROMPT, CLARIFY_SYSTEM_PROMPT) to candidate override "
             "text. Injects the candidate prompt for THIS run only — analyzer.py is "
             "never edited and the run is logged as prompt_version 'candidate:<hash>' "
-            "so it never pollutes score-over-time. Omit for the byte-identical "
-            "default path."
+            "so the regression baseline and the dashboard's baseline views leave it out. "
+            "Omit for the byte-identical default path."
         ),
     )
     ap.add_argument(

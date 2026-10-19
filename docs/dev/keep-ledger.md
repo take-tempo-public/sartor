@@ -29,7 +29,8 @@ the entry an affirmation-only design note to honor in review.
 ## Eval surfaces
 
 ### F-eval-05 — KEEP: candidate A/B is non-polluting; the default path is byte-identical
-- **Invariant.** A prompt-override A/B run is quarantined from score-over-time and
+- **Invariant.** A prompt-override A/B run is kept out of the regression baseline and the
+  dashboard's baseline views (`hardening.is_candidate_record`) and
   leaves the analyze→generate cache untouched on the default (no-override) path —
   the resolver returns the identical constant object, and the logged version stays
   `PROMPT_VERSION`. Only under an active override does it become
@@ -39,7 +40,7 @@ the entry an affirmation-only design note to honor in review.
   system-prompt constants only) + `analyzer.effective_prompt_version()`.
 - **Regression risk.** An analyzer refactor that lets an override leak into the
   default path, changes the default logged version, or widens the registry to the
-  dynamic user-prompt builders — any of which would pollute score-over-time or bust
+  dynamic user-prompt builders — any of which would put a candidate run into the baseline views or bust
   the cache.
 - **Protection.** Natural guard-test candidate for the v1.0.8 split: assert
   `effective_prompt_version() == PROMPT_VERSION` and that the resolver returns the

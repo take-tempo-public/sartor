@@ -1210,8 +1210,9 @@ def tune_run_stream() -> ResponseReturnValue:
     one worker — baseline (no overrides) then candidate (the pasted override map) — and
     streams a per-(fixture, rubric) delta computed by the LLM-free `evals.tune` helpers.
     The candidate run self-stamps `prompt_version=candidate:<hash>` via the override
-    primitive, so it never pollutes score-over-time. **Promote stays manual** — this
-    route never edits `analyzer.py`; it only surfaces the delta + candidate text.
+    primitive, so the regression baseline and the dashboard's baseline views leave it out.
+    **Promote stays manual** — this route never edits `analyzer.py`; it only surfaces the
+    delta + candidate text.
 
     Input JSON: `prompt_overrides` ({CONSTANT_NAME: candidate_text}, required, one of
     the registered `analyzer._BASE_SYSTEM_PROMPTS` keys) + the same `suite`/`subset`/

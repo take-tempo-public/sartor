@@ -15,7 +15,8 @@ and drafts the candidate from it, then A/Bs against the **real-data** regression
 fixture the annotation contract produced. It is built on the same prompt-override
 primitive (`analyzer.prompt_overrides` + the runner's `--prompt-overrides`), so
 `analyzer.py` is **not edited during the trial** and the candidate run is logged
-as `prompt_version=candidate:<hash>` (never pollutes score-over-time). The
+as `prompt_version=candidate:<hash>` (the regression baseline and the dashboard's
+baseline views leave it out). The
 constant is edited only at the very end, on an explicit **promote**.
 
 Resolve `<name>` from `--candidate` (default: the single candidate directory

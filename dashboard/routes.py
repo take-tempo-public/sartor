@@ -30,6 +30,7 @@ from flask import Blueprint, abort, jsonify, render_template, request
 from flask.typing import ResponseReturnValue
 
 from config import _default_base_dir
+from hardening import is_candidate_record
 from web_infra import _is_localhost_request
 
 logger = logging.getLogger(__name__)
@@ -229,12 +230,13 @@ def _per_rubric_pass_rate(records: list[dict[str, Any]]) -> list[dict[str, Any]]
 
     A pass is score >= 4.0. Records with score=None (pipeline_error,
     judge_error) are counted as failures so the dashboard surfaces them
-    clearly rather than hiding behind None.
+    clearly rather than hiding behind None. Candidate-run records (a prompt or model
+    override, `is_candidate_record`) are not baseline results and are skipped.
     """
     by_rubric: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in records:
         rubric = r.get("rubric")
-        if not rubric:
+        if not rubric or is_candidate_record(r):
             continue
         by_rubric[rubric].append(r)
 
@@ -264,12 +266,16 @@ def _score_over_time(records: list[dict[str, Any]]) -> dict[str, Any]:
     no actionable attribution). judge_error records are also filtered out —
     their score is a crashed-grader placeholder (0), not a real graded
     value, and plotting it would read as a quality regression that never
-    happened. Returned shape:
+    happened. Candidate-run records (a prompt or model override, `is_candidate_record`)
+    are not baseline results: they are left off the chart and counted apart in
+    `candidate_records`, so `filtered_records` keeps meaning "untagged older records".
+    Returned shape:
         {labels: [iso_timestamp], datasets: [{label: rubric, data: [score]}]}
     """
+    baseline_records = [r for r in records if not is_candidate_record(r)]
     typed_records = [
         r
-        for r in records
+        for r in baseline_records
         if r.get("prompt_version")
         and isinstance(r.get("score"), (int, float))
         and r.get("rubric")
@@ -302,7 +308,8 @@ def _score_over_time(records: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "labels": labels,
         "datasets": datasets,
-        "filtered_records": len(records) - len(typed_records),
+        "filtered_records": len(baseline_records) - len(typed_records),
+        "candidate_records": len(records) - len(baseline_records),
     }
 
 
@@ -312,13 +319,14 @@ def _rubric_fixture_heatmap(records: list[dict[str, Any]]) -> dict[str, Any]:
     Renders as an HTML/CSS table in the template (color = hsl(120 *
     score/5, 60%, 30%)) — green for pass, red for fail. Cells with no
     record, or whose most recent record is a judge_error (crashed-grader
-    placeholder score, not a real grade), show as empty.
+    placeholder score, not a real grade), show as empty. Candidate-run records
+    (`is_candidate_record`) never become a cell, however recent.
     """
     latest: dict[tuple[str, str], dict[str, Any]] = {}
     for r in records:
         rubric = r.get("rubric")
         fixture = r.get("fixture")
-        if not rubric or not fixture:
+        if not rubric or not fixture or is_candidate_record(r):
             continue
         key = (rubric, fixture)
         prev = latest.get(key)
@@ -394,10 +402,14 @@ def _failure_mode_frequency(records: list[dict[str, Any]]) -> list[dict[str, Any
 
     Per-record dedup: a record with failed_rules=["a","a","b"] counts as
     {a:1, b:1}. This keeps a single rubric-judgment from dominating the
-    histogram. Top-20 sorted by count desc, then alphabetical tie-break.
+    histogram. Top-20 sorted by count desc, then alphabetical tie-break. Candidate-run
+    records (`is_candidate_record`) are skipped: a candidate's failures are not the
+    baseline's failure modes.
     """
     counter: Counter[str] = Counter()
     for r in records:
+        if is_candidate_record(r):
+            continue
         seen_in_record: set[str] = set()
         for slug in r.get("failed_rules") or []:
             if not isinstance(slug, str) or not slug:
@@ -410,6 +422,21 @@ def _failure_mode_frequency(records: list[dict[str, Any]]) -> list[dict[str, Any
     return [{"slug": slug, "count": count} for slug, count in top]
 
 
+def _series_label(record: dict[str, Any]) -> str:
+    """The Pareto series a record belongs to: its prompt version, plus the model swap if any.
+
+    A model-override run keeps the real `PROMPT_VERSION`, so the version alone would merge its
+    points into the baseline series. The swap is appended (`v2 · SONNET_MODEL→claude-sonnet-5-5`)
+    so the candidate is its own series, and a prompt candidate is already `candidate:<hash>`.
+    """
+    version = str(record.get("prompt_version", ""))
+    overrides = record.get("model_overrides")
+    if isinstance(overrides, dict) and overrides:
+        swaps = ", ".join(f"{pin}→{target}" for pin, target in sorted(overrides.items()))
+        return f"{version} · {swaps}"
+    return version
+
+
 def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
     """Build Pareto frontier data for the quality-vs-latency scatter panel.
 
@@ -418,9 +445,16 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
     for the bubble scatter, latency trend, and cost trend charts, plus a
     plain-dict summary of the most-recent prompt-version change.
 
+    Candidate-run records (a prompt or model override, `is_candidate_record`) are plotted as
+    their own labelled scatter series (`_series_label`) but are NOT part of the baseline
+    trajectory: the dashed polyline, the most-recent-change summary and the latency/cost
+    trend lines use baseline prompt versions only, so a candidate never reads as "the
+    newest version".
+
     Returns a dict with keys:
         has_data: bool
-        scatter_datasets: list[dict]  — one Chart.js dataset per prompt_version
+        scatter_datasets: list[dict]  — one Chart.js dataset per series (baseline versions
+                                        first, then candidate runs)
         timeline_dataset: dict        — dashed polyline connecting version centroids
         summary: dict | None          — most-recent-change delta + Pareto verdict
         latency_trend: dict           — Chart.js line-chart data (p50/p90 by version)
@@ -459,7 +493,8 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
             {
                 "run_id": run_id,
                 "fixture": r.get("fixture", ""),
-                "prompt_version": r.get("prompt_version", ""),
+                "prompt_version": _series_label(r),
+                "is_candidate": is_candidate_record(r),
                 "timestamp": r.get("timestamp", ""),
                 "score": float(score),
                 "total_latency_ms": int(total_lat_ms),
@@ -475,10 +510,19 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
     for pt in points:
         by_version[pt["prompt_version"]].append(pt)
 
-    sorted_versions = sorted(
-        by_version.keys(),
-        key=lambda v: min(pt["timestamp"] for pt in by_version[v]),
+    def _first_seen(v: str) -> str:
+        return min(pt["timestamp"] for pt in by_version[v])
+
+    # A series is a candidate iff its points are (the label differs from every baseline's, so a
+    # series never mixes the two). Baseline versions drive the trajectory, summary and trends;
+    # candidates are appended to the scatter only.
+    baseline_versions = sorted(
+        (v for v, pts in by_version.items() if not pts[0]["is_candidate"]), key=_first_seen
     )
+    candidate_versions = sorted(
+        (v for v, pts in by_version.items() if pts[0]["is_candidate"]), key=_first_seen
+    )
+    sorted_versions = baseline_versions + candidate_versions
 
     # Per-version aggregates used for trend lines and summary.
     version_stats: dict[str, dict[str, Any]] = {}
@@ -535,7 +579,7 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
             "y": round(version_stats[v]["mean_composite"], 3),
             "version": v,
         }
-        for v in sorted_versions
+        for v in baseline_versions
     ]
     timeline_dataset = {
         "label": "baseline trajectory",
@@ -549,11 +593,11 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
         "order": 0,
     }
 
-    # Most-recent-change summary (requires ≥2 distinct prompt_versions).
+    # Most-recent-change summary (requires ≥2 distinct baseline prompt_versions).
     summary: dict[str, Any] | None = None
-    if len(sorted_versions) >= 2:
-        v_prev = sorted_versions[-2]
-        v_new = sorted_versions[-1]
+    if len(baseline_versions) >= 2:
+        v_prev = baseline_versions[-2]
+        v_new = baseline_versions[-1]
         prev = version_stats[v_prev]
         new = version_stats[v_new]
         delta_composite = round(new["mean_composite"] - prev["mean_composite"], 3)
@@ -585,8 +629,9 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
             "classification": classification,
         }
 
-    # Latency and cost trend (line charts by prompt_version).
-    labels = sorted_versions
+    # Latency and cost trend (line charts by baseline prompt_version; a candidate on a
+    # time axis would read as the next chronological change).
+    labels = baseline_versions
     latency_trend = {
         "labels": labels,
         "datasets": [
@@ -658,9 +703,12 @@ def _groundedness_points(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     Pulls deterministic_metrics.groundedness off each record, dedups by run_id,
     and keeps only points with a numeric score. Shared by the trend chart and
     the latest-detail panel so both agree on what counts as a groundedness run.
+    Candidate-run records (`is_candidate_record`) are not baseline runs and are skipped.
     """
     candidates = []
     for r in records:
+        if is_candidate_record(r):  # a prompt/model candidate run is not a baseline run
+            continue
         gnd = (r.get("deterministic_metrics") or {}).get("groundedness") or {}
         score = gnd.get("score")
         if not isinstance(score, (int, float)):
@@ -938,12 +986,18 @@ def _baseline_health(records: list[dict[str, Any]], baseline: dict[str, Any]) ->
     if not fixtures:
         return {"has_baseline": False, "overall": "unknown", "rows": [], "counts": {}}
 
-    # Latest score per (fixture, rubric) — same "most recent wins" rule as the heatmap.
+    # Latest score per (fixture, rubric) — same "most recent wins" rule as the heatmap, and the
+    # same exclusion: a losing candidate run must not turn the baseline badge to "regressed".
     latest: dict[tuple[str, str], dict[str, Any]] = {}
     for r in records:
         fixture = r.get("fixture")
         rubric = r.get("rubric")
-        if not fixture or not rubric or not isinstance(r.get("score"), (int, float)):
+        if (
+            not fixture
+            or not rubric
+            or not isinstance(r.get("score"), (int, float))
+            or is_candidate_record(r)
+        ):
             continue
         key = (fixture, rubric)
         prev = latest.get(key)
