@@ -511,7 +511,7 @@ def _pareto_data(eval_records: list[dict[str, Any]]) -> dict[str, Any]:
         by_version[pt["prompt_version"]].append(pt)
 
     def _first_seen(v: str) -> str:
-        return min(pt["timestamp"] for pt in by_version[v])
+        return str(min(pt["timestamp"] for pt in by_version[v]))
 
     # A series is a candidate iff its points are (the label differs from every baseline's, so a
     # series never mixes the two). Baseline versions drive the trajectory, summary and trends;
