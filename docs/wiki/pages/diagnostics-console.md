@@ -213,8 +213,10 @@ after the view returns and the app context is gone) `[synthesis]`:
   overrides) then candidate (the pasted `prompt_overrides` map) — and streams a
   per-(fixture, rubric) delta from the LLM-free `evals.tune` helpers. The
   candidate self-stamps `prompt_version=candidate:<hash>` via
-  `analyzer.prompt_overrides`, so it never pollutes score-over-time; promote
-  stays manual (the route never edits `analyzer.py`).
+  `analyzer.prompt_overrides`, so the regression baseline
+  (`evals/runner.py:_load_baseline_scores`) and dashboard baseline views
+  exclude it via `hardening.is_candidate_record`; promote stays manual (the
+  route never edits `analyzer.py`).
 - `POST /api/annotation/*` — the annotation-step write surface, running the v1.0.4
   tuning loop in-browser, all in
   [`blueprints/diagnostics.py`](../../../blueprints/diagnostics.py):

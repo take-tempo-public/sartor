@@ -3326,3 +3326,52 @@ paragraph in `eval-harness` (lines 88-100) was read in full. They state the reco
 kwarg actually sent" (still true), and `effective_model = model or SONNET_MODEL` (unchanged). **Not done:** the pages were not read end
 to end, and no auditor was run, because nothing was edited. A new sentence on the thinking policy in `llm-call-catalog` would be new
 coverage, not a correction; not written.
+
+
+---
+
+## 2026-10-19 — scoped `/wiki-self-update` (`feat/model-override-candidate-quarantine`)
+
+**Mode:** diff, scoped to this branch's own diff (`70a118f..HEAD`), not the checkpoint window. **`.last_ingest_sha` NOT advanced** (a scoped
+pass never moves it, item 65). Spend authorised by the owner at the step-2 gate (5 pages, cap 8).
+
+**Wiki-relevant paths in the diff (per `scripts/wiki_relevance.py`): 10** — `analyzer.py`, `hardening.py`, `evals/runner.py`,
+`dashboard/routes.py`, `dashboard/templates/dashboard.html`, `blueprints/diagnostics.py`, `AGENTS.md`, `evals/README.md`, `dashboard/README.md`,
+`docs/dev/keep-ledger.md`. Source read at HEAD: `analyzer.py` (`model_overrides`, `_validate_model_override`, `_resolve_model`,
+`active_model_overrides`, `_call_llm_streaming`, `effective_prompt_version`), `hardening.py` (`is_candidate_record`, `CANDIDATE_VERSION_PREFIX`),
+`evals/runner.py` (`_model_provenance_fields`, `_load_baseline_scores`, `run_suite`, the `--model-override` flag), `dashboard/routes.py` (the
+baseline aggregations, `_pareto_data`, `_series_label`), `blueprints/diagnostics.py` (`tune_run_stream`).
+
+**What changed in the code:** a model-override primitive (`analyzer.model_overrides`), and candidate runs (a `candidate:<hash>` prompt override OR a
+model override) are now actually excluded from the regression baseline and the dashboard's baseline views by `hardening.is_candidate_record`.
+Before this branch they were only labelled, so the wiki's "quarantined from score-over-time" was a claim the code did not back.
+
+**Pages edited (5, 0 created):** `prompt-version-discipline` (the quarantine section: "a property of the label, not a separate filter" was false;
+heading widened to both candidate kinds; a quoted warning text that no longer exists replaced by a paraphrase), `eval-harness` (record fields,
+new "Model-override A/B tuning" section, the baseline bullet), `diagnostics-console` (the `/api/tune/run` bullet), `llm-call-catalog` (the model
+resolution step and the `pinned_model` row field), `deterministic-llm-boundary` (`effective_model` is now `_resolve_model(requested_model)`).
+`index.md`: two one-liners widened (prompt-version-discipline, eval-harness).
+
+**Cite check (`python -m scripts.wiki_cites --base HEAD --strict-removed`):** first run FAILED with E1 on 3 pages (5 bare line cites the scribes added
+despite a brief that said symbol cites only); replaced with symbol anchors by hand; re-run OK (0 violations, 0 removed cites). E2/E3/E4: 0.
+
+**Auditor (Sonnet 5, one per page, separate context):** changed hunks 33 SUPPORTED / 0 DRIFTED / 0 UNSUPPORTED across the 5 pages. Outside the hunks it
+caught (a) `prompt-version-discipline` quoted the `run_suite` warning as "quarantined from score-over-time", a string the code no longer logs
+(UNSUPPORTED as a quote), (b) the section heading named only `candidate:<hash>` after the body covered two kinds, (c) the `eval-harness`
+validation sentence named 2 of the 4 checks `_validate_model_override` makes. All three were corrected; the corrected hunks were re-audited by two
+fresh auditors: 13 SUPPORTED / 0 / 0.
+
+**Review (orchestrator, step 6 — prose, unenforced):** caught (a) again (found before the auditor's report arrived), plus one the auditor did not
+raise: `eval-harness` still said "real JSONL records with a later timestamp win" for the baseline, false for candidate records now. It also saw that
+the scribe left 1 of the 3 stale claims the brief named by line (the quoted warning) untouched. A judgement call left as is: the auditor found
+`eval-harness`'s prompt-override section's word "quarantined" accurate now that `is_candidate_record` really excludes, so it was not rewritten.
+
+**Retune signal:** scribes added bare line cites against the brief (3 of 5 pages) and missed a named stale sentence; hunk-level grounding was clean.
+The cite check caught the first and review the second, so the existing three layers held; nothing blocks on this.
+
+**Gate:** `/wiki-lint` structural checks run by hand (no script): 0 ERROR — every `[[backlink]]` resolves except the literal text `[[wikilink]]` in
+`docs-information-architecture.md` (pre-existing, not touched), index and `pages/` agree. `python -m scripts.wiki_freshness`: OK.
+
+**Not audited, declared (C-12):** the other 24 pages, including `generation-and-grounding` (its line-171 "score-over-time chart, attributable by
+`prompt_version`" was read and is still true) and `code-module-map` (its long line 77 was not read). The wiki pages were audited on the changed hunks
+plus the sentences named above, not end to end, except `prompt-version-discipline`, which the re-auditor swept in full.

@@ -1,8 +1,8 @@
 # PROMPT_VERSION discipline + the prompt-override primitive
 
 > **Audience:** `dev`
-> **Concept:** why a single `PROMPT_VERSION` string must bump in the same commit as any prompt change, and how the eval prompt-override primitive A/Bs a *candidate* prompt without editing the persona constants — quarantining candidate runs as `candidate:<hash>` so they never pollute score-over-time.
-> **Sources:** [`analyzer.py`](../../../analyzer.py), [`evals/runner.py`](../../../evals/runner.py), [`AGENTS.md`](../../../AGENTS.md).
+> **Concept:** why a single `PROMPT_VERSION` string must bump in the same commit as any prompt change, and how the eval prompt-override and model-override primitives A/B *candidate* prompts or models without editing the persona constants or model pins — quarantining candidate runs via `hardening.py:is_candidate_record` so they never pollute the baseline.
+> **Sources:** [`analyzer.py`](../../../analyzer.py), [`evals/runner.py`](../../../evals/runner.py), [`hardening.py`](../../../hardening.py), [`AGENTS.md`](../../../AGENTS.md).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -86,7 +86,7 @@ count quoted anywhere (including the number above, and
 `sorted(_BASE_SYSTEM_PROMPTS)` is the live answer, and the `ValueError` in
 [`analyzer.py:prompt_overrides`](../../../analyzer.py) prints it.
 
-## Quarantine: `candidate:<hash>` never pollutes the baseline
+## Quarantine: a candidate run never pollutes the baseline
 
 [`analyzer.py:effective_prompt_version`](../../../analyzer.py) is the single
 resolver for the stamp:
@@ -97,9 +97,11 @@ resolver for the stamp:
   override mapping — stable for a given candidate, so repeated runs of the same
   candidate share one label.
 
-Because the stamp differs, candidate telemetry sorts into its own `candidate:*`
-bucket and never lands in the `PROMPT_VERSION` score-over-time series — the
-quarantine is a property of the label, not a separate filter `[synthesis]`.
+Because the stamp differs, prompt-override telemetry sorts into its own `candidate:*`
+bucket. Model-override runs keep the real `PROMPT_VERSION` but are identified by the
+`model_overrides` field. Both are filtered from the baseline via [`hardening.py:is_candidate_record`](../../../hardening.py),
+which returns true for either `candidate:` prefix or a non-empty `model_overrides`
+field, so neither pollutes the score-over-time baseline `[synthesis]`.
 
 ## Default-path byte-identity (why production is untouched)
 
@@ -120,7 +122,8 @@ file read + shape-validation (object of string→string, else exit 1); the
 prompt-**name** validation happens once inside `run_suite`, before any paid LLM
 call. When overrides are present `run_suite` enters `prompt_overrides(...)`,
 computes the `candidate:<hash>` it will run under, and logs a loud warning that
-the run is "quarantined from score-over-time." Every result record then stamps
+the run is kept out of the regression baseline and the dashboard's baseline views.
+Every result record then stamps
 `effective_prompt_version()`. With no `--prompt-overrides`, `run_suite`'s default
 invocation is byte-identical to the historical path (`prompt_overrides({})` is a
 no-op). This is the substrate the `/prompt-tune` and v1.0.4 tuning loop build on
@@ -136,5 +139,5 @@ It stamps the avatar's telemetry via an explicit `prompt_version` parameter. Whe
 
 - [[code-module-map]] — where `analyzer.py` sits in the module graph.
 - [[llm-call-catalog]] — the call kinds whose telemetry the version stamps; the avatar's `avatar_answer` is one of them (stamped `AVATAR_PROMPT_VERSION`, not `PROMPT_VERSION`).
-- [[eval-harness]] — `runner.py`, `--prompt-overrides`, and the result records.
+- [[eval-harness]] — `runner.py`, `--prompt-overrides`, model overrides via `analyzer.py:model_overrides()`, and the result records.
 - [[deterministic-llm-boundary]] — the deterministic modules that never bump it.

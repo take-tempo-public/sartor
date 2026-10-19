@@ -44,7 +44,7 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
 - [`pages/deterministic-llm-boundary.md`](pages/deterministic-llm-boundary.md) — the P1
   boundary: all LLM in `analyzer.py`, the rest deterministic by contract.
 - [`pages/prompt-version-discipline.md`](pages/prompt-version-discipline.md) — the
-  `PROMPT_VERSION` bump rule + the eval prompt-override primitive.
+  `PROMPT_VERSION` bump rule + the eval prompt- and model-override primitives.
 - [`pages/context-set-contract.md`](pages/context-set-contract.md) — the `context_set`
   JSON contract every pipeline stage reads + writes; atomic writes + the lost-update
   transaction; the containment guard.
@@ -77,7 +77,7 @@ All `audience: dev`; every code claim `path:line`-grounded against HEAD.
   what this machine can actually do: the tri-state probes behind `sartor --doctor`,
   `--setup`, and the PDF availability gate.
 - [`pages/eval-harness.md`](pages/eval-harness.md) — the offline eval system: suites,
-  rubric judges, baseline/anchors, bootstrap, prompt-override A/B, the F-14 `jd_label`,
+  rubric judges, baseline/anchors, bootstrap, prompt- and model-override A/B, the F-14 `jd_label`,
   and annotation-pin integrity.
 - [`pages/diagnostics-console.md`](pages/diagnostics-console.md) — the localhost
   `/_dashboard` console + the SSE eval/tune/annotation loop; disconnect-as-cancel run

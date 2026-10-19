@@ -11,9 +11,10 @@
 
 Every call in this catalog routes through `_call_llm` / `_parse_or_retry`, which take
 an optional `model` arg that **defaults to `SONNET_MODEL`** — the resolution
-`effective_model = model or SONNET_MODEL` lives in
-[`analyzer.py:_call_llm_streaming`](../../../analyzer.py), which the non-streaming
-[`analyzer.py:_call_llm`](../../../analyzer.py) wraps. The two model constants are
+happens in [`analyzer.py:_call_llm_streaming`](../../../analyzer.py) (which the non-streaming
+[`analyzer.py:_call_llm`](../../../analyzer.py) wraps): first `requested_model = model or SONNET_MODEL`,
+then `effective_model = _resolve_model(requested_model)` to apply any active model overrides
+([`analyzer.py:_resolve_model`](../../../analyzer.py)) `[synthesis]`. The two model constants are
 [`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-5"`) and
 [`analyzer.py:HAIKU_MODEL`](../../../analyzer.py) (`"claude-haiku-4-5-20251001"`).
 A call is Sonnet when it passes **no** `model=` (the default); it is Haiku when it
@@ -109,6 +110,8 @@ These two fields ride ONLY on `status="error"` rows. Every row (both `status="ok
 - **`served_as`** — a fixed-shape dict of `service_tier`, `speed` and `inference_geo` (each `None` if the response's usage does not carry it), or `None` entirely when it carries none of the three.
 - **`thinking_tokens`** — `usage.output_tokens_details.thinking_tokens` when the response carries it, else `None`; it was `None` on both live calls observed, neither of which thinks `[synthesis]`.
 - **`attempt`** — `1` for a first pass, `2` for the `<kind>_retry` pass.
+
+Additionally, **`pinned_model`** (model-override calls only) — when a call's `effective_model` differs from its `requested_model` (because `model_overrides()` replaced the pin with a candidate), this field records the pin that was replaced. On ordinary calls (no override active), the field is absent so the row remains byte-identical to pre-override rows ([`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) `[synthesis]`.
 
 Eval judges ([`evals/runner.py:_judge_create`](../../../evals/runner.py)) now also write telemetry rows via [`analyzer.py:log_judge_call`](../../../analyzer.py) under call kinds `judge_grade` and `judge_distinctiveness`, with the same row shape and provenance fields `[synthesis]`.
 

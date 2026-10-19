@@ -83,10 +83,15 @@ path `[synthesis]`.
 
 ## Two models, one funnel
 
-Model selection is also centralized. The funnel resolves
-`effective_model = model or SONNET_MODEL` —
-[`analyzer.py:SONNET_MODEL`](../../../analyzer.py) (`"claude-sonnet-5"`) is the
-default; a caller opts a cheap structured call into
+Model selection is also centralized. The funnel first computes
+`requested_model = model or SONNET_MODEL` (in [`analyzer.py:_call_llm_streaming`](../../../analyzer.py)),
+then resolves `effective_model = _resolve_model(requested_model)` via
+[`analyzer.py:_resolve_model`](../../../analyzer.py). The resolver returns its
+argument unchanged in product calls; in eval-mode only, a
+[`analyzer.py:model_overrides`](../../../analyzer.py) context manager can
+replace a named pin (`SONNET_MODEL` or `HAIKU_MODEL`) with a candidate model id for A/B testing
+without editing the pins themselves `[synthesis]`. [`analyzer.py:SONNET_MODEL`](../../../analyzer.py)
+(`"claude-sonnet-5"`) is the default; a caller opts a cheap structured call into
 [`analyzer.py:HAIKU_MODEL`](../../../analyzer.py)
 (`"claude-haiku-4-5-20251001"`) by passing `model=HAIKU_MODEL`. Sonnet carries
 the heavy reasoning calls; Haiku carries structured selection / extraction —
