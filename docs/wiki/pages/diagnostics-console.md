@@ -119,7 +119,7 @@ runtime CDN; lazy-init on open):
   [`_cost_by_call_kind`](../../../dashboard/routes.py)), reliability
   ([`_reliability`](../../../dashboard/routes.py): error% + `max_tokens`
   truncation%), and a per-`run_id` span waterfall
-  ([`_run_trace`](../../../dashboard/routes.py)) — all over the filtered call list.
+  ([`_run_trace`](../../../dashboard/routes.py)) — all over the filtered call list. As of item 175, eval-judge calls (`judge_grade` and `judge_distinctiveness`, logged via [`analyzer.py:log_judge_call`](../../../analyzer.py)) are written to the same call log and included in the Pipeline cost panel's aggregations `[synthesis]`.
 - **Quality** — baseline-delta health bands
   ([`_baseline_health`](../../../dashboard/routes.py): regressed Δ<−0.5 = the
   merge-block gate, watch Δ<−0.3, else ok), per-rubric pass rate (≥4.0)

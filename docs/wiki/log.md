@@ -3190,3 +3190,43 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Freshness:** `python -m scripts.wiki_freshness` reads 67 files changed since the last ingest, under the 75 block threshold.
 - **Not run:** the grounding auditor and `/wiki-lint`. The edit removes a claim and adds one cited test link; the author of that edit was this
   session, so it has had no independent audit.
+
+## 2026-10-19 — scoped /wiki-self-update, six pages (`fix/llm-call-provenance`, item 175)
+
+- **Mode:** scoped to this branch's own diff (`git diff main...HEAD`), not the `.last_ingest_sha` window. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged, `3798e2d`). Owner authorized the spend: six Haiku scribe syntheses and six Sonnet 5
+  auditor passes, on the Claude Code session, no `.api_key` spend.
+- **Wiki-relevant changes in the diff (6):** `analyzer.py`, `evals/runner.py`, `db/build_context.py`, `SECURITY.md`,
+  `docs/user/install.md`, `evals/README.md`, per `is_wiki_relevant()`. The last three needed no page edit.
+- **Pages changed (6):** `llm-call-catalog`, `deterministic-llm-boundary`, `prompt-version-discipline`, `eval-harness`,
+  `application-audit-chain`, `diagnostics-console`. No page created; index and backlinks unchanged.
+- **Catches, kept apart:**
+  - **Cite check** (`python -m scripts.wiki_cites --base HEAD --strict-removed`): 3 findings on the first run. E1 on
+    `llm-call-catalog` (two bare line cites, one allowed) and on `prompt-version-discipline` (two, none allowed); E4 on
+    `application-audit-chain` (the scribe removed the `analyzer.py:PROMPT_VERSION` cite; restored, since it is still the default-path
+    value). All fixed to symbol cites. The ratchet then asked for `llm-call-catalog`'s allowance to be deleted, because the page's one
+    old bare cite (`lines 1458–1460`, long stale) was gone; the entry was removed from `ALLOWED_LINE_CITES`. Final run: OK.
+  - **Auditor** (6 pages): DRIFTED 0. UNSUPPORTED 5 on three pages, plus 1 flagged across pages. `deterministic-llm-boundary` 3
+    (`served_as` omitted `speed`; the pre-existing "no call site that does not" read as universal although the judges bypass the
+    funnel; the closing "observability is a property of the funnel" for the judges). `llm-call-catalog` 1 (`served_as` is a
+    fixed-shape dict, not "whichever it carries"). `eval-harness` 1 (`_score_distinctiveness` was said to send "rubric text + JSON
+    payload"; it sends its own inlined prompt). The `prompt-version-discipline` auditor, clean on its own page, flagged
+    `llm-call-catalog` line 67 ("telemetry still stamps `PROMPT_VERSION`" for the avatar), which the scribe had missed. Clean:
+    `application-audit-chain`, `diagnostics-console` (its auditor traced `dashboard/routes.py` end to end and found no call-kind or
+    `eval:` exclusion), `prompt-version-discipline`.
+  - **Orchestrator review** (step 6, unenforced prose): before the auditors ran, `llm-call-catalog` carried two scribe sentences
+    with no source (`answered_model` "may differ … if routing occurred"; the request id "used to correlate logs with API audits"),
+    rewritten from the live probe's observation that the response echoed the requested alias. Caught by review and **not** by the
+    auditor: `judge_request_id` listed inside the "`schema_version 3` — v2 plus …" enumeration, which implies v3 introduced it
+    (there was no version bump; it moved to its own sentence), and the vague "`judge_grade` and related call kinds". Caught by
+    review and also by an auditor: the `served_as` omission, the funnel overreach, and the `_score_distinctiveness` request shape.
+- **Not changed, noted:** `eval-harness`'s `schema_version 3` field list omits `eval_mode` and `leaked_handles`
+  (an auditor's flag; both predate this branch, so the list was already incomplete).
+- **Lint** (`/wiki-lint` checks, read-only): 42 pages. ERROR 0. One hit from an ad-hoc dangling-link regex, `[[wikilink]]` inside
+  backticks on `docs-information-architecture` (unchanged by this branch), is a false positive. WARN 0 (no orphans, no stubs).
+  Cite existence: OK. Index agreement: OK. Verdict: pass.
+- **Freshness:** `python scripts/wiki_freshness.py` reads 71 files changed since the last ingest, **under the 75 block threshold by four**
+  (it read 67 before this branch). A checkpoint-advancing pass is owed and the next branch that touches wiki-relevant files may trip the gate.
+- **Not audited:** anything on the six pages outside the changed passages named in each brief (the auditors were scoped to them, and
+  said so). The wiki edits themselves have had the independent audit above; the fix pass after it (the `served_as`, funnel,
+  `_score_distinctiveness`, schema-list and line 67 rewrites) was checked by the cite check and my own read, **not** re-audited.

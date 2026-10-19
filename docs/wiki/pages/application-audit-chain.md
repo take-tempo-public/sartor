@@ -59,9 +59,11 @@ chain. Key columns:
   ([`db/persist_run.py` module docstring](../../../db/persist_run.py)). The
   per-iteration audit trail lives in the context-file chain instead
   (`context_*.json` with `parent_context_path` pointers) `[synthesis]`.
-- `prompt_version` — stamped at creation from
-  [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py) (imported into
-  `build_context.py`), so a run's output is attributable to a prompt revision.
+- `prompt_version` — stamped at creation via
+  [`analyzer.py:effective_prompt_version()`](../../../analyzer.py), which returns
+  [`analyzer.py:PROMPT_VERSION`](../../../analyzer.py) on the default path or `candidate:<hash>` (sha256 of the
+  override mapping) when the run is made inside `analyzer.prompt_overrides(...)`
+  context `[synthesis]`, so a run's output is attributable to a prompt revision.
   The bump discipline itself is canonical in AGENTS.md — cited, not restated
   (D5).
 - `corpus_snapshot_json` — the **frozen** set of eligible bullet/title IDs this
@@ -76,8 +78,8 @@ chain. Key columns:
   (the C.3 ATS round-trip self-check).
 
 The iteration-0 run is created in `build_context_set_from_db` with
-`iteration=0, parent_run_id=None, prompt_version=PROMPT_VERSION` and the
-freshly computed snapshot `[synthesis]`.
+`iteration=0, parent_run_id=None, prompt_version=effective_prompt_version()`
+and the freshly computed snapshot `[synthesis]`.
 
 ## `ApplicationBullet` / `ApplicationRunTitle` — what was actually used
 

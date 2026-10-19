@@ -59,18 +59,27 @@ silently `[synthesis]`.
 
 Funnelling through one door is what makes the boundary *enforceable* rather than
 aspirational: caching, telemetry, model selection, and retry are defined once and
-cannot be forgotten by any call site that routes through it — and since item 21 there
-is no call site that does not `[synthesis]`. The single
+cannot be forgotten by any call site that routes through it — and since item 21 no call
+site in `analyzer.py` bypasses it `[synthesis]`. The single
 `_emit_call_log` block in the `finally` of
 [`analyzer.py:_call_llm_streaming`](../../../analyzer.py) writes one JSONL
 telemetry record per funnelled call (stamped with the call kind under the JSON key
-`call`, plus `model` and `prompt_version`); on `status="error"` rows, two additional
-fields carry `error_type` (the exception class name, set in
-[`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) and `error_message`, a
-redacted exception text via
-[`analyzer.py:_redact_error_message`](../../../analyzer.py) (whitespace collapsed,
-API-key shapes and header values masked, 500-character cap), so observability is a
-property of the funnel, not of each caller.
+`call`, plus `model` and `prompt_version`). Each row also carries six provenance
+fields via [`analyzer.py:_provenance_fields`](../../../analyzer.py): `answered_model`
+(the model actually returned), `api_request_id` (for tracing), `request_settings` (every
+call kwarg except `system` and `messages`, so no prompt or résumé text is logged),
+`served_as` (service tier, speed and inference geo from the response, each `None` when absent),
+`thinking_tokens`,
+and `attempt` (1 for first pass, 2 for retry). On `status="error"` rows, two additional
+fields carry `error_type` (the exception class name) and `error_message`, a redacted
+exception text via [`analyzer.py:_redact_error_message`](../../../analyzer.py)
+(whitespace collapsed, API-key shapes and header values masked, 500-character cap).
+The eval judges (`evals/runner.py`) do not go through the funnel: their one path,
+[`evals/runner.py:_judge_create`](../../../evals/runner.py), writes the same row shape via
+[`analyzer.py:log_judge_call`](../../../analyzer.py) under `judge_grade` /
+`judge_distinctiveness`, reusing `_provenance_fields`. For product calls observability is a
+property of the funnel, not of each caller; for the judges it is a property of that second
+path `[synthesis]`.
 
 ## Two models, one funnel
 

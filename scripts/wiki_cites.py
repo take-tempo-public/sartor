@@ -65,7 +65,6 @@ ALLOWED_LINE_CITES: dict[str, int] = {
     "docs/wiki/pages/document-rendering.md": 3,
     "docs/wiki/pages/education-degree-field-rendering.md": 12,
     "docs/wiki/pages/governance-extraction.md": 2,
-    "docs/wiki/pages/llm-call-catalog.md": 1,
     "docs/wiki/pages/non-dependency-downloads.md": 2,
     "docs/wiki/pages/openapi-api-reference.md": 1,
     "docs/wiki/pages/route-surface.md": 2,

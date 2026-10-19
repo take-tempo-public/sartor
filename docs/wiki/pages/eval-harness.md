@@ -20,6 +20,8 @@ Result records are at **`schema_version 3`** — v2's float scores plus
 `baseline_comparison` / `phase_latencies_ms` / `grounding_signals`, and (F-14) a
 `jd_label`; the dashboard normalizes all three versions at read time rather than
 rewriting files ([`evals/README.md`](../../../evals/README.md) §"Interpreting results").
+Since item 175 the per-rubric and iteration records also carry `judge_request_id`, with no
+`schema_version` bump; it is absent from older records and from rows where no judge ran `[synthesis]`.
 The harness lives under `evals/` — **off the P1 hardening boundary** — so it may
 orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `clarify`,
 `generate`) rather than duplicating call logic, which still lives in `analyzer.py`
@@ -87,9 +89,15 @@ The canonical full run is `python evals/runner.py --suite synthetic`.
 ## The rubric judges
 
 Each rubric is a markdown file; `_grade` sends `(rubric text + JSON payload)` to the judge
-model `claude-haiku-4-5-20251001` (`JUDGE_MODEL`) and parses a JSON verdict, force-floating
-the score and tagging malformed responses `status: judge_error` so they don't fire false
-regressions ([`evals/runner.py:_grade`](../../../evals/runner.py)). The rubric files are
+model `claude-haiku-4-5-20251001` (`JUDGE_MODEL`), while `_score_distinctiveness` sends its own
+fixed recruiter-persona prompt with the job description and résumé inlined (no rubric file).
+Both route through [`evals/runner.py:_judge_create`](../../../evals/runner.py), which writes a
+telemetry row via [`analyzer.py:log_judge_call`](../../../analyzer.py) under call kinds
+`judge_grade` / `judge_distinctiveness` and username `eval:<fixture>`. The judge's API request
+id is returned in the verdict/metric as `judge_request_id` so a score joins to its telemetry
+row. `_grade` parses the JSON verdict, force-floating the score and tagging malformed responses
+`status: judge_error` so they don't fire false regressions ([`evals/runner.py:_grade`](../../../evals/runner.py)).
+The rubric files are
 `ats_format`, `callback_likelihood`, `clarification_quality`, `grounding`,
 `iteration_quality`, `keyword_coverage`, `tone` ([`evals/rubrics/`](../../../evals/rubrics)).
 Scores are 0.0–[`evals/runner.py:SCORE_MAX`](../../../evals/runner.py) (5.0, one decimal); the
@@ -116,9 +124,10 @@ LLM-free post-generation metrics computed in `hardening.py`: `verb_diversity`,
 The L0 `fabricated_specifics` check scores against the dynamic source union from
 [`hardening.py:assemble_source_union`](../../../hardening.py) (primary + supplementals +
 clarifications), kept separate from the `grounding_overlap` source set so its baseline isn't
-perturbed `[synthesis]`. Per-eval `cost_usd` is rolled up from `logs/llm_calls.jsonl` by
-tailing records tagged `eval:<fixture>` since the run started ([`evals/runner.py:_eval_cost_since`](../../../evals/runner.py))
-and summing via [`hardening.py:compute_call_cost`](../../../hardening.py).
+perturbed `[synthesis]`. Per-eval `cost_usd` is generation-only: rolled up from `logs/llm_calls.jsonl` by
+tailing records tagged `eval:<fixture>` since the run started, but [`evals/runner.py:_eval_cost_since`](../../../evals/runner.py)
+skips rows whose `call` field starts with `judge_`, so judge calls are excluded ([`evals/runner.py:_eval_cost_since`](../../../evals/runner.py))
+and the sum is via [`hardening.py:compute_call_cost`](../../../hardening.py) `[synthesis]`.
 
 **Leaked-handles detection** (item 140) — `leaked_handles` is a sibling record key (not inside
 `deterministic_metrics`, which is the part handed to the judge), computed by

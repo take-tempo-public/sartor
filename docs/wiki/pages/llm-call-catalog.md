@@ -64,7 +64,7 @@ drafting calls (`draft_summary`, `draft_gap_fill`, `draft_experience_summary`,
 | `critique_proposal` | [`critique_proposal`](../../../analyzer.py) | Structured critique of a proposal. |
 | `promote_clarification_to_bullet` | [`analyzer.py` promote helper](../../../analyzer.py) | Turns a confirmed clarification into a bullet. |
 | `extract_experiences` | [`onboarding/extract_experiences.py:extract_experiences`](../../../onboarding/extract_experiences.py) | Onboarding/corpus résumé ingest — **lives outside `analyzer.py`** `[synthesis]`. |
-| `avatar_answer` | [`avatar_answer_streaming`](../../../analyzer.py) | **Memory/recall subsystem only** — the doc-grounded assistant, answering questions over a `recall.Context` (not a `context_set`). Avatar-prompt revisions track a separate source constant [`AVATAR_PROMPT_VERSION`](../../../analyzer.py); telemetry still stamps `PROMPT_VERSION` — see [[prompt-version-discipline]] `[synthesis]`. |
+| `avatar_answer` | [`avatar_answer_streaming`](../../../analyzer.py) | **Memory/recall subsystem only** — the doc-grounded assistant, answering questions over a `recall.Context` (not a `context_set`). Avatar-prompt revisions track a separate source constant [`AVATAR_PROMPT_VERSION`](../../../analyzer.py); its telemetry rows are stamped with it (passed as `prompt_version`), not with `PROMPT_VERSION` — see [[prompt-version-discipline]] `[synthesis]`. |
 | `check_refinement_scope` | [`check_refinement_scope`](../../../analyzer.py) | Fail-open scope classifier for a free-text refinement note (`POST /api/validate-refinement`). Fixed item 21 (2026-08-02): now routes through `_parse_or_retry` like every other Haiku call, with a `max_tokens=128` cap (the shared helper's `max_tokens` kwarg, defaulting to `MAX_TOKENS` for every other call site) and a named `SCOPE_CHECK_SYSTEM_PROMPT` `[synthesis]`. |
 
 Watch the function-name vs. `call_kind` drift in the recommend family: the functions
@@ -84,7 +84,7 @@ vanishing silently — see [[deterministic-llm-boundary]] `[synthesis]`.
 All LLM calls emit one JSONL record per call to `logs/llm_calls.jsonl` via
 [`analyzer.py:_emit_call_log`](../../../analyzer.py). When a call fails, the
 `status` field is set to `"error"` and two additional fields are appended
-([`analyzer.py:_call_llm_streaming`](../../../analyzer.py) lines 1458–1460) `[synthesis]`:
+(in the record built in [`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) `[synthesis]`:
 
 - **`error_type`** — the exception class name (`"APIError"`, `"TypeError"`,
   `"LLMConfigurationError"`, etc.), captured via
@@ -99,9 +99,16 @@ All LLM calls emit one JSONL record per call to `logs/llm_calls.jsonl` via
   can never replace the caller's exception — the exception is re-raised unchanged
   after telemetry is recorded `[synthesis]`.
 
-These two fields ride ONLY on `status="error"` rows; all `status="ok"` rows are
-byte-identical to pre-epic-C rows, so readers that tolerate their absence stay
-compatible `[synthesis]`.
+These two fields ride ONLY on `status="error"` rows. Every row (both `status="ok"` and `status="error"`) carries six provenance fields added by item 175 ([`analyzer.py:_provenance_fields`](../../../analyzer.py)) `[synthesis]`:
+
+- **`answered_model`** — the `model` the API response reports. `model` keeps meaning "the id requested" (pricing and the dashboard key on it). On the two live calls observed (2026-10-19), the response echoed the requested alias, so this field does not name a dated version behind an alias; the request id below is the per-call handle `[synthesis]`.
+- **`api_request_id`** — the SDK stream's request id for that call, read as soon as the stream opens so a call that fails mid-stream still logs it.
+- **`request_settings`** — every request kwarg except prompt content (`system` / `messages`), taken from the kwargs actually sent.
+- **`served_as`** — a fixed-shape dict of `service_tier`, `speed` and `inference_geo` (each `None` if the response's usage does not carry it), or `None` entirely when it carries none of the three.
+- **`thinking_tokens`** — `usage.output_tokens_details.thinking_tokens` when the response carries it, else `None`; it was `None` on both live calls observed, neither of which thinks `[synthesis]`.
+- **`attempt`** — `1` for a first pass, `2` for the `<kind>_retry` pass.
+
+Eval judges ([`evals/runner.py:_judge_create`](../../../evals/runner.py)) now also write telemetry rows via [`analyzer.py:log_judge_call`](../../../analyzer.py) under call kinds `judge_grade` and `judge_distinctiveness`, with the same row shape and provenance fields `[synthesis]`.
 
 ## The two-pass analyze (the cache-defining detail)
 
