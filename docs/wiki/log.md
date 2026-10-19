@@ -3174,3 +3174,19 @@ checkpoint. The owner authorized the pass with a page cap raised to 11 (~22 Haik
 - **Freshness:** `python -m scripts.wiki_freshness` reads 67 files changed since the last ingest, under the 75 block
   threshold. A checkpoint-advancing pass is still owed.
 - **Not run:** scribe, auditor and `/wiki-lint`: no page changed, so there was nothing to grade or lint.
+
+## 2026-10-18 — one page corrected by hand (`fix/threaded-server-claim`, item 177 point 1)
+
+- **Mode:** a scoped correction at branch close-out, made directly by the orchestrating session with no scribe run. The checkpoint is **not**
+  advanced (`.last_ingest_sha` unchanged). No spend.
+- **Wiki-relevant changes in the diff:** `hardening.py` (a docstring), `docs/dev/RELEASE_ARC.md` and `docs/dev/RELEASE_CHECKLIST.md` (inline errata),
+  per `is_wiki_relevant()`.
+- **Edit:** `pages/diagnostics-console.md` stated that cancel is signalled by client disconnect because `app.run()` has never been `threaded=True`.
+  The production entry point is threaded (`tests/test_production_server_concurrency.py`), so that sentence now says the earlier reason was false
+  and that the real reason for the design is not established. Record: `docs/dev/diagnosis/threaded-server-claim.md`.
+- **Checked, no edit:** no other wiki page outside this log mentions `threaded`, single-threading or "forward cover" (`git grep -i` over
+  `docs/wiki`); no page cites `hardening.py` at a line past the edited docstring (`git grep -E "hardening\.py:(199[1-9]|20[0-9]{2}|2[1-9][0-9]{2}|[3-9][0-9]{3})"` over `docs/wiki` returns nothing).
+- **Cite check** (`python -m scripts.wiki_cites --base main --strict-removed`): OK, 0 violations, 0 removed cites.
+- **Freshness:** `python -m scripts.wiki_freshness` reads 67 files changed since the last ingest, under the 75 block threshold.
+- **Not run:** the grounding auditor and `/wiki-lint`. The edit removes a claim and adds one cited test link; the author of that edit was this
+  session, so it has had no independent audit.

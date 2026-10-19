@@ -1473,6 +1473,9 @@ Themes (each design-scoped, not yet branch-planned):
   (`app.py`, no `threaded=True`) freezes the whole app during a diagnostics run —
   making it threaded touches the C-1-sensitive loopback-bind area, so it is an
   owner-gated governance call, deliberately kept out of this epic.
+  *[Erratum 2026-10-18: the server is threaded, not single-threaded; `Flask.run()` defaults
+  `threaded=True` and `tests/test_production_server_concurrency.py` observes it. The cause of
+  the freeze is unexplained. See `diagnosis/threaded-server-claim.md`.]*
 
 Deferred out of this epic (tracked elsewhere): **Co3** (skill-suggestion
 ATS-quality) is a tune-loop question, not a code branch. **O1b** (dates

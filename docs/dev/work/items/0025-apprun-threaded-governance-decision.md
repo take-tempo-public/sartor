@@ -29,3 +29,15 @@ epic prose, not the Carry-forward ledger the old-system migration covered.
 ## Updates
 
 ### 2026-07-29 — filed during fix/bootstrap-annotation-overwrite, migration-gap sweep
+
+### 2026-10-18 - premise falsified, `fix/threaded-server-claim` (item 177 point 1)
+
+**The premise that `app.run()` is single-threaded is false.** `Flask.run()` applies `threaded=True` by default, and
+`tests/test_production_server_concurrency.py` answers a full request against `python app.py` itself while another connection
+is half-sent, with the debug reloader on and off (Flask 3.1.3; the 3.0.0 source has the same default). Evidence and the
+controls: `docs/dev/diagnosis/threaded-server-claim.md`. Nothing in `app.py` changed.
+
+So the "governance decision" as framed (flip `threaded=True`) is already the behaviour. What remains is the owner's call on
+whether to make it explicit or to say anything about the C-1 loopback-bind posture in light of it. The reported **freeze
+during a diagnostics run** was never observed and single-threading does not explain it; its cause is unknown. I did not
+change this item's status or summary (the board summary still repeats the false premise); that is for the owner.
