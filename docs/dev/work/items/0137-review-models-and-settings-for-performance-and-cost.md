@@ -232,3 +232,36 @@ parse-and-retry, so it has no `_retry` sibling. Not re-read: the Flask route tha
   (assemble). The last full 22-row synthetic runs (2026-06-23 to 2026-07-09, $2.1 to $2.4 each) predate both the current pins and the item 174 price
   fix, so they are not a current figure; a full-suite swap is unmeasured. **Not checked:** whether a record's `cost_usd` includes the judge calls.
 - **Approval needed from the owner before any of it:** the pin, the suite/subset and mode, N, and the spend ceiling. None is given.
+
+### 2026-10-19 - free review, part 3: `architecture.md` routing section corrected against the code (docs/item-137-free-review)
+
+Owner decision (chat, same day): fix the drift on this branch rather than only record it. Model-per-call already matched the code for
+every product call kind; what was wrong, each re-read in the code before editing:
+1. **Clarify prefix.** Prose and a diagram comment said the clarify variants reuse the heavy user prefix. They pass `cached_user_prefix=""`
+   (`analyzer.py:2705`, `:2849`); they send none.
+2. **Frozen generate is not LLM-free when a cover letter is requested.** `_assemble_from_frozen_composition` calls
+   `generate_cover_letter_against_resume` (`blueprints/generation.py:1087-1088`; its docstring says so), reached from `/api/generate`
+   (:1227) and `/api/generate/stream` (:1619). Only the résumé body is zero-LLM. Diagram edge added.
+3. **Stream routes missing.** `/api/analyze/stream` (`blueprints/analysis.py:92`) and `/api/generate/stream` (`blueprints/generation.py:1477`) added.
+4. **Route path.** `suggest-from-corpus` is `/api/users/<u>/skills/suggest-from-corpus` (`blueprints/corpus/skills.py:237`), not under `/corpus/`.
+5. **Retry claim.** "Every call kind has a `_retry` sibling" is false for `avatar_answer`, sent once through `_call_llm_streaming`
+   (`analyzer.py:2574`) with no parse step. `check_refinement_scope` does retry (`_parse_or_retry`, :3609).
+6. **Scope claim.** The diagram header said "every site in analyzer.py"; `extract_experiences` is called from
+   `onboarding/extract_experiences.py:165`. The eval judge is not a product call and is now said to be undrawn.
+7. **Cost/latency wording.** A comment and a table row (`architecture.md:283`) promised or described numbers the section does not carry.
+8. **Legend.** "red = no cache prefix, cache_read=0" was false for kinds whose system block caches (`generate_cover_letter` read cache on
+   5 of its 6 product rows, part 1). Now "no `cached_user_prefix`, the system block may still cache".
+9. **Five stale `analyzer.py` line cites** in "Typed contracts" re-derived at HEAD (`_LLMResponse` :273, `HiddenQualityItem.category` :433,
+   `enforce_composition_rules` :506, `_parse_or_retry` :2093, the retry block :2164-2188). New short paragraphs: the cache-minimum behaviour
+   (points here instead of restating numbers) and thinking / output limits (`THINKING_POLICY`, `MAX_TOKENS`, `request_settings`).
+Two stale comments in `analyzer.py` fixed (comment and docstring text only, no prompt string, `PROMPT_VERSION` unchanged):
+`_check_refinement_scope` is `check_refinement_scope`, and `analyze()`'s docstring said "Sonnet 4.6" for pass 2; it now names
+`SONNET_MODEL` and `HAIKU_MODEL` so the next pin move cannot make it stale again.
+
+**Verification, and what it does not show.** `doc_lints` (0 blocks), `check_doc_frontmatter`, `check_doc_links`, `check_doc_single_home`
+pass. The edited diagram renders in headless Chromium with the docs-site's installed Mermaid 11.16.0 (`docs-site/node_modules`), and the
+same harness FAILS on an unclosed bracket, so it can fail. **That is a stand-in, not the CI check:** `scripts/check_docs_site_mermaid.py`
+reads a prebuilt `docs-site/out/` dated 2026-10-01 and reports a 404 for a page added since, so it did not see this diagram; I did not run
+the full docs-site build (OpenAPI spec, MDX projection, `next build`) on a shared machine. CI's `docs-deploy` job is the authority. The
+`docs/wiki/pages/llm-call-catalog.md` page is the doc the diagram summarizes: its line 12 says every catalog call routes through
+`_call_llm` / `_parse_or_retry`, which `avatar_answer` does not; the close-out wiki check decides that page.
