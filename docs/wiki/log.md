@@ -3375,3 +3375,16 @@ The cite check caught the first and review the second, so the existing three lay
 **Not audited, declared (C-12):** the other 24 pages, including `generation-and-grounding` (its line-171 "score-over-time chart, attributable by
 `prompt_version`" was read and is still true) and `code-module-map` (its long line 77 was not read). The wiki pages were audited on the changed hunks
 plus the sentences named above, not end to end, except `prompt-version-discipline`, which the re-auditor swept in full.
+
+## 2026-10-19 — scoped close-out relevance check (`fix/eval-results-test-leak`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (not a full ingest). `.last_ingest_sha` not advanced.
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, `is_wiki_relevant()` run on each path): one,
+`evals/runner.py`.** The others (`tests/conftest.py`, `tests/test_eval_runner.py`, `CHANGELOG.md`, `docs/dev/**`) classify irrelevant.
+
+**Pages edited (0). Pages verified no-edit:** `eval-harness`, `diagnostics-console`, `prompt-version-discipline`, `code-module-map`.
+The `evals/runner.py` change is one default: `run_suite(out_dir=None)` resolves to `RESULTS_DIR` when called instead of when
+defined. A grep of `docs/wiki/pages/` for `out_dir`, `RESULTS_DIR` and `evals/results` found only statements that stay true
+(`eval-harness` "writes one record per grading to `evals/results/{timestamp}.jsonl`"); no page describes the default's binding.
+Checked by grep and by reading those lines, not audited by a subagent (no spend).

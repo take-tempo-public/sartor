@@ -1201,7 +1201,7 @@ def run_suite(
     prompt_overrides_map: dict[str, str] | None = None,
     model_overrides_map: dict[str, str] | None = None,
     grounding_signals: bool = False,
-    out_dir: str | Path = RESULTS_DIR,
+    out_dir: str | Path | None = None,
     client: anthropic.Anthropic | None = None,
     progress: ProgressFn | None = None,
     cancel_check: Callable[[], bool] | None = None,
@@ -1337,7 +1337,9 @@ def run_suite(
     )
 
     client = client or _get_client()
-    out_dir = Path(out_dir)
+    # None resolves to the module's RESULTS_DIR now, not at def time: a default bound at def time
+    # ignored a patched RESULTS_DIR and let tests write stub runs into the real directory (item 179).
+    out_dir = Path(RESULTS_DIR if out_dir is None else out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%SZ")
     out_path_for_baseline = out_dir / f"{timestamp}.jsonl"
