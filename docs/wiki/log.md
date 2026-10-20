@@ -3388,3 +3388,34 @@ The `evals/runner.py` change is one default: `run_suite(out_dir=None)` resolves 
 defined. A grep of `docs/wiki/pages/` for `out_dir`, `RESULTS_DIR` and `evals/results` found only statements that stay true
 (`eval-harness` "writes one record per grading to `evals/results/{timestamp}.jsonl`"); no page describes the default's binding.
 Checked by grep and by reading those lines, not audited by a subagent (no spend).
+
+## 2026-10-20 — scoped `/wiki-self-update` (`docs/item-137-free-review`)
+
+**Trigger:** branch close-out, scoped to this branch's own diff (`git diff main...HEAD`), owner-authorised spend (about two subagent
+calls, one more added below). **`.last_ingest_sha` not advanced** (scoped pass; it still reads `619549af`).
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): two,** `analyzer.py` (two comment lines and a docstring, no
+code or prompt text) and `docs/dev/architecture.md` (the LLM-routing section corrected). No wiki page cites `architecture.md` by
+line number; the one page that names its §"LLM routing + cost" is `llm-call-catalog`.
+
+**Pages edited (1): `llm-call-catalog`.** Its "Two tiers, one helper" paragraph said every catalog call routes through `_call_llm` /
+`_parse_or_retry` and that every call has a `<kind>_retry` sibling. `avatar_answer` does neither (`analyzer.py:avatar_answer_streaming`
+calls `_call_llm_streaming` directly, no response validation, no retry kind), and the two streaming passes use
+`_parse_or_retry_streaming`. Now: every call reaches the API through `_call_llm_streaming`, by one of three paths named on the page.
+
+**Catches, kept apart:**
+- **Cite check (`scripts/wiki_cites.py --strict-removed`):** 0 violations, 0 removed cites, before and after the correction.
+- **Auditor (Sonnet 5, separate context):** 1 page audited, 21 claims: 20 SUPPORTED, 0 DRIFTED, **1 UNSUPPORTED**: the scribe's new line 12
+  ("every call except `avatar_answer_streaming`") was still false for `analyze_streaming` and `generate_streaming`. The scribe had
+  generalised from the non-streaming helper pair. A scope word (*every … except*), the failure class review step 6 names.
+- **My review:** read the scribe's diff and confirmed the retry claim against `_parse_or_retry` / `_parse_or_retry_streaming`, but
+  **did not catch the streaming exception; the auditor did.** After the correction I enumerated the `_call_llm_streaming` call sites by
+  grep (three: `_call_llm`, `_parse_or_retry_streaming`, `avatar_answer_streaming`) and found the same three paths the page now names.
+- **Re-audit of the correction (fresh Sonnet 5 context, narrow slice):** 6 SUPPORTED, 0 DRIFTED, 0 UNSUPPORTED, call sites enumerated
+  (`_call_llm` 2, `_parse_or_retry` 20 including `onboarding/extract_experiences.py`, `_parse_or_retry_streaming` 3). The eval judge
+  calls `client.messages.create` directly (`evals/runner.py`); it is not a catalog call and the page already says so in its error-capture
+  section.
+
+**Not verified:** the rest of the page beyond the two paragraphs and the sentences the auditors sampled (the first audit read the whole
+page but spent less depth on the lower Haiku rows); the two "2026-10-19 live calls observed" sentences in the error-capture section are
+telemetry observations no source read can confirm (the auditor flagged them; not checked against `logs/llm_calls.jsonl` here).
