@@ -5,7 +5,9 @@ kind = "item"
 title = "Review current Claude models and call settings for performance and cost"
 status = "open"
 decision_owner = "agent"
-branches = ["feat/docs-assets-enforcement", "docs/model-55-eval-item"]
+epic = 180
+depends_on = [190]
+branches = ["feat/docs-assets-enforcement", "docs/model-55-eval-item", "docs/eval-redesign-decisions"]
 refs = [
   "analyzer.py:1042-1043",
   "analyzer.py:1573-1595",
@@ -290,3 +292,10 @@ and an eleven-branch build order whose last step is this A/B, pre-registered on 
 **This item stays open.** Still open under it: the A/B itself (step 11 of that order), the subagent pins, Opus 5.5 price and policy, and
 the items listed in the 2026-10-19 blocks. No cheaper fallback is proposed: a smoke run in assemble mode would test `recommend` on the
 committed seed but not `recommend_summary`, and would leave `clarify` ungraded.
+
+### 2026-10-20 - re-parented under epic 180; the owner answered the eight design decisions (docs/eval-redesign-decisions)
+
+This item is now a child of epic 180 (the eval redesign build order) and is **step 11**: it depends on item 190 (step 10), so it cannot
+start until steps 1 to 10 have landed. The four A/B answers above stand. Decision 3 bears on it: the judge model is chosen at step 9
+(item 189), not now, and with no human-labelled gold set (decision 5) the calibration is judge-to-judge agreement. Nothing else in this
+item changed; it stays open.

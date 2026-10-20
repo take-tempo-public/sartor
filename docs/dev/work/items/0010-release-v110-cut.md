@@ -6,7 +6,7 @@ title = "chore/release-v1.1.0 - version bump, CHANGELOG cut, tag"
 status = "blocked"
 decision_owner = "user"
 epic = 40
-depends_on = [3, 6, 7, 9, 19]
+depends_on = [3, 6, 7, 9, 19, 181, 182, 183, 184, 185, 186]
 blocked_on = "everything else landing first, plus the owner's explicit go"
 refs = ["RELEASE_ARC.md step 17"]
 summary = "Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go."
@@ -34,3 +34,9 @@ This item is the terminal step of epic 40; its mechanics are unchanged. The marc
 adds the pre-tag gate list (eval smoke, wiki-lint, compliance-witness, fresh-clone
 re-verify, the type-scan) and the post-tag steps (PyPI publish verification,
 `gh release create`) around it — see `RELEASE_ARC.md` §"v1.1.0 Final March" epic E.
+
+### 2026-10-20 - depends on eval redesign steps 1 to 6 (owner decision 2)
+
+The owner decided (chat, 2026-10-20) that v1.1.0 waits for steps 1 to 3 of the eval redesign build order and for a deterministic-check
+call eval on every kind, which is the deterministic part of steps 4 to 6. Those are items 181 to 186 under epic 180. Judged-rubric
+calibration (steps 7 to 10) does not block the cut. Source: `docs/dev/eval-redesign-design.md` section 8, decision 2.

@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 24 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 6 | Closed 92
+**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 92
 
 ## Open
 
@@ -19,7 +19,6 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **133** -- There is no way to delete a candidate profile (`user`) -- No route, UI or script removes a user. Product decision: wanted, and when?
 - **134** -- Diagnostics console: the Tuning smoke cost estimate contradicts the Quality smoke estimate (`agent`) -- Tuning smoke says ~$0.20 for TWO suite runs; Quality smoke says ~$0.35-0.40 for ONE. At most one is right.
 - **135** -- Copies of the close-out protocol drift from docs/dev/maintainer-lane.md: the template's step 1 and charter.md:206's step number (`user`) -- Template close-out step 1 says ruff+mypy+pytest (gate runs 6); charter:206 cites step 4 for a step-5 rule.
-- **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Review pinned models and call settings, now including the Claude 5.5 candidate evaluation (absorbs item 173).
 - **138** -- The Settings drawer has no help bubble (`user`) -- _initHelp attaches only to .cb-panel; Settings is a drawer, so it gets no (i) bubble or Learn more link.
 - **139** -- capture_screenshots leaves its demo user behind: cleanup skips on failure, and DB rows always persist (`agent`) -- cleanup() runs only on success; demo DB rows are never removed, so a stale import blocks later runs.
 - **140** -- LLM output leaks internal bullet ids (b173, b180) into user text, and the cover letter invents its date (`agent`) -- Fix built, measured, screenshots recaptured; score drop not specific to the change; carrier hypothesis never reproduced.
@@ -139,7 +138,23 @@ IA research + design; full user/dev docs split; user + dev content; screenshots,
 
 Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; owner toggles during the epic.
 
-- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19] [blocked on: everything else landing first, plus the owner's explicit go]
+- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19, 181, 182, 183, 184, 185, 186] [blocked on: everything else landing first, plus the owner's explicit go]
+
+### 180 -- Eval redesign build order (open)
+
+Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, step 11 is item 137.
+
+- **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Review pinned models and call settings, now including the Claude 5.5 candidate evaluation (absorbs item 173). [depends on: 190]
+- **181** -- Eval redesign step 1: record identity and the prompt-version gate (`agent`) -- Prompt content hashes + version gate, producer id, trace/span/case ids, parse outcome, judge cost in run totals.
+- **182** -- Eval redesign step 2: catalog skeleton and the all-kinds gate (`agent`) -- Catalog format, lazy loader, all-kinds gate, --list/--estimate/--max-spend; entries for the kinds already covered. [depends on: 181] [blocked on: step 1 (item 181) has not landed]
+- **183** -- Eval redesign step 3: standard dataset, captured inputs, reachability check (`agent`) -- O*NET synthetic matrix, captured upstream inputs, reachability check; on-demand public fetch only if it clears C-2. [depends on: 182] [blocked on: step 2 (item 182) has not landed]
+- **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183] [blocked on: step 3 (item 183) has not landed]
+- **185** -- Eval redesign step 5: call evals for the 11 compose kinds (`agent`) -- Call evals for the 11 compose-group kinds. Deterministic part blocks v1.1.0. [depends on: 184] [blocked on: step 4 (item 184) has not landed]
+- **186** -- Eval redesign step 6: call evals for avatar, proposals and clarification promotion (`agent`) -- Call evals: avatar_answer, critique_proposal, promote_clarification_to_bullet; deterministic part blocks 1.1.0. [depends on: 185] [blocked on: step 5 (item 185) has not landed]
+- **187** -- Eval redesign step 7: pre-registered comparison protocol (`agent`) -- Pre-registered spec, noise floor, arithmetic decision rule; replaces evals/tune.py. [depends on: 186] [blocked on: step 6 (item 186) has not landed]
+- **188** -- Eval redesign step 8: Catalog dashboard tab and drill-downs (`agent`) -- Catalog tab, kind/case/judge-span drill-downs, attention view, arm comparison. [depends on: 187] [blocked on: step 7 (item 187) has not landed]
+- **189** -- Eval redesign step 9: pinned judge, schema parse, judge-to-judge calibration (`agent`) -- Pinned judge, schema parse, judge-to-judge agreement (no gold set), over-suppression check; owner picks the judge. [depends on: 188] [blocked on: step 8 (item 188) has not landed]
+- **190** -- Eval redesign step 10: OpenTelemetry projection (`agent`) -- Pure row-to-span projection and its mapping module, pinned to one semantic-conventions-genai commit; no dependency. [depends on: 189] [blocked on: step 9 (item 189) has not landed]
 
 ## Closed (92)
 

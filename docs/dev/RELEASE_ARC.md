@@ -2036,6 +2036,9 @@ subagent on user docs). Runs after all UI epics so assets are produced once.
   `enforce_admins`. Tag `v1.1.0` → `release.yml` publishes (OIDC + Sigstore);
   verify `pip install sartor` from PyPI; create the GitHub Release with notes
   (`release.yml` does not create one). Local-dev install path stays documented.
+  **Eval prerequisite (owner decision, 2026-10-20):** E1 also waits for steps 1 to 3 of the
+  eval redesign and a deterministic-check eval on every call kind (item 10 depends on items
+  181 to 186, under epic 180). Scope and order: `eval-redesign-design.md` sections 8 and 9.
 
 ### Post-1.1 backlog (filed as board items 41–43; not scheduled)
 
