@@ -306,9 +306,14 @@ Section 6 gives the research behind this. The requirements, whatever the source:
   recording stub in place of the API client and asserts the set of call kinds that fired equals
   the set the catalog expects. It costs nothing and would have caught the `recommend_summary`
   gap.
-- **Frozen subsets:** an anchor (a pinned version for cross-release comparison) and an
-  exploration area for candidates, promoted by the rule already written in
-  `evals/exploration/README.md` *(reported)*.
+- **Two roles, never mixed (proposal, 6.4):** a **golden set** (the committed, authored matrix:
+  frozen inputs, ground truth written by code, the only set that gates a release or a model swap,
+  versioned so a later version adds cells and never edits one in place) and an **exploration set** (a
+  fetched real-posting draw, or a fresh seeded draw from the matrix, pinned by a manifest of source
+  revision and sha256; its result is a lead and never moves a pin). Candidates are promoted by the
+  rule already written in `evals/exploration/README.md` *(reported)*. The fetched set cannot be the
+  golden set: it can change or vanish upstream, it cannot be committed, and every public set found is
+  IT or government only (6.1 to 6.3).
 
 ### 5.5 Identity and versioning
 
@@ -386,6 +391,12 @@ and Pipeline tabs stay; the end-to-end `flows` group feeds the Quality tab as it
 A research pass on 2026-10-20 read dataset cards and licence pages and downloaded nothing. It
 used a summarizing fetch tool, so quotes are near-verbatim. "Licence" below is what the page
 declares, not a legal opinion, and every row is *(reported)*.
+
+> **Updated 2026-10-20 (branch `docs/eval-dataset-research`):** a second, deeper pass is in 6.1 to 6.3,
+> with each row marked *(reported)* or **raw-read**, and 6.4 is a matrix proposal that **replaces the
+> "Recommended standard set" paragraph below, including its Job Zone to level mapping** (Job Zones are
+> now four and do not separate seniority inside a profession; see 6.3). The first-pass table and
+> paragraphs below are kept as the record of what the first pass found.
 
 **Result: no public dataset found is both redistributable and broad across professions and
 levels, with résumés and JDs.** Every large résumé set is scraped, real and not clearly
@@ -539,6 +550,93 @@ non-tech fields, so the level axis there must be constructed.
 Zones are four, they describe an occupation's preparation, and they do not separate a junior from a staff
 developer. Levels need a second source (DDaT ladders for tech; a stated rule elsewhere).
 
+### 6.4 Proposal: the golden matrix (for the owner to choose; nothing here is decided)
+
+**Why the current set is too thin.** `evals/fixtures/synthetic/` holds three personas: `data-scientist-junior`,
+`pm-senior`, `sre-mid-level`. All three are tech, one level each. The owner's requirement (2026-10-20): the
+v1 set becomes the ground truth for later releases, so it must vary across IT and development, security,
+administration, project management, product management, design and UX, and across seniority, **and** (owner's
+answer the same day) across sectors as section 6 first proposed.
+
+**What the research settles.**
+
+| Question | Answer from 6.1 to 6.3 |
+|---|---|
+| Can any existing résumé set be committed as ground truth? | **No** outside IT. `sukhrobnurali/resume-parsing-vision` (CC-BY-4.0, synthetic, 32 IT roles incl. sysadmin, networking, security, support, data, mobile, scrum, product owner) is raw-read and committable but is IT only, has no level names and no JDs. PopResume has five sectors but is a fairness benchmark and its README is behind a gate |
+| Can real JDs be committed? | **Possibly.** USAJOBS (open licence reported, **terms not raw-read**) and NYC Jobs (no licence field; statute vs "All rights are reserved" unresolved) carry level labels. Both are government postings, so their language skews public-sector. JobSet (CC BY 4.0, raw-read) is synthetic and has no level field |
+| What licensed source gives each profession's facts? | O\*NET 31.0 (CC BY 4.0, raw-read): tasks, software skills, work activities, titles, for 923 occupations across all sectors. No Product Manager occupation, no SRE/DevOps code, thin UX |
+| What gives levels? | **Tech:** UK DDaT (OGL v3.0, footer raw-read): nine levels for software developer (that ladder read via summary); other roles' ladders unread. **Non-tech:** nothing verified; levels would be an authored rule. O\*NET Job Zones are four and per occupation, so they do not give levels |
+| What is not usable? | SFIA (licensed), Lightcast Open Skills (non-commercial), Web Data Commons, Common Crawl, the scraped LinkedIn and LiveCareer sets |
+
+**Proposed design.**
+
+1. **Golden set: authored, committed, frozen.** Every committed résumé and JD is generated from a
+   structured profile authored by code from O\*NET facts and a level ladder, with a model writing only the
+   prose (the pattern the CC-BY set above documents). No third-party posting text is committed, so no
+   licence question rests on a posting. The generating model id, prompt version and a sha256 per cell are
+   recorded; CI fails on drift. Ground truth is exact by construction, which keeps decision 5 (no human
+   labels) intact.
+2. **Exploration set: fetched, real, never committed.** Real JDs from USAJOBS and NYC Jobs (and JobSet for
+   breadth) fetched on demand, pinned by a manifest of source revision and sha256, used for "does this hold on
+   real text?". This is where the C-2 route question lives. A result there is a lead and never gates.
+3. **Why not commit real postings into the golden set:** the terms are unsettled for both sources, they skew
+   to government, and a posting can be edited or withdrawn upstream. The cost of authoring is one generation
+   run in step 3, which is already capped paid spend.
+
+**Profession axis: three options for the owner.**
+
+| Option | Professions | Tech coverage | Cost / risk |
+|---|---|---|---|
+| **A. Section 6 as first written** | about 12, tech as one "engineering" row | the existing three personas only | does not answer the owner's objection |
+| **B. 12 professions, tech split (recommended)** | **6 tech:** software engineering (QA as a sub-variant), SRE / DevOps / IT operations, security, data / ML, product management, design / UX. **1 cross-sector:** project / program management. **5 non-tech:** healthcare, skilled trades, finance, education, sales / operations | six tech families, each a profession | 12 by 4 levels fully crossed is exactly 48 cells, so no sampling is needed; creative and legal are left out of v1 |
+| **C. 16 professions** | 8 tech (B's six plus IT administration / support and QA as their own rows) + project management + 7 non-tech | eight tech families | 16 by 3 sampled levels is 48 cells, but each profession loses a level, which weakens within-profession level comparison |
+
+**Level axis (proposal).** Four levels: **entry** (about 0 to 2 years), **mid** (3 to 5), **senior** (6 to 10),
+**lead or manager** (10+, or a people-lead or staff scope). Tech cells take their rung names and skill
+expectations from DDaT where read; non-tech cells take them from a short rule written in the dataset's
+manifest (years, scope of responsibility), **marked as authored, not sourced**. A fifth rung (staff or
+principal) for tech only is possible and would add cells.
+
+**Industry axis.** A JD-side variant, not a crossed axis: each cell has one or two JDs for the same role in
+different industries (for example a security analyst at a hospital and at a bank). That keeps the set at 48
+cells and still varies the context.
+
+**The existing personas become cells:** `data-scientist-junior` (data / ML, entry), `sre-mid-level` (SRE,
+mid), `pm-senior` (product management, senior). They stay as they are in `evals/fixtures/synthetic/` until
+step 3 replaces them; no fixture is edited by this proposal.
+
+**Versioning.** `v1` is frozen when step 3 lands. A later version adds cells or a new level; it never
+edits a `v1` cell in place, and a result states which version it ran on. This is what makes the set a
+ground truth across releases.
+
+**Size tiers (proposal; sizes are a decision for step 3, set from measured cost).**
+
+| Tier | Cases | Draw | Use |
+|---|---|---|---|
+| Sentinel | about 21 | one per call kind | "is any call broken"; the arithmetic floor in 5.2 is $0.30 |
+| Day-to-day | about 12 | one per profession, level rotated, seeded | tuning one prompt or one area |
+| Full golden | 48 | all cells | release gates, model swaps, pre-registered comparisons |
+
+The full set's size follows from 5.6. The exact binomial rule needs at least 5 discordant cases, all in
+one direction, for a one-sided p below 0.05 (6 for a two-sided test). If a change flips 15 to 20 percent of
+cases, that needs about 30 to 40 cases, so below about 20 cases most comparisons return INCONCLUSIVE. A cost
+for 48 cases is a guess: `AGENTS.md` says the 3-fixture synthetic suite costs about $0.30 to $0.40, about
+$0.10 to $0.13 per fixture, which scales to roughly $5 to $6 per arm per pass. Not run; step 3's calibration
+run measures it.
+
+**What the research did not settle (each blocks something, none blocks the others):**
+
+- USAJOBS terms: not raw-read (HTTP 403 to `curl`; the browser extension was not connected). Blocks only
+  *committing* federal text; the exploration fetch can still be planned.
+- NYC Jobs: whether the city's open-data statute overrides "All rights are reserved" for this dataset.
+- PopResume's gate terms and a sample row; ResumeBench's release; the seniority paper (arXiv 2509.09229)
+  dataset link and licence. None is needed for the golden set as proposed.
+- DDaT ladders for every role except software developer; the OGL v3.0 text; the downloadable framework
+  file's own terms.
+- O\*NET's "Except as noted below" exception text, and the old-to-new Job Zone mapping.
+- ESCO's licence page (404) if ESCO occupations are ever used.
+- Non-tech seniority ladders: none found, so they are authored (above).
+
 ## 7. OpenTelemetry
 
 **Finding: there is no released version to pin.** The GenAI semantic conventions moved out of
@@ -642,6 +740,21 @@ Where the answer is not the recommendation the question carried, it says so.
 8. **Publication:** the doc is left out of `PUBLISHED` in `scripts/doc_registry.py`, so it is not
    published to the docs site. Register it when you want the scheme public, or keep it repo-only.
    **Answer: repo-only for now.** Revisit after steps 1 to 3 land.
+
+### Raised after the answers above (2026-10-20, unanswered)
+
+The owner asked that the v1 ground truth be broadened before release and that the open-source research be
+deeper first. 6.1 to 6.4 are that research. The questions it leaves, for the owner:
+
+9. **Profession axis:** option A, B or C in 6.4. B (recommended) splits tech into six families, adds
+   project management and keeps five non-tech sectors, giving 12 professions by 4 levels, 48 cells.
+10. **Golden set composition:** all-authored from O\*NET and a level ladder (recommended), or some committed
+    real postings. If real, USAJOBS needs its terms read raw, and NYC Jobs needs a ruling on its statute
+    against "All rights are reserved".
+11. **Levels outside tech:** no open ladder was found, so the rule is authored in the manifest. Accept,
+    or hold the non-tech cells until a source is found.
+12. **Whether the exploration fetch targets USAJOBS and NYC Jobs** (the C-2 route question in 5.4
+    applies to either).
 
 ## 9. Build order
 

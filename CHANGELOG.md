@@ -31,6 +31,11 @@ gap map and a proposed redesign as `docs/dev/eval-redesign-design.md`. **Docs on
 - **Owner decisions recorded (`docs/eval-redesign-decisions`, still docs only):** the eight decisions in the design doc's section 8 are
   answered and the build order is filed as epic 180 (items 181 to 190; item 137 is step 11). v1.1.0 now waits for steps 1 to 3 and a
   deterministic-check eval on every call kind (item 10 depends on items 181 to 186). No code, pin, prompt or dependency changed.
+- **Dataset research deepened (`docs/eval-dataset-research`, still docs only):** the owner found the golden set too narrow (three tech
+  personas, one level each), so the design doc gains a second research pass over résumé sets, job-description sources and
+  taxonomies (sections 6.1 to 6.3, each row marked reported or raw-read) and a matrix proposal (6.4: golden and exploration sets, a
+  12-profession by 4-level option with tech split into families, size tiers). Section 8 has four new unanswered questions; item 183
+  records what step 3 must decide. No code, pin, prompt, dependency or paid call.
 
 ### Changed: the LLM routing documentation now matches the code (`docs/item-137-free-review`, item 137)
 

@@ -19,3 +19,9 @@ Re-read the O*NET and dataset licence pages at the primary source before committ
 ## Updates
 
 ### 2026-10-20 -- filed during docs/eval-redesign-decisions
+
+### 2026-10-20 -- the owner widened the dataset requirement; second research pass recorded (docs/eval-dataset-research)
+
+Owner, 2026-10-20: the golden set has only three tech personas at one level each, and the v1 set becomes ground truth for later releases, so it needs more variation (IT and development, security, administration, project and product management, design and UX, plus other sectors) and a deeper open-set research pass **before v1**. Design doc sections 6.1 to 6.3 record that pass (each row marked reported or raw-read) and 6.4 is the matrix proposal; section 8 questions 9 to 12 are unanswered.
+
+What this step must decide or do, given the research: (1) the profession axis, option A, B or C in 6.4 (recommended B: 12 professions by 4 levels, 48 cells); (2) the golden set's composition, all-authored from O*NET and a level ladder (recommended) or with committed real postings, which needs USAJOBS's terms read raw and a ruling on NYC Jobs; (3) how non-tech levels are defined, since no open ladder was found; (4) final tier sizes from the calibration run's measured cost, not from the 6.4 guess; (5) the C-2 route for the exploration fetch. Re-read at the primary source anything a decision rests on; the tool-mediated rows in 6.1 to 6.3 are not enough.
