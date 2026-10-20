@@ -280,7 +280,7 @@ also carries `accTitle`/`accDescr` a11y directives for screen readers.
 | Pipeline (§System overview, above) | `analyzer.py` + `blueprints/` route map | One full apply-run, sequence-diagram view |
 | Persistence (§Persistence model) | `db/models.py` | DB tables + FK relationships + cascade behavior |
 | Data flow (§context_set lifecycle) | `hardening.py` + route handlers | `context_set` lifecycle across iterations |
-| LLM routing (§LLM routing + cost) | `analyzer.py` `_call_llm` sites + `docs/wiki/pages/llm-call-catalog.md` | Which route fires which model, with cost / latency |
+| LLM routing (§LLM routing + cost) | `analyzer.py` `_call_llm` sites + `docs/wiki/pages/llm-call-catalog.md` | Which route fires which model, and which calls share a cached prefix |
 
 All four render natively on GitHub in a fenced `mermaid` block, and
 parse cleanly by every modern LLM. Use a local Mermaid live editor
@@ -584,16 +584,20 @@ Highlights:
 Full picture — rendered inline below.
 
 ```mermaid
-%% LLM routing — every _call_llm / _call_llm_streaming site in analyzer.py,
-%% with model assignment and cache-prefix usage.
+%% LLM routing — every product call kind, with model assignment and
+%% cache-prefix usage. Every kind but avatar_answer goes through
+%% analyzer.py `_parse_or_retry()` / `_parse_or_retry_streaming()`;
+%% extract_experiences is called from onboarding/extract_experiences.py
+%% and reaches the same send path. The eval judge (evals/runner.py) is not
+%% a product call and is not drawn.
 %% 
-%% Source: analyzer.py `_call_llm(...)` / `_call_llm_streaming(...)`
-%% invocations + the SONNET_MODEL / HAIKU_MODEL constants (re-derived
-%% 2026-07-28 — see docs/wiki/pages/llm-call-catalog.md for the full,
-%% continuously-maintained table this diagram summarizes). Cost / latency
-%% numbers below are illustrative (pre-Sonnet-5, small-n) — see
-%% docs/dev/perf/PERFORMANCE_HISTORY.md's Era 4 section for the current
-%% real-corpus baseline.
+%% Source: the call sites above + the SONNET_MODEL / HAIKU_MODEL constants
+%% (stream routes, the frozen-path cover letter and the skills route path
+%% re-checked 2026-10-19 — see docs/wiki/pages/llm-call-catalog.md for the
+%% full, continuously-maintained table this diagram summarizes).
+%% This diagram carries no cost or latency numbers — see
+%% docs/dev/perf/PERFORMANCE_HISTORY.md's Era 4 section for the real-corpus
+%% baseline.
 %% 
 %% Two model tiers:
 %%   - Sonnet 5: heavy reasoning, JSON-structured output, costlier
@@ -601,21 +605,23 @@ Full picture — rendered inline below.
 %% 
 %% generate's route is CONDITIONAL: it only fires when Compose was not
 %% frozen (approved_composition absent) — the common path assembles the
-%% résumé body deterministically with zero LLM calls. See the "System
-%% overview" sequence diagram above for the frozen/legacy branch.
+%% résumé body deterministically with zero LLM calls. The frozen path still
+%% makes one LLM call when the request opts in to a cover letter
+%% (blueprints/generation.py `_assemble_from_frozen_composition`). See the
+%% "System overview" sequence diagram above for the frozen/legacy branch.
 %% 
 %% A call uses the "cached_user_prefix" trick when it can re-use a long
 %% static user-message block across attempts within the same run (the
 %% retry path shares the cache). analyze_synthesis runs under the shared
 %% SYSTEM_PROMPT and WRITES the [SYSTEM_PROMPT][corpus+resume] prefix that
 %% generate READS; the Haiku analyze_extraction pass has its own
-%% EXTRACTION_SYSTEM_PROMPT (separate cache pool). The clarify variants
-%% override the system prompt, so they pay one extra cache-miss on the
-%% system block.
+%% EXTRACTION_SYSTEM_PROMPT (separate cache pool). The clarify variants send
+%% no cached user prefix at all (their own system prompt, a small user
+%% prompt).
 %% 
 graph LR
     accTitle: Sartor LLM call routing and cost tiers
-    accDescr: Graph of every LLM call site in analyzer.py grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_experience_summary, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer, check_refinement_scope), connected from the Flask route that triggers each, with the generate route shown as conditional on whether Compose was frozen, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
+    accDescr: Graph of every product LLM call kind grouped into a heavy-reasoning Sonnet 5 subgraph (analyze_synthesis, iterate_clarify, generate, generate_cover_letter, draft_summary, draft_gap_fill, draft_experience_summary, draft_surgical_refinement) and a structured-selection Haiku 4.5 subgraph (analyze_extraction, clarify, recommend bullets, recommend_summary, recommend_skill, suggest_skill, suggest_skill_from_corpus, recommend_experience_summary, critique_proposal, promote_clarification_to_bullet, extract_experiences, avatar_answer, check_refinement_scope), connected from the Flask route that triggers each, with the generate routes (including the streaming ones) shown as conditional on whether Compose was frozen, the frozen path still reaching the cover letter call when a cover letter is requested, and a legend distinguishing calls that reuse a cached prompt prefix from calls that do not.
     subgraph SO[Sonnet 5 — heavy reasoning]
         direction TB
         A1[analyze_synthesis<br/>cache writer<br/>strategy + keywords only]
@@ -648,10 +654,15 @@ graph LR
     %% Routes that fire each call
     R_AN[/POST /api/analyze/] --> A0
     R_AN --> A1
+    R_ANS[/POST /api/analyze/stream/] --> A0
+    R_ANS --> A1
     R_CL[/POST /api/clarify/] --> A2
     R_IT[/POST /api/iterate-clarify/] --> A3
-    R_GE[/POST /api/generate/] -.->|frozen: zero-LLM assemble instead| DET[deterministic assemble<br/>from approved_composition]
+    R_GE[/POST /api/generate/] -.->|frozen: no LLM for the résumé body| DET[deterministic assemble<br/>from approved_composition]
     R_GE -->|legacy: not frozen| A4
+    R_GES[/POST /api/generate/stream/] -.->|frozen: no LLM for the résumé body| DET
+    R_GES -->|legacy: not frozen| A4
+    DET -.->|only if a cover letter is requested| A5
     R_CO[/POST /api/generate-cover-letter/] --> A5
 
     R_RC[/POST /api/applications/&lt;id&gt;/recommend/] --> H1
@@ -662,7 +673,7 @@ graph LR
     R_DES[/POST /api/applications/&lt;id&gt;/draft-experience-summaries/] --> A9
     R_RSK[/POST /api/applications/&lt;id&gt;/recommend-skills/] --> H6
     R_SSK[/POST /api/applications/&lt;id&gt;/suggest-skills/] --> H7
-    R_SSC[/POST /api/users/&lt;u&gt;/corpus/skills/suggest-from-corpus/] --> H8
+    R_SSC[/POST /api/users/&lt;u&gt;/skills/suggest-from-corpus/] --> H8
     R_RES[/POST /api/applications/&lt;id&gt;/recommend-experience-summaries/] --> H9
     R_PC[/POST /api/proposals/&lt;id&gt;/critique/] --> H3
     R_PR[/POST /api/clarifications/&lt;id&gt;/promote-to-bullet/] --> H4
@@ -675,8 +686,7 @@ graph LR
     %% is byte-identical to generate's — synthesis WRITES the prefix and
     %% generate READS it (only on the legacy/not-frozen branch). The Haiku
     %% analyze_extraction pass (A0) uses its own EXTRACTION_SYSTEM_PROMPT
-    %% (separate cache pool). clarify variants override the system prompt,
-    %% reusing the heavy user prefix.
+    %% (separate cache pool). clarify variants send no cached user prefix.
     classDef cached fill:#0f172a,stroke:#10b981,color:#d1fae5
     classDef nocache fill:#0f172a,stroke:#ef4444,color:#fecaca
     classDef det fill:#1e3a8a,stroke:#60a5fa,color:#dbeafe
@@ -688,13 +698,14 @@ graph LR
     %% Legend (rendered as a subgraph that visually clarifies the colors)
     subgraph Legend["legend"]
         L1[green border = uses cached_user_prefix]:::cached
-        L2[red border = no cache prefix, cache_read=0]:::nocache
+        L2[red border = no cached_user_prefix, the system block may still cache]:::nocache
         L3[blue = deterministic, no LLM]:::det
     end
 
-    %% Retry attribution — every call kind has a sibling "<kind>_retry"
-    %% call_kind for dashboard breakdowns. Implementation:
+    %% Retry attribution — every call kind sent through _parse_or_retry has a
+    %% sibling "<kind>_retry" call_kind for dashboard breakdowns. Implementation:
     %% analyzer.py `_parse_or_retry()` / `_parse_or_retry_streaming()`.
+    %% avatar_answer (H10) is sent once with no parse step, so it has none.
 ```
 
 *(This fenced diagram is the single source as of v1.0.9 — the standalone `docs/diagrams/llm-routing.mmd` copy was retired to remove the two-copy sync-drift risk.)*
@@ -732,30 +743,44 @@ cached user prefix (corpus + résumé blocks): synthesis runs under
 the shared `SYSTEM_PROMPT` and WRITES the prefix that `generate`
 READS. The Haiku `analyze_extraction` pass uses its own
 `EXTRACTION_SYSTEM_PROMPT` (separate cache pool). The clarify
-variants (`clarify`, `clarify_iteration`) override the system
-prompt and pay one cache-miss on the system block, but the
-heavy user prefix is unaffected.
+variants (`clarify`, `clarify_iteration`) send no cached user
+prefix, so they neither write nor read the heavy one. Every other
+call caches at most its system block, and a prefix shorter than the
+model's minimum cacheable length is not cached at all: in the call
+log, Haiku 4.5 rows with a short prefix show no cache writes. Which
+kinds cache, and how often a cache read follows a write, is measured
+in work item 137 (`docs/dev/work/items/`), not restated here.
 
-**Retry attribution.** Every call_kind has a sibling
+**Thinking and output limits.** `THINKING_POLICY` in
+[`analyzer.py`](../../analyzer.py) maps each pinned model to the
+`thinking` field sent, and no call site overrides it. Every call
+uses `MAX_TOKENS` except `check_refinement_scope` (128, above). A
+call-log row carries the settings sent in `request_settings`; rows
+written before that field existed (item 175) carry none, so for
+them the setting is read from the policy table, not from the row.
+
+**Retry attribution.** Every call_kind sent through
+`_parse_or_retry()` (or its streaming variant) has a sibling
 `<kind>_retry` for dashboard breakdowns. Implementation in
-[`analyzer.py`](../../analyzer.py) `_parse_or_retry()`.
+[`analyzer.py`](../../analyzer.py). `avatar_answer` is the exception:
+it is sent once, with no parse step, so it has no retry kind.
 
 **Typed contracts (pydantic-in-the-loop).** Every call's expected shape is a
-`pydantic.BaseModel` subclass — `_LLMResponse` (`analyzer.py:152`) and its
+`pydantic.BaseModel` subclass — `_LLMResponse` (`analyzer.py:273`) and its
 per-call subclasses (`AnalyzeResponse`, `ClarifyResponse`, `GenerateResponse`,
 etc.). `response_model.model_validate()` runs on the parsed JSON before a
 response is trusted, and validation is not limited to shape: a `Literal`-typed
-field (`HiddenQualityItem.category`, `analyzer.py:158`) rejects an out-of-enum
+field (`HiddenQualityItem.category`, `analyzer.py:433`) rejects an out-of-enum
 value, and a `@model_validator(mode="after")` can enforce a semantic rule —
-`ClarifyResponse.enforce_composition_rules` (`analyzer.py:240`) fails
+`ClarifyResponse.enforce_composition_rules` (`analyzer.py:506`) fails
 validation unless `clarify()`'s question-composition rules hold (a
 `context_probe` question when `hidden_qualities` is non-empty; ≥60% of
 questions typed `experience_probe`/`context_probe`). The resulting
 `ValidationError` is what *drives* the retry, not just what it is logged as:
-`_parse_or_retry()` (`analyzer.py:1405`, streaming variant
+`_parse_or_retry()` (`analyzer.py:2093`, streaming variant
 `_parse_or_retry_streaming()`) catches it, appends the error text to the
 prompt inside a `<retry_reason>` block, and re-calls the model
-(`analyzer.py:1452`-1474) — the "structured retry" [`README.md`](../../README.md)
+(`analyzer.py:2164`-2188) — the "structured retry" [`README.md`](../../README.md)
 refers to under "For developers."
 
 ---

@@ -1231,7 +1231,7 @@ Rules you follow without exception:
 #   - clarify_iteration() stays on Sonnet: iteration_quality is still
 #     fixture-fragile (fires ~1/5 runs) and not yet stably ≥ 4.0 — not a
 #     candidate for the cheaper model yet.
-#   - Haiku 4.5 for scope check (_check_refinement_scope), eval grading
+#   - Haiku 4.5 for scope check (check_refinement_scope), eval grading
 #     (evals/runner.py), and onboarding extraction (extract_experiences):
 #     binary classification, structured rubric application, and one-shot
 #     structured extraction are the Haiku sweet spot. Volume + structure
@@ -2197,12 +2197,12 @@ def analyze(
 ) -> dict[str, Any]:
     """Call 1: Analysis & Strategy — two-pass split (r1/analyze-split-retry).
 
-    Pass 1 (Haiku 4.5, EXTRACTION_SYSTEM_PROMPT): extracts the JD keyword/
+    Pass 1 (HAIKU_MODEL, EXTRACTION_SYSTEM_PROMPT): extracts the JD keyword/
     vocabulary signals (essential_skills, preferred_skills, industry_keywords,
     the typed hidden_qualities, professional_vocabulary, keyword_placement).
     Structurally Haiku-friendly — classification, not multi-step reasoning.
 
-    Pass 2 (Sonnet 4.6, the shared default SYSTEM_PROMPT): produces comparison,
+    Pass 2 (SONNET_MODEL, the shared default SYSTEM_PROMPT): produces comparison,
     suggestions, overall_strategy. Receives Pass 1's output as
     <extracted_signal> so it grounds its synthesis on concrete extracted
     signals rather than re-extracting in line. It runs under SYSTEM_PROMPT (NOT

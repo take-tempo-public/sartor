@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed: the LLM routing documentation now matches the code (`docs/item-137-free-review`, item 137)
+
+The free review of item 137 (models, call settings, cache, output limits) compared `docs/dev/architecture.md` §"LLM routing + cost"
+with the code. **No pin moves, no prompt text changes (no `PROMPT_VERSION` bump), no new dependency, no behavior change, and nothing
+paid was run.** The measurements and the proposed candidate A/B are recorded in the item, not here.
+
+- **`docs/dev/architecture.md`**: the clarify variants send no cached user prefix (the text said they reused the heavy one); the
+  frozen generate path still makes one LLM call when a cover letter is requested; `/api/analyze/stream` and `/api/generate/stream`
+  are drawn; the `suggest-from-corpus` route path is corrected; `avatar_answer` is the one call kind with no `_retry` kind; the
+  legend no longer says a call without a cached prefix has `cache_read=0`; five stale `analyzer.py` line cites are re-derived.
+- **`analyzer.py`**: two comments only (a wrong function name, and a docstring that named a retired model version). No code or
+  prompt string changed.
+
 ### Fixed: tests no longer write stub eval runs into the real `evals/results/` (`fix/eval-results-test-leak`, item 179)
 
 337 of the 425 `2026*.jsonl` files in a developer's `evals/results/` were output of one stubbed test (the same 6 rows, grounding

@@ -9,8 +9,11 @@
 
 ## Two tiers, one helper
 
-Every call in this catalog routes through `_call_llm` / `_parse_or_retry`, which take
-an optional `model` arg that **defaults to `SONNET_MODEL`** — the resolution
+Every call in this catalog reaches the API through [`analyzer.py:_call_llm_streaming`](../../../analyzer.py): the non-streaming
+calls via `_call_llm` / `_parse_or_retry`, the streaming `analyze` and `generate` passes via
+[`analyzer.py:_parse_or_retry_streaming`](../../../analyzer.py), and the doc-grounded assistant
+([`analyzer.py:avatar_answer_streaming`](../../../analyzer.py)) directly, with no response validation `[synthesis]`.
+These helpers take an optional `model` arg that **defaults to `SONNET_MODEL`** — the resolution
 happens in [`analyzer.py:_call_llm_streaming`](../../../analyzer.py) (which the non-streaming
 [`analyzer.py:_call_llm`](../../../analyzer.py) wraps): first `requested_model = model or SONNET_MODEL`,
 then `effective_model = _resolve_model(requested_model)` to apply any active model overrides
@@ -25,8 +28,8 @@ points at `SONNET_MODEL` but new code references the tier constants directly
 The split is deliberate: **Sonnet 5 for heavy reasoning** (large JSON, strategy,
 prose); **Haiku 4.5 for structured selection / classification** (cheap, fast; routing in
 [`architecture.md`](../../dev/architecture.md) §"LLM routing + cost", which carries no latency figures). Every
-call carries a `call_kind` string for JSONL telemetry + the dashboard, with a
-`<kind>_retry` sibling on the retry path ([`analyzer.py:_parse_or_retry`](../../../analyzer.py)).
+call carries a `call_kind` string for JSONL telemetry + the dashboard; calls through [`analyzer.py:_parse_or_retry`](../../../analyzer.py) / [`analyzer.py:_parse_or_retry_streaming`](../../../analyzer.py) have a
+`<kind>_retry` sibling on the retry path, while [`analyzer.py:avatar_answer_streaming`](../../../analyzer.py) calls `_call_llm_streaming` directly with no retry variant `[synthesis]`.
 
 On the retry path, both `_parse_or_retry` and `_parse_or_retry_streaming` accept an optional `validation_context` dict that carries a handle guard — built by [`analyzer.py:_handle_guard`](../../../analyzer.py), [`analyzer.py:_corpus_guard`](../../../analyzer.py), or [`analyzer.py:_block_guard`](../../../analyzer.py) at call time. The pydantic after-validator [`analyzer.py:_LLMResponse.reject_handle_leaks`](../../../analyzer.py) rejects any prose that names an id handle the prompt shipped, except id-typed fields (matching the pattern in [`hardening.py:_HANDLE_ID_KEY_RE`](../../../hardening.py)) which are always permitted `[synthesis]`. If validation fails on the first attempt, the retry is re-asked with the error appended; if it fails again, [`analyzer.py:_accept_soft_leaks`](../../../analyzer.py) decides the outcome. Leaks in top-level fields listed in the guard's `hard_fields` (e.g., `resume_content`, `cover_letter_content` — see [`analyzer.py:_SHIPPED_FIELDS`](../../../analyzer.py)) still raise `LLMResponseError`; a leak elsewhere is accepted with a logged warning, but only when every validation failure on that attempt is itself a handle leak: a leak alongside a missing key or malformed JSON still raises `LLMResponseError`. Four `analyzer.py` calls forward no guard because their prompts ship no id handles: `check_refinement_scope`, `critique_proposal`, `promote_clarification_to_bullet`, and `draft_summary` — enumerated in [`tests/test_handle_guard.py:EXEMPT_CALL_KINDS`](../../../tests/test_handle_guard.py) with reasons `[synthesis]`.
 
