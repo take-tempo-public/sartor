@@ -28,6 +28,9 @@ gap map and a proposed redesign as `docs/dev/eval-redesign-design.md`. **Docs on
 - Also: item 137's update records the owner's A/B answers; `docs/wiki/log.md` records a verified no-edit check; one line in
   `scripts/wiki_relevance.py` (`KNOWN_RELEVANT_TOP_LEVEL`) acknowledges the new doc, which the wiki-relevance audit test requires for any
   new top-level `docs/dev/` file. It changes no classification (the dossier is `docs/dev/blast-radius/eval-redesign.md`).
+- **Owner decisions recorded (`docs/eval-redesign-decisions`, still docs only):** the eight decisions in the design doc's section 8 are
+  answered and the build order is filed as epic 180 (items 181 to 190; item 137 is step 11). v1.1.0 now waits for steps 1 to 3 and a
+  deterministic-check eval on every call kind (item 10 depends on items 181 to 186). No code, pin, prompt or dependency changed.
 
 ### Changed: the LLM routing documentation now matches the code (`docs/item-137-free-review`, item 137)
 

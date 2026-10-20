@@ -5,8 +5,9 @@
 > grouped into runs of a chosen size, a full run for the whole system, one standard dataset,
 > one record format, and a dashboard that drills from a call kind down to a single case.
 > **Audience:** `dev` — the owner deciding what to build, and the agents who will build it.
-> **Authoritative for:** the 2026-10-20 gap map and the proposed scheme. **Status: proposed.
-> Nothing in section 5 or later is built.** It defers to
+> **Authoritative for:** the 2026-10-20 gap map and the proposed scheme. **Status: proposed;
+> the owner answered the eight decisions in section 8 on 2026-10-20. Nothing in section 5 or
+> later is built.** The build order is filed as epic 180. It defers to
 > [`../governance/charter.md`](../governance/charter.md) (claims discipline C-0 governs) and to
 > [`evals/README.md`](../../evals/README.md) for how the harness works today.
 > **Source of record:** item 137's updates in
@@ -290,6 +291,12 @@ against; a test fails when the current input type no longer accepts it.
 Section 6 gives the research behind this. The requirements, whatever the source:
 
 - **Committed or fetched reproducibly**, versioned, content-hashed. No personal data.
+  The owner chose the committed synthetic matrix **plus** a public set fetched on demand
+  (decision 1). A fetch is an outbound connection, and charter C-2 names exactly two
+  destinations (`../governance/charter.md:91-100`); the one precedent for another is the
+  grounding-model download, an opt-in install under D-6 (`../governance/charter.md:108-110`).
+  So the fetch takes that route and passes `tests/test_egress_allowlist.py`, or it returns to
+  the owner as a C-2 amendment. Nothing fetched is committed.
 - **A profession by level matrix**, sampled rather than crossed, with every persona in
   **both** forms: a résumé file for the legacy flow and a seed for the corpus flow.
 - **Each persona carries:** one or two JDs (a strong match and a stretch), expected signals,
@@ -346,6 +353,12 @@ agreement figure shown beside every judged score. The repository already has an 
 (`evals/annotation.py`, `commands/tune-from-annotations.md`, *(reported)*) to produce labels.
 Add an over-suppression check for C-3 (a grounded sentence the grader or the guard wrongly
 removed). Choosing the judge model is the owner's decision (section 8).
+
+**Owner decision 5 (2026-10-20): no human-labelled gold set.** Calibration therefore rests on
+deterministic checks and on agreement between judges. Agreement between judges shows that they
+are consistent with each other, not that either is right, so a judged score carries weaker
+evidence than the gold-set design above would give. The agreement figure beside a judged score
+must be labelled "judge-to-judge", never "human agreement".
 
 ### 5.8 Telemetry and dashboard
 
@@ -490,42 +503,68 @@ network use; that there is no egress without an exporter is an inference. Two op
 Recommendation: start with option 1, which needs no dependency and no `CHANGELOG` entry under
 D-1. Ids come from `secrets.token_hex(16)` and `secrets.token_hex(8)`.
 
+**Owner decision 4 (2026-10-20): option 1, with the projection pinned to one commit** of
+`open-telemetry/semantic-conventions-genai`. Step 10 re-reads the primary pages and records the
+commit before the mapping is written.
+
 ## 8. Owner decisions
+
+**Answered by the owner in chat on 2026-10-20.** Each question stays, followed by the answer.
+Where the answer is not the recommendation the question carried, it says so.
 
 1. **Dataset:** adopt the O\*NET-based synthetic matrix (section 6), fetch a public set on
    demand, or both. No public résumé set found is cleared for committing.
+   **Answer: both.** The committed matrix is the standard set; a public set may be fetched on
+   demand and is never committed. *(Not the recommendation: the recommendation was the matrix
+   alone.)* The fetch is an outbound connection and must satisfy charter C-2; see 5.4.
 2. **Release scope:** does v1.1.0 wait for any of the build order below? Recommendation: wait
    for steps 1 to 3 and for a deterministic-check call eval on every kind; calibrate judged
    rubrics after release.
+   **Answer: wait for steps 1 to 3 and for a deterministic-check call eval on every kind.**
+   The deterministic parts of steps 4 to 6 are therefore release-blocking; their judged parts
+   are not. Item 10 now depends on steps 1 to 6 (items 181 to 186).
 3. **Judge model:** keep Haiku 4.5 (past its earliest retirement date), move to a newer Haiku,
    or use a Sonnet-class pin that stays fixed across arms. A stronger judge costs more per case
    and is unmeasured here.
+   **Answer: decide at step 9, with data.** Haiku 4.5 stays the judge until then. With decision
+   5 answered "no", that data is judge-to-judge agreement (5.7), which is weaker than the gold
+   set the question assumed. Whether Haiku 4.5 is still Active was not re-checked.
 4. **OpenTelemetry:** option 1 or 2 in section 7; and whether the projection pins to a commit.
+   **Answer: option 1 (no dependency), pinned to one commit.**
 5. **Gold labels:** one-time human labelling for judge calibration (5.7). D-4 says no recurring
    human labour; a one-time set is the question.
+   **Answer: no human labels.** *(Not the recommendation.)* See 5.7 for what that costs.
 6. **The avatar prompt:** it was left out of the eval path on purpose (`analyzer.py:1193`).
    Keep that, or bring it in with the documentation-question set (5.3).
+   **Answer: bring it in, catalog only.** It gets a catalog entry at step 6; it stays out of
+   `_BASE_SYSTEM_PROMPTS` and keeps `AVATAR_PROMPT_VERSION`.
 7. **Epic or items:** the board is over its ceiling (24 open against 10). File the build order
    as one epic, as separate items, or hold.
+   **Answer: one epic.** Epic 180 holds steps 1 to 10 as items 181 to 190: step 1 open, each
+   later step blocked on the one before. Step 11 is item 137, re-parented under the epic.
 8. **Publication:** the doc is left out of `PUBLISHED` in `scripts/doc_registry.py`, so it is not
    published to the docs site. Register it when you want the scheme public, or keep it repo-only.
+   **Answer: repo-only for now.** Revisit after steps 1 to 3 land.
 
 ## 9. Build order
 
 Each step is its own branch with its own plan, consumer enumeration and gate run. None is
-started by this doc.
+started by this doc. Filed on 2026-10-20 as epic 180: steps 1 to 10 are items 181 to 190 in
+order, and step 11 is item 137. Per decision 2, steps 1 to 3 and the deterministic parts of
+steps 4 to 6 block the v1.1.0 cut. Per decision 1, step 3's on-demand fetch must clear charter
+C-2 (5.4). Per decision 5, step 9 calibrates against judge-to-judge agreement (5.7).
 
 | # | Branch | What | Paid spend |
 |---|---|---|---|
 | 1 | `feat/eval-record-identity` | prompt hashes and the version gate; producer id; trace, span and case ids; parse outcome; judge cost into run totals; fix the cost-by-window leak | none |
 | 2 | `feat/eval-catalog-skeleton` | catalog format, lazy loader, the all-kinds gate, `--list`, `--estimate`, `--max-spend`; entries for the kinds already covered | none |
-| 3 | `feat/eval-dataset-v1` | the standard dataset, captured upstream inputs, the reachability check | one calibration run, capped |
+| 3 | `feat/eval-dataset-v1` | the standard dataset, captured upstream inputs, the reachability check; the on-demand public fetch only if it clears charter C-2 | one calibration run, capped |
 | 4 | `feat/eval-calls-ingest-analyze` | call evals for `extract_experiences`, `analyze_*`, `clarify`, `iterate_clarify` | capped |
 | 5 | `feat/eval-calls-compose` | call evals for the 11 `compose` kinds | capped |
 | 6 | `feat/eval-calls-assistant-proposals` | `avatar_answer`, `critique_proposal`, `promote_clarification_to_bullet` | capped |
 | 7 | `feat/eval-compare-protocol` | pre-registered spec, noise floor, arithmetic rule; replaces `evals/tune.py` | none |
 | 8 | `feat/eval-dashboard-catalog` | Catalog tab, drill-downs, attention view, arm comparison | none |
-| 9 | `feat/eval-judge-calibration` | pinned judge, schema parse, gold set, over-suppression check | capped |
+| 9 | `feat/eval-judge-calibration` | pinned judge, schema parse, judge-to-judge agreement (no gold set, decision 5), over-suppression check; the judge-model choice (decision 3) | capped |
 | 10 | `feat/otel-projection` | the pure projection and its mapping module (section 7) | none |
 | 11 | item 137's A/B | the Haiku 5.5 comparison, pre-registered, on the full run | capped |
 

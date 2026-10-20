@@ -3437,3 +3437,22 @@ cited by any page and is not registered for the docs site.**
 
 **Not verified:** the rest of `eval-harness` beyond the matched lines; this is a read for contradiction, not a grounding audit. When
 the proposed scheme is built, `eval-harness` needs its own pass (the catalog, the tiers and the record fields it would add).
+
+## 2026-10-20 — scoped close-out check, `docs/eval-redesign-decisions` (verified no-edit)
+
+**Trigger:** branch close-out wiki-relevance check, scoped to this branch's own diff (`git diff main...HEAD`). **No subagent spend; no
+page edited; `.last_ingest_sha` not advanced.**
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, `is_wiki_relevant()` run on every changed path): two,**
+`docs/dev/eval-redesign-design.md` (records the owner's answers to its section 8; describes no built behavior) and
+`docs/dev/RELEASE_ARC.md` (one added paragraph under Epic E, the eval prerequisite for the v1.1.0 cut). Every other changed path (work
+items, the generated board, `CHANGELOG.md`, this log, the provenance ledger file) classifies as not wiki-relevant.
+
+**Pages: `engineering-workstreams` read at the one passage that names Epic E (lines 70-79), verified no-edit; `eval-harness` not
+re-read.** The page calls Epic E "the public cut" and says RELEASE_ARC "is authoritative and moves", so the added paragraph contradicts
+nothing on it. `eval-harness` was read for contradiction against the same design doc on the previous branch (the entry above); this diff
+adds decisions and filings to the doc and no claim about what the harness does today, so I did not repeat that read. That is a judgment
+about scope, not a measurement. A grep of the wiki pages for the Epic E / `release-v1.1.0` terms found only that one passage.
+
+**Not verified:** the rest of `engineering-workstreams`; the rest of `eval-harness`. When the scheme is built, `eval-harness` needs its
+own pass (stated in the previous entry).
