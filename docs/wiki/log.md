@@ -3419,3 +3419,21 @@ calls `_call_llm_streaming` directly, no response validation, no retry kind), an
 **Not verified:** the rest of the page beyond the two paragraphs and the sentences the auditors sampled (the first audit read the whole
 page but spent less depth on the lower Haiku rows); the two "2026-10-19 live calls observed" sentences in the error-capture section are
 telemetry observations no source read can confirm (the auditor flagged them; not checked against `logs/llm_calls.jsonl` here).
+
+## 2026-10-20 — scoped close-out check, `docs/eval-redesign` (verified no-edit)
+
+**Trigger:** branch close-out wiki-relevance check, scoped to this branch's own diff (`git diff main...HEAD`). **No subagent spend; no
+page edited; `.last_ingest_sha` not advanced.**
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`): one,** `docs/dev/eval-redesign-design.md`, a new design doc
+marked "Status: proposed" in its header. The other changed paths (item 137, the provenance ledger file) classify as not wiki-relevant.
+
+**Pages: `eval-harness` read for contradiction, verified no-edit; `llm-call-catalog` not re-read.** The doc proposes a scheme and builds
+none of it, and the wiki describes what is built. For `eval-harness` the lines matching suites, rubrics, judge, anchor and baseline were
+read against the doc's sections 2 and 3: its description of the suites, `JUDGE_MODEL`, the seven rubric files, judge telemetry rows and
+`judge_request_id` agrees with the doc, and it makes no coverage claim the gap map contradicts. `llm-call-catalog` was corrected on the
+previous branch (the entry above, also dated 2026-10-20) against the same call inventory; this branch did not re-read it. **The doc is not
+cited by any page and is not registered for the docs site.**
+
+**Not verified:** the rest of `eval-harness` beyond the matched lines; this is a read for contradiction, not a grounding audit. When
+the proposed scheme is built, `eval-harness` needs its own pass (the catalog, the tiers and the record fields it would add).

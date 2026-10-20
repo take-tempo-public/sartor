@@ -265,3 +265,28 @@ reads a prebuilt `docs-site/out/` dated 2026-10-01 and reports a 404 for a page 
 the full docs-site build (OpenAPI spec, MDX projection, `next build`) on a shared machine. CI's `docs-deploy` job is the authority. The
 `docs/wiki/pages/llm-call-catalog.md` page is the doc the diagram summarizes: its line 12 says every catalog call routes through
 `_call_llm` / `_parse_or_retry`, which `avatar_answer` does not; the close-out wiki check decides that page.
+
+### 2026-10-20 - the A/B is held for an eval redesign (docs/eval-redesign); no code, no spend
+
+**The owner's four answers for the A/B (chat, 2026-10-20), recorded so they are not asked again:** pin `HAIKU_MODEL=claude-haiku-5-5`;
+suite full synthetic in generate mode; N = 3 per arm; spend ceiling $12, measured from the telemetry window, not `cost_usd`. **Nothing was
+run and nothing was spent.**
+
+**Why it is held.** Planning the run showed the harness cannot answer the Haiku question for most Haiku calls. Read at source: of the
+21 product call kinds, 2 are scored on their own output (`clarify`, `iterate_clarify`), 5 only through the finished document, 1 by an
+off-runner probe, and **12 by no eval at all**; those 12 carry 260 of the 524 product rows. Under `--model-override HAIKU_MODEL=...` the
+generate-mode run changes only `analyze_extraction` and `clarify` (the judge makes its own call, `runner.py:466`). `recommend_summary`
+cannot fire under the committed data: it makes no LLM call below two summary variants (`analyzer.py:3978-3989`) and the committed corpus
+seed has one (observed: 0 eval rows for that kind in the log). The only seed with more is gitignored and personal, which the owner ruled
+out as a comparison set.
+
+**Owner direction (same day):** map every gap; propose the one redesign worth doing before the public release (single-call, group and
+full runs; every call evaluated and dashboarded with drill-downs; one standard dataset; OpenTelemetry-shaped telemetry considered;
+prompt-versioning and model-tracking designs from the owner's other work looked at). The result is `docs/dev/eval-redesign-design.md`: the gap
+map, the scheme, a dataset recommendation (a synthetic matrix on O\*NET, CC BY 4.0; no public résumé set found is cleared for
+committing), the OpenTelemetry finding (the GenAI conventions are in Development status with no release to pin), eight owner decisions
+and an eleven-branch build order whose last step is this A/B, pre-registered on the full run.
+
+**This item stays open.** Still open under it: the A/B itself (step 11 of that order), the subagent pins, Opus 5.5 price and policy, and
+the items listed in the 2026-10-19 blocks. No cheaper fallback is proposed: a smoke run in assemble mode would test `recommend` on the
+committed seed but not `recommend_summary`, and would leave `clarify` ungraded.

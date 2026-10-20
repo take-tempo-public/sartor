@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: a design for one eval scheme before the public release (`docs/eval-redesign`, item 137)
+
+Planning item 137's candidate A/B showed the eval harness cannot answer the Haiku question for most Haiku calls. This branch adds the
+gap map and a proposed redesign as `docs/dev/eval-redesign-design.md`. **Docs only: no code, no pin moves, no prompt text changes (no
+`PROMPT_VERSION` bump), no new dependency, nothing built, and nothing paid was run.** The A/B is held until the scheme exists.
+
+- **Gap map, read at source:** of 21 product call kinds, 2 are scored on their own output, 5 only through the finished document, 1 by an
+  off-runner probe and 12 by no eval; `recommend_summary` cannot fire under the committed corpus seed.
+- **Proposal:** a per-call eval catalog with a gate that fails closed, single / group / full runs, a standard dataset (a synthetic matrix on
+  O\*NET; no public résumé set found is cleared for committing), prompt content hashes and a producer id, a pre-registered comparison
+  rule, and a dashboard that drills from a call kind to a case. OpenTelemetry is treated as a projection of the house record; the GenAI
+  conventions have no release to pin.
+- Also: item 137's update records the owner's A/B answers; `docs/wiki/log.md` records a verified no-edit check; one line in
+  `scripts/wiki_relevance.py` (`KNOWN_RELEVANT_TOP_LEVEL`) acknowledges the new doc, which the wiki-relevance audit test requires for any
+  new top-level `docs/dev/` file. It changes no classification (the dossier is `docs/dev/blast-radius/eval-redesign.md`).
+
 ### Changed: the LLM routing documentation now matches the code (`docs/item-137-free-review`, item 137)
 
 The free review of item 137 (models, call settings, cache, output limits) compared `docs/dev/architecture.md` §"LLM routing + cost"
