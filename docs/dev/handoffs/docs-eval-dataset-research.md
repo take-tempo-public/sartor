@@ -1,4 +1,4 @@
-<!-- provenance: schema=1 session=5518a87f-abfc-497e-a3a5-13b2fbb09fd5 branch=docs/eval-dataset-research commit=005883d actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-20 -->
+<!-- provenance: schema=1 session=5518a87f-abfc-497e-a3a5-13b2fbb09fd5 branch=docs/eval-dataset-research commit=b806ac7 actor=amodal1 agent=anthropic/claude-sonnet-5-5 generated_at=2026-10-20 -->
 
 # Agent handoff — the eval dataset research recorded (design doc 6.1 to 6.4); branch `docs/eval-dataset-research` → push (needs the owner's OK), PR, merge, prune; then the owner answers section 8 questions 9 to 12; then step 1 (item 181)
 
@@ -16,7 +16,7 @@
 >   other sectors) and **a deeper open-set research pass before v1**. Choices made through AskUserQuestion: **research branch now**; profession
 >   axis **"broad, as section 6 has it"** (about 12 professions across sectors). The owner's tech-variation point is carried into the proposal as an
 >   explicit choice (option B, below), not decided for them.
-> - **Built (commits `7b334a5` ledger; `7af5bfc` the research; `005883d` the proposal and housekeeping):** `docs/dev/eval-redesign-design.md` gains
+> - **Built (commits `7b334a5` ledger; `7af5bfc` the research; `005883d` the proposal and housekeeping; `b806ac7` the USAJOBS terms read in a browser):** `docs/dev/eval-redesign-design.md` gains
 >   **6.1** (résumé sets), **6.2** (job-description sources), **6.3** (taxonomies and level frameworks), each row marked *(reported)* or
 >   **raw-read**; **6.4** the matrix proposal (golden set authored and committed, exploration set fetched and never committed, three profession-axis
 >   options A/B/C with B recommended: 12 professions by 4 levels, 48 cells, tech split into six families; size tiers 21 / 12 / 48); a pointer at the
@@ -31,16 +31,19 @@
 >   fresh scratchpad directory (treated as untrusted data; no data files downloaded). **Raw-read:** `resume-parsing-vision` card (CC-BY-4.0,
 >   synthetic, 32 IT roles); PopResume API metadata and the arXiv abstract; JobSet card; NYC Jobs Postings metadata (no licence field;
 >   `career_level` counts); the O\*NET 31.0 licence text, Job Zones file counts and the four zone definitions; the UK DDaT framework home page
->   (OGL v3.0 footer, role list). Everything else in 6.1 to 6.3 is still *(reported)*.
+>   (OGL v3.0 footer, role list); and, after the owner enabled the Chrome extension, **the USAJOBS API terms of service, read in a browser** (the page
+>   blocks `curl` with HTTP 403). Everything else in 6.1 to 6.3 is still *(reported)*.
 > - **Findings that change the earlier design (written into the doc, not decisions the owner took):** (a) no résumé set found is both committable
 >   and broad: the one clean source is IT only and has no level names; (b) **O\*NET Job Zones are now four and are a property of an occupation, not
 >   a career stage, so the first-pass "Job Zone maps to level" line was wrong** and is superseded; (c) real committable postings might exist
->   (USAJOBS, NYC Jobs) but both have unsettled terms and skew to government; (d) no open seniority ladder was found outside tech (UK DDaT covers
+>   (USAJOBS, NYC Jobs): **USAJOBS's terms, read in a browser after the owner enabled the Chrome extension, permit committing text obtained through its API**
+>   (open licence, no approval needed, a carve-out for separately identified restricted content, contact names to scrub, no circumventing rate limits,
+>   no effective date shown); NYC Jobs's terms are unsettled; both skew to government; (d) no open seniority ladder was found outside tech (UK DDaT covers
 >   tech; only its software-developer ladder was read), so non-tech levels would be an authored rule.
-> - **Gate:** `python -X utf8 -m scripts.gate --result` read `PASSED on this tree -- exit 0, failed step None, finished 2026-10-20T11:19:28-0700, HEAD 005883d` (non-UX 3688 passed, 9 skipped; ux 189 passed, 2 xpassed; the log has 0 `RERUN` markers; run in Git Bash). The background-task notification also said exit 0; I cited `--result`, not the notification. **This handoff's commit moves HEAD, so `--result` reads STALE afterwards**; that commit is documentation only and I did not re-run the full gate for it. CI (`ci_wait`) is the authority at PR time.
-> - **Not verified:** (1) **USAJOBS's terms were not raw-read**: `curl` got HTTP 403 from an edge filter, the Chrome extension was not connected
->   (`tabs_context_mcp` returned "Browser extension is not connected"), and a second `WebFetch` returned the same quotes as the subagent but is still
->   a summary; one news item says the terms were revised days ago and the page shows no date. (2) PopResume's README is behind an access gate (HTTP
+> - **Gate:** `python -X utf8 -m scripts.gate --result` read `PASSED on this tree -- exit 0, failed step None, finished 2026-10-20T15:37:00-0700, HEAD b806ac7` (non-UX 3688 passed, 9 skipped; ux 189 passed, 2 xpassed; the log has 0 `RERUN` markers; run in Git Bash). The background-task notification also said exit 0; I cited `--result`, not the notification. The gate was run twice: once at `005883d` and again at `b806ac7` after the USAJOBS update changed the design doc. **This handoff's commit moves HEAD, so `--result` reads STALE afterwards**; that commit is documentation only and I did not re-run the full gate for it. CI (`ci_wait`) is the authority at PR time.
+> - **Not verified:** (1) **The USAJOBS page shows no effective or last-updated date**, so a later revision is possible (one news item said the terms
+>   were revised days ago); the text read on 2026-10-20 is what the page says, and it should be re-read when step 3 starts. Registering the API key is
+>   the owner's to do. (2) PopResume's README is behind an access gate (HTTP
 >   401), so "No real individual's data is included" is unverified. (3) NYC Jobs: the statute against "All rights are reserved" is unresolved.
 >   (4) The O\*NET licence says "Except as noted below"; the exception text was not read. (5) UK DDaT ladders for every role except software
 >   developer, the OGL v3.0 text and the downloadable framework file's terms. (6) ResumeBench's release and the seniority paper (arXiv 2509.09229)
@@ -53,9 +56,10 @@
 >   the three subagent hand-backs (known, item 169); each post-approval pause was cleared by re-running the identical call, the work being the
 >   owner-approved plan. Scratch files (`raw-resume-cards/`, `raw-jd-sources/`, `raw-taxonomy/`,
 >   `make_handoff.py`, `gate.log`) are in the session scratchpad, not committed. One memory file was updated (`project-eval-redesign-direction`) and its
->   `MEMORY.md` line. **Processes:** the gate I started has exited; no dev server was started; I opened no browser tab.
-> - **Branch state at writing:** this branch is 4 commits ahead of `main` (`fec8899`) before this handoff's own commit: the ledger file (`7b334a5`),
->   the research (`7af5bfc`), the proposal and housekeeping (`005883d`), and the commit that adds this file. **Nothing is pushed.** The branch is
+>   `MEMORY.md` line. **Processes:** the gate I started has exited; no dev server was started; I opened one browser tab (to read the USAJOBS terms) and closed it.
+> - **Branch state at writing:** this branch is ahead of `main` (`fec8899`) by the ledger file (`7b334a5`), the research (`7af5bfc`), the proposal and
+>   housekeeping (`005883d`), a first version of this handoff (`e4e213e`), the USAJOBS terms update (`b806ac7`), and the commit that replaces this
+>   file (`git log --oneline main..` lists them). **Nothing is pushed.** The branch is
 >   local until the owner confirms the push; what would become public is those commits and nothing else (re-check with `git log origin/main..main`
 >   for commits on local `main` that the remote lacks). `stash@{0}` (another session's), the Dependabot branches and the kept backup branch
 >   `docs/eval-redesign-pre-scrub` were not touched.
@@ -98,7 +102,7 @@
 
 - Everything through `docs/eval-redesign-decisions` ✓ (#195, merge `fec8899`, MERGED): the eight decisions recorded, epic 180 filed.
 - **`docs/eval-dataset-research`** ← this branch: the dataset requirement widened by the owner; second-pass research and a matrix proposal recorded in the design doc; no code or pin changed.
-- **Next, once this branch has landed:** the owner answers section 8 questions 9 to 12 (profession axis A/B/C, golden-set composition, non-tech levels, exploration targets) and reads USAJOBS's terms; then **step 1, `feat/eval-record-identity` (item 181)** when the owner approves it. Items 182 to 190 are steps 2 to 10; item 183 (step 3) builds the dataset the owner chooses; item 137 is step 11.
+- **Next, once this branch has landed:** the owner answers section 8 questions 9 to 12 (profession axis A/B/C, golden-set composition, non-tech levels, exploration targets); then **step 1, `feat/eval-record-identity` (item 181)** when the owner approves it. Items 182 to 190 are steps 2 to 10; item 183 (step 3) builds the dataset the owner chooses; item 137 is step 11.
   Other candidates: the rest of item 177; item 25's status; item 176; the six item 7 decisions; items 175, 140, 179's closure; item 178's mechanism; item 145's branch 2 and 3 (not started); item 171 (waits on four owner answers).
 
 **Do not start the cut, the version bump or the CHANGELOG cut.** Item 10 now depends on 3, 6, 7, 9, 19 and items 181 to 186, and on the owner's alpha approval.
@@ -118,7 +122,7 @@
 
 ## Carried-forward observations (cumulative open ledger — render the full still-open subset)
 
-The authoritative home is `docs/dev/work/BOARD.md`. Header, read from the board at `005883d`: **Open 26 / 10 ceiling -- OVER | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 92**
+The authoritative home is `docs/dev/work/BOARD.md`. Header, read from the board at `b806ac7`: **Open 26 / 10 ceiling -- OVER | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 92**
 
 **Changes from the previous handoff:** none to the board. This branch filed no item and closed none; `docs/dev/work/BOARD.md` is byte-identical to `main`'s, so the lists below, re-derived by script in the previous session, still match it (**Open 26**, still OVER the ceiling of 10; items 181 to 190 and 137 render under epic 180, not in the lists). Item **183** gained an update block (what step 3 must decide). The owner's direction stands: drawdown to 0 if possible before alpha staging; the open count is more than twice the reduction-sprint threshold. Owner-decision items are marked *(owner)*.
 
@@ -217,7 +221,7 @@ The authoritative home is `docs/dev/work/BOARD.md`. Header, read from the board 
 
 ### Decisions the owner owes (collected; each is also in the item it belongs to)
 
-- **The eval redesign: all eight section 8 decisions are ANSWERED (2026-10-20, recorded in `docs/dev/eval-redesign-design.md` section 8). Open follow-ons:** (a) **new, unanswered: section 8 questions 9 to 12** (profession axis A/B/C with B recommended; golden set all-authored or with committed real postings; levels outside tech, where no open ladder was found; whether the exploration fetch targets USAJOBS and NYC Jobs). (b) **The owner or the Chrome extension reads USAJOBS's terms** (the page blocks `curl`; the extension was not connected); they decide whether federal posting text can be committed. (c) **NYC Jobs:** a ruling on the open-data statute against "All rights are reserved". (d) The on-demand public-set fetch (decision 1) is an outbound connection and charter C-2 names exactly two destinations; step 3 (item 183) must take the D-6 opt-in route and pass `tests/test_egress_allowlist.py`, or come back as a C-2 amendment; I did not read the egress test. (e) With no gold labels (decision 5), step 9's calibration is judge-to-judge agreement only, which shows consistency, not correctness. (f) Haiku 4.5's status was not re-checked; re-check before step 9 picks the judge.
+- **The eval redesign: all eight section 8 decisions are ANSWERED (2026-10-20, recorded in `docs/dev/eval-redesign-design.md` section 8). Open follow-ons:** (a) **new, unanswered: section 8 questions 9 to 12** (profession axis A/B/C with B recommended; golden set all-authored or with committed real postings; levels outside tech, where no open ladder was found; whether the exploration fetch targets USAJOBS and NYC Jobs). (b) **USAJOBS:** its terms were read in a browser and permit committing API text (see the design doc's 6.2); the page shows no effective date, so re-read it when step 3 starts, and the API key is the owner's to register. (c) **NYC Jobs:** a ruling on the open-data statute against "All rights are reserved". (d) The on-demand public-set fetch (decision 1) is an outbound connection and charter C-2 names exactly two destinations; step 3 (item 183) must take the D-6 opt-in route and pass `tests/test_egress_allowlist.py`, or come back as a C-2 amendment; I did not read the egress test. (e) With no gold labels (decision 5), step 9's calibration is judge-to-judge agreement only, which shows consistency, not correctness. (f) Haiku 4.5's status was not re-checked; re-check before step 9 picks the judge.
 - **The backup branch `docs/eval-redesign-pre-scrub` (new, owner's call):** the owner said keep it for now; it was never pushed (tip `27bac3f`). Delete when the owner agrees.
 - **Item 137, what is left (updated):** the A/B itself (step 11 of the build order, now item 137 itself under epic 180, depending on item 190; pre-registered on the full
   run with the four answers already recorded); the subagent pins (`agents/*.md`, after the product decision); Opus 5.5 price and policy (only if a product call is ever
@@ -261,9 +265,9 @@ The authoritative home is `docs/dev/work/BOARD.md`. Header, read from the board 
 
 ### Declared, not filed — new this session
 
-- **The Chrome extension was not connected** (`tabs_context_mcp` returned "Browser extension is not connected"), so a page that blocks `curl` cannot be raw-read from this machine until it is reconnected. Cause not examined.
+- **The Chrome extension was not connected at first** (`tabs_context_mcp` returned "Browser extension is not connected"); the owner enabled it later and the USAJOBS page was then read. Cause of the first failure not examined.
 - **PopResume's README is access-gated** (HTTP 401 on `/raw/main/README.md`); reading it needs an authenticated Hugging Face account, which this session did not use.
-- **Unread, listed in the design doc's 6.4 "did not settle" list:** USAJOBS terms; NYC Jobs statute; DDaT ladders other than software developer; the OGL text; O\*NET's "Except as noted below" text; ESCO's licence page; ResumeBench; arXiv 2509.09229's dataset link.
+- **Unread, listed in the design doc's 6.4 "did not settle" list:** NYC Jobs statute; DDaT ladders other than software developer; the OGL text; O\*NET's "Except as noted below" text; ESCO's licence page; ResumeBench; arXiv 2509.09229's dataset link.
 
 ### Declared, not filed — carried unchanged from the previous handoff; this session re-verified none of it (any 'this session' wording in the bullets below refers to an earlier session)
 
@@ -293,7 +297,7 @@ The full set is in `docs/dev/handoffs/gate-skips-linked-worktrees.md` and, behin
 **Nothing is queued on this branch beyond landing it.** The owner chooses what follows; this list is the closing agent's **recommendation for order, not a decision.**
 
 1. **Land this branch first if it is not already landed.** Check `gh pr list` and `git branch -a`. The push needs the owner's explicit confirmation (public repo); a merge is **not** authorised: wait for the required checks with `python -m scripts.ci_wait <n>` (exit 0 only; 3 means green-after-retries, stop and look), get the owner's explicit confirmation, then `gh pr merge <n> --merge`, `git checkout main && git pull --ff-only`, regenerate and check the pointer, `git branch -d`. Authority: `docs/dev/maintainer-lane.md` close-out.
-2. **Put the four section 8 questions (9 to 12) to the owner**, with the USAJOBS terms: the owner reads https://developer.usajobs.gov/guides/terms-of-service in their own browser, or the Chrome extension is reconnected and the next session reads it. Do not answer them for the owner.
+2. **Put the four section 8 questions (9 to 12) to the owner**. Do not answer them for the owner.
 3. **Build step 1, `feat/eval-record-identity` (item 181),** when the owner approves: prompt content hashes and a gate that fails when a hash changes and `PROMPT_VERSION` does not (turns `docs/governance/enforcement.md:127` from convention into a mechanism); producer id; trace, span and case ids; parse outcome; judge cost into run totals. `analyzer.py` and `hardening.py` are not on the C-10 gated list, but the call-log row and the eval record have consumers (the dashboard, `commands/bench.md`, `evals/tune.py`): enumerate them first and write a dossier.
 4. **Item 177 points 12 and 13, then 2 to 11**; **item 25's status**; the remaining item 7 decisions; items 175, 140, 178, 179's closure.
 5. **Item 176**, when the owner wants the 44 fold-ins done (re-verify each fact before writing it).
