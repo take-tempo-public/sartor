@@ -156,6 +156,9 @@ sartor = "app:main"
 py-modules = [
     "app",
     "analyzer",
+    # Imported at RUNTIME by `analyzer.py` (prompt content hash, producer id, trace ids; item
+    # 181). A stdlib-only leaf: omitting it would ship a wheel whose `analyzer.py` fails at import.
+    "call_identity",
     "config",
     "corpus_to_json_resume",
     "demo_fixtures",
@@ -449,6 +452,7 @@ module = [
     "json_resume",
     "pdf_render",
     "analyzer",
+    "call_identity",
     "hardening",
     "parser",
     "generator",

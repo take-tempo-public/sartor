@@ -41,6 +41,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+import call_identity  # noqa: E402
 import preflight  # noqa: E402
 import sartor_home  # noqa: E402
 from analyzer import (  # noqa: E402
@@ -50,6 +51,7 @@ from analyzer import (  # noqa: E402
     analyze,
     clarify,
     clarify_iteration,
+    current_trace_context,
     effective_prompt_version,
     generate,
     log_judge_call,
@@ -58,6 +60,7 @@ from analyzer import (  # noqa: E402
     recommend_bullets,
     recommend_summaries,
     thinking_setting,
+    trace_context,
 )
 
 # F-11 (2026-07 UX review) — the "assemble" eval mode drives the SAME
@@ -146,6 +149,24 @@ def _model_provenance_fields() -> dict[str, Any]:
     return {"model_snapshots": snapshots, "model_overrides": overrides}
 
 
+def _trace_fields() -> dict[str, Any]:
+    """The ids every eval record carries inside a run (item 181): the run's ``trace_id``, the case
+    (fixture) it belongs to and the case span the product and judge calls are children of.
+
+    Empty outside a trace context. The key names mirror the call-log row's, so a record and its
+    rows join on ``trace_id`` + ``case_id`` instead of on a time window.
+    """
+    ctx = current_trace_context()
+    if ctx is None:
+        return {}
+    fields: dict[str, Any] = {"trace_id": ctx.trace_id}
+    if ctx.case_id is not None:
+        fields["case_id"] = ctx.case_id
+    if ctx.parent_span_id is not None:
+        fields["span_id"] = ctx.parent_span_id
+    return fields
+
+
 PASS_THRESHOLD = 4.0
 SCORE_MAX = 5.0
 # Bumped when the eval-result JSONL shape changes. Old records (no field) are
@@ -188,6 +209,11 @@ class EvalRunResult:
     improvements: list[dict[str, Any]]
     candidate_version: str | None = None
     cancelled: bool = False
+    # Item 181. The run's trace id; the judge's spend, which a record's ``cost_usd`` leaves out by
+    # design; and the run's whole spend (generation + judge), read from the call log by trace id.
+    trace_id: str | None = None
+    judge_cost_usd: float = 0.0
+    total_cost_usd: float = 0.0
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -449,9 +475,9 @@ def _judge_create(
     """``client.messages.create`` for an eval judge, with its telemetry row (item 175 gap 5).
 
     Returns ``(message, api_request_id)``. The row is written under ``call_kind`` (``judge_*``)
-    and ``eval:<fixture_name>`` so the spend is in the telemetry window; `_eval_cost_since`
-    skips ``judge_*`` rows so a fixture's ``cost_usd`` stays generation-only. A failed call
-    logs its error row and re-raises.
+    and ``eval:<fixture_name>``, and inside a run it carries the trace and case ids (item 181), so
+    the spend is found by id; `_trace_cost` splits ``judge_*`` rows out so a fixture's ``cost_usd``
+    stays generation-only. A failed call logs its error row and re-raises.
 
     The judge model's `thinking` value comes from the product's `THINKING_POLICY` (item 137), so
     moving ``JUDGE_MODEL`` cannot silently switch a judge to adaptive thinking; a model with no
@@ -542,37 +568,60 @@ def _score_distinctiveness(
         return {"score": None, "summary": "judge_error", "judge_request_id": request_id}
 
 
-def _eval_cost_since(t0_iso: str, fixture_name: str) -> float:
-    """Sum costs of every generation-side llm_calls.jsonl record written for this fixture
-    since the eval run started (the `judge_*` rows are excluded). Best-effort: missing log → 0.0."""
-    if not LLM_LOG_PATH.exists():
-        return 0.0
-    needle = f"eval:{fixture_name}"
-    total = 0.0
+def _log_offset() -> int:
+    """Byte size of the call log now: where a scan for rows written from here on can begin."""
     try:
-        with LLM_LOG_PATH.open(encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
+        return LLM_LOG_PATH.stat().st_size
+    except OSError:
+        return 0
+
+
+def _trace_cost(
+    start_offset: int, trace_id: str, case_id: str | None = None
+) -> tuple[float, float]:
+    """``(generation_usd, judge_usd)`` of the call-log rows carrying ``trace_id`` (and ``case_id``).
+
+    Rows are selected by id, not by a time window (item 181): two runs overlapping on one fixture
+    each carry their own trace id, so neither sums the other's spend. Only the bytes written since
+    ``start_offset`` are read, so a scan costs this run's rows and not the whole log's history
+    (every writer appends whole lines, so an offset taken between calls lies on a line boundary;
+    an offset past the end means the file was rotated and is read from the start). ``judge_*``
+    rows are split out so `cost_usd` stays generation-only, whatever order the rollup runs in
+    relative to the judge calls (item 175). Best-effort: a missing log is ``(0.0, 0.0)``.
+    """
+    generation = judge = 0.0
+    try:
+        with LLM_LOG_PATH.open("rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(start_offset if start_offset <= size else 0)
+            for raw in f:
                 try:
-                    rec = json.loads(line)
-                except json.JSONDecodeError:
+                    rec = json.loads(raw)
+                except ValueError:
                     continue
-                if rec.get("username") != needle:
+                if not isinstance(rec, dict) or rec.get("trace_id") != trace_id:
                     continue
-                # Eval judges log under `judge_*` kinds (item 175); cost_usd stays generation-only,
-                # whatever order the rollup runs in relative to the judge calls.
+                if case_id is not None and rec.get("case_id") != case_id:
+                    continue
+                cost = compute_call_cost(rec)
                 if str(rec.get("call", "")).startswith("judge_"):
-                    continue
-                ts = rec.get("timestamp", "")
-                if ts < t0_iso:
-                    continue
-                total += compute_call_cost(rec)
+                    judge += cost
+                else:
+                    generation += cost
     except OSError as exc:
         logger.warning("eval cost rollup failed: %s", exc)
+        return 0.0, 0.0
+    return round(generation, 6), round(judge, 6)
+
+
+def _case_cost(start_offset: int, *, judge: bool = False) -> float:
+    """Generation (or, with ``judge=True``, judge) spend of the case in the active trace context."""
+    ctx = current_trace_context()
+    if ctx is None or ctx.case_id is None:
         return 0.0
-    return round(total, 6)
+    generation, judge_usd = _trace_cost(start_offset, ctx.trace_id, ctx.case_id)
+    return judge_usd if judge else generation
 
 
 BASELINE_JSON = RESULTS_DIR / "baseline_v1.json"
@@ -869,7 +918,7 @@ def _run_iteration_phase(
     run_id: str,
     det_metrics: dict[str, Any],
     elapsed_ms: int,
-    t0_iso: str,
+    case_offset: int,
 ) -> dict[str, Any] | None:
     """Run one simulated iteration cycle for fixtures with iteration_scenarios.
 
@@ -926,7 +975,7 @@ def _run_iteration_phase(
             "prompt_version": effective_prompt_version(),
             "run_id": run_id,
             "deterministic_metrics": det_metrics,
-            "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+            "cost_usd": _case_cost(case_offset),
             "pipeline_latency_ms": elapsed_ms,
         }
 
@@ -1011,7 +1060,7 @@ def _run_iteration_phase(
             "prompt_version": effective_prompt_version(),
             "run_id": run_id,
             "deterministic_metrics": det_metrics,
-            "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+            "cost_usd": _case_cost(case_offset),
             "pipeline_latency_ms": elapsed_ms,
         }
 
@@ -1049,7 +1098,7 @@ def _run_iteration_phase(
         "prompt_version": effective_prompt_version(),
         "run_id": run_id,
         "deterministic_metrics": det_metrics,
-        "cost_usd": _eval_cost_since(t0_iso, fixture["name"]),
+        "cost_usd": _case_cost(case_offset),
         "pipeline_latency_ms": elapsed_ms,
         "iteration_scenario": scenario.get("name"),
         "iteration_questions_count": len(iter_questions),
@@ -1356,6 +1405,11 @@ def run_suite(
 
     n_pass = n_fail = 0
 
+    # One trace per invocation (item 181). `run_offset` bounds the end-of-run spend scan to the rows
+    # this run could have written; selection within it is by trace id.
+    trace_id = call_identity.new_trace_id()
+    run_offset = _log_offset()
+
     weights: dict[str, float] = {}
     if WEIGHTS_PATH.exists():
         weights = json.loads(WEIGHTS_PATH.read_text(encoding="utf-8"))
@@ -1406,7 +1460,14 @@ def run_suite(
                 run_id,
             )
             t0 = time.perf_counter()
-            t0_iso = datetime.now(timezone.utc).isoformat()
+            # The case (fixture) span: every product and judge call below is its child. Entered on the
+            # run's ExitStack (the loop body is too long to re-indent under a `with`), so each fixture's
+            # context replaces the previous one and all of them unwind, newest first, when the run ends.
+            case_span_id = call_identity.new_span_id()
+            stack.enter_context(
+                trace_context(trace_id, case_id=fixture["name"], parent_span_id=case_span_id)
+            )
+            case_offset = _log_offset()
             # clarify_questions is captured separately because the clarify
             # step is opt-in in production and we want the eval to keep
             # producing scores for the existing rubrics even if clarify
@@ -1520,6 +1581,7 @@ def run_suite(
                             "fixture_hash": fixture["hash"],
                             "rubric_version": None,
                             **_model_provenance_fields(),
+                            **_trace_fields(),
                             "baseline_comparison": None,
                             "phase_latencies_ms": None,
                             "eval_mode": mode,
@@ -1589,7 +1651,7 @@ def run_suite(
                 context["job_description"],
                 fixture_name=fixture["name"],
             )
-            cost_usd = _eval_cost_since(t0_iso, fixture["name"])
+            cost_usd = _case_cost(case_offset)
             logger.info(
                 "  metrics: verb_diversity=%.2f density=%.2f grounding_overlap=%.2f"
                 " top_third_density=%.2f quantification_rate=%.2f"
@@ -1732,6 +1794,7 @@ def run_suite(
                                 "fixture_hash": fixture["hash"],
                                 "rubric_version": rubric_versions.get(rubric_path),
                                 **_model_provenance_fields(),
+                                **_trace_fields(),
                                 "baseline_comparison": None,
                                 "phase_latencies_ms": phase_latencies_ms,
                                 "grounding_signals": grounding_signals_data,
@@ -1765,7 +1828,7 @@ def run_suite(
                         run_id=run_id,
                         det_metrics=det_metrics,
                         elapsed_ms=elapsed_ms,
-                        t0_iso=t0_iso,
+                        case_offset=case_offset,
                     )
                     if iter_record is None:
                         # Fixture has no iteration_scenarios — silently skip,
@@ -1792,6 +1855,7 @@ def run_suite(
                             "fixture_hash": fixture["hash"],
                             "rubric_version": rubric_versions.get(rubric_path),
                             **_model_provenance_fields(),
+                            **_trace_fields(),
                             "baseline_comparison": iter_baseline_comparison,
                             "phase_latencies_ms": phase_latencies_ms,
                             "grounding_signals": grounding_signals_data,
@@ -1892,6 +1956,7 @@ def run_suite(
                     "fixture_hash": fixture["hash"],
                     "rubric_version": rubric_versions.get(rubric_path),
                     **_model_provenance_fields(),
+                    **_trace_fields(),
                     "baseline_comparison": baseline_comparison,
                     "phase_latencies_ms": phase_latencies_ms,
                     "grounding_signals": grounding_signals_data,
@@ -1989,6 +2054,10 @@ def run_suite(
                         "suite": suite,
                         "fixture_hash": fixture["hash"],
                         **_model_provenance_fields(),
+                        **_trace_fields(),
+                        # Complete here, unlike on the per-rubric records written while later rubrics
+                        # were still to be graded: the case's judge spend, by id (item 181).
+                        "judge_cost_usd": _case_cost(case_offset, judge=True),
                         "phase_latencies_ms": phase_latencies_ms,
                         "eval_mode": mode,
                     }
@@ -2070,6 +2139,9 @@ def run_suite(
             )
 
     exit_code = 0 if (n_fail == 0 and not regressions) else 2
+    # Run totals from the log by trace id, so they hold on every path (a pipeline error, a cancel)
+    # and count the judge calls `cost_usd` leaves out by design.
+    generation_usd, judge_usd = _trace_cost(run_offset, trace_id)
     return EvalRunResult(
         exit_code=exit_code,
         out_path=out_path,
@@ -2079,6 +2151,9 @@ def run_suite(
         improvements=improvements,
         candidate_version=candidate_version,
         cancelled=cancelled,
+        trace_id=trace_id,
+        judge_cost_usd=judge_usd,
+        total_cost_usd=round(generation_usd + judge_usd, 6),
     )
 
 

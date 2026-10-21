@@ -244,6 +244,7 @@ def test_magicmock_fake_leaves_a_parseable_log_line(monkeypatch, tmp_path):
 def test_unserialisable_request_kwarg_is_recorded_as_text_not_dropped_or_fatal():
     fields = analyzer._provenance_fields(
         {"model": "m", "system": "s", "messages": [], "odd": object()},
+        call_kind="t",
         answered_model=None,
         api_request_id=None,
         usage=None,

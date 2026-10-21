@@ -22,6 +22,14 @@ Result records are at **`schema_version 3`** — v2's float scores plus
 rewriting files ([`evals/README.md`](../../../evals/README.md) §"Interpreting results").
 Since item 175 the per-rubric and iteration records also carry `judge_request_id`, with no
 `schema_version` bump; it is absent from older records and from rows where no judge ran `[synthesis]`.
+Since item 181, records additionally carry `trace_id` / `case_id` / `span_id` (W3C trace and span
+identifiers tying the run together, minted per invocation and per fixture by
+[`call_identity.py:new_trace_id`](../../../call_identity.py) /
+[`call_identity.py:new_span_id`](../../../call_identity.py)), with no `schema_version` bump;
+a record joins its telemetry rows in `logs/llm_calls.jsonl` on `trace_id` + `case_id` instead of on a
+time window ([`evals/runner.py:_trace_fields`](../../../evals/runner.py)). The record's `span_id` is the
+**case** span, so it equals the call rows' `parent_span_id`; a call row's own `span_id` is minted fresh for
+that one call ([`analyzer.py:_identity_fields`](../../../analyzer.py)) `[synthesis]`.
 When a model override is active, records additionally carry `model_overrides` (the pin → candidate
 mapping, e.g., `{"SONNET_MODEL": "claude-sonnet-5-5"}`), paired with the updated `model_snapshots`
 showing the models actually sent — this field is absent from baseline runs ([`evals/runner.py:_model_provenance_fields`](../../../evals/runner.py)) `[synthesis]`.
@@ -128,9 +136,16 @@ The L0 `fabricated_specifics` check scores against the dynamic source union from
 [`hardening.py:assemble_source_union`](../../../hardening.py) (primary + supplementals +
 clarifications), kept separate from the `grounding_overlap` source set so its baseline isn't
 perturbed `[synthesis]`. Per-eval `cost_usd` is generation-only: rolled up from `logs/llm_calls.jsonl` by
-tailing records tagged `eval:<fixture>` since the run started, but [`evals/runner.py:_eval_cost_since`](../../../evals/runner.py)
-skips rows whose `call` field starts with `judge_`, so judge calls are excluded ([`evals/runner.py:_eval_cost_since`](../../../evals/runner.py))
-and the sum is via [`hardening.py:compute_call_cost`](../../../hardening.py) `[synthesis]`.
+selecting the rows that carry the run's `trace_id` and the fixture's `case_id` (item 181; it was a time
+window over the fixture's username, which summed two overlapping runs on one fixture together), reading
+only the bytes written since the fixture started, and [`evals/runner.py:_trace_cost`](../../../evals/runner.py)
+splits out rows whose `call` field starts with `judge_`, so judge calls are excluded from `cost_usd`
+([`evals/runner.py:_case_cost`](../../../evals/runner.py)) and reported separately as
+`judge_cost_usd` on the case's `eval_composite` record ([`evals/runner.py:run_suite`](../../../evals/runner.py))
+and on the run result (`judge_cost_usd` in [`evals/runner.py:EvalRunResult`](../../../evals/runner.py)).
+`EvalRunResult` additionally carries `total_cost_usd`, the sum of generation and judge spend
+([`evals/runner.py:EvalRunResult`](../../../evals/runner.py)). Each call's cost is
+computed via [`hardening.py:compute_call_cost`](../../../hardening.py) `[synthesis]`.
 
 **Leaked-handles detection** (item 140) — `leaked_handles` is a sibling record key (not inside
 `deterministic_metrics`, which is the part handed to the judge), computed by

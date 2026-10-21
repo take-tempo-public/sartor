@@ -161,6 +161,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         # repo root — production code
         "app.py",
         "analyzer.py",
+        "call_identity.py",
         "config.py",
         "corpus_to_json_resume.py",
         "demo_fixtures.py",
