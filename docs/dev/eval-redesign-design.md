@@ -550,7 +550,7 @@ non-tech fields, so the level axis there must be constructed.
 Zones are four, they describe an occupation's preparation, and they do not separate a junior from a staff
 developer. Levels need a second source (DDaT ladders for tech; a stated rule elsewhere).
 
-### 6.4 Proposal: the golden matrix (for the owner to choose; nothing here is decided)
+### 6.4 Proposal: the golden matrix (owner answered 2026-10-21: option B, all-authored, authored non-tech levels, USAJOBS-only exploration; see section 8, questions 9 to 12)
 
 **Why the current set is too thin.** `evals/fixtures/synthetic/` holds three personas: `data-scientist-junior`,
 `pm-senior`, `sre-mid-level`. All three are tech, one level each. The owner's requirement (2026-10-20): the
@@ -576,8 +576,9 @@ answer the same day) across sectors as section 6 first proposed.
    licence question rests on a posting. The generating model id, prompt version and a sha256 per cell are
    recorded; CI fails on drift. Ground truth is exact by construction, which keeps decision 5 (no human
    labels) intact.
-2. **Exploration set: fetched, real, never committed.** Real JDs from USAJOBS and NYC Jobs (and JobSet for
-   breadth) fetched on demand, pinned by a manifest of source revision and sha256, used for "does this hold on
+2. **Exploration set: fetched, real, never committed.** Real JDs from USAJOBS (the owner's answer to
+   question 12 on 2026-10-21: USAJOBS only, so NYC Jobs is not targeted yet; JobSet for breadth remains
+   possible) fetched on demand, pinned by a manifest of source revision and sha256, used for "does this hold on
    real text?". This is where the C-2 route question lives. A result there is a lead and never gates.
 3. **Why not commit real postings into the golden set:** the terms are unsettled for both sources, they skew
    to government, and a posting can be edited or withdrawn upstream. The cost of authoring is one generation
@@ -588,13 +589,14 @@ answer the same day) across sectors as section 6 first proposed.
 | Option | Professions | Tech coverage | Cost / risk |
 |---|---|---|---|
 | **A. Section 6 as first written** | about 12, tech as one "engineering" row | the existing three personas only | does not answer the owner's objection |
-| **B. 12 professions, tech split (recommended)** | **6 tech:** software engineering (QA as a sub-variant), SRE / DevOps / IT operations, security, data / ML, product management, design / UX. **1 cross-sector:** project / program management. **5 non-tech:** healthcare, skilled trades, finance, education, sales / operations | six tech families, each a profession | 12 by 4 levels fully crossed is exactly 48 cells, so no sampling is needed; creative and legal are left out of v1 |
+| **B. 12 professions, tech split (recommended; chosen by the owner 2026-10-21)** | **6 tech:** software engineering (QA as a sub-variant), SRE / DevOps / IT operations, security, data / ML, product management, design / UX. **1 cross-sector:** project / program management. **5 non-tech:** healthcare, skilled trades, finance, education, sales / operations | six tech families, each a profession | 12 by 4 levels fully crossed is exactly 48 cells, so no sampling is needed; creative and legal are left out of v1 |
 | **C. 16 professions** | 8 tech (B's six plus IT administration / support and QA as their own rows) + project management + 7 non-tech | eight tech families | 16 by 3 sampled levels is 48 cells, but each profession loses a level, which weakens within-profession level comparison |
 
 **Level axis (proposal).** Four levels: **entry** (about 0 to 2 years), **mid** (3 to 5), **senior** (6 to 10),
 **lead or manager** (10+, or a people-lead or staff scope). Tech cells take their rung names and skill
 expectations from DDaT where read; non-tech cells take them from a short rule written in the dataset's
-manifest (years, scope of responsibility), **marked as authored, not sourced**. A fifth rung (staff or
+manifest (years, scope of responsibility), **marked as authored, not sourced** (accepted by the owner,
+2026-10-21). A fifth rung (staff or
 principal) for tech only is possible and would add cells.
 
 **Industry axis.** A JD-side variant, not a crossed axis: each cell has one or two JDs for the same role in
@@ -744,22 +746,33 @@ Where the answer is not the recommendation the question carried, it says so.
    published to the docs site. Register it when you want the scheme public, or keep it repo-only.
    **Answer: repo-only for now.** Revisit after steps 1 to 3 land.
 
-### Raised after the answers above (2026-10-20, unanswered)
+### Raised after the answers above (raised 2026-10-20, answered by the owner 2026-10-21)
 
 The owner asked that the v1 ground truth be broadened before release and that the open-source research be
-deeper first. 6.1 to 6.4 are that research. The questions it leaves, for the owner:
+deeper first. 6.1 to 6.4 are that research. The questions it left, each followed by the answer. Answers 9
+to 11 are the recommendation the question carried; question 12 carried none.
 
 9. **Profession axis:** option A, B or C in 6.4. B (recommended) splits tech into six families, adds
    project management and keeps five non-tech sectors, giving 12 professions by 4 levels, 48 cells.
+   **Answer: B.** Twelve professions by four levels, 48 cells fully crossed, tech split into six families.
+   Creative and legal are left out of v1.
 10. **Golden set composition:** all-authored from O\*NET and a level ladder (recommended), or some committed
     real postings. If real, USAJOBS's terms now permit it (read in a browser 2026-10-20: open
     licence, a carve-out for separately identified restricted content, contact names to scrub, rate limits
     to respect), and NYC Jobs still needs a ruling on its statute against "All rights are reserved". Real
     government postings skew public-sector either way.
+    **Answer: all-authored.** No third-party posting or résumé text is committed to the golden set, so no
+    licence question rests on one.
 11. **Levels outside tech:** no open ladder was found, so the rule is authored in the manifest. Accept,
     or hold the non-tech cells until a source is found.
+    **Answer: accept the authored rule.** The non-tech levels ship in v1, defined by a short rule in the
+    dataset manifest (years, scope of responsibility) and marked as authored, not sourced.
 12. **Whether the exploration fetch targets USAJOBS and NYC Jobs** (the C-2 route question in 5.4
     applies to either).
+    **Answer: USAJOBS only.** NYC Jobs is not targeted until its terms are settled. The fetch is still an
+    outbound connection: step 3 takes the D-6 opt-in route and passes `tests/test_egress_allowlist.py`, or
+    returns to the owner as a C-2 amendment. The owner registers the API key. The USAJOBS terms have no
+    effective date on the page, so re-read them when step 3 starts.
 
 ## 9. Build order
 

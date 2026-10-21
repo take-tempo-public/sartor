@@ -36,6 +36,9 @@ gap map and a proposed redesign as `docs/dev/eval-redesign-design.md`. **Docs on
   taxonomies (sections 6.1 to 6.3, each row marked reported or raw-read) and a matrix proposal (6.4: golden and exploration sets, a
   12-profession by 4-level option with tech split into families, size tiers). Section 8 has four new unanswered questions; item 183
   records what step 3 must decide. No code, pin, prompt, dependency or paid call.
+- **Dataset questions answered (`docs/eval-dataset-decisions`, still docs only):** the owner chose the 12-profession by 4-level matrix
+  (option B, 48 cells), an all-authored golden set, an authored non-tech level rule, and a USAJOBS-only exploration fetch. They are
+  recorded in the design doc's section 8 and 6.4 and in item 183. No code, pin, prompt, dependency or paid call.
 
 ### Changed: the LLM routing documentation now matches the code (`docs/item-137-free-review`, item 137)
 
