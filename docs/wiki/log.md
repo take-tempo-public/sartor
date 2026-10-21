@@ -3474,3 +3474,13 @@ Line 43 says the three synthetic fixtures are `data-scientist-junior`, `pm-senio
 changes no fixture (6.4 says so). No page cites the design doc. This is a read for contradiction, not a grounding audit.
 
 **Not verified:** the rest of `eval-harness`; when the dataset is built (step 3, item 183) the page needs its own pass.
+
+## 2026-10-21 — scoped close-out check, `docs/eval-dataset-decisions` (verified no-edit)
+
+**Trigger:** branch close-out wiki-relevance check, scoped to this branch's own diff (`git diff main`). **No subagent spend; no page edited; `.last_ingest_sha` not advanced.**
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, `is_wiki_relevant()` run on every changed path): one,** `docs/dev/eval-redesign-design.md` (records the owner's answers to section 8 questions 9 to 12 and marks the chosen options in 6.4; it describes no built behavior). The other changed paths (item 183, `CHANGELOG.md`, the provenance ledger file) classify as not wiki-relevant.
+
+**Pages: `eval-harness` grepped, verified no-edit.** A grep of `docs/wiki/pages`, `index.md` and `overview.md` for "option B", "golden set", "usajobs" and "48 cells" found no match. `eval-harness` line 43 (the three synthetic fixtures) stays true because this branch changes no fixture. No page cites the design doc. This is a read for contradiction, not a grounding audit.
+
+**Not verified:** the rest of `eval-harness`; when the dataset is built (step 3, item 183) the page needs its own pass.
