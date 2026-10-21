@@ -306,9 +306,14 @@ Section 6 gives the research behind this. The requirements, whatever the source:
   recording stub in place of the API client and asserts the set of call kinds that fired equals
   the set the catalog expects. It costs nothing and would have caught the `recommend_summary`
   gap.
-- **Frozen subsets:** an anchor (a pinned version for cross-release comparison) and an
-  exploration area for candidates, promoted by the rule already written in
-  `evals/exploration/README.md` *(reported)*.
+- **Two roles, never mixed (proposal, 6.4):** a **golden set** (the committed, authored matrix:
+  frozen inputs, ground truth written by code, the only set that gates a release or a model swap,
+  versioned so a later version adds cells and never edits one in place) and an **exploration set** (a
+  fetched real-posting draw, or a fresh seeded draw from the matrix, pinned by a manifest of source
+  revision and sha256; its result is a lead and never moves a pin). Candidates are promoted by the
+  rule already written in `evals/exploration/README.md` *(reported)*. The fetched set cannot be the
+  golden set: it can change or vanish upstream, it cannot be committed, and every public set found is
+  IT or government only (6.1 to 6.3).
 
 ### 5.5 Identity and versioning
 
@@ -387,6 +392,12 @@ A research pass on 2026-10-20 read dataset cards and licence pages and downloade
 used a summarizing fetch tool, so quotes are near-verbatim. "Licence" below is what the page
 declares, not a legal opinion, and every row is *(reported)*.
 
+> **Updated 2026-10-20 (branch `docs/eval-dataset-research`):** a second, deeper pass is in 6.1 to 6.3,
+> with each row marked *(reported)* or **raw-read**, and 6.4 is a matrix proposal that **replaces the
+> "Recommended standard set" paragraph below, including its Job Zone to level mapping** (Job Zones are
+> now four and do not separate seniority inside a profession; see 6.3). The first-pass table and
+> paragraphs below are kept as the record of what the first pass found.
+
 **Result: no public dataset found is both redistributable and broad across professions and
 levels, with résumés and JDs.** Every large résumé set is scraped, real and not clearly
 anonymized, or of unclear origin.
@@ -441,6 +452,193 @@ an LLM or a score.
 status of `cnamuangtoun/resume-job-description-fit`; ESCO's licence text; OpenResume's size and
 licence; the Djinni CV-to-JD join key; whether LiveCareer-derived rows are real people; O\*NET's
 occupation count and file layout.
+
+### 6.1 Second pass, résumé sets (2026-10-20, in progress)
+
+Added on branch `docs/eval-dataset-research` after the owner found the first pass too shallow and the
+current golden set too narrow (three personas, all tech, one level each: `evals/fixtures/synthetic/`).
+This subsection is a **working record of one subagent's report**, written the turn it arrived (C-8).
+The agent says its fetch tool summarized pages, so every row is *(reported)* unless it says
+**raw-read**. A row moves to verified only when the orchestrator reads the primary page raw. The
+job-description and taxonomy passes are still running; section 6's table and the matrix proposal are
+rewritten from all three once they land.
+
+| Source | Declared licence | Provenance | Covers | Committable (desk view) | Status |
+|---|---|---|---|---|---|
+| `ahmedheakl/resume-atlas` | `mit` (front matter, **raw-read**) | images from Google, Bing and LiveCareer, OCR'd; warns of names, phones, emails | 13,389 rows, 43 categories; no levels, no JDs | no | provenance reported |
+| `opensporks/resumes` (Kaggle mirror) | CC0 (uploader's tag) | scraped from livecareer.com; PII section empty | 2,484 rows, 24 categories; no levels, no JDs | fetch-only | Kaggle page unreadable; reported |
+| `datasetmaster/resumes` | `mit` | real "anonymized" CVs mixed with Faker rows, not flagged per row | 4,817 rows; technical roles only | no | viewer crashed; reported |
+| `sukhrobnurali/resume-parsing-vision` | `cc-by-4.0` | fully synthetic, code authors fields, a model writes prose | 1,000 résumés, 32 software-industry roles (top 12 listed on the card include System Administrator, Support Specialist, Networking, Data Scientist, Mobile Developer, Scrum Master, Security Specialist, DB Administrator, Architect, Product Owner, ML Engineer), 0 to 25 years, English prose; no JDs | yes, IT only | **raw-read 2026-10-20** (README via `/raw/main/README.md`: licence, "no real personal data", `example.com`, `555-01xx`, structured-first generation, frozen splits). `DATASHEET.md` not read |
+| `netsol/resume-score-details` | `cc`, no version | GPT-4o JDs over résumés of undisclosed origin | 1,031 samples | no | reported |
+| `cnamuangtoun/resume-job-description-fit` | none stated, no README | not found | 1K to 10K pairs | no | reported |
+| `anatiagent/resume-posting-pairs` | `other`, each source its own terms | real résumés from Indeed and Reddit; LLM-judge labels | 17,187 pairs, IT | no | reported |
+| Djinni (`lang-uk`) CVs | `mit` (card and paper abstract) | real, "anonymized", method not found | 210,250 CVs, IT, years 0 to 11 | fetch-only | reported |
+| **PopResume** (`sumin-yu/PopResume`) *(new)* | `cc-by-4.0` | synthetic from aggregate population statistics (ACS PUMS, PSID, SSA names); "No real individual's data is included" | 60,884 résumés, **5 occupations**: accountants, construction laborers, teachers, registered nurses, software developers; seniority unconfirmed | fetch-only until the repo gate is read | **partly raw-read 2026-10-20:** HF API metadata gives `license: cc-by-4.0`, `gated: auto`, file names for five occupations; the paper (arXiv 2603.22714, abstract raw-read) says "population-representative", 60.8K résumés, five occupations, built for fairness auditing. The README body returns HTTP 401, so "No real individual's data is included" is **not verified**. It is a fairness benchmark with demographic attributes, not a level-labelled set |
+| CareerCorpus (Mendeley) *(new)* | CC-BY-4.0 | derived from the LiveCareer scrape and LinkedIn profiles | 302 résumés, 6 categories | no | reported |
+| ResumeBench (EMNLP 2025) *(new)* | not found | synthetic | per a search snippet: 2,500 résumés, 30 career fields, 5 languages | unknown | page 404; **no release or licence found** |
+| Seniority paper, arXiv 2509.09229 *(new)* | paper is CC BY 4.0 (the data's is not found) | real plus synthetic "hard examples" | seniority-labelled résumés; size not found | no, until the licence and split are known | the only seniority-labelled résumé set found; short link not followed |
+| arXiv 2508.21179, SynthResume 2510.09722, TalentCLEF 2026 | n/a | n/a | no data release found, or a sample of a few kB | no | reported |
+
+**What the agent concluded (reported):** no résumé source is both committable and broad across
+professions and levels. `sukhrobnurali/resume-parsing-vision` is the only one that clears licence and
+provenance today, and it is tech only. PopResume is the only one that crosses sectors and may qualify.
+The gap is non-tech professions with seniority labels and a clean licence; closing it means generating
+those cells, using these sets as schema and style references.
+
+**Not yet done:** PopResume's gate terms and a sample row (needs an authenticated read, which the
+orchestrator has not done), the `resume-parsing-vision` `DATASHEET.md`, ResumeBench's paper and the
+seniority paper's dataset link.
+
+**What the raw reads change (2026-10-20):** `resume-parsing-vision` is broader inside IT than "software
+roles" suggests (administration, networking, security, support, data, mobile, scrum, product owner), so
+for the owner's IT sub-roles it is a usable schema and style reference and a committable source of
+tech-side résumés. It has no non-IT professions, no level names (years only) and no JDs.
+
+### 6.2 Second pass, job-description sources (2026-10-20, in progress)
+
+A working record of the second subagent's report, written the turn it arrived (C-8). The agent used the
+same summarizing fetch tool, so "verified" in its report means the tool returned the quoted fragment, not
+that raw text was seen. Every row is *(reported)* unless marked **raw-read**. Why this matters: job
+descriptions are the half that might be real **and** committable, which résumés are not (6.1).
+
+| Source | Declared terms (as returned) | Provenance | Covers | Committable (desk view) | Status |
+|---|---|---|---|---|---|
+| **USAJOBS** API and Historic JOA | "OPM provides Public Data under an open license"; "Prior OPM approval is not required"; "may be copied, stored, reformatted, adapted, analyzed, published, redistributed" (sentence cut off); "does not include content separately identified in accompanying metadata or notice" | government-authored announcements; contact names and emails may need scrubbing | search API returns duties, summary, qualifications, requirements, grade range, series; **GS grade and a supervisory flag are the level signal**; live search is a 0 to 60 day window; Historic JOA is metadata only | yes for text obtained through the API, desk view, with the carve-out and contact scrubbing below | **page text read in a browser 2026-10-20** (`developer.usajobs.gov/guides/terms-of-service`, via the Chrome extension, after `curl` got HTTP 403 and a `WebFetch` returned only a summary). Section 2: "Public Data" is data OPM makes available "through a USAJOBS API, including the Search, Historic JOA, Announcement Text, and public code-list endpoints"; it "may be copied, stored, reformatted, adapted, analyzed, published, redistributed, and used for lawful commercial or noncommercial purposes. Prior OPM approval is not required." **Carve-out:** Public Data "does not include content separately identified in accompanying metadata or notice as subject to a specific legal or third-party intellectual-property restriction". **Limits:** a user may not "falsely present modified information as official or unaltered government information", may not imply OPM endorsement or use agency seals, and may not "circumvent authentication requirements, rate limits, or other technical safeguards" (section 4). **Section 3:** announcements "may include names and business contact information for agency points of contact", so committed text needs those scrubbed. Attribution is "encouraged", not required. The page shows **no effective or last-updated date**, so the news item saying the terms were revised days ago is neither confirmed nor refuted; the text read is what the page says on 2026-10-20. Using the API needs credentials, which are a person's registration |
+| **JobSet** (`Crisp-Unimib/JobSet`) | CC BY 4.0 | LLM-generated ads shaped by real EU ads and ESCO; the real ads are not in the set | 15,469 English ads, about 215 words, 396 ESCO occupations (non-tech included), no level field | yes, desk view | **raw-read 2026-10-20** (README via `/raw/main/README.md`): `license: cc-by-4.0`, "synthetic", "396 ESCO IV digit-level occupations ... 15,469 unique job postings", about 39 per occupation, English; the card warns against use in automated hiring decisions. The generating model is not named in the part read, so its terms are unchecked |
+| **NYC Jobs Postings** (Socrata `kpav-sd4t`) | no licence field in metadata; NYC Admin Code 23-502(d): public data sets available "without any ... license requirement or restrictions" on use; the city's general terms say "All rights are reserved" | municipal government | `level`, `career_level`, `civil_service_title`, `job_description`; municipal roles (IT, health, engineering, legal, trades, admin); finance and sales thin | probably, desk view | **metadata raw-read 2026-10-20** (`/api/views/kpav-sd4t.json`): `licenseId` and `license` are null, attribution "Department of Citywide Administrative Services (DCAS)", weekly updates, current postings only. `career_level` counts: Experienced (non-manager) 2,013, Entry-Level 270, Manager 214, Student 61, Executive 36. `job_category` top values: Engineering/Architecture/Planning 352, Legal 213, Public Safety 173, Health 160, Administration/HR 140, Technology/Data/Innovation 128, Finance/Accounting/Procurement 120, so finance is not thin. No licence statement was found on the dataset; the statute and the "All rights are reserved" tension are unresolved |
+| Djinni English JDs (`lang-uk`) | `mit` (card and paper abstract) | posts from the Djinni IT board, 2020 to 2023; employer consent not stated | 141,897 JDs, IT only, experience-years classes and Junior/Middle/Senior titles | tech only, with caution | consent unverified |
+| Canada Job Bank open data | Open Government Licence, Canada | federal | monthly CSVs; NOC codes, wages, requirements; **no description text** | licence yes, little use | text of the licence not read |
+| SkillSpan (`jjzha/skillspan`) | `cc-by-4.0` | "usually from job ads", method unstated | 11,543 annotated sentences, not whole postings | low utility | reported |
+| Web Data Commons JobPosting and Common Crawl | WDC: "for research purposes only"; Common Crawl: content "may be subject to separate terms" | scraped employer and board pages | 189.8M quads, 61,024 hosts, 7.57 GB | **no** | quotes returned by the tool |
+| LinkedIn Job Postings (Kaggle, `arshkon`) and its HF copy | Kaggle page unreadable; HF copy tagged `mit` by the uploader | scraped from LinkedIn | has `formatted_experience_level` | **no** | Kaggle blocked |
+| Remotive API | "Please do not submit Remotive jobs to third Party websites" | board | remote tech | no | reported |
+| Arbeitnow API | no terms found | ATS pages | European | fetch-only, terms unknown | reported |
+| UK Civil Service Jobs, EURES, Australia, JobBERT, other Kaggle sets | not found or page blocked | n/a | n/a | treat as no until read | not read |
+| O\*NET database | "licensed under a Creative Commons Attribution 4.0 International License"; attribution to O\*NET and USDOL/ETA | US Department of Labor | occupation descriptions and tasks, **not postings**; the agent did not read an occupation count or Job Zones | yes, with attribution | reported (6.3 re-reads it) |
+
+**What the agent concluded (reported):** the union of USAJOBS, JobSet and NYC comes closest to broad and
+level-labelled. Real private-sector postings for healthcare, trades, sales and finance under an open
+licence were **not found**.
+
+### 6.3 Second pass, taxonomies and level frameworks (2026-10-20, in progress)
+
+A working record of the third subagent's report, written the turn it arrived (C-8). Same caveat: the
+fetch tool summarizes; every row is *(reported)* unless marked **raw-read**. This is the source for a
+profession by level matrix's structured facts, not for postings or résumés.
+
+| Source | Declared terms (as returned) | Content | Level information | Committable (desk view) | Status |
+|---|---|---|---|---|---|
+| **O\*NET 31.0** | page titled "O\*NET 31.0 Database Content License", CC BY 4.0; credit O\*NET and USDOL/ETA, link the licence, indicate changes; "O\*NET" is a trademark | August 2026 release per the what's-new page; **923 occupations with Job Zone ratings**, 1,016 rows in Occupation Data; Task Statements 18,838; Task Ratings 165,780; Software Skills 31,821; Work Activities 74,702; Excel, CSV, JSON, SQL, RDF. A file called "Technology Skills" is no longer listed (now "Software Skills") | **Job Zones are now four (1-2, 3, 4, 5)**, merged in the 30.2 release (Feb 2026). A zone is a property of the occupation, not a career stage: Software Developers is one zone for every seniority. Zone text: 5 = "Many require more than five years of experience" | yes, with attribution | **raw-read 2026-10-20** (`onetcenter.org/license_db.html`, `database.html`, `onetonline.org/help/online/zones`): licence text "licensed under a Creative Commons Attribution 4.0 International License ... credit the O\*NET 31.0 Database and the U.S. Department of Labor ... link to the license ... indicate where any changes were made"; the stated credit line for verbatim use and for edits; trademark rule ("O\*NET" as an adjective). Job Zones file "923 rows updated in 31.0"; Job Zone Reference "4 rows"; the four zones read as "Job Zone 1-2 ... 3 ... 4 ... 5". The licence says "Except as noted below", and the exception text was not read. The page's release date and the old-to-new zone mapping were not read |
+| **UK DDaT Capability Framework** | footer: "All content is available under the Open Government Licence v3.0, except where otherwise stated"; "© Crown copyright" (returned as raw) | 8 families, 53 roles: Architecture, Chief digital and data, Data, IT operations, Product and delivery (product manager, delivery manager, business analyst, programme delivery manager), Quality assurance testing, Software development (DevOps engineer, frontend, software developer), User-centred design (8 roles). No cyber security family | **software developer has 9 levels** (Apprentice, Junior, Developer, Senior, Senior-management, Lead, Lead-management, Principal, Principal-management); skills rated Awareness, Working, Practitioner, Expert by level. **Only the software-developer ladder was read** | yes, with OGL attribution | **home page raw-read 2026-10-20** (`understand-digital-data-roles-skills.service.gov.uk`): footer "All content is available under the Open Government Licence v3.0, except where otherwise stated / © Crown copyright"; role list includes Test engineer, Quality assurance test analyst, Interaction designer, User researcher, Service designer, DevOps engineer; links "Download framework content" and "Civil Service job grades in this framework". The OGL text, the download file and every role's ladder except software developer (read via summary) were not read |
+| NIST NICE Framework Components v2.2.0 | NIST licence page: works by NIST employees "not subject to Copyright protection within the United States"; third-party parts may be | work roles with task, knowledge and skill statements; XLSX, JSON; new supply-chain role and DevSecOps competency in v2.2.0 | none in the components | likely yes, with credit | the v2.2.0 date conflicts (April 28, 2026 on the news page, 2025 on the versions page); work-role count not stated by NIST |
+| ESCO v1.2.x | FAQ: "can be downloaded, used, reproduced and reused for any purpose"; services must carry an ESCO statement; modified versions "clearly indicated" | about 3,039 occupations and 13,939 skills (snippet) | none | unclear, leaning yes | the licence page 404'd; the acknowledgement page not read |
+| `jorgef/engineeringladders` | Apache-2.0 (licence file read) | Developer, Tech Lead, TPM and Engineering Manager ladders; levels D1 to D3 and 4 to 7 | yes, tech | yes, with notice | via summary |
+| `sdras/career-ladders`, Enova, GitLab handbook | MIT per page / snippet / not found | ladder content not seen | levels exist | unclear | not verified beyond the label |
+| UK SOC 2020 | OGL v3.0 (page footer) | 412 unit groups (snippet) | skill level 1 to 4 not described on the page read | yes, with attribution | dataset files not checked |
+| Canada NOC 2021 | Statistics Canada Open Licence | 516 unit groups (snippet); TEER categories | TEER 0 to 5 | likely yes | licence terms not read |
+| **SFIA 9** | "you need a licence to use SFIA"; "All use of SFIA is under licence" | seven levels of responsibility | the best IT level scale found | **no** | licensed |
+| Lightcast Open Skills | "excluding commercial or for-profit purposes" | skills only | none | **no** | updated 2026-10-01 |
+| ISCO-08 | page 403; copyright page 404 | n/a | skill levels 1 to 4 are from memory | unclear | not verified |
+
+**What the agent concluded (reported):** O\*NET for content across all fields, UK DDaT for tech title
+ladders, with NICE adding security detail. **Gaps it states:** O\*NET has no seniority inside a profession
+and no Product Manager occupation (IT project managers 15-1299.09 and Project Management Specialists
+13-1082.00 exist; no SRE/DevOps code; UX is thin at 15-1255.00); nothing verified gives seniority ladders for
+non-tech fields, so the level axis there must be constructed.
+
+**Consequence for 6's earlier line "Job Zone (which maps to level)":** that mapping is weaker than written.
+Zones are four, they describe an occupation's preparation, and they do not separate a junior from a staff
+developer. Levels need a second source (DDaT ladders for tech; a stated rule elsewhere).
+
+### 6.4 Proposal: the golden matrix (for the owner to choose; nothing here is decided)
+
+**Why the current set is too thin.** `evals/fixtures/synthetic/` holds three personas: `data-scientist-junior`,
+`pm-senior`, `sre-mid-level`. All three are tech, one level each. The owner's requirement (2026-10-20): the
+v1 set becomes the ground truth for later releases, so it must vary across IT and development, security,
+administration, project management, product management, design and UX, and across seniority, **and** (owner's
+answer the same day) across sectors as section 6 first proposed.
+
+**What the research settles.**
+
+| Question | Answer from 6.1 to 6.3 |
+|---|---|
+| Can any existing résumé set be committed as ground truth? | **No** outside IT. `sukhrobnurali/resume-parsing-vision` (CC-BY-4.0, synthetic, 32 IT roles incl. sysadmin, networking, security, support, data, mobile, scrum, product owner) is raw-read and committable but is IT only, has no level names and no JDs. PopResume has five sectors but is a fairness benchmark and its README is behind a gate |
+| Can real JDs be committed? | **Possibly.** USAJOBS (open licence; **terms read in a browser 2026-10-20**, see 6.2) and NYC Jobs (no licence field; statute vs "All rights are reserved" unresolved) carry level labels. Both are government postings, so their language skews public-sector. JobSet (CC BY 4.0, raw-read) is synthetic and has no level field |
+| What licensed source gives each profession's facts? | O\*NET 31.0 (CC BY 4.0, raw-read): tasks, software skills, work activities, titles, for 923 occupations across all sectors. No Product Manager occupation, no SRE/DevOps code, thin UX |
+| What gives levels? | **Tech:** UK DDaT (OGL v3.0, footer raw-read): nine levels for software developer (that ladder read via summary); other roles' ladders unread. **Non-tech:** nothing verified; levels would be an authored rule. O\*NET Job Zones are four and per occupation, so they do not give levels |
+| What is not usable? | SFIA (licensed), Lightcast Open Skills (non-commercial), Web Data Commons, Common Crawl, the scraped LinkedIn and LiveCareer sets |
+
+**Proposed design.**
+
+1. **Golden set: authored, committed, frozen.** Every committed résumé and JD is generated from a
+   structured profile authored by code from O\*NET facts and a level ladder, with a model writing only the
+   prose (the pattern the CC-BY set above documents). No third-party posting text is committed, so no
+   licence question rests on a posting. The generating model id, prompt version and a sha256 per cell are
+   recorded; CI fails on drift. Ground truth is exact by construction, which keeps decision 5 (no human
+   labels) intact.
+2. **Exploration set: fetched, real, never committed.** Real JDs from USAJOBS and NYC Jobs (and JobSet for
+   breadth) fetched on demand, pinned by a manifest of source revision and sha256, used for "does this hold on
+   real text?". This is where the C-2 route question lives. A result there is a lead and never gates.
+3. **Why not commit real postings into the golden set:** the terms are unsettled for both sources, they skew
+   to government, and a posting can be edited or withdrawn upstream. The cost of authoring is one generation
+   run in step 3, which is already capped paid spend.
+
+**Profession axis: three options for the owner.**
+
+| Option | Professions | Tech coverage | Cost / risk |
+|---|---|---|---|
+| **A. Section 6 as first written** | about 12, tech as one "engineering" row | the existing three personas only | does not answer the owner's objection |
+| **B. 12 professions, tech split (recommended)** | **6 tech:** software engineering (QA as a sub-variant), SRE / DevOps / IT operations, security, data / ML, product management, design / UX. **1 cross-sector:** project / program management. **5 non-tech:** healthcare, skilled trades, finance, education, sales / operations | six tech families, each a profession | 12 by 4 levels fully crossed is exactly 48 cells, so no sampling is needed; creative and legal are left out of v1 |
+| **C. 16 professions** | 8 tech (B's six plus IT administration / support and QA as their own rows) + project management + 7 non-tech | eight tech families | 16 by 3 sampled levels is 48 cells, but each profession loses a level, which weakens within-profession level comparison |
+
+**Level axis (proposal).** Four levels: **entry** (about 0 to 2 years), **mid** (3 to 5), **senior** (6 to 10),
+**lead or manager** (10+, or a people-lead or staff scope). Tech cells take their rung names and skill
+expectations from DDaT where read; non-tech cells take them from a short rule written in the dataset's
+manifest (years, scope of responsibility), **marked as authored, not sourced**. A fifth rung (staff or
+principal) for tech only is possible and would add cells.
+
+**Industry axis.** A JD-side variant, not a crossed axis: each cell has one or two JDs for the same role in
+different industries (for example a security analyst at a hospital and at a bank). That keeps the set at 48
+cells and still varies the context.
+
+**The existing personas become cells:** `data-scientist-junior` (data / ML, entry), `sre-mid-level` (SRE,
+mid), `pm-senior` (product management, senior). They stay as they are in `evals/fixtures/synthetic/` until
+step 3 replaces them; no fixture is edited by this proposal.
+
+**Versioning.** `v1` is frozen when step 3 lands. A later version adds cells or a new level; it never
+edits a `v1` cell in place, and a result states which version it ran on. This is what makes the set a
+ground truth across releases.
+
+**Size tiers (proposal; sizes are a decision for step 3, set from measured cost).**
+
+| Tier | Cases | Draw | Use |
+|---|---|---|---|
+| Sentinel | about 21 | one per call kind | "is any call broken"; the arithmetic floor in 5.2 is $0.30 |
+| Day-to-day | about 12 | one per profession, level rotated, seeded | tuning one prompt or one area |
+| Full golden | 48 | all cells | release gates, model swaps, pre-registered comparisons |
+
+The full set's size follows from 5.6. The exact binomial rule needs at least 5 discordant cases, all in
+one direction, for a one-sided p below 0.05 (6 for a two-sided test). If a change flips 15 to 20 percent of
+cases, that needs about 30 to 40 cases, so below about 20 cases most comparisons return INCONCLUSIVE. A cost
+for 48 cases is a guess: `AGENTS.md` says the 3-fixture synthetic suite costs about $0.30 to $0.40, about
+$0.10 to $0.13 per fixture, which scales to roughly $5 to $6 per arm per pass. Not run; step 3's calibration
+run measures it.
+
+**What the research did not settle (each blocks something, none blocks the others):**
+
+- USAJOBS terms: **settled for the text read** (6.2, read in a browser 2026-10-20: open licence, no approval
+  needed, a carve-out for separately identified restricted content, a ban on circumventing rate limits). What
+  stays open: no effective date is shown, so a later revision is possible and the terms should be re-read when
+  step 3 starts; contact names in announcements need scrubbing; and the API needs a registered key, which only
+  the owner can create.
+- NYC Jobs: whether the city's open-data statute overrides "All rights are reserved" for this dataset.
+- PopResume's gate terms and a sample row; ResumeBench's release; the seniority paper (arXiv 2509.09229)
+  dataset link and licence. None is needed for the golden set as proposed.
+- DDaT ladders for every role except software developer; the OGL v3.0 text; the downloadable framework
+  file's own terms.
+- O\*NET's "Except as noted below" exception text, and the old-to-new Job Zone mapping.
+- ESCO's licence page (404) if ESCO occupations are ever used.
+- Non-tech seniority ladders: none found, so they are authored (above).
 
 ## 7. OpenTelemetry
 
@@ -545,6 +743,23 @@ Where the answer is not the recommendation the question carried, it says so.
 8. **Publication:** the doc is left out of `PUBLISHED` in `scripts/doc_registry.py`, so it is not
    published to the docs site. Register it when you want the scheme public, or keep it repo-only.
    **Answer: repo-only for now.** Revisit after steps 1 to 3 land.
+
+### Raised after the answers above (2026-10-20, unanswered)
+
+The owner asked that the v1 ground truth be broadened before release and that the open-source research be
+deeper first. 6.1 to 6.4 are that research. The questions it leaves, for the owner:
+
+9. **Profession axis:** option A, B or C in 6.4. B (recommended) splits tech into six families, adds
+   project management and keeps five non-tech sectors, giving 12 professions by 4 levels, 48 cells.
+10. **Golden set composition:** all-authored from O\*NET and a level ladder (recommended), or some committed
+    real postings. If real, USAJOBS's terms now permit it (read in a browser 2026-10-20: open
+    licence, a carve-out for separately identified restricted content, contact names to scrub, rate limits
+    to respect), and NYC Jobs still needs a ruling on its statute against "All rights are reserved". Real
+    government postings skew public-sector either way.
+11. **Levels outside tech:** no open ladder was found, so the rule is authored in the manifest. Accept,
+    or hold the non-tech cells until a source is found.
+12. **Whether the exploration fetch targets USAJOBS and NYC Jobs** (the C-2 route question in 5.4
+    applies to either).
 
 ## 9. Build order
 

@@ -3456,3 +3456,21 @@ about scope, not a measurement. A grep of the wiki pages for the Epic E / `relea
 
 **Not verified:** the rest of `engineering-workstreams`; the rest of `eval-harness`. When the scheme is built, `eval-harness` needs its
 own pass (stated in the previous entry).
+
+## 2026-10-20 — scoped close-out check, `docs/eval-dataset-research` (verified no-edit)
+
+**Trigger:** branch close-out wiki-relevance check, scoped to this branch's own diff (`git diff main...HEAD`). **No subagent spend on the
+wiki; no page edited; `.last_ingest_sha` not advanced.** (The branch's own research used three research subagents on the open web; that is
+the branch's content, not a wiki pass.)
+
+**Wiki-relevant paths in this diff (per `scripts/wiki_relevance.py`, `is_wiki_relevant()` run on every changed path): one,**
+`docs/dev/eval-redesign-design.md` (adds sections 6.1 to 6.4, a rewritten 5.4 bullet and four unanswered questions in section 8; it
+describes no built behavior). Every other changed path (item 183, `CHANGELOG.md`, this log, the provenance ledger file) classifies as not
+wiki-relevant.
+
+**Pages: `eval-harness` grepped, verified no-edit.** A grep of `docs/wiki/pages`, `index.md` and `overview.md` for the golden set, O\*NET,
+USAJOBS, the public datasets named in the doc, "standard dataset" and the three fixture names found only `eval-harness` lines 43, 47 and 224.
+Line 43 says the three synthetic fixtures are `data-scientist-junior`, `pm-senior` and `sre-mid-level`; that stays true because this branch
+changes no fixture (6.4 says so). No page cites the design doc. This is a read for contradiction, not a grounding audit.
+
+**Not verified:** the rest of `eval-harness`; when the dataset is built (step 3, item 183) the page needs its own pass.
