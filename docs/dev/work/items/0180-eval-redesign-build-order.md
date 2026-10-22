@@ -19,7 +19,7 @@ The scope, the order and the reason for each step live in that doc; this epic do
 Step 1 (item 181) is open; steps 2 to 10 are blocked, each on the one before. Item 137 (the
 Haiku 5.5 A/B, step 11) is a child of this epic and depends on step 10.
 
-### 2026-10-22 -- step 1 closed, step 2 built on feat/eval-catalog-skeleton
+### 2026-10-21 -- step 1 closed, step 2 built on feat/eval-catalog-skeleton
 
 Step 1 (item 181) merged as PR #198 and is closed. Step 2 (item 182) is built on `feat/eval-catalog-skeleton` and waits on its own PR; item 183 (step 3) stays blocked until it lands. Three findings from building step 2 that belong to the build order, not to one item:
 

@@ -3505,7 +3505,7 @@ changes no fixture (6.4 says so). No page cites the design doc. This is a read f
 
 **Not verified:** pages were audited at the changed hunks only, not read whole; `SECURITY.md`, `evals/README.md` and `enforcement.md` were edited by hand (they are not wiki pages) and not audited; the `llm-call-catalog` page's older sections were not re-read against the new row-write path beyond the hunks.
 
-## 2026-10-22 — scoped `/wiki-self-update`, `feat/eval-catalog-skeleton` (item 182)
+## 2026-10-21 — scoped `/wiki-self-update`, `feat/eval-catalog-skeleton` (item 182)
 
 **Trigger:** branch close-out wiki obligation, scoped to this branch's own committed diff (`dcbe24d..HEAD`); mode **diff, scoped**. **`.last_ingest_sha` not advanced** (a scoped pass never advances the global checkpoint). **Not committed** (the skill leaves the commit to the human). Spend: 3 pages, 3 scribe calls and 3 auditor calls, no re-audit. The owner approved the plan that named this pass; no separate spend confirmation was asked.
 
