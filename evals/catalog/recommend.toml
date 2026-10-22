@@ -1,0 +1,8 @@
+schema = 1
+kind = "eval"
+call = "recommend"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.RECOMMEND_SYSTEM_PROMPT"
+groups = ["compose", "flows"]
+pending_on = 185  # step 5: call evals for the 11 compose kinds; reached today only by --mode assemble, scored through the document

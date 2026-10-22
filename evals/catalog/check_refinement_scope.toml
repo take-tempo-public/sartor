@@ -1,0 +1,8 @@
+schema = 1
+kind = "eval"
+call = "check_refinement_scope"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.SCOPE_CHECK_SYSTEM_PROMPT"
+groups = ["compose"]
+pending_on = 185  # step 5: call evals for the 11 compose kinds

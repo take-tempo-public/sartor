@@ -1,0 +1,15 @@
+schema = 1
+kind = "eval"
+call = "clarify"
+status = "covered"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.CLARIFY_SYSTEM_PROMPT"
+groups = ["analyze-clarify", "flows"]
+# Covered today by the clarification_quality rubric on every synthetic fixture. Step 4 (item 184) adds
+# the deterministic call eval; `checks` stays empty until it defines the vocabulary.
+cases = ["synthetic/data-scientist-junior", "synthetic/pm-senior", "synthetic/sre-mid-level"]
+rubrics = ["clarification_quality"]
+checks = []
+lean = "false_positive"
+lean_why = "A question that fabricates a gap or asks what the resume already answers is scored as a deficiency (clarification_quality rule 7 and its intro); a missed gap costs only theme coverage (rule 8). Authored from the rubric, not measured."
+n = 1

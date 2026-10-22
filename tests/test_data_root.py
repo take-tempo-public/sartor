@@ -275,6 +275,10 @@ _CODE_ANCHORS: dict[str, str] = {
     "evals/annotation.py": "sys.path bootstrap so `python -m evals.annotation` resolves imports",
     "evals/bootstrap.py": "sys.path bootstrap so `python -m evals.bootstrap` resolves imports",
     "evals/corpus_drafting_probe.py": "sys.path bootstrap, and the shipped synthetic fixtures",
+    "evals/eval_catalog.py": (
+        "the shipped evals/catalog entries and costs.json, which are committed code-side data; "
+        "the call log `measure` reads goes through sartor_home.data_path"
+    ),
 }
 
 _RUNTIME_PACKAGES = (

@@ -1,0 +1,10 @@
+schema = 1
+kind = "eval"
+call = "analyze_synthesis"
+status = "pending"
+model_pin = "SONNET_MODEL"
+# No dedicated prompt: the call omits system_prompt, so it runs under the default SYSTEM_PROMPT
+# (its cached prefix is byte-identical to generate's on purpose, see analyzer.analyze).
+prompt = "analyzer.SYSTEM_PROMPT"
+groups = ["analyze-clarify", "flows"]
+pending_on = 184  # step 4: call evals for the ingest and analyze kinds; scored through the finished document until then

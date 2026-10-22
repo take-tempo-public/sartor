@@ -1,0 +1,10 @@
+schema = 1
+kind = "eval"
+call = "avatar_answer"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+# Outside the prompt-override registry on purpose (its own AVATAR_PROMPT_VERSION); owner decision 6
+# brings it into the catalog only.
+prompt = "analyzer.AVATAR_SYSTEM_PROMPT"
+groups = ["assistant"]
+pending_on = 186  # step 6: avatar_answer, critique_proposal, promote_clarification_to_bullet

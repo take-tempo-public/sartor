@@ -1,0 +1,9 @@
+schema = 1
+kind = "eval"
+call = "extract_experiences"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+# Defined in onboarding/extract_experiences.py and outside the prompt-override registry.
+prompt = "onboarding.extract_experiences.EXTRACT_EXPERIENCES_SYSTEM_PROMPT"
+groups = ["ingest"]
+pending_on = 184  # step 4: call evals for the ingest and analyze kinds; reached by nothing today

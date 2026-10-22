@@ -1,0 +1,176 @@
+{
+  "kinds": {
+    "analyze_extraction": {
+      "cache_read": 123,
+      "cache_write": 1218,
+      "input": 1887,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 1230,
+      "rows": 164
+    },
+    "analyze_synthesis": {
+      "cache_read": 1330,
+      "cache_write": 4351,
+      "input": 2031,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 3145,
+      "rows": 82
+    },
+    "avatar_answer": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 2857,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 164,
+      "rows": 73
+    },
+    "check_refinement_scope": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 195,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 13,
+      "rows": 1
+    },
+    "clarify": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 3661,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 710,
+      "rows": 125
+    },
+    "critique_proposal": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 1544,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 387,
+      "rows": 2
+    },
+    "draft_experience_summary": {
+      "cache_read": 808,
+      "cache_write": 808,
+      "input": 1166,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 386,
+      "rows": 2
+    },
+    "draft_gap_fill": {
+      "cache_read": 0,
+      "cache_write": 1362,
+      "input": 10305,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 951,
+      "rows": 24
+    },
+    "draft_summary": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 4613,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 200,
+      "rows": 50
+    },
+    "draft_surgical_refinement": {
+      "cache_read": 0,
+      "cache_write": 1184,
+      "input": 4211,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 174,
+      "rows": 1
+    },
+    "extract_experiences": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 578,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 540,
+      "rows": 87
+    },
+    "generate": {
+      "cache_read": 2382,
+      "cache_write": 878,
+      "input": 7892,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 2340,
+      "rows": 25
+    },
+    "generate_cover_letter": {
+      "cache_read": 1478,
+      "cache_write": 50,
+      "input": 3365,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 753,
+      "rows": 28
+    },
+    "iterate_clarify": {
+      "cache_read": 0,
+      "cache_write": 1317,
+      "input": 5468,
+      "measured_on": "2026-10-21",
+      "model": "claude-sonnet-5",
+      "output": 765,
+      "rows": 4
+    },
+    "recommend": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 4245,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 382,
+      "rows": 97
+    },
+    "recommend_experience_summary": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 2360,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 192,
+      "rows": 1
+    },
+    "recommend_skill": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 1969,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 141,
+      "rows": 10
+    },
+    "recommend_summary": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 1370,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 180,
+      "rows": 42
+    },
+    "suggest_skill": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 12441,
+      "measured_on": "2026-10-21",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 3264,
+      "rows": 2
+    }
+  },
+  "schema": 1
+}
