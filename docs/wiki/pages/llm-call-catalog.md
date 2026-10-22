@@ -126,6 +126,8 @@ Also, **`pinned_model`** (model-override calls only) — when a call's `effectiv
 
 Eval judges ([`evals/runner.py:_judge_create`](../../../evals/runner.py)) now also write telemetry rows via [`analyzer.py:log_judge_call`](../../../analyzer.py) under call kinds `judge_grade` and `judge_distinctiveness`, with the same row shape and provenance fields `[synthesis]`.
 
+Every LLM call kind has an eval-catalog entry in `evals/catalog/<call_kind>.toml`, read by [`evals/eval_catalog.py:load`](../../../evals/eval_catalog.py) (one entry), [`evals/eval_catalog.py:load_all`](../../../evals/eval_catalog.py) (all of them) and [`evals/eval_catalog.py:names`](../../../evals/eval_catalog.py) (the file names, parsing none). An entry ([`evals/eval_catalog.py:CatalogEntry`](../../../evals/eval_catalog.py)) records the call's `model_pin`, its `prompt`, its `groups` and an eval `status` of `covered`, `pending` or `exempt`. Two tests in `python -m scripts.gate` fail when the catalog and the source disagree: [`tests/test_eval_catalog.py:test_catalog_has_an_entry_for_every_call_kind_and_no_other`](../../../tests/test_eval_catalog.py) (a call kind with no entry, or an entry with no call site) and [`tests/test_eval_catalog.py:test_each_call_site_agrees_with_its_entry`](../../../tests/test_eval_catalog.py) (the model pin or system prompt a call site uses differs from its entry).
+
 ## The two-pass analyze (the cache-defining detail)
 
 `analyze()` is **not one Sonnet call** — it is Haiku extraction → Sonnet synthesis
@@ -184,3 +186,4 @@ canonical in [`AGENTS.md`](../../../AGENTS.md) — referenced here, not restated
 - [[generation-and-grounding]] — what the `generate` call must not invent.
 - [[route-surface]] — the Flask routes that invoke each call kind.
 - [[keyless-client-refusal]] — what happens to any of these calls when no API key is configured.
+- [[eval-harness]] — the eval catalog (one entry per call kind) and the tests that fail when an entry and a call site disagree on model pin or system prompt.
