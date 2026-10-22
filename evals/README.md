@@ -172,6 +172,7 @@ Examples:
 python evals/runner.py [--suite synthetic|real|all] [--subset smoke|full]
                        [--fixture NAME] [--out-dir PATH]
                        [--prompt-overrides PATH] [--seed PATH]
+                       [--list] [--estimate] [--max-spend USD]
 ```
 
 The same orchestration is importable as `evals.runner.run_suite(...)` (returning an
@@ -214,6 +215,9 @@ Key implementation details:
 | `--prompt-overrides PATH` | Inject a candidate system prompt for this run only (A/B a prompt without editing `analyzer.py`). See [Candidate prompt overrides](#candidate-prompt-overrides---prompt-overrides) below. |
 | `--seed PATH` | Build each fixture's context from a corpus `seed.json` via `build_context_set_from_db` (in-memory SQLite import) instead of the fixture's resume file. The fixture's `jd.txt` + `expected.json` still drive grading. Omit for the byte-identical file-based path. See [Corpus-backed runs](#corpus-backed-runs---seed) below. |
 | `--mode generate\|assemble` | `generate` (default) is the historical `analyzer.generate()` LLM path, byte-identical to before. `assemble` scores the deterministically-ASSEMBLED résumé body instead — REQUIRES `--seed`. See [Assembled runs](#assembled-runs---mode-assemble-f-11) below. |
+| `--list` | Print the eval catalog, one line per LLM call kind, and exit `0`. Reads no key and builds no client. See [The eval catalog](#the-eval-catalog---list---estimate-and---max-spend). |
+| `--estimate` | Print what the selected run is set to spend, per call kind, and exit `0` before any key or client exists. A floor. |
+| `--max-spend USD` | A spend cap. Refuses a run whose estimate is over it (exit `4`, nothing spent) and stops a run once its spend reaches it (exit `4`). |
 
 ### Exit codes
 
@@ -222,8 +226,27 @@ Key implementation details:
 | `0` | Every rubric scored ≥ `PASS_THRESHOLD` (4.0) **and** nothing regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline |
 | `1` | Configuration error (missing fixture, missing API key, etc.) |
 | `2` | At least one rubric scored below `PASS_THRESHOLD` (4.0) **or** regressed past `REGRESSION_DELTA` (0.5) vs the committed baseline (`baseline_v1.json`) |
+| `4` | `--max-spend` refused the run (the estimate is over the cap) or stopped it (the spend reached the cap). Only a run given `--max-spend` can return it. |
 
-CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors. Both arms of the exit-`2` contract are pinned by an LLM-free meta-test — see [Do-not-regress: the gate is machine-enforced](#do-not-regress-the-gate-is-machine-enforced).
+CI uses exit `2` to fail the build, distinguishing rubric failures from setup errors. Both arms of the exit-`2` contract are pinned by an LLM-free meta-test — see [Do-not-regress: the gate is machine-enforced](#do-not-regress-the-gate-is-machine-enforced). An unusable `--max-spend` value (not a number, negative, infinite) is argparse's own usage error, which also exits `2`, as an unknown `--suite` does.
+
+### The eval catalog, `--list`, `--estimate` and `--max-spend`
+
+`evals/catalog/<call>.toml` has one entry for each LLM call kind (23: the 21 product kinds and the two judge kinds). An entry names the model pin and the system prompt the call uses, the groups it belongs to, and whether an eval of it is `covered`, `pending` on a named work item, or `exempt` with an owner-named reason (none is exempt today). [`tests/test_eval_catalog.py`](../tests/test_eval_catalog.py) is the gate, and it fails closed:
+
+- every `call_kind="..."` literal in the production source has an entry, and every entry has a call site;
+- the pin and the prompt each call site really uses, read from the source with `_call_llm`'s defaults applied, equal its entry's (so a call that quietly moves to another model or prompt fails here);
+- a call shape the reader cannot read **fails** instead of being skipped;
+- a `covered` entry's cases and rubrics exist, a `pending` entry's work item exists, and nothing stored is a float.
+
+The loader, [`eval_catalog.py`](eval_catalog.py), is lazy: `names()` lists file names and parses nothing, and `load()` parses the one entry it is asked for. `--estimate` therefore parses only the entries of the kinds the run will call.
+
+- `--list` prints the catalog with each kind's measured dollars per call at the current pins (`-` where nothing is measured yet).
+- `--estimate` turns the selection (`--suite`, `--subset`, `--fixture`, `--mode`, `--seed`, `--model-override`) into a plan of calls per kind and prices it from [`catalog/costs.json`](catalog/costs.json). **It is a floor.** Retries and prompt-cache misses are not included. A kind with no measured tokens yet (when this was written: both judge kinds, `promote_clarification_to_bullet` and `suggest_skill_from_corpus`) is named and left out of the total, not priced at zero. `recommend_summary` is listed as a call that may fire in `--mode assemble` and is not counted, because it makes no call below two summary variants. A fixture that will not load (the `synthetic/corpus` directory) is named and plans no calls. Under `--model-override` the plan is priced at the candidate model, with the token means measured on the pin, so treat that figure as approximate.
+- `--max-spend` checks the estimate before anything starts, then watches the run. The run's spend is read from the call log by trace id, judge calls included, and checked at phase boundaries (before each fixture, clarify, generate, the distinctiveness judge and each rubric). A run that has spent the cap starts no further phase, so it **can overshoot by up to one phase of paid calls**: the cap bounds when the next phase starts, it does not abort a call in flight. Because the judge kinds are unmeasured, the pre-flight cannot price them; the runtime check is what bounds that part. Records already written are kept, and the result is reported as cancelled with `stop_reason: "max_spend"`.
+- `python -m evals.eval_catalog measure` re-derives `costs.json` from the local call log (`--write` saves it): integer mean tokens per call kind, over the successful rows on that kind's current pin, with retry rows left out. It is a read-only aggregate of token counts. Re-run it after a pin moves; the gate fails if a measurement is for a model that is no longer the pin.
+
+The token means reflect one person's usage on one machine until the dataset step's calibration run re-measures them on the standard set.
 
 ### Regression alerting
 
@@ -938,7 +961,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 | `model_snapshots` | The Sonnet, Haiku and judge model IDs in effect for this run, read from `analyzer.SONNET_MODEL` / `HAIKU_MODEL` and `JUDGE_MODEL` (all `hardening.MODEL_PRICING` keys), so a cost figure can always be traced to the pricing that produced it. Under `--model-override` the Sonnet / Haiku entries name the candidate actually sent; the judge never changes. |
 | `model_overrides` | Present only on a candidate-model run: the `{pin name: candidate model id}` mapping given to `--model-override`. Absent on every ordinary record. With a `candidate:<hash>` `prompt_version` it is what `hardening.is_candidate_record` reads to keep the record out of the baseline views. |
 | `judge_request_id` | The API request id of the judge call that produced this score; join it to the `judge_grade` row's `api_request_id` in `logs/llm_calls.jsonl` for the judge's model, settings and tokens. `null` when the call failed. |
-| `trace_id`, `case_id`, `span_id` | (item 181) The run's trace id (32 hex, one per `run_suite` invocation), the fixture this record graded, and that fixture's case span (16 hex). Every call row the fixture's pipeline and judges wrote carries the same `trace_id` and `case_id`, with `parent_span_id` equal to this `span_id`, so a record's calls and spend are found by id, not by a time window. No schema bump: older records simply lack them. |
+| `trace_id`, `case_id`, `span_id` | (item 181) The run's trace id (32 hex, one per `run_suite` invocation), the case this record graded, and that case's span (16 hex). `case_id` is `<suite>/<name>` (item 182: `synthetic/pm-senior`, `anchor-v1/pm-senior`; the bare fixture name was one string for both), where the suite is `synthetic`, `real`, `anchor-v1` or `exploration`; the record's `fixture` field is still the bare name. Every call row the fixture's pipeline and judges wrote carries the same `trace_id` and `case_id`, with `parent_span_id` equal to this `span_id`, so a record's calls and spend are found by id, not by a time window. No schema bump: older records simply lack them. |
 | `judge_cost_usd` | (item 181) On the fixture's `eval_composite` record only: the spend of the fixture's `judge_*` calls, which `cost_usd` leaves out by design. Run totals (`trace_id`, `judge_cost_usd`, `total_cost_usd`) are on `EvalRunResult`. |
 | `baseline_comparison` | `null` for `assemble` mode or when no prior baseline exists; otherwise `{prev_score, delta, is_regression, is_improvement}` against `baseline_v1.json`. |
 | `phase_latencies_ms` | Per-phase wall-clock breakdown (`analyze`/`clarify`/`generate`/…) of `pipeline_latency_ms`. |
@@ -1028,6 +1051,8 @@ Per-run cost (Claude Sonnet 5 + Haiku 4.5 pricing):
 _* `full` hasn't been re-measured since the Sonnet 5 upgrade (2026-07-05); treat as
 approximate — the smoke figure above is a live post-upgrade measurement
 (2026-07-07 UX review, `docs/dev/reviews/2026-07-ux-review/`), 3 fixtures × ~$0.12 = ~$0.37._
+
+`python evals/runner.py <your flags> --estimate` prints the plan's cost for any selection before you spend it (see [The eval catalog](#the-eval-catalog---list---estimate-and---max-spend)); add `--max-spend USD` to cap it.
 
 Each new fixture adds 2 pipeline calls + N grading calls (where N = number of rubrics). The pipeline calls are the dominant cost (Sonnet input + output). Grading calls are cheap (Haiku, structured output, ~1024 max tokens).
 

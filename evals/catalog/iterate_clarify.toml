@@ -1,0 +1,16 @@
+schema = 1
+kind = "eval"
+call = "iterate_clarify"
+status = "covered"
+# No model= at the call site, so it runs on the default pin (analyzer._call_llm_streaming: model or SONNET_MODEL).
+model_pin = "SONNET_MODEL"
+prompt = "analyzer.CLARIFY_ITERATION_SYSTEM_PROMPT"
+groups = ["analyze-clarify", "flows"]
+# Covered today by the iteration_quality rubric, and only on fixtures whose expected.json has
+# `iteration_scenarios` (the sre persona). Step 4 (item 184) adds the deterministic call eval.
+cases = ["synthetic/sre-mid-level"]
+rubrics = ["iteration_quality"]
+checks = []
+lean = "false_positive"
+lean_why = "iteration_quality names re-asking a confirmed truth (redundant_question) the most common failure and scores fabricated_gap and targets_stale_draft as failures; a question the model fails to ask costs theme coverage only. Authored from the rubric, not measured."
+n = 1

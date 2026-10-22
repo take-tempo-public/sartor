@@ -1,0 +1,9 @@
+schema = 1
+kind = "eval"
+call = "judge_grade"
+status = "pending"
+model_pin = "JUDGE_MODEL"
+# The system text is a string at the call site (evals/runner.py), not a named constant.
+prompt = "inline:evals.runner"
+groups = ["flows"]
+pending_on = 189  # step 9: pinned judge, schema parse, judge-to-judge calibration

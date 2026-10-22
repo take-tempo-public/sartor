@@ -1,0 +1,8 @@
+schema = 1
+kind = "eval"
+call = "suggest_skill_from_corpus"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.SUGGEST_SKILLS_FROM_CORPUS_SYSTEM_PROMPT"
+groups = ["compose"]
+pending_on = 185  # step 5: call evals for the 11 compose kinds

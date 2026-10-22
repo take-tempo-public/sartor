@@ -1,0 +1,8 @@
+schema = 1
+kind = "eval"
+call = "analyze_extraction"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.EXTRACTION_SYSTEM_PROMPT"
+groups = ["analyze-clarify", "flows"]
+pending_on = 184  # step 4: call evals for the ingest and analyze kinds; scored through the finished document until then

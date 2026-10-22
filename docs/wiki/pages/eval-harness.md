@@ -5,7 +5,7 @@
 > static baseline + the frozen anchor, the corpus bootstrap engine, and prompt- and
 > model-override A/B tuning primitives. Eval-only: it ORCHESTRATES the product pipeline
 > but is never on the request hot path.
-> **Sources:** [`evals/runner.py`](../../../evals/runner.py), [`evals/bootstrap.py`](../../../evals/bootstrap.py), [`evals/rubrics/`](../../../evals/rubrics), [`evals/results/baseline_v1.json`](../../../evals/results/baseline_v1.json), [`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
+> **Sources:** [`evals/runner.py`](../../../evals/runner.py), [`evals/eval_catalog.py`](../../../evals/eval_catalog.py), [`evals/bootstrap.py`](../../../evals/bootstrap.py), [`evals/rubrics/`](../../../evals/rubrics), [`evals/results/baseline_v1.json`](../../../evals/results/baseline_v1.json), [`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -26,6 +26,9 @@ Since item 181, records additionally carry `trace_id` / `case_id` / `span_id` (W
 identifiers tying the run together, minted per invocation and per fixture by
 [`call_identity.py:new_trace_id`](../../../call_identity.py) /
 [`call_identity.py:new_span_id`](../../../call_identity.py)), with no `schema_version` bump;
+`case_id` is `<suite>/<name>` (e.g., `synthetic/pm-senior`; the suite half comes from
+[`evals/runner.py:_suite_of`](../../../evals/runner.py), set in
+[`evals/runner.py:run_suite`](../../../evals/runner.py)), while a record's `fixture` field stays the bare name;
 a record joins its telemetry rows in `logs/llm_calls.jsonl` on `trace_id` + `case_id` instead of on a
 time window ([`evals/runner.py:_trace_fields`](../../../evals/runner.py)). The record's `span_id` is the
 **case** span, so it equals the call rows' `parent_span_id`; a call row's own `span_id` is minted fresh for
@@ -40,15 +43,25 @@ orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `cla
 
 ## Suites, subsets, fixtures
 
-[`evals/runner.py:main`](../../../evals/runner.py) is a thin argparse wrapper over
-`run_suite`. Flags: `--suite {synthetic,real,all,anchor,exploration}`, `--subset
+[`evals/runner.py:main`](../../../evals/runner.py) is an argparse wrapper over
+`run_suite`; it answers `--list` and the `--estimate` / `--max-spend` pre-flight itself, before any
+client exists, and delegates the run to `run_suite`. Flags: `--suite {synthetic,real,all,anchor,exploration}`, `--subset
 {smoke,full}`, `--fixture <name>`, plus `--seed`, `--prompt-overrides`,
-`--grounding-signals`, `--out-dir`. `_select_fixtures` resolves directories:
+`--grounding-signals`, `--out-dir`, `--list` (catalog), `--estimate`, and
+`--max-spend USD`. `_select_fixtures` resolves directories:
 `synthetic` and `real` from `evals/fixtures/`, `anchor` from `anchors/anchor-v1/fixtures/`,
 `exploration` from `evals/exploration/` ([`evals/runner.py:_select_fixtures`](../../../evals/runner.py)).
 A fixture is a directory of `jd.txt` + `resume.{md,docx,pdf}` + `expected.json`; its SHA-256
 `hash` over those bytes is stamped on every record ([`evals/runner.py:_load_fixture`](../../../evals/runner.py)).
 The three synthetic fixtures are `data-scientist-junior`, `pm-senior`, `sre-mid-level`.
+
+## The eval catalog and spend capping
+
+[`evals/eval_catalog.py`](../../../evals/eval_catalog.py) catalogs every LLM call kind (one TOML file per call in `evals/catalog/`, lazily parsed by [`evals/eval_catalog.py:load`](../../../evals/eval_catalog.py) or all at once by [`evals/eval_catalog.py:load_all`](../../../evals/eval_catalog.py)) with its status (`covered` / `pending` / `exempt`), model pin, system prompt, and group membership. [`evals/catalog/costs.json`](../../../evals/catalog/costs.json) holds integer mean tokens per kind: [`evals/eval_catalog.py:aggregate`](../../../evals/eval_catalog.py) averages the successful call-log rows on each kind's pinned model (retry rows are left out) and `python -m evals.eval_catalog measure --write` ([`evals/eval_catalog.py:main`](../../../evals/eval_catalog.py)) saves the result.
+
+`--list` prints the catalog ([`evals/runner.py:format_catalog_list`](../../../evals/runner.py)). `--estimate` turns the selected run into a plan of calls per kind ([`evals/runner.py:_call_plan`](../../../evals/runner.py)) and prices it from `costs.json` ([`evals/runner.py:estimate_spend`](../../../evals/runner.py), printed by [`evals/runner.py:format_estimate`](../../../evals/runner.py)). The total is a floor (retries and cache misses are not included), and a kind with no measured tokens is named and left out of it.
+
+`--max-spend USD` has two parts. Before the run, it refuses to start when the estimate is over the cap, exiting with [`evals/runner.py:EXIT_OVER_BUDGET`](../../../evals/runner.py) (4). During the run, [`evals/runner.py:run_suite`](../../../evals/runner.py) stops at the next phase boundary once the spend has reached the cap, reading the call log by trace id with [`evals/runner.py:_SpendMeter`](../../../evals/runner.py), and reports `stop_reason` `max_spend` on the result ([`evals/runner.py:EvalRunResult`](../../../evals/runner.py)). The first part cannot price a kind with no measured tokens, so only the second bounds those, and because it checks at phase boundaries a run can overshoot the cap by up to one phase of paid calls.
 
 ## Naming the posting a run graded (F-14 `jd_label`)
 
@@ -136,7 +149,7 @@ The L0 `fabricated_specifics` check scores against the dynamic source union from
 [`hardening.py:assemble_source_union`](../../../hardening.py) (primary + supplementals +
 clarifications), kept separate from the `grounding_overlap` source set so its baseline isn't
 perturbed `[synthesis]`. Per-eval `cost_usd` is generation-only: rolled up from `logs/llm_calls.jsonl` by
-selecting the rows that carry the run's `trace_id` and the fixture's `case_id` (item 181; it was a time
+selecting the rows that carry the run's `trace_id` and the case's `case_id` (item 181; it was a time
 window over the fixture's username, which summed two overlapping runs on one fixture together), reading
 only the bytes written since the fixture started, and [`evals/runner.py:_trace_cost`](../../../evals/runner.py)
 splits out rows whose `call` field starts with `judge_`, so judge calls are excluded from `cost_usd`
@@ -191,8 +204,9 @@ Two distinct artifacts, easy to conflate:
   ([`evals/runner.py:_load_baseline_scores`](../../../evals/runner.py),
   [`hardening.py:is_candidate_record`](../../../hardening.py)) `[synthesis]`. `_detect_regression`
   flags any drop past `REGRESSION_DELTA` (default 0.5, sized for Haiku judge variance)
-  ([`evals/runner.py:_detect_regression`](../../../evals/runner.py)). A non-zero
-  `exit_code` (2) fires when any rubric fails OR a regression fires.
+  ([`evals/runner.py:_detect_regression`](../../../evals/runner.py)). Exit code 2 fires when any
+  rubric fails OR a regression fires; exit code 4 fires when `--max-spend` refused the run
+  or stopped it ([`evals/runner.py:EXIT_OVER_BUDGET`](../../../evals/runner.py)) `[synthesis]`.
 - **Anchor** — `evals/anchors/anchor-v1/` freezes the *fixtures* (jd/resume/expected) plus a
   `manifest.json` recording `prompt_version`, per-fixture `fixture_set_hash`, and the rubric
   list ([`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json)).
@@ -324,6 +338,7 @@ or console SSE routes) surfaces a real error instead of a phantom "0 pass / 0 fa
 
 ## Related
 
+- [[llm-call-catalog]] — the call kinds the eval catalog has an entry for.
 - [[code-module-map]] — where `evals/` sits in the module graph.
 - [[generation-and-grounding]] — the grounding contract the `grounding` rubric scores against.
 - [[prompt-version-discipline]] — why `PROMPT_VERSION` and `candidate:<hash>` matter for attribution.

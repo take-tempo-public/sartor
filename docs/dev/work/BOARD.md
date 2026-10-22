@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 92
+**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 93
 
 ## Open
 
@@ -146,7 +146,7 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 
 - **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Review pinned models and call settings, now including the Claude 5.5 candidate evaluation (absorbs item 173). [depends on: 190]
 - **181** -- Eval redesign step 1: record identity and the prompt-version gate (`agent`) -- Prompt content hashes + version gate, producer id, trace/span/case ids, parse outcome, judge cost in run totals.
-- **182** -- Eval redesign step 2: catalog skeleton and the all-kinds gate (`agent`) -- Catalog format, lazy loader, all-kinds gate, --list/--estimate/--max-spend; entries for the kinds already covered. [depends on: 181] [blocked on: step 1 (item 181) has not landed]
+- **182** -- Eval redesign step 2: catalog skeleton and the all-kinds gate (`agent`) -- Catalog format, lazy loader, all-kinds gate, --list/--estimate/--max-spend; entries for the kinds already covered. [depends on: 181]
 - **183** -- Eval redesign step 3: standard dataset, captured inputs, reachability check (`agent`) -- O*NET synthetic matrix, captured upstream inputs, reachability check; on-demand public fetch only if it clears C-2. [depends on: 182] [blocked on: step 2 (item 182) has not landed]
 - **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183] [blocked on: step 3 (item 183) has not landed]
 - **185** -- Eval redesign step 5: call evals for the 11 compose kinds (`agent`) -- Call evals for the 11 compose-group kinds. Deterministic part blocks v1.1.0. [depends on: 184] [blocked on: step 4 (item 184) has not landed]
@@ -156,7 +156,7 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - **189** -- Eval redesign step 9: pinned judge, schema parse, judge-to-judge calibration (`agent`) -- Pinned judge, schema parse, judge-to-judge agreement (no gold set), over-suppression check; owner picks the judge. [depends on: 188] [blocked on: step 8 (item 188) has not landed]
 - **190** -- Eval redesign step 10: OpenTelemetry projection (`agent`) -- Pure row-to-span projection and its mapping module, pinned to one semantic-conventions-genai commit; no dependency. [depends on: 189] [blocked on: step 9 (item 189) has not landed]
 
-## Closed (92)
+## Closed (93)
 
 - 1 -- Quality gate unrunnable by an agent in one shot (2026-07-28, chore/work-item-tracking: root cause found (real ~30min runtime, no mystery kill); -n auto lands for the non-UX tier in scripts/gate.py, cutting it substantially; UX-tier flakiness confirmed as this project's pre-existing, CI-accepted (--reruns 2) characteristic, not a new problem, and deliberately left un-parallelized.)
 - 6 -- PX-39 real-corpus Sonnet-5 baseline (Closed 2026-07-28 (docs/pipeline-truth-and-era4-baseline) with a different deliverable than filed: the analyze+generate split-pair metric this item planned has no subject anymore, because fix/compose-frozen-composition (merged 2026-07-06, one day into this era) retired generate() from the dominant real-corpus path. Defined a new Era 4 in PERFORMANCE_HISTORY.md instead (total LLM wall-clock+cost per application per run_id): frozen path n=13 p50=109.3s $0.2508, legacy path n=2 (86.2s/163.9s, no p50 published). Zero new spend, 128 records copied from owner's E2E clone. Also found the wizard-rail gap that lets a user reach legacy generate() by accident (filed as a new item) and the check_refinement_scope untelemetered-call gap (filed as a new item).)
@@ -250,3 +250,4 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - 172 -- Whole-tree gate tests scan linked worktrees under .claude/worktrees and fail the main checkout's gate (2026-10-16, fix/gate-skips-linked-worktrees: reproduced first (3 of 5 whole-tree scans failed with a worktree at .claude/worktrees/repro-172, all passed without; ruff, mypy and collection were unaffected). The egress, call_kind and toast scans now take their files from tests/_repo_files.repo_files() (git ls-files; a nested checkout is never listed, ignored or not; ~65 ms against a 1.3-2.3 s walk) and .claude joined [tool.interrogate].exclude. tests/test_tree_walk_gate.py fails any recursive walk in tests/ or scripts/ that is not listed with its reason. Same worktree after the fix: 46 passed. The hooksPath change is NOT explained: plain git worktree add/remove left core.hooksPath at .githooks, so the cause in the original incident (the harness, or something else) is still unknown.)
 - 173 -- Evaluate the Claude 5.5 generation (Sonnet, Haiku, Opus) against the models the product and its subagents pin (2026-10-17: absorbed into item 137 by the owner's decision. The 5.5 candidate evaluation itself was NOT run; only its free first step was (results in this file's Updates). 137 carries the scope, the 17 proposals and the findings.)
 - 174 -- MODEL_PRICING disagrees with the published pricing page for two live pins, claude-sonnet-5 and claude-haiku-4-5 (2026-10-17: fixed on fix/model-pricing-rates. Sonnet 5 now 2/10 (cache 2.50/0.20) and Haiku 4.5 1/5 (cache 1.25/0.10) in hardening.MODEL_PRICING, per the pricing page rows read 2026-10-17; the updated assertions failed on HEAD first (docs/dev/diagnosis/model-pricing-rates.md). A new test requires every model pin to have a complete entry. Published figures computed at the old rates are left as dated records (owner decision); the 5.5 keys and Haiku 5.5's prompt-length tiers belong to item 137.)
+- 181 -- Eval redesign step 1: record identity and the prompt-version gate (Built and merged as PR #198 (dcbe24d); owner chose to close it on 2026-10-21 (feat/eval-catalog-skeleton). The declared gaps in the 2026-10-21 update stay declared, not fixed.)

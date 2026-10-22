@@ -13,6 +13,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: an eval catalog of every LLM call kind, and spend control for eval runs (`feat/eval-catalog-skeleton`, item 182, eval redesign step 2)
+
+Every LLM call kind now has a catalog entry that says which model pin and which system prompt it uses and whether an eval of it exists, a test
+keeps those entries true, and an eval run can be priced before it starts and capped while it runs. **No prompt text changed (no `PROMPT_VERSION`
+bump), no pin moved, no paid call was made, and no dependency was added** (`tomllib` is stdlib and `requires-python` is already `>=3.11`;
+`evals/eval_catalog.py` is stdlib-only and, being under `evals/`, needs no `py-modules` entry; it is registered, with its reason, in
+`tests/test_data_root.py`'s `_CODE_ANCHORS` because it locates its directory with `Path(__file__)`).
+
+- **The catalog:** `evals/catalog/<call>.toml`, one per call kind (23: 21 product kinds and the two judge kinds), each `covered`, `pending` on a
+  named work item, or `exempt` with an owner-named reason (none is). The loader is lazy: `names()` parses nothing and `load()` parses one file.
+  `evals/catalog/costs.json` holds integer mean tokens per kind, written by `python -m evals.eval_catalog measure --write` (no float is stored).
+- **Gate:** `tests/test_eval_catalog.py`, part of `python -m scripts.gate`, fails when a call kind has no entry or an entry has no call site, and
+  when the pin or system prompt a call site really uses (read from the source with `_call_llm`'s defaults applied) differs from its entry. A call
+  shape the reader cannot read fails instead of being skipped. **Limits, stated:** it checks that the catalog agrees with the source, not that an
+  eval of a covered call is any good; `lean_why` is authored prose, not measured; a call routed through a wrapper the test does not list is refused,
+  not followed.
+- **`--list`, `--estimate`, `--max-spend`** on `evals/runner.py`. `--estimate` prices the selected run's call plan from `costs.json` before any key
+  or client exists. **It is a floor:** retries and prompt-cache misses are not in it, and a kind with no measured tokens yet (both judge kinds, when
+  this was written) is named and left out of the total. `--max-spend` refuses a run whose estimate is over the cap (exit **4**, nothing spent) and
+  stops a running one at the next phase boundary once its spend, read from the call log by trace id with an incremental reader, reaches it (exit 4).
+  **Limits, stated:** the check runs at phase boundaries, so a run can overshoot by up to one phase of paid calls; the pre-flight cannot price the
+  unmeasured kinds, so the runtime check bounds those. `run_suite` gains `max_spend_usd` (default `None`, so the console routes are unchanged) and
+  `EvalRunResult` gains `stop_reason`, appended last with a default.
+- **The call plan is declared, and a test ties it to the code:** `runner._FIXTURE_CALLS` lists what `run_suite` calls per fixture, by mode, and
+  `tests/test_eval_spend.py` drives a stubbed `run_suite` in both modes and both subsets and fails when the table and the fired calls differ.
+  The entry-point-to-kinds mapping inside that test (`analyze` fires two kinds) is declared, not derived.
+- **Changed, `case_id` is `<suite>/<name>`** (`synthetic/pm-senior`, `anchor-v1/pm-senior`). The bare fixture name was one string for both suites.
+  The record's `fixture` field and the `eval:<name>` username are unchanged. No historical row carries the old form (no paid eval has run since
+  item 181 added the field).
+- **Found, not fixed:** no step of the eval redesign's build order names a single-call eval for `generate` or `generate_cover_letter`; their
+  entries are `covered` through the finished document only.
+- Also: item 181 is closed (`verified_by` names its three test files and the green run of PR #198); `SECURITY.md`, `evals/README.md` and the
+  design doc are updated; `docs/dev/blast-radius/eval-catalog-skeleton.md` is the consumer enumeration, written before the first code edit.
+
 ### Added: record identity and a gate on system-prompt changes (`feat/eval-record-identity`, item 181, eval redesign step 1)
 
 Every call-log row and eval record now says what produced it, a run's rows are tied together by id, and a system prompt can no longer change

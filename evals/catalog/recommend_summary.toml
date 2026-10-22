@@ -1,0 +1,8 @@
+schema = 1
+kind = "eval"
+call = "recommend_summary"
+status = "pending"
+model_pin = "HAIKU_MODEL"
+prompt = "analyzer.RECOMMEND_SUMMARIES_SYSTEM_PROMPT"
+groups = ["compose", "flows"]
+pending_on = 185  # step 5: call evals for the 11 compose kinds; makes no LLM call below two summary variants, so the committed seed never reaches it
