@@ -94,6 +94,18 @@ new parameter, which no caller does.
    loader owns its directory (`Path(__file__)`), and row 18 registers that.
 2. **`_suite_of` must tolerate monkeypatched `FIXTURES_DIR`** (row 3).
 3. **`EvalRunResult` is built positionally in 9 places** (row 15), so a new field goes last, with a default.
+4. **Pre-flight does not refuse on an unmeasured kind (a deviation from the approved plan).** The plan said
+   `--max-spend` would refuse when any planned kind is unmeasured. Observed at build time: `python -m
+   evals.eval_catalog measure` finds no rows for `judge_grade` and `judge_distinctiveness` (judge logging merged
+   2026-10-18 and no paid eval has run since), and every eval run calls both. Refusing would make `--max-spend`
+   unusable for every current run, so unmeasured kinds are named in the output and left out of the total, and
+   the **runtime** cap is what bounds the judge's spend. The estimate says so in its own text.
+5. **The measured means agree with an independent figure.** `--suite synthetic --subset smoke --estimate` prints
+   `$0.3159` for the four measured kinds, and `evals/README.md` gives `~$0.35-0.40` for that run (the Haiku judge
+   calls, unpriced here, make up the difference). Observed, not a proof: the README figure is itself a recorded
+   measurement from an earlier session.
+6. **A cap of exactly the spend stops the run** (`>=`): the poll decides whether to START the next phase, and a run
+   that has spent the cap has none left to spend.
 
 ---
 

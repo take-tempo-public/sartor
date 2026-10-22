@@ -7,8 +7,10 @@
 > **Audience:** `dev` — the owner deciding what to build, and the agents who will build it.
 > **Authoritative for:** the 2026-10-20 gap map and the proposed scheme. **Status: proposed;
 > the owner answered the eight decisions in section 8 on 2026-10-20. Built so far: build step 1
-> (section 5.5 and the cost-by-window fix; branch `feat/eval-record-identity`, item 181). Nothing
-> else in section 5 or later is built.** The build order is filed as epic 180. It defers to
+> (section 5.5 and the cost-by-window fix; item 181, merged) and build step 2 (section 5.1's catalog
+> and gate and the `--list`, `--estimate` and `--max-spend` flags of section 5.2; branch
+> `feat/eval-catalog-skeleton`, item 182). Nothing else in section 5 or later is built.** The build
+> order is filed as epic 180. It defers to
 > [`../governance/charter.md`](../governance/charter.md) (claims discipline C-0 governs) and to
 > [`evals/README.md`](../../evals/README.md) for how the harness works today.
 > **Source of record:** item 137's updates in
@@ -226,6 +228,35 @@ the gate lists file names, and the runner parses only the entries it was asked t
 deliberate, not a shortcut: a run of one kind should not parse twenty, and a pull request that
 changes one call should touch one file.
 
+**Built in build step 2 (item 182), with these departures from the text above, each decided on the
+branch.** The catalog is `evals/catalog/<call>.toml`, one file per member of `EXPECTED_CALL_KINDS`
+(23), loaded by `evals/eval_catalog.py`:
+
+- **Field names.** The head is `schema = 1` and `kind = "eval"` (the document type, as in the
+  siblings' files); the call kind is `call`, and it must equal the file name. `pin` is `model_pin`
+  (`pin` means a TLS or key pin in the factory's configuration). `prompt_const` is `prompt`, written
+  `module.CONSTANT`, or `inline:module` for the two judge kinds whose system text is a string at the call
+  site. `rubric` is `rubrics`, a list, because `generate` is graded by five. `cases` use the `case_id`
+  form `<suite>/<name>`. `checks` stays empty until steps 4 to 6 define the vocabulary. There is no
+  `sentinel` membership yet, because no per-kind case exists to run.
+- **Status, not an `exempt`-only escape.** Every entry is `covered` (an eval exists today: `clarify`,
+  `iterate_clarify`, and `generate`/`generate_cover_letter` through the finished document), `pending`
+  with `pending_on` naming the work item whose step builds it, or `exempt` with a reason of more than 40
+  characters and an owner-named approval. No entry is exempt.
+- **`cost` is not a field.** A field each run rewrites would dirty tracked files on every eval.
+  `evals/catalog/costs.json` holds integer mean tokens per kind, written by `python -m evals.eval_catalog
+  measure --write` (tokens are primary and dollars are derived from `hardening.MODEL_PRICING` for the model
+  actually to be sent; no float is stored). The gate fails if a measurement is for a model that is no
+  longer the pin.
+- **The gate is stronger than the text.** Besides "every kind has an entry", `tests/test_eval_catalog.py`
+  reads every `call_kind="..."` site's model and system prompt from the AST, applies `_call_llm`'s
+  defaults, and fails when they differ from the entry. A call shape it cannot read fails rather than being
+  skipped. This is what `--affected-by` (step 3) will lean on.
+- **Found while writing the entries: no step in section 9 names a single-call eval for `generate` or
+  `generate_cover_letter`.** Their entries are `covered` through the finished document only. Whether they
+  need one is the owner's call.
+- **Not built here:** `--eval`, `--group`, `--affected-by`, case files and captured inputs (step 3).
+
 ### 5.2 Three run sizes, one runner
 
 | Size | Command shape | Use it to | Selects |
@@ -251,6 +282,13 @@ runs:
 `--affected-by SYSTEM_PROMPT` reads each entry's `prompt_const` and runs the kinds that use
 it, so a change to a shared prompt says which calls to re-run. Every run prints an estimated
 spend from each entry's measured `cost` and refuses to start above `--max-spend`.
+
+**Built in step 2:** `--list`, `--estimate` and `--max-spend` (`--affected-by`, `--eval` and `--group` are
+not). A run prints its estimate only when asked (`--estimate`, or with `--max-spend`), not on every run.
+`--max-spend` refuses a run whose estimate is over the cap, and also stops a running one at the next phase
+boundary once the spend, read by trace id, reaches it, so it can overshoot by up to one phase. A kind with no
+measured tokens (both judge kinds, when this was written) is named and left out of the estimate rather than
+making `--max-spend` unusable for every run; the runtime check is what bounds it. The estimate is a floor.
 
 **Cost of the cheapest tier, measured.** One call per kind at the mean cost of that kind on
 the current pins (product rows, else eval rows) sums to **$0.30** for 19 of the 21 kinds. The
@@ -322,7 +360,8 @@ Section 6 gives the research behind this. The requirements, whatever the source:
 branch:** the hash and producer id are `sha256:<hex>` (spolia P-0001 and the `journal@2` pattern), not a
 short hash; the lock covers system prompts only (user-prompt templates are inline f-strings with
 dynamic parts, so the bump rule for them stays unenforced); ids appear only on rows written inside an
-eval run; `case_id` is the fixture name until the catalog (step 2) defines it; the parse outcome has five
+eval run; `case_id` was the fixture name until the catalog (step 2) defined it as `<suite>/<name>`
+(`synthetic/pm-senior`, `anchor-v1/pm-senior`: the bare name was one string for both suites); the parse outcome has five
 values, not three: the two added are `rejected_retried` (every attempt writes a row, so the first
 attempt of a retried pair needs one) and `accepted_soft_leak` (the handle-leak carve-out in
 `_accept_soft_leaks`); `SCHEMA_VERSION` stays 3.
@@ -820,3 +859,6 @@ for first; it comes last because its result is only as good as steps 1 to 9.
   re-read before any code or licence decision relies on them.
 - Which Anthropic id `api_request_id` holds, and so whether it maps to `gen_ai.response.id`,
   was not checked.
+- The `runner.py` and `EXPECTED_CALL_KINDS` line cites in sections 2 and 3 are as of 2026-10-20 and have
+  moved (for example, `main()` is at line 2476 of `evals/runner.py` as of step 2, not 2107); they were not
+  refreshed by the step 1 or step 2 branches. Find a symbol by name, not by those numbers.
