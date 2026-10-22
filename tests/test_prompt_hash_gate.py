@@ -150,12 +150,17 @@ def test_write_accepts_the_change_once_the_version_moved(lock_path, monkeypatch)
     )
     monkeypatch.setattr(prompt_lock, "current", lambda: cur)
 
-    assert prompt_lock.write() == []
+    refusal = prompt_lock.write()
+
+    assert refusal == []
     assert json.loads(lock_path.read_text(encoding="utf-8")) == cur
     assert b"\r" not in lock_path.read_bytes()
 
 
 def test_write_creates_the_lock_when_there_is_none(lock_path, monkeypatch):
-    monkeypatch.setattr(prompt_lock, "current", lambda: _lock())
-    assert prompt_lock.write() == []
+    monkeypatch.setattr(prompt_lock, "current", _lock)
+
+    refusal = prompt_lock.write()
+
+    assert refusal == []
     assert prompt_lock.load() == _lock()

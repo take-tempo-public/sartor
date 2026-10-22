@@ -142,6 +142,7 @@ RELEVANT_OVERRIDES = frozenset(
         "scripts/enforcement/guards/route_security_lint.py",
         "scripts/gate.py",
         "scripts/generate_openapi_spec.py",
+        "scripts/prompt_lock.py",
         "scripts/project_docs_to_mdx.py",
         "scripts/release_version.py",
         "scripts/verify_doc_template.py",
