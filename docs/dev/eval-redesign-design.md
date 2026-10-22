@@ -251,11 +251,14 @@ branch.** The catalog is `evals/catalog/<call>.toml`, one file per member of `EX
 - **The gate is stronger than the text.** Besides "every kind has an entry", `tests/test_eval_catalog.py`
   reads every `call_kind="..."` site's model and system prompt from the AST, applies `_call_llm`'s
   defaults, and fails when they differ from the entry. A call shape it cannot read fails rather than being
-  skipped. This is what `--affected-by` (step 3) will lean on.
+  skipped. This is what `--affected-by` will lean on, whichever step builds it.
 - **Found while writing the entries: no step in section 9 names a single-call eval for `generate` or
   `generate_cover_letter`.** Their entries are `covered` through the finished document only. Whether they
   need one is the owner's call.
-- **Not built here:** `--eval`, `--group`, `--affected-by`, case files and captured inputs (step 3).
+- **Not built here, and not assigned to a step by section 9:** the run-size flags `--eval`, `--group`,
+  `--affected-by` and `--full` of 5.2. No row of the build order names them (step 3's row names the dataset and
+  its captured upstream inputs, which they need). Whether step 3, steps 4 to 6 or a step of their own builds them
+  is an open question, recorded on epic 180.
 
 ### 5.2 Three run sizes, one runner
 

@@ -113,7 +113,8 @@ new parameter, which no caller does.
 
 - **The `case_id` form for the dashboard.** No dashboard code reads `case_id` today (negative result above). Step 8 will
   decide how it displays a slash-bearing id. Nothing to do here.
-- **Catalog entries for `--eval`, `--group`, `--affected-by`.** Step 3. The catalog already carries `groups` and `prompt`,
+- **The run-size flags `--eval`, `--group`, `--affected-by`, `--full`.** Not assigned to any step by design section 9
+  (found at close-out; the plan had said "step 3" without checking the table). The catalog already carries `groups` and `prompt`,
   which those flags will read.
 - **`catalog_entry_hash` on records** (design 5.8). It needs the catalog first; step 8 reads it.
 - **Single-call eval of `generate` / `generate_cover_letter`.** No build step names one (design section 9). The entries
