@@ -10,9 +10,13 @@ Usage:
     python evals/runner.py --suite anchor --subset smoke
     python evals/runner.py --suite real
     python evals/runner.py --fixture sre-mid-level
+    python evals/runner.py --list
+    python evals/runner.py --suite synthetic --subset smoke --estimate
+    python evals/runner.py --suite synthetic --max-spend 1.00
 
 Exit code: 0 if every grading scored >= 4, 2 if any failed, 1 on
-configuration error.
+configuration error, 4 when --max-spend refused the run (the estimate is
+over the cap) or stopped it (the spend reached the cap).
 """
 
 from __future__ import annotations
@@ -80,6 +84,7 @@ from blueprints.generation import (  # noqa: E402
     _frozen_composition,
 )
 from corpus_to_json_resume import freeze_approved_composition  # noqa: E402
+from evals import eval_catalog  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
@@ -214,6 +219,15 @@ class EvalRunResult:
     trace_id: str | None = None
     judge_cost_usd: float = 0.0
     total_cost_usd: float = 0.0
+    # Item 182. Why a run stopped early: "max_spend" (the cap was reached) or "cancelled" (the caller's
+    # ``cancel_check`` said so); None for a run that ran to the end. Appended last with a default
+    # because ``EvalRunResult`` is built positionally in several places.
+    stop_reason: str | None = None
+
+
+# ``--max-spend``: the run was refused (its estimate is over the cap) or stopped (the spend reached it).
+# 0, 1 and 2 are taken (every grading passed, configuration error, a grading failed or regressed).
+EXIT_OVER_BUDGET = 4
 
 
 def _get_client() -> anthropic.Anthropic:
@@ -624,6 +638,44 @@ def _case_cost(start_offset: int, *, judge: bool = False) -> float:
     return judge_usd if judge else generation
 
 
+class _SpendMeter:
+    """The running spend of one trace, read forward from where it last stopped (``--max-spend``).
+
+    `_trace_cost` rescans from a fixed offset, which is right once at the end of a run and wasteful
+    on every poll. This reads only the bytes written since the last poll, so polling at every phase
+    boundary costs the new rows, not the run's history. A line that does not yet end in a newline is
+    left for the next poll (a writer may be mid-write); an offset past the end means the log was
+    rotated and is read from the start. Rows are selected by ``trace_id`` exactly as `_trace_cost`
+    selects them, so the two agree on the total.
+    """
+
+    def __init__(self, start_offset: int, trace_id: str) -> None:
+        self._offset = start_offset
+        self._trace_id = trace_id
+        self.total_usd = 0.0
+
+    def poll(self) -> float:
+        try:
+            with LLM_LOG_PATH.open("rb") as f:
+                f.seek(0, 2)
+                if self._offset > f.tell():
+                    self._offset = 0
+                f.seek(self._offset)
+                for raw in f:
+                    if not raw.endswith(b"\n"):
+                        break
+                    self._offset += len(raw)
+                    try:
+                        rec = json.loads(raw)
+                    except ValueError:
+                        continue
+                    if isinstance(rec, dict) and rec.get("trace_id") == self._trace_id:
+                        self.total_usd += compute_call_cost(rec)
+        except OSError as exc:
+            logger.warning("spend meter could not read the call log: %s", exc)
+        return self.total_usd
+
+
 BASELINE_JSON = RESULTS_DIR / "baseline_v1.json"
 
 
@@ -841,6 +893,18 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
     return fixtures
 
 
+def _suite_of(fixture_dir: Path) -> str:
+    """The suite a fixture directory belongs to: ``synthetic``, ``real``, ``anchor-v1`` or ``exploration``.
+
+    Read from the directory's own parents (``.../<suite>/<name>``, or ``.../<suite>/fixtures/<name>``
+    for the anchor), never from ``FIXTURES_DIR``, so a test that patches ``FIXTURES_DIR`` to a tmp
+    path still gets a label. It is the first half of a ``case_id``, ``<suite>/<name>`` (item 182);
+    the bare fixture name was the same string for ``synthetic/pm-senior`` and ``anchor-v1/pm-senior``.
+    """
+    parent = fixture_dir.parent
+    return parent.parent.name if parent.name == "fixtures" else parent.name
+
+
 def _select_rubrics(subset: str) -> list[Path]:
     """Smoke = grounding only; full = every rubric.
 
@@ -858,6 +922,218 @@ def _select_rubrics(subset: str) -> list[Path]:
     if subset == "smoke":
         return [r for r in all_rubrics if r.stem == "grounding"]
     return all_rubrics
+
+
+# ---------- the call plan and the spend estimate (item 182) -------------------------------------
+
+# What `run_suite` calls for ONE fixture, by mode, before any rubric is graded. `analyze` fires two call
+# kinds. This table is declared, not derived from the code above it: `tests/test_eval_spend.py` ties it to
+# the calls a stubbed `run_suite` really fires, in both modes, so a change to the flow fails that test.
+_FIXTURE_CALLS: dict[str, tuple[str, ...]] = {
+    "generate": (
+        "analyze_extraction",
+        "analyze_synthesis",
+        "clarify",
+        "generate",
+        "judge_distinctiveness",
+    ),
+    "assemble": (
+        "analyze_extraction",
+        "analyze_synthesis",
+        "clarify",
+        "recommend",
+        "generate_cover_letter",
+        "judge_distinctiveness",
+    ),
+}
+# Calls a mode MAY make, not counted in the plan, with the reason.
+_CONDITIONAL_CALLS: dict[str, dict[str, str]] = {
+    "generate": {},
+    "assemble": {
+        "recommend_summary": "makes no call below two summary variants (analyzer.recommend_summaries)"
+    },
+}
+# The extra calls of a fixture that has `iteration_scenarios`, when `iteration_quality` is in the subset.
+_ITERATION_CALLS = ("iterate_clarify", "judge_grade")
+
+
+def _check_mode(mode: str, *, has_seed: bool) -> None:
+    """Refuse an unknown mode, or ``assemble`` without a seed, before anything is read or spent."""
+    if mode not in ("generate", "assemble"):
+        raise ValueError(f"Unknown mode {mode!r}; expected 'generate' or 'assemble'")
+    if mode == "assemble" and not has_seed:
+        raise ValueError(
+            "mode='assemble' requires --seed — frozen-composition assembly needs a "
+            "real corpus (candidate + application rows), not a file-parsed résumé"
+        )
+
+
+def _fixture_iterates(fixture_dir: Path, *, seed_mode: bool) -> bool | None:
+    """Whether the fixture has an iteration scenario; ``None`` when `_load_fixture` would fail on it.
+
+    Mirrors `_load_fixture`'s requirements (``jd.txt``, ``expected.json``, and a résumé file unless in
+    seed mode) without parsing a résumé, so a plan costs a few ``stat`` calls and one small JSON read
+    per fixture. The ``synthetic/corpus`` directory is an example of a fixture that does not load.
+    """
+    try:
+        if not (fixture_dir / "jd.txt").is_file():
+            return None
+        if not seed_mode and not any(
+            (fixture_dir / f"resume{ext}").exists() for ext in (".md", ".docx", ".pdf")
+        ):
+            return None
+        expected = json.loads((fixture_dir / "expected.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return isinstance(expected, dict) and bool(expected.get("iteration_scenarios"))
+
+
+def _call_plan(
+    fixtures: list[Path], rubrics: list[Path], *, mode: str, seed_mode: bool
+) -> tuple[dict[str, int], dict[str, str], list[str]]:
+    """``(calls per kind, conditional kinds with their reason, fixtures that will not load)``.
+
+    The calls a run is set to make, one per planned call. A grading `run_suite` skips because clarify
+    failed is still counted, and a retry is not (an estimate prices the plan).
+    """
+    counts: dict[str, int] = {}
+    skipped: list[str] = []
+
+    def add(kinds: tuple[str, ...]) -> None:
+        for kind in kinds:
+            counts[kind] = counts.get(kind, 0) + 1
+
+    stems = [r.stem for r in rubrics]
+    for fdir in fixtures:
+        iterates = _fixture_iterates(fdir, seed_mode=seed_mode)
+        if iterates is None:
+            skipped.append(fdir.name)
+            continue
+        add(_FIXTURE_CALLS[mode])
+        for stem in stems:
+            if stem == "iteration_quality":
+                if iterates:
+                    add(_ITERATION_CALLS)
+            else:
+                add(("judge_grade",))
+    return counts, dict(_CONDITIONAL_CALLS[mode]), skipped
+
+
+def _pin_models(model_overrides_map: dict[str, str] | None) -> dict[str, str]:
+    """Pin name -> the model id a run sends: the pins, with a ``--model-override`` applied (never the judge)."""
+    pins = {"SONNET_MODEL": SONNET_MODEL, "HAIKU_MODEL": HAIKU_MODEL, "JUDGE_MODEL": JUDGE_MODEL}
+    for pin, model in (model_overrides_map or {}).items():
+        if pin in ("SONNET_MODEL", "HAIKU_MODEL"):
+            pins[pin] = model
+    return pins
+
+
+def _usd_per_call(row: dict[str, Any], model: str) -> float:
+    """Dollars for one call of the measured token means in ``row``, priced for ``model`` by `hardening`."""
+    return compute_call_cost(
+        {
+            "model": model,
+            "input_tokens": row["input"],
+            "output_tokens": row["output"],
+            "cache_creation_input_tokens": row["cache_write"],
+            "cache_read_input_tokens": row["cache_read"],
+        }
+    )
+
+
+@dataclass(frozen=True)
+class SpendEstimate:
+    """What a run is set to spend, priced from ``evals/catalog/costs.json``.
+
+    A floor: retries and prompt-cache misses are not in it, and a kind with no measured tokens yet is
+    listed in ``unmeasured`` and left out of ``total_usd`` (it is not priced at zero by accident).
+    """
+
+    calls: dict[str, int]
+    conditional: dict[str, str]
+    per_kind_usd: dict[str, float]
+    unmeasured: tuple[str, ...]
+    skipped_fixtures: tuple[str, ...]
+    total_usd: float
+
+
+def estimate_spend(
+    fixtures: list[Path],
+    rubrics: list[Path],
+    *,
+    mode: str,
+    seed_mode: bool,
+    model_overrides_map: dict[str, str] | None = None,
+) -> SpendEstimate:
+    """Price the call plan of a run. Reads ``costs.json`` once and parses one catalog entry per planned kind."""
+    _check_mode(mode, has_seed=seed_mode)
+    calls, conditional, skipped = _call_plan(fixtures, rubrics, mode=mode, seed_mode=seed_mode)
+    costs = eval_catalog.read_costs()
+    pins = _pin_models(model_overrides_map)
+    per_kind: dict[str, float] = {}
+    unmeasured: list[str] = []
+    for call, count in sorted(calls.items()):
+        row = costs.get(call)
+        if row is None:
+            unmeasured.append(call)
+            continue
+        model = pins[eval_catalog.load(call).model_pin]
+        per_kind[call] = round(_usd_per_call(row, model) * count, 6)
+    return SpendEstimate(
+        calls=calls,
+        conditional=conditional,
+        per_kind_usd=per_kind,
+        unmeasured=tuple(unmeasured),
+        skipped_fixtures=tuple(skipped),
+        total_usd=round(sum(per_kind.values()), 6),
+    )
+
+
+def format_estimate(est: SpendEstimate, *, max_spend: float | None = None) -> str:
+    """The estimate as the text ``--estimate`` prints."""
+    lines = [f"{'call kind':34s} {'calls':>5s} {'$ (floor)':>10s}"]
+    for call, count in sorted(est.calls.items()):
+        priced = (
+            f"{est.per_kind_usd[call]:10.4f}"
+            if call in est.per_kind_usd
+            else f"{'unmeasured':>10s}"
+        )
+        lines.append(f"{call:34s} {count:5d} {priced}")
+    lines.append(f"{'total':34s} {sum(est.calls.values()):5d} {est.total_usd:10.4f}")
+    lines.append("")
+    lines.append(
+        "This is a floor: retries and prompt-cache misses are not included, and the token means "
+        "were measured on one machine's call log (python -m evals.eval_catalog measure)."
+    )
+    if est.unmeasured:
+        lines.append(
+            f"Not priced (no measured tokens yet, left out of the total): {', '.join(est.unmeasured)}."
+        )
+    for call, why in est.conditional.items():
+        lines.append(f"May add calls, not counted: {call} ({why}).")
+    if est.skipped_fixtures:
+        lines.append(f"Will not load, no calls planned: {', '.join(est.skipped_fixtures)}.")
+    if max_spend is not None:
+        verdict = "OVER the cap" if est.total_usd > max_spend else "within the cap"
+        lines.append(f"--max-spend ${max_spend:.4f}: the estimate is {verdict}.")
+    return "\n".join(lines)
+
+
+def format_catalog_list() -> str:
+    """Every catalog entry, one line each, with its $/call at the current pins (the text ``--list`` prints)."""
+    costs = eval_catalog.read_costs()
+    pins = _pin_models(None)
+    lines = [
+        f"{'call kind':34s} {'status':8s} {'pin':13s} {'$/call':>8s}  groups / prompt",
+    ]
+    for call, entry in eval_catalog.load_all().items():
+        row = costs.get(call)
+        usd = f"{_usd_per_call(row, pins[entry.model_pin]):8.4f}" if row else f"{'-':>8s}"
+        lines.append(
+            f"{call:34s} {entry.status:8s} {entry.model_pin:13s} {usd}  "
+            f"{','.join(entry.groups)} / {entry.prompt}"
+        )
+    return "\n".join(lines)
 
 
 def _apply_simulated_edit(generated_resume: str, scenario: dict[str, Any]) -> tuple[str, bool]:
@@ -1254,6 +1530,7 @@ def run_suite(
     client: anthropic.Anthropic | None = None,
     progress: ProgressFn | None = None,
     cancel_check: Callable[[], bool] | None = None,
+    max_spend_usd: float | None = None,
 ) -> EvalRunResult:
     """Run one eval suite — the importable core extracted from ``main()``.
 
@@ -1289,6 +1566,12 @@ def run_suite(
     returned ``EvalRunResult.cancelled`` is ``True``. Already-written JSONL
     records are kept; nothing already billed is discarded.
 
+    ``max_spend_usd`` (optional, ``None`` leaves the run byte-identical) is a spend cap read at the
+    same polls: once the run's spend, read from the call log by trace id (judge calls included),
+    reaches the cap, the next poll stops the run, ``cancelled`` is ``True`` and ``stop_reason`` is
+    ``"max_spend"``. The polls sit at phase boundaries, so a run can overshoot by up to one phase of
+    paid calls; the cap bounds when the NEXT phase starts, it does not abort a call in flight.
+
     ``mode`` (F-11, 2026-07 UX review): ``"generate"`` (default) is the historical
     LLM-generate path, unchanged. ``"assemble"`` drives the SAME Compose -> freeze ->
     assemble path corpus-mode ``/api/generate`` uses instead of calling
@@ -1305,20 +1588,33 @@ def run_suite(
     ``exit_code`` (sub-threshold scores still count via ``n_fail``).
     """
 
-    if mode not in ("generate", "assemble"):
-        raise ValueError(f"Unknown mode {mode!r}; expected 'generate' or 'assemble'")
-    if mode == "assemble" and seed_data is None:
-        raise ValueError(
-            "mode='assemble' requires --seed — frozen-composition assembly needs a "
-            "real corpus (candidate + application rows), not a file-parsed résumé"
-        )
+    _check_mode(mode, has_seed=seed_data is not None)
 
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
             progress(event, payload)
 
+    stop_reason: str | None = None
+    spend_meter: _SpendMeter | None = None  # created once the run's trace exists, below
+
     def _cancelled() -> bool:
-        return cancel_check is not None and cancel_check()
+        nonlocal stop_reason
+        if cancel_check is not None and cancel_check():
+            stop_reason = "cancelled"
+            return True
+        if (
+            spend_meter is not None
+            and max_spend_usd is not None
+            and spend_meter.poll() >= max_spend_usd
+        ):
+            stop_reason = "max_spend"
+            logger.warning(
+                "--max-spend $%.4f reached ($%.4f spent so far); stopping before the next paid phase",
+                max_spend_usd,
+                spend_meter.total_usd,
+            )
+            return True
+        return False
 
     # Candidate prompt overrides: the caller (CLI ``main`` / console route) has
     # already read + shape-validated the mapping; here we validate the prompt-NAMES
@@ -1409,6 +1705,8 @@ def run_suite(
     # this run could have written; selection within it is by trace id.
     trace_id = call_identity.new_trace_id()
     run_offset = _log_offset()
+    if max_spend_usd is not None:
+        spend_meter = _SpendMeter(run_offset, trace_id)
 
     weights: dict[str, float] = {}
     if WEIGHTS_PATH.exists():
@@ -1465,7 +1763,11 @@ def run_suite(
             # context replaces the previous one and all of them unwind, newest first, when the run ends.
             case_span_id = call_identity.new_span_id()
             stack.enter_context(
-                trace_context(trace_id, case_id=fixture["name"], parent_span_id=case_span_id)
+                trace_context(
+                    trace_id,
+                    case_id=f"{_suite_of(fdir)}/{fixture['name']}",
+                    parent_span_id=case_span_id,
+                )
             )
             case_offset = _log_offset()
             # clarify_questions is captured separately because the clarify
@@ -2139,6 +2441,8 @@ def run_suite(
             )
 
     exit_code = 0 if (n_fail == 0 and not regressions) else 2
+    if stop_reason == "max_spend":
+        exit_code = EXIT_OVER_BUDGET
     # Run totals from the log by trace id, so they hold on every path (a pipeline error, a cancel)
     # and count the judge calls `cost_usd` leaves out by design.
     generation_usd, judge_usd = _trace_cost(run_offset, trace_id)
@@ -2154,7 +2458,19 @@ def run_suite(
         trace_id=trace_id,
         judge_cost_usd=judge_usd,
         total_cost_usd=round(generation_usd + judge_usd, 6),
+        stop_reason=stop_reason,
     )
+
+
+def _max_spend_arg(text: str) -> float:
+    """argparse type for ``--max-spend``: a finite, non-negative dollar amount."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a dollar amount") from None
+    if not 0.0 <= value < float("inf"):
+        raise argparse.ArgumentTypeError(f"{text!r} must be a finite amount, 0 or more")
+    return value
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2252,7 +2568,44 @@ def main(argv: list[str] | None = None) -> int:
             "baseline_v1.json (a different, generate-mode population)."
         ),
     )
+    ap.add_argument(
+        "--list",
+        action="store_true",
+        help=(
+            "Print the eval catalog (one line per LLM call kind: status, model pin, prompt, groups, "
+            "measured $ per call) and exit 0. Reads no key and builds no client."
+        ),
+    )
+    ap.add_argument(
+        "--estimate",
+        action="store_true",
+        help=(
+            "Print what the selected run is set to spend, per call kind, priced from "
+            "evals/catalog/costs.json, and exit 0 without a key or a client. A floor: retries and "
+            "prompt-cache misses are not included, and a kind with no measured tokens yet is listed "
+            "as unmeasured and left out of the total."
+        ),
+    )
+    ap.add_argument(
+        "--max-spend",
+        type=_max_spend_arg,
+        metavar="USD",
+        help=(
+            "Spend cap in dollars. Refuses the run (exit 4, nothing spent) when the estimate is over "
+            "it; during the run, stops before the next paid phase once the spend, read from the call "
+            "log by trace id (judge calls included), reaches it (exit 4). The check runs at phase "
+            "boundaries, so a run can overshoot by up to one phase of paid calls."
+        ),
+    )
     args = ap.parse_args(argv)
+
+    if args.list:
+        try:
+            print(format_catalog_list())
+        except eval_catalog.CatalogError as exc:
+            logger.error("%s", exc)
+            return 1
+        return 0
 
     # --prompt-overrides: read + shape-validate the file here (a CLI-file concern);
     # the prompt-NAME validation happens once inside run_suite, before any paid call.
@@ -2306,6 +2659,38 @@ def main(argv: list[str] | None = None) -> int:
             seed_data.get("seed_schema_version"),
         )
 
+    # --estimate / --max-spend: price the plan BEFORE a client or a key exists. The same pre-spend
+    # validation run_suite does (an unknown --fixture, a bad --mode/--seed pair, a --model-override
+    # with no policy or price) fails here with exit 1, not after a paid call.
+    if args.estimate or args.max_spend is not None:
+        try:
+            if model_override_map:
+                with model_overrides(model_override_map):
+                    pass
+            estimate = estimate_spend(
+                _select_fixtures(args.suite, args.fixture),
+                _select_rubrics(args.subset),
+                mode=args.mode,
+                seed_mode=seed_data is not None,
+                model_overrides_map=model_override_map,
+            )
+        except (
+            FileNotFoundError,
+            ValueError,
+        ) as exc:  # unknown fixture; bad mode, override or catalog
+            logger.error("%s", exc)
+            return 1
+        print(format_estimate(estimate, max_spend=args.max_spend))
+        if args.estimate:
+            return 0
+        if estimate.total_usd > args.max_spend:
+            logger.error(
+                "The estimate ($%.4f) is over --max-spend ($%.4f); nothing was run.",
+                estimate.total_usd,
+                args.max_spend,
+            )
+            return EXIT_OVER_BUDGET
+
     try:
         result = run_suite(
             suite=args.suite,
@@ -2317,6 +2702,7 @@ def main(argv: list[str] | None = None) -> int:
             model_overrides_map=model_override_map,
             grounding_signals=args.grounding_signals,
             out_dir=args.out_dir,
+            max_spend_usd=args.max_spend,
         )
     except FileNotFoundError as exc:  # unknown --fixture
         logger.error("%s", exc)

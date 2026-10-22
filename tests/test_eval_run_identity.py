@@ -12,6 +12,7 @@ Bodies are untyped like the rest of tests/.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -105,7 +106,7 @@ def test_the_run_has_one_trace_id_and_every_record_carries_it(run):
 
 def test_each_record_names_its_case_and_the_case_span(run):
     for rec in _records(run):
-        assert rec["case_id"] == rec["fixture"]
+        assert rec["case_id"] == f"synthetic/{rec['fixture']}"
         assert ci.is_span_id(rec["span_id"])
     spans = {}
     for rec in _records(run):
@@ -116,7 +117,7 @@ def test_each_record_names_its_case_and_the_case_span(run):
 
 
 def test_call_rows_are_children_of_the_case_span_they_belong_to(run):
-    case_span = {r["fixture"]: r["span_id"] for r in _records(run)}
+    case_span = {r["case_id"]: r["span_id"] for r in _records(run)}
     rows = _log_rows()
     assert any(r["call"] == "analyze_synthesis" for r in rows)
     assert any(r["call"] == "judge_grade" for r in rows)
@@ -125,6 +126,42 @@ def test_call_rows_are_children_of_the_case_span_they_belong_to(run):
         assert row["parent_span_id"] == case_span[row["case_id"]]
         assert ci.is_span_id(row["span_id"])
         assert row["span_id"] != row["parent_span_id"]
+
+
+def test_the_case_id_names_the_suite_so_two_suites_never_share_one(monkeypatch, tmp_path):
+    """Item 182: `synthetic/pm-senior` and `anchor-v1/pm-senior` are different cases. The bare fixture
+    name was the same string for both."""
+    _stub_pipeline(monkeypatch, tmp_path)
+    # One out_dir each: the result file is named to the second and opened for append, so two runs in
+    # the same second would otherwise share (and both read) one file.
+    synthetic = run_suite(
+        suite="synthetic", subset="smoke", out_dir=tmp_path / "synthetic", client=MagicMock()
+    )
+    anchor = run_suite(
+        suite="anchor", subset="smoke", out_dir=tmp_path / "anchor", client=MagicMock()
+    )
+    synthetic_ids = {r["case_id"] for r in _records(synthetic)}
+    anchor_ids = {r["case_id"] for r in _records(anchor)}
+    assert synthetic_ids and anchor_ids
+    assert all(c.startswith("synthetic/") for c in synthetic_ids)
+    assert all(c.startswith("anchor-v1/") for c in anchor_ids)
+    assert synthetic_ids.isdisjoint(anchor_ids)
+
+
+@pytest.mark.parametrize(
+    ("parts", "label"),
+    [
+        (("evals", "fixtures", "synthetic", "pm-senior"), "synthetic"),
+        (("evals", "fixtures", "real", "robert"), "real"),
+        (("evals", "anchors", "anchor-v1", "fixtures", "pm-senior"), "anchor-v1"),
+        (("evals", "exploration", "some-posting"), "exploration"),
+        # `FIXTURES_DIR` patched to a tmp dir (tests/test_eval_runner.py does this): the label comes from
+        # the directory's own parent, never from a captured constant, and does not raise.
+        (("tmp", "synthetic", "fx"), "synthetic"),
+    ],
+)
+def test_suite_label_comes_from_the_fixture_directorys_own_parents(parts, label):
+    assert runner._suite_of(Path(*parts)) == label
 
 
 def test_two_runs_have_different_trace_ids(monkeypatch, tmp_path):
@@ -159,7 +196,7 @@ def test_a_concurrent_run_on_the_same_fixture_is_not_summed_in(monkeypatch, tmp_
             "cache_creation_input_tokens": 0,
             "cache_read_input_tokens": 0,
             "trace_id": ci.new_trace_id(),
-            "case_id": username.removeprefix("eval:"),
+            "case_id": f"synthetic/{username.removeprefix('eval:')}",
         }
         with analyzer.LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(foreign) + "\n")
