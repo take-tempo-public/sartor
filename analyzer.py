@@ -14,15 +14,17 @@ import logging
 import math
 import re
 import time
-from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
+from collections.abc import Callable, Generator, Iterator, Mapping
+from contextlib import closing, contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any, Literal, cast
 
 import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, model_validator
 
+import call_identity
 import demo_fixtures
 import sartor_home
 from demo_fixtures import is_demo_mode as _demo_mode_active
@@ -737,6 +739,49 @@ def effective_prompt_version() -> str:
     return f"{CANDIDATE_VERSION_PREFIX}{digest}"
 
 
+# --- Item 181: trace context. The eval harness opens one per run (trace) and one per fixture
+# (case); every call row written inside it carries the W3C ids and the case id, so a run's
+# rows -- and their cost -- are selected by id, not by a time window. Product requests never
+# enter one, so their rows carry none of these keys (the journal@2 rule: absent when no span
+# was running). Same shape as the override ContextVars above, and set inside `run_suite`, so it
+# reaches the console route's worker thread too.
+@dataclass(frozen=True)
+class _TraceContext:
+    trace_id: str
+    case_id: str | None
+    parent_span_id: str | None
+
+
+_trace_ctx: ContextVar[_TraceContext | None] = ContextVar("trace_ctx", default=None)
+
+
+def current_trace_context() -> _TraceContext | None:
+    """The active trace context (ids a row written now would carry), or ``None`` outside one."""
+    return _trace_ctx.get()
+
+
+@contextmanager
+def trace_context(
+    trace_id: str, *, case_id: str | None = None, parent_span_id: str | None = None
+) -> Iterator[None]:
+    """Stamp every call row written inside the block with these ids.
+
+    ``trace_id`` is 32 lowercase hex (never all zero); ``parent_span_id``, when given, is 16.
+    A malformed id raises ``ValueError`` -- a typo'd id would silently orphan the rows.
+    """
+    if not call_identity.is_trace_id(trace_id):
+        raise ValueError(f"trace_id must be 32 lowercase hex chars, not all zero: {trace_id!r}")
+    if parent_span_id is not None and not call_identity.is_span_id(parent_span_id):
+        raise ValueError(
+            f"parent_span_id must be 16 lowercase hex chars, not all zero: {parent_span_id!r}"
+        )
+    token = _trace_ctx.set(_TraceContext(trace_id, case_id, parent_span_id))
+    try:
+        yield
+    finally:
+        _trace_ctx.reset(token)
+
+
 # --- Model-override primitive (item 137 / 173 proposal 16) -------------------
 # The sibling of the prompt-override primitive above: lets an eval run send a CANDIDATE model
 # without editing SONNET_MODEL / HAIKU_MODEL. The mapping is pin NAME -> candidate model id, and it
@@ -862,9 +907,63 @@ def _thinking_tokens(usage: object) -> int | None:
     return _int_or_none(raw)
 
 
+def _sent_system_text(request_kwargs: Mapping[str, Any] | None) -> str | None:
+    """The system text a request actually carried: a plain string, or the joined text blocks.
+
+    Read from the kwargs sent (not from the constant a caller meant to send), so the hash on a
+    row is of what the model received, override or not. ``None`` when nothing was built.
+    """
+    system = (request_kwargs or {}).get("system")
+    if isinstance(system, str):
+        return system
+    if isinstance(system, list):
+        return "".join(b["text"] for b in system if isinstance(b, dict) and "text" in b)
+    return None
+
+
+def _identity_fields(
+    request_kwargs: Mapping[str, Any] | None,
+    *,
+    call_kind: str,
+    answered_model: str | None,
+    settings: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Item 181: the prompt's content hash, the producer id and (in a trace context) the ids.
+
+    Telemetry never raises, so a producer id that cannot be built (a float among the settings,
+    which the recipe refuses) is ``None`` and the row is still written. The hash is computed
+    per call: sha256 of a ~10 KB system prompt costs microseconds against a network call, so
+    there is no cache to invalidate (eager on purpose, measured by arithmetic, not a profile).
+    """
+    fields: dict[str, Any] = {}
+    system_text = _sent_system_text(request_kwargs)
+    prompt_sha256 = call_identity.text_sha256(system_text) if system_text is not None else None
+    producer: str | None = None
+    if prompt_sha256 is not None:
+        model = answered_model or str((request_kwargs or {}).get("model") or "")
+        try:
+            producer = call_identity.producer_id(
+                call_kind=call_kind, prompt_sha256=prompt_sha256, model=model, settings=settings
+            )
+        except TypeError as exc:
+            logger.warning("producer id not built for call=%s: %s", call_kind, exc)
+    fields["prompt_sha256"] = prompt_sha256
+    fields["producer_id"] = producer
+    ctx = _trace_ctx.get()
+    if ctx is not None:
+        fields["trace_id"] = ctx.trace_id
+        fields["span_id"] = call_identity.new_span_id()
+        if ctx.parent_span_id is not None:
+            fields["parent_span_id"] = ctx.parent_span_id
+        if ctx.case_id is not None:
+            fields["case_id"] = ctx.case_id
+    return fields
+
+
 def _provenance_fields(
     request_kwargs: Mapping[str, Any] | None,
     *,
+    call_kind: str,
     answered_model: object,
     api_request_id: object,
     usage: object,
@@ -875,7 +974,8 @@ def _provenance_fields(
     ``request_settings`` is every request kwarg except the prompt content (``system`` /
     ``messages``), taken from the kwargs actually sent, so a setting added later is recorded
     without anyone updating a field list, and no prompt or résumé text reaches the log.
-    Unknown values are ``None``, never a guess.
+    Unknown values are ``None``, never a guess. Item 181 adds the content hash, producer id
+    and trace ids through `_identity_fields`.
     """
     settings: dict[str, Any] | None = None
     if request_kwargs is not None:
@@ -885,13 +985,17 @@ def _provenance_fields(
         key: _str_or_none(getattr(usage, key, None))
         for key in ("service_tier", "speed", "inference_geo")
     }
+    answered = _str_or_none(answered_model)
     return {
-        "answered_model": _str_or_none(answered_model),
+        "answered_model": answered,
         "api_request_id": _str_or_none(api_request_id),
         "request_settings": settings,
         "served_as": served if any(v is not None for v in served.values()) else None,
         "thinking_tokens": _thinking_tokens(usage),
         "attempt": attempt,
+        **_identity_fields(
+            request_kwargs, call_kind=call_kind, answered_model=answered, settings=settings
+        ),
     }
 
 
@@ -910,7 +1014,7 @@ def log_judge_call(
     The eval judges (`evals/runner.py`) call `client.messages.create` directly, so they never
     reached `_call_llm_streaming` and left no row (item 175 gap 5). Same row shape and
     provenance fields as a product call, under a `judge_*` ``call_kind`` so
-    `evals.runner._eval_cost_since` can keep eval ``cost_usd`` generation-only. ``response`` is
+    `evals.runner._trace_cost` can keep eval ``cost_usd`` generation-only. ``response`` is
     ``None`` when the call raised (``error`` then fills `error_type` / `error_message`, redacted
     exactly as for product calls). Best-effort like `_emit_call_log`: it never raises.
     """
@@ -935,6 +1039,7 @@ def log_judge_call(
         "status": "error" if error is not None else "ok",
         **_provenance_fields(
             request_kwargs,
+            call_kind=call_kind,
             answered_model=getattr(response, "model", None),
             api_request_id=request_id,
             usage=usage,
@@ -1742,7 +1847,8 @@ def _call_llm_streaming(
     max_tokens: int = MAX_TOKENS,
     attempt: int = 1,
     prompt_version: str | None = None,
-) -> Iterator[str | _StreamDone]:
+    row_sink: dict[str, dict[str, Any]] | None = None,
+) -> Generator[str | _StreamDone, None, None]:
     """Streaming generator yielding text deltas, then a final `_StreamDone`.
 
     Yields:
@@ -1780,6 +1886,11 @@ def _call_llm_streaming(
     ``attempt`` (1 for a first pass, 2 for the `_retry` pass) and the provenance fields built
     by `_provenance_fields` ride on the row (item 175); ``prompt_version`` overrides the
     résumé pipeline's effective version for a subsystem with its own (the avatar).
+
+    ``row_sink`` (item 181): the parse loops pass a dict here so the row is handed over instead
+    of written, and they write it once the reply has been parsed, with ``parse_outcome`` on it
+    (`_emit_deferred_row`). Whoever passes a sink owns writing the row, in a ``finally``. With no
+    sink -- every other caller -- the row is written here, in the ``finally``, exactly as before.
     """
     requested_model = model or SONNET_MODEL
     # A candidate model for the pin this call names, when `model_overrides()` is active (the eval
@@ -1902,6 +2013,7 @@ def _call_llm_streaming(
             "status": status,
             **_provenance_fields(
                 sent_kwargs,
+                call_kind=call_kind,
                 answered_model=getattr(final, "model", None),
                 api_request_id=api_request_id,
                 usage=usage,
@@ -1918,7 +2030,10 @@ def _call_llm_streaming(
         if status == "error":
             _call_log_record["error_type"] = error_type
             _call_log_record["error_message"] = error_message
-        _emit_call_log(_call_log_record)
+        if row_sink is not None:
+            row_sink["row"] = _call_log_record
+        else:
+            _emit_call_log(_call_log_record)
 
     if stop_reason == "max_tokens":
         logger.warning(
@@ -1954,11 +2069,13 @@ def _call_llm(
     model: str | None = None,
     max_tokens: int = MAX_TOKENS,
     attempt: int = 1,
+    row_sink: dict[str, dict[str, Any]] | None = None,
 ) -> str:
     """Non-streaming wrapper — drain `_call_llm_streaming` and return the accumulated text.
 
     Preserves the existing call signature for all callers that don't need
     token-level streaming; new SSE routes use the underlying generator directly.
+    ``row_sink`` is passed straight through (see `_call_llm_streaming`).
     """
     final_text = ""
     for item in _call_llm_streaming(
@@ -1972,10 +2089,29 @@ def _call_llm(
         model=model,
         max_tokens=max_tokens,
         attempt=attempt,
+        row_sink=row_sink,
     ):
         if isinstance(item, _StreamDone):
             final_text = item.text
     return final_text
+
+
+def _emit_deferred_row(sink: dict[str, dict[str, Any]], outcome: str | None) -> None:
+    """Write the row a parse loop was holding, stamped with what became of its reply.
+
+    ``parse_outcome`` is the fate of THIS response: ``accepted_first_try``,
+    ``accepted_after_retry``, ``accepted_soft_leak`` (the handle-leak carve-out, see
+    `_accept_soft_leaks`), ``rejected_retried`` (failed validation, a retry follows) or
+    ``refused`` (failed on the last attempt). ``None`` stamps nothing: the send itself failed,
+    or the loop was abandoned before a verdict. Idempotent -- the row is popped, so the
+    ``finally`` that calls this after an early write cannot write twice.
+    """
+    row = sink.pop("row", None)
+    if row is None:
+        return
+    if outcome is not None:
+        row["parse_outcome"] = outcome
+    _emit_call_log(row)
 
 
 _FENCE_RE = re.compile(r"^```(?:[a-zA-Z]+)?\s*\n?(.*?)\n?\s*```$", re.DOTALL)
@@ -2030,64 +2166,84 @@ def _parse_or_retry_streaming(
     retry_prompt = base_prompt
     current_kind = call_kind
     data: Any = None  # bound by json.loads before any validation error can be accepted
-    for attempt in range(max_attempts):
-        accumulated = ""
-        for item in _call_llm_streaming(
-            client,
-            retry_prompt,
-            cached_user_prefix=cached_user_prefix,
-            call_kind=current_kind,
-            username=username,
-            run_id=run_id,
-            system_prompt=system_prompt,
-            model=model,
-            attempt=attempt + 1,
-        ):
-            if isinstance(item, _StreamDone):
-                accumulated = item.text
-            else:
-                yield ("chunk", item)
-        base_text = accumulated
-        try:
-            data = json.loads(_strip_fences(accumulated), strict=False)
-            response_model.model_validate(data, context=validation_context)
-            yield ("done", data)
-            return
-        except (json.JSONDecodeError, ValidationError) as e:
-            reason = _retry_reason(e)
-            if attempt + 1 >= max_attempts:
-                if _accept_soft_leaks(e, validation_context):
-                    logger.warning(
-                        "Accepting response after %d attempts: handle leak in a non-shipped "
-                        "field only — call=%s %s",
+    # Item 181: each attempt's call-log row is held here until its reply has been judged, then
+    # written once with `parse_outcome`. The `finally` is the guarantee that every attempt
+    # still writes exactly one row when the send fails or the consumer abandons the generator.
+    sink: dict[str, dict[str, Any]] = {}
+    outcome: str | None = None
+    try:
+        for attempt in range(max_attempts):
+            accumulated = ""
+            # `closing`: if the consumer abandons this generator mid-stream, the inner generator
+            # must finish (and hand its row to `sink`) BEFORE the outer `finally` writes the sink.
+            # CPython's unwinding happens to order it that way; this makes it explicit instead of
+            # a property of the interpreter's frame teardown.
+            with closing(
+                _call_llm_streaming(
+                    client,
+                    retry_prompt,
+                    cached_user_prefix=cached_user_prefix,
+                    call_kind=current_kind,
+                    username=username,
+                    run_id=run_id,
+                    system_prompt=system_prompt,
+                    model=model,
+                    attempt=attempt + 1,
+                    row_sink=sink,
+                )
+            ) as attempt_stream:
+                for item in attempt_stream:
+                    if isinstance(item, _StreamDone):
+                        accumulated = item.text
+                    else:
+                        yield ("chunk", item)
+            base_text = accumulated
+            try:
+                data = json.loads(_strip_fences(accumulated), strict=False)
+                response_model.model_validate(data, context=validation_context)
+                outcome = "accepted_first_try" if attempt == 0 else "accepted_after_retry"
+                yield ("done", data)
+                return
+            except (json.JSONDecodeError, ValidationError) as e:
+                reason = _retry_reason(e)
+                if attempt + 1 >= max_attempts:
+                    if _accept_soft_leaks(e, validation_context):
+                        logger.warning(
+                            "Accepting response after %d attempts: handle leak in a non-shipped "
+                            "field only — call=%s %s",
+                            max_attempts,
+                            call_kind,
+                            reason,
+                        )
+                        outcome = "accepted_soft_leak"
+                        yield ("done", data)
+                        return
+                    logger.error(
+                        "LLM response validation failed after %d attempts — call=%s err=%s",
                         max_attempts,
                         call_kind,
-                        reason,
+                        e,
                     )
-                    yield ("done", data)
-                    return
-                logger.error(
-                    "LLM response validation failed after %d attempts — call=%s err=%s",
-                    max_attempts,
+                    outcome = "refused"
+                    raise LLMResponseError(accumulated, reason) from e
+                logger.warning(
+                    "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
+                    attempt + 1,
                     call_kind,
                     e,
                 )
-                raise LLMResponseError(accumulated, reason) from e
-            logger.warning(
-                "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
-                attempt + 1,
-                call_kind,
-                e,
-            )
-            yield ("retry", reason)
-            retry_prompt = (
-                f"{base_prompt}\n\n<retry_reason>Your previous response failed "
-                f"validation: {reason}. Respond again with valid JSON matching the "
-                f"exact structure requested above. Output JSON only, no markdown "
-                f"fences, no commentary.</retry_reason>"
-            )
-            current_kind = f"{call_kind}_retry"
-    raise LLMResponseError(base_text, "exhausted retries")
+                _emit_deferred_row(sink, "rejected_retried")
+                yield ("retry", reason)
+                retry_prompt = (
+                    f"{base_prompt}\n\n<retry_reason>Your previous response failed "
+                    f"validation: {reason}. Respond again with valid JSON matching the "
+                    f"exact structure requested above. Output JSON only, no markdown "
+                    f"fences, no commentary.</retry_reason>"
+                )
+                current_kind = f"{call_kind}_retry"
+        raise LLMResponseError(base_text, "exhausted retries")
+    finally:
+        _emit_deferred_row(sink, outcome)
 
 
 def _parse_or_retry(
@@ -2116,77 +2272,91 @@ def _parse_or_retry(
     Raises LLMResponseError after max_attempts failures so the caller never
     silently degrades on bad output.
     """
-    raw = _call_llm(
-        client,
-        base_prompt,
-        cached_user_prefix=cached_user_prefix,
-        call_kind=call_kind,
-        username=username,
-        run_id=run_id,
-        system_prompt=system_prompt,
-        model=model,
-        max_tokens=max_tokens,
-    )
-    data: Any = None  # bound by json.loads before any validation error can be accepted
-    for attempt in range(max_attempts):
-        try:
-            # `strict=False` allows ASCII control characters (0x00-0x1F)
-            # to appear inside JSON string values. Claude sometimes emits
-            # literal newlines/tabs inside multi-line content fields
-            # (résumé markdown, cover-letter prose) — the spec says to
-            # escape them but the model doesn't always comply, and
-            # appending the error to a retry prompt does not reliably
-            # fix it. Structural malformations (missing brace, trailing
-            # comma) still fail and trigger the retry path; we are only
-            # widening tolerance for the one quirky case we observe.
-            data = json.loads(_strip_fences(raw), strict=False)
-            response_model.model_validate(data, context=validation_context)
-            return cast("dict[str, Any]", data)
-        except (json.JSONDecodeError, ValidationError) as e:
-            reason = _retry_reason(e)
-            if attempt + 1 >= max_attempts:
-                if _accept_soft_leaks(e, validation_context):
-                    logger.warning(
-                        "Accepting response after %d attempts: handle leak in a non-shipped "
-                        "field only — call=%s %s",
+    # Item 181: each attempt's call-log row is held in `sink` until its reply has been judged,
+    # then written once with `parse_outcome`; the `finally` writes whatever is still held when
+    # the send fails or an unexpected exception leaves the loop (outcome stays `None` then).
+    sink: dict[str, dict[str, Any]] = {}
+    outcome: str | None = None
+    try:
+        raw = _call_llm(
+            client,
+            base_prompt,
+            cached_user_prefix=cached_user_prefix,
+            call_kind=call_kind,
+            username=username,
+            run_id=run_id,
+            system_prompt=system_prompt,
+            model=model,
+            max_tokens=max_tokens,
+            row_sink=sink,
+        )
+        data: Any = None  # bound by json.loads before any validation error can be accepted
+        for attempt in range(max_attempts):
+            try:
+                # `strict=False` allows ASCII control characters (0x00-0x1F)
+                # to appear inside JSON string values. Claude sometimes emits
+                # literal newlines/tabs inside multi-line content fields
+                # (résumé markdown, cover-letter prose) — the spec says to
+                # escape them but the model doesn't always comply, and
+                # appending the error to a retry prompt does not reliably
+                # fix it. Structural malformations (missing brace, trailing
+                # comma) still fail and trigger the retry path; we are only
+                # widening tolerance for the one quirky case we observe.
+                data = json.loads(_strip_fences(raw), strict=False)
+                response_model.model_validate(data, context=validation_context)
+                outcome = "accepted_first_try" if attempt == 0 else "accepted_after_retry"
+                return cast("dict[str, Any]", data)
+            except (json.JSONDecodeError, ValidationError) as e:
+                reason = _retry_reason(e)
+                if attempt + 1 >= max_attempts:
+                    if _accept_soft_leaks(e, validation_context):
+                        logger.warning(
+                            "Accepting response after %d attempts: handle leak in a non-shipped "
+                            "field only — call=%s %s",
+                            max_attempts,
+                            call_kind,
+                            reason,
+                        )
+                        outcome = "accepted_soft_leak"
+                        return cast("dict[str, Any]", data)
+                    logger.error(
+                        "LLM response validation failed after %d attempts — call=%s err=%s",
                         max_attempts,
                         call_kind,
-                        reason,
+                        e,
                     )
-                    return cast("dict[str, Any]", data)
-                logger.error(
-                    "LLM response validation failed after %d attempts — call=%s err=%s",
-                    max_attempts,
+                    outcome = "refused"
+                    raise LLMResponseError(raw, reason) from e
+                logger.warning(
+                    "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
+                    attempt + 1,
                     call_kind,
                     e,
                 )
-                raise LLMResponseError(raw, reason) from e
-            logger.warning(
-                "LLM response validation failed on attempt %d — call=%s err=%s, retrying",
-                attempt + 1,
-                call_kind,
-                e,
-            )
-            retry_prompt = (
-                f"{base_prompt}\n\n<retry_reason>Your previous response failed "
-                f"validation: {reason}. Respond again with valid JSON matching the "
-                f"exact structure requested above. Output JSON only, no markdown "
-                f"fences, no commentary.</retry_reason>"
-            )
-            raw = _call_llm(
-                client,
-                retry_prompt,
-                cached_user_prefix=cached_user_prefix,
-                call_kind=f"{call_kind}_retry",
-                username=username,
-                run_id=run_id,
-                system_prompt=system_prompt,
-                model=model,
-                max_tokens=max_tokens,
-                attempt=attempt
-                + 2,  # the first call ran before the loop, so loop index 0 -> retry #2
-            )
-    raise LLMResponseError(raw, "exhausted retries")
+                _emit_deferred_row(sink, "rejected_retried")
+                retry_prompt = (
+                    f"{base_prompt}\n\n<retry_reason>Your previous response failed "
+                    f"validation: {reason}. Respond again with valid JSON matching the "
+                    f"exact structure requested above. Output JSON only, no markdown "
+                    f"fences, no commentary.</retry_reason>"
+                )
+                raw = _call_llm(
+                    client,
+                    retry_prompt,
+                    cached_user_prefix=cached_user_prefix,
+                    call_kind=f"{call_kind}_retry",
+                    username=username,
+                    run_id=run_id,
+                    system_prompt=system_prompt,
+                    model=model,
+                    max_tokens=max_tokens,
+                    attempt=attempt
+                    + 2,  # the first call ran before the loop, so loop index 0 -> retry #2
+                    row_sink=sink,
+                )
+        raise LLMResponseError(raw, "exhausted retries")
+    finally:
+        _emit_deferred_row(sink, outcome)
 
 
 def analyze(

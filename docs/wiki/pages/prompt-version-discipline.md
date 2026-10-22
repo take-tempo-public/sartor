@@ -49,6 +49,14 @@ the prompt template → no `PROMPT_VERSION` bump" ([`analyzer.py`](../../../anal
 near the `bullet_order` handling). Reordering the facts fed *into* a prompt is
 not a prompt change; rewriting the template around them is.
 
+## System-prompt lock and gate (enforced)
+
+The bump rule for **system prompts** is now machine-enforced. [`tests/test_prompt_hash_gate.py`](../../../tests/test_prompt_hash_gate.py) (which runs inside `python -m scripts.gate`) recomputes a SHA-256 hash for each system prompt against [`evals/prompt_hashes.json`](../../../evals/prompt_hashes.json), the committed lock of hashes per prompt. The lock covers 19 prompts: the 17 constants in [`analyzer.py:_BASE_SYSTEM_PROMPTS`](../../../analyzer.py), plus [`analyzer.py:AVATAR_SYSTEM_PROMPT`](../../../analyzer.py) and [`onboarding/extract_experiences.py:EXTRACT_EXPERIENCES_SYSTEM_PROMPT`](../../../onboarding/extract_experiences.py). When a hash differs from the lock while its version (`PROMPT_VERSION` or `AVATAR_PROMPT_VERSION` for the avatar) is unchanged, the gate fails — naming the prompt — so a forgotten bump is caught at the pytest step `[synthesis]`. [`scripts/prompt_lock.py`](../../../scripts/prompt_lock.py) manages the lock with `--check` (validate) and `--write` (refresh after bumping); `--write` refuses to record a changed hash under an unchanged version, blocking attempts to edit around the rule. The binding rule lives at [`docs/governance/enforcement.md:C3`](../../../docs/governance/enforcement.md) `[synthesis]`.
+
+Each call-log row also carries `prompt_sha256`, the hash of the system text actually sent ([`analyzer.py:_identity_fields`](../../../analyzer.py)); on the base path it equals the lock's hash for that prompt, and under `prompt_overrides` it is the override's hash. It is `None` when the call failed before a request was built. Nothing in the dashboard reads it yet `[synthesis]`.
+
+**Declared limits:** the lock covers **system prompts only**. User-prompt templates are inline f-strings (~25 sites), so a change there stays under the convention (unenforced). A hand-edited lock (both hash and version edited) passes.
+
 ## The prompt-override primitive (eval tuning loop)
 
 A/B-testing a candidate prompt by editing the persona constants would (a) ship an

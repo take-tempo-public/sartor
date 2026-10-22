@@ -115,6 +115,14 @@ incident that motivates C-10 sits in that blind spot. There is also no CI backst
 "was a dossier written before the edit" leaves no server-side artifact to check, unlike
 `ci_backstop.py`'s secret scan.
 
+### C3. C-11 — a changed system prompt needs a bumped version (item 181)
+
+| Gate | What it runs | Why it must be a gate | Ship state |
+|---|---|---|---|
+| **System-prompt lock** | [`../../tests/test_prompt_hash_gate.py`](../../tests/test_prompt_hash_gate.py) recomputes a SHA-256 for each system prompt `analyzer.py` sends (the 17 registry constants, the avatar prompt, the `extract_experiences` prompt) and compares it with the committed [`../../evals/prompt_hashes.json`](../../evals/prompt_hashes.json). A hash that changed under an unchanged `PROMPT_VERSION` (`AVATAR_PROMPT_VERSION` for the avatar prompt) fails; any other difference fails as a stale lock. [`../../scripts/prompt_lock.py`](../../scripts/prompt_lock.py) `--write` refuses to record a changed hash under an unchanged version. It runs inside `python -m scripts.gate` (the pytest step), so CI binds every agent | The bump rule was "convention + witness": an edit that forgot the bump passed every check, and the dashboard then attributed a regression to the wrong prompt version. That is the recurrence C-11 names; the failure mode is judging mid-edit that this change is too small to bump | **SHIPPED** (item 181) |
+
+**Stated limits (C-0):** the lock covers **system prompts only**. The user-prompt templates are inline f-strings with dynamic content (about 25 sites), so a change there still relies on the convention below and is **unenforced**. A lock edited by hand, hash and version together, passes: `--write` cannot stop that, and a comparison against the lock on `origin/main` would, but it is fragile on shallow CI clones and is not built.
+
 ### D. Rules that stay witness / best-effort by design (do NOT gate)
 
 | Rule | Enforcement | Why it stays soft |
@@ -124,7 +132,7 @@ incident that motivates C-10 sits in that blind spot. There is also no CI backst
 | Grounding strictness / no-invention | **prompt mechanism + witness metric** (`grounding_overlap`), never a categorical | C-0 bars LLM-behavior absolutes; the metric *measures*, it does not enforce by construction. The absolute "the LLM cannot invent facts" copy was struck in v1.0.6 (PX-09, F-vision-02/F-docs-03). Over-suppression is uninstrumented (F-eval-01) — instrument as a witness signal, not a gate |
 | Parallel-session isolation (W-1) | **worktree-local hooks: DONE; written governance: DONE** | the "make the plan hooks worktree-scoped" half **shipped** on `fix/plan-approval-hook-scope` — `check-plan-approved.sh`/`mark-plan-approved.sh`/`cleanup-plan-on-merge.sh` now key their marker/pointer state off `CLAUDE_PROJECT_DIR`, so a concurrent session in a different project/worktree can no longer false-block or wipe this one's approved plan (F-gov-02, backing **W-1.2**). The written-governance half **landed on `docs/charter-w1-amendment`**: [`charter.md`](charter.md#working-model-w-1w-2) now carries the real W-1.1–W-1.4 clauses + the serial-posture paragraph — **F-gov-03 resolved**, the citation is no longer dangling |
 | Close-out sweep / handoff / carry-forward ledger | **tribal (`docs/dev/maintainer-lane.md`, split out of AGENTS.md in Epic D D3) — keep tribal** | judgement-shaped, no clean deterministic predicate; honestly separated from the enforced set today (F-gov-04). The cumulative open-ledger discipline (charter W-1.4) is a written rule, not a gate — do not manufacture a brittle predicate |
-| New-dependency justification, PROMPT_VERSION bump | **convention + witness** | `ruff-changed` blocks lint, but the "couldn't be done in pure Python" and version-bump rules stay reviewer-judgement; gating them invites false positives |
+| New-dependency justification; the `PROMPT_VERSION` bump for a change to a user-prompt template | **convention + witness** | `ruff-changed` blocks lint, but the "couldn't be done in pure Python" rule stays reviewer-judgement; gating it invites false positives. The bump rule for **system prompts** moved to a gate in C3 (item 181); a user-prompt template is inline text with dynamic parts, so no stable hash exists to compare, and that half stays **unenforced** |
 
 ## Enforcement reach — WHICH agents each gate actually binds (read this before extracting governance)
 

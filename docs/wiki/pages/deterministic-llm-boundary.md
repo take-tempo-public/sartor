@@ -60,20 +60,25 @@ silently `[synthesis]`.
 Funnelling through one door is what makes the boundary *enforceable* rather than
 aspirational: caching, telemetry, model selection, and retry are defined once and
 cannot be forgotten by any call site that routes through it — and since item 21 no call
-site in `analyzer.py` bypasses it `[synthesis]`. The single
-`_emit_call_log` block in the `finally` of
-[`analyzer.py:_call_llm_streaming`](../../../analyzer.py) writes one JSONL
-telemetry record per funnelled call (stamped with the call kind under the JSON key
-`call`, plus `model` and `prompt_version`). Each row also carries six provenance
-fields via [`analyzer.py:_provenance_fields`](../../../analyzer.py): `answered_model`
-(the model actually returned), `api_request_id` (for tracing), `request_settings` (every
-call kwarg except `system` and `messages`, so no prompt or résumé text is logged),
-`served_as` (service tier, speed and inference geo from the response, each `None` when absent),
-`thinking_tokens`,
-and `attempt` (1 for first pass, 2 for retry). On `status="error"` rows, two additional
-fields carry `error_type` (the exception class name) and `error_message`, a redacted
-exception text via [`analyzer.py:_redact_error_message`](../../../analyzer.py)
-(whitespace collapsed, API-key shapes and header values masked, 500-character cap).
+site in `analyzer.py` bypasses it `[synthesis]`. Each JSONL telemetry record is written
+via `_emit_call_log` (stamped with the call kind under the JSON key
+`call`, plus `model` and `prompt_version`). The row is written either
+immediately in the `finally` of [`analyzer.py:_call_llm_streaming`](../../../analyzer.py)
+(the default), or deferred to the parse loop via [`analyzer.py:_emit_deferred_row`](../../../analyzer.py)
+when a caller passes `row_sink` — the deferred path stamps the row with `parse_outcome`
+after JSON validation completes `[synthesis]` (item 181).
+Each row carries provenance fields via [`analyzer.py:_provenance_fields`](../../../analyzer.py),
+which merges [`analyzer.py:_identity_fields`](../../../analyzer.py) (`prompt_sha256` from
+[`call_identity.py:text_sha256`](../../../call_identity.py), `producer_id`, and inside
+an active trace context `trace_id` and `span_id`, plus `parent_span_id` and `case_id` when the context carries them)
+with call-execution fields: `answered_model` (the model actually returned), `api_request_id`
+(for tracing), `request_settings` (every call kwarg except `system` and `messages`, so no
+prompt or résumé text is logged), `served_as` (service tier, speed and inference geo from
+the response, each `None` when absent), `thinking_tokens`, and `attempt` (1 for first pass, 2
+for retry). On `status="error"` rows, two additional fields carry `error_type` (the exception
+class name) and `error_message`, a redacted exception text via
+[`analyzer.py:_redact_error_message`](../../../analyzer.py) (whitespace collapsed, API-key shapes
+and header values masked, 500-character cap).
 The eval judges (`evals/runner.py`) do not go through the funnel: their one path,
 [`evals/runner.py:_judge_create`](../../../evals/runner.py), writes the same row shape via
 [`analyzer.py:log_judge_call`](../../../analyzer.py) under `judge_grade` /

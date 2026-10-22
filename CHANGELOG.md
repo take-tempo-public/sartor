@@ -13,6 +13,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: record identity and a gate on system-prompt changes (`feat/eval-record-identity`, item 181, eval redesign step 1)
+
+Every call-log row and eval record now says what produced it, a run's rows are tied together by id, and a system prompt can no longer change
+without a version bump. **No prompt text changed (no `PROMPT_VERSION` bump), no pin moved, no paid call was made, and no dependency was
+added** (`call_identity.py` is stdlib-only; it is registered in `pyproject.toml`'s `py-modules` and mypy roster).
+
+- **Content hash and producer id on every row:** `prompt_sha256` (SHA-256 of the system text as sent, `sha256:<hex>`; a hash, never the
+  text) and `producer_id` (a hash over call kind, that hash, the answering model and the settings sent; a `_retry` is the same producer).
+  Judge rows carry both.
+- **Parse outcome:** rows written by `_parse_or_retry` / `_parse_or_retry_streaming` carry `parse_outcome` (`accepted_first_try`,
+  `accepted_after_retry`, `accepted_soft_leak`, `rejected_retried`, `refused`). The row is now handed to the parse loop and written once after
+  the reply is judged, in a `finally`, so a failed send or an abandoned stream still writes exactly one row.
+- **Ids for an eval run:** one `trace_id` per `run_suite` invocation, a case span per fixture, and `trace_id` / `span_id` /
+  `parent_span_id` / `case_id` on every call row written inside it (W3C sizes; absent outside an eval run). Records carry `trace_id`,
+  `case_id` and the case `span_id`. `SCHEMA_VERSION` stays 3.
+- **Fixed, cost read by id:** a fixture's `cost_usd` was the sum of rows for `eval:<fixture>` after a start time, so two runs overlapping on one
+  fixture were added together, and every fixture rescanned the whole log. It now selects by trace and case id from the byte offset where the
+  fixture started. `cost_usd` is still generation-only; `judge_cost_usd` is on the `eval_composite` record, and `EvalRunResult` gains
+  `trace_id`, `judge_cost_usd` and `total_cost_usd`. `_eval_cost_since` is removed.
+- **Gate:** `evals/prompt_hashes.json` locks a hash per system prompt (17 registry prompts, the avatar prompt, the `extract_experiences`
+  prompt). `tests/test_prompt_hash_gate.py`, part of `python -m scripts.gate`, fails when a hash changed under an unchanged version and when
+  the lock is stale; `python -m scripts.prompt_lock --write` refuses to lock a changed hash under an unchanged version. **Limits, stated:**
+  user-prompt templates are not covered (still convention, unenforced), and a hand-edited lock passes.
+- Also: `tests/conftest.py` redirects the runner's copy of the log path (stubbed `run_suite` tests used to read the developer's real log);
+  `SECURITY.md`'s "13 fields" count and the field tables in `evals/README.md` and `commands/bench.md` are updated; `docs/governance/enforcement.md`
+  moves the system-prompt half of the bump rule from "convention + witness" to a shipped gate (C3).
+
 ### Added: a design for one eval scheme before the public release (`docs/eval-redesign`, item 137)
 
 Planning item 137's candidate A/B showed the eval harness cannot answer the Haiku question for most Haiku calls. This branch adds the

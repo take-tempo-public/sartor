@@ -2,7 +2,7 @@
 
 The judges (`evals.runner._grade`, `_score_distinctiveness`) used to call `messages.create`
 directly and discard the response, so their spend and the model that scored a fixture appeared
-nowhere. They now write a `judge_*` row through `analyzer.log_judge_call`, and `_eval_cost_since`
+nowhere. They now write a `judge_*` row through `analyzer.log_judge_call`, and `_case_cost`
 keeps eval `cost_usd` generation-only. `test_judge_row_mirrors_every_request_kwarg` is the
 fail-closed half (charter C-11), the judge-side twin of `tests/test_call_provenance.py`.
 
@@ -13,7 +13,6 @@ real log), so nothing reaches the developer's `logs/llm_calls.jsonl`.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -22,7 +21,7 @@ import pytest
 import analyzer
 import hardening
 from evals import runner
-from evals.runner import JUDGE_MODEL, _eval_cost_since, _grade, _score_distinctiveness
+from evals.runner import JUDGE_MODEL, _case_cost, _grade, _score_distinctiveness
 
 PROMPT_SENTINEL = "SENTINEL-JUDGE-INPUT-must-never-be-logged"
 
@@ -207,7 +206,7 @@ def test_magicmock_judge_response_leaves_a_parseable_log_line(rubric):
 
 
 def test_eval_cost_ignores_judge_rows_whatever_their_order(monkeypatch, tmp_path):
-    t0 = datetime.now(UTC).isoformat()
+    trace = "ab" * 16
     base = {
         "username": "eval:fx",
         "model": analyzer.SONNET_MODEL,
@@ -215,27 +214,32 @@ def test_eval_cost_ignores_judge_rows_whatever_their_order(monkeypatch, tmp_path
         "output_tokens": 1000,
         "cache_creation_input_tokens": 0,
         "cache_read_input_tokens": 0,
+        "trace_id": trace,
+        "case_id": "fx",
     }
-    ts = datetime.now(UTC).isoformat()
     log = tmp_path / "llm_calls.jsonl"
     log.write_text(
         "\n".join(
             json.dumps(r)
             for r in (
-                {**base, "call": "generate", "timestamp": ts},
-                {**base, "model": JUDGE_MODEL, "call": "judge_distinctiveness", "timestamp": ts},
-                {**base, "model": JUDGE_MODEL, "call": "judge_grade", "timestamp": ts},
+                {**base, "call": "generate"},
+                {**base, "model": JUDGE_MODEL, "call": "judge_distinctiveness"},
+                {**base, "model": JUDGE_MODEL, "call": "judge_grade"},
             )
         ),
         encoding="utf-8",
     )
     monkeypatch.setattr(runner, "LLM_LOG_PATH", log)
 
-    cost = _eval_cost_since(t0, "fx")
+    with analyzer.trace_context(trace, case_id="fx"):
+        cost = _case_cost(0)
+        judge = _case_cost(0, judge=True)
 
     generation_only = hardening.compute_call_cost({**base, "call": "generate"})
+    judge_only = 2 * hardening.compute_call_cost({**base, "model": JUDGE_MODEL})
     assert generation_only > 0
     assert cost == pytest.approx(generation_only)
+    assert judge == pytest.approx(judge_only)
 
 
 def test_model_snapshots_follow_the_analyzer_pins():

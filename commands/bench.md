@@ -18,6 +18,7 @@ Read the LLM telemetry log and print a summary table.
    - cache hit ratio = `sum(cache_read) / (sum(cache_read) + sum(cache_creation))` — undefined when both are zero
    - rough cost estimate using current Anthropic pricing (state the assumed rates in the output so the user can verify)
    - rows also carry `answered_model`, `api_request_id`, `request_settings`, `served_as`, `thinking_tokens` and `attempt` (not aggregated here); `judge_grade` / `judge_distinctiveness` are eval-judge calls, so read them as their own groups
+   - rows also carry `prompt_sha256` (hash of the system text as sent) and `producer_id` (a hash of call kind, prompt hash, model and settings, the same for a call and its `_retry`), so two `prompt_version` groups with the same `producer_id` ran identically; `parse_outcome` appears only on rows written by a parse loop; `trace_id`, `span_id`, `parent_span_id` and `case_id` appear only on eval-run rows
 3. Print the table sorted by `count` descending.
 4. After the table, surface any anomalies:
    - Cache hit ratio < 30% on `generate` calls (caching may not be working — likely the system block isn't structured correctly)

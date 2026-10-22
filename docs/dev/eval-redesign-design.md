@@ -6,8 +6,9 @@
 > one record format, and a dashboard that drills from a call kind down to a single case.
 > **Audience:** `dev` — the owner deciding what to build, and the agents who will build it.
 > **Authoritative for:** the 2026-10-20 gap map and the proposed scheme. **Status: proposed;
-> the owner answered the eight decisions in section 8 on 2026-10-20. Nothing in section 5 or
-> later is built.** The build order is filed as epic 180. It defers to
+> the owner answered the eight decisions in section 8 on 2026-10-20. Built so far: build step 1
+> (section 5.5 and the cost-by-window fix; branch `feat/eval-record-identity`, item 181). Nothing
+> else in section 5 or later is built.** The build order is filed as epic 180. It defers to
 > [`../governance/charter.md`](../governance/charter.md) (claims discipline C-0 governs) and to
 > [`evals/README.md`](../../evals/README.md) for how the harness works today.
 > **Source of record:** item 137's updates in
@@ -316,6 +317,15 @@ Section 6 gives the research behind this. The requirements, whatever the source:
   IT or government only (6.1 to 6.3).
 
 ### 5.5 Identity and versioning
+
+**Built in build step 1 (item 181), with these departures from the text below, each decided on the
+branch:** the hash and producer id are `sha256:<hex>` (spolia P-0001 and the `journal@2` pattern), not a
+short hash; the lock covers system prompts only (user-prompt templates are inline f-strings with
+dynamic parts, so the bump rule for them stays unenforced); ids appear only on rows written inside an
+eval run; `case_id` is the fixture name until the catalog (step 2) defines it; the parse outcome has five
+values, not three: the two added are `rejected_retried` (every attempt writes a row, so the first
+attempt of a retried pair needs one) and `accepted_soft_leak` (the handle-leak carve-out in
+`_accept_soft_leaks`); `SCHEMA_VERSION` stays 3.
 
 Today `PROMPT_VERSION` is a human label for 17 prompts. Add, without removing it:
 

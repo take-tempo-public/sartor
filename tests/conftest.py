@@ -31,6 +31,14 @@ def _default_llm_log_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     import analyzer
 
     monkeypatch.setattr(analyzer, "LOG_PATH", tmp_path / "llm_calls.jsonl")
+    # The eval runner keeps its own copy of the log path (it reads the log back for spend). Item 181:
+    # redirect it too, or a stubbed `run_suite` scans the developer's real log. Only when the module
+    # is already loaded: importing `evals.runner` (blueprints, hardening, the DB layer) just to patch
+    # it would add that import to every test in the suite, and a test that loads it later patches
+    # `LLM_LOG_PATH` itself (see tests/test_judge_call_provenance.py).
+    runner = sys.modules.get("evals.runner")
+    if runner is not None:
+        monkeypatch.setattr(runner, "LLM_LOG_PATH", tmp_path / "llm_calls.jsonl")
 
 
 @pytest.fixture(autouse=True)

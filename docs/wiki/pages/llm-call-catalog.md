@@ -105,7 +105,7 @@ All LLM calls emit one JSONL record per call to `logs/llm_calls.jsonl` via
   `analyzer.py:_call_llm_streaming` re-labels the `TypeError` as
   `LLMConfigurationError` (chained with `from exc`) `[synthesis]`.
 
-These two fields ride ONLY on `status="error"` rows. Every row (both `status="ok"` and `status="error"`) carries six provenance fields added by item 175 ([`analyzer.py:_provenance_fields`](../../../analyzer.py)) `[synthesis]`:
+These two fields ride ONLY on `status="error"` rows. Every row (both `status="ok"` and `status="error"`) carries eight core provenance fields (six from item 175 plus two from item 181, [`analyzer.py:_provenance_fields`](../../../analyzer.py)) `[synthesis]`:
 
 - **`answered_model`** — the `model` the API response reports. `model` keeps meaning "the id requested" (pricing and the dashboard key on it). On the two live calls observed (2026-10-19), the response echoed the requested alias, so this field does not name a dated version behind an alias; the request id below is the per-call handle `[synthesis]`.
 - **`api_request_id`** — the SDK stream's request id for that call, read as soon as the stream opens so a call that fails mid-stream still logs it.
@@ -113,8 +113,16 @@ These two fields ride ONLY on `status="error"` rows. Every row (both `status="ok
 - **`served_as`** — a fixed-shape dict of `service_tier`, `speed` and `inference_geo` (each `None` if the response's usage does not carry it), or `None` entirely when it carries none of the three.
 - **`thinking_tokens`** — `usage.output_tokens_details.thinking_tokens` when the response carries it, else `None`; it was `None` on both live calls observed, neither of which thinks `[synthesis]`.
 - **`attempt`** — `1` for a first pass, `2` for the `<kind>_retry` pass.
+- **`prompt_sha256`** — SHA-256 hash of the system text as sent ([`call_identity:text_sha256`](../../../call_identity.py)), for content-addressing the prompt. Computed eagerly per call (microseconds on a ~10 KB system prompt vs. the network round-trip cost, item 181) `[synthesis]`.
+- **`producer_id`** — call-specific identifier derived from the call kind (without `_retry`), the prompt hash, the answering model (else requested model), and request settings, via [`call_identity:producer_id`](../../../call_identity.py). `None` if it cannot be built (e.g., when settings carry a float value, or when the call failed before a request was built, so there is no system text to hash; `prompt_sha256` is `None` in that last case too) `[synthesis]`.
 
-Additionally, **`pinned_model`** (model-override calls only) — when a call's `effective_model` differs from its `requested_model` (because `model_overrides()` replaced the pin with a candidate), this field records the pin that was replaced. On ordinary calls (no override active), the field is absent so the row remains byte-identical to pre-override rows ([`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) `[synthesis]`.
+Additionally, rows inside an active [`analyzer.py:trace_context(...)`](../../../analyzer.py) call add up to four trace-context fields via item 181:
+- **`trace_id`, `span_id`** — the trace identifiers; `span_id` is generated fresh for each call via [`call_identity:new_span_id`](../../../call_identity.py); `trace_id` is inherited from the context.
+- **`parent_span_id`, `case_id`** — also added within the trace context if they are set; absent when not set.
+
+Also, **`pinned_model`** (model-override calls only) — when a call's `effective_model` differs from its `requested_model` (because `model_overrides()` replaced the pin with a candidate), this field records the pin that was replaced. On ordinary calls (no override active), the field is absent so the row remains byte-identical to pre-override rows ([`analyzer.py:_call_llm_streaming`](../../../analyzer.py)) `[synthesis]`.
+
+**`parse_outcome`** (item 181, rows from `_parse_or_retry` / `_parse_or_retry_streaming` only) — the fate of the LLM response after parsing: `accepted_first_try`, `accepted_after_retry`, `accepted_soft_leak` (the handle-leak carve-out), `rejected_retried` (failed validation, a retry follows), or `refused` (failed on the last attempt). Rows from [`analyzer.py:avatar_answer_streaming`](../../../analyzer.py) and [`analyzer.py:log_judge_call`](../../../analyzer.py) carry no `parse_outcome` because they do not go through the parse loops, and neither does an error row whose send failed before any reply existed to parse (the outcome is stamped by [`analyzer.py:_emit_deferred_row`](../../../analyzer.py) only when a verdict was reached). `check_refinement_scope` does go through `_parse_or_retry`, so its rows carry one `[synthesis]`.
 
 Eval judges ([`evals/runner.py:_judge_create`](../../../evals/runner.py)) now also write telemetry rows via [`analyzer.py:log_judge_call`](../../../analyzer.py) under call kinds `judge_grade` and `judge_distinctiveness`, with the same row shape and provenance fields `[synthesis]`.
 

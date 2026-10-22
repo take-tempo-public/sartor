@@ -175,7 +175,13 @@ user-data folder for an installed wheel. Everything below, including the
   token counts, latency, username, `prompt_version`, status — 13 fields on
   every row), plus six provenance fields (item 175): the model that answered,
   the API request id, the request settings (`max_tokens`, `thinking`, …), how
-  the call was served, thinking tokens and the attempt number, plus, on failed calls only (`status: "error"`), two more:
+  the call was served, thinking tokens and the attempt number, plus two
+  identity fields (item 181): `prompt_sha256`, a SHA-256 of the system prompt as sent (a
+  hash, never the prompt text), and `producer_id`, a SHA-256 over the call
+  kind, that hash, the model and the settings; plus, only on rows written by
+  the response-parsing paths, `parse_outcome`, and, only on rows written
+  inside an eval run, random `trace_id` / `span_id` / `parent_span_id` and the
+  fixture name as `case_id`; plus, on failed calls only (`status: "error"`), two more:
   `error_type` and a free-text `error_message`. That message is the
   exception's own text — for an Anthropic API error, the server's error
   response — with whitespace collapsed, `sk-ant-…` key shapes and

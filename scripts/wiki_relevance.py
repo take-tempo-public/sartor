@@ -142,6 +142,7 @@ RELEVANT_OVERRIDES = frozenset(
         "scripts/enforcement/guards/route_security_lint.py",
         "scripts/gate.py",
         "scripts/generate_openapi_spec.py",
+        "scripts/prompt_lock.py",
         "scripts/project_docs_to_mdx.py",
         "scripts/release_version.py",
         "scripts/verify_doc_template.py",
@@ -161,6 +162,7 @@ KNOWN_RELEVANT_TOP_LEVEL = frozenset(
         # repo root — production code
         "app.py",
         "analyzer.py",
+        "call_identity.py",
         "config.py",
         "corpus_to_json_resume.py",
         "demo_fixtures.py",
