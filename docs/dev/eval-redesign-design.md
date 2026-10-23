@@ -376,8 +376,9 @@ Section 6 gives the research behind this. The requirements, whatever the source:
 - **The reachability check** (`tests/test_golden_reachability.py`) stubs the Anthropic client, not the
   functions `run_suite` calls, so it sees a gate inside one of them. Its control arm is the
   `recommend_summary` gap: a cell with one summary variant fails the richness predicate and the call does
-  not fire. The 13 kinds `run_suite` never reaches are covered by static predicates over the cell, each the
-  staging rule of the route that does reach the kind. A converted pilot (an existing persona) cannot meet
+  not fire. Of the 13 kinds `run_suite` never reaches, 12 are covered by static predicates over the cell, each
+  the staging rule of the route that does reach the kind; the thirteenth, `avatar_answer`, takes its questions
+  from the repository's documentation, not from the dataset. A converted pilot (an existing persona) cannot meet
   four of them and carries a **waiver** the checker requires to be exact; a `frozen` manifest must have
   none.
 - **The prose generator** (`evals/golden_author.py`) is built and tested against a stub only. **It has

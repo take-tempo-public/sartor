@@ -133,7 +133,7 @@ Recorded while building the generator (step 7), after the first version of this 
 - **The committed corpus seed's `area` / `study_type` keys** (`evals/fixtures/synthetic/corpus/role-summary-drafting/seed.json`)
   are not read by the importer (`evals/seed_import.py:280` reads `field`), so the education discipline is lost. Not
   fixed here: that file is under `synthetic/`. The golden renderer writes `field`, and a test asserts every seed key is
-  one the importer reads. To be filed as a carry-forward observation.
+  one the importer reads. Filed as item 192 (watching).
 - **Seed-borne clarifications.** The seed format (v1) has no clarifications and the importer ignores them; `iterate_clarify`
   gets its answers from `expected.json`. A seed v2 is not designed here.
 - **The freeze is prose-enforced.** Nothing stops a later commit rewriting both a cell and the manifest hash. Stated as a limit;

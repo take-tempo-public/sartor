@@ -42,3 +42,7 @@ Item 182 landed (PR #199, merge `186a064`), so this item is unblocked. The owner
 - Run-size flags and the single-call evals of `generate` / `generate_cover_letter` are step 4 (item 184), by the owner's answers on epic 180.
 
 Consumers: `docs/dev/blast-radius/eval-dataset-format.md`.
+
+### 2026-10-22 -- built (feat/eval-dataset-format); waits on the owner's go to push
+
+Step 3a is built: the format (`evals/golden_set.py`, `evals/golden/golden-v1/` with three converted pilot cells and 12 exact waivers), per-cell seeds in the runner, the stub-tested generator (`evals/golden_author.py`, never run for real), the reachability check, and the docs. No paid call was made. Open on purpose until the PR merges: it closes with a `verified_by` naming `tests/test_golden_set.py`, `tests/test_golden_author.py`, `tests/test_golden_reachability.py`, `tests/test_eval_golden_runner.py` and the green CI run of the merge. Found and filed: item 192 (the committed corpus seed's `area` / `study_type` keys are dropped by the importer). Proposal for the owner: design doc 6.5 (the USAJOBS fetch and charter C-2).

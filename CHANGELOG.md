@@ -33,8 +33,9 @@ paid call was made, and no dependency was added** (`evals/golden_set.py` is stdl
   and closed one at a time. The `--seed` path is unchanged, and a fixture's seed is read only in assemble mode so `--suite real` is unchanged.
   `golden-v1` is not part of `--suite all`.
 - **A reachability check** (`tests/test_golden_reachability.py`) runs every cell through the real pipeline against a stub client, one level below the
-  existing call-plan test, and asserts the calls that fire. Its control arm is the old `recommend_summary` gap. The 13 kinds `run_suite` never reaches
-  are covered by static predicates, tied to the catalog in both directions.
+  existing call-plan test, and asserts the calls that fire. Its control arm is the old `recommend_summary` gap. Of the 13 kinds `run_suite` never reaches,
+  12 are covered by static predicates (the thirteenth, `avatar_answer`, takes its questions from the documentation), tied to the catalog in both
+  directions.
 - **The prose generator** (`evals/golden_author.py`, call kind `dataset_author`, an `exempt` catalog entry) is built and tested against a stub only.
   **It has never made a real call**, so the live request is as documented, not observed. Its model is a pin of its own, `claude-opus-5-5`, outside the
   product pins and both arms of the item 137 comparison. It needs `--confirm-paid` and `--max-spend`, and uses no fallback model, so the recorded
