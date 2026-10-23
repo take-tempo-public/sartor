@@ -97,8 +97,8 @@ class _Stream:
     def __enter__(self) -> _Stream:
         return self
 
-    def __exit__(self, *exc: object) -> bool:
-        return False
+    def __exit__(self, *exc: object) -> None:
+        return None
 
     @property
     def text_stream(self) -> Any:
