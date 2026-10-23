@@ -1667,7 +1667,7 @@ class TestCandidateRuns:
         "bad",
         [
             {"OPUS_MODEL": "claude-sonnet-5-5"},
-            {"SONNET_MODEL": "claude-opus-5-5"},  # no THINKING_POLICY / price entry today
+            {"SONNET_MODEL": "claude-opus-5-5"},  # priced, but no THINKING_POLICY entry on purpose
         ],
     )
     def test_bad_override_is_refused_before_any_client_or_record(self, tmp_path, monkeypatch, bad):

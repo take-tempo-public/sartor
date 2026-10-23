@@ -85,6 +85,7 @@ from blueprints.generation import (  # noqa: E402
 )
 from corpus_to_json_resume import freeze_approved_composition  # noqa: E402
 from evals import eval_catalog  # noqa: E402
+from evals.golden_author import AUTHOR_MODEL  # noqa: E402
 from evals.seed_import import load_seed, seeded_session  # noqa: E402
 from hardening import (  # noqa: E402
     ContextSet,
@@ -1066,7 +1067,12 @@ def _call_plan(
 
 def _pin_models(model_overrides_map: dict[str, str] | None) -> dict[str, str]:
     """Pin name -> the model id a run sends: the pins, with a ``--model-override`` applied (never the judge)."""
-    pins = {"SONNET_MODEL": SONNET_MODEL, "HAIKU_MODEL": HAIKU_MODEL, "JUDGE_MODEL": JUDGE_MODEL}
+    pins = {
+        "SONNET_MODEL": SONNET_MODEL,
+        "HAIKU_MODEL": HAIKU_MODEL,
+        "JUDGE_MODEL": JUDGE_MODEL,
+        "AUTHOR_MODEL": AUTHOR_MODEL,
+    }
     for pin, model in (model_overrides_map or {}).items():
         if pin in ("SONNET_MODEL", "HAIKU_MODEL"):
             pins[pin] = model

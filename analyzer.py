@@ -1008,8 +1008,13 @@ def log_judge_call(
     response: object,
     elapsed_ms: int,
     error: BaseException | None = None,
+    prompt_version: str | None = None,
 ) -> str | None:
     """Append the telemetry row for one non-streaming eval-judge call; return its API request id.
+
+    ``prompt_version`` names the version of a prompt that is not the product's (the golden-set
+    author, ``evals/golden_author.py``); left ``None`` the row carries the product's
+    `effective_prompt_version()` exactly as before.
 
     The eval judges (`evals/runner.py`) call `client.messages.create` directly, so they never
     reached `_call_llm_streaming` and left no row (item 175 gap 5). Same row shape and
@@ -1026,7 +1031,7 @@ def log_judge_call(
         "run_id": "",
         "call": call_kind,
         "model": model,
-        "prompt_version": effective_prompt_version(),
+        "prompt_version": prompt_version or effective_prompt_version(),
         "input_tokens": _int_or_none(getattr(usage, "input_tokens", 0)) or 0,
         "output_tokens": _int_or_none(getattr(usage, "output_tokens", 0)) or 0,
         "cache_creation_input_tokens": _int_or_none(

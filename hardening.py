@@ -475,6 +475,15 @@ MODEL_PRICING: dict[str, dict[str, float]] = {
         "cache_write": 2.50,
         "cache_read": 0.10,
     },
+    # Opus 5.5: the golden-set author's model (evals/golden_author.py), not a product pin. Rates read
+    # from the pricing page on 2026-10-22 (page text, not an invoice): $4 in, $20 out, $5 for a
+    # 5-minute write, $0.20 for a hit (0.05x, the page's note for Opus 5.5 and Sonnet 5.5).
+    "claude-opus-5-5": {
+        "in": 4.00,
+        "out": 20.00,
+        "cache_write": 5.00,
+        "cache_read": 0.20,
+    },
     # Haiku 5.5: these are the rates for prompts up to 100,000 tokens; the higher tier is
     # MODEL_PRICING_TIERS below.
     "claude-haiku-5-5": {

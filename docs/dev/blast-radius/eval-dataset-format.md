@@ -22,9 +22,9 @@ Changed:
 - `evals/runner.py`: `--suite` choices, `_select_fixtures`, `_check_mode` and its two callers, `_load_fixture` (a
   `seed_path` argument), `run_suite` (per-fixture seeded session), `main`, `estimate_spend`, `_pin_models`.
 - `evals/eval_catalog.py`: `PINS`, `GROUPS`, `_pin_models`.
-- `analyzer.py`: `log_judge_call` (an optional `prompt_version=`), `THINKING_POLICY` (a `claude-opus-5-5` row), and the
+- `analyzer.py`: `log_judge_call` gains an optional `prompt_version=` (default `None` = today's behaviour). No `THINKING_POLICY` row (finding 1).
   "Opus is intentionally not used" comment above `SONNET_MODEL`.
-- `hardening.py`: `MODEL_PRICING` (a `claude-opus-5-5` row).
+- `hardening.py`: `MODEL_PRICING` (a `claude-opus-5-5` row, rates read from the pricing page 2026-10-22).
 - `scripts/wiki_relevance.py`: `IRRELEVANT_PREFIXES` gains the golden data directory. **This is a registered gated
   surface** (`scripts/enforcement/blast_radius.py`, the `helper` entry): the classifier behind a merge-blocking gate.
 - Tests: `tests/test_eval_catalog.py`, `tests/test_call_kind_telemetry.py`, `tests/test_egress_allowlist.py`,
@@ -82,20 +82,43 @@ Negative results (also findings):
 | 13 | `evals/eval_catalog.py:38` `PINS`, `:39` `GROUPS`, `:333` `_pin_models` | update | add `AUTHOR_MODEL` and a `dataset` group; `_pin_models` imports `evals.golden_author` for the id (still only `measure` imports the product). |
 | 14 | `tests/test_eval_catalog.py:47-55` `_ROUTED`, `:60-63` `_SUITE_DIRS`, `:98` `_pin`, `:228` `_pin_model`, `:367` site count | update | add `_author_create` to `_ROUTED` (no defaults: a missing `model=` / `system_prompt=` raises `GateCannotRead`), `golden-v1` to `_SUITE_DIRS`, `AUTHOR_MODEL` to `_pin_model`, and 26 to 27. |
 | 15 | `tests/test_call_kind_telemetry.py:74-102` `EXPECTED_CALL_KINDS` | update | add `dataset_author`; row emission is covered in `tests/test_golden_author.py`, as the judge kinds are in `test_judge_call_provenance.py`. |
-| 16 | `tests/test_egress_allowlist.py:121-145` `SANCTIONED_EGRESS_FILES` | update | `evals/golden_author.py` imports `anthropic` (it takes the client type), so it is listed on purpose, as `evals/runner.py` is. No new host: the destination is still the configured LLM provider (C-2 class a). |
-| 17 | `tests/test_data_root.py:267-282` `_CODE_ANCHORS` | update | `golden_set.py` and `golden_author.py` anchor paths with `Path(__file__)`; each is listed with its reason. |
+| 16 | `tests/test_egress_allowlist.py:121-145` `SANCTIONED_EGRESS_FILES` | no change (revised) | `evals/golden_author.py` takes the client as an argument and imports no network library; the CLI reaches `evals.runner._get_client` (already listed) with a function-local import. No new host: the destination is still the configured LLM provider (C-2 class a). The egress test passes both ways. |
+| 17 | `tests/test_data_root.py:267-282` `_CODE_ANCHORS` | update (revised) | only `evals/golden_set.py` anchors a path with `Path(__file__)`; `golden_author.py` does not, so it is not listed. |
 | 18 | `scripts/wiki_relevance.py:41-73` `IRRELEVANT_PREFIXES`; `tests/test_wiki_relevance_classification.py:53,96,108` | update | add the golden data directory with a reason line. The classification test reads the set, so it passes only if every prefix is a real directory; the directory is committed in the same change. |
-| 19 | `tests/test_model_overrides.py:204` | update | uses `claude-opus-5-5` as the "no policy, no price" refusal case. Adding the rows makes it a legal override, so the case moves to a still-unlisted id. |
-| 20 | `tests/test_eval_runner.py:1670` | update | the same case in `test_bad_override_is_refused_before_any_client_or_record`; same replacement id. |
-| 21 | `hardening.py:452` `MODEL_PRICING`; `tests/test_hardening.py:795-821` | update | add `claude-opus-5-5` with the four rates **read from the primary pricing page on the day**; the test then requires its `THINKING_POLICY` row too. If the page cannot be read, the work stops and goes to the owner: a guessed price is a C-0 violation. |
-| 22 | `analyzer.py:1357` `THINKING_POLICY` | update | add the Opus 5.5 row, **observed against the API contract in the pricing / models docs, not assumed** (Sonnet 5.5 rejects `disabled`; Opus's value is not known here). |
+| 19 | `tests/test_model_overrides.py:204` | update, comment only (revised) | uses `claude-opus-5-5` as the "no policy, no price" refusal case. Still true for the policy: the author pin has a price but no `THINKING_POLICY` row (finding 1), so Opus 5.5 stays an illegal override target and this case keeps its meaning. Its comment said an Opus 5.5 call has neither a price nor a policy; the price exists now, so the comment is corrected and the assertion is untouched (the refusal asserted is the policy one). |
+| 20 | `tests/test_eval_runner.py:1670` | update, comment only (revised) | the same case in `test_bad_override_is_refused_before_any_client_or_record`; still refused for the missing policy; its trailing comment is corrected the same way. |
+| 21 | `hardening.py:452` `MODEL_PRICING`; `tests/test_hardening.py:795-821` | update, done | `claude-opus-5-5` added with $4 in, $20 out, $5 for a 5-minute write, $0.20 for a hit, **read from the pricing page on 2026-10-22** (it matches the claude-api skill's cached table). `test_hardening` requires every `THINKING_POLICY` model to be priced, not the reverse, so a priced model without a policy passes. |
+| 22 | `analyzer.py:1357` `THINKING_POLICY` | no change (revised) | **no row**, finding 1. `_author_create` sends `thinking: {"type": "adaptive"}` and an effort itself, the only settings Opus 5.5 accepts, and records them in the row's `request_settings`. |
 | 23 | `analyzer.py:1002` `log_judge_call` and its 6 callers (`evals/runner.py:508,518`, `tests/test_call_record_identity.py:104,174`, `tests/test_eval_run_identity.py:51`, `tests/test_judge_call_provenance.py`) | update | an optional `prompt_version=` keyword, default `None` = today's `PROMPT_VERSION`, so every existing row is byte-identical. |
-| 24 | `analyzer.py:1344-1346` comment "Opus is intentionally not used" | update | the comment would be false next to an Opus row; it now says the author pin is not a product pin. |
-| 25 | `analyzer.model_overrides` (`analyzer.py:803-825`) | no change, declared | Opus 5.5 becomes an accepted `SONNET_MODEL` override target as a side effect of rows 21-22. Declared in the CHANGELOG; the override still cannot touch the judge or the author pin. |
+| 24 | `analyzer.py:1344-1346` comment "Opus is intentionally not used" | no change (revised) | it describes the product's models and is still true: the author pin is not a product model. |
+| 25 | `analyzer.model_overrides` (`analyzer.py:803-825`) | no change (revised) | with no `THINKING_POLICY` row, `--model-override SONNET_MODEL=claude-opus-5-5` is still refused before any paid call, so this branch opens no new product path on Opus 5.5. |
 | 26 | `evals/README.md:40, 172, 211, 213, 958` | update | `--suite` list, the `--fixture` lookup, the record's `suite` values, per-cell seeds. |
 | 27 | `commands/eval.md:3`, `commands/tune-from-annotations.md:47-63`, `.github/PULL_REQUEST_TEMPLATE.md:38-39`, `.github/workflows/ci.yml:113`, `AGENTS.md:273-274`, `CONTRIBUTING.md:181` | no change | they name `synthetic`, `real` or `anchor`; none enumerates the suite choices as a closed set. |
-| 28 | `evals/fixtures/synthetic/` consumers: `evals/runner.py:12,878`, `evals/corpus_drafting_probe.py`, `evals/anchors/anchor-v1/manifest.json`, `evals/catalog/{clarify,generate,generate_cover_letter,iterate_clarify}.toml`, `evals/results/baseline_v1.json`, `promptfooconfig.yaml`, `demo_fixtures.py`, `dashboard/templates/dashboard.html:824,1367`, `tests/test_eval_runner.py:1460-1477`, `tests/test_zero_pii_clone.py:102`, `tests/test_hardening.py:147-164` | deferred | 3b retires `synthetic/`, so these are 3b's to retarget. This branch leaves the directory byte-identical. |
+| 28 | `evals/fixtures/synthetic/` consumers: `evals/runner.py:12,878`, `evals/corpus_drafting_probe.py`, `evals/anchors/anchor-v1/manifest.json`, `evals/catalog/{clarify,generate,generate_cover_letter,iterate_clarify}.toml`, `evals/results/baseline_v1.json`, `promptfooconfig.yaml`, `demo_fixtures.py`, `dashboard/templates/dashboard.html:824,1367`, `tests/test_eval_runner.py:1460-1477`, `tests/test_zero_pii_clone.py:102`, `tests/test_hardening.py:147-164`, and this branch's own `tests/test_golden_set.py` (`TestConverter`, `TestWaivers`, `TestParser` read `evals/fixtures/synthetic/` to convert the pilots; they go with the converter) | deferred | 3b retires `synthetic/`, so these are 3b's to retarget. This branch leaves the directory byte-identical. |
 | 29 | `evals/catalog/dataset_author.toml` (new), `tests/test_eval_catalog.py:189-197` (file name = call kind) | update | an `exempt` entry whose `exempt` reason is over 40 characters and whose `exempt_approved` names the owner's 2026-10-22 decision. |
+
+---
+
+## Findings that changed the plan
+
+Recorded while building the generator (step 7), after the first version of this dossier.
+
+1. **Opus 5.5 takes no `THINKING_POLICY` row.** The claude-api skill (loaded 2026-10-22) states that
+   `{"type": "disabled"}` and a thinking budget are 400s on Opus 5.5 at every effort level, so the only
+   valid values are adaptive thinking and an effort. A policy row would also make Opus 5.5 a legal
+   `--model-override` target for product calls nobody has validated against it (forced `tool_choice`,
+   sampling parameters and prefill are 400s there). So the generator sends its own settings and the
+   product's policy table, the override path and the two refusal tests are untouched. Rows 19, 20, 22,
+   24 and 25 are revised from "update" to "no change" for this reason. Stated limit: the request shape
+   is as documented, not observed; no real call has been made.
+2. **The generator imports no network library**, so it needs no egress allowlist entry (row 16).
+3. **The price was read, not recalled.** Pricing page, 2026-10-22: Opus 5.5 $4 / $20 / $5 / $0.20.
+   It also settles a question earlier handoffs carried: Sonnet 5.5's cache-hit price is **$0.10** on the
+   page (0.05x), which is what `hardening.py` has. The skill's cached table says $0.20, so the skill's
+   table is the stale one.
+4. **No fallback model.** The skill advises `fallbacks` by default for `claude-opus-5-5` code. Declined
+   on purpose: a fallback would answer with another model, so the `model` recorded for the prose would
+   be wrong. A refusal on résumé prose raises and the cell is not written.
 
 ---
 

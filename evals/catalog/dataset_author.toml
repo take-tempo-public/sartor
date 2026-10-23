@@ -1,0 +1,9 @@
+schema = 1
+kind = "eval"
+call = "dataset_author"
+status = "exempt"
+model_pin = "AUTHOR_MODEL"
+prompt = "evals.golden_author.AUTHOR_SYSTEM_PROMPT"
+groups = ["dataset"]
+exempt = "The dataset tooling's own call: it writes the golden set's prose and is checked cell by cell by code (evals/golden_set.py), so it has no eval of its own."
+exempt_approved = "owner, 2026-10-22, plan mode: prose is written by a generator script pinned to claude-opus-5-5, registered as an exempt catalog entry"

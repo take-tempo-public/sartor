@@ -25,6 +25,7 @@ import pytest
 
 from evals import golden_set as gs
 from evals import runner
+from evals.seed_import import seeded_session
 
 PILOT_CELLS = ("data-ml-entry", "product-mgmt-senior", "sre-ops-mid")
 
@@ -202,7 +203,7 @@ class TestRunSuite:
     def test_the_corpora_are_opened_and_closed_one_at_a_time(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        real = runner.seeded_session
+        real = seeded_session
         state = {"open": 0, "max_open": 0, "opened": 0}
 
         @contextmanager
@@ -223,7 +224,7 @@ class TestRunSuite:
     def test_the_global_seed_path_still_opens_one_corpus_for_the_run(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        real = runner.seeded_session
+        real = seeded_session
         opened: list[int] = []
 
         @contextmanager
