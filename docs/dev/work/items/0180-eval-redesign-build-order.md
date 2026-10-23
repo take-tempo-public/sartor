@@ -27,3 +27,13 @@ Step 1 (item 181) merged as PR #198 and is closed. Step 2 (item 182) is built on
 - **`--max-spend`'s pre-flight cannot price an unmeasured kind**, and both judge kinds are unmeasured until a paid run writes judge rows to the call log. The runtime cap bounds them. Re-run `python -m evals.eval_catalog measure --write` after the first paid run (step 3's calibration run) so the estimate prices the judge.
 - **`evals/catalog/costs.json` holds one machine's token means.** Step 3's calibration run on the standard dataset is what makes them a shared figure.
 - **No step builds the run-size flags `--eval <kind>`, `--group`, `--affected-by` and `--full`** that design section 5.2 describes. Section 9's rows name the dataset (3), the call evals (4 to 6), the compare protocol (7), the dashboard (8), the judge (9) and OTel (10), not these. They need the catalog (built) and case files (step 3 onward). Decide which step owns them before step 4 starts, since step 4's call evals are what they would run.
+
+### 2026-10-22 -- step 3 split into 3a and 3b; the build-order questions answered (feat/eval-dataset-format)
+
+Step 2 (item 182) merged as PR #199 (`186a064`). The owner chose step 3 and decided, in plan mode:
+- **Step 3 is two branches.** 3a is item 183 on `feat/eval-dataset-format` (format, generator, per-cell seeds, reachability check, three pilot cells; no paid call). 3b is new item 191 on `feat/eval-dataset-v1` (the paid generation of the 48 cells, the calibration run, retiring `synthetic/`). Item 184 and item 10 depend on 191 as well as 183. The design doc's section 9 row 3 is split to match.
+- **The run-size flags** (`--eval`, `--group`, `--affected-by`, `--full`) are built in **step 4** (item 184), the step whose call evals they select. This answers the 2026-10-21 finding that no step owned them.
+- **`generate` and `generate_cover_letter` get a single-call eval in step 4**, taking a captured `context_set` as input, so tuning the generate prompt does not re-run `analyze`. This answers the 2026-10-21 finding that no step covered them. Item 184's scope is not yet edited to say so; it is the first thing step 4 does.
+- **One fixture per JD** in the golden set: `case_id` is `golden-v1/<cell>--<industry>`, so the full tier is up to 96 cases.
+- **The dataset's prose is written by a generator script** pinned to `claude-opus-5-5`, outside the product pins and both arms of item 137's A/B.
+- **The USAJOBS fetch is deferred** to a branch of its own after the owner decides the C-2 / D-6 amendment (3a writes the proposal).

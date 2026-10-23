@@ -2,18 +2,17 @@
 schema = 1
 id = 183
 kind = "item"
-title = "Eval redesign step 3: standard dataset, captured inputs, reachability check"
-status = "blocked"
-blocked_on = "step 2 (item 182) has not landed"
+title = "Eval redesign step 3a: dataset format, generator, per-cell seeds, reachability check"
+status = "open"
 depends_on = [182]
 decision_owner = "agent"
 epic = 180
-branches = ["feat/eval-dataset-v1"]
-refs = ["docs/dev/eval-redesign-design.md"]
-summary = "O*NET synthetic matrix, captured upstream inputs, reachability check; on-demand public fetch only if it clears C-2."
+branches = ["feat/eval-dataset-format"]
+refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-format.md"]
+summary = "Step 3a, no paid call: golden-set format, stub-tested generator, per-cell seeds, reachability check, 3 pilots (3b: 191)."
 ```
 
-Step 3 of the eval redesign build order: docs/dev/eval-redesign-design.md section 9, row 3. Scope lives there.
+Step 3 of the eval redesign build order: docs/dev/eval-redesign-design.md section 9, row 3. Scope lives there. The owner split the step on 2026-10-22: this item is 3a; the paid generation of the 48 cells, the calibration run and the retirement of `evals/fixtures/synthetic/` are item 191.
 Re-read the O*NET and dataset licence pages at the primary source before committing anything (the design doc's research is reported, not verified). The on-demand fetch is an outbound connection: charter C-2 names two destinations, so it takes the D-6 opt-in route and passes `tests/test_egress_allowlist.py`, or returns to the owner as an amendment.
 
 ## Updates
@@ -31,3 +30,15 @@ What this step must decide or do, given the research: (1) the profession axis, o
 Decided (recorded in the design doc's section 8 and 6.4): (1) **profession axis: option B**, 12 professions by 4 levels, 48 cells, tech split into six families; (2) **golden set all-authored** from O*NET and a level ladder, no committed third-party posting or résumé text; (3) **non-tech levels: the authored rule is accepted**, written in the dataset manifest and marked authored, not sourced; (5) **exploration fetch: USAJOBS only**, NYC Jobs not targeted.
 
 Still open for this step: (4) tier sizes, from the calibration run's measured cost and not from the 6.4 guess; the C-2 route for the USAJOBS fetch (D-6 opt-in and `tests/test_egress_allowlist.py`, or an amendment back to the owner); re-reading the USAJOBS terms at the start of the step, since the page shows no effective date; the API key, which the owner registers; and the primary-source licence re-reads (O*NET's "Except as noted below" text, the DDaT ladders for roles other than software developer) before any of it is relied on. The status stays blocked on item 182.
+
+### 2026-10-22 -- unblocked; split into 3a and 3b; started on feat/eval-dataset-format
+
+Item 182 landed (PR #199, merge `186a064`), so this item is unblocked. The owner chose this item and decided, in plan mode:
+- **Split.** This item is **3a**, no paid call: the cell format, the profile builder, a prose generator script (built and tested against a stub client, not run for real), per-cell seeds in the runner, the reachability check, and three pilot cells converted from the existing personas. **3b is item 191:** the remaining professions, the paid generation of the 48 cells, the capped calibration run, retiring `evals/fixtures/synthetic/`, and the final tier sizes.
+- **Prose** is written by the generator script (committed prompt, its own pin `AUTHOR_MODEL` = `claude-opus-5-5`, model id + prompt version + sha256 recorded per cell), not by hand. Opus 5.5 is outside the product pins and both arms of item 137's A/B, so no evaluated model wrote its own test set.
+- **One fixture per JD:** `case_id` is `golden-v1/<cell>--<industry>`, so the full tier is up to 96 cases, not 48. 3b's cost estimate must say so.
+- **The USAJOBS fetch is deferred.** 3a writes a C-2 / D-6 amendment proposal (design doc 6.5) for the owner's ceremony and builds no fetch code. The terms are re-read in a browser first; the date read is recorded in 6.5.
+- **Wiki:** the golden data directory is classified irrelevant in `scripts/wiki_relevance.py`, because about four data files per cell would otherwise reach the merge-blocking limit of 75 on their own.
+- Run-size flags and the single-call evals of `generate` / `generate_cover_letter` are step 4 (item 184), by the owner's answers on epic 180.
+
+Consumers: `docs/dev/blast-radius/eval-dataset-format.md`.
