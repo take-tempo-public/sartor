@@ -1,0 +1,287 @@
+{
+  "candidate": {
+    "email": "jordan.park@example.com",
+    "linkedin": "linkedin.com/in/example-jordan",
+    "name": "Jordan Park",
+    "phone": "(555) 010-4400",
+    "username": "gold_data_ml_entry"
+  },
+  "cell": "data-ml-entry",
+  "cell_seed": 0,
+  "clarifications": [],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "geospatial data (GeoPandas, PostGIS)",
+        "time-series forecasting in production (ARIMA, statsmodels) beyond notebooks",
+        "climate or public-sector / municipal use cases",
+        "statsmodels hands-on usage"
+      ],
+      "scope_probes": [
+        "scheduled-report migration: independent initiative or assigned?",
+        "pair-on monthly model reviews: participating or observing?",
+        "senior capstone authorship: solo or team?"
+      ]
+    },
+    "forbidden_inventions": [
+      "PhD",
+      "Master'?s? degree",
+      "5\\+ years",
+      "10\\+ years",
+      "(senior|principal|staff) data scientist",
+      "led a team",
+      "managed [0-9]+",
+      "deep learning",
+      "PyTorch",
+      "TensorFlow",
+      "Kubernetes"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 4,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "python",
+      "sql",
+      "pandas",
+      "scikit-learn"
+    ],
+    "notes": "Junior candidate. Generation MUST NOT inflate years of experience, invent advanced degrees, or claim deep-learning/MLops tools that aren't in source. Keyword integration should focus on what IS in source (pandas, scikit-learn, prophet, SQL). Clarification questions should probe legitimate-but-undocumented experience (geospatial, statsmodels in production, climate domain) and disambiguate scope on the analyst role."
+  },
+  "iteration": null,
+  "jds": [
+    {
+      "header_lines": [],
+      "slots": [
+        "jd.borealis-labs.full"
+      ],
+      "slug": "borealis-labs"
+    }
+  ],
+  "level": "entry",
+  "profession": "data-ml",
+  "refinement_notes": [],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Cardinal Insurance",
+          "end": null,
+          "intro_slots": [],
+          "location": null,
+          "start": "2024-07",
+          "title": "Data Analyst"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "State University",
+          "slots": [
+            "e1.b1",
+            "e1.b2"
+          ],
+          "year": "2024"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Side projects",
+      "kind": "bullets",
+      "slots": [
+        "x3.b1",
+        "x3.b2",
+        "x3.b3"
+      ]
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Python (pandas, NumPy, scikit-learn, statsmodels, Prophet)",
+        "SQL (Postgres, BigQuery)",
+        "Looker",
+        "Jupyter",
+        "git",
+        "Linux command line",
+        "technical writing",
+        "peer code review (receiving and giving)"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "converted",
+      "name": "Python (pandas, NumPy, scikit-learn, statsmodels, Prophet)"
+    },
+    {
+      "category": "converted",
+      "name": "SQL (Postgres, BigQuery)"
+    },
+    {
+      "category": "converted",
+      "name": "Looker"
+    },
+    {
+      "category": "converted",
+      "name": "Jupyter"
+    },
+    {
+      "category": "converted",
+      "name": "git"
+    },
+    {
+      "category": "converted",
+      "name": "Linux command line"
+    },
+    {
+      "category": "converted",
+      "name": "technical writing"
+    },
+    {
+      "category": "converted",
+      "name": "peer code review (receiving and giving)"
+    }
+  ],
+  "slots": {
+    "e1.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 9,
+      "min_words": 1,
+      "must_include": []
+    },
+    "e1.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 21,
+      "min_words": 1,
+      "must_include": []
+    },
+    "jd.borealis-labs.full": {
+      "allowed_numbers": [
+        "1",
+        "110",
+        "2",
+        "24",
+        "90"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "jd",
+      "max_words": 251,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 9,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 17,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b3": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 16,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 31,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b5": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 20,
+      "min_words": 1,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 25,
+      "min_words": 1,
+      "must_include": []
+    },
+    "x3.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 30,
+      "min_words": 1,
+      "must_include": []
+    },
+    "x3.b2": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 26,
+      "min_words": 1,
+      "must_include": []
+    },
+    "x3.b3": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 7,
+      "min_words": 1,
+      "must_include": []
+    }
+  }
+}
