@@ -122,6 +122,9 @@ FIXTURES_DIR = EVALS_DIR / "fixtures"
 RUBRICS_DIR = EVALS_DIR / "rubrics"
 RESULTS_DIR = EVALS_DIR / "results"
 ANCHOR_DIR = EVALS_DIR / "anchors" / "anchor-v1"
+# The golden set's rendered fixtures (evals/golden_set.py): one directory per cell and JD, each with its
+# own seed.json. Same layout as the anchor, so `_suite_of` names it `golden-v1`.
+GOLDEN_DIR = EVALS_DIR / "golden" / "golden-v1" / "fixtures"
 WEIGHTS_PATH = EVALS_DIR / "callback_weights.json"
 
 JUDGE_MODEL = "claude-haiku-4-5-20251001"
@@ -241,7 +244,9 @@ def _get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=api_key)
 
 
-def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict[str, Any]:
+def _load_fixture(
+    fixture_dir: Path, *, seed_mode: bool = False, seed_path: Path | None = None
+) -> dict[str, Any]:
     """Load a fixture: jd.txt + resume.{md|docx|pdf} + expected.json.
 
     In ``seed_mode`` the corpus comes from a ``--seed`` seed.json instead of a
@@ -249,6 +254,10 @@ def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict[str, An
     the fixture hash is computed over jd.txt + expected.json only. The default
     (``seed_mode=False``) is byte-identical to the prior behavior — a resume file
     is required.
+
+    ``seed_path`` is the fixture's OWN seed (a golden cell, ``evals/golden_set.py``): it is part of
+    the fixture's input, so its bytes join the hash. Left ``None`` (the ``--seed`` path, and every
+    existing suite) the hash is unchanged.
     """
     jd = (fixture_dir / "jd.txt").read_text(encoding="utf-8")
 
@@ -268,6 +277,8 @@ def _load_fixture(fixture_dir: Path, *, seed_mode: bool = False) -> dict[str, An
     if resume_path is not None:
         h.update(resume_path.read_bytes())
     h.update((fixture_dir / "expected.json").read_bytes())
+    if seed_path is not None:
+        h.update(seed_path.read_bytes())
     # F-14: computed once and reused at every downstream record-write site —
     # never re-derived per rubric. Prefer a value already stamped into
     # expected.json (a collated real fixture — see annotation.collate_expected)
@@ -871,6 +882,9 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
             cand = FIXTURES_DIR / sub / single
             if cand.exists():
                 return [cand]
+        golden = GOLDEN_DIR / single
+        if golden.exists():
+            return [golden]
         raise FileNotFoundError(f"Fixture not found: {single}")
 
     fixtures: list[Path] = []
@@ -890,6 +904,9 @@ def _select_fixtures(suite: str, single: str | None) -> list[Path]:
         exploration_dir = EVALS_DIR / "exploration"
         if exploration_dir.exists():
             fixtures.extend(sorted(p for p in exploration_dir.iterdir() if p.is_dir()))
+    # Not in "all": a pass over this suite is up to 96 cases (one fixture per JD) and must be asked for.
+    if suite == "golden-v1" and GOLDEN_DIR.exists():
+        fixtures.extend(sorted(p for p in GOLDEN_DIR.iterdir() if p.is_dir()))
     return fixtures
 
 
@@ -957,15 +974,43 @@ _CONDITIONAL_CALLS: dict[str, dict[str, str]] = {
 _ITERATION_CALLS = ("iterate_clarify", "judge_grade")
 
 
-def _check_mode(mode: str, *, has_seed: bool) -> None:
-    """Refuse an unknown mode, or ``assemble`` without a seed, before anything is read or spent."""
+def _check_mode_name(mode: str) -> None:
+    """Refuse an unknown mode, before anything is read or spent."""
     if mode not in ("generate", "assemble"):
         raise ValueError(f"Unknown mode {mode!r}; expected 'generate' or 'assemble'")
-    if mode == "assemble" and not has_seed:
-        raise ValueError(
-            "mode='assemble' requires --seed — frozen-composition assembly needs a "
-            "real corpus (candidate + application rows), not a file-parsed résumé"
-        )
+
+
+def _seed_source(mode: str, *, has_seed: bool, fixtures: list[Path] | None) -> str:
+    """Where the corpus for a run comes from: ``global``, ``per_fixture`` or ``none``.
+
+    ``global``: a ``--seed`` was given, one corpus for every fixture (the path every earlier suite
+    uses, unchanged). ``per_fixture``: ``assemble`` mode with no ``--seed``, where each selected
+    fixture carries its OWN ``seed.json`` (a golden cell). ``none``: the file-based path. A fixture's
+    ``seed.json`` is read ONLY in assemble mode: real fixtures can already hold one (the console runs
+    them in generate mode), and reading it by presence would silently change ``--suite real``.
+
+    ``assemble`` with neither source raises before anything is spent, naming the fixtures that lack a
+    seed. It needs the selected fixtures, so the caller runs it after ``_select_fixtures``.
+    """
+    if has_seed:
+        return "global"
+    if mode != "assemble":
+        return "none"
+    if fixtures and all((f / "seed.json").is_file() for f in fixtures):
+        return "per_fixture"
+    missing = [f.name for f in fixtures or [] if not (f / "seed.json").is_file()]
+    raise ValueError(
+        "mode='assemble' requires --seed — frozen-composition assembly needs a "
+        "real corpus (candidate + application rows), not a file-parsed résumé; "
+        "or a seed.json in every selected fixture"
+        + (f" (without one: {', '.join(missing[:5])})" if missing else "")
+    )
+
+
+def _check_mode(mode: str, *, has_seed: bool, fixtures: list[Path] | None = None) -> str:
+    """`_check_mode_name` then `_seed_source`: the whole pre-spend mode check, returning the seed source."""
+    _check_mode_name(mode)
+    return _seed_source(mode, has_seed=has_seed, fixtures=fixtures)
 
 
 def _fixture_iterates(fixture_dir: Path, *, seed_mode: bool) -> bool | None:
@@ -1066,8 +1111,11 @@ def estimate_spend(
     model_overrides_map: dict[str, str] | None = None,
 ) -> SpendEstimate:
     """Price the call plan of a run. Reads ``costs.json`` once and parses one catalog entry per planned kind."""
-    _check_mode(mode, has_seed=seed_mode)
-    calls, conditional, skipped = _call_plan(fixtures, rubrics, mode=mode, seed_mode=seed_mode)
+    source = _check_mode(mode, has_seed=seed_mode, fixtures=fixtures)
+    # Any seed source (global or per fixture) means no résumé file is read.
+    calls, conditional, skipped = _call_plan(
+        fixtures, rubrics, mode=mode, seed_mode=source != "none"
+    )
     costs = eval_catalog.read_costs()
     pins = _pin_models(model_overrides_map)
     per_kind: dict[str, float] = {}
@@ -1577,9 +1625,11 @@ def run_suite(
     assemble path corpus-mode ``/api/generate`` uses instead of calling
     ``analyzer.generate()`` for the résumé body — so the rubrics score the
     deterministically-assembled document users actually download, not the LLM
-    fallback. ``mode="assemble"`` REQUIRES ``seed_data`` (frozen-composition
-    assembly needs a real corpus + candidate/application rows) and raises
-    ``ValueError`` immediately, before any paid call, when seed_data is absent.
+    fallback. ``mode="assemble"`` REQUIRES a corpus: ``seed_data`` (frozen-composition
+    assembly needs a real corpus + candidate/application rows) or, with none, a
+    ``seed.json`` in every selected fixture (the golden suite: each cell carries its own,
+    imported into its own in-memory DB). It raises ``ValueError`` before any paid call
+    when neither exists.
     Every JSONL record this run writes carries ``eval_mode`` (``"generate"`` or
     ``"assemble"``) so the dashboard/baseline tooling can tell the two populations
     apart; assemble-mode scores are never compared against ``baseline_v1.json``
@@ -1588,7 +1638,7 @@ def run_suite(
     ``exit_code`` (sub-threshold scores still count via ``n_fail``).
     """
 
-    _check_mode(mode, has_seed=seed_data is not None)
+    _check_mode_name(mode)
 
     def _emit(event: str, **payload: Any) -> None:
         if progress is not None:
@@ -1662,6 +1712,9 @@ def run_suite(
     anchor_version: str | None = "v1" if suite == "anchor" else None
 
     fixtures = _select_fixtures(suite, fixture_name)
+    # Needs the fixtures (a golden cell carries its own seed), so it runs here: after the cheap
+    # directory listing, before a client, a seed import or a paid call.
+    seed_source = _seed_source(mode, has_seed=seed_data is not None, fixtures=fixtures)
 
     if not fixtures:
         logger.warning("No fixtures matched the selection")
@@ -1672,6 +1725,12 @@ def run_suite(
     if not rubrics:
         logger.warning("No rubrics matched the selection")
         return EvalRunResult(0, None, 0, 0, [], [], candidate_version)
+
+    # Every cell's seed is read and validated BEFORE a client exists, so a bad one fails the run
+    # without a paid call (a ValueError, exit 1 from `main`).
+    cell_seeds: dict[Path, dict[str, Any]] = {}
+    if seed_source == "per_fixture":
+        cell_seeds = {fdir: load_seed(fdir / "seed.json") for fdir in fixtures}
 
     logger.info(
         "Eval run: %d fixtures × %d rubrics = %d gradings (judge model: %s)",
@@ -1724,8 +1783,14 @@ def run_suite(
         # run_id), so the accumulation across fixtures is harmless (never read back).
         session: Session | None = None
         seed_username: str | None = None
-        if seed_data is not None:
+        if seed_source == "global":
+            assert seed_data is not None
             session, seed_username = stack.enter_context(seeded_session(seed_data))
+        # Per-cell seeds: each fixture gets its own corpus, closed before the next one is opened (and
+        # when the run ends). A reusable ExitStack because the loop body is too long to re-indent
+        # under a `with`.
+        cell_session_stack = ExitStack()
+        stack.callback(cell_session_stack.close)
         total_fixtures = len(fixtures)
         cancelled = False
         for index, fdir in enumerate(fixtures):
@@ -1736,7 +1801,16 @@ def run_suite(
                 )
                 break
             try:
-                fixture = _load_fixture(fdir, seed_mode=seed_data is not None)
+                if seed_source == "per_fixture":
+                    cell_session_stack.close()  # the previous cell's corpus
+                    session, seed_username = cell_session_stack.enter_context(
+                        seeded_session(cell_seeds[fdir])
+                    )
+                fixture = _load_fixture(
+                    fdir,
+                    seed_mode=seed_source != "none",
+                    seed_path=fdir / "seed.json" if seed_source == "per_fixture" else None,
+                )
             except Exception as exc:
                 logger.error("Fixture load failed: %s — %s", fdir.name, exc)
                 continue
@@ -1784,7 +1858,7 @@ def run_suite(
             _t_generate_end: float | None = None
             seed_application: Any = None
             try:
-                if seed_data is not None:
+                if seed_source != "none":
                     assert session is not None and seed_username is not None
                     context, seed_application = _build_context_from_seed(
                         session,
@@ -2497,7 +2571,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="sartor. eval harness")
     ap.add_argument(
         "--suite",
-        choices=["synthetic", "real", "all", "anchor", "exploration"],
+        choices=["synthetic", "real", "all", "anchor", "exploration", "golden-v1"],
         default="synthetic",
     )
     ap.add_argument("--subset", choices=["smoke", "full"], default="full")
@@ -2563,7 +2637,8 @@ def main(argv: list[str] | None = None) -> int:
             "/api/generate uses (recommend_bullets/recommend_summaries -> "
             "freeze_approved_composition -> deterministic assemble, zero "
             "résumé-body LLM calls) so the rubrics score the assembled document "
-            "users actually download. REQUIRES --seed. Every JSONL record carries "
+            "users actually download. REQUIRES --seed, or a seed.json in every selected "
+            "fixture (the golden-v1 suite). Every JSONL record carries "
             "eval_mode; assemble-mode scores are never regression-gated against "
             "baseline_v1.json (a different, generate-mode population)."
         ),

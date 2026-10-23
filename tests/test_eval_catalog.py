@@ -60,6 +60,7 @@ _ITEMS_DIR = REPO_ROOT / "docs" / "dev" / "work" / "items"
 _SUITE_DIRS = {
     "synthetic": runner.FIXTURES_DIR / "synthetic",
     "anchor-v1": runner.ANCHOR_DIR / "fixtures",
+    "golden-v1": runner.GOLDEN_DIR,
 }
 
 
