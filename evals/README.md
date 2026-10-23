@@ -169,7 +169,7 @@ Examples:
 ## How the runner works
 
 ```
-python evals/runner.py [--suite synthetic|real|all] [--subset smoke|full]
+python evals/runner.py [--suite synthetic|real|all|anchor|exploration|golden-v1] [--subset smoke|full]
                        [--fixture NAME] [--out-dir PATH]
                        [--prompt-overrides PATH] [--seed PATH]
                        [--list] [--estimate] [--max-spend USD]
@@ -208,13 +208,13 @@ Key implementation details:
 
 | Flag | Meaning |
 |---|---|
-| `--suite synthetic\|real\|all` | Which fixture directories to read. Default `synthetic`. |
+| `--suite synthetic\|real\|all\|anchor\|exploration\|golden-v1` | Which fixture directories to read. Default `synthetic`. `all` is `synthetic` plus `real`; it does not include `golden-v1`, which is up to 96 fixtures and is asked for by name. See [The golden set](#the-golden-set---suite-golden-v1). |
 | `--subset smoke\|full` | `smoke` runs only the `grounding` rubric (cheapest, most important signal); `full` runs all four. Default `full`. |
-| `--fixture NAME` | Override `--suite` to run a single named fixture. Looks in `synthetic/` first, then `real/`. |
+| `--fixture NAME` | Override `--suite` to run a single named fixture. Looks in `synthetic/` first, then `real/`, then the `golden-v1` fixtures. |
 | `--out-dir PATH` | Override the default `evals/results/` output location. |
 | `--prompt-overrides PATH` | Inject a candidate system prompt for this run only (A/B a prompt without editing `analyzer.py`). See [Candidate prompt overrides](#candidate-prompt-overrides---prompt-overrides) below. |
 | `--seed PATH` | Build each fixture's context from a corpus `seed.json` via `build_context_set_from_db` (in-memory SQLite import) instead of the fixture's resume file. The fixture's `jd.txt` + `expected.json` still drive grading. Omit for the byte-identical file-based path. See [Corpus-backed runs](#corpus-backed-runs---seed) below. |
-| `--mode generate\|assemble` | `generate` (default) is the historical `analyzer.generate()` LLM path, byte-identical to before. `assemble` scores the deterministically-ASSEMBLED résumé body instead — REQUIRES `--seed`. See [Assembled runs](#assembled-runs---mode-assemble-f-11) below. |
+| `--mode generate\|assemble` | `generate` (default) is the historical `analyzer.generate()` LLM path, byte-identical to before. `assemble` scores the deterministically-ASSEMBLED résumé body instead — REQUIRES `--seed`, or a `seed.json` in every selected fixture (the `golden-v1` suite). See [Assembled runs](#assembled-runs---mode-assemble-f-11) below. |
 | `--list` | Print the eval catalog, one line per LLM call kind, and exit `0`. Reads no key and builds no client. See [The eval catalog](#the-eval-catalog---list---estimate-and---max-spend). |
 | `--estimate` | Print what the selected run is set to spend, per call kind, and exit `0` before any key or client exists. A floor. |
 | `--max-spend USD` | A spend cap. Refuses a run whose estimate is over it (exit `4`, nothing spent) and stops a run once its spend reaches it (exit `4`). |
@@ -507,6 +507,40 @@ regression-gate `exit_code` — a sub-`PASS_THRESHOLD` score still counts via
 `n_fail`, but a *delta* against the generate-mode baseline never fires. The
 `analyze`/`clarify` stages run unchanged in both modes. Omitting `--mode` (or
 passing `--mode generate`) leaves the historical path **byte-identical**.
+
+### The golden set (`--suite golden-v1`)
+
+`evals/golden/golden-v1/` is the committed dataset that is to replace the three tech-only personas in
+`evals/fixtures/synthetic/` (design doc 5.4 and 6.4; owner decisions 2026-10-20 to 2026-10-22). It is a
+**profession by level matrix**, all authored: no third-party résumé or posting text is committed. Step 3a built
+the format and three **pilot cells** converted from the existing personas; the other professions and the paid
+generation are step 3b (item 191). Until then the suite is `draft`.
+
+- **A cell** is one profession at one level. Its source is `cells/<cell>/profile.json` (written by code: the
+  candidate, the ordered résumé sections, every prose slot with the facts and numbers it may hold, the JDs, the
+  invention traps, the iteration scenario) and `cells/<cell>/prose.json` (the text, with provenance: `generated`
+  by a model, or `converted` from a persona).
+- **The fixtures are derived**, never edited: `fixtures/<cell>--<industry>/{resume.md, jd.txt, expected.json,
+  seed.json}`, one directory per JD so the runner's one-`jd.txt` contract holds. A test re-renders them and
+  compares bytes; `manifest.json` records a sha256 for every file. The case id is
+  `golden-v1/<cell>--<industry>`.
+- **Run it.** `python evals/runner.py --suite golden-v1 --mode assemble --estimate` prices a run with no key
+  and no `--seed`: each fixture carries its own corpus, imported into its own in-memory database and closed
+  before the next one opens. The seed is read only in assemble mode. `--mode generate` reads the `resume.md`
+  as any other suite does.
+- **Check it.** `python -m evals.golden_set check` verifies the manifest hashes, every derived file, the
+  prose against its slot rules and the waivers. `tests/test_golden_reachability.py` runs every cell through the
+  real pipeline against a stub client and asserts the right calls fire.
+- **Pilot waivers.** A converted persona has one summary, no role intros, no refinement notes and no
+  clarifications, so four richness checks fail for it; `manifest.json` lists them, the checker requires the
+  list to be exact, and a `frozen` suite may list none. They are why `recommend_summary` does not fire for a
+  pilot in assemble mode.
+- **The prose generator** (`python -m evals.golden_author`) is **paid and has never been run**. It needs
+  `--confirm-paid` and `--max-spend USD`, refuses a cell that already exists, and writes the cell only when
+  every slot passes the checks. Its model is `claude-opus-5-5`, a pin of its own. Run it in step 3b, not before.
+- **Attribution.** Occupation codes and titles come from the O\*NET 31.0 Database and O\*NET OnLine
+  (CC BY 4.0, U.S. Department of Labor, Employment and Training Administration); `manifest.json` carries the
+  credit text and what was read on which day. Every name, employer and address in the set is invented.
 
 ---
 
@@ -955,7 +989,7 @@ Each line in `evals/results/{timestamp}.jsonl` (schema_version 3):
 | `cost_usd` | Sum of all `analyze` + `generate` calls for this fixture, derived from `logs/llm_calls.jsonl` via `hardening.compute_call_cost`, selecting the rows that carry this run's `trace_id` and the fixture's `case_id` (item 181: two runs overlapping on one fixture no longer sum together). Generation only: the eval-judge calls (`judge_*` rows) are excluded. |
 | `pipeline_latency_ms` | End-to-end pipeline time excluding judge calls. |
 | `anchor_version` | Which `evals/anchors/` snapshot this run graded against (`suite="anchor"` runs only carry a real value; otherwise the current fixture tree). |
-| `suite` | `"synthetic"`, `"real"`, `"anchor"`, or `"exploration"` — which fixture tree produced this fixture. |
+| `suite` | `"synthetic"`, `"real"`, `"anchor"`, `"exploration"` or `"golden-v1"` — which fixture tree produced this fixture. |
 | `fixture_hash` | sha256 of `jd.txt` + resume file + `expected.json` bytes — pins exactly which fixture content this record graded. Never includes `jd_label` (label derivation must not change what a rerun would hash). |
 | `rubric_version` | The rubric file's own version marker, if the rubric declares one; `null` otherwise. |
 | `model_snapshots` | The Sonnet, Haiku and judge model IDs in effect for this run, read from `analyzer.SONNET_MODEL` / `HAIKU_MODEL` and `JUDGE_MODEL` (all `hardening.MODEL_PRICING` keys), so a cost figure can always be traced to the pricing that produced it. Under `--model-override` the Sonnet / Haiku entries name the candidate actually sent; the judge never changes. |
