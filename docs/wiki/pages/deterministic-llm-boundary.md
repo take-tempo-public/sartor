@@ -79,12 +79,11 @@ for retry). On `status="error"` rows, two additional fields carry `error_type` (
 class name) and `error_message`, a redacted exception text via
 [`analyzer.py:_redact_error_message`](../../../analyzer.py) (whitespace collapsed, API-key shapes
 and header values masked, 500-character cap).
-The eval judges (`evals/runner.py`) do not go through the funnel: their one path,
-[`evals/runner.py:_judge_create`](../../../evals/runner.py), writes the same row shape via
+The eval judges (`evals/runner.py`) do not go through the funnel: [`evals/runner.py:_judge_create`](../../../evals/runner.py) writes the same row shape via
 [`analyzer.py:log_judge_call`](../../../analyzer.py) under `judge_grade` /
-`judge_distinctiveness`, reusing `_provenance_fields`. For product calls observability is a
-property of the funnel, not of each caller; for the judges it is a property of that second
-path `[synthesis]`.
+`judge_distinctiveness`, reusing `_provenance_fields`. The golden-set author in [`evals/golden_author.py:_author_create`](../../../evals/golden_author.py) follows the same pattern under `dataset_author`; `log_judge_call` accepts optional `prompt_version` to stamp non-product prompts `[synthesis]`. For product calls observability is a
+property of the funnel, not of each caller; for these direct callers it is a property of the
+call path `[synthesis]`.
 
 ## Two models, one funnel
 

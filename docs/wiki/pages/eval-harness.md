@@ -5,7 +5,7 @@
 > static baseline + the frozen anchor, the corpus bootstrap engine, and prompt- and
 > model-override A/B tuning primitives. Eval-only: it ORCHESTRATES the product pipeline
 > but is never on the request hot path.
-> **Sources:** [`evals/runner.py`](../../../evals/runner.py), [`evals/eval_catalog.py`](../../../evals/eval_catalog.py), [`evals/bootstrap.py`](../../../evals/bootstrap.py), [`evals/rubrics/`](../../../evals/rubrics), [`evals/results/baseline_v1.json`](../../../evals/results/baseline_v1.json), [`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
+> **Sources:** [`evals/runner.py`](../../../evals/runner.py), [`evals/eval_catalog.py`](../../../evals/eval_catalog.py), [`evals/bootstrap.py`](../../../evals/bootstrap.py), [`evals/golden_set.py`](../../../evals/golden_set.py), [`evals/golden_author.py`](../../../evals/golden_author.py), [`evals/rubrics/`](../../../evals/rubrics), [`evals/results/baseline_v1.json`](../../../evals/results/baseline_v1.json), [`evals/anchors/anchor-v1/manifest.json`](../../../evals/anchors/anchor-v1/manifest.json), [`analyzer.py`](../../../analyzer.py), [`hardening.py`](../../../hardening.py).
 > **Grounding:** per [`SCHEMA.md`](../SCHEMA.md); conclusions tagged `[synthesis]`.
 
 ---
@@ -45,15 +45,21 @@ orchestrate LLM calls; it reuses the public pipeline primitives (`analyze`, `cla
 
 [`evals/runner.py:main`](../../../evals/runner.py) is an argparse wrapper over
 `run_suite`; it answers `--list` and the `--estimate` / `--max-spend` pre-flight itself, before any
-client exists, and delegates the run to `run_suite`. Flags: `--suite {synthetic,real,all,anchor,exploration}`, `--subset
-{smoke,full}`, `--fixture <name>`, plus `--seed`, `--prompt-overrides`,
+client exists, and delegates the run to `run_suite`. Flags: `--suite {synthetic,real,all,anchor,exploration,golden-v1}`, `--subset
+{smoke,full}`, `--fixture <name>`, plus `--seed`, `--mode`, `--prompt-overrides`,
 `--grounding-signals`, `--out-dir`, `--list` (catalog), `--estimate`, and
 `--max-spend USD`. `_select_fixtures` resolves directories:
 `synthetic` and `real` from `evals/fixtures/`, `anchor` from `anchors/anchor-v1/fixtures/`,
-`exploration` from `evals/exploration/` ([`evals/runner.py:_select_fixtures`](../../../evals/runner.py)).
+`exploration` from `evals/exploration/`, and `golden-v1` from `evals/golden/golden-v1/fixtures/` ([`evals/runner.py:_select_fixtures`](../../../evals/runner.py), [`evals/runner.py:GOLDEN_DIR`](../../../evals/runner.py)).
 A fixture is a directory of `jd.txt` + `resume.{md,docx,pdf}` + `expected.json`; its SHA-256
-`hash` over those bytes is stamped on every record ([`evals/runner.py:_load_fixture`](../../../evals/runner.py)).
-The three synthetic fixtures are `data-scientist-junior`, `pm-senior`, `sre-mid-level`.
+`hash` over those bytes (plus the fixture's own `seed.json` when the run is in assemble mode with no `--seed` and every selected fixture carries one) is stamped on every record ([`evals/runner.py:_load_fixture`](../../../evals/runner.py)).
+The three synthetic fixtures are `data-scientist-junior`, `pm-senior`, `sre-mid-level`. The `golden-v1` suite
+contains fixtures rendered from source files (see [The golden set](#the-golden-set---suite-golden-v1)), each with its
+own `seed.json` (a corpus seed). `--mode assemble` needs a corpus: where it comes from (`global` for `--seed`,
+`per_fixture` for assemble mode with no `--seed` when every selected fixture carries its own `seed.json`, or `none`)
+is decided by [`evals/runner.py:_seed_source`](../../../evals/runner.py), which
+[`evals/runner.py:_check_mode`](../../../evals/runner.py) calls after validating the mode name. A fixture's own
+`seed.json` is read only in assemble mode.
 
 ## The eval catalog and spend capping
 
@@ -236,6 +242,30 @@ parenthetical never fragments the entry it belongs to ("Eval Framework Design
 primitive is public and shared with `json_resume._parse_skills` precisely so the eval
 side and the render side cannot disagree about where a skill ends — see
 [[document-rendering]] `[synthesis]`.
+
+## The golden set (`--suite golden-v1`)
+
+[`evals/golden_set.py`](../../../evals/golden_set.py) (deterministic, stdlib-only, no LLM calls) defines
+the format for `evals/golden/golden-v1/` — a **cell** is one profession at one level. Source files are
+`cells/<cell>/profile.json` (the candidate, sections, prose slots with constraints, JDs, iteration scenarios,
+ground truth) and `cells/<cell>/prose.json` (text for each slot with provenance: `generated` by a model or
+`converted` from an existing persona). [`evals/golden_set.py:render_fixtures`](../../../evals/golden_set.py)
+derives the distributed fixtures (`fixtures/<cell>--<industry>/{resume.md, jd.txt, expected.json, seed.json}`)
+by byte-for-byte re-rendering; [`evals/golden_set.py:check_suite`](../../../evals/golden_set.py) and
+[`evals/golden_set.py:check_cell`](../../../evals/golden_set.py) verify manifest hashes, prose against slot rules,
+and the pilot waivers against the richness checks in [`evals/golden_set.py:PREDICATES`](../../../evals/golden_set.py);
+the invention traps are each profile's `expected.forbidden_inventions`, applied to model-written résumé-side slots only (not to converted prose, and not to JD slots, which name the skills the candidate lacks on purpose).
+[`evals/golden_set.py:REACHABILITY`](../../../evals/golden_set.py) maps every call kind to how the dataset reaches
+it (fired by `run_suite`, checked by a static predicate, independent of the dataset, or exempt), and
+[`tests/test_golden_reachability.py`](../../../tests/test_golden_reachability.py) runs each cell through the real
+pipeline against a stub client and asserts which calls fire `[synthesis]`. The prose is written by
+[`evals/golden_author.py`](../../../evals/golden_author.py), which sends the slot constraints to
+[`evals/golden_author.py:AUTHOR_MODEL`](../../../evals/golden_author.py) (`claude-opus-5-5`) via a direct
+`client.messages.create` call (not through `analyzer.py`'s funnel, following the judge-call pattern). **It has
+never made a real call**: it is tested against a stub client only (its module docstring says so). The author logs telemetry
+via [`analyzer.py:log_judge_call`](../../../analyzer.py) under `call_kind="dataset_author"`, which is marked
+`exempt` in the eval catalog. [`hardening.py:MODEL_PRICING`](../../../hardening.py) carries Opus 5.5's rates
+(read from the pricing page 2026-10-22) `[synthesis]`.
 
 ## The corpus-mode drafting probe (Epic A sprint A3)
 
