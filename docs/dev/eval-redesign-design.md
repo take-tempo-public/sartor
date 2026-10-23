@@ -292,6 +292,8 @@ not). A run prints its estimate only when asked (`--estimate`, or with `--max-sp
 boundary once the spend, read by trace id, reaches it, so it can overshoot by up to one phase. A kind with no
 measured tokens (both judge kinds, when this was written) is named and left out of the estimate rather than
 making `--max-spend` unusable for every run; the runtime check is what bounds it. The estimate is a floor.
+The owner placed `--eval`, `--group`, `--affected-by` and `--full` in **step 4** on 2026-10-22: they select the
+call evals step 4 builds, and until then there is nothing for them to select.
 
 **Cost of the cheapest tier, measured.** One call per kind at the mean cost of that kind on
 the current pins (product rows, else eval rows) sums to **$0.30** for 19 of the 21 kinds. The
@@ -356,6 +358,36 @@ Section 6 gives the research behind this. The requirements, whatever the source:
   rule already written in `evals/exploration/README.md` *(reported)*. The fetched set cannot be the
   golden set: it can change or vanish upstream, it cannot be committed, and every public set found is
   IT or government only (6.1 to 6.3).
+
+**Built in step 3a (item 183), with these departures from the text above, each decided on the branch:**
+
+- **Layout.** `evals/golden/golden-v1/` holds `manifest.json`, `cells/<cell>/{profile,prose}.json` (the only
+  files a person or the generator writes) and `fixtures/<cell>--<industry>/{resume.md, jd.txt,
+  expected.json, seed.json}` (derived by `evals/golden_set.py`; a test re-renders them and compares bytes).
+  It sits outside `evals/fixtures/` on purpose: `tests/test_zero_pii_clone.py` allows only `synthetic/**`
+  and `real/.gitkeep` there, and the anchor already uses this shape.
+- **One fixture per JD**, so the runner's one-`jd.txt`-per-fixture contract is unchanged. The `case_id` is
+  therefore `golden-v1/<cell>--<industry>`, not `golden-v1/<cell>`, and the full tier is **up to 96
+  fixtures**, not 48 cases: 3b's cost estimate must count 96 per arm, which roughly doubles the per-arm
+  figure in 6.4.
+- **Per-cell seeds, assemble mode only.** Each fixture's `seed.json` is its own corpus (the `--seed` path
+  loads one corpus for a whole run). A fixture's seed is read only in assemble mode, because real fixtures
+  can already hold a `seed.json` and the console runs them in generate mode.
+- **The reachability check** (`tests/test_golden_reachability.py`) stubs the Anthropic client, not the
+  functions `run_suite` calls, so it sees a gate inside one of them. Its control arm is the
+  `recommend_summary` gap: a cell with one summary variant fails the richness predicate and the call does
+  not fire. Of the 13 kinds `run_suite` never reaches, 12 are covered by static predicates over the cell, each
+  the staging rule of the route that does reach the kind; the thirteenth, `avatar_answer`, takes its questions
+  from the repository's documentation, not from the dataset. A converted pilot (an existing persona) cannot meet
+  four of them and carries a **waiver** the checker requires to be exact; a `frozen` manifest must have
+  none.
+- **The prose generator** (`evals/golden_author.py`) is built and tested against a stub only. **It has
+  never made a real call**; the live request shape is as documented, not observed. Its model is a pin of
+  its own, `claude-opus-5-5`, outside the product pins and both arms of item 137's comparison.
+- **Converted prose is not held to the invention traps.** The traps are written against eval output (the
+  grounding rubric: patterns that "MUST NOT appear in the generated output"); the data-scientist persona's
+  own résumé names a "senior data scientist" colleague while its trap forbids claiming the title.
+  Model-written prose is held to them.
 
 ### 5.5 Identity and versioning
 
@@ -669,30 +701,103 @@ ground truth across releases.
 |---|---|---|---|
 | Sentinel | about 21 | one per call kind | "is any call broken"; the arithmetic floor in 5.2 is $0.30 |
 | Day-to-day | about 12 | one per profession, level rotated, seeded | tuning one prompt or one area |
-| Full golden | 48 | all cells | release gates, model swaps, pre-registered comparisons |
+| Full golden | 48 cells, up to 96 fixtures (one per JD, see 5.4) | all cells | release gates, model swaps, pre-registered comparisons |
 
 The full set's size follows from 5.6. The exact binomial rule needs at least 5 discordant cases, all in
 one direction, for a one-sided p below 0.05 (6 for a two-sided test). If a change flips 15 to 20 percent of
 cases, that needs about 30 to 40 cases, so below about 20 cases most comparisons return INCONCLUSIVE. A cost
 for 48 cases is a guess: `AGENTS.md` says the 3-fixture synthetic suite costs about $0.30 to $0.40, about
-$0.10 to $0.13 per fixture, which scales to roughly $5 to $6 per arm per pass. Not run; step 3's calibration
-run measures it.
+$0.10 to $0.13 per fixture, which scales to roughly $5 to $6 per arm per pass for 48 fixtures, and about double
+that at one fixture per JD (up to 96, 5.4). Not run; step 3b's calibration run measures it.
 
 **What the research did not settle (each blocks something, none blocks the others):**
 
-- USAJOBS terms: **settled for the text read** (6.2, read in a browser 2026-10-20: open licence, no approval
-  needed, a carve-out for separately identified restricted content, a ban on circumventing rate limits). What
-  stays open: no effective date is shown, so a later revision is possible and the terms should be re-read when
-  step 3 starts; contact names in announcements need scrubbing; and the API needs a registered key, which only
-  the owner can create.
+- USAJOBS terms: **settled for the text read** (6.2, read in a browser 2026-10-20 and again 2026-10-22, see
+  6.5: open licence, no approval needed, a carve-out for separately identified restricted content, a ban on
+  circumventing rate limits). What stays open: the page still shows no effective date, because the terms take
+  effect per registrant on acceptance, so the repo cannot pin a version and records the retrieval date;
+  contact names in announcements need scrubbing; and the API needs a registered key, which only the owner can
+  create and which may not be shared.
 - NYC Jobs: whether the city's open-data statute overrides "All rights are reserved" for this dataset.
 - PopResume's gate terms and a sample row; ResumeBench's release; the seniority paper (arXiv 2509.09229)
   dataset link and licence. None is needed for the golden set as proposed.
 - DDaT ladders for every role except software developer; the OGL v3.0 text; the downloadable framework
   file's own terms.
-- O\*NET's "Except as noted below" exception text, and the old-to-new Job Zone mapping.
+- O\*NET's "Except as noted below" exception text is **settled** (read in a browser 2026-10-22, 6.4 and the
+  manifest): the CC BY 4.0 licence covers the downloadable database files only, not the website or the Career
+  Exploration Tools, and asks for the credit text the manifest carries. The old-to-new Job Zone mapping is not.
 - ESCO's licence page (404) if ESCO occupations are ever used.
 - Non-tech seniority ladders: none found, so they are authored (above).
+
+### 6.5 Proposal for the owner: the USAJOBS exploration fetch needs a charter decision (2026-10-22)
+
+**Status: a proposal. Nothing is built and `docs/governance/charter.md` is not edited.** Owner decision 12
+(2026-10-21) chose USAJOBS as the exploration source and said the fetch either passes
+`tests/test_egress_allowlist.py` by the D-6 opt-in route or comes back as a C-2 amendment. Step 3a looked at
+both and brings the second back, for the reasons below. Owner decision 2026-10-22: no fetch code is written
+until the owner chooses.
+
+**What was read, and when.** The USAJOBS API Terms of Service page
+(`developer.usajobs.gov/guides/terms-of-service`) was read in a browser on **2026-10-22**, the full text.
+Paraphrased, not quoted:
+
+- Public job-announcement data from the API is under an open licence: it may be copied, stored, adapted,
+  analysed, published and redistributed, commercially or not, with no OPM approval. The licence excludes
+  content that the accompanying metadata marks as subject to a specific legal or third-party restriction.
+- OPM encourages naming USAJOBS as the source, linking the announcement, stating the retrieval date and saying
+  that an unofficial product is not endorsed by OPM. Modified data may not be presented as official, and
+  nothing may imply government affiliation.
+- Announcements may carry the names and business contact details of agency contacts.
+- A consumer may not share or transfer its API credentials, and may not circumvent rate limits or other
+  technical safeguards. OPM may change limits without notice.
+- **There is still no effective date on the page.** The terms bind a registrant when accepted, and OPM tells
+  registrants of changes by email or through the API. The repo therefore cannot pin a version of them; it can
+  only record the retrieval date, as above.
+
+**Not read, so not claimed:** the API's host name, the headers a request must carry, and the current rate
+limits live in the developer documentation, which was not opened. Whoever builds the fetch reads them then.
+
+**Why the D-6 route is a stretch.** C-2 (`charter.md:91-100`) names exactly two outbound classes. The one
+precedent for a third destination, the grounding-model download from huggingface.co, is recorded in C-2's source
+note (`charter.md:108-110`) as an opt-in under D-6. D-6 itself (`charter.md:375-376`) is about bundling extra
+installs per system, and a one-time model download is an install. A fetch that runs on demand and pulls
+third-party data into the eval is a different shape of thing. Reading D-6 to cover it is a charter
+interpretation, and the owner's to make. The egress test is also per file (`SANCTIONED_EGRESS_FILES`) and has no
+host pin except the loopback check on `instance.py` (`tests/test_egress_allowlist.py:261-326`), so either
+route needs an allowlist entry and a new host pin.
+
+**Recommended: amend C-2 with an opt-in class (c).** Draft wording for the owner to edit: *an optional,
+developer-only fetch of public job-announcement data from the USAJOBS API, run by an explicit command with the
+operator's own credentials, never by the application, for the eval exploration set only*. Rules the amendment
+would carry:
+
+1. The fetch lives in one module under `scripts/` (dev tooling, outside the shipped runtime). A test asserts
+   no application module imports it, and `SANCTIONED_EGRESS_FILES` lists it and nothing else for this class.
+2. A host pin in the style of the `instance.py` check: the module may name the one API host and no other. The
+   host is read from the developer documentation when the module is built, not assumed here.
+3. The key is the operator's own, from an environment variable or a file in the data root, never committed. The
+   terms forbid sharing credentials, so the repo ships none and the owner registers theirs. The `block-secrets`
+   hook's file patterns would gain the key file's name.
+4. The command needs an explicit confirm flag, makes requests one at a time under the documented limits, and
+   stops on a limit rather than working around it.
+5. Output goes to the data root, never into the repo. Each fetched text is recorded in a manifest with the
+   query, the retrieval date, the announcement id and a sha256, so a result is tied to what was read. Contact
+   names are scrubbed before any text reaches a prompt. The attribution and non-affiliation lines go in the
+   manifest.
+6. A result from the exploration set is a lead and never moves a pin (5.4), unchanged.
+7. `SECURITY.md`'s threat model gains the third class in one paragraph.
+
+The ceremony is the one in `charter.md:500-510`: a dated amendment entry in the charter, a CHANGELOG entry,
+the owner's sign-off at merge, and a flag in the next compliance-witness report.
+
+**Two alternatives, for completeness.** *D-6 route:* the same rules 1 to 7, with the precedent note in C-2
+extended by one sentence instead of a new class; smaller, and it rests on the reading above. *No fetch:* the
+exploration set becomes a fresh seeded draw from the matrix, as 5.4 already allows. It costs nothing and needs
+no charter change, and it gives up the one thing real postings add, which is "does this hold on real text".
+
+**Questions for the owner.** (1) Which route: C-2 class (c), the D-6 reading, or no fetch. (2) If a fetch,
+register the API key; only the owner can. (3) Whether real-text exploration is worth a third egress class
+before v1.1.0, given that the golden set does not depend on it. None of the three blocks step 3b.
 
 ## 7. OpenTelemetry
 
@@ -829,7 +934,10 @@ to 11 are the recommendation the question carried; question 12 carried none.
 ## 9. Build order
 
 Each step is its own branch with its own plan, consumer enumeration and gate run. None is
-started by this doc. Filed on 2026-10-20 as epic 180: steps 1 to 10 are items 181 to 190 in
+started by this doc. **Step 3 was split on 2026-10-22** (owner, in plan mode): 3a is item 183 and 3b is item
+191, so the format is reviewed before 48 cells are generated on it, and items 184 and 10 depend on both. The
+same day the owner placed the run-size flags and the `generate` / `generate_cover_letter` single-call evals
+in step 4. Filed on 2026-10-20 as epic 180: steps 1 to 10 are items 181 to 190 in
 order, and step 11 is item 137. Per decision 2, steps 1 to 3 and the deterministic parts of
 steps 4 to 6 block the v1.1.0 cut. Per decision 1, step 3's on-demand fetch must clear charter
 C-2 (5.4). Per decision 5, step 9 calibrates against judge-to-judge agreement (5.7).
@@ -838,8 +946,9 @@ C-2 (5.4). Per decision 5, step 9 calibrates against judge-to-judge agreement (5
 |---|---|---|---|
 | 1 | `feat/eval-record-identity` | prompt hashes and the version gate; producer id; trace, span and case ids; parse outcome; judge cost into run totals; fix the cost-by-window leak | none |
 | 2 | `feat/eval-catalog-skeleton` | catalog format, lazy loader, the all-kinds gate, `--list`, `--estimate`, `--max-spend`; entries for the kinds already covered | none |
-| 3 | `feat/eval-dataset-v1` | the standard dataset, captured upstream inputs, the reachability check; the on-demand public fetch only if it clears charter C-2 | one calibration run, capped |
-| 4 | `feat/eval-calls-ingest-analyze` | call evals for `extract_experiences`, `analyze_*`, `clarify`, `iterate_clarify` | capped |
+| 3a | `feat/eval-dataset-format` | the golden-set cell format and its checks, the prose generator (built and tested against a stub, never run), per-cell seeds in the runner, the reachability check, three pilot cells; the on-demand fetch only as an amendment proposal (6.5) | none |
+| 3b | `feat/eval-dataset-v1` | the other professions' facts, the paid generation of the 48 cells, the calibration run, retiring `evals/fixtures/synthetic/`, freezing `golden-v1` | one generation run and one calibration run, capped |
+| 4 | `feat/eval-calls-ingest-analyze` | call evals for `extract_experiences`, `analyze_*`, `clarify`, `iterate_clarify`, **and** single-call evals of `generate` and `generate_cover_letter` on a captured `context_set`; **and** the run-size flags `--eval`, `--group`, `--affected-by`, `--full` (5.2) that select them | capped |
 | 5 | `feat/eval-calls-compose` | call evals for the 11 `compose` kinds | capped |
 | 6 | `feat/eval-calls-assistant-proposals` | `avatar_answer`, `critique_proposal`, `promote_clarification_to_bullet` | capped |
 | 7 | `feat/eval-compare-protocol` | pre-registered spec, noise floor, arithmetic rule; replaces `evals/tune.py` | none |
@@ -853,6 +962,13 @@ catalog gate and give every later step an identity to key on. Step 11 is what th
 for first; it comes last because its result is only as good as steps 1 to 9.
 
 ## 10. What this doc does not verify
+
+- **Step 3a (2026-10-22).** The prose generator, `evals/golden_author.py`, has never made a real call, so
+  the live request (explicit adaptive thinking plus an effort, no sampling parameters) is as the claude-api
+  skill documents it, not observed against the API. The reachability check proves the code around the call
+  and the pipeline's reaction to well-formed replies, not what a model writes. The O\*NET occupation codes
+  were read on O\*NET OnLine; no database file was downloaded or used. The prose validator checks digits,
+  required facts, traps and length, and cannot tell an invented employer from a real one.
 
 - Every figure marked *(reported)* was found by a research pass and not re-read here.
 - The dashboard's full view list and its drill-downs were not re-read; section 3.6 states only

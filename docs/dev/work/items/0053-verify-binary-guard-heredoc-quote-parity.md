@@ -30,3 +30,9 @@ heredoc operator in the segment and fail open on the entire remainder (the
 existing docstring already lists heredocs as a fail-open family — the tracker
 just doesn't implement that exclusion on this path). Small, testable against
 the exact observed command shape; out of scope for the chain that found it.
+
+## Updates
+
+### 2026-10-22 -- second recorded recurrence (feat/eval-dataset-format, item 183)
+
+A commit run as `git commit -m "$(cat <<'EOF' ... EOF)"` was BLOCKED with the whole message reported as a binary "not found on PATH". The message contained a single apostrophe ("the persona's own resume"). Same class as the first observation: the quote-parity tracker reads prose inside the heredoc body as shell. The guard's own text says to proceed on a false positive; the clean way through, used for every later commit on that branch, was to write the message with the Write tool and commit with `git commit -F <file>`. The candidate fix above (fail open on the remainder after a `<<` heredoc operator) is unchanged and still unbuilt.

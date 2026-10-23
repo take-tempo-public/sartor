@@ -1,0 +1,373 @@
+{
+  "candidate": {
+    "email": "alex.chen@example.com",
+    "linkedin": "linkedin.com/in/example-alex",
+    "name": "Alex Chen",
+    "phone": "(555) 010-2200",
+    "username": "gold_sre_ops_mid"
+  },
+  "cell": "sre-ops-mid",
+  "cell_seed": 0,
+  "clarifications": [],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "service mesh exposure (Istio, Linkerd) — any production or side-project",
+        "distributed tracing tools beyond Prometheus/Grafana (OpenTelemetry, Jaeger, Honeycomb)",
+        "multi-region control plane work (vs. single-region API edge)",
+        "explicit SLO/SLI ownership and error-budget framework (beyond ad-hoc 'error budget burn')",
+        "driving postmortem CULTURE across a team, not just writing individual postmortems"
+      ],
+      "scope_probes": [
+        "Terraform modules adoption: independent initiative or assigned standardization?",
+        "Sev-1 postmortem leadership: incident commander role or IC writing it up?",
+        "intern mentorship: formal mentor designation or ad-hoc shadowing?",
+        "API edge ownership for ~800 tenants: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "managed [0-9]+ engineers",
+      "saved \\$[0-9]+M",
+      "led [0-9]+\\+ engineers",
+      "PhD",
+      "Master'?s? in",
+      "10\\+ years",
+      "MIT|Stanford|Carnegie Mellon"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 4,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "sre",
+      "slo",
+      "incident",
+      "observability",
+      "kubernetes",
+      "terraform"
+    ],
+    "notes": "Mid-level SRE, real metrics in source are deliberately qualitative. Watch for invented headcount or dollar figures. Clarification questions should probe whether adjacent infrastructure experience (service mesh, multi-region, tracing tools beyond Prom/Grafana) exists undocumented, and disambiguate scope claims around Terraform standardization, incident commanding, and tenant ownership."
+  },
+  "iteration": {
+    "min_score": 4,
+    "mode": "verbatim",
+    "scenarios": [
+      {
+        "clarification_answers": {
+          "iter1_q1": "Yes — formal SLO ownership on API edge: 99.9% availability, 95th-percentile latency under 250ms. Error budget reviewed weekly with the platform team."
+        },
+        "edit_replacement": "error-budget exhaustion by defining and owning SLOs (99.9% availability, p95 latency under 250ms) on the API edge layer",
+        "edit_target_substring": "error budget burn by tightening retry semantics in the ingress layer",
+        "expected_iteration_themes": {
+          "experience_probes": [
+            "service mesh exposure not yet covered by prior clarifications",
+            "multi-region control plane work not yet covered"
+          ],
+          "iteration_probes": [
+            "follow up on the just-typed SLO ownership: which services, which numeric targets, which review cadence",
+            "follow up on edit: who else was involved in defining the SLOs (sole owner vs collaborator)"
+          ],
+          "scope_probes": [
+            "incident commander vs writer-up disambiguation if not yet covered"
+          ]
+        },
+        "name": "user_typed_slo_ownership"
+      }
+    ]
+  },
+  "jds": [
+    {
+      "header_lines": [],
+      "slots": [
+        "jd.lattice-cloud.full"
+      ],
+      "slug": "lattice-cloud"
+    }
+  ],
+  "level": "mid",
+  "profession": "sre-ops",
+  "refinement_notes": [],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Holden Networks",
+          "end": null,
+          "intro_slots": [],
+          "location": null,
+          "start": "2023-03",
+          "title": "Site Reliability Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Stratford Analytics",
+          "end": "2023-03",
+          "intro_slots": [],
+          "location": null,
+          "start": "2021-08",
+          "title": "Production Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "State University",
+          "slots": [],
+          "year": "2021"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Kubernetes",
+        "Prometheus",
+        "Grafana",
+        "Terraform",
+        "AWS (EKS, IAM, VPC, S3)",
+        "Python",
+        "Go",
+        "Bash",
+        "Kafka",
+        "Envoy",
+        "distributed tracing",
+        "incident response",
+        "runbooks",
+        "on-call leadership"
+      ]
+    },
+    {
+      "heading": "Side projects",
+      "kind": "bullets",
+      "slots": [
+        "x4.b1",
+        "x4.b2"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "converted",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "converted",
+      "name": "Prometheus"
+    },
+    {
+      "category": "converted",
+      "name": "Grafana"
+    },
+    {
+      "category": "converted",
+      "name": "Terraform"
+    },
+    {
+      "category": "converted",
+      "name": "AWS (EKS, IAM, VPC, S3)"
+    },
+    {
+      "category": "converted",
+      "name": "Python"
+    },
+    {
+      "category": "converted",
+      "name": "Go"
+    },
+    {
+      "category": "converted",
+      "name": "Bash"
+    },
+    {
+      "category": "converted",
+      "name": "Kafka"
+    },
+    {
+      "category": "converted",
+      "name": "Envoy"
+    },
+    {
+      "category": "converted",
+      "name": "distributed tracing"
+    },
+    {
+      "category": "converted",
+      "name": "incident response"
+    },
+    {
+      "category": "converted",
+      "name": "runbooks"
+    },
+    {
+      "category": "converted",
+      "name": "on-call leadership"
+    }
+  ],
+  "slots": {
+    "jd.lattice-cloud.full": {
+      "allowed_numbers": [
+        "1",
+        "185",
+        "2",
+        "200",
+        "225",
+        "24",
+        "4",
+        "7"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "jd",
+      "max_words": 261,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "2",
+        "800"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 18,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 27,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b3": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 18,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b4": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 20,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b5": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 18,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 17,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 26,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b3": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 19,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 9,
+      "min_words": 1,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 29,
+      "min_words": 1,
+      "must_include": []
+    },
+    "x4.b1": {
+      "allowed_numbers": [
+        "120"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 17,
+      "min_words": 1,
+      "must_include": []
+    },
+    "x4.b2": {
+      "allowed_numbers": [
+        "12",
+        "2024"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 13,
+      "min_words": 1,
+      "must_include": []
+    }
+  }
+}

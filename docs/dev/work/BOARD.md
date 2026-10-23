@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 45 | Epics 7 | Closed 93
+**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 46 | Epics 7 | Closed 93
 
 ## Open
 
@@ -94,6 +94,7 @@ Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-e
 - **168** -- Measure the Sonnet 5 wiki auditor against the Haiku one it replaced: catch counts and cost per pass (`agent`) -- The auditor moved to Sonnet 5 on a measured miss rate, but its own catch rate and cost per pass are unmeasured.
 - **169** -- Non-human prompt shapes the witness has not seen (scheduled wakeup, cron, usage-limit resume) still arm the pause (`agent`) -- Only a <task-notification> prompt is exempt from arming; other injected turns, not yet observed, still arm it.
 - **178** -- The wiki cite check passes a line cite whose content moved: it checks only that the line exists (`agent`) -- wiki_cites passed 4 line cites that no longer pointed at their claim; 17 bare line cites remain allowed.
+- **192** -- The committed corpus seed uses area / study_type for educations; the importer reads field, so the discipline is dropped (`agent`) -- The committed corpus seed's educations use area/study_type; the importer reads field, so the discipline is lost.
 
 ## Epics
 
@@ -138,7 +139,7 @@ IA research + design; full user/dev docs split; user + dev content; screenshots,
 
 Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; owner toggles during the epic.
 
-- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19, 181, 182, 183, 184, 185, 186] [blocked on: everything else landing first, plus the owner's explicit go]
+- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19, 181, 182, 183, 191, 184, 185, 186] [blocked on: everything else landing first, plus the owner's explicit go]
 
 ### 180 -- Eval redesign build order (open)
 
@@ -147,14 +148,15 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - **137** -- Review current Claude models and call settings for performance and cost (`agent`) -- Review pinned models and call settings, now including the Claude 5.5 candidate evaluation (absorbs item 173). [depends on: 190]
 - **181** -- Eval redesign step 1: record identity and the prompt-version gate (`agent`) -- Prompt content hashes + version gate, producer id, trace/span/case ids, parse outcome, judge cost in run totals.
 - **182** -- Eval redesign step 2: catalog skeleton and the all-kinds gate (`agent`) -- Catalog format, lazy loader, all-kinds gate, --list/--estimate/--max-spend; entries for the kinds already covered. [depends on: 181]
-- **183** -- Eval redesign step 3: standard dataset, captured inputs, reachability check (`agent`) -- O*NET synthetic matrix, captured upstream inputs, reachability check; on-demand public fetch only if it clears C-2. [depends on: 182] [blocked on: step 2 (item 182) has not landed]
-- **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183] [blocked on: step 3 (item 183) has not landed]
+- **183** -- Eval redesign step 3a: dataset format, generator, per-cell seeds, reachability check (`agent`) -- Step 3a, no paid call: golden-set format, stub-tested generator, per-cell seeds, reachability check, 3 pilots (3b: 191). [depends on: 182]
+- **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183, 191] [blocked on: step 3 (items 183 and 191) has not landed]
 - **185** -- Eval redesign step 5: call evals for the 11 compose kinds (`agent`) -- Call evals for the 11 compose-group kinds. Deterministic part blocks v1.1.0. [depends on: 184] [blocked on: step 4 (item 184) has not landed]
 - **186** -- Eval redesign step 6: call evals for avatar, proposals and clarification promotion (`agent`) -- Call evals: avatar_answer, critique_proposal, promote_clarification_to_bullet; deterministic part blocks 1.1.0. [depends on: 185] [blocked on: step 5 (item 185) has not landed]
 - **187** -- Eval redesign step 7: pre-registered comparison protocol (`agent`) -- Pre-registered spec, noise floor, arithmetic decision rule; replaces evals/tune.py. [depends on: 186] [blocked on: step 6 (item 186) has not landed]
 - **188** -- Eval redesign step 8: Catalog dashboard tab and drill-downs (`agent`) -- Catalog tab, kind/case/judge-span drill-downs, attention view, arm comparison. [depends on: 187] [blocked on: step 7 (item 187) has not landed]
 - **189** -- Eval redesign step 9: pinned judge, schema parse, judge-to-judge calibration (`agent`) -- Pinned judge, schema parse, judge-to-judge agreement (no gold set), over-suppression check; owner picks the judge. [depends on: 188] [blocked on: step 8 (item 188) has not landed]
 - **190** -- Eval redesign step 10: OpenTelemetry projection (`agent`) -- Pure row-to-span projection and its mapping module, pinned to one semantic-conventions-genai commit; no dependency. [depends on: 189] [blocked on: step 9 (item 189) has not landed]
+- **191** -- Eval redesign step 3b: generate the golden cells, calibration run, retire synthetic (`agent`) -- Step 3b: other professions' facts, paid generation of the 48 cells, capped calibration run, retire synthetic/. [depends on: 183] [blocked on: step 3a (item 183) has not landed]
 
 ## Closed (93)
 

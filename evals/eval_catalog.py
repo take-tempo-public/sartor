@@ -35,7 +35,9 @@ COSTS_PATH = CATALOG_DIR / "costs.json"
 SCHEMA = 1
 KIND = "eval"
 STATUSES = ("covered", "pending", "exempt")
-PINS = ("SONNET_MODEL", "HAIKU_MODEL", "JUDGE_MODEL")
+# AUTHOR_MODEL is the golden-set author's model (evals/golden_author.py): a pin of its own, outside the
+# product pins, so a product swap cannot move the model that wrote the dataset.
+PINS = ("SONNET_MODEL", "HAIKU_MODEL", "JUDGE_MODEL", "AUTHOR_MODEL")
 GROUPS = (
     "analyze-clarify",
     "compose",
@@ -45,6 +47,7 @@ GROUPS = (
     "proposals",
     "flows",
     "sentinel",
+    "dataset",
 )
 LEANS = ("false_positive", "false_negative")
 MIN_EXEMPT_REASON = 40
@@ -333,12 +336,13 @@ def _iter_log(path: Path) -> Iterable[dict[str, Any]]:
 def _pin_models(entries: Mapping[str, CatalogEntry]) -> dict[str, str]:
     """Each kind's current pin as a model id. Imports the product, so only ``measure`` calls it."""
     import analyzer
-    from evals import runner
+    from evals import golden_author, runner
 
     models = {
         "SONNET_MODEL": analyzer.SONNET_MODEL,
         "HAIKU_MODEL": analyzer.HAIKU_MODEL,
         "JUDGE_MODEL": runner.JUDGE_MODEL,
+        "AUTHOR_MODEL": golden_author.AUTHOR_MODEL,
     }
     return {call: models[entry.model_pin] for call, entry in entries.items()}
 

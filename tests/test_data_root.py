@@ -279,6 +279,10 @@ _CODE_ANCHORS: dict[str, str] = {
         "the shipped evals/catalog entries and costs.json, which are committed code-side data; "
         "the call log `measure` reads goes through sartor_home.data_path"
     ),
+    "evals/golden_set.py": (
+        "the shipped evals/golden/golden-v1 suite (facts, cells, fixtures, manifest): committed "
+        "dataset files, read and re-rendered in place; no user data is read or written"
+    ),
 }
 
 _RUNTIME_PACKAGES = (

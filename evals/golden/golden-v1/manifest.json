@@ -1,0 +1,140 @@
+{
+  "author": {
+    "model": "claude-opus-5-5",
+    "prompt_versions": {}
+  },
+  "files": {
+    "cells/data-ml-entry/profile.json": "sha256:dbeefe71ef987c8dd927454be09f984a60df0b8e6d19cb580083462502948888",
+    "cells/data-ml-entry/prose.json": "sha256:b4ec5b07181cb28bde1f9ea841ad8f0d22917f66b1c884123b1947e1eb3f2656",
+    "cells/product-mgmt-senior/profile.json": "sha256:babca0c7eae2917f43885da2f05a540a3f233b37649f8f90d16e60754dcd70f7",
+    "cells/product-mgmt-senior/prose.json": "sha256:5bd6b8638f2f041783dc07924207fa4fcde25709951420b6d76c95b8e6a27711",
+    "cells/sre-ops-mid/profile.json": "sha256:7d143e2f015405dd61caf9640cace3263739b2794cbcbad070beb3d67d329118",
+    "cells/sre-ops-mid/prose.json": "sha256:848a05c8fe763374976045020ce6f8ddd033ec03b3182f1a2c5f7d0d9e4d7251",
+    "fixtures/data-ml-entry--borealis-labs/expected.json": "sha256:f9dae33f8b9c3f9f87c644e0a2f3dc5fda91698e07065a2d96bf7bac0148cfba",
+    "fixtures/data-ml-entry--borealis-labs/jd.txt": "sha256:d314d7df3d0a0a5ed15a86c8687b808bb9bde751c1d42e0eaae7190047427dad",
+    "fixtures/data-ml-entry--borealis-labs/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
+    "fixtures/data-ml-entry--borealis-labs/seed.json": "sha256:6d3c9df26a71de07b27486d7908b20a14d19afc87557d8953cb58f7de38f7360",
+    "fixtures/product-mgmt-senior--atrium-health/expected.json": "sha256:aa3c2bc37f3d498a3e2ebc7b2dd6d1b67615fbb41f75f205d26fec59adf633db",
+    "fixtures/product-mgmt-senior--atrium-health/jd.txt": "sha256:1ad54e1c960830972a1b8ff3965f73c54e744948e93c6fcf42d395b5fd567490",
+    "fixtures/product-mgmt-senior--atrium-health/resume.md": "sha256:d66d93197e8811a128f7f0164703af25928c11aeafefc896cc4293f39e71b2b1",
+    "fixtures/product-mgmt-senior--atrium-health/seed.json": "sha256:ee485c8dbd9eb3751e2ee2c12e15a4f7ff7f682f024382fe9b6d909088e940c8",
+    "fixtures/sre-ops-mid--lattice-cloud/expected.json": "sha256:1fb5ef47813203f81f2ec8e7b0d8f37f3336dadac882f793ab59c8281d2fe0ac",
+    "fixtures/sre-ops-mid--lattice-cloud/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
+    "fixtures/sre-ops-mid--lattice-cloud/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
+    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd"
+  },
+  "levels": {
+    "entry": {
+      "bullets_per_role": 4,
+      "intro_variants": 2,
+      "roles": 1,
+      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+      "rule_source": "authored",
+      "scope": "on a small, well-defined part of the work with a senior colleague reviewing",
+      "skill_count": 10,
+      "summary_variants": 2,
+      "years": [
+        0,
+        2
+      ]
+    },
+    "lead": {
+      "bullets_per_role": 5,
+      "intro_variants": 2,
+      "roles": 3,
+      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+      "rule_source": "authored",
+      "scope": "leading a team and owning the roadmap for the area",
+      "skill_count": 10,
+      "summary_variants": 2,
+      "years": [
+        10,
+        16
+      ]
+    },
+    "mid": {
+      "bullets_per_role": 4,
+      "intro_variants": 2,
+      "roles": 2,
+      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+      "rule_source": "authored",
+      "scope": "owning one service or workstream end to end",
+      "skill_count": 10,
+      "summary_variants": 2,
+      "years": [
+        3,
+        5
+      ]
+    },
+    "senior": {
+      "bullets_per_role": 4,
+      "intro_variants": 2,
+      "roles": 3,
+      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+      "rule_source": "authored",
+      "scope": "setting the technical direction for a product area",
+      "skill_count": 10,
+      "summary_variants": 2,
+      "years": [
+        6,
+        10
+      ]
+    }
+  },
+  "names_note": "Every name, employer and address is invented; any resemblance to a person or organisation is coincidental.",
+  "onet": {
+    "attribution": "This dataset includes information from the O*NET 31.0 Database by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). Used under the CC BY 4.0 license. O*NET® is a trademark of USDOL/ETA. Sartor has modified all or some of this information. USDOL/ETA has not approved, endorsed, or tested these modifications.",
+    "database": "O*NET 31.0 Database",
+    "license": "CC BY 4.0",
+    "license_read": "2026-10-22",
+    "license_url": "https://www.onetcenter.org/license_db.html",
+    "scope_note": "The licence's 'License Exceptions' limit it to the downloadable database files. Step 3a uses only occupation codes and titles read on O*NET OnLine and no database content; the attribution below is carried for step 3b, whose facts come from the database files."
+  },
+  "pilot_waivers": [
+    "data-ml-entry--borealis-labs:clarifications",
+    "data-ml-entry--borealis-labs:refinement_notes",
+    "data-ml-entry--borealis-labs:role_intro_variants",
+    "data-ml-entry--borealis-labs:summary_variants",
+    "product-mgmt-senior--atrium-health:clarifications",
+    "product-mgmt-senior--atrium-health:refinement_notes",
+    "product-mgmt-senior--atrium-health:role_intro_variants",
+    "product-mgmt-senior--atrium-health:summary_variants",
+    "sre-ops-mid--lattice-cloud:clarifications",
+    "sre-ops-mid--lattice-cloud:refinement_notes",
+    "sre-ops-mid--lattice-cloud:role_intro_variants",
+    "sre-ops-mid--lattice-cloud:summary_variants"
+  ],
+  "professions": {
+    "data-ml": {
+      "display": "Data science and machine learning",
+      "onet": {
+        "code": "15-2051.00",
+        "evidence": "code and title read on O*NET OnLine 2026-10-22",
+        "mapping": "exact",
+        "title": "Data Scientists"
+      }
+    },
+    "product-mgmt": {
+      "display": "Product management",
+      "onet": {
+        "code": "11-2021.00",
+        "evidence": "O*NET OnLine keyword search 'product manager' on 2026-10-22 listed no product-manager occupation; this was its first hit; chosen because it is O*NET's own closest hit, not because the work matches",
+        "mapping": "nearest",
+        "title": "Marketing Managers"
+      }
+    },
+    "sre-ops": {
+      "display": "Site reliability and IT operations",
+      "onet": {
+        "code": "15-1244.00",
+        "evidence": "O*NET OnLine keyword search 'site reliability' on 2026-10-22 listed no site-reliability or DevOps occupation; the code and title were read the same day; chosen by the author as the nearest, not by O*NET's ranking",
+        "mapping": "nearest",
+        "title": "Network and Computer Systems Administrators"
+      }
+    }
+  },
+  "schema": 1,
+  "status": "draft",
+  "suite": "golden-v1",
+  "version": 1
+}

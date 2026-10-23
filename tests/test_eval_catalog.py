@@ -31,7 +31,7 @@ import pytest
 import analyzer
 import hardening
 from evals import eval_catalog as cat
-from evals import runner
+from evals import golden_author, runner
 from tests._repo_files import REPO_ROOT, repo_files
 
 # Directory parts that take a .py file out of the production scan: the same set as
@@ -51,6 +51,10 @@ _ROUTED = frozenset(
         "_call_llm",
         "_call_llm_streaming",
         "_judge_create",
+        # The golden-set author (evals/golden_author.py). It has no defaults: a site that omits
+        # `model=` or `system_prompt=` is read as SONNET_MODEL / SYSTEM_PROMPT and so disagrees with
+        # its entry, which fails `test_each_call_site_agrees_with_its_entry`.
+        "_author_create",
     }
 )
 
@@ -60,6 +64,7 @@ _ITEMS_DIR = REPO_ROOT / "docs" / "dev" / "work" / "items"
 _SUITE_DIRS = {
     "synthetic": runner.FIXTURES_DIR / "synthetic",
     "anchor-v1": runner.ANCHOR_DIR / "fixtures",
+    "golden-v1": runner.GOLDEN_DIR,
 }
 
 
@@ -230,6 +235,7 @@ def _pin_model(pin: str) -> str:
         "SONNET_MODEL": analyzer.SONNET_MODEL,
         "HAIKU_MODEL": analyzer.HAIKU_MODEL,
         "JUDGE_MODEL": runner.JUDGE_MODEL,
+        "AUTHOR_MODEL": golden_author.AUTHOR_MODEL,
     }[pin]
 
 
@@ -364,8 +370,8 @@ def test_a_disagreement_between_site_and_entry_is_reported():
 def test_the_production_scan_sees_the_known_sites():
     sites = production_sites()
     assert (
-        len(sites) == 26
-    )  # tests/test_call_kind_telemetry.py: "23 distinct literals across 26 call sites"
+        len(sites) == 27
+    )  # tests/test_call_kind_telemetry.py: "24 distinct literals across 27 call sites"
     assert {s.call for s in sites} >= {"clarify", "judge_grade", "extract_experiences"}
 
 

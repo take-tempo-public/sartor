@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: the golden eval dataset's format, a stub-tested prose generator, per-cell seeds and a reachability check (`feat/eval-dataset-format`, item 183, eval redesign step 3a)
+
+The owner split eval-redesign step 3 on 2026-10-22: this is **3a**, the format and its machinery, with three pilot cells; 3b (item 191) generates the
+other cells. **No prompt text changed (no `PROMPT_VERSION` bump, and the author prompt is not in the product prompt lock), no product pin moved, no
+paid call was made, and no dependency was added** (`evals/golden_set.py` is stdlib-only and is registered with its reason in
+`tests/test_data_root.py`'s `_CODE_ANCHORS`; `evals/golden_author.py` imports no network library and takes the client as an argument).
+
+- **The format** (`evals/golden_set.py`, `evals/golden/golden-v1/`): a cell is one profession at one level. Its source is a code-written
+  `profile.json` and a `prose.json` (model-written or converted from an existing persona); `resume.md`, `jd.txt`, `expected.json` and `seed.json` are
+  derived, one fixture per JD, and a test re-renders them and compares bytes. `manifest.json` records the level ladder (every rule marked `authored`),
+  the O\*NET attribution and a sha256 per file. `python -m evals.golden_set check` runs the whole check. **Limits, stated:** the prose validator checks
+  digits, required facts, invention traps and length, and cannot tell an invented employer from a real one; freezing is not enforced against git
+  history.
+- **Three pilot cells** (`data-ml-entry`, `sre-ops-mid`, `product-mgmt-senior`) are the existing personas converted without rewriting a word: each
+  renders back to its `resume.md` and `jd.txt` byte for byte. `evals/fixtures/synthetic/` is untouched. Twelve **waivers** in the manifest list the
+  four richness checks a converted persona cannot meet; the checker requires the list to be exact and a `frozen` suite may carry none.
+- **Per-cell seeds in the runner:** `--suite golden-v1 --mode assemble` needs no `--seed`; each fixture's own `seed.json` is its own corpus, opened
+  and closed one at a time. The `--seed` path is unchanged, and a fixture's seed is read only in assemble mode so `--suite real` is unchanged.
+  `golden-v1` is not part of `--suite all`.
+- **A reachability check** (`tests/test_golden_reachability.py`) runs every cell through the real pipeline against a stub client, one level below the
+  existing call-plan test, and asserts the calls that fire. Its control arm is the old `recommend_summary` gap. Of the 13 kinds `run_suite` never reaches,
+  12 are covered by static predicates (the thirteenth, `avatar_answer`, takes its questions from the documentation), tied to the catalog in both
+  directions.
+- **The prose generator** (`evals/golden_author.py`, call kind `dataset_author`, an `exempt` catalog entry) is built and tested against a stub only.
+  **It has never made a real call**, so the live request is as documented, not observed. Its model is a pin of its own, `claude-opus-5-5`, outside the
+  product pins and both arms of the item 137 comparison. It needs `--confirm-paid` and `--max-spend`, and uses no fallback model, so the recorded
+  model is the one that wrote the text. `analyzer.log_judge_call` gains an optional `prompt_version=` (default unchanged).
+- **Pricing:** `hardening.MODEL_PRICING` gains `claude-opus-5-5` ($4 in, $20 out, $5 for a 5-minute cache write, $0.20 for a hit), read from the
+  pricing page on 2026-10-22. There is **no** `THINKING_POLICY` row for it on purpose: Opus 5.5 rejects `thinking: disabled`, and a row would make it a
+  legal `--model-override` target for product calls nobody has validated against it. It stays refused as an override.
+- **Found and corrected:** the data-scientist persona's own résumé names a "senior data scientist" colleague while its invention trap forbids claiming
+  the title; the traps are written against eval output, so converted source prose is not held to them (model-written prose is). The same page read also
+  settled that Sonnet 5.5's cache-hit price is $0.10, which `hardening.py` already had.
+- Also: `docs/dev/eval-redesign-design.md` (the 3a/3b split, the run-size flags and the `generate` single-call evals placed in step 4, the per-JD
+  `case_id`, and **6.5, a proposal for the owner on how the USAJOBS exploration fetch could clear charter C-2; nothing is built and the charter is
+  not edited**), `evals/README.md`, items 183 (narrowed), 191 (new) and epic 180, and
+  `docs/dev/blast-radius/eval-dataset-format.md`, the consumer enumeration written before the first code edit.
+
 ### Added: an eval catalog of every LLM call kind, and spend control for eval runs (`feat/eval-catalog-skeleton`, item 182, eval redesign step 2)
 
 Every LLM call kind now has a catalog entry that says which model pin and which system prompt it uses and whether an eval of it exists, a test

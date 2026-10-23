@@ -55,6 +55,10 @@ IRRELEVANT_PREFIXES = frozenset(
         # record (per-run JSONL shards), never a wiki source; see
         # docs/dev/blast-radius/flake-rate-measurement.md
         "docs/screenshots/",  # image assets, not text a wiki page cites
+        "evals/golden/",  # committed eval dataset (cells, fixtures, manifest): data, not a wiki source;
+        # about four files per cell would reach the merge-blocking limit on their own.
+        # evals/golden_set.py (the code) stays wiki-relevant; see
+        # docs/dev/blast-radius/eval-dataset-format.md
         "docs/ux/",  # one-off UX audit / capture-process docs, not wiki-cited
         "tests/",  # the wiki documents production modules, never test files
         "ui_pages/",  # UX test page-object infrastructure

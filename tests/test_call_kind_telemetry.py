@@ -66,7 +66,7 @@ _SCAN_EXCLUDE_PARTS = frozenset(
 )
 
 # The complete, reviewed inventory of `call_kind="<literal>"` keyword arguments in
-# production code, repo-wide, as of this branch — 23 distinct literals across 26 call
+# production code, repo-wide, as of this branch — 24 distinct literals across 27 call
 # sites (analyze_extraction / analyze_synthesis / generate each fire from two branches
 # of their own function; every other literal has one call site). A call kind added
 # later fails this test until someone deliberately updates this set — and, if it's
@@ -98,6 +98,9 @@ EXPECTED_CALL_KINDS = frozenset(
         # tests/test_judge_call_provenance.py (row emitted, cost excluded from eval cost_usd).
         "judge_grade",
         "judge_distinctiveness",
+        # The golden-set author (step 3a, evals/golden_author.py): the same judge pattern, logged by
+        # `analyzer.log_judge_call`; row emission is covered in tests/test_golden_author.py.
+        "dataset_author",
     }
 )
 

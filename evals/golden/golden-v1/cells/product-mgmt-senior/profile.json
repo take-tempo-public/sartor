@@ -1,0 +1,354 @@
+{
+  "candidate": {
+    "email": "priya.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-priya",
+    "name": "Priya Mehta",
+    "phone": "(555) 010-3300",
+    "username": "gold_product_mgmt_senior"
+  },
+  "cell": "product-mgmt-senior",
+  "cell_seed": 0,
+  "clarifications": [],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "healthcare or healthtech product exposure (any past engagement, advisory, side project)",
+        "EHR familiarity (Epic, Cerner) or HL7/FHIR data models",
+        "revenue-cycle workflows or claims processing exposure",
+        "workflow products used by clinicians or other domain experts (auditors, lawyers count as adjacent)"
+      ],
+      "scope_probes": [
+        "cross-functional leadership without authority: design/eng matrixed elsewhere or formally reporting?",
+        "associate-PM mentorship: formal manager role or peer mentoring?",
+        "Evidence Collector adoption: actual percentage of accounts rather than 'strong majority'?",
+        "quarterly business reviews: presenting to executives or informing?"
+      ]
+    },
+    "forbidden_inventions": [
+      "healthcare experience",
+      "EHR",
+      "Epic\\b",
+      "Cerner",
+      "HIPAA",
+      "HL7",
+      "FHIR",
+      "revenue-?cycle",
+      "claims processing",
+      "clinical",
+      "PhD",
+      "Master'?s? in"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "product strategy",
+      "discovery",
+      "b2b",
+      "saas",
+      "workflow",
+      "cross-functional"
+    ],
+    "notes": "Candidate is strong B2B PM but has zero healthcare experience. Generation MUST NOT invent any healthcare/EHR/HIPAA experience. Keyword coverage allowed lower because some JD-essential terms (healthcare, EHR) genuinely don't apply. Clarification questions should explicitly probe whether ANY adjacent healthcare exposure exists (so the generator can either surface or confidently confirm absence) AND disambiguate scope on cross-functional leadership and mentorship claims."
+  },
+  "iteration": null,
+  "jds": [
+    {
+      "header_lines": [],
+      "slots": [
+        "jd.atrium-health.full"
+      ],
+      "slug": "atrium-health"
+    }
+  ],
+  "level": "senior",
+  "profession": "product-mgmt",
+  "refinement_notes": [],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5",
+            "r1.b6"
+          ],
+          "company": "Northgate Compliance",
+          "end": null,
+          "intro_slots": [],
+          "location": null,
+          "start": "2022-04",
+          "title": "Senior Product Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Brightwood Analytics",
+          "end": "2022-04",
+          "intro_slots": [],
+          "location": null,
+          "start": "2019-06",
+          "title": "Product Manager"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2"
+          ],
+          "company": "Gladwell Software",
+          "end": "2019-06",
+          "intro_slots": [],
+          "location": null,
+          "start": "2017-08",
+          "title": "Associate Product Manager"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Economics",
+          "institution": "State University",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Product strategy",
+        "customer discovery",
+        "opportunity briefs",
+        "prioritization frameworks",
+        "B2B SaaS",
+        "workflow product design",
+        "cross-functional leadership",
+        "executive communication",
+        "written briefs",
+        "KPI instrumentation",
+        "Mixpanel",
+        "SQL (working competence)",
+        "Figma (working competence)"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "converted",
+      "name": "Product strategy"
+    },
+    {
+      "category": "converted",
+      "name": "customer discovery"
+    },
+    {
+      "category": "converted",
+      "name": "opportunity briefs"
+    },
+    {
+      "category": "converted",
+      "name": "prioritization frameworks"
+    },
+    {
+      "category": "converted",
+      "name": "B2B SaaS"
+    },
+    {
+      "category": "converted",
+      "name": "workflow product design"
+    },
+    {
+      "category": "converted",
+      "name": "cross-functional leadership"
+    },
+    {
+      "category": "converted",
+      "name": "executive communication"
+    },
+    {
+      "category": "converted",
+      "name": "written briefs"
+    },
+    {
+      "category": "converted",
+      "name": "KPI instrumentation"
+    },
+    {
+      "category": "converted",
+      "name": "Mixpanel"
+    },
+    {
+      "category": "converted",
+      "name": "SQL (working competence)"
+    },
+    {
+      "category": "converted",
+      "name": "Figma (working competence)"
+    }
+  ],
+  "slots": {
+    "jd.atrium-health.full": {
+      "allowed_numbers": [
+        "2",
+        "2026",
+        "210",
+        "260",
+        "3",
+        "7"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "jd",
+      "max_words": 292,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 17,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 22,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "2024"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 19,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 21,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b5": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 19,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r1.b6": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 10,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 14,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 23,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b3": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 18,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 10,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 11,
+      "min_words": 1,
+      "must_include": []
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 11,
+      "min_words": 1,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "converted from an existing persona; not generated",
+      "has_outcome": true,
+      "kind": "summary",
+      "max_words": 35,
+      "min_words": 1,
+      "must_include": []
+    }
+  }
+}

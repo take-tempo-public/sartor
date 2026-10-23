@@ -200,7 +200,8 @@ class TestRefusals:
             ({"SONNET_MODEL": SONNET_MODEL}, "already the pin"),
             ({"HAIKU_MODEL": HAIKU_MODEL}, "already the pin"),
             ({"SONNET_MODEL": "claude-unlisted-9"}, "THINKING_POLICY"),
-            # Priced + policy-listed targets only; an Opus 5.5 call has neither today.
+            # Priced + policy-listed targets only. Opus 5.5 is priced (it is the golden-set author's
+            # model, evals/golden_author.py) but has no THINKING_POLICY row on purpose, so it stays refused.
             ({"SONNET_MODEL": "claude-opus-5-5"}, "THINKING_POLICY"),
             ({"SONNET_MODEL": ""}, "non-empty"),
             ({"SONNET_MODEL": 5}, "non-empty"),

@@ -1,0 +1,28 @@
+{
+  "cell": "sre-ops-mid",
+  "provenance": {
+    "kind": "converted",
+    "persona": "sre-mid-level",
+    "source_sha256": {
+      "expected.json": "sha256:98e53d6cafd7f7c23eb4e0e06fb3af3c292af4bac489b281193425021e7175cd",
+      "jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
+      "resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909"
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.lattice-cloud.full": "Senior Site Reliability Engineer\nLattice Cloud — Remote (US)\n\nAbout the role\nLattice Cloud runs a multi-region container platform serving 1,200+ enterprise customers. The infrastructure team is hiring an SRE to own the reliability of our control plane: ingress, scheduling, and the metadata layer. You'll set SLOs, drive postmortem culture, and reduce on-call burden through deliberate engineering investment.\n\nWhat you'll do\n- Own incident response for the control plane: lead postmortems, identify systemic patterns, drive corrective actions to completion.\n- Define and instrument SLOs and SLIs for our scheduling pipeline; partner with product engineering to fold reliability budgets into roadmap planning.\n- Improve observability: extend our Prometheus/Grafana stack, add structured tracing where it's missing, write runbooks that cut MTTR.\n- Author Terraform modules that codify infrastructure standards across teams; review IaC changes from product engineers.\n- Participate in a 24/7 on-call rotation (one week in five). Mentor junior engineers on incident command.\n- Run blameless postmortems and own the action-item tracker.\n\nWhat we're looking for\n- 4+ years operating production distributed systems at scale (preferably Kubernetes-based).\n- Strong programming in at least one of: Python, Go.\n- Hands-on experience with: Prometheus/Grafana, Terraform, AWS or GCP, structured logging, distributed tracing.\n- Track record of leading incident response and writing postmortems other engineers actually read.\n- Comfort with on-call as a craft, not a chore.\n\nNice to have\n- Service mesh experience (Istio, Linkerd).\n- Previous SRE-track promotion or staff-level scope.\n- Open-source contributions to observability tools.\n\nCompensation\n$185–$225K base + equity. Full benefits, $2K/yr learning budget, fully remote with quarterly team gatherings.",
+    "r1.b1": "Owned reliability of the API edge for a B2B SaaS serving roughly 800 customer tenants on AWS EKS.",
+    "r1.b2": "Reduced control-plane error budget burn by tightening retry semantics in the ingress layer; rewrote the Envoy filter config and added a dashboard that on-call uses every shift.",
+    "r1.b3": "Authored Terraform modules for VPC peering and IAM role provisioning that the platform team adopted as the standard.",
+    "r1.b4": "Took on-call rotation roughly one week in four; led postmortems for two Sev-1 incidents and tracked action items to completion.",
+    "r1.b5": "Wrote a runbook library covering the top ten alert types; runbook usage cut MTTR for those alerts noticeably.",
+    "r2.b1": "Maintained the data ingestion pipeline (Kafka + Flink) for an analytics product used by internal sales teams.",
+    "r2.b2": "Migrated the monitoring stack from a SaaS APM to self-hosted Prometheus + Grafana, saving on the licensing line item and giving the team direct query access.",
+    "r2.b3": "Built a Slack bot in Python that posted incident timelines as they unfolded; on-call adopted it across the org.",
+    "r2.b4": "Mentored two interns through their first on-call shadow rotations.",
+    "summary.1": "Site Reliability Engineer with four years operating Kubernetes-based platforms in production. Strong incident-response habits and a preference for fixing systemic causes over patching symptoms. Comfortable in Python and Go.",
+    "x4.b1": "**kube-budget-cli** — open-source Go tool that reports namespace-level cost attribution from Kubernetes resource quotas. ~120 GitHub stars.",
+    "x4.b2": "Active reviewer on the Prometheus operator GitHub repo (12 merged PRs over 2024)."
+  }
+}
