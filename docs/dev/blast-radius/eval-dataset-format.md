@@ -157,4 +157,8 @@ How a missed consumer would surface:
 - **The `--seed` path drifting:** the existing `tests/test_eval_runner.py`, `tests/test_eval_spend.py` and
   `tests/test_seed_import.py` run unchanged; any edit to them other than rows 19 and 20 is a finding.
 
+Measured, not estimated (`pytest --durations`, 2026-10-22): the reachability test runs the three pilots through
+the real pipeline against the stub in about 0.3 s per mode, so about 0.1 s a fixture. A 96-fixture `golden-v1`
+costs about 10 s a mode, cheap enough to stay in the default test run (3b re-measures at full size).
+
 Run at close-out: the enumeration greps above, once more, against the final tree, and `python -m scripts.gate`.
