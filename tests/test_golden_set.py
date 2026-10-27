@@ -376,6 +376,140 @@ class TestSetting:
         assert seen == {"startup", "small-business"}
 
 
+CERT_FACTS: dict[str, Any] = FACTS | {
+    "education": {
+        "degree": "Certificate",
+        "field": "Electrical Technology",
+        "institutions": ["Tri-County Trade Institute"],
+    },
+    "certifications": [
+        {"name": "Master Licence", "issuer": "State Licensing Board", "level": "senior"},
+        {"name": "OSHA 30-Hour Card", "issuer": "Safety Council", "level": "entry"},
+        {"name": "Journeyman Licence", "issuer": "State Licensing Board", "level": "mid"},
+    ],
+}
+
+
+def _cert_names(profile: dict[str, Any]) -> list[str]:
+    sections = [s for s in profile["sections"] if s["kind"] == "certifications"]
+    return [c["name"] for s in sections for c in s["items"]]
+
+
+class TestCertifications:
+    """Licences and certifications are facts the candidate holds by tier, and claims the candidate must not make."""
+
+    @pytest.mark.parametrize(
+        ("level", "held"),
+        [
+            ("entry", ["OSHA 30-Hour Card"]),
+            ("mid", ["OSHA 30-Hour Card", "Journeyman Licence"]),
+            ("senior", ["OSHA 30-Hour Card", "Journeyman Licence", "Master Licence"]),
+        ],
+    )
+    def test_a_candidate_holds_the_certifications_at_or_below_the_level(
+        self, level: str, held: list[str]
+    ) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder(level), level)
+        assert _cert_names(profile) == held
+
+    def test_the_certifications_follow_education_and_a_cell_without_any_has_no_section(
+        self,
+    ) -> None:
+        kinds = [s["kind"] for s in gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")["sections"]]
+        assert kinds == ["summary", "experience", "education", "certifications", "skills"]
+        plain = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        assert [s["kind"] for s in plain["sections"]] == [
+            "summary",
+            "experience",
+            "education",
+            "skills",
+        ]
+        assert gs.render_seed(plain, _prose(plain)["slots"])["certifications"] == []
+
+    def test_a_certification_the_candidate_has_not_reached_is_a_forbidden_invention(self) -> None:
+        mid = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        senior = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        assert any(re.search(t, "Master Licence") for t in mid["expected"]["forbidden_inventions"])
+        assert not any(
+            re.search(t, "Master Licence") for t in senior["expected"]["forbidden_inventions"]
+        )
+        probes = mid["expected"]["expected_clarification_themes"]["experience_probes"]
+        assert "any progress toward Master Licence" in probes
+        assert "Master Licence" in mid["expected"]["notes"]
+
+    def test_the_jd_requires_a_held_certification_and_names_the_next_as_preferred(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        needs = profile["slots"]["jd.hospital.needs"]
+        # The lowest-tier held certification is required; the lowest-tier one not yet held is preferred.
+        assert "OSHA 30-Hour Card" in needs["must_include"]
+        assert "Master Licence" in needs["must_include"]
+        assert "State OSHA 30-Hour Card as a required" in needs["brief"]
+        assert "State Master Licence as preferred" in needs["brief"]
+        assert (
+            "30" in needs["allowed_numbers"]
+        )  # a digit in a certification's name is not an invented number
+
+    def test_the_résumé_lists_them_with_issuer_and_a_year_inside_the_career(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        text = gs.render_resume(profile, _prose(profile)["slots"])
+        assert "## Certifications\n\n- OSHA 30-Hour Card — Safety Council, " in text
+        first = int(profile["sections"][1]["roles"][-1]["start"][:4])
+        for cert in profile["sections"][3]["items"]:
+            assert first <= int(cert["year"]) <= int(gs.ASOF[:4])
+
+    def test_they_reach_the_seed_and_survive_the_importer_and_exporter(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        seed = gs.render_seed(profile, _prose(profile)["slots"])
+        assert [c["name"] for c in seed["certifications"]] == _cert_names(profile)
+        assert all(c["issued"] and c["issuer"] for c in seed["certifications"])
+        with seeded_session(seed) as (session, username):
+            back = export_seed(session, candidate_username=username)
+        stable = {k: v for k, v in seed.items() if k not in gs.SEED_VOLATILE_KEYS}
+        assert {k: v for k, v in back.items() if k not in gs.SEED_VOLATILE_KEYS} == stable
+
+    def test_the_education_uses_the_professions_own_institutions(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        item = profile["sections"][2]["items"][0]
+        assert item["institution"] == "Tri-County Trade Institute"
+        assert item["degree"] == "Certificate"
+
+    def test_a_built_cell_with_certifications_checks_clean_on_disk(self, tmp_path: Path) -> None:
+        root = tmp_path / "golden-v1"
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        gs.write_cell(root, profile, _prose(profile))
+        assert gs.check_cell(root, "demo-ops-mid") == []
+
+    def test_a_section_kind_with_no_renderer_is_refused_not_rendered_as_skills(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        profile["sections"].append({"kind": "bullets-ish", "heading": "Other"})
+        with pytest.raises(ValueError, match="cannot render a section of kind"):
+            gs.render_resume(profile, _prose(profile)["slots"])
+
+    @pytest.mark.parametrize(
+        ("change", "needle"),
+        [
+            ({"issuer": ""}, "issuer is empty"),
+            ({"level": "principal"}, "level must be one of"),
+            ({"name": ""}, "need a distinct, non-empty name"),
+        ],
+    )
+    def test_bad_certification_facts_are_found(self, change: dict[str, str], needle: str) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["certifications"][0].update(change)
+        assert any(needle in p for p in gs.validate_facts(facts))
+
+    def test_two_certifications_cannot_share_a_name(self) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["certifications"][1]["name"] = facts["certifications"][0]["name"]
+        assert any("distinct, non-empty name" in p for p in gs.validate_facts(facts))
+
+    @pytest.mark.parametrize("institutions", [[], [""], "State University"])
+    def test_bad_institutions_are_found(self, institutions: Any) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["education"]["institutions"] = institutions
+        assert any("institutions" in p for p in gs.validate_facts(facts))
+
+
 # ---------------------------------------------------------------------------------------------------
 # The profile and prose checks
 # ---------------------------------------------------------------------------------------------------

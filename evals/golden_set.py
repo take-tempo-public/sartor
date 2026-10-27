@@ -52,7 +52,7 @@ SUITE_DIR = GOLDEN_ROOT / SUITE
 
 LEVELS = ("entry", "mid", "senior", "lead")
 STATUSES = ("draft", "frozen")
-SECTION_KINDS = ("summary", "experience", "education", "bullets", "skills")
+SECTION_KINDS = ("summary", "experience", "education", "certifications", "bullets", "skills")
 SLOT_KINDS = ("summary", "intro", "bullet", "jd")
 PROSE_KINDS = ("generated", "converted")
 
@@ -439,11 +439,16 @@ def render_resume(profile: dict[str, Any], texts: dict[str, str]) -> str:
                 )
                 out += [f"- {texts[s]}" for s in item.get("slots", [])]
                 out.append("")
+        elif kind == "certifications":
+            out += [f"- {c['name']} — {c['issuer']}, {c['year']}" for c in section["items"]]
+            out.append("")
         elif kind == "bullets":
             out += [f"- {texts[s]}" for s in section["slots"]]
             out.append("")
-        else:  # skills
+        elif kind == "skills":
             out += [", ".join(section["skills"]) + ".", ""]
+        else:  # a new SECTION_KINDS entry must get its own branch, never fall through to skills
+            raise ValueError(f"cannot render a section of kind {kind!r}")
     return "\n".join(out).rstrip("\n") + "\n"
 
 
@@ -569,8 +574,22 @@ def render_seed(profile: dict[str, Any], texts: dict[str, str]) -> dict[str, Any
     summary_items: list[dict[str, Any]] = []
     skills: list[dict[str, Any]] = []
     educations: list[dict[str, Any]] = []
+    certifications: list[dict[str, Any]] = []
     for section in profile["sections"]:
-        if section["kind"] == "summary":
+        if section["kind"] == "certifications":
+            for order, cert in enumerate(section["items"]):
+                certifications.append(
+                    {
+                        "id": 801 + order,
+                        "name": cert["name"],
+                        "issuer": cert["issuer"],
+                        "issued": cert["year"],
+                        "expires": None,
+                        "display_order": order,
+                        "is_active": True,
+                    }
+                )
+        elif section["kind"] == "summary":
             for order, slot_id in enumerate(section["slots"]):
                 summary_items.append(
                     {
@@ -629,7 +648,7 @@ def render_seed(profile: dict[str, Any], texts: dict[str, str]) -> dict[str, Any
         "summary_items": summary_items,
         "skills": skills,
         "educations": educations,
-        "certifications": [],
+        "certifications": certifications,
     }
 
 
@@ -1191,6 +1210,25 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
             problems.append(
                 f"{where}: setting {industry.get('setting')!r} is not one of {SETTINGS}"
             )
+    for key in ("degree", "field"):
+        if not facts["education"].get(key):
+            problems.append(f"education has no {key!r}")
+    institutions = facts["education"].get("institutions")
+    if institutions is not None and (
+        not isinstance(institutions, list)
+        or not institutions
+        or not all(isinstance(i, str) and i for i in institutions)
+    ):
+        problems.append("education.institutions, when given, is a non-empty list of names")
+    certs = facts.get("certifications", [])
+    cert_names = [c.get("name") for c in certs]
+    if not all(cert_names) or len(set(cert_names)) != len(cert_names):
+        problems.append("certifications need a distinct, non-empty name each")
+    for cert in certs:
+        if not cert.get("issuer"):
+            problems.append(f"certification {cert.get('name')!r}: issuer is empty")
+        if cert.get("level") not in LEVELS:
+            problems.append(f"certification {cert.get('name')!r}: level must be one of {LEVELS}")
     return problems
 
 
@@ -1362,14 +1400,37 @@ def build_profile(
     education = {
         "degree": facts["education"]["degree"],
         "field": facts["education"]["field"],
-        "institution": _pick(_SCHOOLS, seed, "school"),
+        "institution": _pick(facts["education"].get("institutions") or _SCHOOLS, seed, "school"),
         "year": oldest_year,
         "slots": [],
     }
+    # Certifications and licences are facts, not prose: a candidate holds the ones whose tier is at or
+    # below the cell's level, and the next tiers' are the ones the candidate must not claim.
+    tier = LEVELS.index(level)
+    certs = sorted(facts.get("certifications", []), key=lambda c: LEVELS.index(c["level"]))
+    held_certs = [c for c in certs if LEVELS.index(c["level"]) <= tier]
+    absent_certs = [c for c in certs if LEVELS.index(c["level"]) > tier]
+    first_year, last_year = int(oldest_year), int(ASOF[:4])
+    cert_items = [
+        {
+            "name": c["name"],
+            "issuer": c["issuer"],
+            "year": str(
+                first_year
+                + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
+            ),
+        }
+        for c in held_certs
+    ]
     sections = [
         {"kind": "summary", "heading": "Summary", "slots": summary_slots},
         {"kind": "experience", "heading": "Experience", "roles": roles},
         {"kind": "education", "heading": "Education", "items": [education]},
+        *(
+            [{"kind": "certifications", "heading": "Certifications", "items": cert_items}]
+            if cert_items
+            else []
+        ),
         {"kind": "skills", "heading": "Skills", "skills": skill_names},
     ]
     # JDs: each asks for four of the candidate's skills and two it does not have.
@@ -1400,11 +1461,17 @@ def build_profile(
             lo=40,
             hi=160,
         )
+        asked_certs = held_certs[:1] + absent_certs[:1]
+        cert_ask = ""
+        if held_certs:
+            cert_ask += f" State {held_certs[0]['name']} as a required licence or certification."
+        if absent_certs:
+            cert_ask += f" State {absent_certs[0]['name']} as preferred."
         slots[jd_slots_for[2]] = _slot(
             "jd",
-            f"A '{voice['needs']}' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.",
-            must=present + absent,
-            numbers=[str(years)],
+            f"A '{voice['needs']}' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.{cert_ask}",
+            must=present + absent + [c["name"] for c in asked_certs],
+            numbers=[str(years), *re.findall(r"\d+", " ".join(c["name"] for c in asked_certs))],
             lo=30,
             hi=160,
         )
@@ -1419,7 +1486,11 @@ def build_profile(
     absent_all = sorted({s for group in absent_by_jd for s in group})
     present_all = [s for group in present_by_jd for s in group]
     must_keywords = sorted({s.lower() for s in present_all})[:6]
-    traps = [re.escape(s) for s in absent_all] + list(GENERIC_TRAPS)
+    traps = (
+        [re.escape(s) for s in absent_all]
+        + [re.escape(c["name"]) for c in absent_certs]
+        + list(GENERIC_TRAPS)
+    )
     target_slot = "r1.b2" if "r1.b2" in slots else roles[0]["bullet_slots"][0]
     profile: dict[str, Any] = {
         "schema": SCHEMA,
@@ -1443,12 +1514,13 @@ def build_profile(
             "expected_clarification_themes": {
                 "experience_probes": [
                     f"any exposure to {s}, in work or side projects" for s in absent_all
-                ],
+                ]
+                + [f"any progress toward {c['name']}" for c in absent_certs],
                 "scope_probes": [
                     f"{roles[0]['title']} at {roles[0]['company']}: sole owner or team member?"
                 ],
             },
-            "notes": f"{level}-level {facts['display']}. The profile has no {', '.join(absent_all)}; generation must not claim them.",
+            "notes": f"{level}-level {facts['display']}. The profile has no {', '.join(absent_all + [c['name'] for c in absent_certs])}; generation must not claim them.",
         },
         "iteration": {
             "mode": "derived",

@@ -115,6 +115,9 @@ def build_user_prompt(
     """The facts and the slots to fill, as sorted-key JSON. ``previous`` carries a failed text and why."""
     roles = [r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]]
     education = [i for s in profile["sections"] if s["kind"] == "education" for i in s["items"]]
+    certifications = [
+        i for s in profile["sections"] if s["kind"] == "certifications" for i in s["items"]
+    ]
     payload: dict[str, Any] = {
         "facts": {
             "level": profile["level"],
@@ -150,6 +153,12 @@ def build_user_prompt(
             for sid in slot_ids
         },
     }
+    if (
+        certifications
+    ):  # only when a cell has any, so a cell without them keeps its prompt byte for byte
+        payload["facts"]["certifications"] = [
+            {k: c[k] for k in ("name", "issuer", "year")} for c in certifications
+        ]
     if previous:
         payload["rewrite"] = {
             sid: {"previous_text": text, "problems": problems}
