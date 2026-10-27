@@ -81,17 +81,18 @@ def _ladder(level: str) -> dict[str, Any]:
         "skill_count": 8,
         "scope": "owning the service end to end",
         "rule_source": "authored",
+        "label": level,
     }
 
 
 def _manifest(status: str = "draft", waivers: list[str] | None = None) -> dict[str, Any]:
     return {
-        "schema": gs.SCHEMA,
+        "schema": gs.MANIFEST_SCHEMA,
         "suite": gs.SUITE,
         "version": 1,
         "status": status,
-        "levels": {level: _ladder(level) for level in gs.LEVELS},
-        "professions": {"demo-ops": {"display": "operations"}},
+        "families": {"demo": {"levels": {level: _ladder(level) for level in gs.LEVELS}}},
+        "professions": {"demo-ops": {"display": "operations", "family": "demo"}},
         "author": {"model": "stub", "prompt_versions": {"t1": "sha256:prompt"}},
         "pilot_waivers": waivers or [],
     }
@@ -243,6 +244,23 @@ class TestTenure:
             if not low * 12 <= months <= high * 12:
                 outside.append((facts["profession"], months))
         assert outside == [], f"{level}: ladder {low}-{high} years, outside: {outside[:5]}"
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_every_role_is_at_least_the_minimum_and_the_roles_sum_to_the_career(
+        self, level: str
+    ) -> None:
+        ladder = _ladder(level)
+        for seed in range(60):
+            tenures = gs._tenures(seed, ladder)
+            assert len(tenures) == ladder["roles"]
+            assert min(tenures) >= gs.MIN_ROLE_MONTHS, (seed, tenures)
+            low, high = ladder["years"]
+            assert max(low * 12, ladder["roles"] * gs.MIN_ROLE_MONTHS) <= sum(tenures) <= high * 12
+
+    def test_the_career_length_is_not_one_value(self) -> None:
+        # A window that collapsed to a point would pass the bounds test and hide the same defect.
+        spans = {sum(gs._tenures(seed, _ladder("senior"))) for seed in range(60)}
+        assert len(spans) > 10
 
     @pytest.mark.parametrize("level", gs.LEVELS)
     def test_the_stated_years_match_the_career_length(self, level: str) -> None:
@@ -527,9 +545,62 @@ class TestSuiteChecks:
     def test_a_bad_level_rule_source_is_found(self, tmp_path: Path) -> None:
         root = _suite(tmp_path)
         manifest = gs.load_manifest(root)
-        manifest["levels"]["mid"]["rule_source"] = "guessed"
+        manifest["families"]["demo"]["levels"]["mid"]["rule_source"] = "guessed"
         gs.write_manifest(root, manifest)
         assert any("rule_source" in p for p in gs.check_suite(root))
+
+    def test_a_schema_one_manifest_is_refused(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        gs.write_manifest(root, gs.load_manifest(root) | {"schema": 1})
+        assert any("manifest schema 1" in p for p in gs.check_suite(root))
+
+    def test_a_profession_must_name_a_family_the_manifest_has(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["professions"]["demo-ops"]["family"] = "nowhere"
+        gs.write_manifest(root, manifest)
+        assert any("family 'nowhere' is not in the manifest" in p for p in gs.check_suite(root))
+
+    def test_a_family_must_have_exactly_the_four_tiers(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        del manifest["families"]["demo"]["levels"]["lead"]
+        gs.write_manifest(root, manifest)
+        assert any("family demo: levels" in p for p in gs.check_suite(root))
+
+    @pytest.mark.parametrize("label", [None, ""])
+    def test_a_level_needs_its_own_label(self, tmp_path: Path, label: str | None) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["mid"]["label"] = label
+        gs.write_manifest(root, manifest)
+        assert any("label must be a non-empty string" in p for p in gs.check_suite(root))
+
+    @pytest.mark.parametrize("years", [[5, 3], [3], ["3", "5"], [-1, 2]])
+    def test_a_level_needs_a_sound_years_window(self, tmp_path: Path, years: list[Any]) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["mid"]["years"] = years
+        gs.write_manifest(root, manifest)
+        assert any("years must be" in p for p in gs.check_suite(root))
+
+    def test_a_ladder_whose_roles_do_not_fit_its_years_is_found(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["lead"]["years"] = [1, 2]  # 3 roles need 36 months
+        gs.write_manifest(root, manifest)
+        assert any("do not fit in 2 years" in p for p in gs.check_suite(root))
+
+
+class TestLadderFor:
+    def test_it_finds_the_rule_through_the_family(self) -> None:
+        assert gs.ladder_for(_manifest(), "demo-ops", "senior") == _ladder("senior")
+
+    def test_an_unknown_profession_or_level_says_which(self) -> None:
+        with pytest.raises(KeyError, match="no family in the manifest"):
+            gs.ladder_for(_manifest(), "nope", "mid")
+        with pytest.raises(KeyError, match="no rule for level"):
+            gs.ladder_for(_manifest(), "demo-ops", "principal")
 
 
 class TestWaivers:

@@ -41,6 +41,11 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = 1
+#: The manifest's own schema. Cells and prose stay at `SCHEMA`, so moving the manifest to a ladder per family
+#: (2) changes no committed cell byte.
+MANIFEST_SCHEMA = 2
+#: A role shorter than this is not a job a résumé lists; a ladder must fit its roles at this length.
+MIN_ROLE_MONTHS = 12
 SUITE = "golden-v1"
 GOLDEN_ROOT = Path(__file__).resolve().parent / "golden"
 SUITE_DIR = GOLDEN_ROOT / SUITE
@@ -677,6 +682,57 @@ def load_manifest(root: Path) -> dict[str, Any]:
     return manifest
 
 
+def ladder_for(manifest: dict[str, Any], profession: str, level: str) -> dict[str, Any]:
+    """The rule for ``level`` in the family ``profession`` belongs to. Raises ``KeyError`` with the reason."""
+    try:
+        family = manifest["professions"][profession]["family"]
+    except KeyError:
+        raise KeyError(f"profession {profession!r} has no family in the manifest") from None
+    try:
+        rule: dict[str, Any] = manifest["families"][family]["levels"][level]
+    except KeyError:
+        raise KeyError(f"family {family!r} has no rule for level {level!r}") from None
+    return rule
+
+
+def _check_ladders(manifest: dict[str, Any]) -> list[str]:
+    """Every way the manifest's families and its professions' family links can be wrong."""
+    problems: list[str] = []
+    families = manifest.get("families", {})
+    if not families:
+        problems.append("manifest has no families")
+    for name, family in sorted(families.items()):
+        levels = family.get("levels", {})
+        if sorted(levels) != sorted(LEVELS):
+            problems.append(
+                f"family {name}: levels {sorted(levels)} must be exactly {sorted(LEVELS)}"
+            )
+        for level, rule in sorted(levels.items()):
+            where = f"family {name}, level {level}"
+            if rule.get("rule_source") not in ("authored", "sourced"):
+                problems.append(f"{where}: rule_source must be authored or sourced")
+            if not isinstance(rule.get("label"), str) or not rule["label"]:
+                problems.append(f"{where}: label must be a non-empty string")
+            years = rule.get("years")
+            if not (
+                isinstance(years, list)
+                and len(years) == 2
+                and all(isinstance(y, int) for y in years)
+                and 0 <= years[0] <= years[1]
+            ):
+                problems.append(f"{where}: years must be [low, high] whole years, low <= high")
+            elif years[1] * 12 < rule.get("roles", 0) * MIN_ROLE_MONTHS:
+                problems.append(
+                    f"{where}: {rule.get('roles')} roles of at least {MIN_ROLE_MONTHS} months do not fit in {years[1]} years"
+                )
+    for profession, row in sorted(manifest.get("professions", {}).items()):
+        if row.get("family") not in families:
+            problems.append(
+                f"profession {profession}: family {row.get('family')!r} is not in the manifest"
+            )
+    return problems
+
+
 def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> list[str]:
     """Every way the suite can be wrong. ``author_prompt_sha`` maps a prompt version to its text's hash."""
     try:
@@ -684,17 +740,13 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
     except (OSError, ValueError) as exc:
         return [f"manifest.json cannot be read ({exc})"]
     problems: list[str] = []
-    if manifest.get("schema") != SCHEMA:
-        problems.append(f"manifest schema {manifest.get('schema')!r}, this reader knows {SCHEMA}")
+    if manifest.get("schema") != MANIFEST_SCHEMA:
+        problems.append(
+            f"manifest schema {manifest.get('schema')!r}, this reader knows {MANIFEST_SCHEMA}"
+        )
     if manifest.get("status") not in STATUSES:
         problems.append(f"manifest status {manifest.get('status')!r} is not one of {STATUSES}")
-    if sorted(manifest.get("levels", {})) != sorted(LEVELS):
-        problems.append(
-            f"manifest levels {sorted(manifest.get('levels', {}))} must be exactly {sorted(LEVELS)}"
-        )
-    for level, rule in manifest.get("levels", {}).items():
-        if rule.get("rule_source") not in ("authored", "sourced"):
-            problems.append(f"level {level}: rule_source must be authored or sourced")
+    problems += _check_ladders(manifest)
     cells = cell_names(root)
     failing: set[str] = set()
     for cell in cells:
@@ -1041,6 +1093,25 @@ def _sample(seq: list[str], count: int, seed: int, label: str) -> list[str]:
     return ranked[:count]
 
 
+def _tenures(seed: int, ladder: dict[str, Any]) -> list[int]:
+    """Each role's length in months, newest first. They sum to a career length inside ``ladder['years']``.
+
+    The total is drawn from the ladder's window (never shorter than ``MIN_ROLE_MONTHS`` a role), so the level
+    controls career length; the total is then split by hashed weights, every role at least ``MIN_ROLE_MONTHS``.
+    """
+    roles = int(ladder["roles"])
+    low_years, high_years = ladder["years"]
+    floor = roles * MIN_ROLE_MONTHS
+    low = max(low_years * 12, floor)
+    high = max(high_years * 12, low)
+    total = low + _hash_int(seed, "tenure:total") % (high - low + 1)
+    weights = [1 + _hash_int(seed, f"tenure:w{i}") % 8 for i in range(roles)]
+    spare = total - floor
+    shares = [spare * w // sum(weights) for w in weights]
+    shares[0] += spare - sum(shares)  # the integer remainder goes to the newest role
+    return [MIN_ROLE_MONTHS + share for share in shares]
+
+
 def cell_seed_for(profession: str, level: str) -> int:
     """The integer every pseudo-random choice in a cell derives from. A function of the cell's name only."""
     return _hash_int(0, f"{SUITE}:{profession}:{level}") % (2**31)
@@ -1105,8 +1176,7 @@ def build_profile(
     end: str | None = None
     cursor = _months(ASOF)
     total_months = 0
-    for index in range(ladder["roles"]):
-        duration = 18 + _hash_int(seed, f"tenure:{index}") % 24
+    for index, duration in enumerate(_tenures(seed, ladder)):
         start_months = cursor - duration
         total_months += duration
         bullet_slots: list[str] = []
@@ -1162,7 +1232,7 @@ def build_profile(
         top = ", ".join(skill_names[:3])
         slots[slot_id] = _slot(
             "summary",
-            f"Variant {v} of a two-sentence résumé summary for a {level}-level {facts['display']} professional with about {years} years of experience, scope: {ladder['scope']}. Mention {top}.",
+            f"Variant {v} of a two-sentence résumé summary for a {ladder.get('label', level)}-level {facts['display']} professional with about {years} years of experience, scope: {ladder['scope']}. Mention {top}.",
             must=skill_names[:3],
             numbers=[str(years)],
             lo=15,

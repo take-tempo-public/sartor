@@ -3,6 +3,72 @@
     "model": "claude-opus-5-5",
     "prompt_versions": {}
   },
+  "families": {
+    "tech-product": {
+      "levels": {
+        "entry": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "entry",
+          "roles": 1,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "on a small, well-defined part of the work with a senior colleague reviewing",
+          "skill_count": 10,
+          "summary_variants": 2,
+          "years": [
+            0,
+            2
+          ]
+        },
+        "lead": {
+          "bullets_per_role": 5,
+          "intro_variants": 2,
+          "label": "lead",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "leading a team and owning the roadmap for the area",
+          "skill_count": 10,
+          "summary_variants": 2,
+          "years": [
+            10,
+            16
+          ]
+        },
+        "mid": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "mid",
+          "roles": 2,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "owning one service or workstream end to end",
+          "skill_count": 10,
+          "summary_variants": 2,
+          "years": [
+            3,
+            5
+          ]
+        },
+        "senior": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "senior",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "setting the technical direction for a product area",
+          "skill_count": 10,
+          "summary_variants": 2,
+          "years": [
+            6,
+            10
+          ]
+        }
+      }
+    }
+  },
   "files": {
     "cells/data-ml-entry/profile.json": "sha256:dbeefe71ef987c8dd927454be09f984a60df0b8e6d19cb580083462502948888",
     "cells/data-ml-entry/prose.json": "sha256:b4ec5b07181cb28bde1f9ea841ad8f0d22917f66b1c884123b1947e1eb3f2656",
@@ -22,64 +88,6 @@
     "fixtures/sre-ops-mid--lattice-cloud/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
     "fixtures/sre-ops-mid--lattice-cloud/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
     "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd"
-  },
-  "levels": {
-    "entry": {
-      "bullets_per_role": 4,
-      "intro_variants": 2,
-      "roles": 1,
-      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
-      "rule_source": "authored",
-      "scope": "on a small, well-defined part of the work with a senior colleague reviewing",
-      "skill_count": 10,
-      "summary_variants": 2,
-      "years": [
-        0,
-        2
-      ]
-    },
-    "lead": {
-      "bullets_per_role": 5,
-      "intro_variants": 2,
-      "roles": 3,
-      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
-      "rule_source": "authored",
-      "scope": "leading a team and owning the roadmap for the area",
-      "skill_count": 10,
-      "summary_variants": 2,
-      "years": [
-        10,
-        16
-      ]
-    },
-    "mid": {
-      "bullets_per_role": 4,
-      "intro_variants": 2,
-      "roles": 2,
-      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
-      "rule_source": "authored",
-      "scope": "owning one service or workstream end to end",
-      "skill_count": 10,
-      "summary_variants": 2,
-      "years": [
-        3,
-        5
-      ]
-    },
-    "senior": {
-      "bullets_per_role": 4,
-      "intro_variants": 2,
-      "roles": 3,
-      "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
-      "rule_source": "authored",
-      "scope": "setting the technical direction for a product area",
-      "skill_count": 10,
-      "summary_variants": 2,
-      "years": [
-        6,
-        10
-      ]
-    }
   },
   "names_note": "Every name, employer and address is invented; any resemblance to a person or organisation is coincidental.",
   "onet": {
@@ -107,6 +115,7 @@
   "professions": {
     "data-ml": {
       "display": "Data science and machine learning",
+      "family": "tech-product",
       "onet": {
         "code": "15-2051.00",
         "evidence": "code and title read on O*NET OnLine 2026-10-22",
@@ -116,6 +125,7 @@
     },
     "product-mgmt": {
       "display": "Product management",
+      "family": "tech-product",
       "onet": {
         "code": "11-2021.00",
         "evidence": "O*NET OnLine keyword search 'product manager' on 2026-10-22 listed no product-manager occupation; this was its first hit; chosen because it is O*NET's own closest hit, not because the work matches",
@@ -125,6 +135,7 @@
     },
     "sre-ops": {
       "display": "Site reliability and IT operations",
+      "family": "tech-product",
       "onet": {
         "code": "15-1244.00",
         "evidence": "O*NET OnLine keyword search 'site reliability' on 2026-10-22 listed no site-reliability or DevOps occupation; the code and title were read the same day; chosen by the author as the nearest, not by O*NET's ranking",
@@ -133,7 +144,7 @@
       }
     }
   },
-  "schema": 1,
+  "schema": 2,
   "status": "draft",
   "suite": "golden-v1",
   "version": 1

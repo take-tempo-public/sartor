@@ -342,7 +342,12 @@ def main(argv: list[str] | None = None) -> int:
     facts = json.loads((root / "facts" / f"{args.profession}.json").read_text(encoding="utf-8"))
     profiles: list[dict[str, Any]] = []
     for level in args.level:
-        profile = gs.build_profile(facts, manifest["levels"][level], level)
+        try:
+            ladder = gs.ladder_for(manifest, args.profession, level)
+        except KeyError as exc:
+            print(f"golden_author: {exc.args[0]}", file=sys.stderr)
+            return 1
+        profile = gs.build_profile(facts, ladder, level)
         if (root / "cells" / profile["cell"]).exists():
             print(
                 f"golden_author: cell {profile['cell']} exists; a version adds cells and never edits one",
