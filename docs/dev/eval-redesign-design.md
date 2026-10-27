@@ -729,9 +729,51 @@ that at one fixture per JD (up to 96, 5.4). Not run; step 3b's calibration run m
 - ESCO's licence page (404) if ESCO occupations are ever used.
 - Non-tech seniority ladders: none found, so they are authored (above).
 
+**Update 2026-10-27 (owner, plan mode): the matrix is widened.** The 12 professions by 4 levels above are too coarse to
+measure performance across fields: "design and UX" is one row, "skilled trades" is one row, mobile and hardware
+engineering and administrative support are absent, and the format itself was tech-shaped (one global level ladder whose
+scopes read "technical direction for a product area", a tech employer pool, a hardcoded `— Remote (US)` JD header, one
+startup JD shape, no certifications). Decided:
+
+- **About 24 professions in four groups** (owner: "about right"): tech and product (web/backend, mobile, hardware and
+  embedded, SRE and IT operations, security, data and ML, product management, product and UX design, visual design);
+  business and office (administrative assistant, customer support, corporate project management, finance, sales, HR);
+  healthcare, education and community (registered nurse, medical assistant, teacher, social services); trades and
+  construction (electrician, HVAC and plumbing, construction project manager, site carpenter and foreman, logistics and
+  driving). The names are examples; step 3b-ii fixes the list.
+- **Four normalized tiers, a ladder per family.** The tiers stay `entry / mid / senior / lead` so results pool; each family
+  has its own scope text and its own label (apprentice, journeyman, master, foreman). The ladders are authored, not
+  sourced, except where a source is read (DDaT for tech).
+- **A setting axis** (startup, large enterprise, small business, healthcare system or nonprofit, public sector), rotated
+  across cells, not crossed with every profession. The JD register, header and location follow the setting.
+- **96 fixtures stay the ceiling**, now as about 24 professions by 4 levels by one JD. The second JD per cell is spent on
+  breadth. The cost is that a same-résumé, different-JD pair is not in v1; a later version can add cells.
+- **About 5% of fixtures use a public-sector register**, written in the model's words from our brief, with no third-party
+  posting text.
+- **Mismatched pairs** (owner: yes, for career changers and for career advancers). A pair is a résumé of one cell against
+  the JD of another cell's fixture: `change` (a different profession, authored adjacency) or `advance` (the same profession,
+  the JD one tier up). A pair is derived from existing cells, so it adds no author spend, only judge cost when run. Its
+  `expected.json` names the transferable terms the candidate truly has as `must_keywords` and the JD's other requirements
+  as `forbidden_inventions`; the gate for a pair is grounding and no invention, not callback (how the judge weights it is
+  steps 8 and 9). Pairs are counted outside the 96.
+- **Statistics, stated plainly.** The rule in this section (at least 5 discordant cases in one direction for a one-sided
+  p below 0.05) cannot be met inside one profession (4 cases) and is marginal inside a group (about 24). The pooled set
+  carries any gate; a per-field or per-group result is a direction and a flag, not a certificate. Certifying a group would
+  take about 30 to 40 cases in it.
+- **Build order.** Step 3b is two branches: 3b-i (item 193, format only, no paid call) and 3b-ii (item 191, facts, the
+  paid generation, the calibration run, retiring `synthetic/`, freezing). The manifest is `draft`, so cells may change
+  until the freeze.
+
 ### 6.5 Proposal for the owner: the USAJOBS exploration fetch needs a charter decision (2026-10-22)
 
-**Status: a proposal. Nothing is built and `docs/governance/charter.md` is not edited.** Owner decision 12
+**Decision (owner, 2026-10-27, plan mode): no fetch.** There is no USAJOBS fetch, no API key and no charter change:
+C-2 stays at two classes and D-6 is not read to cover a fetch. The golden set is authored and committed; the exploration
+set is a seeded draw from the matrix (5.4 allows it). The reason is the goal, not the licence: the set exists to measure
+performance across many fields, settings and career moves, and real postings add government-skewed text to a set that
+needs breadth (see "Update 2026-10-27" at the end of 6.4). Everything below is kept as the record of the options and
+what was read; it is no longer a proposal. Reopen it only if the golden set shows a reason to want real text.
+
+**Status (as filed 2026-10-22): a proposal. Nothing is built and `docs/governance/charter.md` is not edited.** Owner decision 12
 (2026-10-21) chose USAJOBS as the exploration source and said the fetch either passes
 `tests/test_egress_allowlist.py` by the D-6 opt-in route or comes back as a C-2 amendment. Step 3a looked at
 both and brings the second back, for the reasons below. Owner decision 2026-10-22: no fetch code is written
@@ -930,6 +972,8 @@ to 11 are the recommendation the question carried; question 12 carried none.
     outbound connection: step 3 takes the D-6 opt-in route and passes `tests/test_egress_allowlist.py`, or
     returns to the owner as a C-2 amendment. The owner registers the API key. The USAJOBS terms have no
     effective date on the page, so re-read them when step 3 starts.
+    **Superseded 2026-10-27 (owner): no fetch.** USAJOBS is not fetched and the exploration set is a seeded draw from
+    the matrix. See 6.5.
 
 ## 9. Build order
 
@@ -947,7 +991,8 @@ C-2 (5.4). Per decision 5, step 9 calibrates against judge-to-judge agreement (5
 | 1 | `feat/eval-record-identity` | prompt hashes and the version gate; producer id; trace, span and case ids; parse outcome; judge cost into run totals; fix the cost-by-window leak | none |
 | 2 | `feat/eval-catalog-skeleton` | catalog format, lazy loader, the all-kinds gate, `--list`, `--estimate`, `--max-spend`; entries for the kinds already covered | none |
 | 3a | `feat/eval-dataset-format` | the golden-set cell format and its checks, the prose generator (built and tested against a stub, never run), per-cell seeds in the runner, the reachability check, three pilot cells; the on-demand fetch only as an amendment proposal (6.5) | none |
-| 3b | `feat/eval-dataset-v1` | the other professions' facts, the paid generation of the 48 cells, the calibration run, retiring `evals/fixtures/synthetic/`, freezing `golden-v1` | one generation run and one calibration run, capped |
+| 3b-i | `feat/eval-golden-breadth` | the format changes that let the set span fields and career moves: a ladder per family, a setting axis, certifications and training-aware education, mismatched pairs, the tenure fix (item 193) | none |
+| 3b-ii | `feat/eval-dataset-v1` | facts for about 24 professions, the paid generation (96 fixtures plus pairs), the calibration run, retiring `evals/fixtures/synthetic/`, freezing `golden-v1` (item 191) | one generation run and one calibration run, capped |
 | 4 | `feat/eval-calls-ingest-analyze` | call evals for `extract_experiences`, `analyze_*`, `clarify`, `iterate_clarify`, **and** single-call evals of `generate` and `generate_cover_letter` on a captured `context_set`; **and** the run-size flags `--eval`, `--group`, `--affected-by`, `--full` (5.2) that select them | capped |
 | 5 | `feat/eval-calls-compose` | call evals for the 11 `compose` kinds | capped |
 | 6 | `feat/eval-calls-assistant-proposals` | `avatar_answer`, `critique_proposal`, `promote_clarification_to_bullet` | capped |

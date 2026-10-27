@@ -37,3 +37,11 @@ Step 2 (item 182) merged as PR #199 (`186a064`). The owner chose step 3 and deci
 - **One fixture per JD** in the golden set: `case_id` is `golden-v1/<cell>--<industry>`, so the full tier is up to 96 cases.
 - **The dataset's prose is written by a generator script** pinned to `claude-opus-5-5`, outside the product pins and both arms of item 137's A/B.
 - **The USAJOBS fetch is deferred** to a branch of its own after the owner decides the C-2 / D-6 amendment (3a writes the proposal).
+
+### 2026-10-27 -- step 3b split again; the USAJOBS question closed as no fetch (feat/eval-golden-breadth)
+
+Step 3a merged as PR #200 (`acf6d6f`). The owner reviewed the 48-cell matrix against the need (measure performance across many fields, settings and career moves) and decided, in plan mode:
+- **3b is two branches.** 3b-i is new item 193 on `feat/eval-golden-breadth` (format only, no paid call: per-family ladders, a setting axis, certifications, mismatched pairs). 3b-ii is item 191, rescoped to about 24 professions by 4 levels, one fixture per JD (96), plus the pairs, on `feat/eval-dataset-v1`. Items 184 and 10 still depend on 191.
+- **No USAJOBS fetch, no key, no charter change.** The golden set is authored and committed; the exploration set becomes a seeded draw from the matrix. Recorded in design doc 6.5, which supersedes the proposal there.
+- **Government register is about 5% of the fixtures**, written in the model's own words from our brief; no third-party posting text.
+- **Mismatched pairs are in the set** (career changers and career advancers), derived from existing cells with no new prose. How they are graded is steps 8 and 9.
