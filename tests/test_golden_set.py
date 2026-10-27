@@ -220,6 +220,38 @@ class TestBuilder:
         assert set(needs) & set(missing), "the JD should name a skill the candidate lacks"
 
 
+def _iso_months(iso: str) -> int:
+    year, month = iso.split("-")
+    return int(year) * 12 + int(month)
+
+
+class TestTenure:
+    """Level is the axis the golden set measures, so a cell's career length sits inside its ladder's years."""
+
+    @staticmethod
+    def _career_months(profile: dict[str, Any]) -> int:
+        roles = next(s for s in profile["sections"] if s["kind"] == "experience")["roles"]
+        return _iso_months(gs.ASOF) - _iso_months(roles[-1]["start"])
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_the_career_length_sits_inside_the_ladder_years(self, level: str) -> None:
+        low, high = _ladder(level)["years"]
+        outside = []
+        for n in range(40):
+            facts = FACTS | {"profession": f"demo-{n}"}
+            months = self._career_months(gs.build_profile(facts, _ladder(level), level))
+            if not low * 12 <= months <= high * 12:
+                outside.append((facts["profession"], months))
+        assert outside == [], f"{level}: ladder {low}-{high} years, outside: {outside[:5]}"
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_the_stated_years_match_the_career_length(self, level: str) -> None:
+        # The summary brief and the JD requirement both quote "about N years"; N must be the career length.
+        profile = gs.build_profile(FACTS, _ladder(level), level)
+        years = max(1, round(self._career_months(profile) / 12))
+        assert profile["slots"]["summary.1"]["allowed_numbers"] == [str(years)]
+
+
 # ---------------------------------------------------------------------------------------------------
 # The profile and prose checks
 # ---------------------------------------------------------------------------------------------------
