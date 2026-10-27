@@ -133,7 +133,30 @@ How a missed consumer would surface:
 - **The tenure defect:** a new test builds `senior` and `lead` profiles and asserts total tenure lies inside the ladder's
   `years`; it is committed failing first.
 
-Measured, not estimated: scale and timing are measured in a temp directory at a synthetic 96-cell-plus-pairs size and the
-seconds are written here before close-out (the 3a figure was about 0.1 s a fixture in the reachability test).
+Measured, not estimated (2026-10-27, a scratch script, a synthetic suite in a temp directory, Windows 11): **96 cells with one JD each plus 24 advance pairs = 120 fixtures, 2.6 MB on disk.** Building and writing the 96 cells
+took 1.3 to 1.4 s (about 14 ms a cell). `python -m evals.golden_set check` over the whole suite took **1.4 s**, of which
+the pair check alone was 0.25 to 0.33 s (it re-renders each referenced cell, a second render the cell loop already did: about
+a fifth of the check, left as is). Writing the pairs and re-stamping the manifest took 6.2 s on one run and 13.8 s on another
+(`write_pairs` 2.0 s for 96 new files; `write_manifest` 3.9 s hashing about 700 just-written files, against 1.4 s for the full
+check once the files were cached): the variance is the file system on freshly written files, an authoring step run once, not
+growth in the tooling's work. This is the synthetic stub prose, not generated prose, so the byte counts will be larger in
+3b-ii; the reachability test (real pipeline against the stub) was not re-timed at 120 fixtures here.
+
+Found while building, and changing the plan's rows:
+- **A cell's `must_keywords` pool every JD of the cell**, so a pair against one JD picked up skills only another JD asks for
+  (caught by `TestPairs::test_the_ground_truth_is_built_for_a_candidate_who_does_not_fit` on its first run). A pair now reads
+  the target JD's own `needs` slot.
+- **A converted pilot's keywords are vocabulary, not claims** ("workflow", "cross-functional"), so listing them as
+  `forbidden_inventions` ("MUST NOT appear", `evals/rubrics/grounding.md`) would punish honest tailoring. For a converted
+  target the cell's own invention traps stand in; the unshown requirements go in a new `expected.json` key,
+  `jd_requirements_not_shown`. Consumers of `expected.json`: the runner passes the whole dict to the judge payload
+  (`evals/runner.py`), and nothing enforces the `min_*` or trap keys in code, so an added key reaches only the judge.
+- `case_id` for a pair is `golden-v1/pair--<id>`; `tests/test_eval_golden_runner.py` and `tests/test_golden_reachability.py`
+  now derive counts and map a pair to its résumé cell instead of splitting the name on `--` (Consumers 18 and 19).
+- A mutation check (scratch, not committed) broke ten rules one at a time (tenure window, minimum role length, the tier a
+  candidate holds, the unreached-certification trap, a pair's seed source, the suite check skipping pairs, the JD-term check,
+  the ladder-fit check, the JD header, the advance-pair tier rule). Nine were caught at once; **one was not** (an advance pair
+  that skips a tier), so `test_an_advance_pair_cannot_skip_a_tier` was added and the mutation re-run, red. Every file was
+  restored byte for byte (`git diff --quiet`).
 
 Run at close-out: the enumeration greps above, once more, against the final tree, and `python -m scripts.gate`.

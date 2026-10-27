@@ -511,10 +511,12 @@ passing `--mode generate`) leaves the historical path **byte-identical**.
 ### The golden set (`--suite golden-v1`)
 
 `evals/golden/golden-v1/` is the committed dataset that is to replace the three tech-only personas in
-`evals/fixtures/synthetic/` (design doc 5.4 and 6.4; owner decisions 2026-10-20 to 2026-10-22). It is a
-**profession by level matrix**, all authored: no third-party résumé or posting text is committed. Step 3a built
-the format and three **pilot cells** converted from the existing personas; the other professions and the paid
-generation are step 3b (item 191). Until then the suite is `draft`.
+`evals/fixtures/synthetic/` (design doc 5.4 and 6.4; owner decisions 2026-10-20 to 2026-10-27). It is a
+**profession by level matrix**, all authored: no third-party résumé or posting text is committed, and nothing
+is fetched. It exists to measure performance across many job fields, not one band of tech job hunters. Step 3a
+built the format and three **pilot cells** converted from the existing personas; step 3b-i (item 193) widened
+the format (a ladder per family, a setting for every job, certifications, mismatched pairs); the other
+professions and the paid generation are step 3b-ii (item 191). Until then the suite is `draft`.
 
 - **A cell** is one profession at one level. Its source is `cells/<cell>/profile.json` (written by code: the
   candidate, the ordered résumé sections, every prose slot with the facts and numbers it may hold, the JDs, the
@@ -528,9 +530,38 @@ generation are step 3b (item 191). Until then the suite is `draft`.
   and no `--seed`: each fixture carries its own corpus, imported into its own in-memory database and closed
   before the next one opens. The seed is read only in assemble mode. `--mode generate` reads the `resume.md`
   as any other suite does.
-- **Check it.** `python -m evals.golden_set check` verifies the manifest hashes, every derived file, the
-  prose against its slot rules and the waivers. `tests/test_golden_reachability.py` runs every cell through the
-  real pipeline against a stub client and asserts the right calls fire.
+- **A ladder per family.** The four tiers (`entry`, `mid`, `senior`, `lead`) are what results pool on. Each
+  profession belongs to a **family** in the manifest (`families.<name>.levels.<tier>`), and the family gives
+  every tier its own `label` (apprentice, journeyman, master, foreman), scope text and career length in `years`.
+  A cell's career length is drawn inside that window. The rules are `authored` unless a source is read; a
+  manifest still on schema 1 is refused.
+- **A setting for every job.** `startup`, `enterprise`, `small-business`, `health-nonprofit` or
+  `public-sector`. A profession lists the settings its career moves through (past employers are drawn from
+  those, all invented), and each industry a JD can sit in names its setting and its place, so the JD header, its
+  headings and its register follow the setting. The public-sector register is written by the model from our
+  brief; no real agency, statute or posting text is used.
+- **Certifications and training.** A profession's `certifications` each name an issuer and the first tier that
+  holds them. A candidate holds the ones at or below the cell's tier; the next one is a forbidden invention and a
+  clarification probe, and the JD names a held one as required and the next as preferred. `education.institutions`
+  lets a trade school or apprenticeship programme stand in for a university.
+- **A profession's facts file** (`facts/<profession>.json`, written in step 3b-ii) is checked by
+  `validate_facts` before any cell is built: `profession`, `display`, `titles` (one per tier), `skills`
+  (`name`, `category`), `work_themes`, `education` (`degree`, `field`, optional `institutions`), `settings`,
+  `industries` (`slug`, `company`, `phrase`, `setting`, `location`) and optional `certifications`.
+- **Mismatched pairs** test the people the tool is for who are not applying to the job they already do: a
+  career **change** (a résumé of one profession against another's posting) and a career **advance** (the same
+  profession, the posting one tier up). A pair is listed in the manifest (`pairs[]`: `id`, `kind`,
+  `resume_fixture`, `jd_fixture`, `transferable`, `note`) and written by `python -m evals.golden_set pairs` as
+  `fixtures/pair--<id>/`, derived from the two cells with no new prose and no author spend. Every transferable
+  term must appear in both texts. Its `expected.json` keeps only those terms as `must_keywords`, sets no
+  keyword-coverage minimum, and lists what the posting asks for and the résumé does not show. **How the judge
+  weights a pair, and whether results pool across pairs and cells, is steps 8 and 9, not decided here.** The
+  gate for a pair is meant to be grounding and no invention, not callback.
+- **Check it.** `python -m evals.golden_set check` verifies the manifest hashes, every derived file, every pair
+  against a fresh derivation, the prose against its slot rules and the waivers.
+  `tests/test_golden_reachability.py` runs every cell and pair through the real pipeline against a stub client
+  and asserts the right calls fire. Measured (2026-10-27, a synthetic suite in a temp directory): 96 cells with
+  one JD each plus 24 pairs (120 fixtures, 2.6 MB) checks in about 1.4 s, 0.3 s of it the pairs.
 - **Pilot waivers.** A converted persona has one summary, no role intros, no refinement notes and no
   clarifications, so four richness checks fail for it; `manifest.json` lists them, the checker requires the
   list to be exact, and a `frozen` suite may list none. They are why `recommend_summary` does not fire for a

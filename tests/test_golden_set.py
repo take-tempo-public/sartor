@@ -595,6 +595,15 @@ class TestPairs:
         gs.write_manifest(root, manifest | {"pairs": pairs})
         assert any("not one step" in p for p in gs.check_suite(root))
 
+    def test_an_advance_pair_cannot_skip_a_tier(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        lead = gs.build_profile(FACTS, _ladder("lead"), "lead")
+        gs.write_cell(root, lead, _prose(lead))  # mid to lead leaves out senior
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0] |= {"jd_fixture": "demo-ops-lead--hospital", "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("mid to lead is not one step" in p for p in gs.check_suite(root))
+
     def test_a_change_pair_must_cross_professions(self, tmp_path: Path) -> None:
         root, manifest = _pair_suite(tmp_path)
         pairs = copy.deepcopy(manifest["pairs"])
