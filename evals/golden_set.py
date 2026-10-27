@@ -87,12 +87,70 @@ _LAST_NAMES = (
     "Chen", "Park", "Mehta", "Reyes", "Okafor", "Lindqvist", "Haddad", "Novak", "Silva", "Brandt",
     "Kowalski", "Ito",
 )  # fmt: skip
-_EMPLOYERS = (
-    "Alder Systems", "Brightwater Labs", "Calloway Group", "Dunmore Technologies",
-    "Elmstead Partners", "Fairhaven Works", "Granite Ridge", "Halcyon Services",
-    "Ironbridge Co", "Juniper Row", "Kestrel Works", "Lantern Hill", "Meridian Cross",
-    "Northfield Group", "Oakmont Systems", "Pinecrest Labs",
-)  # fmt: skip
+#: Where a job sits. A cell's résumé employers and its JDs come from these, so one set can hold a startup
+#: engineer, a hospital nurse, a county clerk and a family electrical contractor.
+SETTINGS = ("startup", "enterprise", "small-business", "health-nonprofit", "public-sector")
+
+# Invented organisations, one pool per setting; nothing here names a real employer or agency.
+_EMPLOYERS_BY_SETTING: dict[str, tuple[str, ...]] = {
+    "startup": (
+        "Alder Systems", "Brightwater Labs", "Fairhaven Works", "Juniper Row", "Kestrel Works",
+        "Lantern Hill", "Oakmont Systems", "Pinecrest Labs",
+    ),
+    "enterprise": (
+        "Calloway Group", "Dunmore Technologies", "Elmstead Partners", "Granite Ridge",
+        "Halcyon Services", "Ironbridge Co", "Meridian Cross", "Northfield Group",
+    ),
+    "small-business": (
+        "Harlow and Daughters", "Pennywhistle Supply", "Redfern Family Trades", "Tillman Brothers",
+        "Wren Valley Builders", "Copperfield Services", "Marlow Contracting", "Sutter Street Shop",
+    ),
+    "health-nonprofit": (
+        "Harborview Community Clinic", "Eastgate Regional Hospital", "Bluebird Family Services",
+        "Riverbend Health Network", "Cedar Hollow Hospice", "Maple Court Care",
+        "Stonebridge Community Trust", "Neighborhood Table Services",
+    ),
+    "public-sector": (
+        "Fairmont County Office", "Ridgeway Transit Authority", "Northplain Water District",
+        "Greenfield Parks Department", "Westmoor City Services", "Highland County Schools",
+        "Eastvale Public Works", "Stonegate Housing Authority",
+    ),
+}  # fmt: skip
+
+#: How a JD reads in each setting: the three headings (about / duties / needs) and the register the model is
+#: asked to write in. The brief carries these; the checks do not read heading text.
+_JD_VOICE: dict[str, dict[str, str]] = {
+    "startup": {
+        "about": "About the role",
+        "duties": "What you'll do",
+        "needs": "What we're looking for",
+        "register": "a direct, informal startup voice",
+    },
+    "enterprise": {
+        "about": "Position summary",
+        "duties": "Responsibilities",
+        "needs": "Minimum and preferred qualifications",
+        "register": "a formal corporate voice, with a short minimum list and a shorter preferred list",
+    },
+    "small-business": {
+        "about": "About us and the job",
+        "duties": "What the job involves",
+        "needs": "What you need",
+        "register": "plain words, as an owner-run business would write it, with the work on site",
+    },
+    "health-nonprofit": {
+        "about": "Summary",
+        "duties": "Duties",
+        "needs": "Licensure and qualifications",
+        "register": "the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement",
+    },
+    "public-sector": {
+        "about": "Duties",
+        "duties": "Responsibilities of the position",
+        "needs": "Qualifications and conditions of employment",
+        "register": "the voice of a fictional county or city agency posting; name no real agency, statute or pay table",
+    },
+}
 _SCHOOLS = (
     "State University",
     "Lakeshore University",
@@ -1093,6 +1151,64 @@ def _sample(seq: list[str], count: int, seed: int, label: str) -> list[str]:
     return ranked[:count]
 
 
+def validate_facts(facts: dict[str, Any]) -> list[str]:
+    """Problems with a profession's facts file, empty when it is sound. Never raises on bad content."""
+    required = (
+        "profession",
+        "display",
+        "titles",
+        "skills",
+        "work_themes",
+        "education",
+        "industries",
+        "settings",
+    )
+    problems = [f"facts are missing {key!r}" for key in required if key not in facts]
+    if problems:
+        return problems
+    for level in LEVELS:
+        if not facts["titles"].get(level):
+            problems.append(f"titles has no {level!r}")
+    names = [s.get("name") for s in facts["skills"]]
+    if not all(names) or len(set(names)) != len(names):
+        problems.append("skills need a distinct, non-empty name each")
+    if not all(s.get("category") for s in facts["skills"]):
+        problems.append("every skill needs a category")
+    if not facts["work_themes"]:
+        problems.append("work_themes is empty")
+    settings = facts["settings"]
+    if not settings or any(s not in SETTINGS for s in settings):
+        problems.append(f"settings must be a non-empty list of {SETTINGS}")
+    slugs = [i.get("slug") for i in facts["industries"]]
+    if not slugs or len(set(slugs)) != len(slugs):
+        problems.append("industries need at least one entry, each with a distinct slug")
+    for industry in facts["industries"]:
+        where = f"industry {industry.get('slug')!r}"
+        for key in ("company", "phrase", "location"):
+            if not industry.get(key):
+                problems.append(f"{where}: {key} is empty")
+        if industry.get("setting") not in SETTINGS:
+            problems.append(
+                f"{where}: setting {industry.get('setting')!r} is not one of {SETTINGS}"
+            )
+    return problems
+
+
+def _employers_for(facts: dict[str, Any], seed: int, count: int) -> list[str]:
+    """``count`` distinct employers, newest first, each drawn from a setting this profession works in."""
+    used: set[str] = set()
+    out: list[str] = []
+    for index in range(count):
+        setting = _pick(facts["settings"], seed, f"role-setting:{index}")
+        ranked = sorted(
+            _EMPLOYERS_BY_SETTING[setting], key=lambda n: _hash_int(seed, f"employer:{index}:{n}")
+        )
+        name = next(n for n in ranked if n not in used)
+        used.add(name)
+        out.append(name)
+    return out
+
+
 def _tenures(seed: int, ladder: dict[str, Any]) -> list[int]:
     """Each role's length in months, newest first. They sum to a career length inside ``ladder['years']``.
 
@@ -1147,8 +1263,11 @@ def build_profile(
     and industries. ``ladder`` is the manifest's rule for the level. Every choice derives from
     `cell_seed_for`, so the same inputs write the same bytes. What the model is asked to write is the
     slot briefs; everything else (names, employers, dates, figures, skills, traps, JD requirements) is
-    decided here.
+    decided here. Raises ``ValueError`` when the facts fail `validate_facts`.
     """
+    bad_facts = validate_facts(facts)
+    if bad_facts:
+        raise ValueError("; ".join(bad_facts))
     profession = facts["profession"]
     seed = cell_seed_for(profession, level)
     cell = f"{profession}-{level}"
@@ -1167,7 +1286,7 @@ def build_profile(
     )
     category = {s["name"]: s["category"] for s in facts["skills"]}
     themes = list(facts["work_themes"])
-    employers = _sample(list(_EMPLOYERS), ladder["roles"], seed, "employers")
+    employers = _employers_for(facts, seed, ladder["roles"])
     # Dates run back from ASOF: the newest role is current, each older one ends where the next began.
     titles = [
         facts["titles"][LEVELS[max(LEVELS.index(level) - i, 0)]] for i in range(ladder["roles"])
@@ -1267,22 +1386,23 @@ def build_profile(
         present_by_jd.append(present)
         absent_by_jd.append(absent)
         title = facts["titles"][level]
+        voice = _JD_VOICE[industry["setting"]]
         jd_slots_for = [f"jd.{slug}.about", f"jd.{slug}.duties", f"jd.{slug}.needs"]
         slots[jd_slots_for[0]] = _slot(
             "jd",
-            f"The 'About the role' paragraph of a job description for a {title} at {industry['company']}, {industry['phrase']}. Include no number.",
+            f"The '{voice['about']}' paragraph of a job description for a {title} at {industry['company']}, {industry['phrase']}. Write in {voice['register']}. Include no number.",
             lo=25,
             hi=90,
         )
         slots[jd_slots_for[1]] = _slot(
             "jd",
-            f"A 'What you'll do' heading and four to six bullet lines for a {title}, about {', '.join(_sample(themes, 3, seed, f'duties:{slug}'))}. Include no number.",
+            f"A '{voice['duties']}' heading and four to six bullet lines for a {title}, about {', '.join(_sample(themes, 3, seed, f'duties:{slug}'))}. Include no number.",
             lo=40,
             hi=160,
         )
         slots[jd_slots_for[2]] = _slot(
             "jd",
-            f"A 'What we're looking for' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.",
+            f"A '{voice['needs']}' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.",
             must=present + absent,
             numbers=[str(years)],
             lo=30,
@@ -1291,7 +1411,8 @@ def build_profile(
         jds.append(
             {
                 "slug": slug,
-                "header_lines": [title, f"{industry['company']} — Remote (US)"],
+                "setting": industry["setting"],
+                "header_lines": [title, f"{industry['company']} — {industry['location']}"],
                 "slots": jd_slots_for,
             }
         )

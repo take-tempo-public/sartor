@@ -58,13 +58,22 @@ FACTS: dict[str, Any] = {
         "vendor management",
     ],
     "education": {"degree": "B.S.", "field": "Operations"},
+    "settings": ["startup", "enterprise"],
     "industries": [
         {
             "slug": "hospital",
             "company": "Northwind Health",
             "phrase": "a regional hospital network",
+            "setting": "health-nonprofit",
+            "location": "On site, Tampa, FL",
         },
-        {"slug": "bank", "company": "Cedar Bank", "phrase": "a mid-size retail bank"},
+        {
+            "slug": "bank",
+            "company": "Cedar Bank",
+            "phrase": "a mid-size retail bank",
+            "setting": "enterprise",
+            "location": "Hybrid, Charlotte, NC",
+        },
     ],
 }
 
@@ -268,6 +277,103 @@ class TestTenure:
         profile = gs.build_profile(FACTS, _ladder(level), level)
         years = max(1, round(self._career_months(profile) / 12))
         assert profile["slots"]["summary.1"]["allowed_numbers"] == [str(years)]
+
+
+class TestFacts:
+    """A profession's facts file is checked before a cell is built from it."""
+
+    def test_sound_facts_have_no_problems(self) -> None:
+        assert gs.validate_facts(FACTS) == []
+
+    @pytest.mark.parametrize(
+        "key", ["titles", "skills", "work_themes", "education", "industries", "settings"]
+    )
+    def test_a_missing_key_is_named(self, key: str) -> None:
+        facts = {k: v for k, v in FACTS.items() if k != key}
+        assert gs.validate_facts(facts) == [f"facts are missing {key!r}"]
+
+    def test_a_missing_title_tier_is_found(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        del facts["titles"]["lead"]
+        assert gs.validate_facts(facts) == ["titles has no 'lead'"]
+
+    def test_an_unknown_career_setting_is_found(self) -> None:
+        assert any(
+            "settings must be" in p for p in gs.validate_facts(FACTS | {"settings": ["moon"]})
+        )
+        assert any("settings must be" in p for p in gs.validate_facts(FACTS | {"settings": []}))
+
+    @pytest.mark.parametrize("key", ["setting", "location", "company", "phrase"])
+    def test_an_industry_needs_its_setting_location_company_and_phrase(self, key: str) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][0][key] = "" if key != "setting" else "moon"
+        assert any(f"industry 'hospital': {key}" in p for p in gs.validate_facts(facts))
+
+    def test_two_industries_cannot_share_a_slug(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][1]["slug"] = "hospital"
+        assert any("distinct slug" in p for p in gs.validate_facts(facts))
+
+    def test_the_builder_refuses_bad_facts_with_every_reason(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][0]["location"] = ""
+        facts["settings"] = ["moon"]
+        with pytest.raises(ValueError, match=r"settings must be.*location is empty"):
+            gs.build_profile(facts, _ladder("mid"), "mid")
+
+
+class TestSetting:
+    """Where a job sits sets its employers, its JD register and its place (not a tech startup by default)."""
+
+    def test_every_setting_has_a_voice_and_enough_employers(self) -> None:
+        assert set(gs._EMPLOYERS_BY_SETTING) == set(gs.SETTINGS) == set(gs._JD_VOICE)
+        longest_career = max(_ladder(level)["roles"] for level in gs.LEVELS)
+        for setting, pool in gs._EMPLOYERS_BY_SETTING.items():
+            assert len(set(pool)) >= longest_career, setting
+        for voice in gs._JD_VOICE.values():
+            assert set(voice) == {"about", "duties", "needs", "register"}
+
+    def test_the_jd_header_names_the_industrys_place_and_never_a_default(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        headers = {jd["slug"]: jd["header_lines"][1] for jd in profile["jds"]}
+        assert headers == {
+            "hospital": "Northwind Health — On site, Tampa, FL",
+            "bank": "Cedar Bank — Hybrid, Charlotte, NC",
+        }
+        assert all("Remote (US)" not in h for h in headers.values())
+
+    def test_each_jd_is_briefed_in_its_settings_headings_and_register(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        hospital = gs._JD_VOICE["health-nonprofit"]
+        bank = gs._JD_VOICE["enterprise"]
+        assert f"'{hospital['about']}' paragraph" in profile["slots"]["jd.hospital.about"]["brief"]
+        assert hospital["register"] in profile["slots"]["jd.hospital.about"]["brief"]
+        assert f"'{hospital['needs']}' heading" in profile["slots"]["jd.hospital.needs"]["brief"]
+        assert f"'{bank['duties']}' heading" in profile["slots"]["jd.bank.duties"]["brief"]
+        assert {jd["slug"]: jd["setting"] for jd in profile["jds"]} == {
+            "hospital": "health-nonprofit",
+            "bank": "enterprise",
+        }
+
+    @pytest.mark.parametrize("setting", gs.SETTINGS)
+    def test_a_career_draws_its_employers_from_its_settings(self, setting: str) -> None:
+        facts = FACTS | {"settings": [setting]}
+        for level in gs.LEVELS:
+            roles = gs.build_profile(facts, _ladder(level), level)["sections"][1]["roles"]
+            companies = [r["company"] for r in roles]
+            assert set(companies) <= set(gs._EMPLOYERS_BY_SETTING[setting]), (level, companies)
+            assert len(set(companies)) == len(companies), (level, companies)
+
+    def test_a_mixed_career_uses_more_than_one_setting_across_cells(self) -> None:
+        seen: set[str] = set()
+        for n in range(30):
+            facts = FACTS | {"profession": f"demo-{n}", "settings": ["startup", "small-business"]}
+            roles = gs.build_profile(facts, _ladder("senior"), "senior")["sections"][1]["roles"]
+            for role in roles:
+                for setting in facts["settings"]:
+                    if role["company"] in gs._EMPLOYERS_BY_SETTING[setting]:
+                        seen.add(setting)
+        assert seen == {"startup", "small-business"}
 
 
 # ---------------------------------------------------------------------------------------------------
