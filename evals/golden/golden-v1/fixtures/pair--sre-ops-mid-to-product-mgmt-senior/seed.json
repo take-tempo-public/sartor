@@ -1,0 +1,291 @@
+{
+  "candidate": {
+    "email": "alex.chen@example.com",
+    "linkedin_url": "linkedin.com/in/example-alex",
+    "name": "Alex Chen",
+    "notes": null,
+    "phone": "(555) 010-2200",
+    "profile_text": null,
+    "username": "gold_sre_ops_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_sre_ops_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2021",
+      "field": "Computer Science",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Owned reliability of the API edge for a B2B SaaS serving roughly 800 customer tenants on AWS EKS."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reduced control-plane error budget burn by tightening retry semantics in the ingress layer; rewrote the Envoy filter config and added a dashboard that on-call uses every shift."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": false,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Authored Terraform modules for VPC peering and IAM role provisioning that the platform team adopted as the standard."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": true,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Took on-call rotation roughly one week in four; led postmortems for two Sev-1 incidents and tracked action items to completion."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": false,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote a runbook library covering the top ten alert types; runbook usage cut MTTR for those alerts noticeably."
+        }
+      ],
+      "company": "Holden Networks",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-03",
+      "summary": null,
+      "summary_items": [],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Site Reliability Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintained the data ingestion pipeline (Kafka + Flink) for an analytics product used by internal sales teams."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Migrated the monitoring stack from a SaaS APM to self-hosted Prometheus + Grafana, saving on the licensing line item and giving the team direct query access."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built a Slack bot in Python that posted incident timelines as they unfolded; on-call adopted it across the org."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentored two interns through their first on-call shadow rotations."
+        }
+      ],
+      "company": "Stratford Analytics",
+      "display_order": 1,
+      "end_date": "2023-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-08",
+      "summary": null,
+      "summary_items": [],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Production Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "converted",
+      "id": 605,
+      "name": "AWS (EKS, IAM, VPC, S3)",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 608,
+      "name": "Bash",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 610,
+      "name": "Envoy",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 607,
+      "name": "Go",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 603,
+      "name": "Grafana",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 609,
+      "name": "Kafka",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 601,
+      "name": "Kubernetes",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 602,
+      "name": "Prometheus",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 606,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 604,
+      "name": "Terraform",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 611,
+      "name": "distributed tracing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 612,
+      "name": "incident response",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 614,
+      "name": "on-call leadership",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "converted",
+      "id": 613,
+      "name": "runbooks",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Site Reliability Engineer with four years operating Kubernetes-based platforms in production. Strong incident-response habits and a preference for fixing systemic causes over patching symptoms. Comfortable in Python and Go."
+    }
+  ],
+  "tags": []
+}

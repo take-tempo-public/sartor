@@ -810,6 +810,205 @@ def _check_ladders(manifest: dict[str, Any]) -> list[str]:
     return problems
 
 
+# --------------------------------------------------------------------------------------------------
+# Mismatched pairs: a résumé against the job description of a different cell
+# --------------------------------------------------------------------------------------------------
+
+#: ``change`` is a different profession; ``advance`` is the same profession, the JD one tier up.
+PAIR_KINDS = ("change", "advance")
+PAIR_PREFIX = "pair--"
+PAIR_FILES = ("resume.md", "jd.txt", "seed.json", "expected.json")
+
+
+def pair_fixture_name(pair_id: str) -> str:
+    return f"{PAIR_PREFIX}{pair_id}"
+
+
+def _mentions(text: str, term: str) -> bool:
+    """Whether ``term`` starts a word in ``text``, ignoring case ('customer' is found in 'customers')."""
+    return re.search(rf"(?<![A-Za-z0-9]){re.escape(term)}", text, re.IGNORECASE) is not None
+
+
+def _pair_side(root: Path, fixture: str, cache: dict[str, Any]) -> dict[str, Any]:
+    """The cell behind a fixture name, and that fixture's rendered files. Raises ``ValueError`` if it does not resolve.
+
+    Rendered from the cell's source files, never read back from ``fixtures/``, so a stale source
+    fixture cannot make a pair look right.
+    """
+    cell, sep, slug = fixture.partition("--")
+    if not sep or fixture_name(cell, slug) != fixture or cell not in cell_names(root):
+        raise ValueError(f"fixture {fixture!r} is not '<cell>--<jd slug>' of a cell in this suite")
+    if cell not in cache:
+        profile, prose = load_cell(root, cell)  # OSError / ValueError reach the caller
+        problems = validate_profile(profile) + check_prose(profile, prose)
+        if problems:
+            raise ValueError(f"cell {cell!r} is not sound ({problems[0]})")
+        cache[cell] = (profile, render_fixtures(profile, prose))
+    profile, rendered = cache[cell]
+    if fixture not in rendered:
+        raise ValueError(f"cell {cell!r} has no fixture {fixture!r}")
+    return {"cell": cell, "slug": slug, "profile": profile, "files": rendered[fixture]}
+
+
+def _check_pair_terms(
+    pair: dict[str, Any], resume: dict[str, Any], jd: dict[str, Any]
+) -> list[str]:
+    """Problems with how a pair relates its two cells, and with the transferable terms it claims."""
+    problems: list[str] = []
+    a, b = resume["profile"], jd["profile"]
+    if pair["kind"] == "advance":
+        if a["profession"] != b["profession"]:
+            problems.append("an advance pair keeps the profession")
+        elif LEVELS.index(b["level"]) != LEVELS.index(a["level"]) + 1:
+            problems.append(
+                f"an advance pair asks for the next tier up ({a['level']} to {b['level']} is not one step)"
+            )
+    elif a["profession"] == b["profession"]:
+        problems.append("a change pair crosses professions")
+    terms = pair.get("transferable")
+    if not isinstance(terms, list) or not terms or not all(isinstance(t, str) and t for t in terms):
+        return [*problems, "transferable must be a non-empty list of terms"]
+    for term in terms:
+        if not _mentions(resume["files"]["resume.md"], term):
+            problems.append(f"transferable term {term!r} is not in the résumé")
+        if not _mentions(jd["files"]["jd.txt"], term):
+            problems.append(f"transferable term {term!r} is not in the job description")
+    return problems
+
+
+def render_pair(pair: dict[str, Any], resume: dict[str, Any], jd: dict[str, Any]) -> dict[str, str]:
+    """The four files of one pair fixture. A pure function of the two cells and the pair's authored fields.
+
+    The résumé and seed are the first cell's, the job description is the second cell's. The ground truth
+    is built for a candidate who does not fit: ``must_keywords`` are only the terms the candidate truly
+    has, ``forbidden_inventions`` are the job description's requirements the résumé does not show, and
+    the notes say the gate is grounding and no invention, not callback.
+    """
+    a, b = resume["profile"], jd["profile"]
+    resume_text = resume["files"]["resume.md"]
+    needs = b["slots"].get(f"jd.{jd['slug']}.needs", {}).get("must_include", [])
+    # The requirements of THIS job description: a cell's `must_keywords` pool every JD of the cell, so
+    # they are used only for a converted pilot, whose slots carry no `must_include`.
+    required = list(dict.fromkeys(needs or b["expected"].get("must_keywords", [])))
+    missing = [r for r in required if not _mentions(resume_text, r)]
+    if needs:
+        # A built cell's JD names skills and certifications: claiming one the résumé lacks is an invention.
+        traps = ["(?i)" + re.escape(r) for r in missing]
+    else:
+        # A converted pilot's keywords are vocabulary ("workflow"), not claims, so its own invention
+        # traps stand in; the vocabulary the résumé does not show is listed in `jd_requirements_not_shown`.
+        traps = list(b["expected"].get("forbidden_inventions", []))
+    traps += [t for t in a["expected"].get("forbidden_inventions", []) if t not in traps]
+    terms = sorted({t.lower() for t in pair["transferable"]})
+    shown = ", ".join(missing) if missing else "nothing"
+    expected: dict[str, Any] = {
+        "candidate_name": a["candidate"]["name"],
+        "must_keywords": terms[:6],
+        "forbidden_inventions": traps,
+        "jd_requirements_not_shown": missing,
+        "min_grounding_score": 4,
+        "min_ats_format_score": 4,
+        "min_tone_score": 3,
+        "min_clarification_quality_score": 4,
+        "expected_clarification_themes": {
+            "experience_probes": [
+                f"any exposure to {r}, in work or side projects" for r in missing
+            ],
+            "scope_probes": a["expected"]
+            .get("expected_clarification_themes", {})
+            .get("scope_probes", []),
+        },
+        "notes": (
+            f"Mismatched pair ({pair['kind']}): the {resume['cell']} résumé against the {jd['cell']} job "
+            f"description. {pair['note']} The gate is grounding and no invention, not callback: keyword "
+            f"coverage and callback are expected to be low, so no minimum is set for them. The job "
+            f"description asks for what the résumé does not show: {shown}. The output must claim none of it."
+        ),
+        "pair": {
+            "id": pair["id"],
+            "kind": pair["kind"],
+            "resume_fixture": pair["resume_fixture"],
+            "jd_fixture": pair["jd_fixture"],
+            "resume_cell": resume["cell"],
+            "jd_cell": jd["cell"],
+            "transferable": terms,
+        },
+    }
+    return {
+        "resume.md": resume_text,
+        "jd.txt": jd["files"]["jd.txt"],
+        "seed.json": resume["files"]["seed.json"],
+        "expected.json": canonical_json(expected),
+    }
+
+
+def _pairs_wanted(
+    root: Path, manifest: dict[str, Any]
+) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """``({pair fixture name: files}, problems)`` for every pair the manifest lists."""
+    wanted: dict[str, dict[str, str]] = {}
+    problems: list[str] = []
+    cache: dict[str, Any] = {}
+    seen: set[str] = set()
+    for index, pair in enumerate(manifest.get("pairs", [])):
+        pair_id = pair.get("id") if isinstance(pair, dict) else None
+        where = f"pair {pair_id!r}" if pair_id else f"pairs[{index}]"
+        if not isinstance(pair_id, str) or not re.fullmatch(r"[a-z0-9-]+", pair_id):
+            problems.append(f"{where}: id must be lowercase letters, digits and hyphens")
+            continue
+        if pair_id in seen:
+            problems.append(f"{where}: the id is used twice")
+            continue
+        seen.add(pair_id)
+        if pair.get("kind") not in PAIR_KINDS:
+            problems.append(f"{where}: kind must be one of {PAIR_KINDS}")
+            continue
+        if not isinstance(pair.get("note"), str) or not pair["note"]:
+            problems.append(f"{where}: note must say why the pair is in the set")
+            continue
+        try:
+            resume = _pair_side(root, str(pair.get("resume_fixture")), cache)
+            jd = _pair_side(root, str(pair.get("jd_fixture")), cache)
+        except (OSError, ValueError) as exc:
+            problems.append(f"{where}: {exc}")
+            continue
+        found = _check_pair_terms(pair, resume, jd)
+        if found:
+            problems += [f"{where}: {p}" for p in found]
+            continue
+        wanted[pair_fixture_name(pair_id)] = render_pair(pair, resume, jd)
+    return wanted, problems
+
+
+def check_pairs(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Every way the manifest's pairs can be wrong, and each pair fixture against a fresh derivation."""
+    wanted, problems = _pairs_wanted(root, manifest)
+    fixtures = root / "fixtures"
+    for name, files in wanted.items():
+        base = fixtures / name
+        for filename in PAIR_FILES:
+            path = base / filename
+            if not path.is_file():
+                problems.append(f"{name}/{filename} is missing")
+            elif path.read_bytes() != files[filename].encode("utf-8"):
+                problems.append(f"{name}/{filename} differs from a fresh derivation")
+        if base.is_dir():
+            for extra in sorted(p.name for p in base.iterdir() if p.name not in PAIR_FILES):
+                problems.append(f"{name}/{extra} is not a file of a pair fixture")
+    return problems
+
+
+def write_pairs(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Write every listed pair's fixture; return the names written. Raises ``ValueError`` on a bad pair."""
+    wanted, problems = _pairs_wanted(root, manifest)
+    if problems:
+        raise ValueError("pairs are not sound:\n  " + "\n  ".join(problems))
+    for name, files in wanted.items():
+        for filename, content in files.items():
+            _write(root / "fixtures" / name / filename, content)
+    return sorted(wanted)
+
+
 def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> list[str]:
     """Every way the suite can be wrong. ``author_prompt_sha`` maps a prompt version to its text's hash."""
     try:
@@ -876,9 +1075,19 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
         if (root / "fixtures").is_dir()
         else set()
     )
+    pair_dirs = {
+        pair_fixture_name(p["id"])
+        for p in manifest.get("pairs", [])
+        if isinstance(p, dict) and isinstance(p.get("id"), str)
+    }
     for name in sorted(fixture_dirs):
-        if not any(name.startswith(f"{c}--") for c in cells):
+        if name in pair_dirs:
+            continue
+        if name.startswith(PAIR_PREFIX):
+            problems.append(f"fixtures/{name} belongs to no pair in the manifest")
+        elif not any(name.startswith(f"{c}--") for c in cells):
             problems.append(f"fixtures/{name} belongs to no cell")
+    problems += check_pairs(root, manifest)
     return problems
 
 
@@ -1645,11 +1854,24 @@ REACHABILITY: dict[str, tuple[str, str | None]] = {
 
 
 def main(argv: list[str] | None = None) -> int:
-    """``python -m evals.golden_set check [--root DIR]`` and ``manifest [--root DIR]`` (re-stamp ``files``)."""
+    """``python -m evals.golden_set check|pairs|manifest [--root DIR]``.
+
+    ``pairs`` writes the fixture of every pair the manifest lists; ``manifest`` re-stamps ``files``.
+    """
     ap = argparse.ArgumentParser(prog="python -m evals.golden_set")
-    ap.add_argument("command", choices=("check", "manifest"))
+    ap.add_argument("command", choices=("check", "pairs", "manifest"))
     ap.add_argument("--root", type=Path, default=SUITE_DIR)
     args = ap.parse_args(argv)
+    if args.command == "pairs":
+        try:
+            names = write_pairs(args.root, load_manifest(args.root))
+        except (OSError, ValueError) as exc:
+            print(f"golden_set: {exc}", file=sys.stderr)
+            return 1
+        print(
+            f"golden_set: wrote {len(names)} pair fixtures; run 'manifest' to re-stamp the hashes"
+        )
+        return 0
     if args.command == "manifest":
         write_manifest(args.root, load_manifest(args.root))
         print(f"golden_set: wrote {args.root / 'manifest.json'}")

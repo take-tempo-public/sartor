@@ -1,0 +1,30 @@
+Senior Product Manager, Provider Workflows
+Atrium Health Platform — Hybrid, Boston
+
+About Atrium
+Atrium Health Platform sells revenue-cycle automation to mid-size hospital systems. Our product reduces denied-claim rates and shortens billing cycles for our customers. We are post-Series-C, profitable, growing the platform team to take on a new EHR-integration surface in 2026.
+
+The role
+You'll own the Provider Workflows product area — the part of our platform that clinical teams interact with daily. The current PM is rotating to a new initiative; this hire takes the existing roadmap, ships the next two quarters, and begins discovery on the EHR integration line.
+
+Responsibilities
+- Drive product strategy and roadmap for Provider Workflows, balancing hospital-system stakeholder needs against engineering capacity.
+- Run discovery: customer interviews, usage analytics, qualitative research with clinical staff. Synthesize findings into prioritized opportunity briefs.
+- Partner with design and engineering through the full delivery lifecycle: scoping, build, launch, instrumentation, post-launch iteration.
+- Own KPIs for the area: feature adoption, denial-rate reduction, time-to-resolution. Defend tradeoffs in quarterly business reviews.
+- Mentor an associate PM on prioritization and customer-discovery craft.
+
+What we're looking for
+- 7+ years product management in B2B SaaS, ideally with workflow products used by domain experts (clinicians, lawyers, finance ops).
+- Demonstrated discovery skill — you have customer-interview habits, not just opinions.
+- Strong written communication; you write opportunity briefs that stakeholders read end-to-end.
+- Comfort presenting to executive customers and to your own exec team.
+- Cross-functional leadership without authority — design, eng, sales, support all reporting elsewhere.
+
+Nice to have
+- Healthcare or healthtech product background.
+- Familiarity with EHR systems (Epic, Cerner) or HL7/FHIR data models.
+- Experience with revenue-cycle workflows or claims processing.
+
+Compensation
+$210–$260K base + equity. Hybrid Boston (3 days/week in office).

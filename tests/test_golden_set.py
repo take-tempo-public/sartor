@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -374,6 +375,271 @@ class TestSetting:
                     if role["company"] in gs._EMPLOYERS_BY_SETTING[setting]:
                         seen.add(setting)
         assert seen == {"startup", "small-business"}
+
+
+FACTS_AP: dict[str, Any] = FACTS | {"profession": "demo-ap", "display": "administration"}
+
+
+def _common_term(resume_text: str, jd_text: str) -> str:
+    """A skill (or the filler word) both texts mention, so a pair can name a truly transferable term."""
+    for term in [s["name"] for s in FACTS["skills"]] + ["steady"]:
+        if gs._mentions(resume_text, term) and gs._mentions(jd_text, term):
+            return term
+    raise AssertionError("the two texts share no term")
+
+
+def _pair_suite(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
+    """Three cells (demo-ops mid and senior, demo-ap mid) and a manifest listing an advance and a change pair."""
+    root = tmp_path / "golden-v1"
+    for facts, level in ((FACTS, "mid"), (FACTS, "senior"), (FACTS_AP, "mid")):
+        profile = gs.build_profile(facts, _ladder(level), level)
+        gs.write_cell(root, profile, _prose(profile))
+    manifest = _manifest()
+    manifest["professions"]["demo-ap"] = {"display": "administration", "family": "demo"}
+
+    def text(cell: str, slug: str, name: str) -> str:
+        return (root / "fixtures" / f"{cell}--{slug}" / name).read_text(encoding="utf-8")
+
+    manifest["pairs"] = [
+        {
+            "id": "ops-mid-to-senior",
+            "kind": "advance",
+            "resume_fixture": "demo-ops-mid--hospital",
+            "jd_fixture": "demo-ops-senior--hospital",
+            "transferable": [
+                _common_term(
+                    text("demo-ops-mid", "hospital", "resume.md"),
+                    text("demo-ops-senior", "hospital", "jd.txt"),
+                )
+            ],
+            "note": "A mid operator reaching for the senior role.",
+        },
+        {
+            "id": "ops-to-admin",
+            "kind": "change",
+            "resume_fixture": "demo-ops-mid--bank",
+            "jd_fixture": "demo-ap-mid--bank",
+            "transferable": [
+                _common_term(
+                    text("demo-ops-mid", "bank", "resume.md"), text("demo-ap-mid", "bank", "jd.txt")
+                )
+            ],
+            "note": "An operator moving to administration.",
+        },
+    ]
+    gs.write_pairs(root, manifest)
+    gs.write_manifest(root, manifest)
+    return root, manifest
+
+
+class TestPairs:
+    """A résumé against another cell's job description: derived, never authored by hand, and checked."""
+
+    def test_a_sound_suite_of_pairs_passes_the_suite_check(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        assert gs.check_suite(root) == []
+
+    def test_each_pair_fixture_is_the_résumé_of_one_cell_and_the_jd_of_another(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        fx = root / "fixtures"
+        for pair in manifest["pairs"]:
+            got = fx / gs.pair_fixture_name(pair["id"])
+            assert sorted(p.name for p in got.iterdir()) == sorted(gs.PAIR_FILES)
+            for name, source in (
+                ("resume.md", pair["resume_fixture"]),
+                ("seed.json", pair["resume_fixture"]),
+                ("jd.txt", pair["jd_fixture"]),
+            ):
+                assert (got / name).read_bytes() == (fx / source / name).read_bytes(), name
+
+    def test_the_ground_truth_is_built_for_a_candidate_who_does_not_fit(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pair = manifest["pairs"][1]
+        got = json.loads(
+            (root / "fixtures" / "pair--ops-to-admin" / "expected.json").read_text("utf-8")
+        )
+        assert got["must_keywords"] == sorted({t.lower() for t in pair["transferable"]})
+        assert got["pair"] == {
+            "id": "ops-to-admin",
+            "kind": "change",
+            "resume_fixture": "demo-ops-mid--bank",
+            "jd_fixture": "demo-ap-mid--bank",
+            "resume_cell": "demo-ops-mid",
+            "jd_cell": "demo-ap-mid",
+            "transferable": sorted({t.lower() for t in pair["transferable"]}),
+        }
+        # No keyword-coverage minimum: that rubric would punish the honest answer.
+        assert "min_keyword_coverage_score" not in got
+        assert "not callback" in got["notes"]
+        # A built cell's JD names skills: each one the résumé lacks is trapped as well as listed.
+        assert got["jd_requirements_not_shown"]
+        assert [t.removeprefix("(?i)").replace("\\", "") for t in got["forbidden_inventions"]][
+            : len(got["jd_requirements_not_shown"])
+        ] == got["jd_requirements_not_shown"]
+        resume = (root / "fixtures" / "pair--ops-to-admin" / "resume.md").read_text("utf-8")
+        jd = (root / "fixtures" / "pair--ops-to-admin" / "jd.txt").read_text("utf-8")
+        # Every forbidden requirement is one the JD asks for and the résumé does not show.
+        own = gs.build_profile(FACTS, _ladder("mid"), "mid")["expected"]["forbidden_inventions"]
+        for trap in got["forbidden_inventions"]:
+            if trap in own:
+                continue
+            term = trap.removeprefix("(?i)").replace("\\", "")
+            assert gs._mentions(jd, term) or term in jd.lower(), term
+            assert not gs._mentions(resume, term), term
+        assert all(t in got["forbidden_inventions"] for t in own)
+
+    def test_a_pair_is_deterministic(self, tmp_path: Path) -> None:
+        one, _ = _pair_suite(tmp_path / "a")
+        two, _ = _pair_suite(tmp_path / "b")
+        for pair in ("pair--ops-mid-to-senior", "pair--ops-to-admin"):
+            for name in gs.PAIR_FILES:
+                assert (one / "fixtures" / pair / name).read_bytes() == (
+                    two / "fixtures" / pair / name
+                ).read_bytes()
+
+    def test_a_changed_source_cell_makes_its_pair_stale(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        profile, prose = gs.load_cell(root, "demo-ops-senior")
+        prose["slots"]["jd.hospital.about"] += " Extra words that change the job description."
+        gs.write_cell(
+            root, profile, prose
+        )  # the cell's own fixtures are re-rendered; the pair is not
+        gs.write_manifest(root, gs.load_manifest(root))
+        found = gs.check_suite(root)
+        assert any(
+            "pair--ops-mid-to-senior/jd.txt differs from a fresh derivation" in p for p in found
+        )
+
+    def test_a_flipped_byte_a_missing_file_and_an_extra_file_are_found(
+        self, tmp_path: Path
+    ) -> None:
+        root, _ = _pair_suite(tmp_path)
+        base = root / "fixtures" / "pair--ops-to-admin"
+        (base / "resume.md").write_bytes((base / "resume.md").read_bytes() + b"x")
+        (base / "seed.json").unlink()
+        (base / "notes.txt").write_text("stray", encoding="utf-8")
+        found = " | ".join(gs.check_pairs(root, gs.load_manifest(root)))
+        assert "pair--ops-to-admin/resume.md differs" in found
+        assert "pair--ops-to-admin/seed.json is missing" in found
+        assert "pair--ops-to-admin/notes.txt is not a file of a pair fixture" in found
+
+    def test_a_pair_directory_the_manifest_does_not_list_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        gs.write_manifest(root, manifest | {"pairs": manifest["pairs"][:1]})
+        found = gs.check_suite(root)
+        assert any("fixtures/pair--ops-to-admin belongs to no pair" in p for p in found)
+        assert not any("belongs to no cell" in p for p in found)
+
+    def test_a_listed_pair_with_no_fixture_on_disk_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        for name in gs.PAIR_FILES:
+            (root / "fixtures" / "pair--ops-to-admin" / name).unlink()
+        gs.write_manifest(root, manifest)
+        found = gs.check_suite(root)
+        assert any("pair--ops-to-admin/resume.md is missing" in p for p in found)
+
+    @pytest.mark.parametrize(
+        ("change", "needle"),
+        [
+            ({"id": "Bad Id"}, "id must be lowercase"),
+            ({"kind": "swap"}, "kind must be one of"),
+            ({"note": ""}, "note must say why"),
+            ({"resume_fixture": "demo-ops-mid--nowhere"}, "has no fixture"),
+            ({"resume_fixture": "ghost-mid--bank"}, "is not '<cell>--<jd slug>'"),
+            ({"jd_fixture": "demo-ap-mid"}, "is not '<cell>--<jd slug>'"),
+            ({"transferable": []}, "transferable must be a non-empty list"),
+            ({"transferable": ["Quasar"]}, "'Quasar' is not in the résumé"),
+            ({"kind": "advance"}, "an advance pair keeps the profession"),
+        ],
+    )
+    def test_a_bad_pair_is_found(self, tmp_path: Path, change: dict[str, Any], needle: str) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1].update(change)
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any(needle in p for p in gs.check_suite(root)), gs.check_suite(root)
+
+    def test_a_term_missing_from_the_jd_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        resume = (root / "fixtures" / "demo-ops-mid--bank" / "resume.md").read_text("utf-8")
+        jd = (root / "fixtures" / "demo-ap-mid--bank" / "jd.txt").read_text("utf-8")
+        only_resume = next(
+            s["name"]
+            for s in FACTS["skills"]
+            if gs._mentions(resume, s["name"]) and not gs._mentions(jd, s["name"])
+        )
+        pairs[1]["transferable"] = [only_resume]
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any(
+            f"{only_resume!r} is not in the job description" in p for p in gs.check_suite(root)
+        )
+
+    @pytest.mark.parametrize(
+        ("resume", "jd"),
+        [
+            ("demo-ops-senior--hospital", "demo-ops-mid--hospital"),  # down a tier
+            ("demo-ops-mid--hospital", "demo-ops-mid--bank"),  # the same tier
+        ],
+    )
+    def test_an_advance_pair_asks_for_exactly_the_next_tier_up(
+        self, tmp_path: Path, resume: str, jd: str
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0] |= {"resume_fixture": resume, "jd_fixture": jd, "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("not one step" in p for p in gs.check_suite(root))
+
+    def test_a_change_pair_must_cross_professions(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1] |= {"jd_fixture": "demo-ops-senior--bank", "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("a change pair crosses professions" in p for p in gs.check_suite(root))
+
+    def test_two_pairs_cannot_share_an_id(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1]["id"] = pairs[0]["id"]
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("the id is used twice" in p for p in gs.check_suite(root))
+
+    def test_write_pairs_refuses_a_bad_pair_and_writes_nothing(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = [
+            *copy.deepcopy(manifest["pairs"]),
+            {**manifest["pairs"][0], "id": "late", "kind": "swap"},
+        ]
+        with pytest.raises(ValueError, match="kind must be one of"):
+            gs.write_pairs(root, manifest | {"pairs": pairs})
+        assert not (root / "fixtures" / "pair--late").exists()
+
+    def test_the_command_line_writes_the_pairs_and_the_check_then_passes(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        shutil.rmtree(root / "fixtures" / "pair--ops-to-admin")
+        assert gs.main(["pairs", "--root", str(root)]) == 0
+        gs.write_manifest(root, manifest)
+        assert gs.check_suite(root) == []
+
+    def test_the_command_line_reports_a_bad_pair_instead_of_raising(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0]["note"] = ""
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert gs.main(["pairs", "--root", str(root)]) == 1
+
+    def test_pair_fixtures_are_hashed_by_the_manifest(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        files = gs.load_manifest(root)["files"]
+        for pair in ("pair--ops-mid-to-senior", "pair--ops-to-admin"):
+            assert all(f"fixtures/{pair}/{name}" in files for name in gs.PAIR_FILES)
 
 
 CERT_FACTS: dict[str, Any] = FACTS | {
@@ -984,3 +1250,21 @@ class TestCommittedSuite:
         if not (gs.SUITE_DIR / "manifest.json").is_file():
             pytest.skip("no committed suite yet")
         assert gs.check_suite(gs.SUITE_DIR) == []
+
+    def test_the_committed_pairs_cross_the_pilots_and_use_the_target_cells_own_traps(self) -> None:
+        pairs = gs.load_manifest(gs.SUITE_DIR)["pairs"]
+        assert [p["kind"] for p in pairs] == ["change", "change"]
+        fixtures = gs.SUITE_DIR / "fixtures"
+        expected = json.loads(
+            (fixtures / "pair--sre-ops-mid-to-product-mgmt-senior" / "expected.json").read_text(
+                "utf-8"
+            )
+        )
+        target = json.loads(
+            (fixtures / "product-mgmt-senior--atrium-health" / "expected.json").read_text("utf-8")
+        )
+        # A converted pilot's keywords are vocabulary, not claims: they are listed, never trapped.
+        assert set(target["forbidden_inventions"]) <= set(expected["forbidden_inventions"])
+        assert "(?i)workflow" not in expected["forbidden_inventions"]
+        assert "workflow" in expected["jd_requirements_not_shown"]
+        assert expected["must_keywords"] == ["customer", "platform"]
