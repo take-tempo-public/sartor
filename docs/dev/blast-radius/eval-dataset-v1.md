@@ -233,6 +233,25 @@ write (23 entry, 23 mid, 22 senior, 23 lead; the three pilots are among them) ar
 $0.7191 already logged is about $7.09 in all. Stated limits: ten requests are not a distribution; a rewrite request
 costs a further request; and a different profession may think more or less.
 
+**The bulk run, and two faults it found (2026-10-28, sweeps 1 to 3).** Sweep 1 (24 cells, tiers rotated across the
+professions) cost $1.7812 and sweep 2 (23 cells) $1.7120: 49 cells, 48 first-attempt, 1 after a single rewrite, none
+rejected, per-tier means about 6 percent above the earlier projection under prompt v2 (entry $0.052, mid $0.069,
+senior $0.083, lead $0.093). Sweep 3 wrote 14 of its 23 cells and stopped on its own rules:
+
+1. *A fenced reply.* `admin-assistant-lead`: the model wrapped otherwise-valid JSON in a markdown code fence and the
+   strict parser called it "not JSON" after the cell had been paid for ($0.09; the 4,604-character reply was kept under
+   `logs/golden_rejects/`). One case in 77 requests. Fixed in the parser, not the prompt: `_unfence` accepts a reply that
+   is wrapped, and only wrapped, in one fence; prose around a fence and an unclosed fence are still refused
+   (`TestAuthorCell`). `AUTHOR_PROMPT_VERSION` is unchanged because the prompt is.
+2. *A request across a sleep.* `sales-senior`: `APIConnectionError` after **622.9 s** on a client with a 180 s
+   timeout. The Windows system log shows the laptop entered Modern Standby at 3:03:28 PM, the second the request began,
+   and left it at 3:13:48 PM, three seconds before the error. The client's timeout counts awake time, so it never
+   fired, and the connection was dead on wake. **Whether the server billed that request is unknown**: a client-side
+   failure is logged with no tokens, so it is in neither the run's count nor the log's. Mitigation:
+   `SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)` is held for the length of a paid run and released
+   afterwards, on every exit path (`TestStagedRun`); the real call was confirmed to take effect on this machine.
+   **Unverified:** that it prevents Modern Standby here, and a closed lid can still sleep a machine set to.
+
 ---
 
 ## Deferred

@@ -365,6 +365,32 @@ class TestAuthorCell:
             ga.author_cell(client, profile)
         assert len(client.messages.captured) == 1
 
+    @pytest.mark.parametrize(
+        "fence", ["```json\n{body}\n```", "```\n{body}\n```", "```JSON\n{body}\n```\n"]
+    )
+    def test_a_reply_wrapped_in_a_markdown_fence_is_accepted(self, fence: str) -> None:
+        # Seen once in 77 paid requests: valid JSON inside a ```json fence, rejected as "not JSON" after the
+        # cell had been paid for. Every slot is checked on its own, so the wrapper carries no risk.
+        profile, _ = _built()
+        client = _Client([lambda p: fence.format(body=_good_reply(p))])
+        prose = ga.author_cell(client, profile)
+        assert len(client.messages.captured) == 1
+        assert gs.check_prose(profile, prose) == []
+
+    @pytest.mark.parametrize(
+        "wrapped",
+        [
+            "Here you go:\n```json\n{body}\n```",  # prose around the fence is not tolerated
+            "```json\n{body}\n```\nHope that helps.",
+            "```json\n{body}",  # an unclosed fence
+        ],
+    )
+    def test_prose_around_a_fence_is_still_refused(self, wrapped: str) -> None:
+        profile, _ = _built()
+        client = _Client([lambda p: wrapped.format(body=_good_reply(p))])
+        with pytest.raises(ga.AuthorError, match="not JSON"):
+            ga.author_cell(client, profile)
+
     def test_a_refusal_names_the_decision_not_to_fall_back(self) -> None:
         profile, _ = _built()
         with pytest.raises(ga.AuthorError, match="no fallback model"):
@@ -863,6 +889,35 @@ class TestStagedRun:
         assert kept["problems"] and len(kept["replies"]) == 2
         assert kept["usage"]["input_tokens"] == 2000
         assert kept["request_ids"] == ["req_author_1", "req_author_2"]
+
+    def test_a_paid_run_keeps_the_machine_awake_and_lets_it_sleep_again(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, real_log: Path
+    ) -> None:
+        # Observed 2026-10-28: the laptop entered Modern Standby for ten minutes during one request, and the
+        # connection was dead on wake (APIConnectionError at 622.9 s against a 180 s awake-time timeout).
+        calls: list[int] = []
+        monkeypatch.setattr(ga, "_set_execution_state", calls.append)
+        monkeypatch.setattr(runner, "_get_client", lambda: _Client())
+        assert self._run(self._root(tmp_path), "--cell", "demo-ops:entry") == 0
+        assert calls == [ga.ES_CONTINUOUS | ga.ES_SYSTEM_REQUIRED, ga.ES_CONTINUOUS]
+
+    def test_the_machine_is_released_even_when_the_run_fails(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, real_log: Path
+    ) -> None:
+        calls: list[int] = []
+        monkeypatch.setattr(ga, "_set_execution_state", calls.append)
+        monkeypatch.setattr(runner, "_get_client", lambda: _Client([ConnectionError("down")]))
+        assert self._run(self._root(tmp_path), "--cell", "demo-ops:entry") == 1
+        assert calls[-1] == ga.ES_CONTINUOUS and calls[0] != ga.ES_CONTINUOUS
+
+    def test_a_dry_run_does_not_touch_the_power_state(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        calls: list[int] = []
+        monkeypatch.setattr(ga, "_set_execution_state", calls.append)
+        base = ["--root", str(self._root(tmp_path)), "--cell", "demo-ops:entry", "--max-spend", "1"]
+        assert ga.main(base) == 3
+        assert calls == []
 
     def test_the_client_makes_one_attempt_and_waits_a_bounded_time(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, real_log: Path

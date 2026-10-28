@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -239,6 +240,20 @@ def _reply_text(msg: Any) -> str:
     return "".join(b.text for b in msg.content if getattr(b, "type", "text") == "text").strip()
 
 
+_FENCE = re.compile(r"\A```[A-Za-z]*[ \t]*\n(.*)\n```\Z", re.DOTALL)
+
+
+def _unfence(text: str) -> str:
+    """The JSON inside a reply that is wrapped, and only wrapped, in one markdown code fence.
+
+    The prompt asks for a bare JSON object; once in 77 paid requests the model added a ```json fence and
+    the strict parse refused a cell that had been paid for. Prose before or after the fence, or an
+    unclosed fence, is still not JSON. Every slot is checked on its own, so the wrapper carries no risk.
+    """
+    match = _FENCE.match(text.strip())
+    return match.group(1) if match else text
+
+
 def _reply_slots(msg: Any) -> dict[str, str]:
     """The ``{"slots": {...}}`` object a reply holds, or `AuthorError`."""
     if msg.stop_reason != "end_turn":
@@ -250,7 +265,7 @@ def _reply_slots(msg: Any) -> dict[str, str]:
                 else ""
             )
         )
-    text = _reply_text(msg)
+    text = _unfence(_reply_text(msg))
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
@@ -384,6 +399,30 @@ def cost_of_usage(usage: dict[str, int]) -> float:
 def cost_of(prose: dict[str, Any]) -> float:
     """Dollars for the requests behind one cell's prose."""
     return cost_of_usage(prose["provenance"]["usage"])
+
+
+#: Windows power flags for `SetThreadExecutionState`.
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+
+
+def _set_execution_state(flags: int) -> None:
+    """Ask Windows not to put the machine to sleep while a paid run is in flight; a no-op elsewhere.
+
+    Observed 2026-10-28: the laptop entered Modern Standby for ten minutes in the middle of one request.
+    The client's timeout counts awake time, so it never fired, the connection was dead on wake
+    (``APIConnectionError`` at 622.9 s against a 180 s timeout), and a request the server may have
+    billed was logged with no tokens. Best-effort: a failure here must never stop the run, and closing
+    the lid can still sleep a machine that is set to.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.kernel32.SetThreadExecutionState(ctypes.c_uint(flags))
+    except Exception:
+        return
 
 
 def _log_offset() -> int:
@@ -629,6 +668,7 @@ def main(argv: list[str] | None = None) -> int:
         run = max(counted, logged_spend(since=start))
         return run, prior + run
 
+    _set_execution_state(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
     try:
         for profile in profiles:
             cell = profile["cell"]
@@ -717,6 +757,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"${total:.4f} of ${cap_total:.4f} in all)"
             )
     finally:
+        _set_execution_state(ES_CONTINUOUS)
         logged = logged_spend(since=start)
         total = prior + max(counted, logged)
         print(
