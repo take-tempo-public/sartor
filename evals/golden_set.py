@@ -41,13 +41,18 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = 1
+#: The manifest's own schema. Cells and prose stay at `SCHEMA`, so moving the manifest to a ladder per family
+#: (2) changes no committed cell byte.
+MANIFEST_SCHEMA = 2
+#: A role shorter than this is not a job a résumé lists; a ladder must fit its roles at this length.
+MIN_ROLE_MONTHS = 12
 SUITE = "golden-v1"
 GOLDEN_ROOT = Path(__file__).resolve().parent / "golden"
 SUITE_DIR = GOLDEN_ROOT / SUITE
 
 LEVELS = ("entry", "mid", "senior", "lead")
 STATUSES = ("draft", "frozen")
-SECTION_KINDS = ("summary", "experience", "education", "bullets", "skills")
+SECTION_KINDS = ("summary", "experience", "education", "certifications", "bullets", "skills")
 SLOT_KINDS = ("summary", "intro", "bullet", "jd")
 PROSE_KINDS = ("generated", "converted")
 
@@ -82,12 +87,70 @@ _LAST_NAMES = (
     "Chen", "Park", "Mehta", "Reyes", "Okafor", "Lindqvist", "Haddad", "Novak", "Silva", "Brandt",
     "Kowalski", "Ito",
 )  # fmt: skip
-_EMPLOYERS = (
-    "Alder Systems", "Brightwater Labs", "Calloway Group", "Dunmore Technologies",
-    "Elmstead Partners", "Fairhaven Works", "Granite Ridge", "Halcyon Services",
-    "Ironbridge Co", "Juniper Row", "Kestrel Works", "Lantern Hill", "Meridian Cross",
-    "Northfield Group", "Oakmont Systems", "Pinecrest Labs",
-)  # fmt: skip
+#: Where a job sits. A cell's résumé employers and its JDs come from these, so one set can hold a startup
+#: engineer, a hospital nurse, a county clerk and a family electrical contractor.
+SETTINGS = ("startup", "enterprise", "small-business", "health-nonprofit", "public-sector")
+
+# Invented organisations, one pool per setting; nothing here names a real employer or agency.
+_EMPLOYERS_BY_SETTING: dict[str, tuple[str, ...]] = {
+    "startup": (
+        "Alder Systems", "Brightwater Labs", "Fairhaven Works", "Juniper Row", "Kestrel Works",
+        "Lantern Hill", "Oakmont Systems", "Pinecrest Labs",
+    ),
+    "enterprise": (
+        "Calloway Group", "Dunmore Technologies", "Elmstead Partners", "Granite Ridge",
+        "Halcyon Services", "Ironbridge Co", "Meridian Cross", "Northfield Group",
+    ),
+    "small-business": (
+        "Harlow and Daughters", "Pennywhistle Supply", "Redfern Family Trades", "Tillman Brothers",
+        "Wren Valley Builders", "Copperfield Services", "Marlow Contracting", "Sutter Street Shop",
+    ),
+    "health-nonprofit": (
+        "Harborview Community Clinic", "Eastgate Regional Hospital", "Bluebird Family Services",
+        "Riverbend Health Network", "Cedar Hollow Hospice", "Maple Court Care",
+        "Stonebridge Community Trust", "Neighborhood Table Services",
+    ),
+    "public-sector": (
+        "Fairmont County Office", "Ridgeway Transit Authority", "Northplain Water District",
+        "Greenfield Parks Department", "Westmoor City Services", "Highland County Schools",
+        "Eastvale Public Works", "Stonegate Housing Authority",
+    ),
+}  # fmt: skip
+
+#: How a JD reads in each setting: the three headings (about / duties / needs) and the register the model is
+#: asked to write in. The brief carries these; the checks do not read heading text.
+_JD_VOICE: dict[str, dict[str, str]] = {
+    "startup": {
+        "about": "About the role",
+        "duties": "What you'll do",
+        "needs": "What we're looking for",
+        "register": "a direct, informal startup voice",
+    },
+    "enterprise": {
+        "about": "Position summary",
+        "duties": "Responsibilities",
+        "needs": "Minimum and preferred qualifications",
+        "register": "a formal corporate voice, with a short minimum list and a shorter preferred list",
+    },
+    "small-business": {
+        "about": "About us and the job",
+        "duties": "What the job involves",
+        "needs": "What you need",
+        "register": "plain words, as an owner-run business would write it, with the work on site",
+    },
+    "health-nonprofit": {
+        "about": "Summary",
+        "duties": "Duties",
+        "needs": "Licensure and qualifications",
+        "register": "the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement",
+    },
+    "public-sector": {
+        "about": "Duties",
+        "duties": "Responsibilities of the position",
+        "needs": "Qualifications and conditions of employment",
+        "register": "the voice of a fictional county or city agency posting; name no real agency, statute or pay table",
+    },
+}
 _SCHOOLS = (
     "State University",
     "Lakeshore University",
@@ -376,11 +439,16 @@ def render_resume(profile: dict[str, Any], texts: dict[str, str]) -> str:
                 )
                 out += [f"- {texts[s]}" for s in item.get("slots", [])]
                 out.append("")
+        elif kind == "certifications":
+            out += [f"- {c['name']} — {c['issuer']}, {c['year']}" for c in section["items"]]
+            out.append("")
         elif kind == "bullets":
             out += [f"- {texts[s]}" for s in section["slots"]]
             out.append("")
-        else:  # skills
+        elif kind == "skills":
             out += [", ".join(section["skills"]) + ".", ""]
+        else:  # a new SECTION_KINDS entry must get its own branch, never fall through to skills
+            raise ValueError(f"cannot render a section of kind {kind!r}")
     return "\n".join(out).rstrip("\n") + "\n"
 
 
@@ -506,8 +574,22 @@ def render_seed(profile: dict[str, Any], texts: dict[str, str]) -> dict[str, Any
     summary_items: list[dict[str, Any]] = []
     skills: list[dict[str, Any]] = []
     educations: list[dict[str, Any]] = []
+    certifications: list[dict[str, Any]] = []
     for section in profile["sections"]:
-        if section["kind"] == "summary":
+        if section["kind"] == "certifications":
+            for order, cert in enumerate(section["items"]):
+                certifications.append(
+                    {
+                        "id": 801 + order,
+                        "name": cert["name"],
+                        "issuer": cert["issuer"],
+                        "issued": cert["year"],
+                        "expires": None,
+                        "display_order": order,
+                        "is_active": True,
+                    }
+                )
+        elif section["kind"] == "summary":
             for order, slot_id in enumerate(section["slots"]):
                 summary_items.append(
                     {
@@ -566,7 +648,7 @@ def render_seed(profile: dict[str, Any], texts: dict[str, str]) -> dict[str, Any
         "summary_items": summary_items,
         "skills": skills,
         "educations": educations,
-        "certifications": [],
+        "certifications": certifications,
     }
 
 
@@ -677,6 +759,256 @@ def load_manifest(root: Path) -> dict[str, Any]:
     return manifest
 
 
+def ladder_for(manifest: dict[str, Any], profession: str, level: str) -> dict[str, Any]:
+    """The rule for ``level`` in the family ``profession`` belongs to. Raises ``KeyError`` with the reason."""
+    try:
+        family = manifest["professions"][profession]["family"]
+    except KeyError:
+        raise KeyError(f"profession {profession!r} has no family in the manifest") from None
+    try:
+        rule: dict[str, Any] = manifest["families"][family]["levels"][level]
+    except KeyError:
+        raise KeyError(f"family {family!r} has no rule for level {level!r}") from None
+    return rule
+
+
+def _check_ladders(manifest: dict[str, Any]) -> list[str]:
+    """Every way the manifest's families and its professions' family links can be wrong."""
+    problems: list[str] = []
+    families = manifest.get("families", {})
+    if not families:
+        problems.append("manifest has no families")
+    for name, family in sorted(families.items()):
+        levels = family.get("levels", {})
+        if sorted(levels) != sorted(LEVELS):
+            problems.append(
+                f"family {name}: levels {sorted(levels)} must be exactly {sorted(LEVELS)}"
+            )
+        for level, rule in sorted(levels.items()):
+            where = f"family {name}, level {level}"
+            if rule.get("rule_source") not in ("authored", "sourced"):
+                problems.append(f"{where}: rule_source must be authored or sourced")
+            if not isinstance(rule.get("label"), str) or not rule["label"]:
+                problems.append(f"{where}: label must be a non-empty string")
+            years = rule.get("years")
+            if not (
+                isinstance(years, list)
+                and len(years) == 2
+                and all(isinstance(y, int) for y in years)
+                and 0 <= years[0] <= years[1]
+            ):
+                problems.append(f"{where}: years must be [low, high] whole years, low <= high")
+            elif years[1] * 12 < rule.get("roles", 0) * MIN_ROLE_MONTHS:
+                problems.append(
+                    f"{where}: {rule.get('roles')} roles of at least {MIN_ROLE_MONTHS} months do not fit in {years[1]} years"
+                )
+    for profession, row in sorted(manifest.get("professions", {}).items()):
+        if row.get("family") not in families:
+            problems.append(
+                f"profession {profession}: family {row.get('family')!r} is not in the manifest"
+            )
+    return problems
+
+
+# --------------------------------------------------------------------------------------------------
+# Mismatched pairs: a résumé against the job description of a different cell
+# --------------------------------------------------------------------------------------------------
+
+#: ``change`` is a different profession; ``advance`` is the same profession, the JD one tier up.
+PAIR_KINDS = ("change", "advance")
+PAIR_PREFIX = "pair--"
+PAIR_FILES = ("resume.md", "jd.txt", "seed.json", "expected.json")
+
+
+def pair_fixture_name(pair_id: str) -> str:
+    return f"{PAIR_PREFIX}{pair_id}"
+
+
+def _mentions(text: str, term: str) -> bool:
+    """Whether ``term`` starts a word in ``text``, ignoring case ('customer' is found in 'customers')."""
+    return re.search(rf"(?<![A-Za-z0-9]){re.escape(term)}", text, re.IGNORECASE) is not None
+
+
+def _pair_side(root: Path, fixture: str, cache: dict[str, Any]) -> dict[str, Any]:
+    """The cell behind a fixture name, and that fixture's rendered files. Raises ``ValueError`` if it does not resolve.
+
+    Rendered from the cell's source files, never read back from ``fixtures/``, so a stale source
+    fixture cannot make a pair look right.
+    """
+    cell, sep, slug = fixture.partition("--")
+    if not sep or fixture_name(cell, slug) != fixture or cell not in cell_names(root):
+        raise ValueError(f"fixture {fixture!r} is not '<cell>--<jd slug>' of a cell in this suite")
+    if cell not in cache:
+        profile, prose = load_cell(root, cell)  # OSError / ValueError reach the caller
+        problems = validate_profile(profile) + check_prose(profile, prose)
+        if problems:
+            raise ValueError(f"cell {cell!r} is not sound ({problems[0]})")
+        cache[cell] = (profile, render_fixtures(profile, prose))
+    profile, rendered = cache[cell]
+    if fixture not in rendered:
+        raise ValueError(f"cell {cell!r} has no fixture {fixture!r}")
+    return {"cell": cell, "slug": slug, "profile": profile, "files": rendered[fixture]}
+
+
+def _check_pair_terms(
+    pair: dict[str, Any], resume: dict[str, Any], jd: dict[str, Any]
+) -> list[str]:
+    """Problems with how a pair relates its two cells, and with the transferable terms it claims."""
+    problems: list[str] = []
+    a, b = resume["profile"], jd["profile"]
+    if pair["kind"] == "advance":
+        if a["profession"] != b["profession"]:
+            problems.append("an advance pair keeps the profession")
+        elif LEVELS.index(b["level"]) != LEVELS.index(a["level"]) + 1:
+            problems.append(
+                f"an advance pair asks for the next tier up ({a['level']} to {b['level']} is not one step)"
+            )
+    elif a["profession"] == b["profession"]:
+        problems.append("a change pair crosses professions")
+    terms = pair.get("transferable")
+    if not isinstance(terms, list) or not terms or not all(isinstance(t, str) and t for t in terms):
+        return [*problems, "transferable must be a non-empty list of terms"]
+    for term in terms:
+        if not _mentions(resume["files"]["resume.md"], term):
+            problems.append(f"transferable term {term!r} is not in the résumé")
+        if not _mentions(jd["files"]["jd.txt"], term):
+            problems.append(f"transferable term {term!r} is not in the job description")
+    return problems
+
+
+def render_pair(pair: dict[str, Any], resume: dict[str, Any], jd: dict[str, Any]) -> dict[str, str]:
+    """The four files of one pair fixture. A pure function of the two cells and the pair's authored fields.
+
+    The résumé and seed are the first cell's, the job description is the second cell's. The ground truth
+    is built for a candidate who does not fit: ``must_keywords`` are only the terms the candidate truly
+    has, ``forbidden_inventions`` are the job description's requirements the résumé does not show, and
+    the notes say the gate is grounding and no invention, not callback.
+    """
+    a, b = resume["profile"], jd["profile"]
+    resume_text = resume["files"]["resume.md"]
+    needs = b["slots"].get(f"jd.{jd['slug']}.needs", {}).get("must_include", [])
+    # The requirements of THIS job description: a cell's `must_keywords` pool every JD of the cell, so
+    # they are used only for a converted pilot, whose slots carry no `must_include`.
+    required = list(dict.fromkeys(needs or b["expected"].get("must_keywords", [])))
+    missing = [r for r in required if not _mentions(resume_text, r)]
+    if needs:
+        # A built cell's JD names skills and certifications: claiming one the résumé lacks is an invention.
+        traps = ["(?i)" + re.escape(r) for r in missing]
+    else:
+        # A converted pilot's keywords are vocabulary ("workflow"), not claims, so its own invention
+        # traps stand in; the vocabulary the résumé does not show is listed in `jd_requirements_not_shown`.
+        traps = list(b["expected"].get("forbidden_inventions", []))
+    traps += [t for t in a["expected"].get("forbidden_inventions", []) if t not in traps]
+    terms = sorted({t.lower() for t in pair["transferable"]})
+    shown = ", ".join(missing) if missing else "nothing"
+    expected: dict[str, Any] = {
+        "candidate_name": a["candidate"]["name"],
+        "must_keywords": terms[:6],
+        "forbidden_inventions": traps,
+        "jd_requirements_not_shown": missing,
+        "min_grounding_score": 4,
+        "min_ats_format_score": 4,
+        "min_tone_score": 3,
+        "min_clarification_quality_score": 4,
+        "expected_clarification_themes": {
+            "experience_probes": [
+                f"any exposure to {r}, in work or side projects" for r in missing
+            ],
+            "scope_probes": a["expected"]
+            .get("expected_clarification_themes", {})
+            .get("scope_probes", []),
+        },
+        "notes": (
+            f"Mismatched pair ({pair['kind']}): the {resume['cell']} résumé against the {jd['cell']} job "
+            f"description. {pair['note']} The gate is grounding and no invention, not callback: keyword "
+            f"coverage and callback are expected to be low, so no minimum is set for them. The job "
+            f"description asks for what the résumé does not show: {shown}. The output must claim none of it."
+        ),
+        "pair": {
+            "id": pair["id"],
+            "kind": pair["kind"],
+            "resume_fixture": pair["resume_fixture"],
+            "jd_fixture": pair["jd_fixture"],
+            "resume_cell": resume["cell"],
+            "jd_cell": jd["cell"],
+            "transferable": terms,
+        },
+    }
+    return {
+        "resume.md": resume_text,
+        "jd.txt": jd["files"]["jd.txt"],
+        "seed.json": resume["files"]["seed.json"],
+        "expected.json": canonical_json(expected),
+    }
+
+
+def _pairs_wanted(
+    root: Path, manifest: dict[str, Any]
+) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """``({pair fixture name: files}, problems)`` for every pair the manifest lists."""
+    wanted: dict[str, dict[str, str]] = {}
+    problems: list[str] = []
+    cache: dict[str, Any] = {}
+    seen: set[str] = set()
+    for index, pair in enumerate(manifest.get("pairs", [])):
+        pair_id = pair.get("id") if isinstance(pair, dict) else None
+        where = f"pair {pair_id!r}" if pair_id else f"pairs[{index}]"
+        if not isinstance(pair_id, str) or not re.fullmatch(r"[a-z0-9-]+", pair_id):
+            problems.append(f"{where}: id must be lowercase letters, digits and hyphens")
+            continue
+        if pair_id in seen:
+            problems.append(f"{where}: the id is used twice")
+            continue
+        seen.add(pair_id)
+        if pair.get("kind") not in PAIR_KINDS:
+            problems.append(f"{where}: kind must be one of {PAIR_KINDS}")
+            continue
+        if not isinstance(pair.get("note"), str) or not pair["note"]:
+            problems.append(f"{where}: note must say why the pair is in the set")
+            continue
+        try:
+            resume = _pair_side(root, str(pair.get("resume_fixture")), cache)
+            jd = _pair_side(root, str(pair.get("jd_fixture")), cache)
+        except (OSError, ValueError) as exc:
+            problems.append(f"{where}: {exc}")
+            continue
+        found = _check_pair_terms(pair, resume, jd)
+        if found:
+            problems += [f"{where}: {p}" for p in found]
+            continue
+        wanted[pair_fixture_name(pair_id)] = render_pair(pair, resume, jd)
+    return wanted, problems
+
+
+def check_pairs(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Every way the manifest's pairs can be wrong, and each pair fixture against a fresh derivation."""
+    wanted, problems = _pairs_wanted(root, manifest)
+    fixtures = root / "fixtures"
+    for name, files in wanted.items():
+        base = fixtures / name
+        for filename in PAIR_FILES:
+            path = base / filename
+            if not path.is_file():
+                problems.append(f"{name}/{filename} is missing")
+            elif path.read_bytes() != files[filename].encode("utf-8"):
+                problems.append(f"{name}/{filename} differs from a fresh derivation")
+        if base.is_dir():
+            for extra in sorted(p.name for p in base.iterdir() if p.name not in PAIR_FILES):
+                problems.append(f"{name}/{extra} is not a file of a pair fixture")
+    return problems
+
+
+def write_pairs(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Write every listed pair's fixture; return the names written. Raises ``ValueError`` on a bad pair."""
+    wanted, problems = _pairs_wanted(root, manifest)
+    if problems:
+        raise ValueError("pairs are not sound:\n  " + "\n  ".join(problems))
+    for name, files in wanted.items():
+        for filename, content in files.items():
+            _write(root / "fixtures" / name / filename, content)
+    return sorted(wanted)
+
+
 def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> list[str]:
     """Every way the suite can be wrong. ``author_prompt_sha`` maps a prompt version to its text's hash."""
     try:
@@ -684,17 +1016,13 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
     except (OSError, ValueError) as exc:
         return [f"manifest.json cannot be read ({exc})"]
     problems: list[str] = []
-    if manifest.get("schema") != SCHEMA:
-        problems.append(f"manifest schema {manifest.get('schema')!r}, this reader knows {SCHEMA}")
+    if manifest.get("schema") != MANIFEST_SCHEMA:
+        problems.append(
+            f"manifest schema {manifest.get('schema')!r}, this reader knows {MANIFEST_SCHEMA}"
+        )
     if manifest.get("status") not in STATUSES:
         problems.append(f"manifest status {manifest.get('status')!r} is not one of {STATUSES}")
-    if sorted(manifest.get("levels", {})) != sorted(LEVELS):
-        problems.append(
-            f"manifest levels {sorted(manifest.get('levels', {}))} must be exactly {sorted(LEVELS)}"
-        )
-    for level, rule in manifest.get("levels", {}).items():
-        if rule.get("rule_source") not in ("authored", "sourced"):
-            problems.append(f"level {level}: rule_source must be authored or sourced")
+    problems += _check_ladders(manifest)
     cells = cell_names(root)
     failing: set[str] = set()
     for cell in cells:
@@ -747,9 +1075,19 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
         if (root / "fixtures").is_dir()
         else set()
     )
+    pair_dirs = {
+        pair_fixture_name(p["id"])
+        for p in manifest.get("pairs", [])
+        if isinstance(p, dict) and isinstance(p.get("id"), str)
+    }
     for name in sorted(fixture_dirs):
-        if not any(name.startswith(f"{c}--") for c in cells):
+        if name in pair_dirs:
+            continue
+        if name.startswith(PAIR_PREFIX):
+            problems.append(f"fixtures/{name} belongs to no pair in the manifest")
+        elif not any(name.startswith(f"{c}--") for c in cells):
             problems.append(f"fixtures/{name} belongs to no cell")
+    problems += check_pairs(root, manifest)
     return problems
 
 
@@ -1041,6 +1379,102 @@ def _sample(seq: list[str], count: int, seed: int, label: str) -> list[str]:
     return ranked[:count]
 
 
+def validate_facts(facts: dict[str, Any]) -> list[str]:
+    """Problems with a profession's facts file, empty when it is sound. Never raises on bad content."""
+    required = (
+        "profession",
+        "display",
+        "titles",
+        "skills",
+        "work_themes",
+        "education",
+        "industries",
+        "settings",
+    )
+    problems = [f"facts are missing {key!r}" for key in required if key not in facts]
+    if problems:
+        return problems
+    for level in LEVELS:
+        if not facts["titles"].get(level):
+            problems.append(f"titles has no {level!r}")
+    names = [s.get("name") for s in facts["skills"]]
+    if not all(names) or len(set(names)) != len(names):
+        problems.append("skills need a distinct, non-empty name each")
+    if not all(s.get("category") for s in facts["skills"]):
+        problems.append("every skill needs a category")
+    if not facts["work_themes"]:
+        problems.append("work_themes is empty")
+    settings = facts["settings"]
+    if not settings or any(s not in SETTINGS for s in settings):
+        problems.append(f"settings must be a non-empty list of {SETTINGS}")
+    slugs = [i.get("slug") for i in facts["industries"]]
+    if not slugs or len(set(slugs)) != len(slugs):
+        problems.append("industries need at least one entry, each with a distinct slug")
+    for industry in facts["industries"]:
+        where = f"industry {industry.get('slug')!r}"
+        for key in ("company", "phrase", "location"):
+            if not industry.get(key):
+                problems.append(f"{where}: {key} is empty")
+        if industry.get("setting") not in SETTINGS:
+            problems.append(
+                f"{where}: setting {industry.get('setting')!r} is not one of {SETTINGS}"
+            )
+    for key in ("degree", "field"):
+        if not facts["education"].get(key):
+            problems.append(f"education has no {key!r}")
+    institutions = facts["education"].get("institutions")
+    if institutions is not None and (
+        not isinstance(institutions, list)
+        or not institutions
+        or not all(isinstance(i, str) and i for i in institutions)
+    ):
+        problems.append("education.institutions, when given, is a non-empty list of names")
+    certs = facts.get("certifications", [])
+    cert_names = [c.get("name") for c in certs]
+    if not all(cert_names) or len(set(cert_names)) != len(cert_names):
+        problems.append("certifications need a distinct, non-empty name each")
+    for cert in certs:
+        if not cert.get("issuer"):
+            problems.append(f"certification {cert.get('name')!r}: issuer is empty")
+        if cert.get("level") not in LEVELS:
+            problems.append(f"certification {cert.get('name')!r}: level must be one of {LEVELS}")
+    return problems
+
+
+def _employers_for(facts: dict[str, Any], seed: int, count: int) -> list[str]:
+    """``count`` distinct employers, newest first, each drawn from a setting this profession works in."""
+    used: set[str] = set()
+    out: list[str] = []
+    for index in range(count):
+        setting = _pick(facts["settings"], seed, f"role-setting:{index}")
+        ranked = sorted(
+            _EMPLOYERS_BY_SETTING[setting], key=lambda n: _hash_int(seed, f"employer:{index}:{n}")
+        )
+        name = next(n for n in ranked if n not in used)
+        used.add(name)
+        out.append(name)
+    return out
+
+
+def _tenures(seed: int, ladder: dict[str, Any]) -> list[int]:
+    """Each role's length in months, newest first. They sum to a career length inside ``ladder['years']``.
+
+    The total is drawn from the ladder's window (never shorter than ``MIN_ROLE_MONTHS`` a role), so the level
+    controls career length; the total is then split by hashed weights, every role at least ``MIN_ROLE_MONTHS``.
+    """
+    roles = int(ladder["roles"])
+    low_years, high_years = ladder["years"]
+    floor = roles * MIN_ROLE_MONTHS
+    low = max(low_years * 12, floor)
+    high = max(high_years * 12, low)
+    total = low + _hash_int(seed, "tenure:total") % (high - low + 1)
+    weights = [1 + _hash_int(seed, f"tenure:w{i}") % 8 for i in range(roles)]
+    spare = total - floor
+    shares = [spare * w // sum(weights) for w in weights]
+    shares[0] += spare - sum(shares)  # the integer remainder goes to the newest role
+    return [MIN_ROLE_MONTHS + share for share in shares]
+
+
 def cell_seed_for(profession: str, level: str) -> int:
     """The integer every pseudo-random choice in a cell derives from. A function of the cell's name only."""
     return _hash_int(0, f"{SUITE}:{profession}:{level}") % (2**31)
@@ -1076,8 +1510,11 @@ def build_profile(
     and industries. ``ladder`` is the manifest's rule for the level. Every choice derives from
     `cell_seed_for`, so the same inputs write the same bytes. What the model is asked to write is the
     slot briefs; everything else (names, employers, dates, figures, skills, traps, JD requirements) is
-    decided here.
+    decided here. Raises ``ValueError`` when the facts fail `validate_facts`.
     """
+    bad_facts = validate_facts(facts)
+    if bad_facts:
+        raise ValueError("; ".join(bad_facts))
     profession = facts["profession"]
     seed = cell_seed_for(profession, level)
     cell = f"{profession}-{level}"
@@ -1096,7 +1533,7 @@ def build_profile(
     )
     category = {s["name"]: s["category"] for s in facts["skills"]}
     themes = list(facts["work_themes"])
-    employers = _sample(list(_EMPLOYERS), ladder["roles"], seed, "employers")
+    employers = _employers_for(facts, seed, ladder["roles"])
     # Dates run back from ASOF: the newest role is current, each older one ends where the next began.
     titles = [
         facts["titles"][LEVELS[max(LEVELS.index(level) - i, 0)]] for i in range(ladder["roles"])
@@ -1105,8 +1542,7 @@ def build_profile(
     end: str | None = None
     cursor = _months(ASOF)
     total_months = 0
-    for index in range(ladder["roles"]):
-        duration = 18 + _hash_int(seed, f"tenure:{index}") % 24
+    for index, duration in enumerate(_tenures(seed, ladder)):
         start_months = cursor - duration
         total_months += duration
         bullet_slots: list[str] = []
@@ -1162,7 +1598,7 @@ def build_profile(
         top = ", ".join(skill_names[:3])
         slots[slot_id] = _slot(
             "summary",
-            f"Variant {v} of a two-sentence résumé summary for a {level}-level {facts['display']} professional with about {years} years of experience, scope: {ladder['scope']}. Mention {top}.",
+            f"Variant {v} of a two-sentence résumé summary for a {ladder.get('label', level)}-level {facts['display']} professional with about {years} years of experience, scope: {ladder['scope']}. Mention {top}.",
             must=skill_names[:3],
             numbers=[str(years)],
             lo=15,
@@ -1173,14 +1609,37 @@ def build_profile(
     education = {
         "degree": facts["education"]["degree"],
         "field": facts["education"]["field"],
-        "institution": _pick(_SCHOOLS, seed, "school"),
+        "institution": _pick(facts["education"].get("institutions") or _SCHOOLS, seed, "school"),
         "year": oldest_year,
         "slots": [],
     }
+    # Certifications and licences are facts, not prose: a candidate holds the ones whose tier is at or
+    # below the cell's level, and the next tiers' are the ones the candidate must not claim.
+    tier = LEVELS.index(level)
+    certs = sorted(facts.get("certifications", []), key=lambda c: LEVELS.index(c["level"]))
+    held_certs = [c for c in certs if LEVELS.index(c["level"]) <= tier]
+    absent_certs = [c for c in certs if LEVELS.index(c["level"]) > tier]
+    first_year, last_year = int(oldest_year), int(ASOF[:4])
+    cert_items = [
+        {
+            "name": c["name"],
+            "issuer": c["issuer"],
+            "year": str(
+                first_year
+                + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
+            ),
+        }
+        for c in held_certs
+    ]
     sections = [
         {"kind": "summary", "heading": "Summary", "slots": summary_slots},
         {"kind": "experience", "heading": "Experience", "roles": roles},
         {"kind": "education", "heading": "Education", "items": [education]},
+        *(
+            [{"kind": "certifications", "heading": "Certifications", "items": cert_items}]
+            if cert_items
+            else []
+        ),
         {"kind": "skills", "heading": "Skills", "skills": skill_names},
     ]
     # JDs: each asks for four of the candidate's skills and two it does not have.
@@ -1197,38 +1656,50 @@ def build_profile(
         present_by_jd.append(present)
         absent_by_jd.append(absent)
         title = facts["titles"][level]
+        voice = _JD_VOICE[industry["setting"]]
         jd_slots_for = [f"jd.{slug}.about", f"jd.{slug}.duties", f"jd.{slug}.needs"]
         slots[jd_slots_for[0]] = _slot(
             "jd",
-            f"The 'About the role' paragraph of a job description for a {title} at {industry['company']}, {industry['phrase']}. Include no number.",
+            f"The '{voice['about']}' paragraph of a job description for a {title} at {industry['company']}, {industry['phrase']}. Write in {voice['register']}. Include no number.",
             lo=25,
             hi=90,
         )
         slots[jd_slots_for[1]] = _slot(
             "jd",
-            f"A 'What you'll do' heading and four to six bullet lines for a {title}, about {', '.join(_sample(themes, 3, seed, f'duties:{slug}'))}. Include no number.",
+            f"A '{voice['duties']}' heading and four to six bullet lines for a {title}, about {', '.join(_sample(themes, 3, seed, f'duties:{slug}'))}. Include no number.",
             lo=40,
             hi=160,
         )
+        asked_certs = held_certs[:1] + absent_certs[:1]
+        cert_ask = ""
+        if held_certs:
+            cert_ask += f" State {held_certs[0]['name']} as a required licence or certification."
+        if absent_certs:
+            cert_ask += f" State {absent_certs[0]['name']} as preferred."
         slots[jd_slots_for[2]] = _slot(
             "jd",
-            f"A 'What we're looking for' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.",
-            must=present + absent,
-            numbers=[str(years)],
+            f"A '{voice['needs']}' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.{cert_ask}",
+            must=present + absent + [c["name"] for c in asked_certs],
+            numbers=[str(years), *re.findall(r"\d+", " ".join(c["name"] for c in asked_certs))],
             lo=30,
             hi=160,
         )
         jds.append(
             {
                 "slug": slug,
-                "header_lines": [title, f"{industry['company']} — Remote (US)"],
+                "setting": industry["setting"],
+                "header_lines": [title, f"{industry['company']} — {industry['location']}"],
                 "slots": jd_slots_for,
             }
         )
     absent_all = sorted({s for group in absent_by_jd for s in group})
     present_all = [s for group in present_by_jd for s in group]
     must_keywords = sorted({s.lower() for s in present_all})[:6]
-    traps = [re.escape(s) for s in absent_all] + list(GENERIC_TRAPS)
+    traps = (
+        [re.escape(s) for s in absent_all]
+        + [re.escape(c["name"]) for c in absent_certs]
+        + list(GENERIC_TRAPS)
+    )
     target_slot = "r1.b2" if "r1.b2" in slots else roles[0]["bullet_slots"][0]
     profile: dict[str, Any] = {
         "schema": SCHEMA,
@@ -1252,12 +1723,13 @@ def build_profile(
             "expected_clarification_themes": {
                 "experience_probes": [
                     f"any exposure to {s}, in work or side projects" for s in absent_all
-                ],
+                ]
+                + [f"any progress toward {c['name']}" for c in absent_certs],
                 "scope_probes": [
                     f"{roles[0]['title']} at {roles[0]['company']}: sole owner or team member?"
                 ],
             },
-            "notes": f"{level}-level {facts['display']}. The profile has no {', '.join(absent_all)}; generation must not claim them.",
+            "notes": f"{level}-level {facts['display']}. The profile has no {', '.join(absent_all + [c['name'] for c in absent_certs])}; generation must not claim them.",
         },
         "iteration": {
             "mode": "derived",
@@ -1382,11 +1854,24 @@ REACHABILITY: dict[str, tuple[str, str | None]] = {
 
 
 def main(argv: list[str] | None = None) -> int:
-    """``python -m evals.golden_set check [--root DIR]`` and ``manifest [--root DIR]`` (re-stamp ``files``)."""
+    """``python -m evals.golden_set check|pairs|manifest [--root DIR]``.
+
+    ``pairs`` writes the fixture of every pair the manifest lists; ``manifest`` re-stamps ``files``.
+    """
     ap = argparse.ArgumentParser(prog="python -m evals.golden_set")
-    ap.add_argument("command", choices=("check", "manifest"))
+    ap.add_argument("command", choices=("check", "pairs", "manifest"))
     ap.add_argument("--root", type=Path, default=SUITE_DIR)
     args = ap.parse_args(argv)
+    if args.command == "pairs":
+        try:
+            names = write_pairs(args.root, load_manifest(args.root))
+        except (OSError, ValueError) as exc:
+            print(f"golden_set: {exc}", file=sys.stderr)
+            return 1
+        print(
+            f"golden_set: wrote {len(names)} pair fixtures; run 'manifest' to re-stamp the hashes"
+        )
+        return 0
     if args.command == "manifest":
         write_manifest(args.root, load_manifest(args.root))
         print(f"golden_set: wrote {args.root / 'manifest.json'}")

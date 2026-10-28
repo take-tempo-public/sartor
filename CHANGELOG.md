@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: golden-set breadth, a ladder per family, a setting for every job, certifications and mismatched pairs (`feat/eval-golden-breadth`, item 193, eval redesign step 3b-i)
+
+The owner widened the golden set's job on 2026-10-27: it has to measure performance across many fields (administration, design, mobile and hardware
+engineering, the trades, healthcare, construction, support work), in startups and in enterprises, and for people changing or advancing a career, not in
+one band of tech job hunters. Step 3b is split: this is **3b-i**, the format, with no paid call; 3b-ii (item 191) writes the facts for about 24
+professions and runs the paid generation. **No prompt text changed (no `PROMPT_VERSION` bump, and the author system prompt is byte-identical), no pin
+moved, no paid call was made, no dependency was added, and nothing is fetched: the USAJOBS fetch is not built, no key is registered, and charter C-2 and
+D-6 are untouched** (design doc 6.5 records the decision).
+
+- **A level ladder per family** (manifest `schema` 2; cells and prose stay at 1, so no committed cell byte changed). The four tiers still pool results;
+  each family gives them its own label, scope and career length. The pilots sit in one `tech-product` family with the same values.
+- **Fixed, found by a test written first:** a cell's career length ignored its ladder. Each role was 18 to 41 months whatever the tier, so a generated
+  `lead` could not reach its ladder's 10 to 16 years (observed in the first five sampled cells of each tier: entry 26 to 41 months against a ceiling of
+  24, 26 of 40 sampled entry cells outside; lead 69 to 104 months against a floor of 120). Career length is now drawn inside the ladder's `years`, and
+  the manifest check refuses a ladder whose roles cannot fit it.
+- **A setting for every job** (startup, enterprise, small business, health-care or nonprofit, public sector): employers come from per-setting pools of
+  invented names, the JD header uses the industry's place instead of a fixed "Remote (US)", and the JD's headings and register follow the setting.
+  `validate_facts` checks a profession's facts before a cell is built.
+- **Certifications and licences**, and a profession's own training institutions. They are deterministic facts held by tier; a certification not yet
+  reached is a forbidden invention and a clarification probe, and the seed carries them into the existing corpus `certifications` list.
+- **Mismatched résumé/JD pairs** for career changers and advancers, derived from existing cells with no new prose or author spend, checked byte for byte
+  by `python -m evals.golden_set check` and written by `... pairs`. Two pilot pairs are committed. How a pair is graded is steps 8 and 9.
+- **Limits, stated:** transferable terms are authored and only checked to appear in both texts; the settings, ladders and pairs of the other professions do
+  not exist yet; the facts, O\*NET codes and DDaT ladders for them are unread; and the tooling's time was measured on a synthetic suite, not on generated
+  prose.
+- Also: `docs/dev/blast-radius/eval-golden-breadth.md` (the consumer enumeration, written before the first code edit), `evals/README.md`, items 193
+  (new) and 191 (rescoped to 3b-ii) and epic 180, and `docs/dev/eval-redesign-design.md` (6.4 widened, 6.5 decided, section 9 row 3b split).
+
 ### Added: the golden eval dataset's format, a stub-tested prose generator, per-cell seeds and a reachability check (`feat/eval-dataset-format`, item 183, eval redesign step 3a)
 
 The owner split eval-redesign step 3 on 2026-10-22: this is **3a**, the format and its machinery, with three pilot cells; 3b (item 191) generates the

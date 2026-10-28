@@ -251,14 +251,25 @@ the format for `evals/golden/golden-v1/` — a **cell** is one profession at one
 ground truth) and `cells/<cell>/prose.json` (text for each slot with provenance: `generated` by a model or
 `converted` from an existing persona). [`evals/golden_set.py:render_fixtures`](../../../evals/golden_set.py)
 derives the distributed fixtures (`fixtures/<cell>--<industry>/{resume.md, jd.txt, expected.json, seed.json}`)
-by byte-for-byte re-rendering; [`evals/golden_set.py:check_suite`](../../../evals/golden_set.py) and
-[`evals/golden_set.py:check_cell`](../../../evals/golden_set.py) verify manifest hashes, prose against slot rules,
-and the pilot waivers against the richness checks in [`evals/golden_set.py:PREDICATES`](../../../evals/golden_set.py);
+by byte-for-byte re-rendering; [`evals/golden_set.py:check_cell`](../../../evals/golden_set.py) verifies a cell's
+prose against its slot rules and its fixtures against a fresh render, and
+[`evals/golden_set.py:check_suite`](../../../evals/golden_set.py) additionally verifies the manifest hashes and
+the pilot waivers against the richness checks in [`evals/golden_set.py:PREDICATES`](../../../evals/golden_set.py);
 the invention traps are each profile's `expected.forbidden_inventions`, applied to model-written résumé-side slots only (not to converted prose, and not to JD slots, which name the skills the candidate lacks on purpose).
 [`evals/golden_set.py:REACHABILITY`](../../../evals/golden_set.py) maps every call kind to how the dataset reaches
 it (fired by `run_suite`, checked by a static predicate, independent of the dataset, or exempt), and
 [`tests/test_golden_reachability.py`](../../../tests/test_golden_reachability.py) runs each cell through the real
-pipeline against a stub client and asserts which calls fire `[synthesis]`. The prose is written by
+pipeline against a stub client and asserts which calls fire `[synthesis]`.
+
+The manifest uses schema 2 (`MANIFEST_SCHEMA`): level rules live under `families.<name>.levels.<tier>`, with each profession naming its `family` for lookup via [`evals/golden_set.py:ladder_for`](../../../evals/golden_set.py); [`evals/golden_set.py:_check_ladders`](../../../evals/golden_set.py) validates the families. The four tiers are `LEVELS` (entry, mid, senior, lead); each rule carries its own `label`. A cell's career length is drawn from the rule's `years` window (raised to the roles' minimum when the window is shorter) by [`evals/golden_set.py:_tenures`](../../../evals/golden_set.py), with each role at least [`evals/golden_set.py:MIN_ROLE_MONTHS`](../../../evals/golden_set.py) (12 months) `[synthesis]`.
+
+A job sits in one of five [`evals/golden_set.py:SETTINGS`](../../../evals/golden_set.py) (startup, enterprise, small-business, health-nonprofit, public-sector). A profession's facts list the settings its career moves through, and each role's employer is drawn from the pool in [`evals/golden_set.py:_EMPLOYERS_BY_SETTING`](../../../evals/golden_set.py) for one of them; each industry a JD sits in names its own setting, which picks that JD's voice (headings and register) from [`evals/golden_set.py:_JD_VOICE`](../../../evals/golden_set.py), so one cell's roles and JDs can sit in different settings `[synthesis]`.
+
+The résumé sections include an optional `certifications` kind in [`evals/golden_set.py:SECTION_KINDS`](../../../evals/golden_set.py). [`evals/golden_set.py:validate_facts`](../../../evals/golden_set.py) checks a profession's facts including optional `certifications` and `education.institutions`. Certifications are rendered under a `## Certifications` heading by [`evals/golden_set.py:render_resume`](../../../evals/golden_set.py). A certification above the cell's tier is added to `expected.forbidden_inventions` `[synthesis]`.
+
+Mismatched pairs — a résumé of one cell against the JD of another — are handled by [`evals/golden_set.py:render_pair`](../../../evals/golden_set.py), [`evals/golden_set.py:check_pairs`](../../../evals/golden_set.py), and [`evals/golden_set.py:write_pairs`](../../../evals/golden_set.py). [`evals/golden_set.py:PAIR_KINDS`](../../../evals/golden_set.py) names two kinds: `"change"` (different profession) and `"advance"` (same profession, next tier up). `write_pairs` writes each pair to `fixtures/pair--<id>/` (the `pairs` command of `python -m evals.golden_set`). [`evals/golden_set.py:check_suite`](../../../evals/golden_set.py) re-derives each pair through `check_pairs` and compares bytes; [`evals/golden_set.py:_check_pair_terms`](../../../evals/golden_set.py) checks that each listed transferable term appears in both the résumé and the JD, and that an `"advance"` pair is one tier up in the same profession and a `"change"` pair crosses professions `[synthesis]`.
+
+The prose is written by
 [`evals/golden_author.py`](../../../evals/golden_author.py), which sends the slot constraints to
 [`evals/golden_author.py:AUTHOR_MODEL`](../../../evals/golden_author.py) (`claude-opus-5-5`) via a direct
 `client.messages.create` call (not through `analyzer.py`'s funnel, following the judge-call pattern). **It has

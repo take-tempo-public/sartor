@@ -115,6 +115,9 @@ def build_user_prompt(
     """The facts and the slots to fill, as sorted-key JSON. ``previous`` carries a failed text and why."""
     roles = [r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]]
     education = [i for s in profile["sections"] if s["kind"] == "education" for i in s["items"]]
+    certifications = [
+        i for s in profile["sections"] if s["kind"] == "certifications" for i in s["items"]
+    ]
     payload: dict[str, Any] = {
         "facts": {
             "level": profile["level"],
@@ -150,6 +153,12 @@ def build_user_prompt(
             for sid in slot_ids
         },
     }
+    if (
+        certifications
+    ):  # only when a cell has any, so a cell without them keeps its prompt byte for byte
+        payload["facts"]["certifications"] = [
+            {k: c[k] for k in ("name", "issuer", "year")} for c in certifications
+        ]
     if previous:
         payload["rewrite"] = {
             sid: {"previous_text": text, "problems": problems}
@@ -342,7 +351,15 @@ def main(argv: list[str] | None = None) -> int:
     facts = json.loads((root / "facts" / f"{args.profession}.json").read_text(encoding="utf-8"))
     profiles: list[dict[str, Any]] = []
     for level in args.level:
-        profile = gs.build_profile(facts, manifest["levels"][level], level)
+        try:
+            ladder = gs.ladder_for(manifest, args.profession, level)
+            profile = gs.build_profile(facts, ladder, level)
+        except KeyError as exc:
+            print(f"golden_author: {exc.args[0]}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"golden_author: facts/{args.profession}.json: {exc}", file=sys.stderr)
+            return 1
         if (root / "cells" / profile["cell"]).exists():
             print(
                 f"golden_author: cell {profile['cell']} exists; a version adds cells and never edits one",

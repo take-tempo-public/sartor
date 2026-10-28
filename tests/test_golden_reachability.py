@@ -253,6 +253,16 @@ def _check_rows(rows: list[dict[str, Any]]) -> None:
     assert first_try <= {"accepted_first_try"}, first_try
 
 
+def _source_fixture(name: str) -> str:
+    """The fixture whose corpus ``name`` runs on: itself, or a pair's résumé fixture."""
+    if not name.startswith(gs.PAIR_PREFIX):
+        return name
+    pair = next(
+        p for p in gs.load_manifest(gs.SUITE_DIR)["pairs"] if gs.pair_fixture_name(p["id"]) == name
+    )
+    return str(pair["resume_fixture"])
+
+
 class TestCommittedPilots:
     @pytest.mark.parametrize("mode", ["generate", "assemble"])
     def test_each_pilot_fires_exactly_what_is_planned(
@@ -264,7 +274,8 @@ class TestCommittedPilots:
             f"{gs.SUITE}/{p.name}" for p in runner.GOLDEN_DIR.iterdir()
         )
         for fdir in sorted(runner.GOLDEN_DIR.iterdir()):
-            profile, _ = gs.load_cell(gs.SUITE_DIR, fdir.name.split("--")[0])
+            # A pair runs on its résumé cell's corpus, so that cell's profile decides what is reachable.
+            profile, _ = gs.load_cell(gs.SUITE_DIR, _source_fixture(fdir.name).split("--")[0])
             assert per_case[f"{gs.SUITE}/{fdir.name}"] == _planned(fdir, profile, mode), fdir.name
 
     def test_the_pilots_do_not_reach_recommend_summary_and_the_waiver_says_so(
@@ -274,7 +285,11 @@ class TestCommittedPilots:
         assert all("recommend_summary" not in counts for counts in per_case.values())
         waivers = gs.load_manifest(gs.SUITE_DIR)["pilot_waivers"]
         assert all(
-            any(w.endswith(":summary_variants") for w in waivers if w.startswith(c.split("/")[1]))
+            any(
+                w.endswith(":summary_variants")
+                for w in waivers
+                if w.startswith(_source_fixture(c.split("/")[1]))
+            )
             for c in per_case
         )
 

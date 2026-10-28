@@ -1,0 +1,28 @@
+Senior Site Reliability Engineer
+Lattice Cloud — Remote (US)
+
+About the role
+Lattice Cloud runs a multi-region container platform serving 1,200+ enterprise customers. The infrastructure team is hiring an SRE to own the reliability of our control plane: ingress, scheduling, and the metadata layer. You'll set SLOs, drive postmortem culture, and reduce on-call burden through deliberate engineering investment.
+
+What you'll do
+- Own incident response for the control plane: lead postmortems, identify systemic patterns, drive corrective actions to completion.
+- Define and instrument SLOs and SLIs for our scheduling pipeline; partner with product engineering to fold reliability budgets into roadmap planning.
+- Improve observability: extend our Prometheus/Grafana stack, add structured tracing where it's missing, write runbooks that cut MTTR.
+- Author Terraform modules that codify infrastructure standards across teams; review IaC changes from product engineers.
+- Participate in a 24/7 on-call rotation (one week in five). Mentor junior engineers on incident command.
+- Run blameless postmortems and own the action-item tracker.
+
+What we're looking for
+- 4+ years operating production distributed systems at scale (preferably Kubernetes-based).
+- Strong programming in at least one of: Python, Go.
+- Hands-on experience with: Prometheus/Grafana, Terraform, AWS or GCP, structured logging, distributed tracing.
+- Track record of leading incident response and writing postmortems other engineers actually read.
+- Comfort with on-call as a craft, not a chore.
+
+Nice to have
+- Service mesh experience (Istio, Linkerd).
+- Previous SRE-track promotion or staff-level scope.
+- Open-source contributions to observability tools.
+
+Compensation
+$185–$225K base + equity. Full benefits, $2K/yr learning budget, fully remote with quarterly team gatherings.

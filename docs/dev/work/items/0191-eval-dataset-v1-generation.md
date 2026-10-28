@@ -2,22 +2,22 @@
 schema = 1
 id = 191
 kind = "item"
-title = "Eval redesign step 3b: generate the golden cells, calibration run, retire synthetic"
+title = "Eval redesign step 3b-ii: facts, paid generation of the golden cells, calibration run, retire synthetic"
 status = "blocked"
-blocked_on = "step 3a (item 183) has not landed"
-depends_on = [183]
+blocked_on = "step 3b-i (item 193) has not landed"
+depends_on = [193]
 decision_owner = "agent"
 epic = 180
 branches = ["feat/eval-dataset-v1"]
-refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-format.md"]
-summary = "Step 3b: other professions' facts, paid generation of the 48 cells, capped calibration run, retire synthetic/."
+refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-format.md", "docs/dev/blast-radius/eval-golden-breadth.md"]
+summary = "Step 3b-ii: facts for about 24 professions, paid generation, capped calibration run, pairs, retire synthetic/."
 ```
 
-Step 3b of the eval redesign build order: docs/dev/eval-redesign-design.md section 9, row 3 (split by the owner on 2026-10-22; 3a is item 183). Per owner decision 2 this half blocks the v1.1.0 cut with 3a, so item 10 depends on it.
+Step 3b of the eval redesign build order, second half: docs/dev/eval-redesign-design.md section 9, row 3 (split by the owner on 2026-10-22; 3a is item 183; split again on 2026-10-27, 3b-i is item 193). Per owner decision 2 this half blocks the v1.1.0 cut with 3a, so item 10 depends on it.
 
 ## Scope
 
-- The O*NET facts and the level ladder for the other professions (12 professions by 4 levels, 48 cells; the three pilots from 3a are the first three). Re-read the O*NET licence text ("Except as noted below") and the DDaT ladders at the primary source before relying on them.
+- The O*NET facts and the family ladders for the other professions: about **24 professions** in four groups (tech and product; business and office; healthcare, education and community; trades and construction) **by 4 levels, one fixture per JD, so 96** (the 2026-10-27 breadth decision replaces "12 by 4 = 48 cells"; the three pilots from 3a are the first three). The setting is rotated across cells, about 5% of fixtures use a public-sector register written in the model's words, and the mismatched pairs (career change and career advance) are chosen here from the finished cells. Re-read the O*NET licence text ("Except as noted below") and the DDaT ladders at the primary source before relying on them; read each occupation code on O*NET OnLine (several will be `nearest`).
 - The paid generation run through `evals/golden_author.py`, with `--max-spend` and `--confirm-paid`. **It needs the owner's spend approval, estimated first.**
 - The capped calibration run on the finished set. Afterwards `python -m evals.eval_catalog measure --write`, so the estimate prices the judge kinds.
 - Retire `evals/fixtures/synthetic/` and retarget its consumers (listed under "Deferred" in `docs/dev/blast-radius/eval-dataset-format.md`).
@@ -29,3 +29,7 @@ Step 3b of the eval redesign build order: docs/dev/eval-redesign-design.md secti
 ### 2026-10-22 -- filed during feat/eval-dataset-format
 
 Filed when the owner split step 3 into 3a and 3b. Item 184 (step 4) and item 10 (the v1.1.0 cut) now depend on this item as well as on 183.
+
+### 2026-10-27 -- rescoped to 3b-ii; the USAJOBS fetch is not built
+
+Step 3a merged (PR #200, `acf6d6f`). The owner widened the matrix to about 24 professions by 4 levels (96 fixtures, one JD each), a rotating setting axis, about 5% public-sector register, and mismatched pairs, and chose **no fetch**: no USAJOBS code, no key, charter C-2 and D-6 untouched (design doc 6.5). The format changes that make this possible are item 193 (3b-i, no paid call); this item now waits on it. The spend is still the owner's to approve, staged: `--help` and a dry run, then one cell for real with a small cap and a hand check of its prose, then the cap for the rest from that cell's measured cost. The pilots' 12 waivers still have to be gone before the freeze (replace the pilots with generated cells, or enrich them).

@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 46 | Epics 7 | Closed 93
+**Open 28 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 46 | Epics 7 | Closed 93
 
 ## Open
 
@@ -156,7 +156,8 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - **188** -- Eval redesign step 8: Catalog dashboard tab and drill-downs (`agent`) -- Catalog tab, kind/case/judge-span drill-downs, attention view, arm comparison. [depends on: 187] [blocked on: step 7 (item 187) has not landed]
 - **189** -- Eval redesign step 9: pinned judge, schema parse, judge-to-judge calibration (`agent`) -- Pinned judge, schema parse, judge-to-judge agreement (no gold set), over-suppression check; owner picks the judge. [depends on: 188] [blocked on: step 8 (item 188) has not landed]
 - **190** -- Eval redesign step 10: OpenTelemetry projection (`agent`) -- Pure row-to-span projection and its mapping module, pinned to one semantic-conventions-genai commit; no dependency. [depends on: 189] [blocked on: step 9 (item 189) has not landed]
-- **191** -- Eval redesign step 3b: generate the golden cells, calibration run, retire synthetic (`agent`) -- Step 3b: other professions' facts, paid generation of the 48 cells, capped calibration run, retire synthetic/. [depends on: 183] [blocked on: step 3a (item 183) has not landed]
+- **191** -- Eval redesign step 3b-ii: facts, paid generation of the golden cells, calibration run, retire synthetic (`agent`) -- Step 3b-ii: facts for about 24 professions, paid generation, capped calibration run, pairs, retire synthetic/. [depends on: 193] [blocked on: step 3b-i (item 193) has not landed]
+- **193** -- Eval redesign step 3b-i: golden-set breadth (per-family ladders, setting, certifications, mismatched pairs) (`agent`) -- Step 3b-i, no paid call: format changes so the golden set spans many fields, settings and mismatched pairs (3b-ii: 191). [depends on: 183]
 
 ## Closed (93)
 

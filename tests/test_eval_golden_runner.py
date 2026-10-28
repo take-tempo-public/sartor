@@ -34,14 +34,27 @@ def _golden() -> list[Path]:
     return runner._select_fixtures("golden-v1", None)
 
 
+def _pairs() -> list[dict[str, Any]]:
+    pairs: list[dict[str, Any]] = gs.load_manifest(gs.SUITE_DIR).get("pairs", [])
+    return pairs
+
+
 def _cell_of(fixture_dir: Path) -> str:
+    """The cell whose corpus a fixture runs on: a pair runs on its résumé's cell."""
+    if fixture_dir.name.startswith(gs.PAIR_PREFIX):
+        pair = next(p for p in _pairs() if gs.pair_fixture_name(p["id"]) == fixture_dir.name)
+        return str(pair["resume_fixture"]).split("--")[0]
     return fixture_dir.name.split("--")[0]
 
 
 class TestSelection:
     def test_the_suite_resolves_to_the_committed_fixtures(self) -> None:
         names = sorted(p.name for p in _golden())
-        assert [n.split("--")[0] for n in names] == sorted(PILOT_CELLS)
+        cells = [n.split("--")[0] for n in names if not n.startswith(gs.PAIR_PREFIX)]
+        assert cells == sorted(PILOT_CELLS)
+        assert [n for n in names if n.startswith(gs.PAIR_PREFIX)] == sorted(
+            gs.pair_fixture_name(p["id"]) for p in _pairs()
+        )
         assert all((p / "seed.json").is_file() for p in _golden())
 
     def test_its_label_is_the_suite_name(self) -> None:
@@ -126,16 +139,18 @@ class TestEstimate:
         estimate = runner.estimate_spend(
             _golden(), runner._select_rubrics("smoke"), mode="assemble", seed_mode=False
         )
-        assert estimate.calls["analyze_extraction"] == 3
-        assert estimate.calls["recommend"] == 3
-        assert estimate.calls["generate_cover_letter"] == 3
+        n = len(PILOT_CELLS) + len(_pairs())  # every fixture, pairs included
+        assert len(_golden()) == n
+        assert estimate.calls["analyze_extraction"] == n
+        assert estimate.calls["recommend"] == n
+        assert estimate.calls["generate_cover_letter"] == n
         assert "generate" not in estimate.calls
 
     def test_generate_over_the_same_fixtures_still_reads_the_resume_files(self) -> None:
         estimate = runner.estimate_spend(
             _golden(), runner._select_rubrics("smoke"), mode="generate", seed_mode=False
         )
-        assert estimate.calls["generate"] == 3
+        assert estimate.calls["generate"] == len(_golden())
         assert estimate.skipped_fixtures == ()
 
     def test_the_command_line_estimate_needs_no_seed(
@@ -188,8 +203,7 @@ class TestRunSuite:
     ) -> None:
         fake = self._run(tmp_path, monkeypatch)
         profiles = {c: gs.load_cell(gs.SUITE_DIR, c)[0] for c in PILOT_CELLS}
-        by_cell = {_cell_of(p): p for p in _golden()}
-        assert len(fake.seen) == 3
+        assert len(fake.seen) == len(_golden())
         for fdir, seen in zip(_golden(), fake.seen, strict=True):
             profile = profiles[_cell_of(fdir)]
             roles = [
@@ -197,8 +211,22 @@ class TestRunSuite:
             ]
             assert seen["name"] == profile["candidate"]["name"]
             assert seen["companies"] == sorted(r["company"] for r in roles)
-            assert fdir in by_cell.values()
-        assert len({s["name"] for s in fake.seen}) == 3
+            # The posting is the fixture's own: for a pair that is the OTHER cell's, on this cell's corpus.
+            assert seen["jd_first_line"] == (fdir / "jd.txt").read_text("utf-8").split("\n", 1)[0]
+        assert len({s["name"] for s in fake.seen}) == len(PILOT_CELLS)
+        pair_runs = {
+            fdir.name: seen
+            for fdir, seen in zip(_golden(), fake.seen, strict=True)
+            if fdir.name.startswith(gs.PAIR_PREFIX)
+        }
+        assert len(pair_runs) == len(_pairs()) > 0
+        by_name = {fdir.name: seen for fdir, seen in zip(_golden(), fake.seen, strict=True)}
+        for pair in _pairs():
+            resume_run = by_name[pair["resume_fixture"]]
+            jd_run = by_name[pair["jd_fixture"]]
+            got = pair_runs[gs.pair_fixture_name(pair["id"])]
+            assert got["name"] == resume_run["name"] and got["companies"] == resume_run["companies"]
+            assert got["jd_first_line"] == jd_run["jd_first_line"]
 
     def test_the_corpora_are_opened_and_closed_one_at_a_time(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -219,7 +247,7 @@ class TestRunSuite:
 
         monkeypatch.setattr(runner, "seeded_session", counting)
         self._run(tmp_path, monkeypatch)
-        assert state == {"open": 0, "max_open": 1, "opened": 3}
+        assert state == {"open": 0, "max_open": 1, "opened": len(_golden())}
 
     def test_the_global_seed_path_still_opens_one_corpus_for_the_run(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

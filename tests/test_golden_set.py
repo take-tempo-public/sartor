@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -58,13 +59,22 @@ FACTS: dict[str, Any] = {
         "vendor management",
     ],
     "education": {"degree": "B.S.", "field": "Operations"},
+    "settings": ["startup", "enterprise"],
     "industries": [
         {
             "slug": "hospital",
             "company": "Northwind Health",
             "phrase": "a regional hospital network",
+            "setting": "health-nonprofit",
+            "location": "On site, Tampa, FL",
         },
-        {"slug": "bank", "company": "Cedar Bank", "phrase": "a mid-size retail bank"},
+        {
+            "slug": "bank",
+            "company": "Cedar Bank",
+            "phrase": "a mid-size retail bank",
+            "setting": "enterprise",
+            "location": "Hybrid, Charlotte, NC",
+        },
     ],
 }
 
@@ -81,17 +91,18 @@ def _ladder(level: str) -> dict[str, Any]:
         "skill_count": 8,
         "scope": "owning the service end to end",
         "rule_source": "authored",
+        "label": level,
     }
 
 
 def _manifest(status: str = "draft", waivers: list[str] | None = None) -> dict[str, Any]:
     return {
-        "schema": gs.SCHEMA,
+        "schema": gs.MANIFEST_SCHEMA,
         "suite": gs.SUITE,
         "version": 1,
         "status": status,
-        "levels": {level: _ladder(level) for level in gs.LEVELS},
-        "professions": {"demo-ops": {"display": "operations"}},
+        "families": {"demo": {"levels": {level: _ladder(level) for level in gs.LEVELS}}},
+        "professions": {"demo-ops": {"display": "operations", "family": "demo"}},
         "author": {"model": "stub", "prompt_versions": {"t1": "sha256:prompt"}},
         "pilot_waivers": waivers or [],
     }
@@ -218,6 +229,560 @@ class TestBuilder:
         assert missing and any(re.escape(m) in traps for m in missing)
         needs = profile["slots"]["jd.hospital.needs"]["must_include"]
         assert set(needs) & set(missing), "the JD should name a skill the candidate lacks"
+
+
+def _iso_months(iso: str) -> int:
+    year, month = iso.split("-")
+    return int(year) * 12 + int(month)
+
+
+class TestTenure:
+    """Level is the axis the golden set measures, so a cell's career length sits inside its ladder's years."""
+
+    @staticmethod
+    def _career_months(profile: dict[str, Any]) -> int:
+        roles = next(s for s in profile["sections"] if s["kind"] == "experience")["roles"]
+        return _iso_months(gs.ASOF) - _iso_months(roles[-1]["start"])
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_the_career_length_sits_inside_the_ladder_years(self, level: str) -> None:
+        low, high = _ladder(level)["years"]
+        outside = []
+        for n in range(40):
+            facts = FACTS | {"profession": f"demo-{n}"}
+            months = self._career_months(gs.build_profile(facts, _ladder(level), level))
+            if not low * 12 <= months <= high * 12:
+                outside.append((facts["profession"], months))
+        assert outside == [], f"{level}: ladder {low}-{high} years, outside: {outside[:5]}"
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_every_role_is_at_least_the_minimum_and_the_roles_sum_to_the_career(
+        self, level: str
+    ) -> None:
+        ladder = _ladder(level)
+        for seed in range(60):
+            tenures = gs._tenures(seed, ladder)
+            assert len(tenures) == ladder["roles"]
+            assert min(tenures) >= gs.MIN_ROLE_MONTHS, (seed, tenures)
+            low, high = ladder["years"]
+            assert max(low * 12, ladder["roles"] * gs.MIN_ROLE_MONTHS) <= sum(tenures) <= high * 12
+
+    def test_the_career_length_is_not_one_value(self) -> None:
+        # A window that collapsed to a point would pass the bounds test and hide the same defect.
+        spans = {sum(gs._tenures(seed, _ladder("senior"))) for seed in range(60)}
+        assert len(spans) > 10
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_the_stated_years_match_the_career_length(self, level: str) -> None:
+        # The summary brief and the JD requirement both quote "about N years"; N must be the career length.
+        profile = gs.build_profile(FACTS, _ladder(level), level)
+        years = max(1, round(self._career_months(profile) / 12))
+        assert profile["slots"]["summary.1"]["allowed_numbers"] == [str(years)]
+
+
+class TestFacts:
+    """A profession's facts file is checked before a cell is built from it."""
+
+    def test_sound_facts_have_no_problems(self) -> None:
+        assert gs.validate_facts(FACTS) == []
+
+    @pytest.mark.parametrize(
+        "key", ["titles", "skills", "work_themes", "education", "industries", "settings"]
+    )
+    def test_a_missing_key_is_named(self, key: str) -> None:
+        facts = {k: v for k, v in FACTS.items() if k != key}
+        assert gs.validate_facts(facts) == [f"facts are missing {key!r}"]
+
+    def test_a_missing_title_tier_is_found(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        del facts["titles"]["lead"]
+        assert gs.validate_facts(facts) == ["titles has no 'lead'"]
+
+    def test_an_unknown_career_setting_is_found(self) -> None:
+        assert any(
+            "settings must be" in p for p in gs.validate_facts(FACTS | {"settings": ["moon"]})
+        )
+        assert any("settings must be" in p for p in gs.validate_facts(FACTS | {"settings": []}))
+
+    @pytest.mark.parametrize("key", ["setting", "location", "company", "phrase"])
+    def test_an_industry_needs_its_setting_location_company_and_phrase(self, key: str) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][0][key] = "" if key != "setting" else "moon"
+        assert any(f"industry 'hospital': {key}" in p for p in gs.validate_facts(facts))
+
+    def test_two_industries_cannot_share_a_slug(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][1]["slug"] = "hospital"
+        assert any("distinct slug" in p for p in gs.validate_facts(facts))
+
+    def test_the_builder_refuses_bad_facts_with_every_reason(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["industries"][0]["location"] = ""
+        facts["settings"] = ["moon"]
+        with pytest.raises(ValueError, match=r"settings must be.*location is empty"):
+            gs.build_profile(facts, _ladder("mid"), "mid")
+
+
+class TestSetting:
+    """Where a job sits sets its employers, its JD register and its place (not a tech startup by default)."""
+
+    def test_every_setting_has_a_voice_and_enough_employers(self) -> None:
+        assert set(gs._EMPLOYERS_BY_SETTING) == set(gs.SETTINGS) == set(gs._JD_VOICE)
+        longest_career = max(_ladder(level)["roles"] for level in gs.LEVELS)
+        for setting, pool in gs._EMPLOYERS_BY_SETTING.items():
+            assert len(set(pool)) >= longest_career, setting
+        for voice in gs._JD_VOICE.values():
+            assert set(voice) == {"about", "duties", "needs", "register"}
+
+    def test_the_jd_header_names_the_industrys_place_and_never_a_default(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        headers = {jd["slug"]: jd["header_lines"][1] for jd in profile["jds"]}
+        assert headers == {
+            "hospital": "Northwind Health — On site, Tampa, FL",
+            "bank": "Cedar Bank — Hybrid, Charlotte, NC",
+        }
+        assert all("Remote (US)" not in h for h in headers.values())
+
+    def test_each_jd_is_briefed_in_its_settings_headings_and_register(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        hospital = gs._JD_VOICE["health-nonprofit"]
+        bank = gs._JD_VOICE["enterprise"]
+        assert f"'{hospital['about']}' paragraph" in profile["slots"]["jd.hospital.about"]["brief"]
+        assert hospital["register"] in profile["slots"]["jd.hospital.about"]["brief"]
+        assert f"'{hospital['needs']}' heading" in profile["slots"]["jd.hospital.needs"]["brief"]
+        assert f"'{bank['duties']}' heading" in profile["slots"]["jd.bank.duties"]["brief"]
+        assert {jd["slug"]: jd["setting"] for jd in profile["jds"]} == {
+            "hospital": "health-nonprofit",
+            "bank": "enterprise",
+        }
+
+    @pytest.mark.parametrize("setting", gs.SETTINGS)
+    def test_a_career_draws_its_employers_from_its_settings(self, setting: str) -> None:
+        facts = FACTS | {"settings": [setting]}
+        for level in gs.LEVELS:
+            roles = gs.build_profile(facts, _ladder(level), level)["sections"][1]["roles"]
+            companies = [r["company"] for r in roles]
+            assert set(companies) <= set(gs._EMPLOYERS_BY_SETTING[setting]), (level, companies)
+            assert len(set(companies)) == len(companies), (level, companies)
+
+    def test_a_mixed_career_uses_more_than_one_setting_across_cells(self) -> None:
+        seen: set[str] = set()
+        for n in range(30):
+            facts = FACTS | {"profession": f"demo-{n}", "settings": ["startup", "small-business"]}
+            roles = gs.build_profile(facts, _ladder("senior"), "senior")["sections"][1]["roles"]
+            for role in roles:
+                for setting in facts["settings"]:
+                    if role["company"] in gs._EMPLOYERS_BY_SETTING[setting]:
+                        seen.add(setting)
+        assert seen == {"startup", "small-business"}
+
+
+FACTS_AP: dict[str, Any] = FACTS | {"profession": "demo-ap", "display": "administration"}
+
+
+def _common_term(resume_text: str, jd_text: str) -> str:
+    """A skill (or the filler word) both texts mention, so a pair can name a truly transferable term."""
+    for term in [s["name"] for s in FACTS["skills"]] + ["steady"]:
+        if gs._mentions(resume_text, term) and gs._mentions(jd_text, term):
+            return term
+    raise AssertionError("the two texts share no term")
+
+
+def _pair_suite(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
+    """Three cells (demo-ops mid and senior, demo-ap mid) and a manifest listing an advance and a change pair."""
+    root = tmp_path / "golden-v1"
+    for facts, level in ((FACTS, "mid"), (FACTS, "senior"), (FACTS_AP, "mid")):
+        profile = gs.build_profile(facts, _ladder(level), level)
+        gs.write_cell(root, profile, _prose(profile))
+    manifest = _manifest()
+    manifest["professions"]["demo-ap"] = {"display": "administration", "family": "demo"}
+
+    def text(cell: str, slug: str, name: str) -> str:
+        return (root / "fixtures" / f"{cell}--{slug}" / name).read_text(encoding="utf-8")
+
+    manifest["pairs"] = [
+        {
+            "id": "ops-mid-to-senior",
+            "kind": "advance",
+            "resume_fixture": "demo-ops-mid--hospital",
+            "jd_fixture": "demo-ops-senior--hospital",
+            "transferable": [
+                _common_term(
+                    text("demo-ops-mid", "hospital", "resume.md"),
+                    text("demo-ops-senior", "hospital", "jd.txt"),
+                )
+            ],
+            "note": "A mid operator reaching for the senior role.",
+        },
+        {
+            "id": "ops-to-admin",
+            "kind": "change",
+            "resume_fixture": "demo-ops-mid--bank",
+            "jd_fixture": "demo-ap-mid--bank",
+            "transferable": [
+                _common_term(
+                    text("demo-ops-mid", "bank", "resume.md"), text("demo-ap-mid", "bank", "jd.txt")
+                )
+            ],
+            "note": "An operator moving to administration.",
+        },
+    ]
+    gs.write_pairs(root, manifest)
+    gs.write_manifest(root, manifest)
+    return root, manifest
+
+
+class TestPairs:
+    """A résumé against another cell's job description: derived, never authored by hand, and checked."""
+
+    def test_a_sound_suite_of_pairs_passes_the_suite_check(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        assert gs.check_suite(root) == []
+
+    def test_each_pair_fixture_is_the_résumé_of_one_cell_and_the_jd_of_another(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        fx = root / "fixtures"
+        for pair in manifest["pairs"]:
+            got = fx / gs.pair_fixture_name(pair["id"])
+            assert sorted(p.name for p in got.iterdir()) == sorted(gs.PAIR_FILES)
+            for name, source in (
+                ("resume.md", pair["resume_fixture"]),
+                ("seed.json", pair["resume_fixture"]),
+                ("jd.txt", pair["jd_fixture"]),
+            ):
+                assert (got / name).read_bytes() == (fx / source / name).read_bytes(), name
+
+    def test_the_ground_truth_is_built_for_a_candidate_who_does_not_fit(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pair = manifest["pairs"][1]
+        got = json.loads(
+            (root / "fixtures" / "pair--ops-to-admin" / "expected.json").read_text("utf-8")
+        )
+        assert got["must_keywords"] == sorted({t.lower() for t in pair["transferable"]})
+        assert got["pair"] == {
+            "id": "ops-to-admin",
+            "kind": "change",
+            "resume_fixture": "demo-ops-mid--bank",
+            "jd_fixture": "demo-ap-mid--bank",
+            "resume_cell": "demo-ops-mid",
+            "jd_cell": "demo-ap-mid",
+            "transferable": sorted({t.lower() for t in pair["transferable"]}),
+        }
+        # No keyword-coverage minimum: that rubric would punish the honest answer.
+        assert "min_keyword_coverage_score" not in got
+        assert "not callback" in got["notes"]
+        # A built cell's JD names skills: each one the résumé lacks is trapped as well as listed.
+        assert got["jd_requirements_not_shown"]
+        assert [t.removeprefix("(?i)").replace("\\", "") for t in got["forbidden_inventions"]][
+            : len(got["jd_requirements_not_shown"])
+        ] == got["jd_requirements_not_shown"]
+        resume = (root / "fixtures" / "pair--ops-to-admin" / "resume.md").read_text("utf-8")
+        jd = (root / "fixtures" / "pair--ops-to-admin" / "jd.txt").read_text("utf-8")
+        # Every forbidden requirement is one the JD asks for and the résumé does not show.
+        own = gs.build_profile(FACTS, _ladder("mid"), "mid")["expected"]["forbidden_inventions"]
+        for trap in got["forbidden_inventions"]:
+            if trap in own:
+                continue
+            term = trap.removeprefix("(?i)").replace("\\", "")
+            assert gs._mentions(jd, term) or term in jd.lower(), term
+            assert not gs._mentions(resume, term), term
+        assert all(t in got["forbidden_inventions"] for t in own)
+
+    def test_a_pair_is_deterministic(self, tmp_path: Path) -> None:
+        one, _ = _pair_suite(tmp_path / "a")
+        two, _ = _pair_suite(tmp_path / "b")
+        for pair in ("pair--ops-mid-to-senior", "pair--ops-to-admin"):
+            for name in gs.PAIR_FILES:
+                assert (one / "fixtures" / pair / name).read_bytes() == (
+                    two / "fixtures" / pair / name
+                ).read_bytes()
+
+    def test_a_changed_source_cell_makes_its_pair_stale(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        profile, prose = gs.load_cell(root, "demo-ops-senior")
+        prose["slots"]["jd.hospital.about"] += " Extra words that change the job description."
+        gs.write_cell(
+            root, profile, prose
+        )  # the cell's own fixtures are re-rendered; the pair is not
+        gs.write_manifest(root, gs.load_manifest(root))
+        found = gs.check_suite(root)
+        assert any(
+            "pair--ops-mid-to-senior/jd.txt differs from a fresh derivation" in p for p in found
+        )
+
+    def test_a_flipped_byte_a_missing_file_and_an_extra_file_are_found(
+        self, tmp_path: Path
+    ) -> None:
+        root, _ = _pair_suite(tmp_path)
+        base = root / "fixtures" / "pair--ops-to-admin"
+        (base / "resume.md").write_bytes((base / "resume.md").read_bytes() + b"x")
+        (base / "seed.json").unlink()
+        (base / "notes.txt").write_text("stray", encoding="utf-8")
+        found = " | ".join(gs.check_pairs(root, gs.load_manifest(root)))
+        assert "pair--ops-to-admin/resume.md differs" in found
+        assert "pair--ops-to-admin/seed.json is missing" in found
+        assert "pair--ops-to-admin/notes.txt is not a file of a pair fixture" in found
+
+    def test_a_pair_directory_the_manifest_does_not_list_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        gs.write_manifest(root, manifest | {"pairs": manifest["pairs"][:1]})
+        found = gs.check_suite(root)
+        assert any("fixtures/pair--ops-to-admin belongs to no pair" in p for p in found)
+        assert not any("belongs to no cell" in p for p in found)
+
+    def test_a_listed_pair_with_no_fixture_on_disk_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        for name in gs.PAIR_FILES:
+            (root / "fixtures" / "pair--ops-to-admin" / name).unlink()
+        gs.write_manifest(root, manifest)
+        found = gs.check_suite(root)
+        assert any("pair--ops-to-admin/resume.md is missing" in p for p in found)
+
+    @pytest.mark.parametrize(
+        ("change", "needle"),
+        [
+            ({"id": "Bad Id"}, "id must be lowercase"),
+            ({"kind": "swap"}, "kind must be one of"),
+            ({"note": ""}, "note must say why"),
+            ({"resume_fixture": "demo-ops-mid--nowhere"}, "has no fixture"),
+            ({"resume_fixture": "ghost-mid--bank"}, "is not '<cell>--<jd slug>'"),
+            ({"jd_fixture": "demo-ap-mid"}, "is not '<cell>--<jd slug>'"),
+            ({"transferable": []}, "transferable must be a non-empty list"),
+            ({"transferable": ["Quasar"]}, "'Quasar' is not in the résumé"),
+            ({"kind": "advance"}, "an advance pair keeps the profession"),
+        ],
+    )
+    def test_a_bad_pair_is_found(self, tmp_path: Path, change: dict[str, Any], needle: str) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1].update(change)
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any(needle in p for p in gs.check_suite(root)), gs.check_suite(root)
+
+    def test_a_term_missing_from_the_jd_is_found(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        resume = (root / "fixtures" / "demo-ops-mid--bank" / "resume.md").read_text("utf-8")
+        jd = (root / "fixtures" / "demo-ap-mid--bank" / "jd.txt").read_text("utf-8")
+        only_resume = next(
+            s["name"]
+            for s in FACTS["skills"]
+            if gs._mentions(resume, s["name"]) and not gs._mentions(jd, s["name"])
+        )
+        pairs[1]["transferable"] = [only_resume]
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any(
+            f"{only_resume!r} is not in the job description" in p for p in gs.check_suite(root)
+        )
+
+    @pytest.mark.parametrize(
+        ("resume", "jd"),
+        [
+            ("demo-ops-senior--hospital", "demo-ops-mid--hospital"),  # down a tier
+            ("demo-ops-mid--hospital", "demo-ops-mid--bank"),  # the same tier
+        ],
+    )
+    def test_an_advance_pair_asks_for_exactly_the_next_tier_up(
+        self, tmp_path: Path, resume: str, jd: str
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0] |= {"resume_fixture": resume, "jd_fixture": jd, "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("not one step" in p for p in gs.check_suite(root))
+
+    def test_an_advance_pair_cannot_skip_a_tier(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        lead = gs.build_profile(FACTS, _ladder("lead"), "lead")
+        gs.write_cell(root, lead, _prose(lead))  # mid to lead leaves out senior
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0] |= {"jd_fixture": "demo-ops-lead--hospital", "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("mid to lead is not one step" in p for p in gs.check_suite(root))
+
+    def test_a_change_pair_must_cross_professions(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1] |= {"jd_fixture": "demo-ops-senior--bank", "transferable": ["steady"]}
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("a change pair crosses professions" in p for p in gs.check_suite(root))
+
+    def test_two_pairs_cannot_share_an_id(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[1]["id"] = pairs[0]["id"]
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert any("the id is used twice" in p for p in gs.check_suite(root))
+
+    def test_write_pairs_refuses_a_bad_pair_and_writes_nothing(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = [
+            *copy.deepcopy(manifest["pairs"]),
+            {**manifest["pairs"][0], "id": "late", "kind": "swap"},
+        ]
+        with pytest.raises(ValueError, match="kind must be one of"):
+            gs.write_pairs(root, manifest | {"pairs": pairs})
+        assert not (root / "fixtures" / "pair--late").exists()
+
+    def test_the_command_line_writes_the_pairs_and_the_check_then_passes(
+        self, tmp_path: Path
+    ) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        shutil.rmtree(root / "fixtures" / "pair--ops-to-admin")
+        assert gs.main(["pairs", "--root", str(root)]) == 0
+        gs.write_manifest(root, manifest)
+        assert gs.check_suite(root) == []
+
+    def test_the_command_line_reports_a_bad_pair_instead_of_raising(self, tmp_path: Path) -> None:
+        root, manifest = _pair_suite(tmp_path)
+        pairs = copy.deepcopy(manifest["pairs"])
+        pairs[0]["note"] = ""
+        gs.write_manifest(root, manifest | {"pairs": pairs})
+        assert gs.main(["pairs", "--root", str(root)]) == 1
+
+    def test_pair_fixtures_are_hashed_by_the_manifest(self, tmp_path: Path) -> None:
+        root, _ = _pair_suite(tmp_path)
+        files = gs.load_manifest(root)["files"]
+        for pair in ("pair--ops-mid-to-senior", "pair--ops-to-admin"):
+            assert all(f"fixtures/{pair}/{name}" in files for name in gs.PAIR_FILES)
+
+
+CERT_FACTS: dict[str, Any] = FACTS | {
+    "education": {
+        "degree": "Certificate",
+        "field": "Electrical Technology",
+        "institutions": ["Tri-County Trade Institute"],
+    },
+    "certifications": [
+        {"name": "Master Licence", "issuer": "State Licensing Board", "level": "senior"},
+        {"name": "OSHA 30-Hour Card", "issuer": "Safety Council", "level": "entry"},
+        {"name": "Journeyman Licence", "issuer": "State Licensing Board", "level": "mid"},
+    ],
+}
+
+
+def _cert_names(profile: dict[str, Any]) -> list[str]:
+    sections = [s for s in profile["sections"] if s["kind"] == "certifications"]
+    return [c["name"] for s in sections for c in s["items"]]
+
+
+class TestCertifications:
+    """Licences and certifications are facts the candidate holds by tier, and claims the candidate must not make."""
+
+    @pytest.mark.parametrize(
+        ("level", "held"),
+        [
+            ("entry", ["OSHA 30-Hour Card"]),
+            ("mid", ["OSHA 30-Hour Card", "Journeyman Licence"]),
+            ("senior", ["OSHA 30-Hour Card", "Journeyman Licence", "Master Licence"]),
+        ],
+    )
+    def test_a_candidate_holds_the_certifications_at_or_below_the_level(
+        self, level: str, held: list[str]
+    ) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder(level), level)
+        assert _cert_names(profile) == held
+
+    def test_the_certifications_follow_education_and_a_cell_without_any_has_no_section(
+        self,
+    ) -> None:
+        kinds = [s["kind"] for s in gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")["sections"]]
+        assert kinds == ["summary", "experience", "education", "certifications", "skills"]
+        plain = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        assert [s["kind"] for s in plain["sections"]] == [
+            "summary",
+            "experience",
+            "education",
+            "skills",
+        ]
+        assert gs.render_seed(plain, _prose(plain)["slots"])["certifications"] == []
+
+    def test_a_certification_the_candidate_has_not_reached_is_a_forbidden_invention(self) -> None:
+        mid = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        senior = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        assert any(re.search(t, "Master Licence") for t in mid["expected"]["forbidden_inventions"])
+        assert not any(
+            re.search(t, "Master Licence") for t in senior["expected"]["forbidden_inventions"]
+        )
+        probes = mid["expected"]["expected_clarification_themes"]["experience_probes"]
+        assert "any progress toward Master Licence" in probes
+        assert "Master Licence" in mid["expected"]["notes"]
+
+    def test_the_jd_requires_a_held_certification_and_names_the_next_as_preferred(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        needs = profile["slots"]["jd.hospital.needs"]
+        # The lowest-tier held certification is required; the lowest-tier one not yet held is preferred.
+        assert "OSHA 30-Hour Card" in needs["must_include"]
+        assert "Master Licence" in needs["must_include"]
+        assert "State OSHA 30-Hour Card as a required" in needs["brief"]
+        assert "State Master Licence as preferred" in needs["brief"]
+        assert (
+            "30" in needs["allowed_numbers"]
+        )  # a digit in a certification's name is not an invented number
+
+    def test_the_résumé_lists_them_with_issuer_and_a_year_inside_the_career(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        text = gs.render_resume(profile, _prose(profile)["slots"])
+        assert "## Certifications\n\n- OSHA 30-Hour Card — Safety Council, " in text
+        first = int(profile["sections"][1]["roles"][-1]["start"][:4])
+        for cert in profile["sections"][3]["items"]:
+            assert first <= int(cert["year"]) <= int(gs.ASOF[:4])
+
+    def test_they_reach_the_seed_and_survive_the_importer_and_exporter(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        seed = gs.render_seed(profile, _prose(profile)["slots"])
+        assert [c["name"] for c in seed["certifications"]] == _cert_names(profile)
+        assert all(c["issued"] and c["issuer"] for c in seed["certifications"])
+        with seeded_session(seed) as (session, username):
+            back = export_seed(session, candidate_username=username)
+        stable = {k: v for k, v in seed.items() if k not in gs.SEED_VOLATILE_KEYS}
+        assert {k: v for k, v in back.items() if k not in gs.SEED_VOLATILE_KEYS} == stable
+
+    def test_the_education_uses_the_professions_own_institutions(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        item = profile["sections"][2]["items"][0]
+        assert item["institution"] == "Tri-County Trade Institute"
+        assert item["degree"] == "Certificate"
+
+    def test_a_built_cell_with_certifications_checks_clean_on_disk(self, tmp_path: Path) -> None:
+        root = tmp_path / "golden-v1"
+        profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
+        gs.write_cell(root, profile, _prose(profile))
+        assert gs.check_cell(root, "demo-ops-mid") == []
+
+    def test_a_section_kind_with_no_renderer_is_refused_not_rendered_as_skills(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        profile["sections"].append({"kind": "bullets-ish", "heading": "Other"})
+        with pytest.raises(ValueError, match="cannot render a section of kind"):
+            gs.render_resume(profile, _prose(profile)["slots"])
+
+    @pytest.mark.parametrize(
+        ("change", "needle"),
+        [
+            ({"issuer": ""}, "issuer is empty"),
+            ({"level": "principal"}, "level must be one of"),
+            ({"name": ""}, "need a distinct, non-empty name"),
+        ],
+    )
+    def test_bad_certification_facts_are_found(self, change: dict[str, str], needle: str) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["certifications"][0].update(change)
+        assert any(needle in p for p in gs.validate_facts(facts))
+
+    def test_two_certifications_cannot_share_a_name(self) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["certifications"][1]["name"] = facts["certifications"][0]["name"]
+        assert any("distinct, non-empty name" in p for p in gs.validate_facts(facts))
+
+    @pytest.mark.parametrize("institutions", [[], [""], "State University"])
+    def test_bad_institutions_are_found(self, institutions: Any) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["education"]["institutions"] = institutions
+        assert any("institutions" in p for p in gs.validate_facts(facts))
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -495,9 +1060,62 @@ class TestSuiteChecks:
     def test_a_bad_level_rule_source_is_found(self, tmp_path: Path) -> None:
         root = _suite(tmp_path)
         manifest = gs.load_manifest(root)
-        manifest["levels"]["mid"]["rule_source"] = "guessed"
+        manifest["families"]["demo"]["levels"]["mid"]["rule_source"] = "guessed"
         gs.write_manifest(root, manifest)
         assert any("rule_source" in p for p in gs.check_suite(root))
+
+    def test_a_schema_one_manifest_is_refused(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        gs.write_manifest(root, gs.load_manifest(root) | {"schema": 1})
+        assert any("manifest schema 1" in p for p in gs.check_suite(root))
+
+    def test_a_profession_must_name_a_family_the_manifest_has(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["professions"]["demo-ops"]["family"] = "nowhere"
+        gs.write_manifest(root, manifest)
+        assert any("family 'nowhere' is not in the manifest" in p for p in gs.check_suite(root))
+
+    def test_a_family_must_have_exactly_the_four_tiers(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        del manifest["families"]["demo"]["levels"]["lead"]
+        gs.write_manifest(root, manifest)
+        assert any("family demo: levels" in p for p in gs.check_suite(root))
+
+    @pytest.mark.parametrize("label", [None, ""])
+    def test_a_level_needs_its_own_label(self, tmp_path: Path, label: str | None) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["mid"]["label"] = label
+        gs.write_manifest(root, manifest)
+        assert any("label must be a non-empty string" in p for p in gs.check_suite(root))
+
+    @pytest.mark.parametrize("years", [[5, 3], [3], ["3", "5"], [-1, 2]])
+    def test_a_level_needs_a_sound_years_window(self, tmp_path: Path, years: list[Any]) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["mid"]["years"] = years
+        gs.write_manifest(root, manifest)
+        assert any("years must be" in p for p in gs.check_suite(root))
+
+    def test_a_ladder_whose_roles_do_not_fit_its_years_is_found(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["families"]["demo"]["levels"]["lead"]["years"] = [1, 2]  # 3 roles need 36 months
+        gs.write_manifest(root, manifest)
+        assert any("do not fit in 2 years" in p for p in gs.check_suite(root))
+
+
+class TestLadderFor:
+    def test_it_finds_the_rule_through_the_family(self) -> None:
+        assert gs.ladder_for(_manifest(), "demo-ops", "senior") == _ladder("senior")
+
+    def test_an_unknown_profession_or_level_says_which(self) -> None:
+        with pytest.raises(KeyError, match="no family in the manifest"):
+            gs.ladder_for(_manifest(), "nope", "mid")
+        with pytest.raises(KeyError, match="no rule for level"):
+            gs.ladder_for(_manifest(), "demo-ops", "principal")
 
 
 class TestWaivers:
@@ -641,3 +1259,21 @@ class TestCommittedSuite:
         if not (gs.SUITE_DIR / "manifest.json").is_file():
             pytest.skip("no committed suite yet")
         assert gs.check_suite(gs.SUITE_DIR) == []
+
+    def test_the_committed_pairs_cross_the_pilots_and_use_the_target_cells_own_traps(self) -> None:
+        pairs = gs.load_manifest(gs.SUITE_DIR)["pairs"]
+        assert [p["kind"] for p in pairs] == ["change", "change"]
+        fixtures = gs.SUITE_DIR / "fixtures"
+        expected = json.loads(
+            (fixtures / "pair--sre-ops-mid-to-product-mgmt-senior" / "expected.json").read_text(
+                "utf-8"
+            )
+        )
+        target = json.loads(
+            (fixtures / "product-mgmt-senior--atrium-health" / "expected.json").read_text("utf-8")
+        )
+        # A converted pilot's keywords are vocabulary, not claims: they are listed, never trapped.
+        assert set(target["forbidden_inventions"]) <= set(expected["forbidden_inventions"])
+        assert "(?i)workflow" not in expected["forbidden_inventions"]
+        assert "workflow" in expected["jd_requirements_not_shown"]
+        assert expected["must_keywords"] == ["customer", "platform"]

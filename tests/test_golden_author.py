@@ -20,7 +20,7 @@ import hardening
 from evals import golden_author as ga
 from evals import golden_set as gs
 from evals import runner
-from tests.test_golden_set import FACTS, _built, _suite, _text_for
+from tests.test_golden_set import FACTS, _built, _ladder, _suite, _text_for
 
 
 class _Usage:
@@ -151,6 +151,22 @@ class TestRequest:
         profile, _ = _built()
         ids = sorted(profile["slots"])
         assert ga.build_user_prompt(profile, ids) == ga.build_user_prompt(profile, ids)
+
+    def test_the_prompt_names_the_certifications_a_cell_holds_and_only_then(self) -> None:
+        # The system prompt forbids inventing a certification, so the model has to be told the real ones.
+        plain, _ = _built()
+        assert (
+            "certifications" not in json.loads(ga.build_user_prompt(plain, ["summary.1"]))["facts"]
+        )
+        facts = FACTS | {
+            "certifications": [
+                {"name": "Journeyman Licence", "issuer": "State Board", "level": "mid"}
+            ]
+        }
+        profile = gs.build_profile(facts, _ladder("mid"), "mid")
+        sent = json.loads(ga.build_user_prompt(profile, ["summary.1"]))["facts"]["certifications"]
+        assert [(c["name"], c["issuer"]) for c in sent] == [("Journeyman Licence", "State Board")]
+        assert all(c["year"].isdigit() for c in sent)
 
 
 class TestAuthorCell:
