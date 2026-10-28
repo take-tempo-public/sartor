@@ -310,6 +310,39 @@ class TestFacts:
         facts["industries"][0][key] = "" if key != "setting" else "moon"
         assert any(f"industry 'hospital': {key}" in p for p in gs.validate_facts(facts))
 
+    @pytest.mark.parametrize(
+        ("name", "needle"),
+        [
+            ("Python3", "a digit in a name"),
+            ("Go", "under three characters"),
+        ],
+    )
+    def test_a_skill_name_the_checks_cannot_hold_is_found(self, name: str, needle: str) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["skills"][0]["name"] = name
+        assert any(f"skill {name!r}" in p and needle in p for p in gs.validate_facts(facts))
+
+    def test_a_skill_name_inside_another_is_found(self) -> None:
+        # A trap or a required fact is a substring test, so "Git" would match "GitHub" and the reverse.
+        facts = copy.deepcopy(FACTS)
+        facts["skills"][0]["name"] = "Git"
+        facts["skills"][1]["name"] = "GitHub"
+        assert any("'Git' is inside skill 'GitHub'" in p for p in gs.validate_facts(facts))
+        assert not any("'GitHub' is inside" in p for p in gs.validate_facts(facts))
+
+    def test_the_overlap_check_ignores_case(self) -> None:
+        facts = copy.deepcopy(FACTS)
+        facts["skills"][0]["name"] = "SQL"
+        facts["skills"][1]["name"] = "Postgresql"
+        assert any("'SQL' is inside skill 'Postgresql'" in p for p in gs.validate_facts(facts))
+
+    def test_a_skill_inside_a_certification_name_is_found(self) -> None:
+        facts = copy.deepcopy(CERT_FACTS)
+        facts["skills"][0]["name"] = "Journeyman"
+        assert any(
+            "skill 'Journeyman'" in p and "certification" in p for p in gs.validate_facts(facts)
+        )
+
     def test_two_industries_cannot_share_a_slug(self) -> None:
         facts = copy.deepcopy(FACTS)
         facts["industries"][1]["slug"] = "hospital"
@@ -449,6 +482,41 @@ class TestSetting:
             companies = [r["company"] for r in roles]
             assert set(companies) <= set(gs._EMPLOYERS_BY_SETTING[setting]), (level, companies)
             assert len(set(companies)) == len(companies), (level, companies)
+
+    def test_a_profession_may_name_its_own_employers(self) -> None:
+        # A teacher in the public-sector pool could work for a transit authority; the facts can say who hires.
+        schools = [
+            "Willowbrook Elementary",
+            "Cedar Grove Academy",
+            "Hillcrest School",
+            "Maple Street School",
+        ]
+        facts = FACTS | {"settings": ["public-sector"], "employers": schools}
+        assert gs.validate_facts(facts) == []
+        for level in gs.LEVELS:
+            roles = gs.build_profile(facts, _ladder(level), level)["sections"][1]["roles"]
+            companies = [r["company"] for r in roles]
+            assert set(companies) <= set(schools), (level, companies)
+            assert len(set(companies)) == len(companies), (level, companies)
+
+    def test_named_employers_change_nothing_for_facts_that_do_not_name_any(self) -> None:
+        assert gs.canonical_json(
+            gs.build_profile(FACTS, _ladder("senior"), "senior")
+        ) == gs.canonical_json(gs.build_profile(copy.deepcopy(FACTS), _ladder("senior"), "senior"))
+
+    @pytest.mark.parametrize(
+        "employers",
+        [
+            [],
+            ["Only One", "Only Two"],
+            ["A School", "A School", "Another School"],
+            ["A", "", "B"],
+            "School",
+        ],
+    )
+    def test_bad_employers_are_found(self, employers: Any) -> None:
+        facts = FACTS | {"employers": employers}
+        assert any("employers" in p for p in gs.validate_facts(facts))
 
     def test_a_mixed_career_uses_more_than_one_setting_across_cells(self) -> None:
         seen: set[str] = set()
@@ -1160,6 +1228,29 @@ class TestSuiteChecks:
         manifest["professions"]["demo-ops"]["family"] = "nowhere"
         gs.write_manifest(root, manifest)
         assert any("family 'nowhere' is not in the manifest" in p for p in gs.check_suite(root))
+
+    def test_a_profession_may_name_one_of_the_four_groups(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["professions"]["demo-ops"]["group"] = gs.GROUPS[0]
+        gs.write_manifest(root, manifest)
+        assert gs.check_suite(root) == []
+
+    @pytest.mark.parametrize("group", ["", "tech", 3])
+    def test_a_group_the_set_does_not_define_is_found(self, tmp_path: Path, group: Any) -> None:
+        root = _suite(tmp_path)
+        manifest = gs.load_manifest(root)
+        manifest["professions"]["demo-ops"]["group"] = group
+        gs.write_manifest(root, manifest)
+        assert any("profession demo-ops: group" in p for p in gs.check_suite(root))
+
+    def test_the_four_groups_are_the_ones_the_design_names(self) -> None:
+        assert gs.GROUPS == (
+            "tech-and-product",
+            "business-and-office",
+            "health-education-and-community",
+            "trades-and-construction",
+        )
 
     def test_a_family_must_have_exactly_the_four_tiers(self, tmp_path: Path) -> None:
         root = _suite(tmp_path)

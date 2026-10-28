@@ -90,6 +90,15 @@ _LAST_NAMES = (
 #: Where a job sits. A cell's résumé employers and its JDs come from these, so one set can hold a startup
 #: engineer, a hospital nurse, a county clerk and a family electrical contractor.
 SETTINGS = ("startup", "enterprise", "small-business", "health-nonprofit", "public-sector")
+#: The owner's four groups of professions (design doc 6.4, 2026-10-27): what a per-group result is pooled over.
+#: A group is not a ladder family (a construction project manager is in the trades group and uses an office
+#: ladder), so a profession's row may name one.
+GROUPS = (
+    "tech-and-product",
+    "business-and-office",
+    "health-education-and-community",
+    "trades-and-construction",
+)
 
 # Invented organisations, one pool per setting; nothing here names a real employer or agency.
 _EMPLOYERS_BY_SETTING: dict[str, tuple[str, ...]] = {
@@ -807,6 +816,10 @@ def _check_ladders(manifest: dict[str, Any]) -> list[str]:
             problems.append(
                 f"profession {profession}: family {row.get('family')!r} is not in the manifest"
             )
+        if "group" in row and row["group"] not in GROUPS:
+            problems.append(
+                f"profession {profession}: group {row['group']!r} is not one of {', '.join(GROUPS)}"
+            )
     return problems
 
 
@@ -1402,6 +1415,21 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
         problems.append("skills need a distinct, non-empty name each")
     if not all(s.get("category") for s in facts["skills"]):
         problems.append("every skill needs a category")
+    # A skill name is matched as a substring (a trap against a claim, a required fact in a slot) and any
+    # digit in prose must be one the slot allows, so a name that is short, numeric or inside another
+    # name makes a check fire on text that is right, or pass on text that is wrong.
+    usable = [n for n in names if isinstance(n, str) and n]
+    for name in usable:
+        if any(ch.isdigit() for ch in name):
+            problems.append(f"skill {name!r}: a digit in a name is a number the slots do not allow")
+        if len(name) < 3:
+            problems.append(f"skill {name!r}: a name under three characters matches inside words")
+    for inner in usable:
+        for outer in usable:
+            if inner != outer and inner.lower() in outer.lower():
+                problems.append(
+                    f"skill {inner!r} is inside skill {outer!r}: a check for one matches the other"
+                )
     if not facts["work_themes"]:
         problems.append("work_themes is empty")
     settings = facts["settings"]
@@ -1444,10 +1472,26 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
         or not all(isinstance(i, str) and i for i in institutions)
     ):
         problems.append("education.institutions, when given, is a non-empty list of names")
+    employers = facts.get("employers")
+    if employers is not None and (
+        not isinstance(employers, list)
+        or len(employers) < 3
+        or not all(isinstance(e, str) and e for e in employers)
+        or len(set(employers)) != len(employers)
+    ):
+        problems.append(
+            "employers, when given, is a list of at least three distinct names (a career has up to three roles)"
+        )
     certs = facts.get("certifications", [])
     cert_names = [c.get("name") for c in certs]
     if not all(cert_names) or len(set(cert_names)) != len(cert_names):
         problems.append("certifications need a distinct, non-empty name each")
+    for cert_name in (c for c in cert_names if isinstance(c, str) and c):
+        for skill_name in usable:
+            if skill_name.lower() in cert_name.lower() or cert_name.lower() in skill_name.lower():
+                problems.append(
+                    f"skill {skill_name!r} and certification {cert_name!r} contain one another"
+                )
     for cert in certs:
         if not cert.get("issuer"):
             problems.append(f"certification {cert.get('name')!r}: issuer is empty")
@@ -1457,7 +1501,14 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
 
 
 def _employers_for(facts: dict[str, Any], seed: int, count: int) -> list[str]:
-    """``count`` distinct employers, newest first, each drawn from a setting this profession works in."""
+    """``count`` distinct employers, newest first.
+
+    Drawn from the profession's own ``employers`` when the facts name them (who hires a teacher is not
+    who hires an engineer), otherwise from a setting pool this profession works in.
+    """
+    named = facts.get("employers")
+    if named:
+        return sorted(named, key=lambda n: _hash_int(seed, f"employer:{n}"))[:count]
     used: set[str] = set()
     out: list[str] = []
     for index in range(count):
