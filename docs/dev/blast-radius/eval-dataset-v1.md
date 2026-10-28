@@ -217,6 +217,21 @@ generation would have left a cell describing a profession the facts no longer sa
 generated cell and compares (`TestACellIsTheFunctionOfItsFacts`). The five cells were discarded and are regenerated:
 **$0.3589 of the $3 was spent on cells that did not survive**, the price of learning this from five cells.
 
+**Stage 2b, observed (the same five cells, regenerated with the corrected builder):** `web-backend-lead` $0.0862,
+`teacher-mid` $0.0645, `electrician-entry` $0.0535, `accounting-senior` $0.0854, `ux-design-senior` $0.0706; $0.3603 for
+the run, $0.7191 logged in all; every request first-attempt, `end_turn`, 16 to 31 s. Measured on the model's own text:
+every listed skill now appears in the web-backend, teacher, accounting and design cells; no skill appears more than
+twice outside the accounting cell, whose worst is 3 where it was 6 (its skill and a theme share the phrase "month-end
+close"); `Nearpod` fell from 3 uses to 1 and `API versioning` from 4 to at most 2; and the apprentice now "reports
+findings to the journeyman before any repair is made". Output tokens per request varied by up to 27 percent between the
+two runs of one cell (2,665 to 3,094 for the design cell), so the same prompt does not cost the same twice.
+
+**The checkpoint projection, from ten requests.** Mean cost per cell by tier: entry $0.0491 (2 cells), mid $0.0650 (2),
+senior $0.0791 (4), lead $0.0872 (2). One profession is $0.280, so the 96 cells are about **$6.73**; the 91 still to
+write (23 entry, 23 mid, 22 senior, 23 lead; the three pilots are among them) are about **$6.37**, which with the
+$0.7191 already logged is about $7.09 in all. Stated limits: ten requests are not a distribution; a rewrite request
+costs a further request; and a different profession may think more or less.
+
 ---
 
 ## Deferred
