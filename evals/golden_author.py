@@ -428,6 +428,17 @@ def _set_execution_state(flags: int) -> None:
         return
 
 
+def _flush_progress() -> None:
+    """Make progress lines appear as they are printed.
+
+    Redirected to a file, stdout is block-buffered: a background run's log stayed empty until the run
+    exited (observed 2026-10-28) and looked like a hung or failed run. Best-effort.
+    """
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(line_buffering=True)
+
+
 def _log_offset() -> int:
     """Byte size of the call log now: where a scan for rows written from here on can begin."""
     try:
@@ -574,6 +585,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--confirm-paid", action="store_true", help="required: this spends money")
     args = ap.parse_args(argv)
+    _flush_progress()
     if args.max_spend <= 0:
         ap.error("--max-spend must be positive")
     if args.max_total_spend is not None and args.max_total_spend <= 0:

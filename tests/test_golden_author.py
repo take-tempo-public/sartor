@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -909,6 +910,28 @@ class TestStagedRun:
         monkeypatch.setattr(runner, "_get_client", lambda: _Client([ConnectionError("down")]))
         assert self._run(self._root(tmp_path), "--cell", "demo-ops:entry") == 1
         assert calls[-1] == ga.ES_CONTINUOUS and calls[0] != ga.ES_CONTINUOUS
+
+    def test_progress_lines_are_flushed_as_they_are_printed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Observed 2026-10-28: redirected to a file, stdout is block-buffered, so a background run's log was
+        # empty until it exited and looked like a hung or failed run.
+        calls: list[dict[str, Any]] = []
+
+        class _Out:
+            def reconfigure(self, **options: Any) -> None:
+                calls.append(options)
+
+            def write(self, text: str) -> int:
+                return len(text)
+
+            def flush(self) -> None:
+                return None
+
+        monkeypatch.setattr(sys, "stdout", _Out())
+        base = ["--root", str(self._root(tmp_path)), "--cell", "demo-ops:entry", "--max-spend", "1"]
+        assert ga.main(base) == 3
+        assert calls == [{"line_buffering": True}]
 
     def test_a_dry_run_does_not_touch_the_power_state(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
