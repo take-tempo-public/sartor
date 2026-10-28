@@ -1,0 +1,21 @@
+Senior Mobile Engineer
+Dunmark Financial — Hybrid, Charlotte, NC
+
+Position summary
+Dunmark Financial is seeking a Senior Mobile Engineer to design, build and maintain the mobile banking applications used by our customers nationwide. The successful candidate will work closely with product, design and engineering partners to deliver secure, reliable and accessible features. Minimum qualifications include substantial professional experience with Kotlin, Firebase and push notifications. Preferred qualifications include experience with TestFlight and the App Store release process.
+
+Responsibilities
+- Plan releases with product and design partners, defining scope, priorities and delivery timelines
+- Measure and improve app start-up time across supported devices
+- Own and maintain the release pipeline, from build automation through store submission
+- Review code and provide technical guidance to other mobile engineers
+- Monitor app stability and coordinate fixes for production issues
+- Ensure features meet the bank's security, privacy and accessibility standards
+
+Minimum and preferred qualifications
+- 8 or more years of professional mobile engineering experience
+- Strong working knowledge of Kotlin and Firebase
+- Experience implementing push notifications in production applications
+- Experience with crash reporting tools and stability monitoring
+- Familiarity with TestFlight and the App Store release process
+- Preferred: experience building applications in the financial services industry

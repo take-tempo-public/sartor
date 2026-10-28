@@ -1,0 +1,36 @@
+{
+  "cell": "logistics-driving-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:e14de0aef930f2b8e1e7b3039bad97199dd4f925300fa7bae75eed0dee2d65c8",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPRdkH6rdjY1pmMydUc"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2931,
+      "output_tokens": 2162
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.parcel-delivery.about": "Position summary\nFairlane Parcel Delivery seeks a Delivery Driver to transport parcels safely and deliver them to customers on schedule from our Columbus, OH site. The Delivery Driver works with dispatch and follows company safety and documentation standards. At minimum, candidates must hold a Driver Safety Certificate and have prior delivery experience. A Commercial Driver Licence is preferred.",
+    "jd.parcel-delivery.duties": "Responsibilities\n- Conduct pre-trip vehicle inspections and report any defects before departure\n- Secure each load and check it against shipping paperwork before leaving the site\n- Deliver parcels to customers on time along assigned routes\n- Obtain customer confirmation at the point of delivery and record any exceptions\n- Communicate with dispatch about delays, route changes and delivery status\n- Follow company safety procedures and traffic regulations at all times",
+    "jd.parcel-delivery.needs": "Minimum and preferred qualifications\n- Minimum: 1 or more years of experience as a delivery driver\n- Minimum: working knowledge of dispatch software, bills of lading and customer signoff procedures\n- Minimum: skill in trailer coupling and defensive driving\n- Minimum: training in hazmat handling\n- Required certification: Driver Safety Certificate\n- Preferred: Commercial Driver Licence",
+    "r1.b1": "Performs pre-trip vehicle inspections and keeps cargo documentation complete for every load, cutting loading delays by 20 percent.",
+    "r1.b2": "Plans daily delivery routes and checks bills of lading against each load before departure.",
+    "r1.b3": "Coordinates with dispatch on route changes and applies defensive driving on every shift, reducing late arrivals by 20 percent.",
+    "r1.b4": "Keeps accurate driver logs and updates trip status in dispatch software throughout each shift.",
+    "r1.i1": "Delivers loads to customers on schedule across assigned routes for Stonebridge Logistics.",
+    "r1.i2": "Inspects the delivery vehicle each shift at Stonebridge Logistics and reports any defects promptly so repairs happen before routes begin.",
+    "summary.1": "Entry-level delivery driver with about 1 year of experience in truck driving and dispatch support, handling a small share of route work under close supervision. Applies defensive driving, hours-of-service logging and delivery scheduling to keep deliveries safe and on time.",
+    "summary.2": "Truck driving and dispatch professional at entry level with about 1 year of experience, handling assigned deliveries with a supervisor close by. Brings skills in defensive driving, hours-of-service logging and delivery scheduling, along with a Commercial Driving certificate from Lakeshore Trucking School."
+  }
+}

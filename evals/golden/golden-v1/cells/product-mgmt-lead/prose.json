@@ -1,0 +1,51 @@
+{
+  "cell": "product-mgmt-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:8202334bd1a24e6e9372d3aaa21acfd8a770a432906fd491fa1e0c1951b6c8b2",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPXp1aSsvbMEZBoriFA"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4866,
+      "output_tokens": 3593
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.learning-startup.about": "Kestrel Learning builds education software, and we need a Director of Product to own where it goes next. You'll lead our product managers, set the roadmap with leadership, and keep us honest about what learners and teachers actually need. Expect real ownership, quick decisions and very little ceremony.",
+    "jd.learning-startup.duties": "What you'll do\n- Run regular metrics reviews and turn what the data shows into clear roadmap calls\n- Coach and grow our product managers through feedback, pairing and hands-on support\n- Own feature launches from first spec to release, working closely with engineering, design and marketing\n- Set product priorities with leadership and explain the trade-offs plainly\n- Talk with learners and teachers often so customer needs stay at the center of our work",
+    "jd.learning-startup.needs": "What we're looking for\n- 15 or more years of experience in product management\n- Strong requirements writing and product analytics skills\n- Hands-on pricing analysis and go-to-market planning for software products\n- A track record of stakeholder alignment across leadership, engineering and sales\n- Comfort planning and tracking delivery in Jira",
+    "r1.b1": "Sets product strategy with the leadership team, using pricing analysis to guide packaging decisions that raised revenue by 15 percent.",
+    "r1.b2": "Leads feature launches end to end, applying go-to-market planning to coordinate timing, messaging and support readiness across teams.",
+    "r1.b3": "Coordinates work across product, engineering and operations teams, using shared Amplitude dashboards to cut time spent on status reporting by 50 percent.",
+    "r1.b4": "Guides vendor and pricing decisions with prioritization frameworks that weigh cost, user value and delivery risk.",
+    "r1.b5": "Writes requirements paired with Figma prototypes, reducing rework during development by 15 percent.",
+    "r1.i1": "Leads product at Stonebridge Community Trust, coordinating priorities and delivery across product, engineering and operations teams.",
+    "r1.i2": "Directs product work at Stonebridge Community Trust and runs regular metrics reviews that tie roadmap decisions to measured outcomes.",
+    "r2.b1": "Ran customer interviews alongside product analytics to locate drop-off points, raising onboarding completion by 45 percent.",
+    "r2.b2": "Coached other product managers on discovery and specification practices, building shared templates and guides in Confluence.",
+    "r2.b3": "Introduced monthly metrics reviews informed by user interviews, increasing feature adoption by 55 percent.",
+    "r2.b4": "Built roadmap plans from Tableau reports on usage and support volume to sequence work for each quarter.",
+    "r2.b5": "Partnered with leadership to set product strategy, using requirements writing to turn goals into clear specifications and cutting delivery delays by 55 percent.",
+    "r2.i1": "Owned metrics reviews for product teams at Halcyon Services, turning usage data into roadmap decisions.",
+    "r2.i2": "Worked with Halcyon Services leadership to set product strategy and translate company goals into a sequenced roadmap.",
+    "r3.b1": "Wrote product requirements grounded in pricing analysis, improving conversion on paid offerings by 35 percent.",
+    "r3.b2": "Conducted customer interviews to inform go-to-market planning for new releases, shaping messaging and rollout order.",
+    "r3.b3": "Established regular metrics reviews using Amplitude data, increasing weekly active usage by 55 percent.",
+    "r3.b4": "Applied prioritization frameworks to roadmap planning, ranking incoming requests by user impact and effort.",
+    "r3.b5": "Shipped feature launches from Figma designs validated with users, raising feature engagement by 25 percent.",
+    "r3.i1": "Managed vendor and pricing decisions for the product at Maple Court Care, balancing cost against user needs.",
+    "r3.i2": "Wrote and maintained product requirements at Maple Court Care, giving engineering and design teams a clear basis for delivery.",
+    "summary.1": "Product leader with about 15 years of experience leading teams and owning the roadmap for a product area. Grounds decisions in user interviews, applies prioritization frameworks to sequence work, and uses Figma to align teams on design.",
+    "summary.2": "Lead-level product manager with roughly 15 years of experience guiding a team and owning the area roadmap. Combines user interviews, prioritization frameworks and Figma prototyping to move from customer needs to shipped work."
+  }
+}

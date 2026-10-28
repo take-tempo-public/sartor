@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "morgan.novak@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-hardware-embedded-mid",
+    "name": "Morgan Novak",
+    "phone": "(555) 010-8897",
+    "username": "gold_hardware_embedded_mid"
+  },
+  "cell": "hardware-embedded-mid",
+  "cell_seed": 976827526,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use MATLAB on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to MATLAB, in work or side projects",
+        "any exposure to SPICE simulation, in work or side projects"
+      ],
+      "scope_probes": [
+        "Hardware Engineer at Dunmore Technologies: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)MATLAB",
+      "(?i)SPICE\\ simulation",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "linux",
+      "pcb layout",
+      "python",
+      "verilog"
+    ],
+    "notes": "mid-level hardware and embedded engineering. The profile has no MATLAB, SPICE simulation; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "MATLAB exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Hardware Engineer",
+        "Copperline Devices — On site, Minneapolis, MN"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.device-maker.about",
+        "jd.device-maker.duties",
+        "jd.device-maker.needs"
+      ],
+      "slug": "device-maker"
+    }
+  ],
+  "level": "mid",
+  "profession": "hardware-embedded",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention PCB layout in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Hardware Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Meridian Cross",
+          "end": "2024-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-11",
+          "title": "Junior Hardware Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Electrical Engineering",
+          "institution": "State University",
+          "slots": [],
+          "year": "2021"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "PCB layout",
+        "Firmware bring-up",
+        "JTAG debugging",
+        "Embedded C",
+        "RTOS",
+        "Oscilloscope debugging",
+        "Linux",
+        "Verilog",
+        "Signal integrity",
+        "Python"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "PCB layout"
+    },
+    {
+      "category": "method",
+      "name": "Firmware bring-up"
+    },
+    {
+      "category": "method",
+      "name": "JTAG debugging"
+    },
+    {
+      "category": "language",
+      "name": "Embedded C"
+    },
+    {
+      "category": "platform",
+      "name": "RTOS"
+    },
+    {
+      "category": "method",
+      "name": "Oscilloscope debugging"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "language",
+      "name": "Verilog"
+    },
+    {
+      "category": "method",
+      "name": "Signal integrity"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    }
+  ],
+  "slots": {
+    "jd.device-maker.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Hardware Engineer at Copperline Devices, a small medical-device maker. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.device-maker.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Hardware Engineer, about firmware updates, validation test plans, component selection with suppliers. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.device-maker.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require PCB layout, Verilog, Python, Linux, MATLAB, SPICE simulation, and 5 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "PCB layout",
+        "Verilog",
+        "Python",
+        "Linux",
+        "MATLAB",
+        "SPICE simulation"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Dunmore Technologies: design reviews, using Oscilloscope debugging. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Oscilloscope debugging",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Dunmore Technologies: firmware updates, using Python. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Python"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Dunmore Technologies: component selection with suppliers, using Verilog. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Verilog",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Dunmore Technologies: validation test plans, using Embedded C. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Embedded C"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Hardware Engineer at Dunmore Technologies, about specification writing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Hardware Engineer at Dunmore Technologies, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Meridian Cross: board bring-up, using Linux. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Linux",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Meridian Cross: prototype testing, using JTAG debugging. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "JTAG debugging"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Meridian Cross: specification writing, using Signal integrity. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Signal integrity",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Meridian Cross: design reviews, using PCB layout. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "PCB layout"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Hardware Engineer at Meridian Cross, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Hardware Engineer at Meridian Cross, about component selection with suppliers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level hardware and embedded engineering professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention PCB layout, Firmware bring-up, JTAG debugging.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "PCB layout",
+        "Firmware bring-up",
+        "JTAG debugging"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level hardware and embedded engineering professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention PCB layout, Firmware bring-up, JTAG debugging.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "PCB layout",
+        "Firmware bring-up",
+        "JTAG debugging"
+      ]
+    }
+  }
+}

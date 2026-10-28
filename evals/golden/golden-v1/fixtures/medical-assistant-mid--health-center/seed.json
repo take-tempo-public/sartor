@@ -1,0 +1,310 @@
+{
+  "candidate": {
+    "email": "morgan.chen@example.com",
+    "linkedin_url": "linkedin.com/in/example-morgan-medical-assistant-mid",
+    "name": "Morgan Chen",
+    "notes": null,
+    "phone": "(555) 010-5310",
+    "profile_text": null,
+    "username": "gold_medical_assistant_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_medical_assistant_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2023",
+      "issuer": "Medical Assisting Certification Board",
+      "name": "Certified Medical Assistant Credential"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "Clinical Skills Council",
+      "name": "Phlebotomy Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2023",
+      "field": "Medical Assisting",
+      "id": 701,
+      "institution": "Ridgeway Technical Institute",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Record vital signs for each roomed patient and enter readings before the provider visit, cutting charting corrections by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedule follow-up visits for patients needing repeat lab work and coordinate specimen handling so samples are labeled and sent before checkout."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Relay physician instructions to patients at discharge and manage instrument sterilization between visits, reducing exam room turnaround time by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Complete insurance forms at check-in and perform insurance verification ahead of each appointment to catch coverage gaps early."
+        }
+      ],
+      "company": "Sutter Street Shop",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Medical Assistant at Sutter Street Shop who relays physician instructions to patients and makes sure each visit ends with clear next steps."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Medical Assistant at Sutter Street Shop responsible for rooming patients, preparing them for the provider and keeping the clinic schedule moving."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Medical Assistant",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Drew blood from patients and documented each collection in Epic Systems, reducing labeling errors by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Roomed patients for scheduled visits and performed EKG testing as ordered by the provider."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Stocked exam rooms before each session and handled appointment scheduling to match supply levels to patient volume, cutting supply shortages by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Took vital signs during patient intake and recorded results for provider review before each exam."
+        }
+      ],
+      "company": "Dunmore Technologies",
+      "display_order": 1,
+      "end_date": "2024-12",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-02",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Clinical Assistant at Dunmore Technologies who roomed patients and prepared them for provider exams throughout each clinic day."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Clinical Assistant at Dunmore Technologies who scheduled follow-up visits and kept patients informed of their next appointments."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Clinical Assistant",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Appointment scheduling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "EKG testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Epic Systems",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Instrument sterilization",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Insurance verification",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Patient intake",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Specimen handling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Vital signs",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Medical assisting professional with about 4 years of experience who carries a full patient caseload without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, specimen handling and vital signs, and holds the Certified Medical Assistant Credential."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Medical assistant with about 4 years of clinical experience managing a full daily patient load independently. Works in Epic Systems for charting and handles appointment scheduling, patient intake, insurance verification and EKG testing."
+    }
+  ],
+  "tags": []
+}

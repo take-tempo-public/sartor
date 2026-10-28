@@ -1,0 +1,344 @@
+{
+  "candidate": {
+    "email": "jordan.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-logistics-driving-entry",
+    "name": "Jordan Kowalski",
+    "phone": "(555) 010-5797",
+    "username": "gold_logistics_driving_entry"
+  },
+  "cell": "logistics-driving-entry",
+  "cell_seed": 547404722,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Customer signoff on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Customer signoff, in work or side projects",
+        "any exposure to Hazmat handling, in work or side projects",
+        "any progress toward Commercial Driver Licence",
+        "any progress toward Hazardous Materials Endorsement",
+        "any progress toward Dispatch Coordinator Certificate"
+      ],
+      "scope_probes": [
+        "Delivery Driver at Stonebridge Logistics: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Customer\\ signoff",
+      "(?i)Hazmat\\ handling",
+      "(?i)Commercial\\ Driver\\ Licence",
+      "(?i)Hazardous\\ Materials\\ Endorsement",
+      "(?i)Dispatch\\ Coordinator\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "bills of lading",
+      "defensive driving",
+      "dispatch software",
+      "trailer coupling"
+    ],
+    "notes": "entry-level truck driving and dispatch. The profile has no Customer signoff, Hazmat handling, Commercial Driver Licence, Hazardous Materials Endorsement, Dispatch Coordinator Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working with a supervisor close by on a small share of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working with a supervisor close by on a small share of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Customer signoff exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Delivery Driver",
+        "Fairlane Parcel Delivery — On site, Columbus, OH"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.parcel-delivery.about",
+        "jd.parcel-delivery.duties",
+        "jd.parcel-delivery.needs"
+      ],
+      "slug": "parcel-delivery"
+    }
+  ],
+  "level": "entry",
+  "profession": "logistics-driving",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Defensive driving in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Stonebridge Logistics",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-05",
+          "title": "Delivery Driver"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Commercial Driving",
+          "institution": "Lakeshore Trucking School",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Driver Safety Council",
+          "name": "Driver Safety Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Defensive driving",
+        "Hours-of-service logging",
+        "Delivery scheduling",
+        "Bills of lading",
+        "Dispatch software",
+        "Route planning",
+        "Cargo documentation",
+        "Trailer coupling"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Defensive driving"
+    },
+    {
+      "category": "method",
+      "name": "Hours-of-service logging"
+    },
+    {
+      "category": "method",
+      "name": "Delivery scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Bills of lading"
+    },
+    {
+      "category": "tool",
+      "name": "Dispatch software"
+    },
+    {
+      "category": "method",
+      "name": "Route planning"
+    },
+    {
+      "category": "method",
+      "name": "Cargo documentation"
+    },
+    {
+      "category": "method",
+      "name": "Trailer coupling"
+    }
+  ],
+  "slots": {
+    "jd.parcel-delivery.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Delivery Driver at Fairlane Parcel Delivery, a parcel delivery company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.parcel-delivery.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Delivery Driver, about pre-trip vehicle inspections, securing and checking loads, delivering to customers on time. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.parcel-delivery.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Dispatch software, Trailer coupling, Bills of lading, Defensive driving, Hazmat handling, Customer signoff, and 1 or more years of experience. State Driver Safety Certificate as a required licence or certification. State Commercial Driver Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Dispatch software",
+        "Trailer coupling",
+        "Bills of lading",
+        "Defensive driving",
+        "Hazmat handling",
+        "Customer signoff",
+        "Driver Safety Certificate",
+        "Commercial Driver Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Delivery Driver at Stonebridge Logistics: pre-trip vehicle inspections, using Cargo documentation. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Cargo documentation",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Delivery Driver at Stonebridge Logistics: planning routes, using Bills of lading. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Bills of lading"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Delivery Driver at Stonebridge Logistics: coordinating with dispatch, using Defensive driving. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Defensive driving",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Delivery Driver at Stonebridge Logistics: keeping driver logs, using Dispatch software. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Dispatch software"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Delivery Driver at Stonebridge Logistics, about delivering to customers on time. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Delivery Driver at Stonebridge Logistics, about reporting vehicle defects. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level truck driving and dispatch professional with about 1 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Defensive driving, Hours-of-service logging, Delivery scheduling.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Defensive driving",
+        "Hours-of-service logging",
+        "Delivery scheduling"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level truck driving and dispatch professional with about 1 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Defensive driving, Hours-of-service logging, Delivery scheduling.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Defensive driving",
+        "Hours-of-service logging",
+        "Delivery scheduling"
+      ]
+    }
+  }
+}

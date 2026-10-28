@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Jordan Kowalski",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Customer signoff, in work or side projects",
+      "any exposure to Hazmat handling, in work or side projects",
+      "any progress toward Commercial Driver Licence",
+      "any progress toward Hazardous Materials Endorsement",
+      "any progress toward Dispatch Coordinator Certificate"
+    ],
+    "scope_probes": [
+      "Delivery Driver at Stonebridge Logistics: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Customer\\ signoff",
+    "(?i)Hazmat\\ handling",
+    "(?i)Commercial\\ Driver\\ Licence",
+    "(?i)Hazardous\\ Materials\\ Endorsement",
+    "(?i)Dispatch\\ Coordinator\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
+      },
+      "edit_replacement": "Plans daily delivery routes and checks bills of lading against, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "Plans daily delivery routes and checks bills of lading against",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Customer signoff exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "bills of lading",
+    "defensive driving",
+    "dispatch software",
+    "trailer coupling"
+  ],
+  "notes": "entry-level truck driving and dispatch. The profile has no Customer signoff, Hazmat handling, Commercial Driver Licence, Hazardous Materials Endorsement, Dispatch Coordinator Certificate; generation must not claim them."
+}

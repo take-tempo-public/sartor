@@ -1,0 +1,394 @@
+{
+  "candidate": {
+    "email": "priya.lindqvist@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-mobile-senior",
+    "name": "Priya Lindqvist",
+    "notes": null,
+    "phone": "(555) 010-9872",
+    "profile_text": null,
+    "username": "gold_mobile_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_mobile_senior",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2018",
+      "field": "Computer Science",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Rebuilds offline sync for the Android app in Android Studio, reducing sync failures by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ships accessibility fixes across core screens and uses Firebase event data to confirm that the changes reach affected users."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reduces app start-up time by 55 percent by deferring push notifications registration and other non-critical setup until after the first screen renders."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans releases with product and design partners, scoping Core Data schema changes and migrations for each release."
+        }
+      ],
+      "company": "Copperfield Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads mobile performance work at Copperfield Services, with a focus on reducing app start-up time."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Owns crash triage for the Copperfield Services mobile apps, turning crash data into prioritised fixes."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Mobile Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automated the release pipeline to deliver TestFlight builds for each merge, shortening release cycles by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Triaged crash reports and fixed recurring state-handling defects in Jetpack Compose screens."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built a device testing matrix for GraphQL-driven screens, cutting device-specific bug reports by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Implemented offline sync for the Android app and organised its modules and dependencies in Gradle."
+        }
+      ],
+      "company": "Juniper Row",
+      "display_order": 1,
+      "end_date": "2025-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2019-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Handled crash triage at Juniper Row, tracing recurring app crashes to their causes and shipping fixes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Built and maintained offline sync for the Juniper Row mobile app so users could keep working without a connection."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Mobile Developer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Fixed accessibility issues in Kotlin screens by adding content descriptions and larger touch targets, raising accessibility check pass rates by 35 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Profiled app start-up time and used Fastlane to produce consistent builds for before-and-after comparisons."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Integrated backend APIs into the Android app using Android Studio, reducing integration defects by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used Firebase to distribute test builds as part of the release pipeline."
+        }
+      ],
+      "company": "Redfern Family Trades",
+      "display_order": 2,
+      "end_date": "2019-12",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2018-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Started at Redfern Family Trades building offline sync features for the company's mobile app."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supported device testing at Redfern Family Trades, checking app behaviour across a range of phones and OS versions."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Mobile Developer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Android Studio",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 608,
+      "name": "Core Data",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "Fastlane",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 606,
+      "name": "Firebase",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Gradle",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "GraphQL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 603,
+      "name": "Jetpack Compose",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 602,
+      "name": "Kotlin",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Push notifications",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "TestFlight",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior mobile engineer with about 8 years of experience building Android apps in Kotlin and Jetpack Compose. Sets the technical direction for a product area, covering architecture, push notifications and release practice."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mobile app engineer with about 8 years of experience, currently setting the technical direction for a product area. Works in Kotlin and Jetpack Compose and has delivered push notifications, offline sync and release pipeline improvements."
+    }
+  ],
+  "tags": []
+}

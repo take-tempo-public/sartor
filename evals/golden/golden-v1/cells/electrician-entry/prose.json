@@ -1,0 +1,36 @@
+{
+  "cell": "electrician-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:367eec044f6d563b45a2962a2c422ab5ad65a478ba988525cbe5e2c4915fd4d6",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPHp6eo5VvEbPqrqfGp"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2915,
+      "output_tokens": 1946
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.family-contractor.about": "Hollis and Sons Electric is a family electrical contractor, owned and run by the family in Dayton, Ohio. We are hiring an Apprentice Electrician to work on site alongside our journeymen. You will learn the trade on real jobs, help with installs and repairs, and have your work checked before we close out each job. We treat our crew well and ask for care, honesty and steady effort in return.",
+    "jd.family-contractor.duties": "What the job involves\n- Trace faults in circuits and equipment alongside a journeyman\n- Read plans and drawings to lay out each job before work starts\n- Install panels and mount them to plan\n- Set and wire light fixtures, outlets and switches\n- Run conduit and pull wire on site\n- Keep the work area clean and safe at the end of each day",
+    "jd.family-contractor.needs": "What you need\n- 2 or more years of experience in electrical work\n- Panel installation and troubleshooting skills on site\n- Blueprint reading and multimeter use\n- Fire alarm wiring and grounding and bonding\n- A current Apprentice Registration Card is required\n- A Journeyman Electrician Licence is preferred",
+    "r1.b1": "Installs panels and fixtures, using blueprint reading to confirm layouts before mounting and cutting layout rework by 40 percent.",
+    "r1.b2": "Runs conduit between panels and fixtures, relying on safe power tool use to cut, bend and fasten each run to plan.",
+    "r1.b3": "Pulls and terminates wire for motor controls circuits, reducing termination errors found at inspection by 50 percent.",
+    "r1.b4": "Traces faults in circuits and equipment through multimeter use, isolating each problem before the journeyman reviews the repair.",
+    "r1.i1": "At Summit Power Contractors, traces faults in circuits and equipment on site under a journeyman who checks each repair.",
+    "r1.i2": "Reads plans and drawings at Summit Power Contractors to place panels, fixtures and conduit runs where the layout calls for them.",
+    "summary.1": "Apprentice electrician with about 2 years of experience working under a journeyman who checks all work before sign-off. Brings troubleshooting, load calculations and code compliance to panel installation and wiring tasks on site.",
+    "summary.2": "Entry-level electrical apprentice with roughly 2 years on job sites, completing tasks under a journeyman who reviews and approves the work. Applies troubleshooting, load calculations and code compliance to daily installation and repair work."
+  }
+}

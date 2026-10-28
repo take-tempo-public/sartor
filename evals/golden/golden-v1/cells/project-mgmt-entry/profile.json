@@ -1,0 +1,330 @@
+{
+  "candidate": {
+    "email": "sam.novak@example.com",
+    "linkedin": "linkedin.com/in/example-sam-project-mgmt-entry",
+    "name": "Sam Novak",
+    "phone": "(555) 010-5570",
+    "username": "gold_project_mgmt_entry"
+  },
+  "cell": "project-mgmt-entry",
+  "cell_seed": 1773854609,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Budget tracking on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Budget tracking, in work or side projects",
+        "any exposure to Jira, in work or side projects",
+        "any progress toward Project Practitioner Certificate",
+        "any progress toward Agile Delivery Certificate"
+      ],
+      "scope_probes": [
+        "Project Coordinator at Elmstead Partners: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Budget\\ tracking",
+      "(?i)Jira",
+      "(?i)Project\\ Practitioner\\ Certificate",
+      "(?i)Agile\\ Delivery\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "agile ceremonies",
+      "gantt scheduling",
+      "smartsheet",
+      "status reporting"
+    ],
+    "notes": "entry-level project management. The profile has no Budget tracking, Jira, Project Practitioner Certificate, Agile Delivery Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Budget tracking exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Project Coordinator",
+        "Garrick Engineering Group — On site, Denver, CO"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.engineering-consultancy.about",
+        "jd.engineering-consultancy.duties",
+        "jd.engineering-consultancy.needs"
+      ],
+      "slug": "engineering-consultancy"
+    }
+  ],
+  "level": "entry",
+  "profession": "project-mgmt",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Smartsheet in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Elmstead Partners",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-02",
+          "title": "Project Coordinator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Business Administration",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Smartsheet",
+        "Status reporting",
+        "Asana",
+        "Agile ceremonies",
+        "Confluence",
+        "Gantt scheduling",
+        "Risk registers",
+        "Vendor negotiation"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Smartsheet"
+    },
+    {
+      "category": "method",
+      "name": "Status reporting"
+    },
+    {
+      "category": "tool",
+      "name": "Asana"
+    },
+    {
+      "category": "method",
+      "name": "Agile ceremonies"
+    },
+    {
+      "category": "tool",
+      "name": "Confluence"
+    },
+    {
+      "category": "method",
+      "name": "Gantt scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Risk registers"
+    },
+    {
+      "category": "method",
+      "name": "Vendor negotiation"
+    }
+  ],
+  "slots": {
+    "jd.engineering-consultancy.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Project Coordinator at Garrick Engineering Group, an engineering consultancy. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.engineering-consultancy.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Project Coordinator, about tracking schedules and milestones, vendor coordination, project close-out. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.engineering-consultancy.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Smartsheet, Gantt scheduling, Agile ceremonies, Status reporting, Jira, Budget tracking, and 2 or more years of experience. State Project Practitioner Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Smartsheet",
+        "Gantt scheduling",
+        "Agile ceremonies",
+        "Status reporting",
+        "Jira",
+        "Budget tracking",
+        "Project Practitioner Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Project Coordinator at Elmstead Partners: tracking schedules and milestones, using Asana. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Asana",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Coordinator at Elmstead Partners: vendor coordination, using Agile ceremonies. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Agile ceremonies"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Project Coordinator at Elmstead Partners: project close-out, using Smartsheet. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Smartsheet",
+        "15"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Coordinator at Elmstead Partners: risk and issue logs, using Gantt scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Gantt scheduling"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Project Coordinator at Elmstead Partners, about tracking schedules and milestones. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Project Coordinator at Elmstead Partners, about project close-out. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level project management professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Smartsheet, Status reporting, Asana.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Smartsheet",
+        "Status reporting",
+        "Asana"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level project management professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Smartsheet, Status reporting, Asana.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Smartsheet",
+        "Status reporting",
+        "Asana"
+      ]
+    }
+  }
+}

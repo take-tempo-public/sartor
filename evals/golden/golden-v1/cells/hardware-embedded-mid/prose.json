@@ -1,0 +1,42 @@
+{
+  "cell": "hardware-embedded-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:1beb172f81caa7d7894032435f75e8395cb34fc9019fa036fe95d8e2a68a44cb",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPKDxcxp4BiHZRZL3v3"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3576,
+      "output_tokens": 2083
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.device-maker.about": "About us and the job\nCopperline Devices is a small, owner-run company in Minneapolis that designs and builds medical devices. We are looking for a Hardware Engineer to help design, test and improve the boards inside our products. This is an on-site job. You will work at our bench alongside the people who build and support each device, and your work will go straight into products used by clinics and patients.",
+    "jd.device-maker.duties": "What the job involves\n- Plan, write and release firmware updates for the boards in our devices\n- Write validation test plans and run them before each design goes to production\n- Choose components with our suppliers, weighing cost, availability and quality\n- Debug prototype boards on the bench and track faults to their cause\n- Keep design records clear so others in the team can follow your work",
+    "jd.device-maker.needs": "What you need\n- 5 or more years of experience as a hardware engineer\n- Hands-on skill in PCB layout for mixed-signal boards\n- Working knowledge of Verilog and SPICE simulation\n- Comfort writing Python scripts and working on Linux\n- Experience using MATLAB for analysis of test data",
+    "r1.b1": "Leads design reviews for new boards and uses oscilloscope debugging to catch timing faults early, cutting rework after review by 30 percent.",
+    "r1.b2": "Writes Python scripts that package, flash and verify firmware updates across test boards, replacing manual update steps.",
+    "r1.b3": "Works with suppliers on component selection and checks candidate logic parts in Verilog simulation, reducing part qualification time by 50 percent.",
+    "r1.b4": "Builds validation test plans and writes Embedded C test routines that exercise each board function before release.",
+    "r1.i1": "Writes hardware specifications for new boards at Dunmore Technologies and turns them into designs that firmware and test teams can build on.",
+    "r1.i2": "Owns board bring-up at Dunmore Technologies, taking new hardware from first power-on to working firmware.",
+    "r2.b1": "Brought up new boards on Linux and wrote bring-up checklists that shortened first-boot time by 25 percent.",
+    "r2.b2": "Tested prototypes with JTAG debugging to trace faults to specific parts and firmware paths before design changes.",
+    "r2.b3": "Wrote board specifications with signal integrity requirements for high-speed traces, cutting late layout changes by 50 percent.",
+    "r2.b4": "Prepared PCB layout packages for design reviews and updated boards based on comments from senior engineers.",
+    "r2.i1": "Supported board bring-up at Meridian Cross, helping get new hardware powered, tested and running firmware.",
+    "r2.i2": "Worked with suppliers at Meridian Cross on component selection, comparing parts for cost, availability and fit with each board design.",
+    "summary.1": "Hardware and embedded engineer with about 5 years of experience owning a board workstream end to end, from PCB layout to firmware bring-up. Uses JTAG debugging and oscilloscope work to find faults and get boards ready for production.",
+    "summary.2": "Mid-level hardware engineer with about 5 years of experience taking one product line from schematic to tested board. Handles PCB layout, firmware bring-up and JTAG debugging, and writes Embedded C and Python to test and update the hardware."
+  }
+}

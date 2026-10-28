@@ -1,0 +1,51 @@
+{
+  "cell": "data-ml-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:d4084592c0a8b432f965431a66a68693ba8456d02e890a10c32f1240d4fc8604",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPFLGGwieE8ZcjtzoD2"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4867,
+      "output_tokens": 3509
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.retail-analytics.about": "About the role\nQuillon Analytics helps retailers make sense of their data. We need a Data Science Manager to lead our team of analysts and scientists and own how we run experiments and build forecasts. You'll keep our work honest and useful for clients. You'll get hands-on when it counts and coach the team the rest of the time.",
+    "jd.retail-analytics.duties": "What you'll do\n- Own experiment analysis for retail clients, from test readouts to clear recommendations\n- Mentor analysts and data scientists through code reviews, pairing and regular feedback\n- Build and improve demand forecasting models that clients use for planning\n- Set priorities for the team and keep its work tied to client needs\n- Partner with product and engineering to move models into production",
+    "jd.retail-analytics.needs": "What we're looking for\n- 14 or more years of experience in data science, including time leading a team\n- Strong Python and SQL for both analysis and production work\n- Hands-on experience with Snowflake and Airflow\n- Feature engineering for predictive and forecasting models\n- Experiment design and analysis, from setting up tests to explaining results",
+    "r1.b1": "Run model validation pipelines in Airflow that cut the time needed to approve a model for production by 55%.",
+    "r1.b2": "Mentor analysts and scientists through code and notebook reviews in Jupyter, building shared habits for clear, reproducible analysis.",
+    "r1.b3": "Set the analytics roadmap with organization leaders, prioritizing PyTorch models that reduced manual review workload by 55%.",
+    "r1.b4": "Build Tableau dashboards that give stakeholders a single, current view of program and model performance.",
+    "r1.b5": "Lead feature selection for TensorFlow models, keeping only inputs with measurable signal and cutting training time by 25%.",
+    "r1.i1": "Leads the data science team at Stonebridge Community Trust and sets the analytics roadmap together with organization leaders.",
+    "r1.i2": "Manages data science work at Stonebridge Community Trust with a focus on analyzing experiments that inform program decisions.",
+    "r2.b1": "Presented findings from statistical modeling to product and business leaders, informing decisions that improved campaign conversion by 10%.",
+    "r2.b2": "Analyzed controlled experiments, applying feature engineering to build covariates that reduced variance and gave clearer reads on treatment effects.",
+    "r2.b3": "Built forecasting models in Python that reduced forecast error by 55% compared with the previous baseline.",
+    "r2.b4": "Cleaned raw data in Snowflake, writing validation checks that caught duplicate and missing records before they reached downstream models.",
+    "r2.b5": "Validated models at scale with Apache Spark, shortening validation runs by 20% and expanding test coverage across data segments.",
+    "r2.i1": "Analyzed experiments at Ironbridge Co as a senior data scientist, turning test results into recommendations for product and business teams.",
+    "r2.i2": "Built and maintained forecasting models at Ironbridge Co that guided planning decisions across the business.",
+    "r3.b1": "Presented findings through scheduled Airflow reports, cutting the time stakeholders waited for weekly results by 30%.",
+    "r3.b2": "Analyzed experiment results in Jupyter notebooks, documenting methods so colleagues could rerun and check each analysis.",
+    "r3.b3": "Developed PyTorch forecasting models that improved forecast accuracy by 10% over the existing approach.",
+    "r3.b4": "Cleaned raw data and profiled quality issues in Tableau, giving teams a clear view of gaps before modeling began.",
+    "r3.b5": "Validated TensorFlow models against holdout data, reducing false positive rates by 20% before release.",
+    "r3.i1": "Validated machine learning models at Elmstead Partners, checking performance against holdout data before each release.",
+    "r3.i2": "Cleaned and prepared raw data at Elmstead Partners so that analyses and models started from reliable inputs.",
+    "summary.1": "Data science and machine learning lead with 14 years of experience leading teams and owning the analytics roadmap for an area. Builds production models and pipelines with Apache Spark, TensorFlow and Python, and ties model work to measurable outcomes.",
+    "summary.2": "Lead data scientist with 14 years of experience across statistical modeling, forecasting and machine learning. Manages a team, owns the roadmap for the area, and works hands-on in Python, Apache Spark and TensorFlow to move models from analysis into production."
+  }
+}

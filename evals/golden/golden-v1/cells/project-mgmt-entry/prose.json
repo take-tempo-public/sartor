@@ -1,0 +1,36 @@
+{
+  "cell": "project-mgmt-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:f73bedf01c5c540bad0cbba5c98562844f74824f0881da9305932777300b0aef",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPaAn3aKDnc4fUhkmxt"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2738,
+      "output_tokens": 2076
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.engineering-consultancy.about": "Position summary\nGarrick Engineering Group seeks a Project Coordinator to support engineering project teams on site at its Denver office. The coordinator will maintain project schedules, coordinate vendors and assist with project close-out. Minimum qualifications include experience with scheduling tools, status reporting and budget tracking. Preferred qualifications include the Project Practitioner Certificate.",
+    "jd.engineering-consultancy.duties": "Responsibilities\n- Track project schedules and milestones, and alert project managers to slipping tasks.\n- Coordinate with vendors on deliverables, timelines and documentation.\n- Prepare regular status updates for project teams and clients.\n- Maintain schedule records and supporting files in shared project tools.\n- Lead project close-out activities, including final documentation and handover checklists.",
+    "jd.engineering-consultancy.needs": "Minimum and preferred qualifications\n- 2 or more years of experience in project coordination or a related role.\n- Working knowledge of Smartsheet, Jira and Gantt scheduling.\n- Experience facilitating or supporting Agile ceremonies.\n- Demonstrated skill in status reporting and budget tracking.\n- Preferred: Project Practitioner Certificate.",
+    "r1.b1": "Tracks schedules and milestones for client projects in Asana, reducing missed deadlines by 45 percent.",
+    "r1.b2": "Coordinates vendor deliverables and follow-ups through Agile ceremonies, keeping suppliers aligned with current sprint priorities.",
+    "r1.b3": "Manages project close-out checklists in Smartsheet, shortening close-out time by 15 percent.",
+    "r1.b4": "Maintains risk and issue logs tied to Gantt scheduling, flagging slipping tasks to the project lead.",
+    "r1.i1": "Coordinates schedules and milestones for client projects at Elmstead Partners as a Project Coordinator.",
+    "r1.i2": "Supports project close-out at Elmstead Partners, gathering final documentation and confirming deliverables before handover.",
+    "summary.1": "Project coordinator who handles routine project requests, with a senior colleague reviewing the work before it is shared. Uses Smartsheet and Asana to track tasks and prepares status reporting for project teams.",
+    "summary.2": "Project management professional who handles routine scheduling and tracking requests under review by an experienced colleague. Brings working knowledge of Asana and Smartsheet, along with status reporting that keeps stakeholders informed of progress."
+  }
+}

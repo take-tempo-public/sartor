@@ -1,0 +1,427 @@
+{
+  "candidate": {
+    "email": "riley.silva@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-data-ml-lead",
+    "name": "Riley Silva",
+    "notes": null,
+    "phone": "(555) 010-7222",
+    "profile_text": null,
+    "username": "gold_data_ml_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_data_ml_lead",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2013",
+      "field": "Statistics",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Run model validation pipelines in Airflow that cut the time needed to approve a model for production by 55%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentor analysts and scientists through code and notebook reviews in Jupyter, building shared habits for clear, reproducible analysis."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Set the analytics roadmap with organization leaders, prioritizing PyTorch models that reduced manual review workload by 55%."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Build Tableau dashboards that give stakeholders a single, current view of program and model performance."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Lead feature selection for TensorFlow models, keeping only inputs with measurable signal and cutting training time by 25%."
+        }
+      ],
+      "company": "Stonebridge Community Trust",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-08",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads the data science team at Stonebridge Community Trust and sets the analytics roadmap together with organization leaders."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Manages data science work at Stonebridge Community Trust with a focus on analyzing experiments that inform program decisions."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Data Science Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Presented findings from statistical modeling to product and business leaders, informing decisions that improved campaign conversion by 10%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Analyzed controlled experiments, applying feature engineering to build covariates that reduced variance and gave clearer reads on treatment effects."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built forecasting models in Python that reduced forecast error by 55% compared with the previous baseline."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Cleaned raw data in Snowflake, writing validation checks that caught duplicate and missing records before they reached downstream models."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Validated models at scale with Apache Spark, shortening validation runs by 20% and expanding test coverage across data segments."
+        }
+      ],
+      "company": "Ironbridge Co",
+      "display_order": 1,
+      "end_date": "2023-08",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2018-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Analyzed experiments at Ironbridge Co as a senior data scientist, turning test results into recommendations for product and business teams."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Built and maintained forecasting models at Ironbridge Co that guided planning decisions across the business."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Data Scientist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Presented findings through scheduled Airflow reports, cutting the time stakeholders waited for weekly results by 30%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Analyzed experiment results in Jupyter notebooks, documenting methods so colleagues could rerun and check each analysis."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Developed PyTorch forecasting models that improved forecast accuracy by 10% over the existing approach."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Cleaned raw data and profiled quality issues in Tableau, giving teams a clear view of gaps before modeling began."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Validated TensorFlow models against holdout data, reducing false positive rates by 20% before release."
+        }
+      ],
+      "company": "Elmstead Partners",
+      "display_order": 2,
+      "end_date": "2018-06",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2013-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Validated machine learning models at Elmstead Partners, checking performance against holdout data before each release."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Cleaned and prepared raw data at Elmstead Partners so that analyses and models started from reliable inputs."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Data Scientist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Airflow",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 601,
+      "name": "Apache Spark",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Feature engineering",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "Jupyter",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 610,
+      "name": "PyTorch",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 603,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 607,
+      "name": "Snowflake",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Statistical modeling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Tableau",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 602,
+      "name": "TensorFlow",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Data science and machine learning lead with 14 years of experience leading teams and owning the analytics roadmap for an area. Builds production models and pipelines with Apache Spark, TensorFlow and Python, and ties model work to measurable outcomes."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead data scientist with 14 years of experience across statistical modeling, forecasting and machine learning. Manages a team, owns the roadmap for the area, and works hands-on in Python, Apache Spark and TensorFlow to move models from analysis into production."
+    }
+  ],
+  "tags": []
+}
