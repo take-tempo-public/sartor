@@ -1,0 +1,505 @@
+{
+  "candidate": {
+    "email": "riley.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-riley-web-backend-senior",
+    "name": "Riley Lindqvist",
+    "phone": "(555) 010-0859",
+    "username": "gold_web_backend_senior"
+  },
+  "cell": "web-backend-senior",
+  "cell_seed": 1798730862,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Kubernetes on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Kubernetes, in work or side projects",
+        "any exposure to PostgreSQL, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Backend Engineer at Bluebird Family Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Kubernetes",
+      "(?i)PostgreSQL",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "docker",
+      "github",
+      "jenkins",
+      "python"
+    ],
+    "notes": "senior-level backend software engineering. The profile has no Kubernetes, PostgreSQL; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Kubernetes exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Backend Engineer",
+        "Eastlake Health Network — Hybrid, Columbus, OH"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.health-system.about",
+        "jd.health-system.duties",
+        "jd.health-system.needs"
+      ],
+      "slug": "health-system"
+    }
+  ],
+  "level": "senior",
+  "profession": "web-backend",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Linux in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Bluebird Family Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-07",
+          "title": "Senior Backend Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Ironbridge Co",
+          "end": "2023-07",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-06",
+          "title": "Backend Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Neighborhood Table Services",
+          "end": "2021-06",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2020-02",
+          "title": "Junior Backend Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2020"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Linux",
+        "GraphQL",
+        "Terraform",
+        "Spring Boot",
+        "Jenkins",
+        "Elasticsearch",
+        "Python",
+        "Docker",
+        "GitHub",
+        "Redis"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "framework",
+      "name": "Spring Boot"
+    },
+    {
+      "category": "tool",
+      "name": "Jenkins"
+    },
+    {
+      "category": "tool",
+      "name": "Elasticsearch"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "Docker"
+    },
+    {
+      "category": "tool",
+      "name": "GitHub"
+    },
+    {
+      "category": "tool",
+      "name": "Redis"
+    }
+  ],
+  "slots": {
+    "jd.health-system.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Senior Backend Engineer at Eastlake Health Network, a regional health system. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.health-system.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Senior Backend Engineer, about deployment pipeline automation, tuning slow queries, mentoring engineers through code review. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.health-system.needs": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Docker, GitHub, Jenkins, Python, Kubernetes, PostgreSQL, and 7 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Docker",
+        "GitHub",
+        "Jenkins",
+        "Python",
+        "Kubernetes",
+        "PostgreSQL"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Bluebird Family Services: mentoring engineers through code review, using GraphQL. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "GraphQL",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Bluebird Family Services: API design and versioning, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Bluebird Family Services: database schema changes, using Python. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Python",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Bluebird Family Services: tuning slow queries, using Redis. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Redis"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Backend Engineer at Bluebird Family Services, about service reliability and on-call. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Backend Engineer at Bluebird Family Services, about setting the team's technical roadmap. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Ironbridge Co: incident follow-up and runbooks, using Terraform. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Terraform",
+        "45"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Ironbridge Co: deployment pipeline automation, using Docker. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Docker"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Ironbridge Co: API design and versioning, using Elasticsearch. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Elasticsearch",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Ironbridge Co: database schema changes, using GitHub. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "GitHub"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Backend Engineer at Ironbridge Co, about API design and versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Backend Engineer at Ironbridge Co, about tuning slow queries. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Neighborhood Table Services: tuning slow queries, using Jenkins. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Jenkins",
+        "55"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Neighborhood Table Services: service reliability and on-call, using Spring Boot. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Spring Boot"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Neighborhood Table Services: incident follow-up and runbooks, using GraphQL. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "GraphQL",
+        "55"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Neighborhood Table Services: deployment pipeline automation, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Backend Engineer at Neighborhood Table Services, about tuning slow queries. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Backend Engineer at Neighborhood Table Services, about database schema changes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level backend software engineering professional with about 7 years of experience, scope: setting the technical direction for a product area. Mention Linux, GraphQL, Terraform.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Linux",
+        "GraphQL",
+        "Terraform"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level backend software engineering professional with about 7 years of experience, scope: setting the technical direction for a product area. Mention Linux, GraphQL, Terraform.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Linux",
+        "GraphQL",
+        "Terraform"
+      ]
+    }
+  }
+}

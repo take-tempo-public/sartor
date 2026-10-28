@@ -1,0 +1,19 @@
+Senior Backend Engineer
+Eastlake Health Network — Hybrid, Columbus, OH
+
+Summary
+Eastlake Health Network exists to deliver compassionate, dependable care to every community in our region. We are seeking a Senior Backend Engineer to build and maintain the systems that support our clinicians, staff and patients. This hybrid role is based in Columbus, OH. Candidates must meet every requirement listed under Licensure and qualifications.
+
+Duties
+- Design, build and maintain automated deployment pipelines for backend services.
+- Identify and tune slow database queries to keep clinical and business applications responsive.
+- Mentor engineers through thoughtful code review and shared engineering standards.
+- Partner with product and operations teams to plan backend changes safely.
+- Document systems and processes so that teams can support services with confidence.
+
+Licensure and qualifications
+- 7 or more years of professional backend engineering experience.
+- Strong working knowledge of Python for building backend services.
+- Experience packaging services with Docker and running them on Kubernetes.
+- Experience designing, querying and tuning PostgreSQL databases.
+- Familiarity with GitHub workflows and Jenkins for continuous integration and delivery.

@@ -1,0 +1,48 @@
+{
+  "cell": "sre-ops-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:ed695241f764b38fb29ddbc358b3b182b3c266035dc1f101389b4e7ef7a5df19",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUU7m9KaiiMmp8557Eo"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4714,
+      "output_tokens": 3585
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.insurance-carrier.about": "Position summary\nRavenswood Insurance Group seeks a Senior Site Reliability Engineer to maintain the availability and resilience of the systems that support our policyholders and agents. The engineer will work with product teams to define reliability targets and lead operational practices across our infrastructure.\nMinimum: experience operating Linux systems, configuration management and production monitoring.\nPreferred: experience with Kubernetes and Microsoft Azure.",
+    "jd.insurance-carrier.duties": "Responsibilities\n- Set reliability targets with product teams and review progress against them on a regular schedule\n- Plan and run patching cycles across server fleets with minimal disruption to business users\n- Schedule and conduct backup and recovery tests, documenting results and remediation steps\n- Lead post-incident reviews and track corrective actions to completion\n- Maintain monitoring and alerting that reflects agreed reliability targets",
+    "jd.insurance-carrier.needs": "Minimum and preferred qualifications\n- 6 or more years of experience in systems administration or site reliability engineering\n- Hands-on experience administering Linux servers and Active Directory\n- Working knowledge of Splunk for log analysis and Ansible for configuration management\n- Experience with ServiceNow for incident and change management, and scripting in Python\n- Required certification: Systems Administrator Certificate",
+    "r1.b1": "Lead capacity planning for production clusters using Prometheus metrics, forecasting demand trends and cutting unplanned resource shortfalls by 50 percent.",
+    "r1.b2": "Run the team on-call rotation for Kubernetes workloads, setting escalation paths and handoff notes so responders resolve issues consistently.",
+    "r1.b3": "Route on-call alerts through Splunk searches and dashboards, reducing time spent triaging pages by 50 percent.",
+    "r1.b4": "Coordinate Linux patching cycles across production hosts, scheduling maintenance windows and verifying services after each update.",
+    "r1.i1": "As Senior Site Reliability Engineer at Cedar Hollow Hospice, owns the planning and execution of patching cycles across production systems.",
+    "r1.i2": "Leads regular backup and recovery tests at Cedar Hollow Hospice to confirm that critical systems can be restored when needed.",
+    "r2.b1": "Automated data collection for post-incident write-ups with Bash scripting, cutting the time to publish each review by 30 percent.",
+    "r2.b2": "Tuned monitoring alerts for Active Directory services, removing noisy thresholds so on-call staff received actionable notifications.",
+    "r2.b3": "Built PowerShell scripts to prepare change approval records, shortening approval turnaround by 20 percent.",
+    "r2.b4": "Prepared capacity plans for Microsoft Azure workloads, forecasting compute and storage needs ahead of demand.",
+    "r2.i1": "Ran scheduled backup and recovery tests at Dunmore Technologies to verify that systems could be restored within agreed targets.",
+    "r2.i2": "Managed change approvals at Dunmore Technologies, reviewing infrastructure changes for risk before they reached production.",
+    "r3.b1": "Supported the on-call rotation by writing Ansible playbooks for common fixes, reducing repeat incidents by 15 percent.",
+    "r3.b2": "Applied patching cycles to test environments provisioned with Terraform, confirming updates were safe before production rollout.",
+    "r3.b3": "Verified backup and recovery tests with Prometheus metrics, raising the restore success rate by 25 percent.",
+    "r3.b4": "Drafted post-incident write-ups for Kubernetes service outages, recording timelines, causes and follow-up actions.",
+    "r3.i1": "Prepared change approval requests at Oakmont Systems, documenting planned work and rollback steps for review.",
+    "r3.i2": "Took part in the on-call rotation at Oakmont Systems, responding to alerts and escalating issues to senior engineers.",
+    "summary.1": "Site reliability and IT operations engineer with about 6 years of experience, currently setting the technical direction for reliability across a product area. Works with Kubernetes, Prometheus and Microsoft Azure to plan capacity, run on-call operations and keep patching and recovery practices on schedule.",
+    "summary.2": "Senior site reliability professional with 6 years in IT operations, from systems administration to setting technical direction for a product area. Builds and operates platforms on Kubernetes and Microsoft Azure, using Prometheus for monitoring and capacity planning."
+  }
+}

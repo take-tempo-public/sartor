@@ -1,0 +1,216 @@
+{
+  "candidate": {
+    "email": "casey.chen@example.com",
+    "linkedin_url": "linkedin.com/in/example-casey-visual-design-entry",
+    "name": "Casey Chen",
+    "notes": null,
+    "phone": "(555) 010-5636",
+    "profile_text": null,
+    "username": "gold_visual_design_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_visual_design_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.F.A.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Graphic Design",
+      "id": 701,
+      "institution": "Ridgeway College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Designs print layouts that apply brand identity standards consistently, cutting reprint requests by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updates brand guideline documents and adds motion graphics examples that show how logos and colors should move across channels."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Produces social media graphics from templates built in Adobe InDesign, reducing production time by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Builds packaging mockups and animates product reveals in Adobe After Effects for client presentations."
+        }
+      ],
+      "company": "Copperfield Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Works through client revisions on print and digital pieces at Copperfield Services, turning feedback into updated files on schedule."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Creates packaging mockups at Copperfield Services that help clients see how a design will look before it goes to print."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Graphic Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Adobe After Effects",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Adobe InDesign",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Brand identity",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Canva",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Color theory",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Figma",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Motion graphics",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Packaging design",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Photo retouching",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Typography",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Entry-level graphic designer with about 2 years of experience in visual and brand design, using Figma, Canva and motion graphics to produce clear, on-brand work. Takes on small, well-defined parts of a project and delivers them for review by a senior colleague."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Visual and brand designer at entry level with about 2 years of experience creating layouts, social graphics and motion graphics. Works in Figma and Canva on focused tasks within larger projects, with a senior colleague reviewing each piece before delivery."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "mobile-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:c280a2a75e15ae81aca70c4ca5c70be0d7eeb0f4555477ed856d75f62ae7d839",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUEbDVuc4jqhBB57UzK"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4902,
+      "output_tokens": 3898
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.airline-mobile.about": "Position summary\nSkyward Travel Group seeks a Mobile Engineering Manager to lead the teams that build and maintain its customer travel apps. The role sets technical direction, manages releases and works closely with product, design and operations partners. Minimum: a degree in computer science or equivalent experience, and prior experience managing mobile engineers. Preferred: experience with airline or travel products.",
+    "jd.airline-mobile.duties": "Responsibilities\n- Lead and develop a team of iOS and Android engineers.\n- Own the device testing strategy across supported phones and tablets.\n- Run crash triage, set priorities and track fixes through to release.\n- Oversee API integration with booking, check-in and loyalty services.\n- Plan release schedules with product, design and quality assurance partners.",
+    "jd.airline-mobile.needs": "Minimum and preferred qualifications\n- 10 or more years of mobile software development experience, including team leadership.\n- Hands-on experience with Xcode, Kotlin and Gradle.\n- Experience owning App Store release and TestFlight beta distribution.\n- Working knowledge of GraphQL APIs.\n- Preferred: experience building apps for airlines or travel companies.",
+    "r1.b1": "Mentors developers on the team through App Store release reviews and shared checklists, cutting rejected submissions by 15 percent.",
+    "r1.b2": "Designs offline sync for the mobile app in Xcode so users keep working without a connection and changes merge cleanly when they reconnect.",
+    "r1.b3": "Runs the release pipeline on Gradle, automating build and signing steps and reducing release preparation time by 35 percent.",
+    "r1.b4": "Leads accessibility fixes in Android Studio, adding content descriptions and focus order checks to screens before each release.",
+    "r1.b5": "Integrates backend APIs with Firebase, reducing failed network requests by 15 percent.",
+    "r1.i1": "Manages the mobile engineering team at Oakmont Systems, with a focus on offline sync so the apps stay usable without a network connection.",
+    "r1.i2": "Leads mobile engineering at Oakmont Systems, directing a programme of accessibility fixes across the company's apps.",
+    "r2.b1": "Planned releases with product and design partners, treating Core Data model changes as a fixed checkpoint and cutting release-date slips by 25 percent.",
+    "r2.b2": "Triaged crashes in Jetpack Compose screens, tracing faulty state handling and shipping fixes ahead of each release.",
+    "r2.b3": "Expanded device testing across phones and tablets, using crash reporting to target failing models and lowering crash rates by 45 percent.",
+    "r2.b4": "Automated build and profiling runs with Fastlane to track app start-up time and catch regressions before release.",
+    "r2.b5": "Mentored developers on the team in GraphQL schema design and query patterns, shortening code review cycles by 55 percent.",
+    "r2.i1": "Worked as a Senior Mobile Engineer at Ironbridge Co, building features and leading accessibility fixes across the company's mobile apps.",
+    "r2.i2": "Served as a Senior Mobile Engineer at Ironbridge Co, focused on reducing app start-up time and keeping launches responsive.",
+    "r3.b1": "Integrated backend APIs into the app and managed each App Store release, cutting integration defects found after launch by 55 percent.",
+    "r3.b2": "Triaged crash reports in Xcode, reproducing faults on device and fixing root causes before the next release.",
+    "r3.b3": "Set up device testing through Gradle tasks, running suites on Android devices and reducing test time by 50 percent.",
+    "r3.b4": "Profiled app start-up time in Android Studio and moved heavy work off the main thread to speed up launch.",
+    "r3.b5": "Built offline sync on Firebase so data saved without a connection uploaded later, reducing sync conflicts by 25 percent.",
+    "r3.i1": "Developed mobile apps at Brightwater Labs, with steady work on app start-up time and launch performance.",
+    "r3.i2": "Built mobile features at Brightwater Labs, focused on API integration between the apps and backend services.",
+    "summary.1": "Mobile engineering lead with about 10 years of experience, currently leading a team and owning the mobile roadmap. Works across Jetpack Compose, Gradle and App Store release, from planning through shipping.",
+    "summary.2": "Mobile engineering manager with about 10 years of experience in app development, now leading a team and owning the roadmap for mobile. Brings hands-on work in Jetpack Compose, Gradle builds and App Store release management."
+  }
+}

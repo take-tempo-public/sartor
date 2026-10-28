@@ -1,0 +1,550 @@
+{
+  "candidate": {
+    "email": "devon.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-devon-ux-design-lead",
+    "name": "Devon Lindqvist",
+    "phone": "(555) 010-1872",
+    "username": "gold_ux_design_lead"
+  },
+  "cell": "ux-design-lead",
+  "cell_seed": 1614731766,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use HTML and CSS on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to HTML and CSS, in work or side projects",
+        "any exposure to Miro, in work or side projects"
+      ],
+      "scope_probes": [
+        "Design Manager at Calloway Group: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)HTML\\ and\\ CSS",
+      "(?i)Miro",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "accessibility review",
+      "adobe illustrator",
+      "design critique",
+      "figma"
+    ],
+    "notes": "lead-level product and UX design. The profile has no HTML and CSS, Miro; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "HTML and CSS exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Design Manager",
+        "Parable Learning — Hybrid, Denver, CO"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.learning-design.about",
+        "jd.learning-design.duties",
+        "jd.learning-design.needs"
+      ],
+      "slug": "learning-design"
+    }
+  ],
+  "level": "lead",
+  "profession": "ux-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Journey mapping in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Calloway Group",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2021-12",
+          "title": "Design Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Lantern Hill",
+          "end": "2021-12",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2016-01",
+          "title": "Senior Product Designer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Riverbend Health Network",
+          "end": "2016-01",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-03",
+          "title": "UX Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Interaction Design",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Journey mapping",
+        "Adobe Illustrator",
+        "Prototyping",
+        "Design systems",
+        "Usability testing",
+        "Wireframing",
+        "Design critique",
+        "Accessibility review",
+        "Information architecture",
+        "Figma"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Journey mapping"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "method",
+      "name": "Prototyping"
+    },
+    {
+      "category": "method",
+      "name": "Design systems"
+    },
+    {
+      "category": "method",
+      "name": "Usability testing"
+    },
+    {
+      "category": "method",
+      "name": "Wireframing"
+    },
+    {
+      "category": "method",
+      "name": "Design critique"
+    },
+    {
+      "category": "method",
+      "name": "Accessibility review"
+    },
+    {
+      "category": "method",
+      "name": "Information architecture"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    }
+  ],
+  "slots": {
+    "jd.learning-design.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Design Manager at Parable Learning, an online learning startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.learning-design.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Design Manager, about handoff to engineering, wireframes, mentoring designers. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.learning-design.needs": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Design critique, Accessibility review, Adobe Illustrator, Figma, Miro, HTML and CSS, and 14 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Design critique",
+        "Accessibility review",
+        "Adobe Illustrator",
+        "Figma",
+        "Miro",
+        "HTML and CSS"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Design Manager at Calloway Group: mentoring designers, using Figma. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Design Manager at Calloway Group: wireframes, using Usability testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Usability testing"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Design Manager at Calloway Group: leading design critiques for the team, using Journey mapping. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Journey mapping",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Design Manager at Calloway Group: usability sessions, using Design critique. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Design critique"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Design Manager at Calloway Group: design system components, using Wireframing. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Wireframing",
+        "15"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Design Manager at Calloway Group, about usability sessions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Design Manager at Calloway Group, about mentoring designers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Product Designer at Lantern Hill: stakeholder reviews, using Information architecture. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Information architecture",
+        "50"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Product Designer at Lantern Hill: accessibility fixes, using Adobe Illustrator. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Illustrator"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Senior Product Designer at Lantern Hill: research synthesis, using Accessibility review. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accessibility review",
+        "20"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Product Designer at Lantern Hill: handoff to engineering, using Design systems. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Design systems"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Product Designer at Lantern Hill: mentoring designers, using Prototyping. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Prototyping",
+        "45"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Product Designer at Lantern Hill, about mentoring designers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Product Designer at Lantern Hill, about wireframes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a UX Designer at Riverbend Health Network: stakeholder reviews, using Figma. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "20"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a UX Designer at Riverbend Health Network: accessibility fixes, using Usability testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Usability testing"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a UX Designer at Riverbend Health Network: research synthesis, using Journey mapping. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Journey mapping",
+        "35"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a UX Designer at Riverbend Health Network: handoff to engineering, using Design critique. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Design critique"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a UX Designer at Riverbend Health Network: wireframes, using Wireframing. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Wireframing",
+        "10"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a UX Designer at Riverbend Health Network, about stakeholder reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a UX Designer at Riverbend Health Network, about accessibility fixes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level product and UX design professional with about 14 years of experience, scope: leading a team and owning the roadmap for the area. Mention Journey mapping, Adobe Illustrator, Prototyping.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Journey mapping",
+        "Adobe Illustrator",
+        "Prototyping"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level product and UX design professional with about 14 years of experience, scope: leading a team and owning the roadmap for the area. Mention Journey mapping, Adobe Illustrator, Prototyping.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Journey mapping",
+        "Adobe Illustrator",
+        "Prototyping"
+      ]
+    }
+  }
+}

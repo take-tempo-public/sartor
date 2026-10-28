@@ -1,0 +1,48 @@
+{
+  "cell": "sales-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:b6faabb3759fe26f624030bbececcd0dfeea24dcb876f5d744e61f676d27036a",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTYH5E3ffzq6dasBDyz"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4472,
+      "output_tokens": 3424
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.industrial-equipment.about": "Position summary\nEllison Industrial Equipment seeks a Senior Account Executive to manage the full sales cycle for its industrial equipment portfolio. The role covers qualifying new opportunities, negotiating contracts and supporting long-term customer relationships. This is a hybrid position based in Cincinnati, OH.\nMinimum requirements:\n- Experience in business-to-business sales\n- A record of closing new accounts\n- Clear written and verbal communication\nPreferred:\n- Experience selling industrial equipment\n- Familiarity with manufacturing buyers",
+    "jd.industrial-equipment.duties": "Responsibilities\n- Qualify inbound and outbound leads against agreed criteria before advancing them in the pipeline\n- Prepare accurate quotes and manage contracts from first draft through signature\n- Negotiate pricing and terms with buyers in line with company guidelines\n- Coordinate a structured handoff of closed accounts to the customer success team\n- Maintain current records of opportunities and forecasts in the CRM\n- Work with internal teams to resolve customer questions during the sales cycle",
+    "jd.industrial-equipment.needs": "Minimum and preferred qualifications\n- 7 or more years of experience in business-to-business sales\n- Proposal writing skills for technical and commercial offers\n- Discovery calls that uncover customer needs and buying criteria\n- Contract negotiation experience with pricing and terms\n- Working knowledge of HubSpot or Salesforce\n- Preferred: experience prospecting with Sales Navigator",
+    "r1.b1": "Runs product demonstrations and structured trials for prospective buyers, raising trial-to-close conversion by 45 percent.",
+    "r1.b2": "Coaches account executives on contract negotiation, reviewing deal terms with them before customer conversations.",
+    "r1.b3": "Leads pipeline reviews with the sales team and applies proposal writing standards to stalled deals, lifting proposal acceptance by 25 percent.",
+    "r1.b4": "Manages quotes and contracts for existing accounts, using renewal management to keep terms current ahead of each renewal date.",
+    "r1.i1": "At Brightwater Labs, leads product demos and trial programmes that help prospective customers evaluate the offering before purchase.",
+    "r1.i2": "Runs pipeline reviews at Brightwater Labs to keep deal stages accurate and forecasts grounded in current opportunities.",
+    "r2.b1": "Used HubSpot to standardise the handoff of closed accounts to customer success, cutting onboarding delays by 40 percent.",
+    "r2.b2": "Prospected new accounts across target segments, building a steady flow of qualified opportunities that supported consistent quota attainment.",
+    "r2.b3": "Ran discovery calls with existing customers to uncover renewal and upsell needs, increasing upsell revenue by 35 percent.",
+    "r2.b4": "Delivered demos and managed trials for prospects, applying pipeline management to track each evaluation through to a decision.",
+    "r2.i1": "Took part in pipeline reviews at Marlow Contracting, reporting deal progress and forecast changes for assigned accounts.",
+    "r2.i2": "Prepared quotes and contracts at Marlow Contracting, working with buyers to agree terms and move deals to signature.",
+    "r3.b1": "Supported pipeline reviews by booking product demonstrations for qualified prospects, increasing demo-to-opportunity conversion by 45 percent.",
+    "r3.b2": "Assembled quotes and draft contracts for account executives, gaining early exposure to contract negotiation on pricing and terms.",
+    "r3.b3": "Qualified inbound and outbound leads and contributed to proposal writing for early-stage deals, raising lead-to-opportunity conversion by 50 percent.",
+    "r3.b4": "Coordinated the handoff of new customers to customer success, sharing account notes that supported later renewal management.",
+    "r3.i1": "Prepared quote requests and contract paperwork at Alder Systems to support account executives closing new business.",
+    "r3.i2": "Prospected new accounts at Alder Systems through outreach that generated meetings for the account executive team.",
+    "summary.1": "Senior business-to-business sales professional with about 7 years of experience across sales development and account executive roles. Sets how the team handles proposal writing and brings steady practice in renewal management and discovery calls.",
+    "summary.2": "Senior account executive with about 7 years in business-to-business sales, from sales development to closing new and renewing accounts. Defines the team's approach to discovery calls and applies the same discipline to proposal writing and renewal management."
+  }
+}

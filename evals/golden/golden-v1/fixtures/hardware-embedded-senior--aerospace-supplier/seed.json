@@ -1,0 +1,394 @@
+{
+  "candidate": {
+    "email": "alex.mehta@example.com",
+    "linkedin_url": "linkedin.com/in/example-alex-hardware-embedded-senior",
+    "name": "Alex Mehta",
+    "notes": null,
+    "phone": "(555) 010-5387",
+    "profile_text": null,
+    "username": "gold_hardware_embedded_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_hardware_embedded_senior",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2017",
+      "field": "Electrical Engineering",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs prototype testing with SPICE simulation ahead of each board spin, cutting failed bench tests by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads design reviews informed by firmware bring-up results, flagging integration issues before boards move to production."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Evaluates components with suppliers, using Linux-based test scripts to confirm compatibility and lower part costs by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentors junior engineers on writing Python test tools and reviews their code for hardware validation tasks."
+        }
+      ],
+      "company": "Sutter Street Shop",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Owns firmware updates for embedded products at Sutter Street Shop, from planning through release on deployed hardware."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads board bring-up for new embedded hardware at Sutter Street Shop, taking designs from initial power-on to working systems."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Embedded Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Brought up new boards and fed findings back into PCB layout revisions, reducing rework on later builds by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote design specifications for programmable logic blocks and kept them aligned with the VHDL implementation."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Developed validation test plans backed by JTAG debugging, shortening fault isolation time by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested prototypes against Verilog simulation models to confirm logic behavior before release."
+        }
+      ],
+      "company": "Pennywhistle Supply",
+      "display_order": 1,
+      "end_date": "2025-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Handled board bring-up for hardware products at Pennywhistle Supply, verifying new designs on the bench before release."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Wrote and maintained hardware specifications at Pennywhistle Supply, defining requirements for boards and programmable logic."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supported design reviews with oscilloscope debugging data, helping cut open signal issues by 50 percent before sign-off."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared schematic capture for new boards and worked with suppliers to confirm part selections and alternates."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Validated firmware updates against SPICE simulation results for the supporting circuits, reducing post-update hardware faults by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assisted with board bring-up through firmware bring-up tasks, confirming that new boards booted and responded correctly."
+        }
+      ],
+      "company": "Calloway Group",
+      "display_order": 2,
+      "end_date": "2020-06",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-09",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Drafted and updated hardware specifications at Calloway Group under the guidance of senior engineers."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Carried out prototype testing at Calloway Group, checking early boards against design requirements on the bench."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Firmware bring-up",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "JTAG debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 603,
+      "name": "Linux",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Oscilloscope debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "PCB layout",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 602,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "SPICE simulation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Schematic capture",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 607,
+      "name": "VHDL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 610,
+      "name": "Verilog",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior hardware and embedded engineer with 9 years of experience setting technical direction for a product area, from board design through firmware bring-up. Brings depth in oscilloscope debugging, Python test tooling and Linux-based development to guide design decisions and team practices."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Hardware and embedded engineering professional with about 9 years of experience, now setting the technical direction for an embedded product area. Combines oscilloscope debugging, Python and Linux skills with a background in electrical engineering to take boards from schematic to working product."
+    }
+  ],
+  "tags": []
+}

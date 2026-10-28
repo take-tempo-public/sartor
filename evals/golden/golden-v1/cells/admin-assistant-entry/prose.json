@@ -1,0 +1,36 @@
+{
+  "cell": "admin-assistant-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:49abf9915a62bd5834fd6d80357908e8c5984a990ccceaaa14fb6ec3ba732fa3",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTsDL2jjvLKXLHCvw2A"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2825,
+      "output_tokens": 1724
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.dental-practice.about": "About us and the job\nLinden Park Dental is an owner-run dental practice in Dayton, OH. We are looking for an Office Assistant to keep our front office running smoothly. The work is on site, alongside our dentists, hygienists and office manager. You will help managers stay organised, keep records in order and make sure patients and visitors are looked after from the moment they walk in.",
+    "jd.dental-practice.duties": "What the job involves\n- Keep schedules up to date for the practice managers and book their meetings\n- Process expense reports and check receipts before they are submitted\n- File patient and office paperwork so it can be found quickly\n- Keep records accurate and current, both on paper and on the computer\n- Help with other office tasks as the day requires",
+    "jd.dental-practice.needs": "What you need\n- 1 or more years of experience in an office support role\n- Office Administration Certificate (required)\n- Confident use of Microsoft Outlook, including calendar management\n- Experience with vendor coordination, invoice processing and travel booking\n- Visitor reception skills and a friendly manner with patients and guests",
+    "r1.b1": "Schedules meetings and appointments for managers using Microsoft Excel trackers, reducing double bookings by 15 percent.",
+    "r1.b2": "Arranges travel and event details for staff through Microsoft Outlook, keeping invitations, bookings and confirmations in one place.",
+    "r1.b3": "Processes expense reports and handles vendor coordination on missing receipts, cutting late submissions by 35 percent.",
+    "r1.b4": "Prepares meeting notes and applies document formatting so records stay consistent and easy to file.",
+    "r1.i1": "Supports managers at Stonebridge Community Trust by keeping their calendars and meeting schedules organised and up to date.",
+    "r1.i2": "Handles travel and event arrangements for staff at Stonebridge Community Trust, from first bookings to final confirmations.",
+    "summary.1": "Administrative support professional with about 1 year of experience handling routine office requests, with a colleague checking the work. Skills include visitor reception, Microsoft Excel and expense reporting.",
+    "summary.2": "Associate-level office assistant with about 1 year of experience covering visitor reception, expense reporting and day-to-day requests. Uses Microsoft Excel for tracking and works with a colleague who reviews completed tasks."
+  }
+}

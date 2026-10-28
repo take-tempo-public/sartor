@@ -1,0 +1,36 @@
+{
+  "cell": "product-mgmt-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:76b97a84f4a3d4d09ea4d346f15436806bac0214f72cf78fe954220666bcff8b",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUHBWZH6At7h85kPub6"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2722,
+      "output_tokens": 1949
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.workflow-startup.about": "Skylark builds workflow software for teams who are tired of chasing status updates across a dozen tools. As our Associate Product Manager, you'll own a clear slice of the product, talk with customers, dig into the data and ship alongside engineering and design. You'll have a senior PM in your corner, plenty of room to learn and real ownership from your first week.",
+    "jd.workflow-startup.duties": "What you'll do\n- Keep engineering, design, support and sales in sync on what's shipping and why\n- Run regular metrics reviews and turn what you find into clear next steps\n- Set up and lead customer interviews to understand how teams actually get work done\n- Write crisp specs and user stories with your senior PM reviewing\n- Track feature launches from kickoff to follow-up and share what we learned\n- Help shape the backlog based on customer evidence and usage data",
+    "jd.workflow-startup.needs": "What we're looking for\n- 1 or more years of experience in product management, product operations or a closely related role\n- Comfort with customer discovery and turning interview notes into product decisions\n- Pricing analysis and go-to-market planning experience, even on a small scope\n- Hands-on use of Tableau for dashboards and Figma for reviewing or sketching designs\n- Clear written documentation habits in Confluence or a similar tool",
+    "r1.b1": "Coordinates feature launches through stakeholder alignment across product, design and support teams, cutting post-launch rework by 55 percent.",
+    "r1.b2": "Writes requirements for fee and plan changes, grounding each decision in pricing analysis reviewed by a senior product manager.",
+    "r1.b3": "Runs metrics reviews using product analytics in Amplitude, flagging a drop-off step whose fix lifted task completion by 15 percent.",
+    "r1.b4": "Conducts customer interviews and applies prioritization frameworks to rank the resulting requests for the team backlog.",
+    "r1.i1": "Supports roadmap planning at Bluebird Family Services, turning team input into a quarterly plan reviewed with a senior product manager.",
+    "r1.i2": "Contributes to vendor and pricing decisions at Bluebird Family Services by preparing analysis and options for senior product leads to review.",
+    "summary.1": "Entry-level product manager with about 1 year of experience owning small, well-defined pieces of product work under review by a senior colleague. Brings pricing analysis, requirements writing and Tableau reporting to day-to-day product decisions.",
+    "summary.2": "Associate product manager with about 1 year of experience at a family services organization, handling scoped tasks with a senior colleague reviewing the work. Skilled in requirements writing, pricing analysis and building dashboards in Tableau."
+  }
+}

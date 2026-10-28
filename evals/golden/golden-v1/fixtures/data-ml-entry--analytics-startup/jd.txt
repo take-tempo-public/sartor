@@ -1,0 +1,18 @@
+Junior Data Scientist
+Borealis Labs — Remote (US)
+
+Borealis Labs is a small analytics startup, and we're hiring a junior data scientist to help turn messy data into answers our customers can actually use. You'll work closely with senior data scientists, ship real analysis early, get honest feedback on your work, and learn fast. The role is fully remote within the US.
+
+What you'll do
+- Validate models before they go live, checking accuracy, drift and edge cases
+- Analyze experiments and explain what the results mean for the product
+- Build and maintain forecasts, and track how they hold up against actuals
+- Write clean, reviewable code for analyses and data pipelines
+- Share findings with teammates through clear charts and short write-ups
+
+What we're looking for
+- 1 or more years of experience in a data science or analytics role
+- Statistical modeling and feature engineering skills you can explain to non-specialists
+- Hands-on work with PyTorch and scikit-learn
+- Comfort doing exploratory analysis in Jupyter notebooks
+- Experience scheduling data pipelines with Airflow

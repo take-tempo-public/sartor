@@ -1,0 +1,36 @@
+{
+  "cell": "data-ml-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:0d5ca76bfa63d931038094425faebafe521b5e574a2f227acd4940b91c26984d",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTztvyKV6GfSJQpZVhU"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2691,
+      "output_tokens": 2066
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.analytics-startup.about": "Borealis Labs is a small analytics startup, and we're hiring a junior data scientist to help turn messy data into answers our customers can actually use. You'll work closely with senior data scientists, ship real analysis early, get honest feedback on your work, and learn fast. The role is fully remote within the US.",
+    "jd.analytics-startup.duties": "What you'll do\n- Validate models before they go live, checking accuracy, drift and edge cases\n- Analyze experiments and explain what the results mean for the product\n- Build and maintain forecasts, and track how they hold up against actuals\n- Write clean, reviewable code for analyses and data pipelines\n- Share findings with teammates through clear charts and short write-ups",
+    "jd.analytics-startup.needs": "What we're looking for\n- 1 or more years of experience in a data science or analytics role\n- Statistical modeling and feature engineering skills you can explain to non-specialists\n- Hands-on work with PyTorch and scikit-learn\n- Comfort doing exploratory analysis in Jupyter notebooks\n- Experience scheduling data pipelines with Airflow",
+    "r1.b1": "Analyzes A/B experiments using experiment design methods and statistical tests, contributing to a 20 percent improvement in the primary metric of a tested change.",
+    "r1.b2": "Queries candidate features in Snowflake and compares their predictive value to select inputs for models under development.",
+    "r1.b3": "Builds stakeholder dashboards on SQL queries and Tableau, cutting time spent on manual reporting by 30 percent.",
+    "r1.b4": "Prepares forecasts and presents them through data visualization so stakeholders can compare projections with actual results.",
+    "r1.i1": "Cleans and prepares raw data for analysis as a junior data scientist at Dunmore Technologies, with senior colleagues reviewing the work.",
+    "r1.i2": "Validates statistical and machine learning models at Dunmore Technologies, checking their performance on held-out data before they are used in analysis.",
+    "summary.1": "Entry-level data scientist with about 1 year of experience in statistical modeling, Python and experiment design. Works on small, well-defined parts of analysis projects with a senior colleague reviewing the results.",
+    "summary.2": "Data science and machine learning professional at the entry level, with about 1 year of hands-on experience. Applies statistical modeling, experiment design and Python to well-defined pieces of larger projects, each reviewed by a senior colleague."
+  }
+}

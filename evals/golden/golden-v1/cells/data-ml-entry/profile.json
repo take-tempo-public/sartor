@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "harper.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-harper-data-ml-entry",
+    "name": "Harper Mehta",
+    "phone": "(555) 010-3559",
+    "username": "gold_data_ml_entry"
+  },
+  "cell": "data-ml-entry",
+  "cell_seed": 379651423,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Jupyter on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Jupyter, in work or side projects",
+        "any exposure to Scikit-learn, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior Data Scientist at Dunmore Technologies: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Jupyter",
+      "(?i)Scikit\\-learn",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "airflow",
+      "feature engineering",
+      "pytorch",
+      "statistical modeling"
+    ],
+    "notes": "entry-level data science and machine learning. The profile has no Jupyter, Scikit-learn; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Jupyter exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Data Scientist",
+        "Borealis Labs — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.analytics-startup.about",
+        "jd.analytics-startup.duties",
+        "jd.analytics-startup.needs"
+      ],
+      "slug": "analytics-startup"
+    }
+  ],
+  "level": "entry",
+  "profession": "data-ml",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Statistical modeling in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-10",
+          "title": "Junior Data Scientist"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Statistics",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Statistical modeling",
+        "Python",
+        "Experiment design",
+        "PyTorch",
+        "Airflow",
+        "Tableau",
+        "Snowflake",
+        "SQL",
+        "Data visualization",
+        "Feature engineering"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Statistical modeling"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "method",
+      "name": "Experiment design"
+    },
+    {
+      "category": "framework",
+      "name": "PyTorch"
+    },
+    {
+      "category": "tool",
+      "name": "Airflow"
+    },
+    {
+      "category": "tool",
+      "name": "Tableau"
+    },
+    {
+      "category": "platform",
+      "name": "Snowflake"
+    },
+    {
+      "category": "language",
+      "name": "SQL"
+    },
+    {
+      "category": "method",
+      "name": "Data visualization"
+    },
+    {
+      "category": "method",
+      "name": "Feature engineering"
+    }
+  ],
+  "slots": {
+    "jd.analytics-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Junior Data Scientist at Borealis Labs, an analytics startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.analytics-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Junior Data Scientist, about model validation, experiment analysis, forecasting. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.analytics-startup.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Airflow, Statistical modeling, PyTorch, Feature engineering, Scikit-learn, Jupyter, and 1 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Airflow",
+        "Statistical modeling",
+        "PyTorch",
+        "Feature engineering",
+        "Scikit-learn",
+        "Jupyter"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: experiment analysis, using Experiment design. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Experiment design",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: feature selection, using Snowflake. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Snowflake"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: dashboards for stakeholders, using SQL. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "SQL",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: forecasting, using Data visualization. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Data visualization"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Data Scientist at Dunmore Technologies, about cleaning raw data. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Data Scientist at Dunmore Technologies, about model validation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level data science and machine learning professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Statistical modeling, Python, Experiment design.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Statistical modeling",
+        "Python",
+        "Experiment design"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level data science and machine learning professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Statistical modeling, Python, Experiment design.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Statistical modeling",
+        "Python",
+        "Experiment design"
+      ]
+    }
+  }
+}

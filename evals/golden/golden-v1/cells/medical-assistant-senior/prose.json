@@ -1,0 +1,48 @@
+{
+  "cell": "medical-assistant-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:773a6afcea0b01cba11ff700f8bfc45582e9262f9700428deeef16b198e528e4",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUCZpMkBA6YyZ8QhjxQ"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4722,
+      "output_tokens": 3195
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.urgent-care.about": "Brightwell Urgent Care Group seeks a Senior Medical Assistant to support providers on site in Raleigh, NC. The role oversees patient intake, clinical procedures and front-desk coordination, and guides other medical assistants during busy shifts. Candidates must meet the short list of minimum qualifications below, and a shorter list of preferred qualifications is noted separately.",
+    "jd.urgent-care.duties": "Responsibilities\n- Manage clinic supplies and keep exam rooms stocked for each shift\n- Coordinate daily clinic schedules with providers and front-desk staff\n- Take and record vital signs for every patient at intake\n- Schedule follow-up visits and confirm them with patients before discharge\n- Guide and support other medical assistants on clinical procedures",
+    "jd.urgent-care.needs": "Minimum and preferred qualifications\n- 9 or more years of experience as a medical assistant\n- Certified Medical Assistant Credential required\n- Demonstrated skill in specimen handling, blood draws and injections\n- Experience with appointment scheduling and prior authorizations\n- Working knowledge of Epic Systems\n- Preferred: prior experience in an urgent-care setting",
+    "r1.b1": "Completes insurance forms and administers injections for scheduled patients, reducing form resubmissions by 55 percent.",
+    "r1.b2": "Rooms patients and records vital signs before each provider visit, flagging abnormal readings for review.",
+    "r1.b3": "Stocks exam rooms and oversees instrument sterilization, cutting supply shortages during clinic hours by 20 percent.",
+    "r1.b4": "Arranges follow-up visits at checkout, using appointment scheduling to confirm each patient's next visit before departure.",
+    "r1.i1": "Manages clinic supplies and schedules for the clinical team as Senior Medical Assistant at Dunmore Technologies.",
+    "r1.i2": "Keeps exam rooms stocked and ready for each patient as Senior Medical Assistant at Dunmore Technologies.",
+    "r2.b1": "Took vital signs and managed specimen handling for incoming patients, reducing mislabeled samples by 35 percent.",
+    "r2.b2": "Performed blood draws and relayed physician instructions clearly to patients before discharge.",
+    "r2.b3": "Drew blood and completed insurance verification ahead of visits, cutting claim denials by 45 percent.",
+    "r2.b4": "Completed insurance forms and conducted EKG testing as ordered by physicians.",
+    "r2.i1": "Scheduled follow-up visits and supported patient flow as Medical Assistant at Harlow and Daughters.",
+    "r2.i2": "Completed insurance forms accurately while supporting clinical staff as Medical Assistant at Harlow and Daughters.",
+    "r3.b1": "Roomed patients and administered injections as ordered, reducing wait time before treatment by 55 percent.",
+    "r3.b2": "Stocked exam rooms between patients and recorded vital signs during intake.",
+    "r3.b3": "Scheduled follow-up visits and maintained instrument sterilization, cutting turnaround time for reusable instruments by 45 percent.",
+    "r3.b4": "Took vital signs at intake and handled appointment scheduling for return visits.",
+    "r3.i1": "Completed insurance forms and supported clinical staff as Clinical Assistant at Eastgate Regional Hospital.",
+    "r3.i2": "Took vital signs for hospital patients as Clinical Assistant at Eastgate Regional Hospital.",
+    "summary.1": "Senior medical assistant with 9 years of experience guiding colleagues and taking on difficult patient cases in clinic and hospital settings. Skilled in blood draws, instrument sterilization and injections, and holds a Certified Medical Assistant Credential and a Phlebotomy Certificate.",
+    "summary.2": "Medical assisting professional with about 9 years of clinical experience who mentors fellow assistants and handles complex patient cases. Brings hands-on skill in blood draws, injections and instrument sterilization, supported by a certificate in medical assisting from Lakeshore Career College."
+  }
+}

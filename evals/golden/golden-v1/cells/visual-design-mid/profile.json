@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "riley.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-riley-visual-design-mid",
+    "name": "Riley Brandt",
+    "phone": "(555) 010-3985",
+    "username": "gold_visual_design_mid"
+  },
+  "cell": "visual-design-mid",
+  "cell_seed": 429225180,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Color theory on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Color theory, in work or side projects",
+        "any exposure to Photo retouching, in work or side projects"
+      ],
+      "scope_probes": [
+        "Graphic Designer at Tillman Brothers: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Color\\ theory",
+      "(?i)Photo\\ retouching",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "adobe photoshop",
+      "canva",
+      "motion graphics",
+      "print production"
+    ],
+    "notes": "mid-level visual and brand design. The profile has no Color theory, Photo retouching; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Color theory exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Graphic Designer",
+        "Kindle Street Foods — Hybrid, Brooklyn, NY"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.food-startup.about",
+        "jd.food-startup.duties",
+        "jd.food-startup.needs"
+      ],
+      "slug": "food-startup"
+    }
+  ],
+  "level": "mid",
+  "profession": "visual-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Figma in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Tillman Brothers",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-02",
+          "title": "Graphic Designer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Marlow Contracting",
+          "end": "2025-02",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2023-05",
+          "title": "Junior Graphic Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.F.A.",
+          "field": "Graphic Design",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2023"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Figma",
+        "Adobe Illustrator",
+        "Adobe After Effects",
+        "Packaging design",
+        "Adobe InDesign",
+        "Canva",
+        "Layout design",
+        "Adobe Photoshop",
+        "Print production",
+        "Motion graphics"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe After Effects"
+    },
+    {
+      "category": "method",
+      "name": "Packaging design"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe InDesign"
+    },
+    {
+      "category": "tool",
+      "name": "Canva"
+    },
+    {
+      "category": "method",
+      "name": "Layout design"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Photoshop"
+    },
+    {
+      "category": "method",
+      "name": "Print production"
+    },
+    {
+      "category": "method",
+      "name": "Motion graphics"
+    }
+  ],
+  "slots": {
+    "jd.food-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Graphic Designer at Kindle Street Foods, a food-products startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.food-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Graphic Designer, about packaging mockups, social media graphics, preparing files for printers. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.food-startup.needs": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Canva, Adobe Photoshop, Print production, Motion graphics, Color theory, Photo retouching, and 3 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Canva",
+        "Adobe Photoshop",
+        "Print production",
+        "Motion graphics",
+        "Color theory",
+        "Photo retouching"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Tillman Brothers: social media graphics, using Packaging design. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Packaging design",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Tillman Brothers: preparing files for printers, using Adobe InDesign. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe InDesign"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Tillman Brothers: client revisions, using Motion graphics. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motion graphics",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Tillman Brothers: campaign launches, using Print production. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Print production"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graphic Designer at Tillman Brothers, about client revisions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graphic Designer at Tillman Brothers, about campaign launches. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Marlow Contracting: packaging mockups, using Adobe After Effects. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Adobe After Effects",
+        "55"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Marlow Contracting: print layouts, using Adobe Photoshop. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Photoshop"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Marlow Contracting: brand guideline updates, using Adobe Illustrator. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Adobe Illustrator",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Marlow Contracting: social media graphics, using Canva. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Canva"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Graphic Designer at Marlow Contracting, about campaign launches. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Graphic Designer at Marlow Contracting, about brand guideline updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level visual and brand design professional with about 3 years of experience, scope: owning one service or workstream end to end. Mention Figma, Adobe Illustrator, Adobe After Effects.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Adobe Illustrator",
+        "Adobe After Effects"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level visual and brand design professional with about 3 years of experience, scope: owning one service or workstream end to end. Mention Figma, Adobe Illustrator, Adobe After Effects.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Adobe Illustrator",
+        "Adobe After Effects"
+      ]
+    }
+  }
+}

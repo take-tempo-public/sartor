@@ -1,0 +1,42 @@
+{
+  "cell": "social-services-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:2f9be965149c7503cba4047badeac83235550eaea90553070734c304279a8086",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUSTdgPotexash8xAgj"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3744,
+      "output_tokens": 2560
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.family-center.about": "Summary\nHarvest Table Family Center is a family services nonprofit that helps local families reach stability through housing, food and support services. We are seeking a Case Manager to work on site in Akron, OH, supporting families from intake through case closure. A current Mandated Reporter Certificate is required for this position.",
+    "jd.family-center.duties": "Duties\n- Conduct home visits to assess family safety, needs and progress toward goals\n- Complete intake interviews with new families and gather required documents\n- Carry out needs assessments and update them as family circumstances change\n- Write service plans with clear goals, responsibilities and follow-up steps\n- Coordinate referrals with schools, clinics and community partners\n- Keep case records current and accurate",
+    "jd.family-center.needs": "Licensure and qualifications\n- 4 or more years of experience in case management or social services\n- Experience with referral coordination, benefits enrollment and needs assessments\n- Working knowledge of Microsoft Access for tracking case data\n- Skill in community outreach and in writing clear, timely case notes\n- Mandated Reporter Certificate required\n- Human Services Supervisor Certificate preferred",
+    "r1.b1": "Coordinates with schools and clinics after home visits, raising the rate of families attending follow-up appointments by 10 percent.",
+    "r1.b2": "Refers families to housing and food programs based on needs identified during intake interviews.",
+    "r1.b3": "Prepares reports for hearings that document each family's benefits enrollment status, cutting continuances caused by missing paperwork by 55 percent.",
+    "r1.b4": "Conducts intake and assessments for new clients and manages referral coordination with partner agencies.",
+    "r1.i1": "Carries a family caseload at Maple Court Care, conducting home visits to check on safety, needs and progress toward service goals.",
+    "r1.i2": "Serves as Case Manager at Maple Court Care, preparing reports for hearings that summarise family progress and service compliance.",
+    "r2.b1": "Logged home visit notes in Microsoft Access, reducing the time staff spent locating visit records by 40 percent.",
+    "r2.b2": "Maintained case records and drafted court reports from file notes for caseworker review.",
+    "r2.b3": "Wrote service plans grounded in needs assessments, increasing the share of plans completed on schedule by 50 percent.",
+    "r2.b4": "Used crisis intervention skills while coordinating with schools and clinics to support tenants in urgent situations.",
+    "r2.i1": "Supported case managers at Stonegate Housing Authority by gathering records and drafting reports for hearings.",
+    "r2.i2": "Kept case records accurate and current for tenant households at Stonegate Housing Authority as a Case Aide.",
+    "summary.1": "Social services case manager with about 4 years of experience carrying a full caseload without close supervision. Skilled in benefits enrollment, referral coordination and court reports, with a background in home visits and needs assessments.",
+    "summary.2": "Casework professional with about 4 years in housing and family services, managing a full caseload independently from intake through closure. Brings practical experience in benefits enrollment, referral coordination and preparing court reports for hearings."
+  }
+}

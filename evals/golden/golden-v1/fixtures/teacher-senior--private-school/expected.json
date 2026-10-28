@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Devon Ito",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Lesson planning, in work or side projects",
+      "any exposure to Reading intervention, in work or side projects"
+    ],
+    "scope_probes": [
+      "Lead Teacher at Maple Street School: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Lesson\\ planning",
+    "(?i)Reading\\ intervention",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
+      },
+      "edit_replacement": "Holds parent conferences that set shared behavior supports for home, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "Holds parent conferences that set shared behavior supports for home",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Lesson planning exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "behavior supports",
+    "math manipulatives",
+    "nearpod",
+    "parent communication"
+  ],
+  "notes": "senior-level elementary teaching. The profile has no Lesson planning, Reading intervention; generation must not claim them."
+}

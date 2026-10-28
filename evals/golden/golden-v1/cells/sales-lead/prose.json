@@ -1,0 +1,51 @@
+{
+  "cell": "sales-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:d5e73535d3e811205ab80ecdb156deccb0944f8a4bddc98a23c38ec8ca4b8d4a",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUNZYGYmabtBHzR8oTk"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4899,
+      "output_tokens": 3898
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.packaging.about": "Position summary\nTrailhead Packaging seeks a Sales Manager to lead its sales team on site in Green Bay, WI. The Sales Manager will direct a team of account executives, manage the sales pipeline and be accountable for revenue results across the customer base.\nMinimum: business-to-business sales management experience and a record of meeting sales targets.\nPreferred: experience selling packaging products.",
+    "jd.packaging.duties": "Responsibilities\n- Lead regular pipeline reviews with account executives and maintain an accurate sales forecast.\n- Drive renewals and upsells across existing packaging accounts.\n- Coach account executives on discovery, proposals and negotiation.\n- Set territory and quota plans for the team and track progress against them.\n- Report sales results and risks to company leadership.",
+    "jd.packaging.needs": "Minimum and preferred qualifications\n- 12 or more years of business-to-business sales experience, including team leadership.\n- Strong proposal writing and cold outreach skills.\n- Demonstrated quota attainment and territory planning experience.\n- Skill in running discovery calls with technical and procurement buyers.\n- Preferred: working knowledge of HubSpot.",
+    "r1.b1": "Sets territory and quota plans for the sales team and tracks quota attainment each month, lifting team attainment by 20 percent.",
+    "r1.b2": "Runs product demos and customer trials, using account planning to match each trial to the buyer's goals and next steps.",
+    "r1.b3": "Leads prospecting into new accounts and handles contract negotiation on first deals, growing new-account bookings by 45 percent.",
+    "r1.b4": "Qualifies inbound and outbound leads against territory planning priorities so account executives spend their time on the strongest prospects.",
+    "r1.b5": "Manages the handoff to customer success through proposal writing that records scope and commitments, cutting onboarding delays by 15 percent.",
+    "r1.i1": "Manages the sales team at Tillman Brothers, with responsibility for renewals and upsells across the existing customer base.",
+    "r1.i2": "Leads the Tillman Brothers sales team and sets the standards for qualifying leads before they enter the pipeline.",
+    "r2.b1": "Used cold outreach to reopen lapsed accounts and drive renewals and upsells, increasing upsell revenue by 50 percent.",
+    "r2.b2": "Prepared quotes and contracts after product demonstrations, tying pricing to the features each customer saw in the session.",
+    "r2.b3": "Ran weekly pipeline reviews in Salesforce, flagging stalled deals early and improving forecast accuracy by 25 percent.",
+    "r2.b4": "Coached account executives on deal strategy and call preparation, raising quota attainment across the team.",
+    "r2.b5": "Set territory and quota plans through account planning for key customers, growing revenue from planned accounts by 20 percent.",
+    "r2.i1": "Served as a senior account executive at Wren Valley Builders, qualifying leads and turning the strongest into active deals.",
+    "r2.i2": "Carried a senior account book at Wren Valley Builders and owned the handoff of closed deals to customer success.",
+    "r3.b1": "Applied contract negotiation to set clear terms before handoff to customer success, reducing post-sale disputes by 20 percent.",
+    "r3.b2": "Grew renewals and upsells by using territory planning to schedule regular visits to existing customers.",
+    "r3.b3": "Drafted quotes and contracts through careful proposal writing, raising the quote win rate by 15 percent.",
+    "r3.b4": "Built pipeline through cold outreach and reviewed progress with the sales manager in regular pipeline reviews.",
+    "r3.b5": "Delivered product demonstrations and ran trials for prospects, converting 55 percent of trials into paying customers.",
+    "r3.i1": "Worked as an account executive at Redfern Family Trades, closing new business and handing accounts to customer success after signature.",
+    "r3.i2": "Managed quotes and contracts for a book of customers as an account executive at Redfern Family Trades.",
+    "summary.1": "Sales manager with 12 years of business-to-business sales experience, leading a team and answering for the results of the sales function. Brings strengths in territory planning, product demonstrations and account planning, with a record of building plans that account executives can carry out.",
+    "summary.2": "Business-to-business sales leader with 12 years of experience who manages a team of account executives and owns the results of the function. Uses territory planning, account planning and product demonstrations to set priorities, coach sellers and win customer commitments."
+  }
+}

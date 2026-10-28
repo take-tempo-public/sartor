@@ -1,0 +1,19 @@
+Mobile Engineering Manager
+Skyward Travel Group — Hybrid, Dallas, TX
+
+Position summary
+Skyward Travel Group seeks a Mobile Engineering Manager to lead the teams that build and maintain its customer travel apps. The role sets technical direction, manages releases and works closely with product, design and operations partners. Minimum: a degree in computer science or equivalent experience, and prior experience managing mobile engineers. Preferred: experience with airline or travel products.
+
+Responsibilities
+- Lead and develop a team of iOS and Android engineers.
+- Own the device testing strategy across supported phones and tablets.
+- Run crash triage, set priorities and track fixes through to release.
+- Oversee API integration with booking, check-in and loyalty services.
+- Plan release schedules with product, design and quality assurance partners.
+
+Minimum and preferred qualifications
+- 10 or more years of mobile software development experience, including team leadership.
+- Hands-on experience with Xcode, Kotlin and Gradle.
+- Experience owning App Store release and TestFlight beta distribution.
+- Working knowledge of GraphQL APIs.
+- Preferred: experience building apps for airlines or travel companies.

@@ -1,0 +1,21 @@
+Senior Site Reliability Engineer
+Ravenswood Insurance Group — Hybrid, Hartford, CT
+
+Position summary
+Ravenswood Insurance Group seeks a Senior Site Reliability Engineer to maintain the availability and resilience of the systems that support our policyholders and agents. The engineer will work with product teams to define reliability targets and lead operational practices across our infrastructure.
+Minimum: experience operating Linux systems, configuration management and production monitoring.
+Preferred: experience with Kubernetes and Microsoft Azure.
+
+Responsibilities
+- Set reliability targets with product teams and review progress against them on a regular schedule
+- Plan and run patching cycles across server fleets with minimal disruption to business users
+- Schedule and conduct backup and recovery tests, documenting results and remediation steps
+- Lead post-incident reviews and track corrective actions to completion
+- Maintain monitoring and alerting that reflects agreed reliability targets
+
+Minimum and preferred qualifications
+- 6 or more years of experience in systems administration or site reliability engineering
+- Hands-on experience administering Linux servers and Active Directory
+- Working knowledge of Splunk for log analysis and Ansible for configuration management
+- Experience with ServiceNow for incident and change management, and scripting in Python
+- Required certification: Systems Administrator Certificate

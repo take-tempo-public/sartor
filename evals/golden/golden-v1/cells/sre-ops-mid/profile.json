@@ -1,0 +1,437 @@
+{
+  "candidate": {
+    "email": "quinn.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-quinn-sre-ops-mid",
+    "name": "Quinn Lindqvist",
+    "phone": "(555) 010-6566",
+    "username": "gold_sre_ops_mid"
+  },
+  "cell": "sre-ops-mid",
+  "cell_seed": 883449538,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use ServiceNow on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to ServiceNow, in work or side projects",
+        "any exposure to Splunk, in work or side projects"
+      ],
+      "scope_probes": [
+        "Systems Engineer at Lantern Hill: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)ServiceNow",
+      "(?i)Splunk",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "powershell",
+      "prometheus",
+      "python",
+      "terraform"
+    ],
+    "notes": "mid-level site reliability and IT operations. The profile has no ServiceNow, Splunk; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "ServiceNow exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Systems Engineer",
+        "Lattice Cloud — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.cloud-hosting.about",
+        "jd.cloud-hosting.duties",
+        "jd.cloud-hosting.needs"
+      ],
+      "slug": "cloud-hosting"
+    }
+  ],
+  "level": "mid",
+  "profession": "sre-ops",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Kubernetes in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Lantern Hill",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-03",
+          "title": "Systems Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Stonebridge Community Trust",
+          "end": "2024-03",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-06",
+          "title": "Junior Systems Administrator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Information Technology",
+          "institution": "State University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Open Systems Training Board",
+          "name": "Systems Administrator Certificate",
+          "year": "2023"
+        },
+        {
+          "issuer": "Cloud Skills Institute",
+          "name": "Cloud Operations Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Kubernetes",
+        "PowerShell",
+        "Microsoft Azure",
+        "Grafana",
+        "Ansible",
+        "Python",
+        "Terraform",
+        "Bash scripting",
+        "Prometheus",
+        "Backup and recovery"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "language",
+      "name": "PowerShell"
+    },
+    {
+      "category": "platform",
+      "name": "Microsoft Azure"
+    },
+    {
+      "category": "tool",
+      "name": "Grafana"
+    },
+    {
+      "category": "tool",
+      "name": "Ansible"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "language",
+      "name": "Bash scripting"
+    },
+    {
+      "category": "tool",
+      "name": "Prometheus"
+    },
+    {
+      "category": "method",
+      "name": "Backup and recovery"
+    }
+  ],
+  "slots": {
+    "jd.cloud-hosting.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Systems Engineer at Lattice Cloud, a cloud hosting startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.cloud-hosting.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Systems Engineer, about on-call rotation, post-incident write-ups, change approvals. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.cloud-hosting.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Terraform, Python, Prometheus, PowerShell, Splunk, ServiceNow, and 4 or more years of experience. State Systems Administrator Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Terraform",
+        "Python",
+        "Prometheus",
+        "PowerShell",
+        "Splunk",
+        "ServiceNow",
+        "Systems Administrator Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Systems Engineer at Lantern Hill: tuning monitoring alerts, using PowerShell. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "PowerShell",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Systems Engineer at Lantern Hill: post-incident write-ups, using Grafana. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Grafana"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Systems Engineer at Lantern Hill: patching cycles, using Backup and recovery. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Backup and recovery",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Systems Engineer at Lantern Hill: backup and recovery tests, using Python. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Python"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Systems Engineer at Lantern Hill, about tuning monitoring alerts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Systems Engineer at Lantern Hill, about post-incident write-ups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Stonebridge Community Trust: capacity planning, using Bash scripting. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bash scripting",
+        "15"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Stonebridge Community Trust: on-call rotation, using Kubernetes. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Kubernetes"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Stonebridge Community Trust: change approvals, using Terraform. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Terraform",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Stonebridge Community Trust: tuning monitoring alerts, using Microsoft Azure. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Azure"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Systems Administrator at Stonebridge Community Trust, about post-incident write-ups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Systems Administrator at Stonebridge Community Trust, about backup and recovery tests. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level site reliability and IT operations professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kubernetes, PowerShell, Microsoft Azure.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kubernetes",
+        "PowerShell",
+        "Microsoft Azure"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level site reliability and IT operations professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kubernetes, PowerShell, Microsoft Azure.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kubernetes",
+        "PowerShell",
+        "Microsoft Azure"
+      ]
+    }
+  }
+}

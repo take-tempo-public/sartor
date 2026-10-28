@@ -1,0 +1,430 @@
+{
+  "candidate": {
+    "email": "morgan.haddad@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-social-services-mid",
+    "name": "Morgan Haddad",
+    "phone": "(555) 010-0437",
+    "username": "gold_social_services_mid"
+  },
+  "cell": "social-services-mid",
+  "cell_seed": 1238631543,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Case notes on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Case notes, in work or side projects",
+        "any exposure to Community outreach, in work or side projects",
+        "any progress toward Human Services Supervisor Certificate"
+      ],
+      "scope_probes": [
+        "Case Manager at Maple Court Care: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Case\\ notes",
+      "(?i)Community\\ outreach",
+      "(?i)Human\\ Services\\ Supervisor\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "benefits enrollment",
+      "microsoft access",
+      "needs assessments",
+      "referral coordination"
+    ],
+    "notes": "mid-level social services casework. The profile has no Case notes, Community outreach, Human Services Supervisor Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Carrying a full caseload or class without close supervision.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, carrying a full caseload or class without close supervision",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Case notes exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Case Manager",
+        "Harvest Table Family Center — On site, Akron, OH"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.family-center.about",
+        "jd.family-center.duties",
+        "jd.family-center.needs"
+      ],
+      "slug": "family-center"
+    }
+  ],
+  "level": "mid",
+  "profession": "social-services",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Benefits enrollment in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Maple Court Care",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Case Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Stonegate Housing Authority",
+          "end": "2024-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-08",
+          "title": "Case Aide"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.W.",
+          "field": "Social Work",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Child Welfare Board",
+          "name": "Mandated Reporter Certificate",
+          "year": "2022"
+        },
+        {
+          "issuer": "Human Services Training Council",
+          "name": "Case Management Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Benefits enrollment",
+        "Referral coordination",
+        "Court reports",
+        "Home visits",
+        "Needs assessments",
+        "Crisis intervention",
+        "Intake interviews",
+        "Microsoft Access"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Benefits enrollment"
+    },
+    {
+      "category": "method",
+      "name": "Referral coordination"
+    },
+    {
+      "category": "method",
+      "name": "Court reports"
+    },
+    {
+      "category": "method",
+      "name": "Home visits"
+    },
+    {
+      "category": "method",
+      "name": "Needs assessments"
+    },
+    {
+      "category": "method",
+      "name": "Crisis intervention"
+    },
+    {
+      "category": "method",
+      "name": "Intake interviews"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Access"
+    }
+  ],
+  "slots": {
+    "jd.family-center.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Case Manager at Harvest Table Family Center, a family services nonprofit. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.family-center.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Case Manager, about home visits, intake and assessments, writing service plans. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.family-center.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Referral coordination, Benefits enrollment, Needs assessments, Microsoft Access, Community outreach, Case notes, and 4 or more years of experience. State Mandated Reporter Certificate as a required licence or certification. State Human Services Supervisor Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Referral coordination",
+        "Benefits enrollment",
+        "Needs assessments",
+        "Microsoft Access",
+        "Community outreach",
+        "Case notes",
+        "Mandated Reporter Certificate",
+        "Human Services Supervisor Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Maple Court Care: coordinating with schools and clinics, using Home visits. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Home visits",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Maple Court Care: referring families to housing and food programs, using Intake interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Intake interviews"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Maple Court Care: reports for hearings, using Benefits enrollment. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Benefits enrollment",
+        "55"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Maple Court Care: intake and assessments, using Referral coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Referral coordination"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Manager at Maple Court Care, about home visits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Manager at Maple Court Care, about reports for hearings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: home visits, using Microsoft Access. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Access",
+        "40"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: keeping case records, using Court reports. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Court reports"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: writing service plans, using Needs assessments. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Needs assessments",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: coordinating with schools and clinics, using Crisis intervention. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Crisis intervention"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Aide at Stonegate Housing Authority, about reports for hearings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Aide at Stonegate Housing Authority, about keeping case records. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a experienced-level social services casework professional with about 4 years of experience, scope: carrying a full caseload or class without close supervision. Mention Benefits enrollment, Referral coordination, Court reports.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Benefits enrollment",
+        "Referral coordination",
+        "Court reports"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a experienced-level social services casework professional with about 4 years of experience, scope: carrying a full caseload or class without close supervision. Mention Benefits enrollment, Referral coordination, Court reports.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Benefits enrollment",
+        "Referral coordination",
+        "Court reports"
+      ]
+    }
+  }
+}

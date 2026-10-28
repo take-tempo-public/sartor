@@ -1,0 +1,42 @@
+{
+  "cell": "logistics-driving-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:c962fd6fa64969be713c8b973b6a26ac3377691bf5f5096bc220ecf9008c7660",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUAcSKNmDQGFoo6pWws"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3872,
+      "output_tokens": 3077
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.freight-carrier.about": "Ironwood Freight Systems, a regional freight carrier, seeks a Class A Truck Driver to transport freight safely and on schedule from its Memphis, TN location. The driver will operate tractor-trailers, maintain accurate records and work closely with dispatch. Minimum requirements include a valid commercial driver licence, a Driver Safety Certificate and a clean safety record. Preference will be given to candidates holding a Hazardous Materials Endorsement.",
+    "jd.freight-carrier.duties": "Responsibilities\n- Operate Class A tractor-trailers safely on assigned regional routes.\n- Keep accurate driver logs and hours-of-service records in line with company and regulatory requirements.\n- Inspect vehicles and report defects promptly to maintenance.\n- Plan routes with dispatch to meet delivery windows and avoid delays.\n- Complete bills of lading and delivery paperwork for each shipment.",
+    "jd.freight-carrier.needs": "Minimum and preferred qualifications\n- 5 or more years of commercial driving experience.\n- Driver Safety Certificate required.\n- Demonstrated skill in defensive driving, route planning and delivery scheduling.\n- Experience with hazmat handling and pre-trip inspections.\n- Familiarity with customer signoff procedures at delivery.\n- Hazardous Materials Endorsement preferred.",
+    "r1.b1": "Coordinate with dispatch on route changes and apply defensive driving in heavy traffic, cutting reported near-miss incidents by 50 percent.",
+    "r1.b2": "Report vehicle defects to maintenance before departure and check load securement at each stop so trailers stay road-ready.",
+    "r1.b3": "Keep accurate driver logs and complete bills of lading for every shipment, reducing paperwork errors by 25 percent.",
+    "r1.b4": "Secure and check each load before departure and follow delivery scheduling to meet customer receiving windows.",
+    "r1.i1": "At Stonebridge Logistics, drives Class A routes and delivers freight to customers on schedule.",
+    "r1.i2": "As a Class A Truck Driver at Stonebridge Logistics, inspects equipment and reports vehicle defects so trucks stay safe and in service.",
+    "r2.b1": "Delivered shipments to customers on time while applying hazmat handling procedures, raising on-time delivery rates by 20 percent.",
+    "r2.b2": "Used route planning to map daily delivery runs around traffic and road closures, keeping stops in an efficient order.",
+    "r2.b3": "Performed pre-trip vehicle inspections and checked trailer coupling before each run, reducing equipment-related delays by 10 percent.",
+    "r2.b4": "Coordinated with dispatch on schedule changes and kept hours-of-service logging current and compliant.",
+    "r2.i1": "Drove delivery routes for Prairie Freight Lines and reported vehicle defects promptly to keep the fleet in safe working order.",
+    "r2.i2": "Delivered freight for Prairie Freight Lines, planning routes to keep daily stops efficient and on time.",
+    "summary.1": "Class A truck driver who handles a full route schedule without close supervision and coordinates closely with dispatch. Skilled in trailer coupling, route planning and defensive driving, backed by a Commercial Driver Licence and Driver Safety Certificate.",
+    "summary.2": "Truck driving professional experienced in freight delivery, managing a full schedule of routes independently and keeping dispatch informed. Applies defensive driving, route planning and trailer coupling on every run to deliver loads safely and on time."
+  }
+}

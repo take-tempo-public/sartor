@@ -1,0 +1,48 @@
+{
+  "cell": "web-backend-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:c83a556f74c546a55ae1dca9a30bbbc0ee69eb671d14bd07186d164fa8459323",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUcQu1FKRQU9mMd5uiN"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4467,
+      "output_tokens": 2491
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.health-system.about": "Summary\nEastlake Health Network exists to deliver compassionate, dependable care to every community in our region. We are seeking a Senior Backend Engineer to build and maintain the systems that support our clinicians, staff and patients. This hybrid role is based in Columbus, OH. Candidates must meet every requirement listed under Licensure and qualifications.",
+    "jd.health-system.duties": "Duties\n- Design, build and maintain automated deployment pipelines for backend services.\n- Identify and tune slow database queries to keep clinical and business applications responsive.\n- Mentor engineers through thoughtful code review and shared engineering standards.\n- Partner with product and operations teams to plan backend changes safely.\n- Document systems and processes so that teams can support services with confidence.",
+    "jd.health-system.needs": "Licensure and qualifications\n- 7 or more years of professional backend engineering experience.\n- Strong working knowledge of Python for building backend services.\n- Experience packaging services with Docker and running them on Kubernetes.\n- Experience designing, querying and tuning PostgreSQL databases.\n- Familiarity with GitHub workflows and Jenkins for continuous integration and delivery.",
+    "r1.b1": "Mentors engineers through code review on GraphQL services, cutting review turnaround time by 30 percent.",
+    "r1.b2": "Designs and versions APIs for services running on Linux, keeping older clients supported during each migration.",
+    "r1.b3": "Writes Python migration scripts for database schema changes, reducing deployment downtime by 35 percent.",
+    "r1.b4": "Tunes slow queries and adds Redis caching for frequently read data to lower database load.",
+    "r1.i1": "Owns service reliability for core backend systems and takes part in the on-call rotation for production incidents.",
+    "r1.i2": "Sets the backend team's technical roadmap and aligns engineering priorities with product goals.",
+    "r2.b1": "Wrote runbooks and led incident follow-up reviews, using Terraform to codify fixes and cutting repeat incidents by 45 percent.",
+    "r2.b2": "Automated the deployment pipeline with Docker images built for each service, replacing manual release steps.",
+    "r2.b3": "Designed versioned search APIs backed by Elasticsearch, improving query response times by 45 percent.",
+    "r2.b4": "Managed database schema changes through GitHub pull requests with peer review before each release.",
+    "r2.i1": "Built and maintained backend APIs with a focus on clear design and safe versioning for client teams.",
+    "r2.i2": "Worked on backend services with a focus on finding and tuning slow database queries.",
+    "r3.b1": "Tuned slow queries and added query checks to Jenkins builds, reducing average response time by 55 percent.",
+    "r3.b2": "Supported service reliability for Spring Boot applications and joined the on-call rotation for production issues.",
+    "r3.b3": "Documented runbooks and incident follow-ups for GraphQL services, shortening time to resolution by 55 percent.",
+    "r3.b4": "Scripted deployment pipeline steps on Linux servers to automate builds and releases.",
+    "r3.i1": "Started a backend career by learning to find and tune slow queries in production services.",
+    "r3.i2": "Supported backend services by planning and applying database schema changes under senior guidance.",
+    "summary.1": "Backend software engineer with about 7 years of experience setting the technical direction for a product area. Builds services on Linux, designs GraphQL APIs and manages infrastructure with Terraform.",
+    "summary.2": "Senior backend engineer with about 7 years of experience who shapes technical direction for a product area and guides other engineers. Works daily with Linux, GraphQL and Terraform to deliver dependable backend systems."
+  }
+}

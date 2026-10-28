@@ -1,0 +1,540 @@
+{
+  "candidate": {
+    "email": "jordan.chen@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-customer-support-lead",
+    "name": "Jordan Chen",
+    "phone": "(555) 010-2339",
+    "username": "gold_customer_support_lead"
+  },
+  "cell": "customer-support-lead",
+  "cell_seed": 2016278484,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Live chat on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Live chat, in work or side projects",
+        "any exposure to Satisfaction surveys, in work or side projects"
+      ],
+      "scope_probes": [
+        "Support Team Lead at Alder Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Live\\ chat",
+      "(?i)Satisfaction\\ surveys",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "escalation handling",
+      "salesforce",
+      "ticket triage",
+      "zendesk"
+    ],
+    "notes": "lead-level customer support. The profile has no Live chat, Satisfaction surveys; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Managing a team and answering for the results of the function.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, managing a team and answering for the results of the function",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Live chat exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Support Team Lead",
+        "Summit Telecom Group — On site, Omaha, NE"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.telecom.about",
+        "jd.telecom.duties",
+        "jd.telecom.needs"
+      ],
+      "slug": "telecom"
+    }
+  ],
+  "level": "lead",
+  "profession": "customer-support",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Salesforce in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Alder Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-10",
+          "title": "Support Team Lead"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Lantern Hill",
+          "end": "2023-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-04",
+          "title": "Senior Support Specialist"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Maple Court Care",
+          "end": "2020-04",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2016-10",
+          "title": "Customer Support Specialist"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.A.",
+          "field": "General Studies",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2016"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Salesforce",
+        "Macros and templates",
+        "Escalation handling",
+        "Onboarding calls",
+        "Zendesk",
+        "De-escalation",
+        "Ticket triage",
+        "Slack"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    },
+    {
+      "category": "method",
+      "name": "Macros and templates"
+    },
+    {
+      "category": "method",
+      "name": "Escalation handling"
+    },
+    {
+      "category": "method",
+      "name": "Onboarding calls"
+    },
+    {
+      "category": "tool",
+      "name": "Zendesk"
+    },
+    {
+      "category": "method",
+      "name": "De-escalation"
+    },
+    {
+      "category": "method",
+      "name": "Ticket triage"
+    },
+    {
+      "category": "tool",
+      "name": "Slack"
+    }
+  ],
+  "slots": {
+    "jd.telecom.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Support Team Lead at Summit Telecom Group, a telecommunications company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.telecom.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Support Team Lead, about updating help articles, tracking satisfaction scores, setting support schedules and goals. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.telecom.needs": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Escalation handling, Zendesk, Salesforce, Ticket triage, Satisfaction surveys, Live chat, and 10 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Escalation handling",
+        "Zendesk",
+        "Salesforce",
+        "Ticket triage",
+        "Satisfaction surveys",
+        "Live chat"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Support Team Lead at Alder Systems: updating help articles, using Ticket triage. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Ticket triage",
+        "50"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Support Team Lead at Alder Systems: resolving complaints, using Zendesk. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Zendesk"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Support Team Lead at Alder Systems: escalating bugs to engineering, using Macros and templates. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Macros and templates",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Support Team Lead at Alder Systems: answering billing questions, using Escalation handling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Escalation handling"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Support Team Lead at Alder Systems: tracking satisfaction scores, using De-escalation. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "De-escalation",
+        "35"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Support Team Lead at Alder Systems, about coaching new agents. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Support Team Lead at Alder Systems, about updating help articles. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Support Specialist at Lantern Hill: setting support schedules and goals, using Salesforce. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Salesforce",
+        "15"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Support Specialist at Lantern Hill: coaching new agents, using Slack. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Slack"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Support Specialist at Lantern Hill: documenting tickets, using Onboarding calls. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Onboarding calls",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Support Specialist at Lantern Hill: updating help articles, using Ticket triage. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Ticket triage"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Support Specialist at Lantern Hill: resolving complaints, using Zendesk. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Zendesk",
+        "55"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Support Specialist at Lantern Hill, about updating help articles. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Support Specialist at Lantern Hill, about resolving complaints. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Customer Support Specialist at Maple Court Care: tracking satisfaction scores, using Macros and templates. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Macros and templates",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Customer Support Specialist at Maple Court Care: documenting tickets, using Escalation handling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Escalation handling"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Customer Support Specialist at Maple Court Care: updating help articles, using De-escalation. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "De-escalation",
+        "55"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Customer Support Specialist at Maple Court Care: resolving complaints, using Salesforce. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Salesforce"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Customer Support Specialist at Maple Court Care: escalating bugs to engineering, using Slack. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Slack",
+        "25"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Customer Support Specialist at Maple Court Care, about escalating bugs to engineering. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Customer Support Specialist at Maple Court Care, about documenting tickets. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a manager-level customer support professional with about 10 years of experience, scope: managing a team and answering for the results of the function. Mention Salesforce, Macros and templates, Escalation handling.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Salesforce",
+        "Macros and templates",
+        "Escalation handling"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a manager-level customer support professional with about 10 years of experience, scope: managing a team and answering for the results of the function. Mention Salesforce, Macros and templates, Escalation handling.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Salesforce",
+        "Macros and templates",
+        "Escalation handling"
+      ]
+    }
+  }
+}

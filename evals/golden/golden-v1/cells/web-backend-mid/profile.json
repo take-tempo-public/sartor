@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "sam.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-sam-web-backend-mid",
+    "name": "Sam Mehta",
+    "phone": "(555) 010-0058",
+    "username": "gold_web_backend_mid"
+  },
+  "cell": "web-backend-mid",
+  "cell_seed": 678484957,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use API versioning on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to API versioning, in work or side projects",
+        "any exposure to PostgreSQL, in work or side projects"
+      ],
+      "scope_probes": [
+        "Backend Engineer at Alder Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)API\\ versioning",
+      "(?i)PostgreSQL",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "jenkins",
+      "linux",
+      "python",
+      "terraform"
+    ],
+    "notes": "mid-level backend software engineering. The profile has no API versioning, PostgreSQL; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "API versioning exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Backend Engineer",
+        "Marlowe Retail Systems — Hybrid, Charlotte, NC"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.retail-enterprise.about",
+        "jd.retail-enterprise.duties",
+        "jd.retail-enterprise.needs"
+      ],
+      "slug": "retail-enterprise"
+    }
+  ],
+  "level": "mid",
+  "profession": "web-backend",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Kafka in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Alder Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-08",
+          "title": "Backend Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": "2024-08",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-12",
+          "title": "Junior Backend Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Kafka",
+        "GraphQL",
+        "Python",
+        "GitHub",
+        "Linux",
+        "Spring Boot",
+        "Jenkins",
+        "Redis",
+        "Kubernetes",
+        "Terraform"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Kafka"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "GitHub"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "framework",
+      "name": "Spring Boot"
+    },
+    {
+      "category": "tool",
+      "name": "Jenkins"
+    },
+    {
+      "category": "tool",
+      "name": "Redis"
+    },
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    }
+  ],
+  "slots": {
+    "jd.retail-enterprise.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Backend Engineer at Marlowe Retail Systems, a national retail company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.retail-enterprise.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Backend Engineer, about service reliability and on-call, tuning slow queries, deployment pipeline automation. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.retail-enterprise.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Jenkins, Python, Linux, Terraform, PostgreSQL, API versioning, and 4 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Jenkins",
+        "Python",
+        "Linux",
+        "Terraform",
+        "PostgreSQL",
+        "API versioning"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Alder Systems: service reliability and on-call, using Spring Boot. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Spring Boot",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Alder Systems: tuning slow queries, using Terraform. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Terraform"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Alder Systems: incident follow-up and runbooks, using Jenkins. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Jenkins",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Alder Systems: database schema changes, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Backend Engineer at Alder Systems, about tuning slow queries. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Backend Engineer at Alder Systems, about API design and versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Dunmore Technologies: API design and versioning, using GraphQL. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "GraphQL",
+        "40"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Dunmore Technologies: deployment pipeline automation, using Kubernetes. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Kubernetes"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Dunmore Technologies: service reliability and on-call, using Python. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Python",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Dunmore Technologies: tuning slow queries, using Kafka. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Kafka"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Backend Engineer at Dunmore Technologies, about API design and versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Backend Engineer at Dunmore Technologies, about incident follow-up and runbooks. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level backend software engineering professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kafka, GraphQL, Python.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kafka",
+        "GraphQL",
+        "Python"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level backend software engineering professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kafka, GraphQL, Python.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kafka",
+        "GraphQL",
+        "Python"
+      ]
+    }
+  }
+}

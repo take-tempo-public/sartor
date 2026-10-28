@@ -1,0 +1,432 @@
+{
+  "candidate": {
+    "email": "riley.silva@example.com",
+    "linkedin": "linkedin.com/in/example-riley-logistics-driving-mid",
+    "name": "Riley Silva",
+    "phone": "(555) 010-4750",
+    "username": "gold_logistics_driving_mid"
+  },
+  "cell": "logistics-driving-mid",
+  "cell_seed": 1706346869,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Customer signoff on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Customer signoff, in work or side projects",
+        "any exposure to Pre-trip inspections, in work or side projects",
+        "any progress toward Hazardous Materials Endorsement",
+        "any progress toward Dispatch Coordinator Certificate"
+      ],
+      "scope_probes": [
+        "Class A Truck Driver at Stonebridge Logistics: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Customer\\ signoff",
+      "(?i)Pre\\-trip\\ inspections",
+      "(?i)Hazardous\\ Materials\\ Endorsement",
+      "(?i)Dispatch\\ Coordinator\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "defensive driving",
+      "delivery scheduling",
+      "hazmat handling",
+      "route planning"
+    ],
+    "notes": "mid-level truck driving and dispatch. The profile has no Customer signoff, Pre-trip inspections, Hazardous Materials Endorsement, Dispatch Coordinator Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Carrying a full caseload or class without close supervision.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, carrying a full caseload or class without close supervision",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Customer signoff exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Class A Truck Driver",
+        "Ironwood Freight Systems — On site, Memphis, TN"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.freight-carrier.about",
+        "jd.freight-carrier.duties",
+        "jd.freight-carrier.needs"
+      ],
+      "slug": "freight-carrier"
+    }
+  ],
+  "level": "mid",
+  "profession": "logistics-driving",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Trailer coupling in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Stonebridge Logistics",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-10",
+          "title": "Class A Truck Driver"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Prairie Freight Lines",
+          "end": "2023-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-01",
+          "title": "Delivery Driver"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Commercial Driving",
+          "institution": "Lakeshore Trucking School",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Driver Safety Council",
+          "name": "Driver Safety Certificate",
+          "year": "2024"
+        },
+        {
+          "issuer": "State Motor Vehicle Agency",
+          "name": "Commercial Driver Licence",
+          "year": "2022"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Trailer coupling",
+        "Route planning",
+        "Defensive driving",
+        "Bills of lading",
+        "Hours-of-service logging",
+        "Load securement",
+        "Delivery scheduling",
+        "Hazmat handling"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Trailer coupling"
+    },
+    {
+      "category": "method",
+      "name": "Route planning"
+    },
+    {
+      "category": "method",
+      "name": "Defensive driving"
+    },
+    {
+      "category": "method",
+      "name": "Bills of lading"
+    },
+    {
+      "category": "method",
+      "name": "Hours-of-service logging"
+    },
+    {
+      "category": "method",
+      "name": "Load securement"
+    },
+    {
+      "category": "method",
+      "name": "Delivery scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Hazmat handling"
+    }
+  ],
+  "slots": {
+    "jd.freight-carrier.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Class A Truck Driver at Ironwood Freight Systems, a regional freight carrier. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.freight-carrier.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Class A Truck Driver, about keeping driver logs, reporting vehicle defects, planning routes. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.freight-carrier.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Defensive driving, Route planning, Hazmat handling, Delivery scheduling, Pre-trip inspections, Customer signoff, and 5 or more years of experience. State Driver Safety Certificate as a required licence or certification. State Hazardous Materials Endorsement as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Defensive driving",
+        "Route planning",
+        "Hazmat handling",
+        "Delivery scheduling",
+        "Pre-trip inspections",
+        "Customer signoff",
+        "Driver Safety Certificate",
+        "Hazardous Materials Endorsement"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: coordinating with dispatch, using Defensive driving. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Defensive driving",
+        "50"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: reporting vehicle defects, using Load securement. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Load securement"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: keeping driver logs, using Bills of lading. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bills of lading",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: securing and checking loads, using Delivery scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Delivery scheduling"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Class A Truck Driver at Stonebridge Logistics, about delivering to customers on time. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Class A Truck Driver at Stonebridge Logistics, about reporting vehicle defects. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Delivery Driver at Prairie Freight Lines: delivering to customers on time, using Hazmat handling. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Hazmat handling",
+        "20"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Delivery Driver at Prairie Freight Lines: planning routes, using Route planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Route planning"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Delivery Driver at Prairie Freight Lines: pre-trip vehicle inspections, using Trailer coupling. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Trailer coupling",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Delivery Driver at Prairie Freight Lines: coordinating with dispatch, using Hours-of-service logging. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Hours-of-service logging"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Delivery Driver at Prairie Freight Lines, about reporting vehicle defects. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Delivery Driver at Prairie Freight Lines, about planning routes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a experienced-level truck driving and dispatch professional with about 5 years of experience, scope: carrying a full caseload or class without close supervision. Mention Trailer coupling, Route planning, Defensive driving.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Trailer coupling",
+        "Route planning",
+        "Defensive driving"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a experienced-level truck driving and dispatch professional with about 5 years of experience, scope: carrying a full caseload or class without close supervision. Mention Trailer coupling, Route planning, Defensive driving.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Trailer coupling",
+        "Route planning",
+        "Defensive driving"
+      ]
+    }
+  }
+}

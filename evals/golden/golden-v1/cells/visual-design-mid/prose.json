@@ -1,0 +1,42 @@
+{
+  "cell": "visual-design-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:9fe8d0c4b4bcd920cfd306dcfc673ce8e6dd6ae45048e9f91c0d91f92b4ec67c",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUadpKTRdEHm9whc9J8"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3586,
+      "output_tokens": 2577
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.food-startup.about": "Kindle Street Foods is a small food-products startup, and our brand needs a designer who can own how it looks. You'll shape our products on shelves, in feeds and in print. Expect a hybrid setup in Brooklyn, a fast pace, and a team that wants your opinion.",
+    "jd.food-startup.duties": "What you'll do\n- Build packaging mockups for new and existing products\n- Design social media graphics for launches and everyday posts\n- Prepare print-ready files for printers and check proofs before they run\n- Keep our visual style consistent across packaging, social and print\n- Work with the founders and marketing team on campaign ideas",
+    "jd.food-startup.needs": "What we're looking for\n- 3 or more years of experience as a graphic designer\n- Strong skills in Adobe Photoshop, including photo retouching for product shots\n- Comfort with Canva for quick social content\n- Hands-on print production experience, from file setup to press checks\n- Working knowledge of motion graphics for short social clips\n- A solid grasp of color theory and how it works on packaging",
+    "r1.b1": "Designs social media graphics that carry packaging design elements into feeds, raising post engagement by 30 percent.",
+    "r1.b2": "Prepares print-ready files for printers in Adobe InDesign, checking bleeds, color settings and fonts before handoff.",
+    "r1.b3": "Handles client revisions on motion graphics projects, cutting revision turnaround time by 35 percent.",
+    "r1.b4": "Coordinates print production for campaign launches, keeping proofs, printer schedules and deliveries on track.",
+    "r1.i1": "Graphic designer at Tillman Brothers who manages client revisions from first feedback through final approved files.",
+    "r1.i2": "Graphic designer at Tillman Brothers who supports campaign launches with print and digital assets delivered on schedule.",
+    "r2.b1": "Built packaging mockups and animated product previews in Adobe After Effects, reducing mockup approval time by 55 percent.",
+    "r2.b2": "Prepared print layouts with images edited in Adobe Photoshop, matching client specifications for each run.",
+    "r2.b3": "Updated brand guidelines in Adobe Illustrator, cutting time spent on asset requests by 40 percent.",
+    "r2.b4": "Created social media graphics in Canva from shared templates so marketing staff could publish posts on time.",
+    "r2.i1": "Junior graphic designer at Marlow Contracting who produced print and digital assets for campaign launches.",
+    "r2.i2": "Junior graphic designer at Marlow Contracting who kept brand guidelines current and applied updates across company materials.",
+    "summary.1": "Graphic designer with 3 years of experience in visual and brand design, owning a design workstream end to end from concept through final files. Works in Figma, Adobe Illustrator and Adobe After Effects across packaging, print production and motion graphics.",
+    "summary.2": "Visual and brand designer with about 3 years of experience across packaging, layout design and social content. Owns a full design workstream end to end, using Figma for layouts, Adobe Illustrator for brand assets and Adobe After Effects for motion graphics."
+  }
+}

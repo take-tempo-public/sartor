@@ -1,0 +1,425 @@
+{
+  "candidate": {
+    "email": "devon.novak@example.com",
+    "linkedin": "linkedin.com/in/example-devon-project-mgmt-mid",
+    "name": "Devon Novak",
+    "phone": "(555) 010-5314",
+    "username": "gold_project_mgmt_mid"
+  },
+  "cell": "project-mgmt-mid",
+  "cell_seed": 362087650,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Change control on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Change control, in work or side projects",
+        "any exposure to Stakeholder communication, in work or side projects",
+        "any progress toward Agile Delivery Certificate"
+      ],
+      "scope_probes": [
+        "Project Manager at Granite Ridge: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Change\\ control",
+      "(?i)Stakeholder\\ communication",
+      "(?i)Agile\\ Delivery\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "asana",
+      "jira",
+      "resource planning",
+      "vendor negotiation"
+    ],
+    "notes": "mid-level project management. The profile has no Change control, Stakeholder communication, Agile Delivery Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning a recurring process from request to completion.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning a recurring process from request to completion",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Change control exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Project Manager",
+        "Tandem Software — Hybrid, Boston, MA"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.software-company.about",
+        "jd.software-company.duties",
+        "jd.software-company.needs"
+      ],
+      "slug": "software-company"
+    }
+  ],
+  "level": "mid",
+  "profession": "project-mgmt",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Status reporting in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Granite Ridge",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-07",
+          "title": "Project Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Kestrel Works",
+          "end": "2024-07",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2023-05",
+          "title": "Project Coordinator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Business Administration",
+          "institution": "State University",
+          "slots": [],
+          "year": "2023"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Project Practice Institute",
+          "name": "Project Practitioner Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Status reporting",
+        "Smartsheet",
+        "Vendor negotiation",
+        "Jira",
+        "Resource planning",
+        "Asana",
+        "Microsoft Project",
+        "Risk registers"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Status reporting"
+    },
+    {
+      "category": "tool",
+      "name": "Smartsheet"
+    },
+    {
+      "category": "method",
+      "name": "Vendor negotiation"
+    },
+    {
+      "category": "tool",
+      "name": "Jira"
+    },
+    {
+      "category": "method",
+      "name": "Resource planning"
+    },
+    {
+      "category": "tool",
+      "name": "Asana"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Project"
+    },
+    {
+      "category": "method",
+      "name": "Risk registers"
+    }
+  ],
+  "slots": {
+    "jd.software-company.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Project Manager at Tandem Software, a software company. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.software-company.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Project Manager, about project close-out, change requests, risk and issue logs. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.software-company.needs": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Asana, Resource planning, Vendor negotiation, Jira, Stakeholder communication, Change control, and 3 or more years of experience. State Project Practitioner Certificate as a required licence or certification. State Agile Delivery Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Asana",
+        "Resource planning",
+        "Vendor negotiation",
+        "Jira",
+        "Stakeholder communication",
+        "Change control",
+        "Project Practitioner Certificate",
+        "Agile Delivery Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Project Manager at Granite Ridge: budget reviews, using Resource planning. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Resource planning",
+        "50"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Manager at Granite Ridge: project close-out, using Status reporting. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Status reporting"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Project Manager at Granite Ridge: tracking schedules and milestones, using Vendor negotiation. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Vendor negotiation",
+        "55"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Manager at Granite Ridge: vendor coordination, using Asana. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Asana"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Project Manager at Granite Ridge, about risk and issue logs. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Project Manager at Granite Ridge, about project close-out. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Project Coordinator at Kestrel Works: risk and issue logs, using Risk registers. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Risk registers",
+        "15"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Coordinator at Kestrel Works: change requests, using Smartsheet. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Smartsheet"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Project Coordinator at Kestrel Works: budget reviews, using Microsoft Project. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Project",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Coordinator at Kestrel Works: project close-out, using Jira. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Jira"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Project Coordinator at Kestrel Works, about project close-out. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Project Coordinator at Kestrel Works, about change requests. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a specialist-level project management professional with about 3 years of experience, scope: owning a recurring process from request to completion. Mention Status reporting, Smartsheet, Vendor negotiation.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Status reporting",
+        "Smartsheet",
+        "Vendor negotiation"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a specialist-level project management professional with about 3 years of experience, scope: owning a recurring process from request to completion. Mention Status reporting, Smartsheet, Vendor negotiation.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Status reporting",
+        "Smartsheet",
+        "Vendor negotiation"
+      ]
+    }
+  }
+}

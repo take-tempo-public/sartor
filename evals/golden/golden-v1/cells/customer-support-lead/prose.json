@@ -1,0 +1,51 @@
+{
+  "cell": "customer-support-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:fd3dbf8917239c2fd2080ed82170a072ea9ffdff14783bbf0405a380fb4f298f",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTxrrQLTPU97R8MvuRB"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4881,
+      "output_tokens": 2778
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.telecom.about": "Position summary\nSummit Telecom Group seeks a Support Team Lead to guide its on-site support team in Omaha, NE. The Support Team Lead oversees daily support operations, coaches agents and is accountable for service quality across customer channels. Minimum requirements include team leadership experience and a working knowledge of support tools. Preference is given to candidates with telecommunications experience.",
+    "jd.telecom.duties": "Responsibilities\n- Review and update help articles so that published guidance reflects current products and common customer issues.\n- Track customer satisfaction scores and report trends to management.\n- Set support schedules that match expected contact volume across the week.\n- Define team goals and review progress with each agent on a regular basis.\n- Coach agents on case handling and identify areas for further training.",
+    "jd.telecom.needs": "Minimum and preferred qualifications\n- 10 or more years of experience in customer support, including time in a lead role.\n- Escalation handling and ticket triage experience in a high-volume support environment.\n- Working knowledge of Zendesk and Salesforce.\n- Preferred: experience running satisfaction surveys and supporting customers through live chat.",
+    "r1.b1": "Updates help articles using findings from ticket triage to address recurring issues, cutting repeat contacts on those topics by 50 percent.",
+    "r1.b2": "Resolves customer complaints in Zendesk, working each case through to a documented outcome.",
+    "r1.b3": "Escalates product bugs to engineering using standard macros and templates, reducing escalation handoff time by 35 percent.",
+    "r1.b4": "Answers customer billing questions and applies escalation handling when an account issue needs review beyond the front line.",
+    "r1.b5": "Tracks satisfaction scores and coaches the team in de-escalation, raising scores on difficult contacts by 35 percent.",
+    "r1.i1": "Leads the support team at Alder Systems, with a focus on coaching new agents as they learn the tools and processes.",
+    "r1.i2": "Leads the support team at Alder Systems and keeps help articles current so customers and agents work from accurate guidance.",
+    "r2.b1": "Set support schedules and goals in Salesforce, improving schedule adherence across the team by 15 percent.",
+    "r2.b2": "Coached new agents through Slack, answering questions in real time and sharing guidance on open cases.",
+    "r2.b3": "Documented tickets from onboarding calls in a consistent format, raising the share of complete ticket records by 10 percent.",
+    "r2.b4": "Updated help articles based on patterns found during ticket triage, keeping guidance aligned with common customer issues.",
+    "r2.b5": "Resolved customer complaints in Zendesk, reducing reopened complaint tickets by 55 percent.",
+    "r2.i1": "Handled senior support work at Lantern Hill, including updating help articles to reflect frequent customer questions.",
+    "r2.i2": "Handled senior support work at Lantern Hill, with responsibility for resolving customer complaints through to a clear outcome.",
+    "r3.b1": "Tracked satisfaction scores and refined macros and templates for common requests, lifting scores by 30 percent.",
+    "r3.b2": "Documented tickets in detail to support escalation handling, giving senior staff the context needed to act quickly.",
+    "r3.b3": "Updated help articles with de-escalation guidance for agents, cutting complaint escalations by 55 percent.",
+    "r3.b4": "Resolved customer complaints and recorded each outcome in Salesforce for follow-up.",
+    "r3.b5": "Escalated bugs to engineering through Slack, shortening the time to an engineering response by 25 percent.",
+    "r3.i1": "Provided customer support at Maple Court Care, including escalating product bugs to engineering with clear reproduction details.",
+    "r3.i2": "Provided customer support at Maple Court Care, with careful documentation of tickets so cases could be picked up by any agent.",
+    "summary.1": "Customer support leader with 10 years of experience managing support teams and answering for the results of the function. Uses Salesforce, macros and templates, and structured escalation handling to keep service consistent and accountable.",
+    "summary.2": "Support team lead with about 10 years in customer support, responsible for team performance and the outcomes of the support function. Brings hands-on skill in escalation handling, Salesforce, and macros and templates that speed up common responses."
+  }
+}

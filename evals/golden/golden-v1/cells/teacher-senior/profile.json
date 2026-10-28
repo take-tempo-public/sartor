@@ -1,0 +1,517 @@
+{
+  "candidate": {
+    "email": "devon.ito@example.com",
+    "linkedin": "linkedin.com/in/example-devon-teacher-senior",
+    "name": "Devon Ito",
+    "phone": "(555) 010-8408",
+    "username": "gold_teacher_senior"
+  },
+  "cell": "teacher-senior",
+  "cell_seed": 1085019616,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Lesson planning on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Lesson planning, in work or side projects",
+        "any exposure to Reading intervention, in work or side projects"
+      ],
+      "scope_probes": [
+        "Lead Teacher at Maple Street School: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Lesson\\ planning",
+      "(?i)Reading\\ intervention",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "behavior supports",
+      "math manipulatives",
+      "nearpod",
+      "parent communication"
+    ],
+    "notes": "senior-level elementary teaching. The profile has no Lesson planning, Reading intervention; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Guiding colleagues and handling the hardest cases.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, guiding colleagues and handling the hardest cases",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Lesson planning exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Lead Teacher",
+        "Lakeshore Preparatory Academy — On site, Evanston, IL"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.private-school.about",
+        "jd.private-school.duties",
+        "jd.private-school.needs"
+      ],
+      "slug": "private-school"
+    }
+  ],
+  "level": "senior",
+  "profession": "teacher",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Nearpod in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Maple Street School",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2021-10",
+          "title": "Lead Teacher"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Riverside Learning Center",
+          "end": "2021-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2019-04",
+          "title": "Classroom Teacher"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Hillcrest Elementary School",
+          "end": "2019-04",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-10",
+          "title": "Associate Teacher"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Elementary Education",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Department of Education",
+          "name": "State Teaching Licence",
+          "year": "2020"
+        },
+        {
+          "issuer": "State Department of Education",
+          "name": "Reading Specialist Endorsement",
+          "year": "2026"
+        },
+        {
+          "issuer": "State Department of Education",
+          "name": "Instructional Leadership Endorsement",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Nearpod",
+        "Math manipulatives",
+        "Parent communication",
+        "Google Classroom",
+        "Differentiated instruction",
+        "Behavior supports",
+        "Small-group instruction",
+        "Classroom management"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Nearpod"
+    },
+    {
+      "category": "method",
+      "name": "Math manipulatives"
+    },
+    {
+      "category": "method",
+      "name": "Parent communication"
+    },
+    {
+      "category": "tool",
+      "name": "Google Classroom"
+    },
+    {
+      "category": "method",
+      "name": "Differentiated instruction"
+    },
+    {
+      "category": "method",
+      "name": "Behavior supports"
+    },
+    {
+      "category": "method",
+      "name": "Small-group instruction"
+    },
+    {
+      "category": "method",
+      "name": "Classroom management"
+    }
+  ],
+  "slots": {
+    "jd.private-school.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Lead Teacher at Lakeshore Preparatory Academy, a private nonprofit school. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.private-school.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Lead Teacher, about assessing student progress, planning daily lessons, adapting work for different learners. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.private-school.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Parent communication, Nearpod, Behavior supports, Math manipulatives, Reading intervention, Lesson planning, and 9 or more years of experience. State State Teaching Licence as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Parent communication",
+        "Nearpod",
+        "Behavior supports",
+        "Math manipulatives",
+        "Reading intervention",
+        "Lesson planning",
+        "State Teaching Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Lead Teacher at Maple Street School: leading grade-level planning, using Classroom management. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Classroom management",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Lead Teacher at Maple Street School: parent conferences, using Behavior supports. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Behavior supports"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Lead Teacher at Maple Street School: adapting work for different learners, using Small-group instruction. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Small-group instruction",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Lead Teacher at Maple Street School: team planning with colleagues, using Google Classroom. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Google Classroom"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Lead Teacher at Maple Street School, about planning daily lessons. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Lead Teacher at Maple Street School, about assessing student progress. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Classroom Teacher at Riverside Learning Center: small-group reading, using Math manipulatives. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Math manipulatives",
+        "35"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Classroom Teacher at Riverside Learning Center: planning daily lessons, using Parent communication. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Parent communication"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Classroom Teacher at Riverside Learning Center: classroom routines, using Differentiated instruction. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Differentiated instruction",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Classroom Teacher at Riverside Learning Center: parent conferences, using Nearpod. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Nearpod"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Classroom Teacher at Riverside Learning Center, about assessing student progress. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Classroom Teacher at Riverside Learning Center, about adapting work for different learners. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Associate Teacher at Hillcrest Elementary School: adapting work for different learners, using Classroom management. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Classroom management",
+        "35"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Teacher at Hillcrest Elementary School: team planning with colleagues, using Behavior supports. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Behavior supports"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Associate Teacher at Hillcrest Elementary School: assessing student progress, using Small-group instruction. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Small-group instruction",
+        "40"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Teacher at Hillcrest Elementary School: small-group reading, using Google Classroom. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Google Classroom"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Associate Teacher at Hillcrest Elementary School, about adapting work for different learners. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Associate Teacher at Hillcrest Elementary School, about team planning with colleagues. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level elementary teaching professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Nearpod, Math manipulatives, Parent communication.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Nearpod",
+        "Math manipulatives",
+        "Parent communication"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level elementary teaching professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Nearpod, Math manipulatives, Parent communication.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Nearpod",
+        "Math manipulatives",
+        "Parent communication"
+      ]
+    }
+  }
+}

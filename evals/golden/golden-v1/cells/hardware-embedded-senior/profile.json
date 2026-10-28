@@ -1,0 +1,505 @@
+{
+  "candidate": {
+    "email": "alex.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-alex-hardware-embedded-senior",
+    "name": "Alex Mehta",
+    "phone": "(555) 010-5387",
+    "username": "gold_hardware_embedded_senior"
+  },
+  "cell": "hardware-embedded-senior",
+  "cell_seed": 1781519897,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Embedded C on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Embedded C, in work or side projects",
+        "any exposure to Signal integrity, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Embedded Engineer at Sutter Street Shop: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Embedded\\ C",
+      "(?i)Signal\\ integrity",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "pcb layout",
+      "python",
+      "schematic capture",
+      "verilog"
+    ],
+    "notes": "senior-level hardware and embedded engineering. The profile has no Embedded C, Signal integrity; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Embedded C exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Embedded Engineer",
+        "Halvorsen Aerospace Systems — On site, Wichita, KS"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.aerospace-supplier.about",
+        "jd.aerospace-supplier.duties",
+        "jd.aerospace-supplier.needs"
+      ],
+      "slug": "aerospace-supplier"
+    }
+  ],
+  "level": "senior",
+  "profession": "hardware-embedded",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Oscilloscope debugging in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Sutter Street Shop",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-01",
+          "title": "Senior Embedded Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Pennywhistle Supply",
+          "end": "2025-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-06",
+          "title": "Hardware Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Calloway Group",
+          "end": "2020-06",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-09",
+          "title": "Junior Hardware Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Electrical Engineering",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Oscilloscope debugging",
+        "Python",
+        "Linux",
+        "Firmware bring-up",
+        "PCB layout",
+        "JTAG debugging",
+        "VHDL",
+        "Schematic capture",
+        "SPICE simulation",
+        "Verilog"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Oscilloscope debugging"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "method",
+      "name": "Firmware bring-up"
+    },
+    {
+      "category": "method",
+      "name": "PCB layout"
+    },
+    {
+      "category": "method",
+      "name": "JTAG debugging"
+    },
+    {
+      "category": "language",
+      "name": "VHDL"
+    },
+    {
+      "category": "method",
+      "name": "Schematic capture"
+    },
+    {
+      "category": "tool",
+      "name": "SPICE simulation"
+    },
+    {
+      "category": "language",
+      "name": "Verilog"
+    }
+  ],
+  "slots": {
+    "jd.aerospace-supplier.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Senior Embedded Engineer at Halvorsen Aerospace Systems, an aerospace supplier. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.aerospace-supplier.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Senior Embedded Engineer, about specification writing, board bring-up, component selection with suppliers. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.aerospace-supplier.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Schematic capture, Python, PCB layout, Verilog, Signal integrity, Embedded C, and 9 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Schematic capture",
+        "Python",
+        "PCB layout",
+        "Verilog",
+        "Signal integrity",
+        "Embedded C"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Sutter Street Shop: prototype testing, using SPICE simulation. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "SPICE simulation",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Sutter Street Shop: design reviews, using Firmware bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firmware bring-up"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Sutter Street Shop: component selection with suppliers, using Linux. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Linux",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Sutter Street Shop: mentoring junior engineers, using Python. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Python"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Embedded Engineer at Sutter Street Shop, about firmware updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Embedded Engineer at Sutter Street Shop, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Pennywhistle Supply: board bring-up, using PCB layout. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "PCB layout",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Pennywhistle Supply: specification writing, using VHDL. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "VHDL"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Pennywhistle Supply: validation test plans, using JTAG debugging. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "JTAG debugging",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Pennywhistle Supply: prototype testing, using Verilog. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Verilog"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Hardware Engineer at Pennywhistle Supply, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Hardware Engineer at Pennywhistle Supply, about specification writing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Calloway Group: design reviews, using Oscilloscope debugging. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Oscilloscope debugging",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Calloway Group: component selection with suppliers, using Schematic capture. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Schematic capture"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Calloway Group: firmware updates, using SPICE simulation. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "SPICE simulation",
+        "25"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Calloway Group: board bring-up, using Firmware bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firmware bring-up"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Hardware Engineer at Calloway Group, about specification writing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Hardware Engineer at Calloway Group, about prototype testing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level hardware and embedded engineering professional with about 9 years of experience, scope: setting the technical direction for a product area. Mention Oscilloscope debugging, Python, Linux.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Oscilloscope debugging",
+        "Python",
+        "Linux"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level hardware and embedded engineering professional with about 9 years of experience, scope: setting the technical direction for a product area. Mention Oscilloscope debugging, Python, Linux.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Oscilloscope debugging",
+        "Python",
+        "Linux"
+      ]
+    }
+  }
+}

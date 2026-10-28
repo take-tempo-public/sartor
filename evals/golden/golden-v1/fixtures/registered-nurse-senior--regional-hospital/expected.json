@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Priya Haddad",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Infection control, in work or side projects",
+      "any exposure to Triage, in work or side projects",
+      "any progress toward Nurse Manager Certificate"
+    ],
+    "scope_probes": [
+      "Charge Nurse at Meridian Cross: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Infection\\ control",
+    "(?i)Triage",
+    "(?i)Nurse\\ Manager\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
+      },
+      "edit_replacement": "directing discharge planning so patients leave with clear instructions and, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "directing discharge planning so patients leave with clear instructions and",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Infection control exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "clinical documentation",
+    "discharge planning",
+    "patient education",
+    "vital signs monitoring"
+  ],
+  "notes": "senior-level nursing. The profile has no Infection control, Triage, Nurse Manager Certificate; generation must not claim them."
+}
