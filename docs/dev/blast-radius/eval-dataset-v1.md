@@ -133,6 +133,50 @@ Found while enumerating (each changes the plan):
 
 ---
 
+## Measured before any spend (2026-10-28, no model, no money)
+
+**What was read.** The O*NET 31.0 licence page, raw (`curl`, text extracted): CC BY 4.0, limited to the downloadable
+files on three pages, with a credit text that includes "has modified all or some of this information", and a
+trademark rule that the name is never used in the possessive or plural (one existing evidence line broke it and was
+reworded). Six tables from `https://www.onetcenter.org/dl_files/database/db_31_0_csv/` were downloaded and read:
+`occupation_data`, `task_statements`, `software_skills`, `job_titles`, `sample_of_reported_titles`, `job_zones`. 31.0
+names its tables differently from older releases (there is no Technology Skills or Alternate Titles file). **Not read:**
+the UK DDaT ladders and the OGL text. They are not relied on: no DDaT content is copied, every ladder stays
+`rule_source = "authored"`, and the tech-product ladder is unchanged. The mapping evidence for each of the 21 new
+profession rows is in `manifest.json`. Counted from it: 18 of the 24 rows are `exact` and 6 are `nearest` (mobile,
+hardware and embedded, UX, social services, and product management and site reliability from 3a); three rows also name
+a second occupation for their top tier (social services, carpentry and driving).
+
+**The matrix.** 24 professions in the owner's four groups (9, 6, 4, 5) make 96 fixtures with one JD each; the 96
+postings are spread over the five settings (startup 17, enterprise 34, health and nonprofit 22, small business 18,
+public sector 5, which is 5.2 percent). `tests/test_golden_facts.py` pins all of that and runs in 5 s.
+
+**The full-size rehearsal** (a throwaway test, deleted; stub prose that is distinct per slot): the 96 cells built and
+written in 1.6 s; 24 advance pairs derived and the manifest stamped in about 10 s; `check_suite` over 96 cells, 24
+pairs and 24 facts files in 3.6 s; the real pipeline against the recording stub fired exactly the planned call kinds for
+all 120 fixtures, in generate mode (3.9 s) and assemble mode (18.9 s); `--estimate` counted 1,512 calls (generate) and
+1,632 (assemble) with nothing skipped. Slots per cell are fixed by the ladder: 11, 17, 23 and 26 for entry, mid,
+senior and lead, so 1,848 slots in all.
+
+**What the rehearsal found.** With the shared test stub (every bullet is a skill plus the word "steady") 19 of 96
+fixtures came back `scenario_misaligned` in assemble mode. Observed on `accounting-entry--tax-firm`: the assembler kept
+three of four bullets and dropped the iteration target, which was a near-duplicate of the bullet after it. That is a
+property of the degenerate stub, not of the dataset; with distinct stub prose all 96 align. It does show that **a
+derived iteration scenario depends on its target bullet surviving assembly**, which model prose that repeats itself
+within a role could break. It is the declared `scenario_misaligned` signal, and the calibration run (follow-on item)
+is where its real rate is measured.
+
+**The cost, with its one unknown stated.** From the committed facts (4 characters a token and 1.35 tokens a word are
+assumptions): the 96 prompts are 988,076 characters, about 247,000 input tokens, $0.99 at $4 a million. Visible output
+at the slots' minimum, middle and maximum word counts is about 32,000, 86,000 and 140,000 tokens: $0.65, $1.72 and
+$2.79 at $20 a million. **Adaptive thinking tokens are billed as output and have never been observed:** at 2,000,
+5,000 or 10,000 tokens a cell they add $3.84, $9.60 or $19.20 over 96 cells. So the whole set is about $2.7 if the
+model barely thinks, and the first paid cell's thinking tokens decide whether it is $6 or $20. The earlier "$0.05 to
+$0.14 a cell" was a guess about that number. `AUTHOR_EFFORT` is `medium`; a lower effort is the lever if the first
+cell shows thinking dominating, and it changes no prompt text. Nothing was sent.
+
+---
+
 ## Deferred
 
 The **`evals/fixtures/synthetic/` retirement** and every consumer in the list below move to the follow-on item, because a
