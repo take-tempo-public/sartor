@@ -993,6 +993,20 @@ def _cert_names(profile: dict[str, Any]) -> list[str]:
 class TestCertifications:
     """Licences and certifications are facts the candidate holds by tier, and claims the candidate must not make."""
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="known defect, item 194 scope 1: the posting requires the LOWEST-tier certification held "
+        "(a foreman posting requires an apprentice card), in 37 of the 56 committed cells that hold any. "
+        "Fixing `asked_certs` in build_profile flips this to a strict failure: remove the marker, then "
+        "the suite check's rebuild comparison forces those cells to be regenerated.",
+    )
+    def test_the_posting_requires_the_highest_certification_the_candidate_holds(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        held = _cert_names(profile)  # lowest tier first
+        assert len(held) >= 2
+        needs = next(s["brief"] for sid, s in profile["slots"].items() if sid.endswith(".needs"))
+        assert f"State {held[-1]} as a required licence or certification." in needs
+
     @pytest.mark.parametrize(
         ("level", "held"),
         [
