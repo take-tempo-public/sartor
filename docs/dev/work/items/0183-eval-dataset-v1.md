@@ -3,13 +3,21 @@ schema = 1
 id = 183
 kind = "item"
 title = "Eval redesign step 3a: dataset format, generator, per-cell seeds, reachability check"
-status = "open"
+status = "closed"
 depends_on = [182]
 decision_owner = "agent"
 epic = 180
 branches = ["feat/eval-dataset-format"]
 refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-format.md"]
 summary = "Step 3a, no paid call: golden-set format, stub-tested generator, per-cell seeds, reachability check, 3 pilots (3b: 191)."
+resolution = "Built and merged as PR #200 (acf6d6f, 2026-10-23); the owner asked for it to be closed on 2026-10-27 (docs/close-eval-items-182-183-193). The 2026-10-21 list of what was still open did not get done here, it moved: tier sizes and the O*NET and DDaT re-reads are item 191's, and the C-2 route for the USAJOBS fetch was settled as no fetch (design doc 6.5, decided 2026-10-27, item 193). The generator has never made a real call."
+verified_by = [
+  "tests/test_golden_set.py",
+  "tests/test_golden_author.py",
+  "tests/test_golden_reachability.py",
+  "tests/test_eval_golden_runner.py",
+  "PR #200 merge acf6d6f: python -m scripts.ci_wait 200 exit 0 (read 2026-10-27, after the merge), no absorbed reruns, required checks green (CI run 40025893744)",
+]
 ```
 
 Step 3 of the eval redesign build order: docs/dev/eval-redesign-design.md section 9, row 3. Scope lives there. The owner split the step on 2026-10-22: this item is 3a; the paid generation of the 48 cells, the calibration run and the retirement of `evals/fixtures/synthetic/` are item 191.
@@ -46,3 +54,7 @@ Consumers: `docs/dev/blast-radius/eval-dataset-format.md`.
 ### 2026-10-22 -- built (feat/eval-dataset-format); waits on the owner's go to push
 
 Step 3a is built: the format (`evals/golden_set.py`, `evals/golden/golden-v1/` with three converted pilot cells and 12 exact waivers), per-cell seeds in the runner, the stub-tested generator (`evals/golden_author.py`, never run for real), the reachability check, and the docs. No paid call was made. Open on purpose until the PR merges: it closes with a `verified_by` naming `tests/test_golden_set.py`, `tests/test_golden_author.py`, `tests/test_golden_reachability.py`, `tests/test_eval_golden_runner.py` and the green CI run of the merge. Found and filed: item 192 (the committed corpus seed's `area` / `study_type` keys are dropped by the importer). Proposal for the owner: design doc 6.5 (the USAJOBS fetch and charter C-2).
+
+### 2026-10-27 -- closed on docs/close-eval-items-182-183-193
+
+PR #200 merged as `acf6d6f` on 2026-10-23T21:41Z. The owner asked for the closure in chat on 2026-10-27. `python -m scripts.ci_wait 200` was run after the merge and printed `GREEN (exit 0)` and `no absorbed reruns found in any required run log` (CI run 40025893744). The closure rests on the four test files and that run. The 2026-10-21 "still open for this step" list is not closed by this: tier sizes and the primary-source licence re-reads moved to item 191, and the USAJOBS fetch and its C-2 route were dropped by the owner's no-fetch decision of 2026-10-27 (item 193, design doc 6.5).
