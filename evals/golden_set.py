@@ -1419,6 +1419,21 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
             problems.append(
                 f"{where}: setting {industry.get('setting')!r} is not one of {SETTINGS}"
             )
+    tiers = [i.get("level") for i in facts["industries"]]
+    if any(tier is not None for tier in tiers):
+        # One JD per cell: the profession names the industry each tier is posted in, so all four are named.
+        for industry in facts["industries"]:
+            if industry.get("level") not in LEVELS:
+                problems.append(
+                    f"industry {industry.get('slug')!r}: level {industry.get('level')!r} must be one of "
+                    f"{LEVELS} when any industry names a tier"
+                )
+        missing = [lv for lv in LEVELS if tiers.count(lv) == 0]
+        repeated = [lv for lv in LEVELS if tiers.count(lv) > 1]
+        if missing or repeated:
+            problems.append(
+                f"industries must cover each tier exactly once (missing {missing}, repeated {repeated})"
+            )
     for key in ("degree", "field"):
         if not facts["education"].get(key):
             problems.append(f"education has no {key!r}")
@@ -1478,6 +1493,18 @@ def _tenures(seed: int, ladder: dict[str, Any]) -> list[int]:
 def cell_seed_for(profession: str, level: str) -> int:
     """The integer every pseudo-random choice in a cell derives from. A function of the cell's name only."""
     return _hash_int(0, f"{SUITE}:{profession}:{level}") % (2**31)
+
+
+def industries_for(facts: dict[str, Any], level: str) -> list[str] | None:
+    """The one industry ``level`` is posted in, as ``[slug]``; ``None`` when the facts name no tiers.
+
+    A profession whose facts tag each industry with a ``level`` gets one JD per cell; facts that do not
+    keep the earlier default (the first two industries).
+    """
+    tiered = [i for i in facts["industries"] if i.get("level")]
+    if not tiered:
+        return None
+    return [i["slug"] for i in tiered if i["level"] == level][:1]
 
 
 def _slot(
@@ -1644,7 +1671,9 @@ def build_profile(
     ]
     # JDs: each asks for four of the candidate's skills and two it does not have.
     absent_pool = [s["name"] for s in facts["skills"] if s["name"] not in skill_names]
-    chosen = industries or [i["slug"] for i in facts["industries"]][:2]
+    chosen = (
+        industries or industries_for(facts, level) or [i["slug"] for i in facts["industries"]][:2]
+    )
     industry_by_slug = {i["slug"]: i for i in facts["industries"]}
     jds: list[dict[str, Any]] = []
     present_by_jd: list[list[str]] = []

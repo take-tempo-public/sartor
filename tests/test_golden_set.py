@@ -323,6 +323,91 @@ class TestFacts:
             gs.build_profile(facts, _ladder("mid"), "mid")
 
 
+TIERED_FACTS: dict[str, Any] = FACTS | {
+    "industries": [
+        {**FACTS["industries"][0], "level": "entry"},
+        {**FACTS["industries"][1], "level": "mid"},
+        {
+            "slug": "county",
+            "company": "Fairmont County Office",
+            "phrase": "a county government office",
+            "setting": "public-sector",
+            "location": "On site, Fairmont, OH",
+            "level": "senior",
+        },
+        {
+            "slug": "shop",
+            "company": "Redfern Family Trades",
+            "phrase": "a family-owned shop",
+            "setting": "small-business",
+            "location": "On site, Dayton, OH",
+            "level": "lead",
+        },
+    ]
+}
+
+
+class TestOneJdPerTier:
+    """One JD per cell (the 96-fixture ceiling): a profession names the industry each tier is posted in."""
+
+    def test_tiered_facts_are_sound(self) -> None:
+        assert gs.validate_facts(TIERED_FACTS) == []
+
+    @pytest.mark.parametrize(
+        ("level", "slug"),
+        [("entry", "hospital"), ("mid", "bank"), ("senior", "county"), ("lead", "shop")],
+    )
+    def test_the_tier_names_its_industry(self, level: str, slug: str) -> None:
+        assert gs.industries_for(TIERED_FACTS, level) == [slug]
+
+    def test_facts_without_tiers_keep_the_default(self) -> None:
+        assert gs.industries_for(FACTS, "mid") is None
+        assert [jd["slug"] for jd in gs.build_profile(FACTS, _ladder("mid"), "mid")["jds"]] == [
+            "hospital",
+            "bank",
+        ]
+
+    @pytest.mark.parametrize("level", gs.LEVELS)
+    def test_a_tiered_profession_builds_one_jd_in_that_industry(self, level: str) -> None:
+        profile = gs.build_profile(TIERED_FACTS, _ladder(level), level)
+        (jd,) = profile["jds"]
+        assert [jd["slug"]] == gs.industries_for(TIERED_FACTS, level)
+        assert sorted(s for s in profile["slots"] if s.startswith("jd.")) == [
+            f"jd.{jd['slug']}.about",
+            f"jd.{jd['slug']}.duties",
+            f"jd.{jd['slug']}.needs",
+        ]
+        assert gs.validate_profile(profile) == []
+        assert jd["setting"] == next(
+            i["setting"] for i in TIERED_FACTS["industries"] if i["slug"] == jd["slug"]
+        )
+
+    def test_an_explicit_choice_still_wins(self) -> None:
+        profile = gs.build_profile(TIERED_FACTS, _ladder("mid"), "mid", ["county", "shop"])
+        assert [jd["slug"] for jd in profile["jds"]] == ["county", "shop"]
+
+    def test_a_missing_tier_is_found(self) -> None:
+        facts = copy.deepcopy(TIERED_FACTS)
+        del facts["industries"][3]
+        assert any("each tier exactly once" in p and "lead" in p for p in gs.validate_facts(facts))
+
+    def test_a_repeated_tier_is_found(self) -> None:
+        facts = copy.deepcopy(TIERED_FACTS)
+        facts["industries"][3]["level"] = "senior"
+        problems = gs.validate_facts(facts)
+        assert any("each tier exactly once" in p and "senior" in p for p in problems)
+
+    def test_an_unknown_tier_is_found(self) -> None:
+        facts = copy.deepcopy(TIERED_FACTS)
+        facts["industries"][0]["level"] = "principal"
+        assert any("industry 'hospital': level" in p for p in gs.validate_facts(facts))
+
+    def test_an_industry_without_a_tier_among_tiered_ones_is_found(self) -> None:
+        facts = copy.deepcopy(TIERED_FACTS)
+        del facts["industries"][0]["level"]
+        assert any("industry 'hospital': level" in p for p in gs.validate_facts(facts))
+
+
 class TestSetting:
     """Where a job sits sets its employers, its JD register and its place (not a tech startup by default)."""
 
