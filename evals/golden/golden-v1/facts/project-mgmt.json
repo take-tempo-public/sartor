@@ -1,0 +1,132 @@
+{
+  "certifications": [
+    {
+      "issuer": "Project Practice Institute",
+      "level": "mid",
+      "name": "Project Practitioner Certificate"
+    },
+    {
+      "issuer": "Delivery Practice Society",
+      "level": "senior",
+      "name": "Agile Delivery Certificate"
+    }
+  ],
+  "display": "project management",
+  "education": {
+    "degree": "B.S.",
+    "field": "Business Administration"
+  },
+  "industries": [
+    {
+      "company": "Garrick Engineering Group",
+      "level": "entry",
+      "location": "On site, Denver, CO",
+      "phrase": "an engineering consultancy",
+      "setting": "enterprise",
+      "slug": "engineering-consultancy"
+    },
+    {
+      "company": "Tandem Software",
+      "level": "mid",
+      "location": "Hybrid, Boston, MA",
+      "phrase": "a software company",
+      "setting": "startup",
+      "slug": "software-company"
+    },
+    {
+      "company": "Lakeshore Medical Center",
+      "level": "senior",
+      "location": "On site, Cleveland, OH",
+      "phrase": "a hospital system",
+      "setting": "health-nonprofit",
+      "slug": "medical-center"
+    },
+    {
+      "company": "Armitage Utilities",
+      "level": "lead",
+      "location": "Hybrid, Kansas City, MO",
+      "phrase": "a regional utility",
+      "setting": "enterprise",
+      "slug": "regional-utility"
+    }
+  ],
+  "profession": "project-mgmt",
+  "settings": [
+    "enterprise",
+    "startup",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Microsoft Project"
+    },
+    {
+      "category": "tool",
+      "name": "Jira"
+    },
+    {
+      "category": "tool",
+      "name": "Asana"
+    },
+    {
+      "category": "tool",
+      "name": "Smartsheet"
+    },
+    {
+      "category": "tool",
+      "name": "Confluence"
+    },
+    {
+      "category": "method",
+      "name": "Gantt scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Risk registers"
+    },
+    {
+      "category": "method",
+      "name": "Budget tracking"
+    },
+    {
+      "category": "method",
+      "name": "Status reporting"
+    },
+    {
+      "category": "method",
+      "name": "Stakeholder communication"
+    },
+    {
+      "category": "method",
+      "name": "Vendor negotiation"
+    },
+    {
+      "category": "method",
+      "name": "Change control"
+    },
+    {
+      "category": "method",
+      "name": "Resource planning"
+    },
+    {
+      "category": "method",
+      "name": "Agile ceremonies"
+    }
+  ],
+  "titles": {
+    "entry": "Project Coordinator",
+    "lead": "Program Manager",
+    "mid": "Project Manager",
+    "senior": "Senior Project Manager"
+  },
+  "work_themes": [
+    "tracking schedules and milestones",
+    "risk and issue logs",
+    "budget reviews",
+    "steering committee updates",
+    "vendor coordination",
+    "change requests",
+    "project close-out"
+  ]
+}

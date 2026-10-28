@@ -1,0 +1,144 @@
+{
+  "certifications": [
+    {
+      "issuer": "State Department of Education",
+      "level": "entry",
+      "name": "State Teaching Licence"
+    },
+    {
+      "issuer": "State Department of Education",
+      "level": "mid",
+      "name": "Reading Specialist Endorsement"
+    },
+    {
+      "issuer": "State Department of Education",
+      "level": "senior",
+      "name": "Instructional Leadership Endorsement"
+    }
+  ],
+  "display": "elementary teaching",
+  "education": {
+    "degree": "B.A.",
+    "field": "Elementary Education"
+  },
+  "employers": [
+    "Willowbrook Elementary School",
+    "Cedar Grove Academy",
+    "Oakridge Charter School",
+    "Riverside Learning Center",
+    "Hillcrest Elementary School",
+    "Maple Street School"
+  ],
+  "industries": [
+    {
+      "company": "Brookside Community Schools",
+      "level": "entry",
+      "location": "On site, Detroit, MI",
+      "phrase": "a nonprofit charter school network",
+      "setting": "health-nonprofit",
+      "slug": "charter-network"
+    },
+    {
+      "company": "Ashgrove Unified School District",
+      "level": "mid",
+      "location": "On site, Ashgrove, OH",
+      "phrase": "a public school district",
+      "setting": "public-sector",
+      "slug": "school-district"
+    },
+    {
+      "company": "Lakeshore Preparatory Academy",
+      "level": "senior",
+      "location": "On site, Evanston, IL",
+      "phrase": "a private nonprofit school",
+      "setting": "health-nonprofit",
+      "slug": "private-school"
+    },
+    {
+      "company": "Northfield Learning Network",
+      "level": "lead",
+      "location": "Hybrid, Minneapolis, MN",
+      "phrase": "a nonprofit school network",
+      "setting": "health-nonprofit",
+      "slug": "school-network"
+    }
+  ],
+  "profession": "teacher",
+  "settings": [
+    "public-sector",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Google Classroom"
+    },
+    {
+      "category": "tool",
+      "name": "Seesaw"
+    },
+    {
+      "category": "tool",
+      "name": "Nearpod"
+    },
+    {
+      "category": "tool",
+      "name": "ClassDojo"
+    },
+    {
+      "category": "method",
+      "name": "Lesson planning"
+    },
+    {
+      "category": "method",
+      "name": "Classroom management"
+    },
+    {
+      "category": "method",
+      "name": "Differentiated instruction"
+    },
+    {
+      "category": "method",
+      "name": "Formative assessment"
+    },
+    {
+      "category": "method",
+      "name": "Parent communication"
+    },
+    {
+      "category": "method",
+      "name": "Reading intervention"
+    },
+    {
+      "category": "method",
+      "name": "Phonics instruction"
+    },
+    {
+      "category": "method",
+      "name": "Math manipulatives"
+    },
+    {
+      "category": "method",
+      "name": "Behavior supports"
+    },
+    {
+      "category": "method",
+      "name": "Small-group instruction"
+    }
+  ],
+  "titles": {
+    "entry": "Associate Teacher",
+    "lead": "Instructional Coach",
+    "mid": "Classroom Teacher",
+    "senior": "Lead Teacher"
+  },
+  "work_themes": [
+    "planning daily lessons",
+    "small-group reading",
+    "assessing student progress",
+    "parent conferences",
+    "classroom routines",
+    "team planning with colleagues",
+    "adapting work for different learners"
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "certifications": [
+    {
+      "issuer": "Construction Safety Council",
+      "level": "mid",
+      "name": "Construction Safety Manager Certificate"
+    }
+  ],
+  "display": "construction project management",
+  "education": {
+    "degree": "B.S.",
+    "field": "Construction Management"
+  },
+  "industries": [
+    {
+      "company": "Garrity Construction Group",
+      "level": "entry",
+      "location": "On site, Charlotte, NC",
+      "phrase": "a general contractor",
+      "setting": "enterprise",
+      "slug": "general-contractor"
+    },
+    {
+      "company": "Elmcrest Builders",
+      "level": "mid",
+      "location": "On site, Boise, ID",
+      "phrase": "a residential builder",
+      "setting": "small-business",
+      "slug": "residential-builder"
+    },
+    {
+      "company": "Stonebridge Commercial Builders",
+      "level": "senior",
+      "location": "On site, Phoenix, AZ",
+      "phrase": "a commercial builder",
+      "setting": "enterprise",
+      "slug": "commercial-builder"
+    },
+    {
+      "company": "Quarry Hill Design-Build",
+      "level": "lead",
+      "location": "Hybrid, Nashville, TN",
+      "phrase": "a design-build firm",
+      "setting": "small-business",
+      "slug": "design-build"
+    }
+  ],
+  "profession": "construction-pm",
+  "settings": [
+    "enterprise",
+    "small-business",
+    "startup"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Procore"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Project"
+    },
+    {
+      "category": "tool",
+      "name": "Autodesk Revit"
+    },
+    {
+      "category": "tool",
+      "name": "Oracle Primavera"
+    },
+    {
+      "category": "tool",
+      "name": "Bluebeam Revu"
+    },
+    {
+      "category": "method",
+      "name": "Submittal tracking"
+    },
+    {
+      "category": "method",
+      "name": "Change orders"
+    },
+    {
+      "category": "method",
+      "name": "Subcontractor coordination"
+    },
+    {
+      "category": "method",
+      "name": "Cost tracking"
+    },
+    {
+      "category": "method",
+      "name": "Schedule recovery"
+    },
+    {
+      "category": "method",
+      "name": "Safety planning"
+    },
+    {
+      "category": "method",
+      "name": "Permit management"
+    },
+    {
+      "category": "method",
+      "name": "Contract administration"
+    },
+    {
+      "category": "method",
+      "name": "Punch list closeout"
+    }
+  ],
+  "titles": {
+    "entry": "Assistant Project Manager",
+    "lead": "Construction Manager",
+    "mid": "Project Manager",
+    "senior": "Senior Project Manager"
+  },
+  "work_themes": [
+    "tracking budgets and schedules",
+    "reviewing submittals",
+    "coordinating subcontractors",
+    "site safety walks",
+    "change order pricing",
+    "permit and inspection scheduling",
+    "owner meetings"
+  ]
+}

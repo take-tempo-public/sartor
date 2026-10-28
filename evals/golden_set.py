@@ -823,6 +823,51 @@ def _check_ladders(manifest: dict[str, Any]) -> list[str]:
     return problems
 
 
+def _check_facts_files(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Every way a ``facts/*.json`` file can be wrong, found before a cell is built from it.
+
+    The file is named for its profession, the manifest knows the profession, the facts pass
+    `validate_facts`, and there are enough skills for the profession's ladder to list its tier's skills
+    and still leave the two that a job description asks for and the cell does not list.
+    """
+    problems: list[str] = []
+    folder = root / "facts"
+    if not folder.is_dir():
+        return problems
+    professions = manifest.get("professions", {})
+    for path in sorted(folder.glob("*.json")):
+        where = f"facts/{path.name}"
+        try:
+            facts = _read_json(path)
+        except (OSError, ValueError) as exc:
+            problems.append(f"{where} cannot be read ({exc})")
+            continue
+        if not isinstance(facts, dict) or facts.get("profession") != path.stem:
+            named = facts.get("profession") if isinstance(facts, dict) else None
+            problems.append(f"{where}: profession is {named!r}, the file is named {path.stem!r}")
+            continue
+        if path.stem not in professions:
+            problems.append(f"{where}: profession is not in the manifest")
+            continue
+        found = validate_facts(facts)
+        problems += [f"{where}: {p}" for p in found]
+        if found:
+            continue
+        family = professions[path.stem].get("family")
+        levels = manifest.get("families", {}).get(family, {}).get("levels", {})
+        if levels:
+            tier, rule = max(
+                sorted(levels.items()), key=lambda kv: int(kv[1].get("skill_count", 0))
+            )
+            listed = int(rule.get("skill_count", 0))
+            if len(facts["skills"]) < listed + 2:
+                problems.append(
+                    f"{where}: {len(facts['skills'])} skills, but the {tier} ladder lists {listed} and a "
+                    f"job description needs 2 the cell does not list ({listed} plus 2 are required)"
+                )
+    return problems
+
+
 # --------------------------------------------------------------------------------------------------
 # Mismatched pairs: a résumé against the job description of a different cell
 # --------------------------------------------------------------------------------------------------
@@ -1036,6 +1081,7 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
     if manifest.get("status") not in STATUSES:
         problems.append(f"manifest status {manifest.get('status')!r} is not one of {STATUSES}")
     problems += _check_ladders(manifest)
+    problems += _check_facts_files(root, manifest)
     cells = cell_names(root)
     failing: set[str] = set()
     for cell in cells:

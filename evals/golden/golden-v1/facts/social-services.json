@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "State Child Welfare Board",
+      "level": "entry",
+      "name": "Mandated Reporter Certificate"
+    },
+    {
+      "issuer": "Human Services Training Council",
+      "level": "mid",
+      "name": "Case Management Certificate"
+    },
+    {
+      "issuer": "Human Services Training Council",
+      "level": "lead",
+      "name": "Human Services Supervisor Certificate"
+    }
+  ],
+  "display": "social services casework",
+  "education": {
+    "degree": "B.S.W.",
+    "field": "Social Work"
+  },
+  "industries": [
+    {
+      "company": "Fairmont County Human Services",
+      "level": "entry",
+      "location": "On site, Fairmont, OH",
+      "phrase": "a county human services department",
+      "setting": "public-sector",
+      "slug": "county-human-services"
+    },
+    {
+      "company": "Harvest Table Family Center",
+      "level": "mid",
+      "location": "On site, Akron, OH",
+      "phrase": "a family services nonprofit",
+      "setting": "health-nonprofit",
+      "slug": "family-center"
+    },
+    {
+      "company": "Crossroads Youth and Family Alliance",
+      "level": "senior",
+      "location": "On site, Indianapolis, IN",
+      "phrase": "a youth services nonprofit",
+      "setting": "health-nonprofit",
+      "slug": "youth-alliance"
+    },
+    {
+      "company": "Riverbend Community Partnership",
+      "level": "lead",
+      "location": "Hybrid, Louisville, KY",
+      "phrase": "a community services nonprofit",
+      "setting": "health-nonprofit",
+      "slug": "community-partnership"
+    }
+  ],
+  "profession": "social-services",
+  "settings": [
+    "health-nonprofit",
+    "public-sector"
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Case notes"
+    },
+    {
+      "category": "method",
+      "name": "Intake interviews"
+    },
+    {
+      "category": "method",
+      "name": "Needs assessments"
+    },
+    {
+      "category": "method",
+      "name": "Service planning"
+    },
+    {
+      "category": "method",
+      "name": "Referral coordination"
+    },
+    {
+      "category": "method",
+      "name": "Crisis intervention"
+    },
+    {
+      "category": "method",
+      "name": "Motivational interviewing"
+    },
+    {
+      "category": "method",
+      "name": "Home visits"
+    },
+    {
+      "category": "method",
+      "name": "Benefits enrollment"
+    },
+    {
+      "category": "method",
+      "name": "Court reports"
+    },
+    {
+      "category": "method",
+      "name": "Client advocacy"
+    },
+    {
+      "category": "method",
+      "name": "Community outreach"
+    },
+    {
+      "category": "method",
+      "name": "Caseload tracking"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Access"
+    }
+  ],
+  "titles": {
+    "entry": "Case Aide",
+    "lead": "Program Manager",
+    "mid": "Case Manager",
+    "senior": "Senior Case Manager"
+  },
+  "work_themes": [
+    "intake and assessments",
+    "writing service plans",
+    "referring families to housing and food programs",
+    "home visits",
+    "keeping case records",
+    "reports for hearings",
+    "coordinating with schools and clinics"
+  ]
+}

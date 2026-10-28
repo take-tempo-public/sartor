@@ -1,0 +1,120 @@
+{
+  "display": "data science and machine learning",
+  "education": {
+    "degree": "B.S.",
+    "field": "Statistics"
+  },
+  "industries": [
+    {
+      "company": "Borealis Labs",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "an analytics startup",
+      "setting": "startup",
+      "slug": "analytics-startup"
+    },
+    {
+      "company": "Cedarpoint Health Research",
+      "level": "mid",
+      "location": "Hybrid, Boston, MA",
+      "phrase": "a health research nonprofit",
+      "setting": "health-nonprofit",
+      "slug": "health-research"
+    },
+    {
+      "company": "Meridian Mutual",
+      "level": "senior",
+      "location": "Hybrid, Chicago, IL",
+      "phrase": "an insurance company",
+      "setting": "enterprise",
+      "slug": "insurance-analytics"
+    },
+    {
+      "company": "Quillon Analytics",
+      "level": "lead",
+      "location": "Remote (US)",
+      "phrase": "a retail analytics startup",
+      "setting": "startup",
+      "slug": "retail-analytics"
+    }
+  ],
+  "profession": "data-ml",
+  "settings": [
+    "startup",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "language",
+      "name": "SQL"
+    },
+    {
+      "category": "tool",
+      "name": "Tableau"
+    },
+    {
+      "category": "framework",
+      "name": "TensorFlow"
+    },
+    {
+      "category": "framework",
+      "name": "PyTorch"
+    },
+    {
+      "category": "platform",
+      "name": "Apache Spark"
+    },
+    {
+      "category": "tool",
+      "name": "Airflow"
+    },
+    {
+      "category": "platform",
+      "name": "Snowflake"
+    },
+    {
+      "category": "framework",
+      "name": "Scikit-learn"
+    },
+    {
+      "category": "tool",
+      "name": "Jupyter"
+    },
+    {
+      "category": "method",
+      "name": "Experiment design"
+    },
+    {
+      "category": "method",
+      "name": "Feature engineering"
+    },
+    {
+      "category": "method",
+      "name": "Statistical modeling"
+    },
+    {
+      "category": "method",
+      "name": "Data visualization"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Data Scientist",
+    "lead": "Data Science Manager",
+    "mid": "Data Scientist",
+    "senior": "Senior Data Scientist"
+  },
+  "work_themes": [
+    "model validation",
+    "cleaning raw data",
+    "dashboards for stakeholders",
+    "forecasting",
+    "experiment analysis",
+    "feature selection",
+    "presenting findings"
+  ]
+}

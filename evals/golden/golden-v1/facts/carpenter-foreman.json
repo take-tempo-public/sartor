@@ -1,0 +1,153 @@
+{
+  "certifications": [
+    {
+      "issuer": "Safety Training Council",
+      "level": "entry",
+      "name": "Construction Safety Card"
+    },
+    {
+      "issuer": "State Apprenticeship Council",
+      "level": "mid",
+      "name": "Apprenticeship Completion Certificate"
+    },
+    {
+      "issuer": "Carpenters Training Council",
+      "level": "senior",
+      "name": "Lead Carpenter Certificate"
+    },
+    {
+      "issuer": "Carpenters Training Council",
+      "level": "lead",
+      "name": "Crew Supervisor Certificate"
+    }
+  ],
+  "display": "carpentry",
+  "education": {
+    "degree": "Apprenticeship Certificate",
+    "field": "Carpentry",
+    "institutions": [
+      "Cedar Valley Trades Academy",
+      "Northern Plains Technical College"
+    ]
+  },
+  "employers": [
+    "Wren Valley Builders",
+    "Harlow Framing Company",
+    "Tillman Brothers Carpentry",
+    "Copperfield Construction",
+    "Marlow Remodeling",
+    "Oakmont Homes"
+  ],
+  "industries": [
+    {
+      "company": "Pennington Custom Homes",
+      "level": "entry",
+      "location": "On site, Asheville, NC",
+      "phrase": "a custom home builder",
+      "setting": "small-business",
+      "slug": "custom-homes"
+    },
+    {
+      "company": "Rowan Remodeling",
+      "level": "mid",
+      "location": "On site, Eugene, OR",
+      "phrase": "a remodeling contractor",
+      "setting": "small-business",
+      "slug": "remodeling"
+    },
+    {
+      "company": "Fieldstone Builders",
+      "level": "senior",
+      "location": "On site, Lancaster, PA",
+      "phrase": "a residential builder",
+      "setting": "small-business",
+      "slug": "residential-builder"
+    },
+    {
+      "company": "Brandt Commercial Construction",
+      "level": "lead",
+      "location": "On site, Denver, CO",
+      "phrase": "a commercial general contractor",
+      "setting": "enterprise",
+      "slug": "commercial-contractor"
+    }
+  ],
+  "profession": "carpenter-foreman",
+  "settings": [
+    "small-business",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Framing"
+    },
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "method",
+      "name": "Concrete forming"
+    },
+    {
+      "category": "method",
+      "name": "Finish trim"
+    },
+    {
+      "category": "method",
+      "name": "Door and window installation"
+    },
+    {
+      "category": "method",
+      "name": "Stair building"
+    },
+    {
+      "category": "method",
+      "name": "Layout and measuring"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    },
+    {
+      "category": "method",
+      "name": "Scaffold erection"
+    },
+    {
+      "category": "method",
+      "name": "Material takeoffs"
+    },
+    {
+      "category": "method",
+      "name": "Cabinet installation"
+    },
+    {
+      "category": "method",
+      "name": "Jobsite safety"
+    },
+    {
+      "category": "method",
+      "name": "Subfloor installation"
+    },
+    {
+      "category": "method",
+      "name": "Rafter cutting"
+    }
+  ],
+  "titles": {
+    "entry": "Apprentice Carpenter",
+    "lead": "Carpentry Foreman",
+    "mid": "Journeyman Carpenter",
+    "senior": "Master Carpenter"
+  },
+  "work_themes": [
+    "framing walls and floors",
+    "installing doors, windows and trim",
+    "reading plans and measuring",
+    "ordering lumber and materials",
+    "keeping the site safe",
+    "building forms for concrete",
+    "directing crews and apprentices"
+  ]
+}

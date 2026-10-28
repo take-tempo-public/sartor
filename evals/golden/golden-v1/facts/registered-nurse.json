@@ -1,0 +1,141 @@
+{
+  "certifications": [
+    {
+      "issuer": "State Board of Nursing",
+      "level": "entry",
+      "name": "Registered Nurse Licence"
+    },
+    {
+      "issuer": "Resuscitation Training Council",
+      "level": "entry",
+      "name": "Basic Life Support Card"
+    },
+    {
+      "issuer": "Resuscitation Training Council",
+      "level": "mid",
+      "name": "Advanced Cardiac Life Support Card"
+    },
+    {
+      "issuer": "Nursing Leadership Council",
+      "level": "lead",
+      "name": "Nurse Manager Certificate"
+    }
+  ],
+  "display": "nursing",
+  "education": {
+    "degree": "B.S.N.",
+    "field": "Nursing"
+  },
+  "industries": [
+    {
+      "company": "Pinebrook Medical Center",
+      "level": "entry",
+      "location": "On site, Toledo, OH",
+      "phrase": "a community hospital",
+      "setting": "health-nonprofit",
+      "slug": "community-hospital"
+    },
+    {
+      "company": "Summit Health Partners",
+      "level": "mid",
+      "location": "On site, Charlotte, NC",
+      "phrase": "a multi-state hospital company",
+      "setting": "enterprise",
+      "slug": "hospital-company"
+    },
+    {
+      "company": "Lakeview Regional Hospital",
+      "level": "senior",
+      "location": "On site, Madison, WI",
+      "phrase": "a regional hospital",
+      "setting": "health-nonprofit",
+      "slug": "regional-hospital"
+    },
+    {
+      "company": "Redstone Children's Hospital",
+      "level": "lead",
+      "location": "On site, Louisville, KY",
+      "phrase": "a children's hospital",
+      "setting": "health-nonprofit",
+      "slug": "childrens-hospital"
+    }
+  ],
+  "profession": "registered-nurse",
+  "settings": [
+    "health-nonprofit",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "Medication administration"
+    },
+    {
+      "category": "method",
+      "name": "Patient assessment"
+    },
+    {
+      "category": "method",
+      "name": "IV therapy"
+    },
+    {
+      "category": "method",
+      "name": "Wound care"
+    },
+    {
+      "category": "method",
+      "name": "Care planning"
+    },
+    {
+      "category": "method",
+      "name": "Patient education"
+    },
+    {
+      "category": "method",
+      "name": "Telemetry monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Infection control"
+    },
+    {
+      "category": "method",
+      "name": "Triage"
+    },
+    {
+      "category": "method",
+      "name": "Discharge planning"
+    },
+    {
+      "category": "method",
+      "name": "Bedside handoff"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Clinical documentation"
+    }
+  ],
+  "titles": {
+    "entry": "Graduate Registered Nurse",
+    "lead": "Nurse Manager",
+    "mid": "Registered Nurse",
+    "senior": "Charge Nurse"
+  },
+  "work_themes": [
+    "assessing patients",
+    "giving medications",
+    "charting in the record",
+    "coordinating with physicians",
+    "teaching patients and families",
+    "shift handoff",
+    "supervising nursing aides"
+  ]
+}

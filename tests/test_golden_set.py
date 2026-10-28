@@ -1229,6 +1229,55 @@ class TestSuiteChecks:
         gs.write_manifest(root, manifest)
         assert any("family 'nowhere' is not in the manifest" in p for p in gs.check_suite(root))
 
+    def _write_facts(self, root: Path, name: str, facts: dict[str, Any]) -> None:
+        _put(root / "facts" / f"{name}.json", gs.canonical_json(facts))
+        gs.write_manifest(root, gs.load_manifest(root))
+
+    def test_a_facts_file_that_breaks_a_rule_is_found(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        bad = copy.deepcopy(FACTS)
+        bad["skills"][0]["name"] = "Go"
+        self._write_facts(root, "demo-ops", bad)
+        assert any(
+            "facts/demo-ops.json:" in p and "under three characters" in p
+            for p in gs.check_suite(root)
+        )
+
+    def test_a_facts_file_is_named_for_its_profession(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        self._write_facts(root, "other-name", FACTS)
+        assert any(
+            "facts/other-name.json" in p and "the file is named 'other-name'" in p
+            for p in gs.check_suite(root)
+        )
+
+    def test_a_facts_file_for_a_profession_the_manifest_lacks_is_found(
+        self, tmp_path: Path
+    ) -> None:
+        root = _suite(tmp_path)
+        self._write_facts(root, "stray", FACTS | {"profession": "stray"})
+        assert any(
+            "facts/stray.json" in p and "not in the manifest" in p for p in gs.check_suite(root)
+        )
+
+    def test_a_facts_file_that_cannot_feed_its_ladder_is_found(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        thin = copy.deepcopy(FACTS)
+        thin["skills"] = thin["skills"][
+            :9
+        ]  # the ladder lists 8 and a JD needs 2 more the cell lacks
+        self._write_facts(root, "demo-ops", thin)
+        assert any(
+            "facts/demo-ops.json" in p and "9 skills" in p and "8 plus 2" in p
+            for p in gs.check_suite(root)
+        )
+
+    def test_an_unreadable_facts_file_is_found(self, tmp_path: Path) -> None:
+        root = _suite(tmp_path)
+        _put(root / "facts" / "demo-ops.json", "{not json")
+        gs.write_manifest(root, gs.load_manifest(root))
+        assert any("facts/demo-ops.json cannot be read" in p for p in gs.check_suite(root))
+
     def test_a_profession_may_name_one_of_the_four_groups(self, tmp_path: Path) -> None:
         root = _suite(tmp_path)
         manifest = gs.load_manifest(root)

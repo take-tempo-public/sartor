@@ -1,0 +1,120 @@
+{
+  "display": "product and UX design",
+  "education": {
+    "degree": "B.A.",
+    "field": "Interaction Design"
+  },
+  "industries": [
+    {
+      "company": "Fernwood Apps",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "a consumer app startup",
+      "setting": "startup",
+      "slug": "consumer-app"
+    },
+    {
+      "company": "Westbrook Insurance Group",
+      "level": "mid",
+      "location": "Hybrid, Des Moines, IA",
+      "phrase": "an insurance company",
+      "setting": "enterprise",
+      "slug": "insurance-digital"
+    },
+    {
+      "company": "Riverside Care Alliance",
+      "level": "senior",
+      "location": "Remote (US)",
+      "phrase": "a telehealth nonprofit",
+      "setting": "health-nonprofit",
+      "slug": "telehealth"
+    },
+    {
+      "company": "Parable Learning",
+      "level": "lead",
+      "location": "Hybrid, Denver, CO",
+      "phrase": "an online learning startup",
+      "setting": "startup",
+      "slug": "learning-design"
+    }
+  ],
+  "profession": "ux-design",
+  "settings": [
+    "startup",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Miro"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "method",
+      "name": "Usability testing"
+    },
+    {
+      "category": "method",
+      "name": "User research"
+    },
+    {
+      "category": "method",
+      "name": "Wireframing"
+    },
+    {
+      "category": "method",
+      "name": "Prototyping"
+    },
+    {
+      "category": "method",
+      "name": "Design systems"
+    },
+    {
+      "category": "method",
+      "name": "Information architecture"
+    },
+    {
+      "category": "method",
+      "name": "Accessibility review"
+    },
+    {
+      "category": "method",
+      "name": "Journey mapping"
+    },
+    {
+      "category": "method",
+      "name": "Interaction design"
+    },
+    {
+      "category": "language",
+      "name": "HTML and CSS"
+    },
+    {
+      "category": "method",
+      "name": "Design critique"
+    }
+  ],
+  "titles": {
+    "entry": "Junior UX Designer",
+    "lead": "Design Manager",
+    "mid": "UX Designer",
+    "senior": "Senior Product Designer"
+  },
+  "work_themes": [
+    "usability sessions",
+    "wireframes",
+    "design system components",
+    "handoff to engineering",
+    "accessibility fixes",
+    "research synthesis",
+    "stakeholder reviews"
+  ]
+}

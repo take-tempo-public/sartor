@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "Medical Assisting Certification Board",
+      "level": "entry",
+      "name": "Certified Medical Assistant Credential"
+    },
+    {
+      "issuer": "Clinical Skills Council",
+      "level": "mid",
+      "name": "Phlebotomy Certificate"
+    }
+  ],
+  "display": "medical assisting",
+  "education": {
+    "degree": "Certificate",
+    "field": "Medical Assisting",
+    "institutions": [
+      "Lakeshore Career College",
+      "Ridgeway Technical Institute"
+    ]
+  },
+  "industries": [
+    {
+      "company": "Maplewood Family Practice",
+      "level": "entry",
+      "location": "On site, Dayton, OH",
+      "phrase": "a private family practice",
+      "setting": "small-business",
+      "slug": "family-practice"
+    },
+    {
+      "company": "Cedar Ridge Community Health",
+      "level": "mid",
+      "location": "On site, Tacoma, WA",
+      "phrase": "a community health center",
+      "setting": "health-nonprofit",
+      "slug": "health-center"
+    },
+    {
+      "company": "Brightwell Urgent Care Group",
+      "level": "senior",
+      "location": "On site, Raleigh, NC",
+      "phrase": "an urgent-care group",
+      "setting": "enterprise",
+      "slug": "urgent-care"
+    },
+    {
+      "company": "Stonehaven Medical Group",
+      "level": "lead",
+      "location": "On site, Savannah, GA",
+      "phrase": "a multi-clinic medical group",
+      "setting": "health-nonprofit",
+      "slug": "medical-group"
+    }
+  ],
+  "profession": "medical-assistant",
+  "settings": [
+    "small-business",
+    "health-nonprofit",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs"
+    },
+    {
+      "category": "method",
+      "name": "Blood draws"
+    },
+    {
+      "category": "method",
+      "name": "Injections"
+    },
+    {
+      "category": "method",
+      "name": "Patient intake"
+    },
+    {
+      "category": "method",
+      "name": "Insurance verification"
+    },
+    {
+      "category": "method",
+      "name": "Appointment scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Medical coding"
+    },
+    {
+      "category": "method",
+      "name": "Specimen handling"
+    },
+    {
+      "category": "method",
+      "name": "EKG testing"
+    },
+    {
+      "category": "method",
+      "name": "Instrument sterilization"
+    },
+    {
+      "category": "method",
+      "name": "Prior authorizations"
+    },
+    {
+      "category": "method",
+      "name": "Patient messaging"
+    },
+    {
+      "category": "method",
+      "name": "Medical records"
+    }
+  ],
+  "titles": {
+    "entry": "Clinical Assistant",
+    "lead": "Clinic Supervisor",
+    "mid": "Medical Assistant",
+    "senior": "Senior Medical Assistant"
+  },
+  "work_themes": [
+    "rooming patients",
+    "taking vital signs",
+    "drawing blood",
+    "scheduling follow-up visits",
+    "completing insurance forms",
+    "stocking exam rooms",
+    "relaying physician instructions"
+  ]
+}

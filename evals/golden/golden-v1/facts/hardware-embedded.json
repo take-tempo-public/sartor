@@ -1,0 +1,120 @@
+{
+  "display": "hardware and embedded engineering",
+  "education": {
+    "degree": "B.S.",
+    "field": "Electrical Engineering"
+  },
+  "industries": [
+    {
+      "company": "Granite Instruments",
+      "level": "entry",
+      "location": "On site, Rochester, NY",
+      "phrase": "a test-equipment manufacturer",
+      "setting": "enterprise",
+      "slug": "instruments-maker"
+    },
+    {
+      "company": "Copperline Devices",
+      "level": "mid",
+      "location": "On site, Minneapolis, MN",
+      "phrase": "a small medical-device maker",
+      "setting": "small-business",
+      "slug": "device-maker"
+    },
+    {
+      "company": "Halvorsen Aerospace Systems",
+      "level": "senior",
+      "location": "On site, Wichita, KS",
+      "phrase": "an aerospace supplier",
+      "setting": "enterprise",
+      "slug": "aerospace-supplier"
+    },
+    {
+      "company": "Fernhill Robotics",
+      "level": "lead",
+      "location": "Hybrid, Pittsburgh, PA",
+      "phrase": "a robotics startup",
+      "setting": "startup",
+      "slug": "robotics-startup"
+    }
+  ],
+  "profession": "hardware-embedded",
+  "settings": [
+    "enterprise",
+    "small-business",
+    "startup"
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Embedded C"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "MATLAB"
+    },
+    {
+      "category": "language",
+      "name": "Verilog"
+    },
+    {
+      "category": "language",
+      "name": "VHDL"
+    },
+    {
+      "category": "tool",
+      "name": "SPICE simulation"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "method",
+      "name": "Oscilloscope debugging"
+    },
+    {
+      "category": "method",
+      "name": "Schematic capture"
+    },
+    {
+      "category": "method",
+      "name": "PCB layout"
+    },
+    {
+      "category": "method",
+      "name": "Firmware bring-up"
+    },
+    {
+      "category": "platform",
+      "name": "RTOS"
+    },
+    {
+      "category": "method",
+      "name": "JTAG debugging"
+    },
+    {
+      "category": "method",
+      "name": "Signal integrity"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Hardware Engineer",
+    "lead": "Hardware Engineering Manager",
+    "mid": "Hardware Engineer",
+    "senior": "Senior Embedded Engineer"
+  },
+  "work_themes": [
+    "board bring-up",
+    "firmware updates",
+    "prototype testing",
+    "specification writing",
+    "design reviews",
+    "component selection with suppliers",
+    "validation test plans"
+  ]
+}

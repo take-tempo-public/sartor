@@ -1,0 +1,120 @@
+{
+  "display": "business-to-business sales",
+  "education": {
+    "degree": "B.A.",
+    "field": "Business Administration"
+  },
+  "industries": [
+    {
+      "company": "Brightside Office Supply",
+      "level": "entry",
+      "location": "Hybrid, Louisville, KY",
+      "phrase": "a regional office-supply distributor",
+      "setting": "small-business",
+      "slug": "office-supply"
+    },
+    {
+      "company": "Pivotal Workflow",
+      "level": "mid",
+      "location": "Remote (US)",
+      "phrase": "a workflow software startup",
+      "setting": "startup",
+      "slug": "workflow-software"
+    },
+    {
+      "company": "Ellison Industrial Equipment",
+      "level": "senior",
+      "location": "Hybrid, Cincinnati, OH",
+      "phrase": "an industrial-equipment manufacturer",
+      "setting": "enterprise",
+      "slug": "industrial-equipment"
+    },
+    {
+      "company": "Trailhead Packaging",
+      "level": "lead",
+      "location": "On site, Green Bay, WI",
+      "phrase": "a packaging manufacturer",
+      "setting": "enterprise",
+      "slug": "packaging"
+    }
+  ],
+  "profession": "sales",
+  "settings": [
+    "small-business",
+    "startup",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    },
+    {
+      "category": "tool",
+      "name": "HubSpot"
+    },
+    {
+      "category": "tool",
+      "name": "Sales Navigator"
+    },
+    {
+      "category": "method",
+      "name": "Cold outreach"
+    },
+    {
+      "category": "method",
+      "name": "Discovery calls"
+    },
+    {
+      "category": "method",
+      "name": "Pipeline management"
+    },
+    {
+      "category": "method",
+      "name": "Contract negotiation"
+    },
+    {
+      "category": "method",
+      "name": "Quota attainment"
+    },
+    {
+      "category": "method",
+      "name": "Account planning"
+    },
+    {
+      "category": "method",
+      "name": "Product demonstrations"
+    },
+    {
+      "category": "method",
+      "name": "Proposal writing"
+    },
+    {
+      "category": "method",
+      "name": "Sales forecasting"
+    },
+    {
+      "category": "method",
+      "name": "Territory planning"
+    },
+    {
+      "category": "method",
+      "name": "Renewal management"
+    }
+  ],
+  "titles": {
+    "entry": "Sales Development Representative",
+    "lead": "Sales Manager",
+    "mid": "Account Executive",
+    "senior": "Senior Account Executive"
+  },
+  "work_themes": [
+    "prospecting new accounts",
+    "qualifying leads",
+    "demos and trials",
+    "quotes and contracts",
+    "renewals and upsells",
+    "pipeline reviews",
+    "handoff to customer success"
+  ]
+}

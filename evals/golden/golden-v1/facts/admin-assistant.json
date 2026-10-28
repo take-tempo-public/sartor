@@ -1,0 +1,127 @@
+{
+  "certifications": [
+    {
+      "issuer": "Business Skills Academy",
+      "level": "entry",
+      "name": "Office Administration Certificate"
+    }
+  ],
+  "display": "administrative support",
+  "education": {
+    "degree": "A.S.",
+    "field": "Business Administration"
+  },
+  "industries": [
+    {
+      "company": "Linden Park Dental",
+      "level": "entry",
+      "location": "On site, Dayton, OH",
+      "phrase": "a dental practice",
+      "setting": "small-business",
+      "slug": "dental-practice"
+    },
+    {
+      "company": "Whitcombe Logistics Group",
+      "level": "mid",
+      "location": "On site, Memphis, TN",
+      "phrase": "a freight company",
+      "setting": "enterprise",
+      "slug": "freight-company"
+    },
+    {
+      "company": "Ashgrove City Clerk's Office",
+      "level": "senior",
+      "location": "On site, Ashgrove, OH",
+      "phrase": "a city government office",
+      "setting": "public-sector",
+      "slug": "city-clerk"
+    },
+    {
+      "company": "Sunrise Valley Community Health",
+      "level": "lead",
+      "location": "On site, Fresno, CA",
+      "phrase": "a community health center",
+      "setting": "health-nonprofit",
+      "slug": "community-clinic"
+    }
+  ],
+  "profession": "admin-assistant",
+  "settings": [
+    "small-business",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Microsoft Outlook"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Word"
+    },
+    {
+      "category": "tool",
+      "name": "Google Workspace"
+    },
+    {
+      "category": "method",
+      "name": "Calendar management"
+    },
+    {
+      "category": "method",
+      "name": "Travel booking"
+    },
+    {
+      "category": "method",
+      "name": "Expense reporting"
+    },
+    {
+      "category": "method",
+      "name": "Records filing"
+    },
+    {
+      "category": "method",
+      "name": "Meeting minutes"
+    },
+    {
+      "category": "method",
+      "name": "Visitor reception"
+    },
+    {
+      "category": "method",
+      "name": "Purchase ordering"
+    },
+    {
+      "category": "method",
+      "name": "Document formatting"
+    },
+    {
+      "category": "method",
+      "name": "Invoice processing"
+    },
+    {
+      "category": "method",
+      "name": "Vendor coordination"
+    }
+  ],
+  "titles": {
+    "entry": "Office Assistant",
+    "lead": "Office Manager",
+    "mid": "Administrative Assistant",
+    "senior": "Senior Administrative Specialist"
+  },
+  "work_themes": [
+    "scheduling for managers",
+    "travel and event arrangements",
+    "filing and records upkeep",
+    "meeting notes",
+    "ordering supplies",
+    "phone and visitor coverage",
+    "processing expense reports"
+  ]
+}

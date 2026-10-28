@@ -4,6 +4,134 @@
     "prompt_versions": {}
   },
   "families": {
+    "business-office": {
+      "levels": {
+        "entry": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "associate",
+          "roles": 1,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "handling routine requests with a colleague checking the work",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            0,
+            2
+          ]
+        },
+        "lead": {
+          "bullets_per_role": 5,
+          "intro_variants": 2,
+          "label": "manager",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "managing a team and answering for the results of the function",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            10,
+            16
+          ]
+        },
+        "mid": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "specialist",
+          "roles": 2,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "owning a recurring process from request to completion",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            3,
+            5
+          ]
+        },
+        "senior": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "senior",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "setting how the team handles one area of the work",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            6,
+            10
+          ]
+        }
+      }
+    },
+    "health-edu-community": {
+      "levels": {
+        "entry": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "entry",
+          "roles": 1,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "working with a supervisor close by on a small share of the work",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            0,
+            2
+          ]
+        },
+        "lead": {
+          "bullets_per_role": 5,
+          "intro_variants": 2,
+          "label": "lead",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "leading a team or program and answering for its results",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            10,
+            16
+          ]
+        },
+        "mid": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "experienced",
+          "roles": 2,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "carrying a full caseload or class without close supervision",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            3,
+            5
+          ]
+        },
+        "senior": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "senior",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "guiding colleagues and handling the hardest cases",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            6,
+            10
+          ]
+        }
+      }
+    },
     "tech-product": {
       "levels": {
         "entry": {
@@ -67,6 +195,70 @@
           ]
         }
       }
+    },
+    "trades-construction": {
+      "levels": {
+        "entry": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "apprentice",
+          "roles": 1,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "working under a journeyman who checks the work",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            0,
+            2
+          ]
+        },
+        "lead": {
+          "bullets_per_role": 5,
+          "intro_variants": 2,
+          "label": "foreman",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "running the crew and answering for the job",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            10,
+            16
+          ]
+        },
+        "mid": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "journeyman",
+          "roles": 2,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "doing the work to code on my own",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            3,
+            5
+          ]
+        },
+        "senior": {
+          "bullets_per_role": 4,
+          "intro_variants": 2,
+          "label": "master",
+          "roles": 3,
+          "rule_note": "years, scope and counts written for this dataset; no open ladder was found for these professions (design doc 6.4, owner decision 2026-10-21)",
+          "rule_source": "authored",
+          "scope": "planning jobs and checking the work of others",
+          "skill_count": 8,
+          "summary_variants": 2,
+          "years": [
+            6,
+            10
+          ]
+        }
+      }
     }
   },
   "files": {
@@ -76,6 +268,30 @@
     "cells/product-mgmt-senior/prose.json": "sha256:5bd6b8638f2f041783dc07924207fa4fcde25709951420b6d76c95b8e6a27711",
     "cells/sre-ops-mid/profile.json": "sha256:7d143e2f015405dd61caf9640cace3263739b2794cbcbad070beb3d67d329118",
     "cells/sre-ops-mid/prose.json": "sha256:848a05c8fe763374976045020ce6f8ddd033ec03b3182f1a2c5f7d0d9e4d7251",
+    "facts/accounting.json": "sha256:468f5d9c22365ac8f8736cd69b51173be22e21039886efe76721ee9385f31941",
+    "facts/admin-assistant.json": "sha256:6345e3018bfacd67a36ed8cc625be4f5caf780fd562c24550ed74ef55b92dee7",
+    "facts/carpenter-foreman.json": "sha256:7a5ef46099e619030133d302e48418f6ca0b73527b7e80597cafc314cec31aa3",
+    "facts/construction-pm.json": "sha256:1826d83f73bd37aa96c0ff17443fbb373dac0131eddaf967b5e73cbc6e7307f7",
+    "facts/customer-support.json": "sha256:3c9ec768a8aa9355bb38ff0dd8dc90b85cb2b901ff9d9a6429a9cd6d7d2aa96d",
+    "facts/data-ml.json": "sha256:95ce4839916d7c097806b1120a619eb9967b86c4f60bd8ea9bbfc1f6b3f4b2e8",
+    "facts/electrician.json": "sha256:0416c0911edda5c394c1474538b5a89d4989eb98f07717520476959eea05d2ec",
+    "facts/hardware-embedded.json": "sha256:78fc2554a5e40fa841ac253883e6fd0575efa6df2656923b05d4d279ed38950b",
+    "facts/hr.json": "sha256:6308fd3347a6c219c7be42a93176e0bcb3d23fe6c9544ad1cff34fc60805325e",
+    "facts/hvac-technician.json": "sha256:fae2bf2d95da8b9021ecadcbc5df2dfab12afac026199aab21b60dc7bbac5626",
+    "facts/logistics-driving.json": "sha256:fb62f77e2ba7058b5349e59f431f6bd1a43f2af39ae5c013f5728a37b80c78e4",
+    "facts/medical-assistant.json": "sha256:0e92ff8ca6f6a9a568fd99a7c93c3c15b80995e57b288d2ccc71b765b536ae18",
+    "facts/mobile.json": "sha256:72f6423b9de2f32575328058e48db12602210b2d364f2a138c617a4da1eeca94",
+    "facts/product-mgmt.json": "sha256:61b7103821a3d36bf2f237b7d311e2cbc523329565b3d7f3ef68126094774b16",
+    "facts/project-mgmt.json": "sha256:15cfc8ca5f7051ee810d1a5449695ea4bbfbf0776bf5d74b0455220f547fedc0",
+    "facts/registered-nurse.json": "sha256:9f15bc722f995a59c2e91d9909a4c16ef17829277ebfc476b928e8babd89cfde",
+    "facts/sales.json": "sha256:902baff870384a40e207b5703d013bcd912b1bf0a9518c171e52ce7a8f690df3",
+    "facts/security.json": "sha256:baf925108705c1fcec2f128b43434238778e81f3f7a2c31d65ccfa17473e0555",
+    "facts/social-services.json": "sha256:cc789cb87dd9f05c3aa3091ed978d12aa880379a38f99857351aee73bee02912",
+    "facts/sre-ops.json": "sha256:34bdecc8e26539b0a1fdb409bfc852e3423f6dfeaaf477e0a5358cc1d5504628",
+    "facts/teacher.json": "sha256:4977e9eb677425da62d189033694cf91b3f470a25be8547183e3d1ea42950cda",
+    "facts/ux-design.json": "sha256:123b8a02b9c32900740d9942b02dbd3df6c701817de02b9c2f6f2d133d594dcc",
+    "facts/visual-design.json": "sha256:34e7ec27a58319835173c32528117c0e6ae906f8ad74af9acb6bd48651e27cf0",
+    "facts/web-backend.json": "sha256:2eb6154f041c28eb31657296cf1137c5904a13abdd847792134a231dc0db73a9",
     "fixtures/data-ml-entry--borealis-labs/expected.json": "sha256:f9dae33f8b9c3f9f87c644e0a2f3dc5fda91698e07065a2d96bf7bac0148cfba",
     "fixtures/data-ml-entry--borealis-labs/jd.txt": "sha256:d314d7df3d0a0a5ed15a86c8687b808bb9bde751c1d42e0eaae7190047427dad",
     "fixtures/data-ml-entry--borealis-labs/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
@@ -101,10 +317,23 @@
   "onet": {
     "attribution": "This dataset includes information from the O*NET 31.0 Database by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). Used under the CC BY 4.0 license. O*NET® is a trademark of USDOL/ETA. Sartor has modified all or some of this information. USDOL/ETA has not approved, endorsed, or tested these modifications.",
     "database": "O*NET 31.0 Database",
+    "database_files_read": {
+      "date": "2026-10-28",
+      "note": "Occupations, titles and skills were chosen from these tables by reading them; no table is copied into the dataset.",
+      "tables": [
+        "occupation_data",
+        "task_statements",
+        "software_skills",
+        "job_titles",
+        "sample_of_reported_titles",
+        "job_zones"
+      ],
+      "url": "https://www.onetcenter.org/dl_files/database/db_31_0_csv/"
+    },
     "license": "CC BY 4.0",
-    "license_read": "2026-10-22",
+    "license_read": "2026-10-28",
     "license_url": "https://www.onetcenter.org/license_db.html",
-    "scope_note": "The licence's 'License Exceptions' limit it to the downloadable database files. Step 3a uses only occupation codes and titles read on O*NET OnLine and no database content; the attribution below is carried for step 3b, whose facts come from the database files."
+    "scope_note": "The licence's 'License Exceptions' limit it to the downloadable files on three pages. Step 3a used only occupation codes and titles read on the O*NET OnLine site. Step 3b-ii reads the downloadable database files (the six tables listed) to choose each profession's tools, tasks and titles; the attribution below is carried."
   },
   "pairs": [
     {
@@ -145,9 +374,65 @@
     "sre-ops-mid--lattice-cloud:summary_variants"
   ],
   "professions": {
+    "accounting": {
+      "display": "accounting",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "13-2011.00",
+        "evidence": "occupation_data 13-2011.00 read 2026-10-28; its reported titles include Accountant, General Accountant and CPA (Certified Public Accountant)",
+        "mapping": "exact",
+        "title": "Accountants and Auditors"
+      }
+    },
+    "admin-assistant": {
+      "display": "administrative support",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "43-6014.00",
+        "evidence": "occupation_data 43-6014.00 read 2026-10-28; its reported titles include Administrative Assistant, Office Assistant and Staff Assistant",
+        "mapping": "exact",
+        "title": "Secretaries and Administrative Assistants, Except Legal, Medical, and Executive"
+      }
+    },
+    "carpenter-foreman": {
+      "display": "carpentry",
+      "family": "trades-construction",
+      "group": "trades-and-construction",
+      "onet": {
+        "code": "47-2031.00",
+        "evidence": "occupation_data 47-2031.00 read 2026-10-28; the foreman tier matches 47-1011.00 First-Line Supervisors of Construction Trades and Extraction Workers ('foreman' in 22 of its title rows)",
+        "mapping": "exact",
+        "title": "Carpenters"
+      }
+    },
+    "construction-pm": {
+      "display": "construction project management",
+      "family": "business-office",
+      "group": "trades-and-construction",
+      "onet": {
+        "code": "11-9021.00",
+        "evidence": "occupation_data 11-9021.00 read 2026-10-28; its reported titles include Construction Manager, Site Manager and Construction Superintendent",
+        "mapping": "exact",
+        "title": "Construction Managers"
+      }
+    },
+    "customer-support": {
+      "display": "customer support",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "43-4051.00",
+        "evidence": "occupation_data 43-4051.00 read 2026-10-28; its reported titles include Customer Service Representative, Customer Support Representative and Client Services Representative",
+        "mapping": "exact",
+        "title": "Customer Service Representatives"
+      }
+    },
     "data-ml": {
       "display": "Data science and machine learning",
       "family": "tech-product",
+      "group": "tech-and-product",
       "onet": {
         "code": "15-2051.00",
         "evidence": "code and title read on O*NET OnLine 2026-10-22",
@@ -155,24 +440,202 @@
         "title": "Data Scientists"
       }
     },
+    "electrician": {
+      "display": "electrical work",
+      "family": "trades-construction",
+      "group": "trades-and-construction",
+      "onet": {
+        "code": "47-2111.00",
+        "evidence": "occupation_data 47-2111.00 read 2026-10-28; its reported titles include Electrician, Inside Wireman and Maintenance Electrician",
+        "mapping": "exact",
+        "title": "Electricians"
+      }
+    },
+    "hardware-embedded": {
+      "display": "hardware and embedded engineering",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "17-2061.00",
+        "evidence": "no embedded-specific occupation: 'embedded' appears in 1 title row of 17-2061.00 and 3 of 15-1252.00 (read 2026-10-28); the hardware occupation was chosen as the closest",
+        "mapping": "nearest",
+        "title": "Computer Hardware Engineers"
+      }
+    },
+    "hr": {
+      "display": "human resources",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "13-1071.00",
+        "evidence": "occupation_data 13-1071.00 read 2026-10-28; its reported titles include HR Generalist, HR Coordinator and Recruiter",
+        "mapping": "exact",
+        "title": "Human Resources Specialists"
+      }
+    },
+    "hvac-technician": {
+      "display": "heating and cooling service",
+      "family": "trades-construction",
+      "group": "trades-and-construction",
+      "onet": {
+        "code": "49-9021.00",
+        "evidence": "occupation_data 49-9021.00 read 2026-10-28; 'hvac' appears in 18 of its title rows (HVAC Tech, HVAC Mechanic, HVAC Installer)",
+        "mapping": "exact",
+        "title": "Heating, Air Conditioning, and Refrigeration Mechanics and Installers"
+      }
+    },
+    "logistics-driving": {
+      "display": "truck driving and dispatch",
+      "family": "health-edu-community",
+      "group": "trades-and-construction",
+      "onet": {
+        "code": "53-3032.00",
+        "evidence": "occupation_data 53-3032.00 read 2026-10-28; its reported titles include Truck Driver, Tractor Trailer Driver and CDL Driver; the lead tier matches 53-1043.00 First-Line Supervisors of Material-Moving Machine and Vehicle Operators (Transportation Supervisor, Driver Manager)",
+        "mapping": "exact",
+        "title": "Heavy and Tractor-Trailer Truck Drivers"
+      }
+    },
+    "medical-assistant": {
+      "display": "medical assisting",
+      "family": "health-edu-community",
+      "group": "health-education-and-community",
+      "onet": {
+        "code": "31-9092.00",
+        "evidence": "occupation_data 31-9092.00 read 2026-10-28; its reported titles include Certified Medical Assistant (CMA) and Clinical Medical Assistant",
+        "mapping": "exact",
+        "title": "Medical Assistants"
+      }
+    },
+    "mobile": {
+      "display": "mobile app engineering",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "15-1252.00",
+        "evidence": "no mobile-app occupation: a title search of job_titles and sample_of_reported_titles for 'mobile' returned mobile homes and heavy equipment and 'android' returned 0 rows (read 2026-10-28); 15-1252.00 chosen as the closest",
+        "mapping": "nearest",
+        "title": "Software Developers"
+      }
+    },
     "product-mgmt": {
       "display": "Product management",
       "family": "tech-product",
+      "group": "tech-and-product",
       "onet": {
         "code": "11-2021.00",
-        "evidence": "O*NET OnLine keyword search 'product manager' on 2026-10-22 listed no product-manager occupation; this was its first hit; chosen because it is O*NET's own closest hit, not because the work matches",
+        "evidence": "O*NET OnLine keyword search 'product manager' on 2026-10-22 listed no product-manager occupation; this was its first hit; chosen because it is the closest hit that O*NET returned, not because the work matches",
         "mapping": "nearest",
         "title": "Marketing Managers"
+      }
+    },
+    "project-mgmt": {
+      "display": "project management",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "13-1082.00",
+        "evidence": "occupation_data 13-1082.00 read 2026-10-28; its reported titles include Implementation Project Manager and Project Management Consultant",
+        "mapping": "exact",
+        "title": "Project Management Specialists"
+      }
+    },
+    "registered-nurse": {
+      "display": "nursing",
+      "family": "health-edu-community",
+      "group": "health-education-and-community",
+      "onet": {
+        "code": "29-1141.00",
+        "evidence": "occupation_data 29-1141.00 read 2026-10-28; its reported titles include Staff Nurse, Charge Nurse and Staff RN",
+        "mapping": "exact",
+        "title": "Registered Nurses"
+      }
+    },
+    "sales": {
+      "display": "business-to-business sales",
+      "family": "business-office",
+      "group": "business-and-office",
+      "onet": {
+        "code": "41-4012.00",
+        "evidence": "occupation_data 41-4012.00 read 2026-10-28; its reported titles include Account Representative, Inside Salesperson and Outside Sales Representative",
+        "mapping": "exact",
+        "title": "Sales Representatives, Wholesale and Manufacturing, Except Technical and Scientific Products"
+      }
+    },
+    "security": {
+      "display": "information security analysis",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "15-1212.00",
+        "evidence": "occupation_data 15-1212.00 read 2026-10-28; its reported titles include Security Analyst and Information Systems Security Analyst",
+        "mapping": "exact",
+        "title": "Information Security Analysts"
+      }
+    },
+    "social-services": {
+      "display": "social services casework",
+      "family": "health-edu-community",
+      "group": "health-education-and-community",
+      "onet": {
+        "code": "21-1021.00",
+        "evidence": "reported titles Case Manager and Case Worker are spread over several occupations ('case manager': 6 rows under 21-1023.00, 4 under 21-1022.00, 3 under 11-9151.00; 'case worker': 2 rows under 21-1021.00, read 2026-10-28); 21-1021.00 chosen for its Case Worker, Family Service Worker and Youth Services Specialist titles; the manager tier matches 11-9151.00 Social and Community Service Managers",
+        "mapping": "nearest",
+        "title": "Child, Family, and School Social Workers"
       }
     },
     "sre-ops": {
       "display": "Site reliability and IT operations",
       "family": "tech-product",
+      "group": "tech-and-product",
       "onet": {
         "code": "15-1244.00",
         "evidence": "O*NET OnLine keyword search 'site reliability' on 2026-10-22 listed no site-reliability or DevOps occupation; the code and title were read the same day; chosen by the author as the nearest, not by O*NET's ranking",
         "mapping": "nearest",
         "title": "Network and Computer Systems Administrators"
+      }
+    },
+    "teacher": {
+      "display": "elementary teaching",
+      "family": "health-edu-community",
+      "group": "health-education-and-community",
+      "onet": {
+        "code": "25-2021.00",
+        "evidence": "occupation_data 25-2021.00 read 2026-10-28; its reported titles include Elementary School Teacher and Classroom Teacher",
+        "mapping": "exact",
+        "title": "Elementary School Teachers, Except Special Education"
+      }
+    },
+    "ux-design": {
+      "display": "product and UX design",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "15-1255.00",
+        "evidence": "the profession is product design; the occupation is web and digital interface design, whose reported titles include UX Developer and UX Engineer ('ux' or 'user experience' in 7 of its title rows, read 2026-10-28)",
+        "mapping": "nearest",
+        "title": "Web and Digital Interface Designers"
+      }
+    },
+    "visual-design": {
+      "display": "visual and brand design",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "27-1024.00",
+        "evidence": "occupation_data 27-1024.00 read 2026-10-28; its reported titles include Graphic Designer, Brand Designer and Production Artist",
+        "mapping": "exact",
+        "title": "Graphic Designers"
+      }
+    },
+    "web-backend": {
+      "display": "backend software engineering",
+      "family": "tech-product",
+      "group": "tech-and-product",
+      "onet": {
+        "code": "15-1252.00",
+        "evidence": "occupation_data 15-1252.00 read 2026-10-28; its reported titles include Software Engineer, DevOps Engineer, Application Developer and Infrastructure Engineer",
+        "mapping": "exact",
+        "title": "Software Developers"
       }
     }
   },
