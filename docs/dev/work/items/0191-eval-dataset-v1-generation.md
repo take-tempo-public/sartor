@@ -3,8 +3,7 @@ schema = 1
 id = 191
 kind = "item"
 title = "Eval redesign step 3b-ii: facts, paid generation of the golden cells, calibration run, retire synthetic"
-status = "blocked"
-blocked_on = "step 3b-i (item 193) has not landed"
+status = "open"
 depends_on = [193]
 decision_owner = "agent"
 epic = 180
@@ -33,3 +32,7 @@ Filed when the owner split step 3 into 3a and 3b. Item 184 (step 4) and item 10 
 ### 2026-10-27 -- rescoped to 3b-ii; the USAJOBS fetch is not built
 
 Step 3a merged (PR #200, `acf6d6f`). The owner widened the matrix to about 24 professions by 4 levels (96 fixtures, one JD each), a rotating setting axis, about 5% public-sector register, and mismatched pairs, and chose **no fetch**: no USAJOBS code, no key, charter C-2 and D-6 untouched (design doc 6.5). The format changes that make this possible are item 193 (3b-i, no paid call); this item now waits on it. The spend is still the owner's to approve, staged: `--help` and a dry run, then one cell for real with a small cap and a hand check of its prose, then the cap for the rest from that cell's measured cost. The pilots' 12 waivers still have to be gone before the freeze (replace the pilots with generated cells, or enrich them).
+
+### 2026-10-27 -- unblocked; step 3b-i landed, the owner approved this step and a $3 spend cap
+
+Item 193 merged as PR #201 (`2195981`) and is closed, so `blocked_on` no longer holds and the item is `open`. The owner approved this step in chat the same day, with **a total cap of $3 on author-model generation** and nothing else paid (no calibration run, eval or capture without a new ask). The staging above stands: `--help`, a dry run, then ONE cell for real. `golden_author.py` checks the cap between cells, so one cell can overshoot it, and no per-cell cost has ever been observed; read the first cell's actual cost and its prose before generating the next. Still to do first, free: the facts and the family ladders for the other professions, and the primary-source re-reads of the O*NET database terms and the DDaT ladders. The generator has never made a real call.
