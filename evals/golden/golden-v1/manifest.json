@@ -1,7 +1,9 @@
 {
   "author": {
     "model": "claude-opus-5-5",
-    "prompt_versions": {}
+    "prompt_versions": {
+      "golden-author-2": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0"
+    }
   },
   "families": {
     "business-office": {
@@ -262,12 +264,16 @@
     }
   },
   "files": {
+    "cells/accounting-senior/profile.json": "sha256:7ea7fdf415cd3c9ec5334656926142905a7e11f2888f60044f9bd2099a37b3c6",
+    "cells/accounting-senior/prose.json": "sha256:f21e01df2ed9e750458f98613fbd06a28272e5a4b307e144773f4b5bcf434d4c",
     "cells/data-ml-entry/profile.json": "sha256:dbeefe71ef987c8dd927454be09f984a60df0b8e6d19cb580083462502948888",
     "cells/data-ml-entry/prose.json": "sha256:b4ec5b07181cb28bde1f9ea841ad8f0d22917f66b1c884123b1947e1eb3f2656",
     "cells/product-mgmt-senior/profile.json": "sha256:babca0c7eae2917f43885da2f05a540a3f233b37649f8f90d16e60754dcd70f7",
     "cells/product-mgmt-senior/prose.json": "sha256:5bd6b8638f2f041783dc07924207fa4fcde25709951420b6d76c95b8e6a27711",
     "cells/sre-ops-mid/profile.json": "sha256:7d143e2f015405dd61caf9640cace3263739b2794cbcbad070beb3d67d329118",
     "cells/sre-ops-mid/prose.json": "sha256:848a05c8fe763374976045020ce6f8ddd033ec03b3182f1a2c5f7d0d9e4d7251",
+    "cells/teacher-mid/profile.json": "sha256:ccdc246f87767a2281c291e3f7725e34c7eb3302e4673a4a64e213128ca26df1",
+    "cells/teacher-mid/prose.json": "sha256:e1c52c24109f6d18fa66ee4f40d6bb1e106ddeb09d1b058bd1a3f6f8e6199a6c",
     "facts/accounting.json": "sha256:6e981047f868c5ff919c65a08ff345dff5ceaa793522b72e45c3aaf062716a7f",
     "facts/admin-assistant.json": "sha256:5cd7dd24d2f04a27848f9ce577663a5559221e077ba994ca7ff3e80e67decb3d",
     "facts/carpenter-foreman.json": "sha256:6cf8120429cdec855b29d8d54a7859c637d50306cb7d43054249b6533dfba0c4",
@@ -292,6 +298,10 @@
     "facts/ux-design.json": "sha256:d15a98bbb6791121fb6eff6191bab782a373b6c5565cd0d23d6c4f6645ae2a9c",
     "facts/visual-design.json": "sha256:df5c72d33e3ffdc8d48b70aa56c1df185091576adee2eb7df09f6d95e0ad536f",
     "facts/web-backend.json": "sha256:c34eb7245faa59a456dbc2b2000a105d4c0e0caa77aed321d3e71959e99ccd5c",
+    "fixtures/accounting-senior--distributor/expected.json": "sha256:ef546bba5921b6170a7d0d5d0c92f5950c4c2f31a48c7082fb92feaa3b2ff2e4",
+    "fixtures/accounting-senior--distributor/jd.txt": "sha256:ff7810c54116f26517b75106f3019eafc5994c1097eb1abcacd49934427496dc",
+    "fixtures/accounting-senior--distributor/resume.md": "sha256:37e6f06ea1a52e469a674d607295d687f66f3d5b07e13ab6315ddb00d6cf5b1f",
+    "fixtures/accounting-senior--distributor/seed.json": "sha256:d58c8d4f33faeab21181e19607bd223d84393f2c60ec7fba60a662aea55fa1fa",
     "fixtures/data-ml-entry--borealis-labs/expected.json": "sha256:f9dae33f8b9c3f9f87c644e0a2f3dc5fda91698e07065a2d96bf7bac0148cfba",
     "fixtures/data-ml-entry--borealis-labs/jd.txt": "sha256:d314d7df3d0a0a5ed15a86c8687b808bb9bde751c1d42e0eaae7190047427dad",
     "fixtures/data-ml-entry--borealis-labs/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
@@ -311,7 +321,11 @@
     "fixtures/sre-ops-mid--lattice-cloud/expected.json": "sha256:1fb5ef47813203f81f2ec8e7b0d8f37f3336dadac882f793ab59c8281d2fe0ac",
     "fixtures/sre-ops-mid--lattice-cloud/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
     "fixtures/sre-ops-mid--lattice-cloud/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
-    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd"
+    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd",
+    "fixtures/teacher-mid--school-district/expected.json": "sha256:00b100361a3f19c7f8bcaedaff92db7de6d4f6124ec81b991d12afb5b378edd1",
+    "fixtures/teacher-mid--school-district/jd.txt": "sha256:71601979127003a4432e6a7c38047dc0b89de787f3c7ffaa664977d299965bca",
+    "fixtures/teacher-mid--school-district/resume.md": "sha256:a06e4b84eaae03859125423db53619c9a7985837c0148bebb39abee66b93b136",
+    "fixtures/teacher-mid--school-district/seed.json": "sha256:701c73665d0e1ec5c98948f69f09f5c86fbbb9ca3c976b945cb39f3cca70e83f"
   },
   "names_note": "Every name, employer and address is invented; any resemblance to a person or organisation is coincidental.",
   "onet": {
