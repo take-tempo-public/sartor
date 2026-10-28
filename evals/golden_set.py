@@ -1891,8 +1891,8 @@ def build_profile(
     present_all = [s for group in present_by_jd for s in group]
     must_keywords = sorted({s.lower() for s in present_all})[:6]
     traps = (
-        [re.escape(s) for s in absent_all]
-        + [re.escape(c["name"]) for c in absent_certs]
+        ["(?i)" + re.escape(s) for s in absent_all]
+        + ["(?i)" + re.escape(c["name"]) for c in absent_certs]
         + list(GENERIC_TRAPS)
     )
     target_slot = "r1.b2" if "r1.b2" in slots else roles[0]["bullet_slots"][0]

@@ -226,7 +226,7 @@ class TestBuilder:
         have = {s["name"] for s in profile["skills"]}
         traps = profile["expected"]["forbidden_inventions"]
         missing = [s["name"] for s in FACTS["skills"] if s["name"] not in have]
-        assert missing and any(re.escape(m) in traps for m in missing)
+        assert missing and any("(?i)" + re.escape(m) in traps for m in missing)
         needs = profile["slots"]["jd.hospital.needs"]["must_include"]
         assert set(needs) & set(missing), "the JD should name a skill the candidate lacks"
 
@@ -439,6 +439,48 @@ class TestOneJdPerTier:
         facts = copy.deepcopy(TIERED_FACTS)
         del facts["industries"][0]["level"]
         assert any("industry 'hospital': level" in p for p in gs.validate_facts(facts))
+
+
+class TestTrapsIgnoreCase:
+    """The author may write a skill in lower case mid-sentence, so a trap against a skill the cell lacks must too."""
+
+    _SLOT: ClassVar[dict[str, Any]] = {
+        "kind": "bullet",
+        "min_words": 1,
+        "max_words": 40,
+        "allowed_numbers": [],
+        "must_include": [],
+    }
+
+    def test_a_skill_the_cell_lacks_is_caught_in_any_capitalisation(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("mid"), "mid")
+        listed = {s["name"] for s in profile["skills"]}
+        absent = next(s["name"] for s in FACTS["skills"] if s["name"] not in listed)
+        traps = profile["expected"]["forbidden_inventions"]
+        for spelling in (absent, absent.lower(), absent.upper()):
+            found = gs.check_slot_text("r1.b1", self._SLOT, f"Worked with {spelling} daily.", traps)
+            assert any("invention trap" in p for p in found), spelling
+
+    def test_a_certification_the_cell_lacks_is_caught_in_any_capitalisation(self) -> None:
+        profile = gs.build_profile(CERT_FACTS, _ladder("entry"), "entry")
+        traps = profile["expected"]["forbidden_inventions"]
+        for spelling in ("Master Licence", "master licence", "MASTER LICENCE"):
+            found = gs.check_slot_text("r1.b1", self._SLOT, f"Holds a {spelling} now.", traps)
+            assert any("invention trap" in p for p in found), spelling
+
+    def test_a_required_skill_may_be_written_in_lower_case(self) -> None:
+        slot = self._SLOT | {"must_include": ["Month-end close"]}
+        text = "Led the month-end close for the whole team every period."
+        assert gs.check_slot_text("r1.b1", slot, text, []) == []
+
+    def test_the_generic_traps_are_unchanged(self) -> None:
+        # "PhD" is a claim only in that spelling; a case-insensitive "phd" would match inside other words.
+        assert gs.GENERIC_TRAPS == (
+            "PhD",
+            "Master'?s? (degree|in)",
+            "managed [0-9]+",
+            "10\\+ years",
+        )
 
 
 LEADERSHIP = "directing the weekly crew huddle"

@@ -190,10 +190,10 @@ class TestConstants:
                 }
             },
         }
-        assert ga.AUTHOR_PROMPT_VERSION == "golden-author-1"
+        assert ga.AUTHOR_PROMPT_VERSION == "golden-author-2"
         assert (
             gs.sha256_text(ga.AUTHOR_SYSTEM_PROMPT)
-            == "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a"
+            == "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0"
         )
         assert (
             gs.sha256_text(ga.build_user_prompt(profile, ["r1.b1"]))
@@ -319,7 +319,9 @@ class TestAuthorCell:
 
     def test_an_invention_trap_in_a_resume_slot_is_a_failure(self) -> None:
         profile, _ = _built()
-        trap_skill = profile["expected"]["forbidden_inventions"][0].replace("\\", "")
+        trap_skill = (
+            profile["expected"]["forbidden_inventions"][0].removeprefix("(?i)").replace("\\", "")
+        )
 
         def claim(prompt: str) -> str:
             data = json.loads(_good_reply(prompt))

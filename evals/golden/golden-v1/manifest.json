@@ -1,9 +1,7 @@
 {
   "author": {
     "model": "claude-opus-5-5",
-    "prompt_versions": {
-      "golden-author-1": "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a"
-    }
+    "prompt_versions": {}
   },
   "families": {
     "business-office": {
@@ -264,22 +262,12 @@
     }
   },
   "files": {
-    "cells/accounting-senior/profile.json": "sha256:29ff3d993ebbe482d5615da4f11d30d4fc16e565f996a99128479a9fd5dd839e",
-    "cells/accounting-senior/prose.json": "sha256:fe6e965baad1b53cd134893be288736b99373a90306988eca63c83145eba930f",
     "cells/data-ml-entry/profile.json": "sha256:dbeefe71ef987c8dd927454be09f984a60df0b8e6d19cb580083462502948888",
     "cells/data-ml-entry/prose.json": "sha256:b4ec5b07181cb28bde1f9ea841ad8f0d22917f66b1c884123b1947e1eb3f2656",
-    "cells/electrician-entry/profile.json": "sha256:553ea1cc294918cf421555ac1b8d928e69ab1700c174926d220bf061dc523352",
-    "cells/electrician-entry/prose.json": "sha256:e18d267f297ca9d9621c61c579745d735794dad7979a43f0581a8b35f41c4b68",
     "cells/product-mgmt-senior/profile.json": "sha256:babca0c7eae2917f43885da2f05a540a3f233b37649f8f90d16e60754dcd70f7",
     "cells/product-mgmt-senior/prose.json": "sha256:5bd6b8638f2f041783dc07924207fa4fcde25709951420b6d76c95b8e6a27711",
     "cells/sre-ops-mid/profile.json": "sha256:7d143e2f015405dd61caf9640cace3263739b2794cbcbad070beb3d67d329118",
     "cells/sre-ops-mid/prose.json": "sha256:848a05c8fe763374976045020ce6f8ddd033ec03b3182f1a2c5f7d0d9e4d7251",
-    "cells/teacher-mid/profile.json": "sha256:7e19676067420c0b8425d04dac431b62a1961dfea61b3c686f98bceb0608e43a",
-    "cells/teacher-mid/prose.json": "sha256:e49aca84a42022037f3b692ceb1d48ac9fa4e324cbe64e7745ebecf0a3d267cd",
-    "cells/ux-design-senior/profile.json": "sha256:751ceba4838fca88080b5d46f9212aa4df63a857e69a1895fc52b8db1516f0ff",
-    "cells/ux-design-senior/prose.json": "sha256:c86cdbb7b43693d3317e41606f6c87bf946ecfd708cd7a5ac17cd24923b6c9e4",
-    "cells/web-backend-lead/profile.json": "sha256:de747e2b1923686e945bd158754b50164e2cbe3d08cdcd8742b93dad0451ee6a",
-    "cells/web-backend-lead/prose.json": "sha256:bcac474fb7d103f2b65c5dee2a8dd134313ba6560c8cfa7732535ca0b089c356",
     "facts/accounting.json": "sha256:6e981047f868c5ff919c65a08ff345dff5ceaa793522b72e45c3aaf062716a7f",
     "facts/admin-assistant.json": "sha256:5cd7dd24d2f04a27848f9ce577663a5559221e077ba994ca7ff3e80e67decb3d",
     "facts/carpenter-foreman.json": "sha256:6cf8120429cdec855b29d8d54a7859c637d50306cb7d43054249b6533dfba0c4",
@@ -304,18 +292,10 @@
     "facts/ux-design.json": "sha256:d15a98bbb6791121fb6eff6191bab782a373b6c5565cd0d23d6c4f6645ae2a9c",
     "facts/visual-design.json": "sha256:df5c72d33e3ffdc8d48b70aa56c1df185091576adee2eb7df09f6d95e0ad536f",
     "facts/web-backend.json": "sha256:c34eb7245faa59a456dbc2b2000a105d4c0e0caa77aed321d3e71959e99ccd5c",
-    "fixtures/accounting-senior--distributor/expected.json": "sha256:3e091658cc1c3c87731e04281bc41730dfb7b0e0304d2b43afd904f514b94d00",
-    "fixtures/accounting-senior--distributor/jd.txt": "sha256:be7c2f7f50352517c58ef21ca4159d27c969285d5f59b0916f454e1a7abcfe96",
-    "fixtures/accounting-senior--distributor/resume.md": "sha256:d16770b00407c34f0ab07ccf24a6c2d022d5568ed8abbfb1caed16f43a934c23",
-    "fixtures/accounting-senior--distributor/seed.json": "sha256:d7a5fc45783e946089ba1bb0363dbdae54b345a96dd9081dcc1c9c617c38021d",
     "fixtures/data-ml-entry--borealis-labs/expected.json": "sha256:f9dae33f8b9c3f9f87c644e0a2f3dc5fda91698e07065a2d96bf7bac0148cfba",
     "fixtures/data-ml-entry--borealis-labs/jd.txt": "sha256:d314d7df3d0a0a5ed15a86c8687b808bb9bde751c1d42e0eaae7190047427dad",
     "fixtures/data-ml-entry--borealis-labs/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
     "fixtures/data-ml-entry--borealis-labs/seed.json": "sha256:6d3c9df26a71de07b27486d7908b20a14d19afc87557d8953cb58f7de38f7360",
-    "fixtures/electrician-entry--family-contractor/expected.json": "sha256:6135e383c2a5195fb5cc50223d85f0ccd2f370ba52f01f98e5079812d46ba9d6",
-    "fixtures/electrician-entry--family-contractor/jd.txt": "sha256:3d2563f52dfc1eee158deaa3c7e7e8f151c817981a91d2607577a92d02420582",
-    "fixtures/electrician-entry--family-contractor/resume.md": "sha256:4c8d819faf08b642b31b94e2f51c204b550fae44e105f574939f8dec9fa9033b",
-    "fixtures/electrician-entry--family-contractor/seed.json": "sha256:9a0a3a1994316c604244be50aae6d2b0006e9477695f825c742c33b11e80a237",
     "fixtures/pair--data-ml-entry-to-sre-ops-mid/expected.json": "sha256:5094dca990190ab482399a51898a8ebb841da222a51e084d37cbb1fc346a3a1f",
     "fixtures/pair--data-ml-entry-to-sre-ops-mid/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
     "fixtures/pair--data-ml-entry-to-sre-ops-mid/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
@@ -331,19 +311,7 @@
     "fixtures/sre-ops-mid--lattice-cloud/expected.json": "sha256:1fb5ef47813203f81f2ec8e7b0d8f37f3336dadac882f793ab59c8281d2fe0ac",
     "fixtures/sre-ops-mid--lattice-cloud/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
     "fixtures/sre-ops-mid--lattice-cloud/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
-    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd",
-    "fixtures/teacher-mid--school-district/expected.json": "sha256:919ac01e2ba963a393516cb2ba9102c384fce5cfeb5a9477957c2b27e3bb244d",
-    "fixtures/teacher-mid--school-district/jd.txt": "sha256:6f7a2c61c3a8ff62066cbec08db88281d4dca46643da0c3194742176020eb859",
-    "fixtures/teacher-mid--school-district/resume.md": "sha256:17c43ecce258cfd5fad20ddfec986c929f602e9a7366c1860d82e152a5ef539e",
-    "fixtures/teacher-mid--school-district/seed.json": "sha256:26b6f53475247c12332f3272e11607f97d14a27362eea46dea0e6574464935b4",
-    "fixtures/ux-design-senior--telehealth/expected.json": "sha256:04ab238c17aa6e0754647d66f8df4ad85c30f22f20ceb5ae61e22f8deadb7362",
-    "fixtures/ux-design-senior--telehealth/jd.txt": "sha256:c414dbefef1764ca304e5d7189f70d315a38c4539581febc4a46250297ce4665",
-    "fixtures/ux-design-senior--telehealth/resume.md": "sha256:2b4825ad855c34ce4b80f412bc16eeeee320763bbbd367e85c577655b209916e",
-    "fixtures/ux-design-senior--telehealth/seed.json": "sha256:c354e0444af76b6364df86ff5016fdcdce8c17bdf263dd86589c6f4326e13805",
-    "fixtures/web-backend-lead--freight-startup/expected.json": "sha256:23f3183ece2bd56c83a96a8bee5e0aa821609e8674acbdaac51914ea5c153ab7",
-    "fixtures/web-backend-lead--freight-startup/jd.txt": "sha256:d313d5e5dbd95260d06ae1674ac32ec2e49fab4bc7c35dfd78195ef36e743d26",
-    "fixtures/web-backend-lead--freight-startup/resume.md": "sha256:3e51f3b9466c891a762e0eae1fda707cbe39eb24b4eeba9d44679f4b1d9be8e1",
-    "fixtures/web-backend-lead--freight-startup/seed.json": "sha256:4febeb9c5b4dad8cb4562ef0690fa8019c4c0bbcbb97cad199a1dad00eed71f0"
+    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd"
   },
   "names_note": "Every name, employer and address is invented; any resemblance to a person or organisation is coincidental.",
   "onet": {

@@ -52,7 +52,7 @@ AUTHOR_MODEL = "claude-opus-5-5"
 AUTHOR_EFFORT = "medium"
 #: Bump with ANY change to ``AUTHOR_SYSTEM_PROMPT`` or ``build_user_prompt``. ``write_manifest`` records
 #: it with the prompt's hash, and `check_suite` fails a generated cell whose version is not recorded.
-AUTHOR_PROMPT_VERSION = "golden-author-1"
+AUTHOR_PROMPT_VERSION = "golden-author-2"
 #: Non-streaming (under the SDK's HTTP timeout). A cell is a few thousand tokens of prose; adaptive
 #: thinking spends from the same budget, so this leaves a wide margin.
 AUTHOR_MAX_TOKENS = 16000
@@ -80,7 +80,10 @@ date, place or number that is not in them. Say nothing about skills the candidat
 2. Numbers. A slot lists the numbers it allows in `allowed_numbers`. Write no digit at all unless it \
 belongs to one of those numbers, written exactly as listed. If the list is empty, write no digits and \
 spell out any number as a word.
-3. Every string in a slot's `must_include` appears in its text, spelled as given.
+3. Every string in a slot's `must_include` appears in its text with the same letters; the check ignores \
+capitalisation. Write a skill, tool or technique as a person would: in lower case in the middle of a \
+sentence, capitalised only for a proper or product name (Python, Kubernetes), an acronym, or the first word \
+of a sentence or bullet.
 4. Length. Stay between `min_words` and `max_words`.
 5. Format. A `bullet`, `intro` or `summary` slot is one line of plain prose: no line break, no \
 leading dash or bullet character, no markdown, no quotation marks around it. A `jd` slot is a job \
