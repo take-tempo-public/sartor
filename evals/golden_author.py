@@ -60,8 +60,9 @@ AUTHOR_MAX_TOKENS = 16000
 MAX_ATTEMPTS = 2
 EXIT_OVER_BUDGET = 4
 #: A request that has not answered by then is abandoned (the SDK's default is 600 s, with two silent retries).
-#: Unobserved: no real call has been timed, so the first paid cell's latency is what revises this number.
-AUTHOR_TIMEOUT_SECONDS = 420.0
+#: Observed 2026-10-28: the heaviest cell (26 slots, 3,449 output tokens) answered in 31 s, so this is about
+#: six times the slowest request seen. It bounds a stall; it is not a guess at normal latency.
+AUTHOR_TIMEOUT_SECONDS = 180.0
 #: The batch stops after this many cells in a row are rejected: a brief that fails twice in a row is a
 #: fault to look at, not a cost to repeat across the remaining cells.
 DEFAULT_MAX_CONSECUTIVE_FAILURES = 2

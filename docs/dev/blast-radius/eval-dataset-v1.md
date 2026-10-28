@@ -173,7 +173,16 @@ $2.79 at $20 a million. **Adaptive thinking tokens are billed as output and have
 5,000 or 10,000 tokens a cell they add $3.84, $9.60 or $19.20 over 96 cells. So the whole set is about $2.7 if the
 model barely thinks, and the first paid cell's thinking tokens decide whether it is $6 or $20. The earlier "$0.05 to
 $0.14 a cell" was a guess about that number. `AUTHOR_EFFORT` is `medium`; a lower effort is the lever if the first
-cell shows thinking dominating, and it changes no prompt text. Nothing was sent.
+cell shows thinking dominating, and it changes no prompt text. Nothing was sent when this was written.
+
+**Stage 1, observed (the first paid call, 2026-10-28):** `web-backend-lead`, 26 slots. One request, `end_turn`, accepted
+on the first attempt, 31.3 s; **4,807 input tokens and 3,449 output tokens, $0.0882** (the run's count and the call log
+agree). The 631 words of visible text are about 850 tokens, so about 2,600 tokens, three quarters of the output, were
+thinking. Two assumptions above were wrong: the prompt is about 2.8 characters a token, not 4 (the 96 prompts are then
+nearer 350,000 input tokens than 247,000), and the 420 s timeout was set against a latency that is a tenth of that
+(now 180 s). A projection from this one cell, assuming thinking is between a third and all of its observed size on the
+lighter tiers: $0.044 to $0.075 for an entry cell, $0.064 to $0.082 for mid, $0.083 to $0.089 for senior, and
+$0.088 for lead, so **about $6.7 to $8.0 for the 96**. One sample is not a distribution; stage 2 adds four more.
 
 ---
 

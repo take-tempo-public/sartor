@@ -1,0 +1,427 @@
+{
+  "candidate": {
+    "email": "quinn.mehta@example.com",
+    "linkedin_url": "linkedin.com/in/example-quinn-web-backend-lead",
+    "name": "Quinn Mehta",
+    "notes": null,
+    "phone": "(555) 010-3374",
+    "profile_text": null,
+    "username": "gold_web_backend_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_web_backend_lead",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2013",
+      "field": "Computer Science",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads the on-call rotation and uses API versioning to retire old endpoints safely, cutting paging incidents by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs incident follow-up reviews and keeps runbooks current for Spring Boot services so on-call engineers resolve recurring issues faster."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Designs GraphQL schemas and versioning rules for client-facing APIs, reducing breaking-change support requests by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reviews GraphQL resolver code and mentors engineers on schema design, query cost and testing practices."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Moves services onto Kubernetes with health checks and autoscaling, lowering after-hours pages by 50 percent."
+        }
+      ],
+      "company": "Maple Court Care",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2019-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads the backend team at Maple Court Care, with a focus on code review standards and mentoring engineers as they grow into service owners."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Manages the engineering team at Maple Court Care and owns incident follow-up, turning each outage review into updated runbooks and tracked fixes."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Engineering Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Managed database schema changes through GitHub pull requests with migration checks, cutting failed deployments caused by schema errors by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Improved reliability of Spring Boot services by adding health endpoints, timeouts and clearer alerts for the on-call rotation."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automated the deployment pipeline for GraphQL services, adding schema checks before release and shortening release time by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote runbooks for API versioning rollouts and led incident follow-up reviews that turned findings into tracked fixes."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Introduced API versioning for clinic-facing services, reducing on-call incidents tied to breaking changes by 45 percent."
+        }
+      ],
+      "company": "Harborview Community Clinic",
+      "display_order": 1,
+      "end_date": "2019-12",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2016-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked on backend services at Harborview Community Clinic, with much of the role spent finding and tuning slow queries behind patient-facing features."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Served as a senior backend engineer at Harborview Community Clinic, profiling slow database queries and reworking them to keep services responsive."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Backend Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applied API versioning to internal services so clients could upgrade on their own schedule, cutting on-call pages from breaking changes by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tuned slow queries behind Kafka consumers by batching lookups and adding indexes, reducing consumer lag during peak traffic."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Planned database schema changes alongside Elasticsearch index updates, reducing reindexing time by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built Docker-based test environments to reproduce and tune slow queries before changes reached production."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reviewed Spring Boot code for junior engineers and paired on fixes, reducing defects found after merge by 55 percent."
+        }
+      ],
+      "company": "Granite Ridge",
+      "display_order": 2,
+      "end_date": "2016-07",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2013-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Started as a backend engineer at Granite Ridge, helping automate the deployment pipeline that moved services from commit to release."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Built and supported backend services at Granite Ridge, taking part in the on-call rotation and improving service reliability."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Backend Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 609,
+      "name": "API versioning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Docker",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Elasticsearch",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "GitHub",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "GraphQL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Jenkins",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 606,
+      "name": "Kafka",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 608,
+      "name": "Kubernetes",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Redis",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 605,
+      "name": "Spring Boot",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead backend engineer with 13 years of experience building services with GraphQL, Redis and Docker. Leads an engineering team and owns the technical roadmap for its area, from API design to deployment and reliability."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Backend engineering lead with about 13 years of experience across API design, data stores and service operations. Leads a team, owns the roadmap for its area and works hands-on with GraphQL, Redis and Docker."
+    }
+  ],
+  "tags": []
+}
