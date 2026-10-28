@@ -1,0 +1,202 @@
+{
+  "candidate": {
+    "email": "avery.reyes@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-customer-support-entry",
+    "name": "Avery Reyes",
+    "notes": null,
+    "phone": "(555) 010-9001",
+    "profile_text": null,
+    "username": "gold_customer_support_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_customer_support_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "A.A.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "General Studies",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Escalates reproducible bugs to engineering with clear notes gathered through phone support, cutting repeat contacts on known issues by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracks satisfaction scores after each resolved case and applies escalation handling to low-scoring contacts so unhappy customers reach the right team quickly."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updates help articles based on patterns found through ticket triage, reducing incoming tickets on covered topics by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Documents tickets in detail after onboarding calls so teammates can pick up each new customer's history without asking the same questions again."
+        }
+      ],
+      "company": "Dunmore Technologies",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-02",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Handles customer complaints at Dunmore Technologies by phone and live chat, working each issue through to a clear resolution."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Serves as a link between customers and engineering at Dunmore Technologies, gathering details on reported bugs and escalating them for a fix."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Customer Support Representative",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Escalation handling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Knowledge base writing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Live chat",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Macros and templates",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Onboarding calls",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Phone support",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Satisfaction surveys",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Ticket triage",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Associate-level customer support professional with about 2 years of experience handling routine requests through live chat and phone, with a colleague reviewing the work. Uses macros and templates for consistent replies and reads satisfaction surveys to spot where answers can improve."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Customer support associate with about 2 years of experience resolving routine customer requests, with work checked by a colleague. Relies on live chat, macros and templates, and satisfaction surveys to keep answers quick, consistent and grounded in customer feedback."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,36 @@
+{
+  "cell": "customer-support-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:5ec73b0dc5d51bedd5dd3c341cf101bc3115920569038f4a5a67306e5bfc06a6",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMMj9dYdsUjrTfrMuz1"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2718,
+      "output_tokens": 1994
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.subscription-box.about": "About the role\nFairlane Subscription Box is a small team that ships surprise boxes to subscribers every month, and our customers are the reason we exist. We're looking for a Customer Support Representative who likes solving problems, writes clearly and stays calm when a box goes missing. You'll be the friendly voice people reach when something isn't right, and you'll help us get better every time.",
+    "jd.subscription-box.duties": "What you'll do\n- Answer subscriber questions by chat, email and phone, and keep every reply friendly and clear\n- Resolve complaints about late, damaged or missing boxes and follow each one through to a fix\n- Document tickets carefully so anyone on the team can pick up a case without starting over\n- Track customer satisfaction scores and flag trends the team should know about\n- Pass recurring product and shipping issues to the right people with the details they need\n- Suggest updates to our help content when the same questions keep coming in",
+    "jd.subscription-box.needs": "What we're looking for\n- 2 or more years of experience in customer support\n- Escalation handling skills and a calm approach with frustrated customers\n- Knowledge base writing that turns common questions into clear help articles\n- Comfort with macros and templates, plus good judgment about when to write a reply from scratch\n- Experience with satisfaction surveys and acting on what customers tell you\n- Familiarity with refund processing and account verification",
+    "r1.b1": "Escalates reproducible bugs to engineering with clear notes gathered through phone support, cutting repeat contacts on known issues by 10 percent.",
+    "r1.b2": "Tracks satisfaction scores after each resolved case and applies escalation handling to low-scoring contacts so unhappy customers reach the right team quickly.",
+    "r1.b3": "Updates help articles based on patterns found through ticket triage, reducing incoming tickets on covered topics by 20 percent.",
+    "r1.b4": "Documents tickets in detail after onboarding calls so teammates can pick up each new customer's history without asking the same questions again.",
+    "r1.i1": "Handles customer complaints at Dunmore Technologies by phone and live chat, working each issue through to a clear resolution.",
+    "r1.i2": "Serves as a link between customers and engineering at Dunmore Technologies, gathering details on reported bugs and escalating them for a fix.",
+    "summary.1": "Associate-level customer support professional with about 2 years of experience handling routine requests through live chat and phone, with a colleague reviewing the work. Uses macros and templates for consistent replies and reads satisfaction surveys to spot where answers can improve.",
+    "summary.2": "Customer support associate with about 2 years of experience resolving routine customer requests, with work checked by a colleague. Relies on live chat, macros and templates, and satisfaction surveys to keep answers quick, consistent and grounded in customer feedback."
+  }
+}

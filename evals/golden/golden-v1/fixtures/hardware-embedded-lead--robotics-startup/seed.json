@@ -1,0 +1,427 @@
+{
+  "candidate": {
+    "email": "riley.okafor@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-hardware-embedded-lead",
+    "name": "Riley Okafor",
+    "notes": null,
+    "phone": "(555) 010-0657",
+    "profile_text": null,
+    "username": "gold_hardware_embedded_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_hardware_embedded_lead",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2015",
+      "field": "Electrical Engineering",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads validation test plans for new hardware, using MATLAB to analyse test data and cutting validation cycle time by 15%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Directs prototype testing for the hardware team, relying on oscilloscope debugging to trace faults before designs move to production."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Works with suppliers on component selection, checking parts against VHDL logic requirements and reducing component lead times by 40%."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs design reviews for hardware and firmware changes, using Linux-based build and test tools to check each change before sign-off."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Oversees board bring-up for new designs, using Verilog test benches to verify programmable logic and shortening bring-up time by 20%."
+        }
+      ],
+      "company": "Redfern Family Trades",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Manages the hardware engineering team at Redfern Family Trades, with responsibility for planning and releasing firmware updates for company hardware."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads hardware engineering at Redfern Family Trades, including prototype testing of new boards before release."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Hardware Engineering Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Delivered firmware updates for field hardware, using schematic capture to document board revisions and reducing update-related defects by 25%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Led design reviews for RTOS-based firmware, checking task scheduling and timing before each release."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentored junior engineers in JTAG debugging, cutting the time they needed to resolve board faults by 45%."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote specifications for firmware modules in Embedded C, defining interfaces, timing and test criteria for the team."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built validation test plans covering firmware bring-up on new boards, increasing defects caught before release by 45%."
+        }
+      ],
+      "company": "Granite Ridge",
+      "display_order": 1,
+      "end_date": "2024-06",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked as a senior embedded engineer at Granite Ridge, with a focus on prototype testing of embedded hardware and firmware."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handled board bring-up for new embedded designs at Granite Ridge as a senior embedded engineer."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Embedded Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Took part in design reviews, using MATLAB models to check circuit behaviour and reducing design rework by 30%."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Carried out board bring-up on new designs, using oscilloscope debugging to locate power and signal faults."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Developed firmware updates for programmable logic in VHDL, cutting deployment time for each update by 45%."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote hardware specifications for Linux-based systems, describing interfaces and test requirements for each board."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Drafted validation test plans for Verilog designs, raising test coverage by 15%."
+        }
+      ],
+      "company": "Marlow Contracting",
+      "display_order": 2,
+      "end_date": "2021-07",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2015-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Joined Marlow Contracting as a hardware engineer and worked on board bring-up for new circuit designs."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Designed hardware at Marlow Contracting and took part in regular design reviews with the engineering team."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "language",
+      "id": 601,
+      "name": "Embedded C",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Firmware bring-up",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "JTAG debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 604,
+      "name": "Linux",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "MATLAB",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 610,
+      "name": "Oscilloscope debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 608,
+      "name": "RTOS",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Schematic capture",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 602,
+      "name": "VHDL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 603,
+      "name": "Verilog",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Hardware and embedded engineering lead with 11 years of experience in Embedded C, VHDL and Verilog. Leads a hardware team and owns the roadmap for hardware and firmware work, from board bring-up to validation."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead-level engineer with 11 years in hardware and embedded systems, working in Embedded C, VHDL and Verilog. Manages a team of engineers and sets the technical roadmap for the hardware area."
+    }
+  ],
+  "tags": []
+}

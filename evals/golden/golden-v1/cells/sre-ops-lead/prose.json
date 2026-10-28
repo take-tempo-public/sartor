@@ -1,0 +1,51 @@
+{
+  "cell": "sre-ops-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:35fbd5bd146baeb3eca61d7ec6f91fc966abe028826339acb0bd6fce1ccdf0d5",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMskzpw656EXg3ny99T"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5131,
+      "output_tokens": 3049
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.hospital-network.about": "Summary\nPinegrove Health System is a multi-hospital health system whose mission is to deliver safe, dependable care to every patient and family we serve. The Infrastructure Manager leads the team that keeps clinical and business systems available, secure and recoverable, working on site in Nashville, TN. A Systems Administrator Certificate is required for this position.",
+    "jd.hospital-network.duties": "Duties\n- Review and approve infrastructure changes, making sure each request has a tested rollback plan and a clear owner.\n- Tune monitoring alerts so on-call staff are paged for real problems and noise is kept low.\n- Set reliability targets with product teams and track performance against them.\n- Lead the infrastructure team, including scheduling, coaching and the on-call rotation.\n- Own the infrastructure roadmap and report progress to hospital leadership.",
+    "jd.hospital-network.needs": "Licensure and qualifications\n- Systems Administrator Certificate required.\n- 14 or more years of experience in infrastructure, systems or site reliability work.\n- Hands-on experience running workloads in Microsoft Azure and administering Linux servers.\n- Working knowledge of Splunk, Prometheus and Grafana for logging, monitoring and dashboards.\n- Ability to write and maintain PowerShell scripts for routine administration.",
+    "r1.b1": "Reviews change approvals for Active Directory group and policy updates, cutting failed changes by 15 percent.",
+    "r1.b2": "Writes post-incident reviews drawing on Splunk searches to trace root causes and assign follow-up actions to owners.",
+    "r1.b3": "Schedules patching cycles around backup and recovery checkpoints, reducing patch-related rollback time by 25 percent.",
+    "r1.b4": "Runs the team on-call rotation for Microsoft Azure workloads, with clear escalation paths and handoff notes.",
+    "r1.b5": "Automates on-call paging triage with Python scripts, lowering after-hours pages by 50 percent.",
+    "r1.i1": "Leads infrastructure operations at Bluebird Family Services and runs the on-call rotation for the team.",
+    "r1.i2": "Manages infrastructure at Bluebird Family Services, including the change approval process for production systems.",
+    "r2.b1": "Forecasted capacity needs from ServiceNow request and incident data, cutting emergency capacity requests by 50 percent.",
+    "r2.b2": "Set reliability targets with product teams and codified the supporting infrastructure in Terraform.",
+    "r2.b3": "Tuned Prometheus alert rules and thresholds, reducing noisy alerts by 10 percent.",
+    "r2.b4": "Ran scheduled backup and recovery tests on Linux servers and documented restore steps for the team.",
+    "r2.b5": "Built Ansible checks into the change approval workflow, reducing failed changes by 35 percent.",
+    "r2.i1": "Worked as a senior site reliability engineer at Dunmore Technologies, owning change approvals for production infrastructure.",
+    "r2.i2": "Kept production systems at Dunmore Technologies current through planned patching cycles as a senior site reliability engineer.",
+    "r3.b1": "Restructured the on-call rotation and automated Active Directory account fixes, cutting after-hours escalations by 45 percent.",
+    "r3.b2": "Used Splunk usage trends to plan server and storage capacity ahead of demand.",
+    "r3.b3": "Tuned monitoring alerts for backup and recovery jobs, reducing false alerts by 45 percent.",
+    "r3.b4": "Tested backup and recovery procedures for Microsoft Azure workloads and recorded the results for review.",
+    "r3.b5": "Wrote Python scripts to pre-check change requests before approval, cutting rejected changes by 40 percent.",
+    "r3.i1": "Supported systems at Calloway Group as a systems engineer, running regular backup and recovery tests.",
+    "r3.i2": "Served as a systems engineer at Calloway Group, writing post-incident reports that recorded causes and fixes.",
+    "summary.1": "Lead site reliability and IT operations professional with 14 years of experience leading teams and owning the infrastructure roadmap. Runs operations across Microsoft Azure, ServiceNow and Active Directory, with a focus on change control, on-call and backup and recovery.",
+    "summary.2": "Site reliability and IT operations lead with 14 years of experience across Microsoft Azure, Active Directory and ServiceNow. Leads an infrastructure team, sets the roadmap for the area and holds the team to clear reliability and change standards."
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "cell": "project-mgmt-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:16efc3ebf8cdaf0ccc92265ec9d1ce279b8a0da4c27174c89325da3ddd9e8cf9",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMhA8ZocjhcqK5p7T1G"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4546,
+      "output_tokens": 2969
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.medical-center.about": "Summary\nLakeshore Medical Center exists to provide safe, compassionate care to every patient and family in our community. The Senior Project Manager leads projects that support clinical and operational teams, working on site in Cleveland, OH. The role coordinates scope, schedule and budget with hospital leaders and staff. A Project Practitioner Certificate is required.",
+    "jd.medical-center.duties": "Duties\n- Review, log and route change requests, assessing their impact on scope, schedule and budget.\n- Maintain risk and issue logs and assign owners for each follow-up action.\n- Escalate high-impact risks and issues to department leaders and the project sponsor.\n- Lead project close-out, including handover to operational teams and lessons learned.\n- Archive final project documentation in line with hospital records policy.",
+    "jd.medical-center.needs": "Licensure and qualifications\n- Project Practitioner Certificate required.\n- 9 or more years of project management experience.\n- Working knowledge of budget tracking and risk registers.\n- Experience running Agile ceremonies and documenting work in Confluence and Asana.\n- Clear stakeholder communication with clinical, administrative and vendor teams.",
+    "r1.b1": "Manages change requests through resource planning, cutting turnaround on approved changes by 20 percent across active projects.",
+    "r1.b2": "Runs budget reviews with project leads, using Jira to link spend against open work items.",
+    "r1.b3": "Maintains risk and issue logs tied to weekly status reporting, reducing overdue issues by 20 percent.",
+    "r1.b4": "Reports to the steering committee with Gantt scheduling views that show milestone progress and slippage.",
+    "r1.i1": "Manages a portfolio of related projects at Kestrel Works, coordinating shared resources and timelines.",
+    "r1.i2": "Leads budget reviews for Kestrel Works projects, comparing planned and actual spend with project leads.",
+    "r2.b1": "Coordinated vendors through shared Confluence pages, reducing delivery delays by 10 percent.",
+    "r2.b2": "Tracked schedules and milestones alongside budget tracking, flagging variances to project sponsors early.",
+    "r2.b3": "Handled change requests within Agile ceremonies, shortening review time by 20 percent.",
+    "r2.b4": "Ran budget reviews supported by risk registers, linking cost exposure to open risks.",
+    "r2.i1": "Coordinated vendors for Alder Systems projects, aligning contracts, deliverables and timelines with internal teams.",
+    "r2.i2": "Managed project close-out at Alder Systems, confirming deliverables, handover and final documentation.",
+    "r3.b1": "Maintained risk and issue logs with resource planning input, cutting unassigned issues by 50 percent.",
+    "r3.b2": "Supported project close-out by reconciling open Jira tickets and archiving final records.",
+    "r3.b3": "Coordinated vendors through status reporting, improving on-time vendor updates by 25 percent.",
+    "r3.b4": "Tracked schedules and milestones using Gantt scheduling, keeping project plans current for managers.",
+    "r3.i1": "Supported project close-out at Pinecrest Labs, gathering sign-offs and closing outstanding tasks.",
+    "r3.i2": "Logged and routed change requests at Pinecrest Labs, keeping change records complete for project managers.",
+    "summary.1": "Senior project manager with 9 years of experience leading delivery across project portfolios. Sets how the team handles risk, using risk registers, Agile ceremonies and status reporting to keep issues visible and owned.",
+    "summary.2": "Project management professional with about 9 years of experience, from coordination to senior project leadership. Defines the team's approach to delivery tracking through Agile ceremonies, risk registers and status reporting."
+  }
+}

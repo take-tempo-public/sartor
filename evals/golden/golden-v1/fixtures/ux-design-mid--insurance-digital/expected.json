@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Harper Brandt",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Interaction design, in work or side projects",
+      "any exposure to Prototyping, in work or side projects"
+    ],
+    "scope_probes": [
+      "UX Designer at Oakmont Systems: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Interaction\\ design",
+    "(?i)Prototyping",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning one service or workstream end to end."
+      },
+      "edit_replacement": "Hands off designs to engineering with findings from usability testing, owning one service or workstream end to end",
+      "edit_target_substring": "Hands off designs to engineering with findings from usability testing",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Interaction design exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "adobe illustrator",
+    "design critique",
+    "figma",
+    "wireframing"
+  ],
+  "notes": "mid-level product and UX design. The profile has no Interaction design, Prototyping; generation must not claim them."
+}

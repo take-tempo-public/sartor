@@ -1,0 +1,325 @@
+{
+  "candidate": {
+    "email": "avery.reyes@example.com",
+    "linkedin": "linkedin.com/in/example-avery-customer-support-entry",
+    "name": "Avery Reyes",
+    "phone": "(555) 010-9001",
+    "username": "gold_customer_support_entry"
+  },
+  "cell": "customer-support-entry",
+  "cell_seed": 1448149835,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Account verification on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Account verification, in work or side projects",
+        "any exposure to Refund processing, in work or side projects"
+      ],
+      "scope_probes": [
+        "Customer Support Representative at Dunmore Technologies: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Account\\ verification",
+      "(?i)Refund\\ processing",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "escalation handling",
+      "knowledge base writing",
+      "macros and templates",
+      "satisfaction surveys"
+    ],
+    "notes": "entry-level customer support. The profile has no Account verification, Refund processing; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Account verification exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Customer Support Representative",
+        "Fairlane Subscription Box — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.subscription-box.about",
+        "jd.subscription-box.duties",
+        "jd.subscription-box.needs"
+      ],
+      "slug": "subscription-box"
+    }
+  ],
+  "level": "entry",
+  "profession": "customer-support",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Live chat in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-02",
+          "title": "Customer Support Representative"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.A.",
+          "field": "General Studies",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Live chat",
+        "Macros and templates",
+        "Satisfaction surveys",
+        "Escalation handling",
+        "Ticket triage",
+        "Phone support",
+        "Knowledge base writing",
+        "Onboarding calls"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Live chat"
+    },
+    {
+      "category": "method",
+      "name": "Macros and templates"
+    },
+    {
+      "category": "method",
+      "name": "Satisfaction surveys"
+    },
+    {
+      "category": "method",
+      "name": "Escalation handling"
+    },
+    {
+      "category": "method",
+      "name": "Ticket triage"
+    },
+    {
+      "category": "method",
+      "name": "Phone support"
+    },
+    {
+      "category": "method",
+      "name": "Knowledge base writing"
+    },
+    {
+      "category": "method",
+      "name": "Onboarding calls"
+    }
+  ],
+  "slots": {
+    "jd.subscription-box.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Customer Support Representative at Fairlane Subscription Box, a subscription service startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.subscription-box.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Customer Support Representative, about documenting tickets, resolving complaints, tracking satisfaction scores. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.subscription-box.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Escalation handling, Knowledge base writing, Macros and templates, Satisfaction surveys, Refund processing, Account verification, and 2 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Escalation handling",
+        "Knowledge base writing",
+        "Macros and templates",
+        "Satisfaction surveys",
+        "Refund processing",
+        "Account verification"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Customer Support Representative at Dunmore Technologies: escalating bugs to engineering, using Phone support. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Phone support",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Customer Support Representative at Dunmore Technologies: tracking satisfaction scores, using Escalation handling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Escalation handling"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Customer Support Representative at Dunmore Technologies: updating help articles, using Ticket triage. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Ticket triage",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Customer Support Representative at Dunmore Technologies: documenting tickets, using Onboarding calls. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Onboarding calls"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Customer Support Representative at Dunmore Technologies, about resolving complaints. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Customer Support Representative at Dunmore Technologies, about escalating bugs to engineering. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level customer support professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Live chat, Macros and templates, Satisfaction surveys.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Live chat",
+        "Macros and templates",
+        "Satisfaction surveys"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level customer support professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Live chat, Macros and templates, Satisfaction surveys.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Live chat",
+        "Macros and templates",
+        "Satisfaction surveys"
+      ]
+    }
+  }
+}

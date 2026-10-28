@@ -1,0 +1,515 @@
+{
+  "candidate": {
+    "email": "alex.chen@example.com",
+    "linkedin": "linkedin.com/in/example-alex-social-services-senior",
+    "name": "Alex Chen",
+    "phone": "(555) 010-1661",
+    "username": "gold_social_services_senior"
+  },
+  "cell": "social-services-senior",
+  "cell_seed": 1523082296,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Benefits enrollment on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Benefits enrollment, in work or side projects",
+        "any exposure to Community outreach, in work or side projects",
+        "any progress toward Human Services Supervisor Certificate"
+      ],
+      "scope_probes": [
+        "Senior Case Manager at Northplain Water District: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Benefits\\ enrollment",
+      "(?i)Community\\ outreach",
+      "(?i)Human\\ Services\\ Supervisor\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "caseload tracking",
+      "crisis intervention",
+      "microsoft access",
+      "motivational interviewing"
+    ],
+    "notes": "senior-level social services casework. The profile has no Benefits enrollment, Community outreach, Human Services Supervisor Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Guiding colleagues and handling the hardest cases.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, guiding colleagues and handling the hardest cases",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Benefits enrollment exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Case Manager",
+        "Crossroads Youth and Family Alliance — On site, Indianapolis, IN"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.youth-alliance.about",
+        "jd.youth-alliance.duties",
+        "jd.youth-alliance.needs"
+      ],
+      "slug": "youth-alliance"
+    }
+  ],
+  "level": "senior",
+  "profession": "social-services",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Service planning in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Northplain Water District",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Senior Case Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Stonegate Housing Authority",
+          "end": "2024-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-12",
+          "title": "Case Manager"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Neighborhood Table Services",
+          "end": "2020-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-08",
+          "title": "Case Aide"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.W.",
+          "field": "Social Work",
+          "institution": "State University",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Child Welfare Board",
+          "name": "Mandated Reporter Certificate",
+          "year": "2019"
+        },
+        {
+          "issuer": "Human Services Training Council",
+          "name": "Case Management Certificate",
+          "year": "2020"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Service planning",
+        "Motivational interviewing",
+        "Caseload tracking",
+        "Crisis intervention",
+        "Home visits",
+        "Microsoft Access",
+        "Intake interviews",
+        "Court reports"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Service planning"
+    },
+    {
+      "category": "method",
+      "name": "Motivational interviewing"
+    },
+    {
+      "category": "method",
+      "name": "Caseload tracking"
+    },
+    {
+      "category": "method",
+      "name": "Crisis intervention"
+    },
+    {
+      "category": "method",
+      "name": "Home visits"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Access"
+    },
+    {
+      "category": "method",
+      "name": "Intake interviews"
+    },
+    {
+      "category": "method",
+      "name": "Court reports"
+    }
+  ],
+  "slots": {
+    "jd.youth-alliance.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Senior Case Manager at Crossroads Youth and Family Alliance, a youth services nonprofit. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.youth-alliance.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Senior Case Manager, about keeping case records, referring families to housing and food programs, managing program budgets and reports. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.youth-alliance.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Caseload tracking, Microsoft Access, Motivational interviewing, Crisis intervention, Benefits enrollment, Community outreach, and 9 or more years of experience. State Mandated Reporter Certificate as a required licence or certification. State Human Services Supervisor Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Caseload tracking",
+        "Microsoft Access",
+        "Motivational interviewing",
+        "Crisis intervention",
+        "Benefits enrollment",
+        "Community outreach",
+        "Mandated Reporter Certificate",
+        "Human Services Supervisor Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Case Manager at Northplain Water District: intake and assessments, using Home visits. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Home visits",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Case Manager at Northplain Water District: coordinating with schools and clinics, using Intake interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Intake interviews"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Case Manager at Northplain Water District: home visits, using Microsoft Access. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Access",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Case Manager at Northplain Water District: writing service plans, using Crisis intervention. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Crisis intervention"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Case Manager at Northplain Water District, about reports for hearings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Case Manager at Northplain Water District, about coordinating with schools and clinics. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Stonegate Housing Authority: keeping case records, using Caseload tracking. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Caseload tracking",
+        "45"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Stonegate Housing Authority: reports for hearings, using Court reports. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Court reports"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Stonegate Housing Authority: referring families to housing and food programs, using Service planning. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Service planning",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Stonegate Housing Authority: intake and assessments, using Motivational interviewing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Motivational interviewing"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Manager at Stonegate Housing Authority, about coordinating with schools and clinics. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Manager at Stonegate Housing Authority, about intake and assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Neighborhood Table Services: coordinating with schools and clinics, using Home visits. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Home visits",
+        "20"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Neighborhood Table Services: home visits, using Intake interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Intake interviews"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Neighborhood Table Services: writing service plans, using Microsoft Access. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Access",
+        "50"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Neighborhood Table Services: keeping case records, using Crisis intervention. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Crisis intervention"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Aide at Neighborhood Table Services, about intake and assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Aide at Neighborhood Table Services, about writing service plans. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level social services casework professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Service planning, Motivational interviewing, Caseload tracking.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Service planning",
+        "Motivational interviewing",
+        "Caseload tracking"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level social services casework professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Service planning, Motivational interviewing, Caseload tracking.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Service planning",
+        "Motivational interviewing",
+        "Caseload tracking"
+      ]
+    }
+  }
+}

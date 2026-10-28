@@ -1,0 +1,58 @@
+{
+  "candidate_name": "Morgan Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Classroom management, in work or side projects",
+      "any exposure to Seesaw, in work or side projects",
+      "any progress toward Reading Specialist Endorsement",
+      "any progress toward Instructional Leadership Endorsement"
+    ],
+    "scope_probes": [
+      "Associate Teacher at Oakridge Charter School: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Classroom\\ management",
+    "(?i)Seesaw",
+    "(?i)Reading\\ Specialist\\ Endorsement",
+    "(?i)Instructional\\ Leadership\\ Endorsement",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
+      },
+      "edit_replacement": "sharing regular updates with the lead teacher to guide next, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "sharing regular updates with the lead teacher to guide next",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Classroom management exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "behavior supports",
+    "lesson planning",
+    "parent communication",
+    "phonics instruction"
+  ],
+  "notes": "entry-level elementary teaching. The profile has no Classroom management, Seesaw, Reading Specialist Endorsement, Instructional Leadership Endorsement; generation must not claim them."
+}

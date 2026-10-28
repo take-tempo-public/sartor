@@ -1,0 +1,48 @@
+{
+  "cell": "social-services-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:111fea3e1837f9090f37dfa8fd6de6b23f88f6b36497e048bb69032fe0e8f2c6",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMqkwJVdTWoqrQQfLXW"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4697,
+      "output_tokens": 3186
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.youth-alliance.about": "Summary\nCrossroads Youth and Family Alliance helps young people and their families build safe, stable lives. We are seeking a Senior Case Manager to carry complex casework, support case management staff and coordinate services with community partners. This is an on-site position in Indianapolis, IN. A current Mandated Reporter Certificate is required for this role.",
+    "jd.youth-alliance.duties": "Duties\n- Maintain accurate, timely case records for each youth and family on the caseload\n- Refer families to housing and food programs and follow up to confirm services are in place\n- Manage program budgets and track spending against approved plans\n- Prepare program reports for leadership and funders\n- Review case files with staff and help resolve difficult cases",
+    "jd.youth-alliance.needs": "Licensure and qualifications\n- 9 or more years of experience in case management or social services\n- Mandated Reporter Certificate required\n- Human Services Supervisor Certificate preferred\n- Working skill in caseload tracking and Microsoft Access\n- Training in motivational interviewing and crisis intervention\n- Experience with benefits enrollment and community outreach",
+    "r1.b1": "Conducts intake and assessments through home visits, cutting the time from referral to completed assessment by 45 percent.",
+    "r1.b2": "Coordinates with schools and clinics on shared cases, using intake interviews to gather the details each partner needs before a referral.",
+    "r1.b3": "Tracks home visit schedules and notes in Microsoft Access, reducing missed visits by 50 percent.",
+    "r1.b4": "Writes service plans for clients in acute need, building crisis intervention steps into each plan.",
+    "r1.i1": "Senior Case Manager at Northplain Water District who prepares reports for hearings and keeps case documentation ready for review.",
+    "r1.i2": "Senior Case Manager at Northplain Water District, coordinating services with local schools and clinics to keep client support consistent.",
+    "r2.b1": "Kept case records current through caseload tracking, reducing overdue file updates by 45 percent.",
+    "r2.b2": "Prepared court reports for hearings, summarizing case history, service progress and client circumstances.",
+    "r2.b3": "Referred families to housing and food programs through service planning, raising completed referrals by 15 percent.",
+    "r2.b4": "Conducted intake and assessments, applying motivational interviewing to help clients set their own goals.",
+    "r2.i1": "Case Manager at Stonegate Housing Authority who coordinated with schools and clinics to support client families.",
+    "r2.i2": "Case Manager at Stonegate Housing Authority who handled intake and assessments for households seeking support.",
+    "r3.b1": "Coordinated with schools and clinics using findings from home visits, increasing completed follow-up appointments by 20 percent.",
+    "r3.b2": "Carried out intake interviews during home visits, recording household needs for the case team.",
+    "r3.b3": "Drafted service plans in Microsoft Access, cutting plan preparation time by 50 percent.",
+    "r3.b4": "Documented crisis intervention contacts in case records, keeping each file complete for follow-up.",
+    "r3.i1": "Case Aide at Neighborhood Table Services who supported intake and assessments for new clients.",
+    "r3.i2": "Case Aide at Neighborhood Table Services who helped write service plans with clients and the case team.",
+    "summary.1": "Senior case manager with 9 years of social services casework, guiding colleagues and taking on difficult, high-risk cases. Applies service planning, motivational interviewing and caseload tracking to keep clients moving toward stable outcomes.",
+    "summary.2": "Casework professional with 9 years in social services, serving as a resource for colleagues and handling difficult cases. Brings service planning, motivational interviewing and caseload tracking to intake, home visits and court reports."
+  }
+}

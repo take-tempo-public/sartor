@@ -1,0 +1,36 @@
+{
+  "cell": "mobile-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:2689c119a2b4aa5fb1d06e6923ce6c6f7197b97c5d3756b9231d6b5823456dfa",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMdo3Ub9HV74xpctB4n"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2700,
+      "output_tokens": 2050
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.fitness-startup.about": "Pacebridge Fitness makes a workout app for people who want to train consistently without the fuss. We're a small remote team, and we need a Junior Mobile Developer who enjoys shipping. You'll work alongside senior engineers, pick up real tickets early, and see your code in the hands of users fast. If you like tidy builds and smooth apps, we'd like to hear from you.",
+    "jd.fitness-startup.duties": "What you'll do\n- Help cut app start-up time by profiling launch and trimming slow work\n- Keep our release pipeline running smoothly from build to store\n- Test new features across a range of real devices and OS versions\n- Fix bugs and write clear notes for the team\n- Pair with senior engineers and take feedback in code review",
+    "jd.fitness-startup.needs": "What we're looking for\n- 2 or more years of experience building mobile apps\n- Hands-on work with Swift and Core Data on iOS\n- Comfort building Android screens with Jetpack Compose and managing builds with Gradle\n- Experience automating releases with Fastlane and shipping beta builds through TestFlight\n- Willingness to ask questions and learn from code review",
+    "r1.b1": "Fixes accessibility issues in Android Studio, such as missing content labels and low-contrast text, cutting accessibility audit findings by 25 percent.",
+    "r1.b2": "Triages crash reports tied to Core Data, tracing faulty fetch requests and threading errors and passing fixes to a senior developer for review.",
+    "r1.b3": "Builds offline sync for app data and ships each change through Fastlane, reducing sync failures by 30 percent.",
+    "r1.b4": "Maintains the release pipeline in Xcode, preparing signed builds and archive settings for each release.",
+    "r1.i1": "Builds and maintains offline sync features for the Tillman Brothers mobile apps as a Junior Mobile Developer.",
+    "r1.i2": "Integrates mobile app features with backend APIs at Tillman Brothers, working with GraphQL queries and Firebase services.",
+    "summary.1": "Entry-level mobile app developer with about 2 years of experience building features in Xcode and Jetpack Compose. Works on small, well-defined parts of a release, such as push notifications, with a senior colleague reviewing the code.",
+    "summary.2": "Mobile app engineer at the entry level with about 2 years of hands-on work using Xcode and Jetpack Compose. Takes on small, clearly scoped tasks such as push notifications and delivers them for review by a senior colleague."
+  }
+}

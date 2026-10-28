@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "devon.silva@example.com",
+    "linkedin": "linkedin.com/in/example-devon-data-ml-mid",
+    "name": "Devon Silva",
+    "phone": "(555) 010-8856",
+    "username": "gold_data_ml_mid"
+  },
+  "cell": "data-ml-mid",
+  "cell_seed": 1496777689,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use SQL on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to SQL, in work or side projects",
+        "any exposure to TensorFlow, in work or side projects"
+      ],
+      "scope_probes": [
+        "Data Scientist at Oakmont Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)SQL",
+      "(?i)TensorFlow",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "experiment design",
+      "feature engineering",
+      "jupyter",
+      "python"
+    ],
+    "notes": "mid-level data science and machine learning. The profile has no SQL, TensorFlow; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "SQL exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Data Scientist",
+        "Cedarpoint Health Research — Hybrid, Boston, MA"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.health-research.about",
+        "jd.health-research.duties",
+        "jd.health-research.needs"
+      ],
+      "slug": "health-research"
+    }
+  ],
+  "level": "mid",
+  "profession": "data-ml",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Snowflake in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Oakmont Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Data Scientist"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": "2025-03",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2023-07",
+          "title": "Junior Data Scientist"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Statistics",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2023"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Snowflake",
+        "Experiment design",
+        "Feature engineering",
+        "Statistical modeling",
+        "Apache Spark",
+        "Tableau",
+        "Python",
+        "PyTorch",
+        "Jupyter",
+        "Data visualization"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Snowflake"
+    },
+    {
+      "category": "method",
+      "name": "Experiment design"
+    },
+    {
+      "category": "method",
+      "name": "Feature engineering"
+    },
+    {
+      "category": "method",
+      "name": "Statistical modeling"
+    },
+    {
+      "category": "platform",
+      "name": "Apache Spark"
+    },
+    {
+      "category": "tool",
+      "name": "Tableau"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "framework",
+      "name": "PyTorch"
+    },
+    {
+      "category": "tool",
+      "name": "Jupyter"
+    },
+    {
+      "category": "method",
+      "name": "Data visualization"
+    }
+  ],
+  "slots": {
+    "jd.health-research.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Data Scientist at Cedarpoint Health Research, a health research nonprofit. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.health-research.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Data Scientist, about feature selection, model validation, experiment analysis. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.health-research.needs": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Jupyter, Feature engineering, Python, Experiment design, SQL, TensorFlow, and 3 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Jupyter",
+        "Feature engineering",
+        "Python",
+        "Experiment design",
+        "SQL",
+        "TensorFlow"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Data Scientist at Oakmont Systems: dashboards for stakeholders, using PyTorch. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "PyTorch",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Data Scientist at Oakmont Systems: feature selection, using Python. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Python"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Data Scientist at Oakmont Systems: presenting findings, using Apache Spark. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Apache Spark",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Data Scientist at Oakmont Systems: experiment analysis, using Tableau. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Tableau"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Data Scientist at Oakmont Systems, about experiment analysis. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Data Scientist at Oakmont Systems, about presenting findings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: cleaning raw data, using Jupyter. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Jupyter",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: forecasting, using Experiment design. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Experiment design"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: model validation, using Statistical modeling. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Statistical modeling",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Data Scientist at Dunmore Technologies: dashboards for stakeholders, using Snowflake. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Snowflake"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Data Scientist at Dunmore Technologies, about presenting findings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Data Scientist at Dunmore Technologies, about feature selection. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level data science and machine learning professional with about 3 years of experience, scope: owning one service or workstream end to end. Mention Snowflake, Experiment design, Feature engineering.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Snowflake",
+        "Experiment design",
+        "Feature engineering"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "3"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level data science and machine learning professional with about 3 years of experience, scope: owning one service or workstream end to end. Mention Snowflake, Experiment design, Feature engineering.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Snowflake",
+        "Experiment design",
+        "Feature engineering"
+      ]
+    }
+  }
+}

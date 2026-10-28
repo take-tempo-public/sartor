@@ -1,0 +1,422 @@
+{
+  "candidate": {
+    "email": "jordan.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-admin-assistant-mid",
+    "name": "Jordan Mehta",
+    "phone": "(555) 010-0220",
+    "username": "gold_admin_assistant_mid"
+  },
+  "cell": "admin-assistant-mid",
+  "cell_seed": 482752252,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Meeting minutes on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Meeting minutes, in work or side projects",
+        "any exposure to Microsoft Outlook, in work or side projects"
+      ],
+      "scope_probes": [
+        "Administrative Assistant at Elmstead Partners: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Meeting\\ minutes",
+      "(?i)Microsoft\\ Outlook",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "invoice processing",
+      "purchase ordering",
+      "vendor coordination",
+      "visitor reception"
+    ],
+    "notes": "mid-level administrative support. The profile has no Meeting minutes, Microsoft Outlook; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning a recurring process from request to completion.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning a recurring process from request to completion",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Meeting minutes exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Administrative Assistant",
+        "Whitcombe Logistics Group — On site, Memphis, TN"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.freight-company.about",
+        "jd.freight-company.duties",
+        "jd.freight-company.needs"
+      ],
+      "slug": "freight-company"
+    }
+  ],
+  "level": "mid",
+  "profession": "admin-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Purchase ordering in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Elmstead Partners",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-05",
+          "title": "Administrative Assistant"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Neighborhood Table Services",
+          "end": "2024-05",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-10",
+          "title": "Office Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.S.",
+          "field": "Business Administration",
+          "institution": "State University",
+          "slots": [],
+          "year": "2021"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Business Skills Academy",
+          "name": "Office Administration Certificate",
+          "year": "2023"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Purchase ordering",
+        "Travel booking",
+        "Microsoft Word",
+        "Records filing",
+        "Invoice processing",
+        "Vendor coordination",
+        "Microsoft Excel",
+        "Visitor reception"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Purchase ordering"
+    },
+    {
+      "category": "method",
+      "name": "Travel booking"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Word"
+    },
+    {
+      "category": "method",
+      "name": "Records filing"
+    },
+    {
+      "category": "method",
+      "name": "Invoice processing"
+    },
+    {
+      "category": "method",
+      "name": "Vendor coordination"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "method",
+      "name": "Visitor reception"
+    }
+  ],
+  "slots": {
+    "jd.freight-company.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Administrative Assistant at Whitcombe Logistics Group, a freight company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.freight-company.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Administrative Assistant, about processing expense reports, ordering supplies, meeting notes. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.freight-company.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Vendor coordination, Purchase ordering, Invoice processing, Visitor reception, Meeting minutes, Microsoft Outlook, and 5 or more years of experience. State Office Administration Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Vendor coordination",
+        "Purchase ordering",
+        "Invoice processing",
+        "Visitor reception",
+        "Meeting minutes",
+        "Microsoft Outlook",
+        "Office Administration Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Elmstead Partners: filing and records upkeep, using Records filing. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Records filing",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Elmstead Partners: phone and visitor coverage, using Purchase ordering. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Purchase ordering"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Elmstead Partners: ordering supplies, using Invoice processing. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Invoice processing",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Elmstead Partners: processing expense reports, using Vendor coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vendor coordination"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Administrative Assistant at Elmstead Partners, about phone and visitor coverage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Administrative Assistant at Elmstead Partners, about filing and records upkeep. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Neighborhood Table Services: scheduling for managers, using Microsoft Word. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Word",
+        "10"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Neighborhood Table Services: meeting notes, using Visitor reception. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Visitor reception"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Neighborhood Table Services: travel and event arrangements, using Microsoft Excel. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Excel",
+        "35"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Neighborhood Table Services: filing and records upkeep, using Travel booking. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Travel booking"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Office Assistant at Neighborhood Table Services, about filing and records upkeep. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Office Assistant at Neighborhood Table Services, about processing expense reports. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a specialist-level administrative support professional with about 5 years of experience, scope: owning a recurring process from request to completion. Mention Purchase ordering, Travel booking, Microsoft Word.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Purchase ordering",
+        "Travel booking",
+        "Microsoft Word"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a specialist-level administrative support professional with about 5 years of experience, scope: owning a recurring process from request to completion. Mention Purchase ordering, Travel booking, Microsoft Word.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Purchase ordering",
+        "Travel booking",
+        "Microsoft Word"
+      ]
+    }
+  }
+}

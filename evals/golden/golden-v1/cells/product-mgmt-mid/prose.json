@@ -1,0 +1,42 @@
+{
+  "cell": "product-mgmt-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:8d39b796f4885b922555f5791a73f5f86159d6e9f47e468c77fa9d2a9b47159d",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMfJHA4Lm4ujxQhVRxV"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3575,
+      "output_tokens": 2685
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.commerce-enterprise.about": "Position summary\nHarbor and Vine Commerce seeks a Product Manager to own a defined area of its e-commerce platform from discovery through launch. The Product Manager will work with engineering, design, merchandising and operations to set priorities and deliver measurable outcomes for customers and vendors. Minimum qualifications include product management experience, clear requirements writing and sound judgment on pricing. Preferred qualifications include familiarity with product analytics tools.",
+    "jd.commerce-enterprise.duties": "Responsibilities\n- Lead vendor evaluations and recommend pricing decisions supported by market and customer data.\n- Plan and conduct customer interviews to identify needs and validate proposed solutions.\n- Coordinate across engineering, design, marketing and operations teams to align on scope and timelines.\n- Write clear requirements and maintain a prioritized product backlog.\n- Track product performance after launch and adjust plans based on results.",
+    "jd.commerce-enterprise.needs": "Minimum and preferred qualifications\n- 5 or more years of experience in product management or a related role.\n- Working knowledge of prioritization frameworks for ranking features and investments.\n- Experience with stakeholder alignment across technical and business teams.\n- Skill in pricing analysis and in conducting user interviews.\n- Preferred: experience with go-to-market planning and prototyping in Figma.",
+    "r1.b1": "Runs monthly metrics reviews using prioritization frameworks to rank backlog items, cutting time to decision by 20 percent.",
+    "r1.b2": "Uses Amplitude usage data to inform vendor selection and pricing decisions for network services.",
+    "r1.b3": "Coordinates customer discovery across design, engineering and operations teams, raising feature adoption by 10 percent.",
+    "r1.b4": "Turns findings from customer interviews into Figma prototypes that teams test with users before build.",
+    "r1.i1": "As Product Manager at Riverbend Health Network, leads customer interviews that shape product direction and priorities.",
+    "r1.i2": "Writes requirements at Riverbend Health Network that turn research and business goals into clear, buildable specifications.",
+    "r2.b1": "Tracked feature launches in Tableau dashboards, lifting post-launch adoption by 25 percent.",
+    "r2.b2": "Wrote product requirements through stakeholder alignment sessions with engineering, design and sales.",
+    "r2.b3": "Applied product analytics to roadmap planning, raising the share of shipped items tied to measured goals by 25 percent.",
+    "r2.b4": "Led recurring metrics reviews and fed the findings back into roadmapping for the next planning cycle.",
+    "r2.i1": "At Meridian Cross, wrote requirements as an Associate Product Manager, translating stakeholder requests into documented specifications for engineering.",
+    "r2.i2": "Coordinated work across engineering, design and business teams at Meridian Cross to keep product releases on schedule.",
+    "summary.1": "Product manager with about 5 years of experience owning a single service or workstream end to end, from customer discovery through delivery. Uses Figma for prototyping and Tableau for reporting to connect user needs with measurable product decisions.",
+    "summary.2": "Mid-level product management professional with about 5 years of experience taking one workstream from research to launch and iteration. Combines customer discovery, Figma prototypes and Tableau analysis with roadmapping and stakeholder alignment to keep delivery focused."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "cell": "ux-design-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:50d4f2dff6a42dd9ef07fbb5390fd2f9f32688d308ee322b9a7571d156c37eb3",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMwSK3LmMdaVJsHibjG"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3516,
+      "output_tokens": 2630
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.insurance-digital.about": "Position summary\nWestbrook Insurance Group seeks a UX Designer to shape digital experiences for policyholders, agents and claims staff. The role sits within a hybrid team based in Des Moines, IA, and partners closely with product and engineering. Minimum: professional UX design experience, a portfolio of shipped work, and working knowledge of accessibility standards. Preferred: experience with insurance or financial services products.",
+    "jd.insurance-digital.duties": "Responsibilities\n- Identify accessibility issues across digital products and work with engineering to deliver fixes.\n- Synthesize user research into clear findings and design recommendations.\n- Plan and run usability sessions with policyholders, agents and internal users.\n- Translate session results into revised designs and share them with stakeholders.\n- Contribute to shared design standards and documentation.",
+    "jd.insurance-digital.needs": "Minimum and preferred qualifications\n- 5 or more years of experience in UX or product design.\n- Proficiency in Figma and Adobe Illustrator.\n- Wireframing and prototyping skills for web and mobile flows.\n- A strong grounding in interaction design principles.\n- Comfort giving and receiving feedback through design critique.\n- Preferred: experience designing for insurance or financial services.",
+    "r1.b1": "Fixes accessibility issues directly in HTML and CSS across product screens, cutting open accessibility defects by 50 percent.",
+    "r1.b2": "Hands off designs to engineering with findings from usability testing attached, so open interaction questions are settled before build.",
+    "r1.b3": "Runs stakeholder reviews structured around design critique, reducing revision rounds by 20 percent.",
+    "r1.b4": "Produces wireframes in Adobe Illustrator to align product and engineering on layout before detailed design begins.",
+    "r1.i1": "At Oakmont Systems, runs usability sessions to test designs with users and turn the findings into product changes.",
+    "r1.i2": "UX Designer at Oakmont Systems responsible for handing finished designs off to engineering with clear specifications.",
+    "r2.b1": "Built design system components in Figma, cutting the time needed to assemble new screens by 50 percent.",
+    "r2.b2": "Synthesized user research findings into recommendations and fed them back into the team's design systems work.",
+    "r2.b3": "Ran usability sessions paired with accessibility review, raising task completion rates by 10 percent.",
+    "r2.b4": "Tracked accessibility fixes on shared Miro boards, keeping design and engineering aligned on each open issue.",
+    "r2.i1": "Supported handoff to engineering at Halcyon Services by preparing design files and notes for developers.",
+    "r2.i2": "Created wireframes at Halcyon Services that shaped early page layouts for product teams.",
+    "summary.1": "UX designer who owns a service end to end, from user research through wireframing to final layouts in Figma. Uses design critique and usability testing to keep work consistent and validated before handoff to engineering.",
+    "summary.2": "Mid-level product and UX designer experienced in owning a workstream from early wireframing to engineering handoff. Works in Figma and leads design critique sessions grounded in usability testing and accessibility review."
+  }
+}

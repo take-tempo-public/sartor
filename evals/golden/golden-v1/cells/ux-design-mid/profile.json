@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "harper.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-harper-ux-design-mid",
+    "name": "Harper Brandt",
+    "phone": "(555) 010-1047",
+    "username": "gold_ux_design_mid"
+  },
+  "cell": "ux-design-mid",
+  "cell_seed": 1822601145,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Interaction design on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Interaction design, in work or side projects",
+        "any exposure to Prototyping, in work or side projects"
+      ],
+      "scope_probes": [
+        "UX Designer at Oakmont Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Interaction\\ design",
+      "(?i)Prototyping",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "adobe illustrator",
+      "design critique",
+      "figma",
+      "wireframing"
+    ],
+    "notes": "mid-level product and UX design. The profile has no Interaction design, Prototyping; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Interaction design exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "UX Designer",
+        "Westbrook Insurance Group — Hybrid, Des Moines, IA"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.insurance-digital.about",
+        "jd.insurance-digital.duties",
+        "jd.insurance-digital.needs"
+      ],
+      "slug": "insurance-digital"
+    }
+  ],
+  "level": "mid",
+  "profession": "ux-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Figma in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Oakmont Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-01",
+          "title": "UX Designer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Halcyon Services",
+          "end": "2024-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-03",
+          "title": "Junior UX Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Interaction Design",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Figma",
+        "Design critique",
+        "Wireframing",
+        "Accessibility review",
+        "Miro",
+        "Design systems",
+        "HTML and CSS",
+        "User research",
+        "Usability testing",
+        "Adobe Illustrator"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "method",
+      "name": "Design critique"
+    },
+    {
+      "category": "method",
+      "name": "Wireframing"
+    },
+    {
+      "category": "method",
+      "name": "Accessibility review"
+    },
+    {
+      "category": "tool",
+      "name": "Miro"
+    },
+    {
+      "category": "method",
+      "name": "Design systems"
+    },
+    {
+      "category": "language",
+      "name": "HTML and CSS"
+    },
+    {
+      "category": "method",
+      "name": "User research"
+    },
+    {
+      "category": "method",
+      "name": "Usability testing"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    }
+  ],
+  "slots": {
+    "jd.insurance-digital.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a UX Designer at Westbrook Insurance Group, an insurance company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.insurance-digital.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a UX Designer, about accessibility fixes, research synthesis, usability sessions. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.insurance-digital.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Figma, Wireframing, Adobe Illustrator, Design critique, Prototyping, Interaction design, and 5 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Figma",
+        "Wireframing",
+        "Adobe Illustrator",
+        "Design critique",
+        "Prototyping",
+        "Interaction design"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a UX Designer at Oakmont Systems: accessibility fixes, using HTML and CSS. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "HTML and CSS",
+        "50"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a UX Designer at Oakmont Systems: handoff to engineering, using Usability testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Usability testing"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a UX Designer at Oakmont Systems: stakeholder reviews, using Design critique. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Design critique",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a UX Designer at Oakmont Systems: wireframes, using Adobe Illustrator. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Illustrator"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a UX Designer at Oakmont Systems, about usability sessions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a UX Designer at Oakmont Systems, about handoff to engineering. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Junior UX Designer at Halcyon Services: design system components, using Figma. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "50"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior UX Designer at Halcyon Services: research synthesis, using Design systems. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Design systems"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Junior UX Designer at Halcyon Services: usability sessions, using Accessibility review. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accessibility review",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior UX Designer at Halcyon Services: accessibility fixes, using Miro. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Miro"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior UX Designer at Halcyon Services, about handoff to engineering. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior UX Designer at Halcyon Services, about wireframes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level product and UX design professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention Figma, Design critique, Wireframing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Design critique",
+        "Wireframing"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level product and UX design professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention Figma, Design critique, Wireframing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Design critique",
+        "Wireframing"
+      ]
+    }
+  }
+}

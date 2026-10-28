@@ -1,0 +1,550 @@
+{
+  "candidate": {
+    "email": "riley.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-riley-hardware-embedded-lead",
+    "name": "Riley Okafor",
+    "phone": "(555) 010-0657",
+    "username": "gold_hardware_embedded_lead"
+  },
+  "cell": "hardware-embedded-lead",
+  "cell_seed": 1187272340,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use SPICE simulation on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to SPICE simulation, in work or side projects",
+        "any exposure to Signal integrity, in work or side projects"
+      ],
+      "scope_probes": [
+        "Hardware Engineering Manager at Redfern Family Trades: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)SPICE\\ simulation",
+      "(?i)Signal\\ integrity",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "firmware bring-up",
+      "linux",
+      "oscilloscope debugging",
+      "rtos"
+    ],
+    "notes": "lead-level hardware and embedded engineering. The profile has no SPICE simulation, Signal integrity; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "SPICE simulation exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Hardware Engineering Manager",
+        "Fernhill Robotics — Hybrid, Pittsburgh, PA"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.robotics-startup.about",
+        "jd.robotics-startup.duties",
+        "jd.robotics-startup.needs"
+      ],
+      "slug": "robotics-startup"
+    }
+  ],
+  "level": "lead",
+  "profession": "hardware-embedded",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Embedded C in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Redfern Family Trades",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-06",
+          "title": "Hardware Engineering Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Granite Ridge",
+          "end": "2024-06",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-07",
+          "title": "Senior Embedded Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Marlow Contracting",
+          "end": "2021-07",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2015-05",
+          "title": "Hardware Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Electrical Engineering",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2015"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Embedded C",
+        "VHDL",
+        "Verilog",
+        "Linux",
+        "Schematic capture",
+        "JTAG debugging",
+        "Firmware bring-up",
+        "RTOS",
+        "MATLAB",
+        "Oscilloscope debugging"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Embedded C"
+    },
+    {
+      "category": "language",
+      "name": "VHDL"
+    },
+    {
+      "category": "language",
+      "name": "Verilog"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "method",
+      "name": "Schematic capture"
+    },
+    {
+      "category": "method",
+      "name": "JTAG debugging"
+    },
+    {
+      "category": "method",
+      "name": "Firmware bring-up"
+    },
+    {
+      "category": "platform",
+      "name": "RTOS"
+    },
+    {
+      "category": "tool",
+      "name": "MATLAB"
+    },
+    {
+      "category": "method",
+      "name": "Oscilloscope debugging"
+    }
+  ],
+  "slots": {
+    "jd.robotics-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Hardware Engineering Manager at Fernhill Robotics, a robotics startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.robotics-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Hardware Engineering Manager, about design reviews, mentoring junior engineers, leading design reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.robotics-startup.needs": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require RTOS, Oscilloscope debugging, Firmware bring-up, Linux, SPICE simulation, Signal integrity, and 11 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "RTOS",
+        "Oscilloscope debugging",
+        "Firmware bring-up",
+        "Linux",
+        "SPICE simulation",
+        "Signal integrity"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineering Manager at Redfern Family Trades: validation test plans, using MATLAB. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "MATLAB",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineering Manager at Redfern Family Trades: prototype testing, using Oscilloscope debugging. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Oscilloscope debugging"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineering Manager at Redfern Family Trades: component selection with suppliers, using VHDL. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "VHDL",
+        "40"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineering Manager at Redfern Family Trades: design reviews, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineering Manager at Redfern Family Trades: board bring-up, using Verilog. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Verilog",
+        "20"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Hardware Engineering Manager at Redfern Family Trades, about firmware updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Hardware Engineering Manager at Redfern Family Trades, about prototype testing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Granite Ridge: firmware updates, using Schematic capture. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Schematic capture",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Granite Ridge: leading design reviews, using RTOS. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "RTOS"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Granite Ridge: mentoring junior engineers, using JTAG debugging. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "JTAG debugging",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Granite Ridge: specification writing, using Embedded C. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Embedded C"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Embedded Engineer at Granite Ridge: validation test plans, using Firmware bring-up. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firmware bring-up",
+        "45"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Embedded Engineer at Granite Ridge, about prototype testing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Embedded Engineer at Granite Ridge, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Marlow Contracting: design reviews, using MATLAB. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "MATLAB",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Marlow Contracting: board bring-up, using Oscilloscope debugging. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Oscilloscope debugging"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Marlow Contracting: firmware updates, using VHDL. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "VHDL",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Hardware Engineer at Marlow Contracting: specification writing, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Hardware Engineer at Marlow Contracting: validation test plans, using Verilog. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Verilog",
+        "15"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Hardware Engineer at Marlow Contracting, about board bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Hardware Engineer at Marlow Contracting, about design reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level hardware and embedded engineering professional with about 11 years of experience, scope: leading a team and owning the roadmap for the area. Mention Embedded C, VHDL, Verilog.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Embedded C",
+        "VHDL",
+        "Verilog"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level hardware and embedded engineering professional with about 11 years of experience, scope: leading a team and owning the roadmap for the area. Mention Embedded C, VHDL, Verilog.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Embedded C",
+        "VHDL",
+        "Verilog"
+      ]
+    }
+  }
+}

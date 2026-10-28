@@ -1,0 +1,52 @@
+{
+  "cell": "registered-nurse-lead",
+  "provenance": {
+    "attempts": 2,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:6b93819a680a532bfd7f35fc10f089b4c06f1b2b79d5b24d923d0a066248d80b",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMj6gGB7zgCtSHqpyoK",
+      "req_011CgVMmSeNB98U1HR6Y7A2s"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 7158,
+      "output_tokens": 4155
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.childrens-hospital.about": "Redstone Children's Hospital gives children and their families safe, compassionate care close to home. We are seeking an on-site Nurse Manager in Louisville, KY to lead nursing staff, oversee daily patient care and uphold clinical standards on the unit. A current Registered Nurse Licence is required, along with a current Basic Life Support Card.",
+    "jd.childrens-hospital.duties": "Duties\n- Serve as charge nurse for assigned shifts, directing staff assignments and patient flow\n- Lead shift handoff so incoming nurses receive complete, accurate patient information\n- Chart assessments, interventions and outcomes in the electronic health record in a timely way\n- Review charting by nursing staff for accuracy and completeness\n- Coordinate with physicians and families on plans of care\n- Supervise and coach nursing staff and aides on the unit",
+    "jd.childrens-hospital.needs": "Licensure and qualifications\n- Current Registered Nurse Licence required\n- 12 or more years of nursing experience, including leadership of a nursing team\n- Skilled in bedside handoff, medication administration and IV therapy\n- Experience with patient assessment and discharge planning for children and families\n- Working knowledge of infection control practices and standards",
+    "r1.b1": "Coordinates with physicians on medication administration orders and dose timing, reducing medication errors on the unit by 20 percent.",
+    "r1.b2": "Supervises nursing aides and reviews their clinical documentation each shift for accuracy and completeness.",
+    "r1.b3": "Oversees patient triage documented in Epic Systems, cutting the time to complete initial triage by 10 percent.",
+    "r1.b4": "Teaches patients and families what to expect at home, building discharge planning into care from admission.",
+    "r1.b5": "Audits charting for IV therapy in the record, raising documentation completion rates by 45 percent.",
+    "r1.i1": "Manages nursing staff at Bluebird Family Services, with a focus on clear and complete shift handoff between teams.",
+    "r1.i2": "Leads nursing care at Bluebird Family Services, overseeing safe and timely medication delivery for every patient.",
+    "r2.b1": "Introduced patient education points into shift handoff, cutting repeat patient questions by 30 percent.",
+    "r2.b2": "Served as charge nurse for assigned shifts, running bedside handoff with patients and families at each change of shift.",
+    "r2.b3": "Used triage to prioritize medication rounds, reducing late doses by 40 percent.",
+    "r2.b4": "Coordinated with physicians to clarify orders and keep medication administration safe and on schedule.",
+    "r2.b5": "Supervised nursing aides and trained them on clinical documentation, lowering charting errors by 50 percent.",
+    "r2.i1": "Charge nurse at Halcyon Services, responsible for safe medication delivery across the unit during each shift.",
+    "r2.i2": "Led shift nursing care at Halcyon Services as Charge Nurse, overseeing triage and bedside handoff so each patient was evaluated and prioritised promptly.",
+    "r3.b1": "Documented shift handoff notes in Epic Systems, reducing missed follow-up tasks by 15 percent.",
+    "r3.b2": "Gave scheduled medications and tied each patient's medication instructions into discharge planning.",
+    "r3.b3": "Coordinated with physicians on IV therapy orders, reducing line-related delays by 20 percent.",
+    "r3.b4": "Assessed patients at admission and each shift, using findings to guide patient education.",
+    "r3.b5": "Taught patients and families during bedside handoff, increasing reported understanding of care plans by 55 percent.",
+    "r3.i1": "Provided direct patient care at Dunmore Technologies as a Registered Nurse, beginning each shift with triage and clinical documentation of every patient's condition.",
+    "r3.i2": "Registered nurse at Dunmore Technologies who kept accurate, timely charting in the patient record.",
+    "summary.1": "Nurse manager with 12 years of experience leading nursing teams and answering for the quality and safety of their care. Brings hands-on strength in medication administration, patient education and clinical documentation in Epic Systems.",
+    "summary.2": "Nursing leader with 12 years in bedside and management roles, accountable for team performance and patient outcomes. Directs staff in medication administration, patient education and charting in Epic Systems, and holds a current Registered Nurse Licence."
+  }
+}

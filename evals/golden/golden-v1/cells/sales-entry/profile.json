@@ -1,0 +1,325 @@
+{
+  "candidate": {
+    "email": "devon.novak@example.com",
+    "linkedin": "linkedin.com/in/example-devon-sales-entry",
+    "name": "Devon Novak",
+    "phone": "(555) 010-0509",
+    "username": "gold_sales_entry"
+  },
+  "cell": "sales-entry",
+  "cell_seed": 1410765899,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Sales Navigator on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Sales Navigator, in work or side projects",
+        "any exposure to Sales forecasting, in work or side projects"
+      ],
+      "scope_probes": [
+        "Sales Development Representative at Brightwater Labs: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Sales\\ Navigator",
+      "(?i)Sales\\ forecasting",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "account planning",
+      "cold outreach",
+      "pipeline management",
+      "product demonstrations"
+    ],
+    "notes": "entry-level business-to-business sales. The profile has no Sales Navigator, Sales forecasting; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Sales Navigator exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Sales Development Representative",
+        "Brightside Office Supply — Hybrid, Louisville, KY"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.office-supply.about",
+        "jd.office-supply.duties",
+        "jd.office-supply.needs"
+      ],
+      "slug": "office-supply"
+    }
+  ],
+  "level": "entry",
+  "profession": "sales",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Product demonstrations in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Brightwater Labs",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-01",
+          "title": "Sales Development Representative"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Business Administration",
+          "institution": "State University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Product demonstrations",
+        "Cold outreach",
+        "Territory planning",
+        "Pipeline management",
+        "Discovery calls",
+        "Quota attainment",
+        "Account planning",
+        "Salesforce"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Product demonstrations"
+    },
+    {
+      "category": "method",
+      "name": "Cold outreach"
+    },
+    {
+      "category": "method",
+      "name": "Territory planning"
+    },
+    {
+      "category": "method",
+      "name": "Pipeline management"
+    },
+    {
+      "category": "method",
+      "name": "Discovery calls"
+    },
+    {
+      "category": "method",
+      "name": "Quota attainment"
+    },
+    {
+      "category": "method",
+      "name": "Account planning"
+    },
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    }
+  ],
+  "slots": {
+    "jd.office-supply.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Sales Development Representative at Brightside Office Supply, a regional office-supply distributor. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.office-supply.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Sales Development Representative, about quotes and contracts, prospecting new accounts, handoff to customer success. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.office-supply.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Product demonstrations, Account planning, Pipeline management, Cold outreach, Sales forecasting, Sales Navigator, and 2 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Product demonstrations",
+        "Account planning",
+        "Pipeline management",
+        "Cold outreach",
+        "Sales forecasting",
+        "Sales Navigator"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Sales Development Representative at Brightwater Labs: qualifying leads, using Salesforce. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Salesforce",
+        "40"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Development Representative at Brightwater Labs: quotes and contracts, using Product demonstrations. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Product demonstrations"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Sales Development Representative at Brightwater Labs: pipeline reviews, using Cold outreach. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Cold outreach",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Development Representative at Brightwater Labs: handoff to customer success, using Territory planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Territory planning"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Sales Development Representative at Brightwater Labs, about qualifying leads. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Sales Development Representative at Brightwater Labs, about prospecting new accounts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level business-to-business sales professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Product demonstrations, Cold outreach, Territory planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Product demonstrations",
+        "Cold outreach",
+        "Territory planning"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level business-to-business sales professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Product demonstrations, Cold outreach, Territory planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Product demonstrations",
+        "Cold outreach",
+        "Territory planning"
+      ]
+    }
+  }
+}

@@ -1,0 +1,315 @@
+{
+  "candidate": {
+    "email": "quinn.lindqvist@example.com",
+    "linkedin_url": "linkedin.com/in/example-quinn-security-mid",
+    "name": "Quinn Lindqvist",
+    "notes": null,
+    "phone": "(555) 010-3766",
+    "profile_text": null,
+    "username": "gold_security_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_security_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2025",
+      "issuer": "Information Assurance Guild",
+      "name": "Security Analyst Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2023",
+      "field": "Cybersecurity",
+      "id": 701,
+      "institution": "Ridgeway College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pairs access reviews with vulnerability scanning to find stale accounts on exposed hosts, cutting unreviewed privileged access by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Triages security alerts in Splunk, correlating events across sources to separate real incidents from noise and escalate confirmed issues."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads risk assessments of network segments and tightens firewall rules based on the findings, reducing exposed services by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Monitors security logs alongside Nessus scan results to spot activity on hosts with open findings and flag them for remediation."
+        }
+      ],
+      "company": "Granite Ridge",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Monitors security logs across Granite Ridge systems to detect suspicious activity and keep the environment under steady watch."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handles alert triage at Granite Ridge, reviewing security alerts and escalating confirmed threats for response."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Security Analyst",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updated access policy documentation using findings from access reviews, reducing open audit gaps by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracked vulnerability fixes across network systems, using Wireshark captures to confirm that patched services no longer showed vulnerable traffic."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran phishing simulation campaigns as part of security awareness training, lowering the staff click rate by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applied threat modeling to access reviews, mapping which roles could reach sensitive data and flagging excess permissions for removal."
+        }
+      ],
+      "company": "Riverbend Health Network",
+      "display_order": 1,
+      "end_date": "2025-04",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported alert triage at Riverbend Health Network, reviewing security alerts and passing confirmed issues to senior analysts."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Helped run security awareness training at Riverbend Health Network, teaching staff to recognise and report phishing attempts."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Security Analyst",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Access reviews",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Firewall rules",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Nessus",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Penetration testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 610,
+      "name": "Phishing simulation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 603,
+      "name": "PowerShell",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "Splunk",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Threat modeling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Vulnerability scanning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Wireshark",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Security analyst with about 4 years of experience owning a security workstream end to end, from scoping through remediation. Uses penetration testing, threat modeling and PowerShell automation to find weaknesses and track fixes to closure."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Information security analyst with about 4 years of experience taking one service from assessment through remediation and ongoing monitoring. Combines threat modeling, penetration testing and PowerShell scripting to find risks early and confirm that fixes hold."
+    }
+  ],
+  "tags": []
+}

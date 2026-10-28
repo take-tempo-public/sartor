@@ -1,0 +1,557 @@
+{
+  "candidate": {
+    "email": "jordan.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-medical-assistant-lead",
+    "name": "Jordan Mehta",
+    "phone": "(555) 010-1718",
+    "username": "gold_medical_assistant_lead"
+  },
+  "cell": "medical-assistant-lead",
+  "cell_seed": 1811156319,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Patient intake on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Patient intake, in work or side projects",
+        "any exposure to Patient messaging, in work or side projects"
+      ],
+      "scope_probes": [
+        "Clinic Supervisor at Cedar Hollow Hospice: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Patient\\ intake",
+      "(?i)Patient\\ messaging",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "blood draws",
+      "epic systems",
+      "injections",
+      "prior authorizations"
+    ],
+    "notes": "lead-level medical assisting. The profile has no Patient intake, Patient messaging; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team or program and answering for its results.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team or program and answering for its results",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Patient intake exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Clinic Supervisor",
+        "Stonehaven Medical Group — On site, Savannah, GA"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.medical-group.about",
+        "jd.medical-group.duties",
+        "jd.medical-group.needs"
+      ],
+      "slug": "medical-group"
+    }
+  ],
+  "level": "lead",
+  "profession": "medical-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Vital signs in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Cedar Hollow Hospice",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2019-11",
+          "title": "Clinic Supervisor"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Riverbend Health Network",
+          "end": "2019-11",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2015-12",
+          "title": "Senior Medical Assistant"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": "2015-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-07",
+          "title": "Medical Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Medical Assisting",
+          "institution": "Lakeshore Career College",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Medical Assisting Certification Board",
+          "name": "Certified Medical Assistant Credential",
+          "year": "2026"
+        },
+        {
+          "issuer": "Clinical Skills Council",
+          "name": "Phlebotomy Certificate",
+          "year": "2017"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Vital signs",
+        "Medical coding",
+        "Prior authorizations",
+        "Specimen handling",
+        "Epic Systems",
+        "EKG testing",
+        "Injections",
+        "Blood draws"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Vital signs"
+    },
+    {
+      "category": "method",
+      "name": "Medical coding"
+    },
+    {
+      "category": "method",
+      "name": "Prior authorizations"
+    },
+    {
+      "category": "method",
+      "name": "Specimen handling"
+    },
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "EKG testing"
+    },
+    {
+      "category": "method",
+      "name": "Injections"
+    },
+    {
+      "category": "method",
+      "name": "Blood draws"
+    }
+  ],
+  "slots": {
+    "jd.medical-group.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Clinic Supervisor at Stonehaven Medical Group, a multi-clinic medical group. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.medical-group.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Clinic Supervisor, about managing clinic supplies and schedules, stocking exam rooms, taking vital signs. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.medical-group.needs": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Injections, Epic Systems, Blood draws, Prior authorizations, Patient messaging, Patient intake, and 13 or more years of experience. State Certified Medical Assistant Credential as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Injections",
+        "Epic Systems",
+        "Blood draws",
+        "Prior authorizations",
+        "Patient messaging",
+        "Patient intake",
+        "Certified Medical Assistant Credential"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Clinic Supervisor at Cedar Hollow Hospice: rooming patients, using Blood draws. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blood draws",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinic Supervisor at Cedar Hollow Hospice: scheduling follow-up visits, using Specimen handling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Specimen handling"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Clinic Supervisor at Cedar Hollow Hospice: relaying physician instructions, using EKG testing. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "EKG testing",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinic Supervisor at Cedar Hollow Hospice: taking vital signs, using Injections. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Injections"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Clinic Supervisor at Cedar Hollow Hospice: completing insurance forms, using Epic Systems. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Epic Systems",
+        "50"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Clinic Supervisor at Cedar Hollow Hospice, about scheduling follow-up visits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Clinic Supervisor at Cedar Hollow Hospice, about rooming patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Riverbend Health Network: training new medical assistants, using Medical coding. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Medical coding",
+        "15"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Riverbend Health Network: drawing blood, using Prior authorizations. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Prior authorizations"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Riverbend Health Network: managing clinic supplies and schedules, using Vital signs. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Vital signs",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Riverbend Health Network: stocking exam rooms, using Blood draws. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Blood draws"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Riverbend Health Network: rooming patients, using Specimen handling. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Specimen handling",
+        "10"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Medical Assistant at Riverbend Health Network, about rooming patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Medical Assistant at Riverbend Health Network, about training new medical assistants. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Medical Assistant at Harborview Community Clinic: taking vital signs, using EKG testing. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "EKG testing",
+        "55"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Medical Assistant at Harborview Community Clinic: completing insurance forms, using Injections. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Injections"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Medical Assistant at Harborview Community Clinic: drawing blood, using Epic Systems. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Epic Systems",
+        "25"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Medical Assistant at Harborview Community Clinic: stocking exam rooms, using Medical coding. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Medical coding"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Medical Assistant at Harborview Community Clinic: rooming patients, using Prior authorizations. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Prior authorizations",
+        "10"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Medical Assistant at Harborview Community Clinic, about completing insurance forms. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Medical Assistant at Harborview Community Clinic, about drawing blood. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level medical assisting professional with about 13 years of experience, scope: leading a team or program and answering for its results. Mention Vital signs, Medical coding, Prior authorizations.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Vital signs",
+        "Medical coding",
+        "Prior authorizations"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level medical assisting professional with about 13 years of experience, scope: leading a team or program and answering for its results. Mention Vital signs, Medical coding, Prior authorizations.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Vital signs",
+        "Medical coding",
+        "Prior authorizations"
+      ]
+    }
+  }
+}
