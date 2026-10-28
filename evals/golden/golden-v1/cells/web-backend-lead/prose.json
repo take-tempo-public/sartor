@@ -1,0 +1,51 @@
+{
+  "cell": "web-backend-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:de747e2b1923686e945bd158754b50164e2cbe3d08cdcd8742b93dad0451ee6a",
+    "prompt_sha256": "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a",
+    "prompt_version": "golden-author-1",
+    "request_ids": [
+      "req_011CgV8N9b2mxpCkCe5QGP3C"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4808,
+      "output_tokens": 3349
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.freight-startup.about": "Tidewater Freight Labs builds tools that show shippers where their freight is, right now. We're looking for an Engineering Manager to lead our backend team, keep our APIs solid, and help us ship faster without breaking things. You'll own the technical direction, coach engineers, and still stay close to the code. Fully remote within the US.",
+    "jd.freight-startup.duties": "What you'll do\n- Lead API design and versioning so partners can integrate without surprises\n- Automate our deployment pipeline from commit to production\n- Set the team's technical roadmap and keep it tied to what customers need\n- Coach engineers through code review and regular one-on-ones\n- Work with product to scope and sequence freight-tracking features",
+    "jd.freight-startup.needs": "What we're looking for\n- 13 or more years of backend software experience, including time leading a team\n- Hands-on work with Spring Boot services and PostgreSQL databases\n- Comfort running Docker containers on Linux in production\n- Experience building and maintaining Jenkins pipelines\n- Working knowledge of Elasticsearch for search and indexing",
+    "r1.b1": "Mentors engineers through code review on Docker-based services, cutting review turnaround time by 10 percent.",
+    "r1.b2": "Coordinates database schema changes with Kafka event consumers so downstream services pick up new fields without breaking.",
+    "r1.b3": "Sets the team's technical roadmap, prioritizing Elasticsearch search improvements that raised query relevance scores by 15 percent.",
+    "r1.b4": "Automates the deployment pipeline for GraphQL services, adding schema checks that block breaking changes before release.",
+    "r1.b5": "Leads service reliability and the on-call rotation for Kubernetes workloads, reducing paged incidents by 50 percent.",
+    "r1.i1": "Leads the backend engineering team at Maple Court Care, mentoring engineers through regular code review.",
+    "r1.i2": "Manages the engineering team at Maple Court Care and oversees database schema changes across its services.",
+    "r2.b1": "Wrote runbooks and led incident follow-ups, adding Jenkins jobs that automated recovery steps and cut repeat incidents by 55 percent.",
+    "r2.b2": "Designed clinic service APIs with an API versioning scheme that let older clients keep working while new endpoints shipped.",
+    "r2.b3": "Tuned slow queries and added Redis caching for frequent lookups, reducing average response time by 15 percent.",
+    "r2.b4": "Mentored engineers through code review on GitHub, giving written feedback on design, testing and readability.",
+    "r2.b5": "Managed database schema changes in Spring Boot services through versioned migrations, shortening migration time by 45 percent.",
+    "r2.i1": "Built and maintained backend services at Harborview Community Clinic, owning database schema changes for clinic systems.",
+    "r2.i2": "Worked on backend systems at Harborview Community Clinic with a focus on finding and tuning slow queries.",
+    "r3.b1": "Designed and versioned internal APIs packaged in Docker containers, cutting integration setup time by 50 percent.",
+    "r3.b2": "Tuned slow queries behind Kafka consumers, batching database writes to relieve load during traffic spikes.",
+    "r3.b3": "Restructured database schemas feeding Elasticsearch indexes, reducing reindexing time by 35 percent.",
+    "r3.b4": "Automated deployment pipeline steps for GraphQL services, replacing manual release checklists with scripted builds.",
+    "r3.b5": "Shared on-call duty for Kubernetes-hosted services and added health checks that lowered downtime by 55 percent.",
+    "r3.i1": "Developed backend services at Granite Ridge and took part in on-call duty to keep them reliable.",
+    "r3.i2": "Wrote backend code at Granite Ridge and handled incident follow-up, turning lessons into written runbooks.",
+    "summary.1": "Backend engineering lead with about 13 years of experience building services and leading a team that owns its technical roadmap. Works hands-on with GraphQL, Redis and Docker while mentoring engineers and planning delivery.",
+    "summary.2": "Lead-level backend engineer with about 13 years of experience who now manages a team and sets the roadmap for its area. Brings working depth in GraphQL APIs, Redis caching and Docker-based deployment."
+  }
+}

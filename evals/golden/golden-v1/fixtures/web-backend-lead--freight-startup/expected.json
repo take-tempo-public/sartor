@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Quinn Mehta",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Linux, in work or side projects",
+      "any exposure to PostgreSQL, in work or side projects"
+    ],
+    "scope_probes": [
+      "Engineering Manager at Maple Court Care: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "Linux",
+    "PostgreSQL",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Leading a team and owning the roadmap for the area."
+      },
+      "edit_replacement": "Coordinates database schema changes with Kafka event consumers so downstream, leading a team and owning the roadmap for the area",
+      "edit_target_substring": "Coordinates database schema changes with Kafka event consumers so downstream",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Linux exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "docker",
+    "elasticsearch",
+    "jenkins",
+    "spring boot"
+  ],
+  "notes": "lead-level backend software engineering. The profile has no Linux, PostgreSQL; generation must not claim them."
+}

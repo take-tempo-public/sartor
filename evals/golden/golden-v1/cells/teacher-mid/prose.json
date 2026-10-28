@@ -1,0 +1,42 @@
+{
+  "cell": "teacher-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:7e19676067420c0b8425d04dac431b62a1961dfea61b3c686f98bceb0608e43a",
+    "prompt_sha256": "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a",
+    "prompt_version": "golden-author-1",
+    "request_ids": [
+      "req_011CgV8QQuaN2Rx4eCjpuNLc"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3733,
+      "output_tokens": 2480
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.school-district.about": "Duties\nAshgrove Unified School District is seeking a Classroom Teacher to plan and deliver daily instruction in an assigned elementary classroom. The teacher maintains a safe and orderly learning environment, assesses student progress, and adjusts instruction to meet individual needs. The position works closely with families, building staff, and grade-level colleagues, and follows district curriculum and policies.",
+    "jd.school-district.duties": "Responsibilities of the position\n- Prepare for and lead parent conferences, sharing student progress and agreeing on next steps with families.\n- Plan and teach small-group reading lessons matched to student needs.\n- Take part in team planning with grade-level colleagues to align lessons, pacing and assessments.\n- Monitor student progress and use the results to adjust instruction.\n- Maintain clear classroom routines and accurate student records.",
+    "jd.school-district.needs": "Qualifications and conditions of employment\n- 4 or more years of experience as an elementary classroom teacher.\n- Demonstrated skill in Classroom management and Parent communication.\n- Experience with Differentiated instruction and Math manipulatives.\n- Working knowledge of Phonics instruction and Reading intervention.\n- Required: a current State Teaching Licence.\n- Preferred: Instructional Leadership Endorsement.",
+    "r1.b1": "Adapts lessons for different learners with Nearpod activities, raising average unit quiz scores by 15 percent.",
+    "r1.b2": "Assesses student progress through regular classroom checks and uses Parent communication to share each child's growth and next steps with families.",
+    "r1.b3": "Builds consistent classroom routines and uses Formative assessment to adjust them, cutting time lost during transitions by 40 percent.",
+    "r1.b4": "Plans daily lessons that use Math manipulatives to make number concepts concrete for students across ability levels.",
+    "r1.i1": "Teaches a full elementary classroom at Hillcrest Elementary School, leading small-group reading sessions matched to each student's needs.",
+    "r1.i2": "Leads a classroom at Hillcrest Elementary School, assessing student progress regularly and using the results to shape instruction.",
+    "r2.b1": "Led small-group reading sessions using Differentiated instruction, increasing the share of students reading on target by 40 percent.",
+    "r2.b2": "Collaborated with colleagues during team planning to build consistent Behavior supports across grade-level classrooms.",
+    "r2.b3": "Prepared families for parent conferences with ClassDojo updates, raising conference attendance by 15 percent.",
+    "r2.b4": "Applied Classroom management strategies while adapting tasks for different learners, keeping students focused during independent work.",
+    "r2.i1": "Supported instruction at Willowbrook Elementary School, assessing student progress and using findings to guide lesson adjustments.",
+    "r2.i2": "Worked as an Associate Teacher at Willowbrook Elementary School, planning lessons and units as part of a team with fellow teachers.",
+    "summary.1": "Elementary teacher with about 4 years of classroom experience who carries a full class without close supervision. Uses Nearpod, Behavior supports and Math manipulatives to keep lessons engaging and routines steady.",
+    "summary.2": "Licensed elementary educator with 4 years of experience managing a full class independently and holding a Reading Specialist Endorsement. Brings Nearpod lessons, Behavior supports and Math manipulatives into daily instruction to meet varied student needs."
+  }
+}

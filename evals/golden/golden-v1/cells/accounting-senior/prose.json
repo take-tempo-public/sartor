@@ -1,0 +1,48 @@
+{
+  "cell": "accounting-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:29ff3d993ebbe482d5615da4f11d30d4fc16e565f996a99128479a9fd5dd839e",
+    "prompt_sha256": "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a",
+    "prompt_version": "golden-author-1",
+    "request_ids": [
+      "req_011CgV8TW8C7kohAhdHGxtdE"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4519,
+      "output_tokens": 3366
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.distributor.about": "Position summary\nDavenport Distribution, a wholesale distributor, seeks a Senior Accountant for its hybrid Indianapolis, IN office. The position supports accurate and timely financial reporting, including the close, account reconciliations and audit work.\nMinimum: a bachelor's degree in accounting and experience with general ledger work.\nPreferred: experience in wholesale distribution.",
+    "jd.distributor.duties": "Responsibilities\n- Review vendor invoices for accuracy, coding and approval before payment.\n- Own the close calendar for the accounting team and track each task to completion.\n- Prepare schedules, reconciliations and supporting documents for the external audit.\n- Respond to auditor requests and coordinate follow-up with other departments.\n- Review journal entries prepared by staff accountants.\n- Maintain documentation of close procedures and controls.",
+    "jd.distributor.needs": "Minimum and preferred qualifications\n- 7 or more years of accounting experience.\n- Proficiency in Microsoft Excel and experience with Accounts receivable.\n- Hands-on experience with Month-end close and Account reconciliation.\n- Experience providing Audit support and handling Sales tax filing.\n- Bookkeeping Certificate required.\n- Preferred: experience in wholesale distribution.",
+    "r1.b1": "Prepares monthly budget variance reports in QuickBooks, cutting report turnaround time by 25 percent.",
+    "r1.b2": "Reviews journal entries and reconciliations prepared by staff accountants, using Microsoft Excel checklists to flag errors before posting.",
+    "r1.b3": "Owns the team close calendar and schedules Financial statements preparation against it, reducing close time by 25 percent.",
+    "r1.b4": "Coordinates audit preparation by aligning Month-end close records and supporting schedules with auditor requests.",
+    "r1.i1": "Senior Accountant at Riverbend Health Network who reviews the work of staff accountants and keeps entries and reconciliations accurate.",
+    "r1.i2": "At Riverbend Health Network, leads audit preparation as Senior Accountant, assembling schedules and support for auditors.",
+    "r2.b1": "Prepared tax schedules from Accounts payable records, reducing preparation time by 25 percent.",
+    "r2.b2": "Built customer statements from Accounts receivable ledgers and sent them to clients on schedule each month.",
+    "r2.b3": "Performed bank reconciliations and organized Audit support files, reducing open reconciling items by 45 percent.",
+    "r2.b4": "Produced budget variance reports that drew on Fixed asset tracking for depreciation and capital spending.",
+    "r2.i1": "As Accountant at Ironbridge Co, handled month-end close tasks including journal entries, accruals and reconciliations.",
+    "r2.i2": "Accountant at Ironbridge Co who prepared statements for customers and internal reviewers.",
+    "r3.b1": "Organized audit preparation files in QuickBooks, reducing auditor follow-up requests by 15 percent.",
+    "r3.b2": "Reviewed vendor invoices against purchase orders using Microsoft Excel trackers before approving payment.",
+    "r3.b3": "Supported month-end close by drafting Financial statements, shortening close time by 15 percent.",
+    "r3.b4": "Compiled tax schedules from Month-end close balances for review by the senior accountant.",
+    "r3.i1": "Staff Accountant at Neighborhood Table Services who prepared financial statements and supporting schedules each month.",
+    "r3.i2": "At Neighborhood Table Services, completed bank reconciliations as Staff Accountant and resolved discrepancies with the bank.",
+    "summary.1": "Senior accountant with about 7 years of experience who sets how the team handles month-end close. Uses QuickBooks, Accounts payable processes and Microsoft Excel to keep records accurate and deadlines on track.",
+    "summary.2": "Accounting professional with about 7 years of experience across close, audit support and financial statements. Defines how the team runs Accounts payable, using QuickBooks and Microsoft Excel for processing and review."
+  }
+}

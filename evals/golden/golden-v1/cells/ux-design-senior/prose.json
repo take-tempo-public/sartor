@@ -1,0 +1,48 @@
+{
+  "cell": "ux-design-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:751ceba4838fca88080b5d46f9212aa4df63a857e69a1895fc52b8db1516f0ff",
+    "prompt_sha256": "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a",
+    "prompt_version": "golden-author-1",
+    "request_ids": [
+      "req_011CgV8VcpLP8YVU7Li8fNXg"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4331,
+      "output_tokens": 2665
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.telehealth.about": "Summary\nRiverside Care Alliance is a telehealth nonprofit working to make quality care reachable from home. We are seeking a Senior Product Designer to shape patient and clinician experiences across our remote care services. This role does not require a clinical licence or certification. The position is remote within the US.",
+    "jd.telehealth.duties": "Duties\n- Mentor designers through regular feedback, pairing and design critique.\n- Plan and run usability sessions with patients, caregivers and clinicians.\n- Identify accessibility issues and partner with engineering to ship fixes.\n- Translate research findings into clear flows, wireframes and prototypes.\n- Present design direction to stakeholders and incorporate their feedback.",
+    "jd.telehealth.needs": "Licensure and qualifications\n- 8 or more years of experience in product or UX design.\n- Strong skills in Interaction design and Information architecture.\n- Proficiency in Wireframing and Prototyping for web and mobile experiences.\n- Experience with Accessibility review for digital products.\n- Working knowledge of HTML and CSS to collaborate with engineers.",
+    "r1.b1": "Mentors designers in Journey mapping practice, reducing rework on new service flows by 25 percent.",
+    "r1.b2": "Runs stakeholder reviews with Wireframing walkthroughs that align product and engineering on scope before visual design begins.",
+    "r1.b3": "Synthesizes research findings in Figma, shortening the time from study to design decision by 45 percent.",
+    "r1.b4": "Leads design critiques for the team, applying Interaction design principles to refine flows and feedback patterns.",
+    "r1.i1": "Leads product design at Neighborhood Table Services, with a focus on building and maintaining design system components.",
+    "r1.i2": "Guides product design work at Neighborhood Table Services and runs stakeholder reviews that keep teams aligned on priorities.",
+    "r2.b1": "Facilitated usability sessions and organized findings in Miro, lowering task failure rates by 30 percent.",
+    "r2.b2": "Built design system components in HTML and CSS, giving engineers coded references for consistent interface patterns.",
+    "r2.b3": "Restructured Information architecture to resolve accessibility issues, reducing navigation errors for assistive technology users by 40 percent.",
+    "r2.b4": "Presented User research findings in stakeholder reviews to guide roadmap and feature decisions.",
+    "r2.i1": "Designed user experiences at Ironbridge Co and led stakeholder reviews to align teams on design direction.",
+    "r2.i2": "Worked as a UX designer at Ironbridge Co, focusing on identifying and delivering accessibility fixes across the product.",
+    "r3.b1": "Synthesized research notes into themes for Design critique sessions, shortening revision cycles by 30 percent.",
+    "r3.b2": "Produced wireframes in Adobe Illustrator for core screens and shared them with the product team for feedback.",
+    "r3.b3": "Prepared Journey mapping artifacts for handoff to engineering, cutting clarification requests by 35 percent.",
+    "r3.b4": "Tested early concepts in usability sessions, using Wireframing to iterate on layouts between rounds.",
+    "r3.i1": "Supported the design team at Maple Court Care by researching and implementing accessibility fixes.",
+    "r3.i2": "Created wireframes at Maple Court Care to shape early product concepts alongside senior designers.",
+    "summary.1": "Senior product and UX designer with about 8 years of experience setting the technical direction for a product area. Uses Miro, Journey mapping and Wireframing to turn research into clear, buildable designs.",
+    "summary.2": "Product and UX design professional with about 8 years of experience who sets the technical direction for a product area at a senior level. Brings teams together in Miro and relies on Journey mapping and Wireframing to define flows before build."
+  }
+}

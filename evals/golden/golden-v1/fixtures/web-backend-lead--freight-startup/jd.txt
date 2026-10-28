@@ -1,0 +1,18 @@
+Engineering Manager
+Tidewater Freight Labs — Remote (US)
+
+Tidewater Freight Labs builds tools that show shippers where their freight is, right now. We're looking for an Engineering Manager to lead our backend team, keep our APIs solid, and help us ship faster without breaking things. You'll own the technical direction, coach engineers, and still stay close to the code. Fully remote within the US.
+
+What you'll do
+- Lead API design and versioning so partners can integrate without surprises
+- Automate our deployment pipeline from commit to production
+- Set the team's technical roadmap and keep it tied to what customers need
+- Coach engineers through code review and regular one-on-ones
+- Work with product to scope and sequence freight-tracking features
+
+What we're looking for
+- 13 or more years of backend software experience, including time leading a team
+- Hands-on work with Spring Boot services and PostgreSQL databases
+- Comfort running Docker containers on Linux in production
+- Experience building and maintaining Jenkins pipelines
+- Working knowledge of Elasticsearch for search and indexing
