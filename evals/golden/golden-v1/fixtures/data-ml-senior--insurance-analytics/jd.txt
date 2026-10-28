@@ -1,0 +1,22 @@
+Senior Data Scientist
+Meridian Mutual — Hybrid, Chicago, IL
+
+Position summary
+Meridian Mutual seeks a Senior Data Scientist to develop, validate and maintain predictive models that support underwriting, pricing and claims decisions. The role works on a hybrid schedule from Chicago and partners with actuarial, product and technology teams.
+Minimum: a degree in a quantitative field and substantial experience building production models.
+Preferred: experience in the insurance industry.
+
+Responsibilities
+- Lead validation of predictive models, including performance testing, stability checks and documentation for review.
+- Direct feature selection for underwriting, pricing and claims models, balancing accuracy with interpretability.
+- Mentor analysts and data scientists through code review, modeling guidance and structured feedback.
+- Partner with actuarial and business teams to define modeling requirements and success measures.
+- Present findings and model recommendations to leadership in clear, actionable terms.
+
+Minimum and preferred qualifications
+- 9 or more years of experience in data science, statistical modeling or a related field.
+- Advanced SQL skills and hands-on experience with Snowflake.
+- Proficiency in Python and Jupyter for analysis and model development.
+- Experience orchestrating data and model pipelines with Airflow.
+- Experience building Tableau dashboards for business audiences.
+- Preferred: background in insurance analytics.

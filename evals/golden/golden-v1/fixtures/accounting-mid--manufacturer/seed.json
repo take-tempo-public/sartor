@@ -1,0 +1,301 @@
+{
+  "candidate": {
+    "email": "quinn.mehta@example.com",
+    "linkedin_url": "linkedin.com/in/example-quinn-accounting-mid",
+    "name": "Quinn Mehta",
+    "notes": null,
+    "phone": "(555) 010-6133",
+    "profile_text": null,
+    "username": "gold_accounting_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_accounting_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "Accounting Training Council",
+      "name": "Bookkeeping Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Accounting",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepares audit documentation for sales tax filing, cutting the time needed to answer auditor requests by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs the month-end close in QuickBooks, posting entries and reviewing ledger balances before statements are prepared."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Builds budget variance reports supported by account reconciliation, reducing unexplained variances by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Compiles tax schedules from accounts receivable records, matching balances to the general ledger for each filing period."
+        }
+      ],
+      "company": "Harborview Community Clinic",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Prepares financial statements for Harborview Community Clinic, drawing on reconciled ledger balances and supporting schedules."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads audit preparation at Harborview Community Clinic, assembling reconciliations and documentation for auditor review."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Accountant",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Performed bank reconciliations as part of the month-end close, shortening the close cycle by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reviewed vendor invoices for capital purchases and recorded them through fixed asset tracking, keeping the asset register in line with the ledger."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared monthly financial statements with budget variance analysis, reducing review revisions by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Organized audit support schedules in Microsoft Excel, giving auditors traceable workpapers for each account balance."
+        }
+      ],
+      "company": "Northfield Group",
+      "display_order": 1,
+      "end_date": "2025-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported audit preparation at Northfield Group by compiling schedules and documentation for auditor requests."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handled bank reconciliations at Northfield Group, matching bank activity to the general ledger each period."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Staff Accountant",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Account reconciliation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Accounts receivable",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Budget variance analysis",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Fixed asset tracking",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Microsoft Excel",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Month-end close",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "QuickBooks",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Sales tax filing",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Specialist-level accounting professional with 5 years of experience owning recurring processes from request to completion, including month-end close and account reconciliation. Applies fixed asset tracking, QuickBooks and Microsoft Excel to keep ledgers accurate and ready for audit."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Specialist-level accountant with about 5 years of experience handling the month-end close from first request through final sign-off. Maintains account reconciliation and fixed asset tracking schedules so each recurring cycle closes with supported balances."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "visual-design-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:ac829eaa3894ff3351d740036e12c8173d87e6c19015cb08c9d968f9770d3511",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNumTYT1wRTgiE12jyE"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4830,
+      "output_tokens": 3469
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.branding-agency.about": "Marigold Creative House is an independent branding agency, run by its owners and built on close work with clients. We are looking for a Creative Director to lead our design team, shape how our clients look in print and online, and keep the work clear and well made. Most of the work happens on site at our Austin studio, with some days from home.",
+    "jd.branding-agency.duties": "What the job involves\n- Lead the design team on print layouts for brochures, packaging and signage\n- Present concepts to clients and manage client revisions through to sign-off\n- Plan and run campaign launches across print and digital channels\n- Review proofs and work with printers on final production\n- Keep each client's brand guidelines up to date and applied consistently",
+    "jd.branding-agency.needs": "What you need\n- 11 or more years of experience in graphic or brand design\n- A strong grounding in color theory and typography\n- Skill in photo retouching using Adobe Photoshop\n- Hands-on knowledge of print production, from file preparation to press checks\n- Working knowledge of Adobe After Effects for motion work",
+    "r1.b1": "Retouches product and lifestyle photos for social media graphics, setting photo retouching standards that have raised average post engagement by 45 percent.",
+    "r1.b2": "Guides junior designers through print production, reviewing proofs, paper choices and press checks before files go to the printer.",
+    "r1.b3": "Builds packaging mockups with motion graphics that show each design in use, cutting client approval time by 45 percent.",
+    "r1.b4": "Leads campaign launches from concept to release, keeping brand identity consistent across print, digital and in-store materials.",
+    "r1.b5": "Updates brand guidelines using color theory to define clear palettes, reducing off-brand color errors in team work by 40 percent.",
+    "r1.i1": "As Creative Director at Northfield Group, leads the team that plans and produces print layouts for client brands.",
+    "r1.i2": "Oversees brand guideline updates at Northfield Group, setting the visual standards the design team applies across client work.",
+    "r2.b1": "Handled client revisions in Canva with shared templates, reducing revision rounds per project by 10 percent.",
+    "r2.b2": "Directed brand work across campaigns, using packaging design to keep products, displays and promotions visually aligned.",
+    "r2.b3": "Prepared print-ready files in Adobe Illustrator with checked bleeds, color modes and dielines, lowering printer rejections by 45 percent.",
+    "r2.b4": "Set typography for catalogs, flyers and point-of-sale print layouts, building clear hierarchies that matched the brand style.",
+    "r2.b5": "Designed social media graphics in Figma from a shared component library, speeding weekly content production by 45 percent.",
+    "r2.i1": "Senior Brand Designer at Pennywhistle Supply responsible for brand guideline updates and the visual consistency of retail campaigns.",
+    "r2.i2": "Created packaging mockups at Pennywhistle Supply as Senior Brand Designer, helping product teams review designs before production.",
+    "r3.b1": "Applied photo retouching to the image library during brand guideline updates, cutting reshoot requests by 50 percent.",
+    "r3.b2": "Managed client revisions through print production, tracking changes on proofs and confirming final files before press runs.",
+    "r3.b3": "Prepared files for printers and adapted the same assets into motion graphics, reducing duplicate design work by 40 percent.",
+    "r3.b4": "Laid out brochures, posters and signage, applying brand identity rules for logos, spacing and imagery across every print piece.",
+    "r3.b5": "Created social media graphics grounded in color theory, raising click-through rates on paid posts by 45 percent.",
+    "r3.i1": "Graphic Designer at Ironbridge Co who produced packaging mockups for client review alongside everyday print and digital design work.",
+    "r3.i2": "Designed social media graphics for Ironbridge Co as a Graphic Designer, supporting marketing campaigns across several channels.",
+    "summary.1": "Lead visual and brand design professional with 11 years of experience leading design teams and owning the creative roadmap for brand work. Brings hands-on skill in photo retouching, packaging design and typography to campaigns from first concept to final print.",
+    "summary.2": "Brand and visual designer at lead level with about 11 years in the field, currently heading a creative team and setting its roadmap. Combines typography, packaging design and photo retouching with print production and brand identity work."
+  }
+}

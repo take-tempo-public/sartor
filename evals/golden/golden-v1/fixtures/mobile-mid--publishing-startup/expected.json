@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Taylor Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Gradle, in work or side projects",
+      "any exposure to Push notifications, in work or side projects"
+    ],
+    "scope_probes": [
+      "Mobile Developer at Fairhaven Works: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Gradle",
+    "(?i)Push\\ notifications",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning one service or workstream end to end."
+      },
+      "edit_replacement": "Shortens app start-up time in Swift by moving non-critical work, owning one service or workstream end to end",
+      "edit_target_substring": "Shortens app start-up time in Swift by moving non-critical work",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Gradle exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "app store release",
+    "fastlane",
+    "kotlin",
+    "swift"
+  ],
+  "notes": "mid-level mobile app engineering. The profile has no Gradle, Push notifications; generation must not claim them."
+}

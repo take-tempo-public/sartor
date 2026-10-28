@@ -1,0 +1,425 @@
+{
+  "candidate": {
+    "email": "sam.park@example.com",
+    "linkedin": "linkedin.com/in/example-sam-hr-mid",
+    "name": "Sam Park",
+    "phone": "(555) 010-2269",
+    "username": "gold_hr_mid"
+  },
+  "cell": "hr-mid",
+  "cell_seed": 925371520,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Benefits administration on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Benefits administration, in work or side projects",
+        "any exposure to Performance review cycles, in work or side projects",
+        "any progress toward Senior HR Practitioner Certificate"
+      ],
+      "scope_probes": [
+        "HR Generalist at Halcyon Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Benefits\\ administration",
+      "(?i)Performance\\ review\\ cycles",
+      "(?i)Senior\\ HR\\ Practitioner\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "applicant tracking",
+      "interview scheduling",
+      "new hire onboarding",
+      "workday"
+    ],
+    "notes": "mid-level human resources. The profile has no Benefits administration, Performance review cycles, Senior HR Practitioner Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning a recurring process from request to completion.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning a recurring process from request to completion",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Benefits administration exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "HR Generalist",
+        "Clearwater Community Hospital — On site, Boise, ID"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.community-hospital.about",
+        "jd.community-hospital.duties",
+        "jd.community-hospital.needs"
+      ],
+      "slug": "community-hospital"
+    }
+  ],
+  "level": "mid",
+  "profession": "hr",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Compliance reporting in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Halcyon Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-04",
+          "title": "HR Generalist"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Juniper Row",
+          "end": "2024-04",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-08",
+          "title": "HR Coordinator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Human Resource Management",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Workforce Practice Society",
+          "name": "HR Practitioner Certificate",
+          "year": "2024"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Compliance reporting",
+        "Interview scheduling",
+        "Workday",
+        "Job postings",
+        "New hire onboarding",
+        "Payroll coordination",
+        "ADP Workforce Now",
+        "Applicant tracking"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Compliance reporting"
+    },
+    {
+      "category": "method",
+      "name": "Interview scheduling"
+    },
+    {
+      "category": "tool",
+      "name": "Workday"
+    },
+    {
+      "category": "method",
+      "name": "Job postings"
+    },
+    {
+      "category": "method",
+      "name": "New hire onboarding"
+    },
+    {
+      "category": "method",
+      "name": "Payroll coordination"
+    },
+    {
+      "category": "tool",
+      "name": "ADP Workforce Now"
+    },
+    {
+      "category": "method",
+      "name": "Applicant tracking"
+    }
+  ],
+  "slots": {
+    "jd.community-hospital.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a HR Generalist at Clearwater Community Hospital, a community hospital. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.community-hospital.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a HR Generalist, about scheduling interviews, keeping HR records, screening candidates. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.community-hospital.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Applicant tracking, New hire onboarding, Workday, Interview scheduling, Performance review cycles, Benefits administration, and 4 or more years of experience. State HR Practitioner Certificate as a required licence or certification. State Senior HR Practitioner Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Applicant tracking",
+        "New hire onboarding",
+        "Workday",
+        "Interview scheduling",
+        "Performance review cycles",
+        "Benefits administration",
+        "HR Practitioner Certificate",
+        "Senior HR Practitioner Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a HR Generalist at Halcyon Services: policy updates, using Applicant tracking. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Applicant tracking",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Generalist at Halcyon Services: scheduling interviews, using Interview scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Interview scheduling"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a HR Generalist at Halcyon Services: new hire paperwork, using Payroll coordination. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Payroll coordination",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Generalist at Halcyon Services: keeping HR records, using New hire onboarding. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "New hire onboarding"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a HR Generalist at Halcyon Services, about scheduling interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a HR Generalist at Halcyon Services, about employee concerns. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a HR Coordinator at Juniper Row: screening candidates, using Job postings. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Job postings",
+        "40"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Coordinator at Juniper Row: employee concerns, using ADP Workforce Now. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "ADP Workforce Now"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a HR Coordinator at Juniper Row: answering benefits questions, using Compliance reporting. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Compliance reporting",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Coordinator at Juniper Row: policy updates, using Workday. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Workday"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a HR Coordinator at Juniper Row, about employee concerns. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a HR Coordinator at Juniper Row, about answering benefits questions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a specialist-level human resources professional with about 4 years of experience, scope: owning a recurring process from request to completion. Mention Compliance reporting, Interview scheduling, Workday.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Compliance reporting",
+        "Interview scheduling",
+        "Workday"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a specialist-level human resources professional with about 4 years of experience, scope: owning a recurring process from request to completion. Mention Compliance reporting, Interview scheduling, Workday.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Compliance reporting",
+        "Interview scheduling",
+        "Workday"
+      ]
+    }
+  }
+}

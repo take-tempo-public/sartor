@@ -1,0 +1,216 @@
+{
+  "candidate": {
+    "email": "casey.park@example.com",
+    "linkedin_url": "linkedin.com/in/example-casey-hardware-embedded-entry",
+    "name": "Casey Park",
+    "notes": null,
+    "phone": "(555) 010-9901",
+    "profile_text": null,
+    "username": "gold_hardware_embedded_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_hardware_embedded_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Electrical Engineering",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applies signal integrity analysis in board design reviews, flagging routing issues early and reducing review rework by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Brings up new boards using JTAG debugging to verify device connectivity and isolate assembly faults before handoff to firmware testing."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs prototype tests using oscilloscope debugging to trace timing faults, reducing test cycle time by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Evaluates candidate components with suppliers and confirms their suitability through firmware bring-up on sample boards before final selection."
+        }
+      ],
+      "company": "Harlow and Daughters",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supports firmware updates for hardware products at Harlow and Daughters, working on scoped tasks reviewed by senior engineers."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Takes part in design reviews at Harlow and Daughters, checking board designs for issues before they move to prototype."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Firmware bring-up",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "JTAG debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 606,
+      "name": "Linux",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "MATLAB",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Oscilloscope debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "PCB layout",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 610,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 607,
+      "name": "RTOS",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Signal integrity",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 601,
+      "name": "VHDL",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Entry-level hardware engineer working on small, well-defined parts of board and logic design with a senior colleague reviewing the work. Applies VHDL, signal integrity analysis and PCB layout skills to design, prototype and bring-up tasks."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Hardware and embedded engineer early in a career, holding a B.S. in Electrical Engineering from Lakeshore University. Handles scoped tasks in PCB layout, VHDL logic and signal integrity checks, with each piece reviewed by a senior engineer."
+    }
+  ],
+  "tags": []
+}

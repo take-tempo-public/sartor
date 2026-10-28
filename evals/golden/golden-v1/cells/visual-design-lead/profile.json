@@ -1,0 +1,550 @@
+{
+  "candidate": {
+    "email": "casey.ito@example.com",
+    "linkedin": "linkedin.com/in/example-casey-visual-design-lead",
+    "name": "Casey Ito",
+    "phone": "(555) 010-4256",
+    "username": "gold_visual_design_lead"
+  },
+  "cell": "visual-design-lead",
+  "cell_seed": 1111759368,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Adobe After Effects on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Adobe After Effects, in work or side projects",
+        "any exposure to Adobe Photoshop, in work or side projects"
+      ],
+      "scope_probes": [
+        "Creative Director at Northfield Group: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Adobe\\ After\\ Effects",
+      "(?i)Adobe\\ Photoshop",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "color theory",
+      "photo retouching",
+      "print production",
+      "typography"
+    ],
+    "notes": "lead-level visual and brand design. The profile has no Adobe After Effects, Adobe Photoshop; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Adobe After Effects exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Creative Director",
+        "Marigold Creative House — Hybrid, Austin, TX"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.branding-agency.about",
+        "jd.branding-agency.duties",
+        "jd.branding-agency.needs"
+      ],
+      "slug": "branding-agency"
+    }
+  ],
+  "level": "lead",
+  "profession": "visual-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Photo retouching in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Northfield Group",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2022-11",
+          "title": "Creative Director"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Pennywhistle Supply",
+          "end": "2022-11",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-06",
+          "title": "Senior Brand Designer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Ironbridge Co",
+          "end": "2020-06",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2015-08",
+          "title": "Graphic Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.F.A.",
+          "field": "Graphic Design",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2015"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Photo retouching",
+        "Packaging design",
+        "Typography",
+        "Canva",
+        "Motion graphics",
+        "Figma",
+        "Color theory",
+        "Brand identity",
+        "Adobe Illustrator",
+        "Print production"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Photo retouching"
+    },
+    {
+      "category": "method",
+      "name": "Packaging design"
+    },
+    {
+      "category": "method",
+      "name": "Typography"
+    },
+    {
+      "category": "tool",
+      "name": "Canva"
+    },
+    {
+      "category": "method",
+      "name": "Motion graphics"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "method",
+      "name": "Color theory"
+    },
+    {
+      "category": "method",
+      "name": "Brand identity"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "method",
+      "name": "Print production"
+    }
+  ],
+  "slots": {
+    "jd.branding-agency.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Creative Director at Marigold Creative House, an independent branding agency. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.branding-agency.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Creative Director, about print layouts, client revisions, campaign launches. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.branding-agency.needs": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Color theory, Typography, Photo retouching, Print production, Adobe After Effects, Adobe Photoshop, and 11 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Color theory",
+        "Typography",
+        "Photo retouching",
+        "Print production",
+        "Adobe After Effects",
+        "Adobe Photoshop"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Creative Director at Northfield Group: social media graphics, using Photo retouching. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Photo retouching",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Creative Director at Northfield Group: guiding junior designers, using Print production. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Print production"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Creative Director at Northfield Group: packaging mockups, using Motion graphics. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motion graphics",
+        "45"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Creative Director at Northfield Group: campaign launches, using Brand identity. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Brand identity"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Creative Director at Northfield Group: brand guideline updates, using Color theory. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Color theory",
+        "40"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Creative Director at Northfield Group, about print layouts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Creative Director at Northfield Group, about brand guideline updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Brand Designer at Pennywhistle Supply: client revisions, using Canva. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Canva",
+        "10"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Brand Designer at Pennywhistle Supply: directing brand work across campaigns, using Packaging design. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Packaging design"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Brand Designer at Pennywhistle Supply: preparing files for printers, using Adobe Illustrator. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Adobe Illustrator",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Brand Designer at Pennywhistle Supply: print layouts, using Typography. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Typography"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Brand Designer at Pennywhistle Supply: social media graphics, using Figma. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "45"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Brand Designer at Pennywhistle Supply, about brand guideline updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Brand Designer at Pennywhistle Supply, about packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Ironbridge Co: brand guideline updates, using Photo retouching. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Photo retouching",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Ironbridge Co: client revisions, using Print production. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Print production"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Ironbridge Co: preparing files for printers, using Motion graphics. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motion graphics",
+        "40"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Ironbridge Co: print layouts, using Brand identity. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Brand identity"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Ironbridge Co: social media graphics, using Color theory. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Color theory",
+        "45"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graphic Designer at Ironbridge Co, about packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graphic Designer at Ironbridge Co, about social media graphics. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level visual and brand design professional with about 11 years of experience, scope: leading a team and owning the roadmap for the area. Mention Photo retouching, Packaging design, Typography.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Photo retouching",
+        "Packaging design",
+        "Typography"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level visual and brand design professional with about 11 years of experience, scope: leading a team and owning the roadmap for the area. Mention Photo retouching, Packaging design, Typography.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Photo retouching",
+        "Packaging design",
+        "Typography"
+      ]
+    }
+  }
+}

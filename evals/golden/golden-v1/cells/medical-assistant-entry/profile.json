@@ -1,0 +1,340 @@
+{
+  "candidate": {
+    "email": "devon.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-devon-medical-assistant-entry",
+    "name": "Devon Lindqvist",
+    "phone": "(555) 010-6377",
+    "username": "gold_medical_assistant_entry"
+  },
+  "cell": "medical-assistant-entry",
+  "cell_seed": 1205804144,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Prior authorizations on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Prior authorizations, in work or side projects",
+        "any exposure to Vital signs, in work or side projects",
+        "any progress toward Phlebotomy Certificate"
+      ],
+      "scope_probes": [
+        "Clinical Assistant at Riverbend Health Network: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Prior\\ authorizations",
+      "(?i)Vital\\ signs",
+      "(?i)Phlebotomy\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "ekg testing",
+      "injections",
+      "medical records",
+      "patient intake"
+    ],
+    "notes": "entry-level medical assisting. The profile has no Prior authorizations, Vital signs, Phlebotomy Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working with a supervisor close by on a small share of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working with a supervisor close by on a small share of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Prior authorizations exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Clinical Assistant",
+        "Maplewood Family Practice — On site, Dayton, OH"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.family-practice.about",
+        "jd.family-practice.duties",
+        "jd.family-practice.needs"
+      ],
+      "slug": "family-practice"
+    }
+  ],
+  "level": "entry",
+  "profession": "medical-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Patient messaging in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Riverbend Health Network",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Clinical Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Medical Assisting",
+          "institution": "Lakeshore Career College",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Medical Assisting Certification Board",
+          "name": "Certified Medical Assistant Credential",
+          "year": "2025"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Patient messaging",
+        "Appointment scheduling",
+        "Medical records",
+        "Insurance verification",
+        "EKG testing",
+        "Injections",
+        "Epic Systems",
+        "Patient intake"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Patient messaging"
+    },
+    {
+      "category": "method",
+      "name": "Appointment scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Medical records"
+    },
+    {
+      "category": "method",
+      "name": "Insurance verification"
+    },
+    {
+      "category": "method",
+      "name": "EKG testing"
+    },
+    {
+      "category": "method",
+      "name": "Injections"
+    },
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "Patient intake"
+    }
+  ],
+  "slots": {
+    "jd.family-practice.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Clinical Assistant at Maplewood Family Practice, a private family practice. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.family-practice.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Clinical Assistant, about scheduling follow-up visits, completing insurance forms, rooming patients. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.family-practice.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Patient intake, EKG testing, Injections, Medical records, Vital signs, Prior authorizations, and 2 or more years of experience. State Certified Medical Assistant Credential as a required licence or certification. State Phlebotomy Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Patient intake",
+        "EKG testing",
+        "Injections",
+        "Medical records",
+        "Vital signs",
+        "Prior authorizations",
+        "Certified Medical Assistant Credential",
+        "Phlebotomy Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Clinical Assistant at Riverbend Health Network: drawing blood, using Appointment scheduling. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Appointment scheduling",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinical Assistant at Riverbend Health Network: rooming patients, using Patient intake. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Patient intake"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Clinical Assistant at Riverbend Health Network: stocking exam rooms, using Insurance verification. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Insurance verification",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinical Assistant at Riverbend Health Network: scheduling follow-up visits, using Medical records. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Medical records"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Clinical Assistant at Riverbend Health Network, about scheduling follow-up visits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Clinical Assistant at Riverbend Health Network, about completing insurance forms. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level medical assisting professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Patient messaging, Appointment scheduling, Medical records.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Patient messaging",
+        "Appointment scheduling",
+        "Medical records"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level medical assisting professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Patient messaging, Appointment scheduling, Medical records.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Patient messaging",
+        "Appointment scheduling",
+        "Medical records"
+      ]
+    }
+  }
+}

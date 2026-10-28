@@ -1,0 +1,19 @@
+Junior Systems Administrator
+Brennan IT Services — Hybrid, Atlanta, GA
+
+Position summary
+Brennan IT Services, a managed services provider, seeks a Junior Systems Administrator to support client infrastructure in a hybrid arrangement based in Atlanta, GA. The role maintains servers, monitoring and patching under the guidance of senior engineers. At minimum, candidates need scripting experience, familiarity with cloud platforms and a recognised systems administration certification. Preferred candidates also hold a cloud operations certification.
+
+Responsibilities
+- Support capacity planning by tracking resource usage across client environments and reporting trends to senior engineers.
+- Tune monitoring alerts to reduce noise and make sure actionable issues reach the right team.
+- Run scheduled patching cycles for client servers and confirm systems return to service afterward.
+- Document changes and follow the change approval process for all production work.
+- Respond to service tickets and escalate complex incidents to senior staff.
+
+Minimum and preferred qualifications
+- Required: 2 or more years of experience in systems administration or IT operations.
+- Required: working knowledge of Python and Bash scripting for routine automation.
+- Required: experience with Prometheus monitoring, Microsoft Azure, Terraform and Kubernetes.
+- Required: Systems Administrator Certificate or an equivalent licence or certification.
+- Preferred: Cloud Operations Certificate.

@@ -1,0 +1,410 @@
+{
+  "candidate": {
+    "email": "taylor.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-sales-mid",
+    "name": "Taylor Lindqvist",
+    "phone": "(555) 010-6393",
+    "username": "gold_sales_mid"
+  },
+  "cell": "sales-mid",
+  "cell_seed": 647286227,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Discovery calls on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Discovery calls, in work or side projects",
+        "any exposure to Pipeline management, in work or side projects"
+      ],
+      "scope_probes": [
+        "Account Executive at Pinecrest Labs: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Discovery\\ calls",
+      "(?i)Pipeline\\ management",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "product demonstrations",
+      "quota attainment",
+      "renewal management",
+      "salesforce"
+    ],
+    "notes": "mid-level business-to-business sales. The profile has no Discovery calls, Pipeline management; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning a recurring process from request to completion.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning a recurring process from request to completion",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Discovery calls exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Account Executive",
+        "Pivotal Workflow — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.workflow-software.about",
+        "jd.workflow-software.duties",
+        "jd.workflow-software.needs"
+      ],
+      "slug": "workflow-software"
+    }
+  ],
+  "level": "mid",
+  "profession": "sales",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Salesforce in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Pinecrest Labs",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Account Executive"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Redfern Family Trades",
+          "end": "2024-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-04",
+          "title": "Sales Development Representative"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Business Administration",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Salesforce",
+        "Contract negotiation",
+        "Sales forecasting",
+        "Account planning",
+        "Renewal management",
+        "Product demonstrations",
+        "Quota attainment",
+        "HubSpot"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    },
+    {
+      "category": "method",
+      "name": "Contract negotiation"
+    },
+    {
+      "category": "method",
+      "name": "Sales forecasting"
+    },
+    {
+      "category": "method",
+      "name": "Account planning"
+    },
+    {
+      "category": "method",
+      "name": "Renewal management"
+    },
+    {
+      "category": "method",
+      "name": "Product demonstrations"
+    },
+    {
+      "category": "method",
+      "name": "Quota attainment"
+    },
+    {
+      "category": "tool",
+      "name": "HubSpot"
+    }
+  ],
+  "slots": {
+    "jd.workflow-software.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Account Executive at Pivotal Workflow, a workflow software startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.workflow-software.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Account Executive, about prospecting new accounts, quotes and contracts, qualifying leads. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.workflow-software.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Quota attainment, Renewal management, Salesforce, Product demonstrations, Discovery calls, Pipeline management, and 4 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Quota attainment",
+        "Renewal management",
+        "Salesforce",
+        "Product demonstrations",
+        "Discovery calls",
+        "Pipeline management"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Account Executive at Pinecrest Labs: pipeline reviews, using Renewal management. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Renewal management",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Account Executive at Pinecrest Labs: qualifying leads, using Account planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Account planning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Account Executive at Pinecrest Labs: demos and trials, using Salesforce. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Salesforce",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Account Executive at Pinecrest Labs: handoff to customer success, using Contract negotiation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Contract negotiation"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Account Executive at Pinecrest Labs, about pipeline reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Account Executive at Pinecrest Labs, about demos and trials. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Sales Development Representative at Redfern Family Trades: renewals and upsells, using Sales forecasting. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Sales forecasting",
+        "15"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Development Representative at Redfern Family Trades: prospecting new accounts, using HubSpot. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "HubSpot"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Sales Development Representative at Redfern Family Trades: quotes and contracts, using Product demonstrations. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Product demonstrations",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Development Representative at Redfern Family Trades: pipeline reviews, using Quota attainment. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Quota attainment"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Sales Development Representative at Redfern Family Trades, about demos and trials. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Sales Development Representative at Redfern Family Trades, about renewals and upsells. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a specialist-level business-to-business sales professional with about 4 years of experience, scope: owning a recurring process from request to completion. Mention Salesforce, Contract negotiation, Sales forecasting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Salesforce",
+        "Contract negotiation",
+        "Sales forecasting"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a specialist-level business-to-business sales professional with about 4 years of experience, scope: owning a recurring process from request to completion. Mention Salesforce, Contract negotiation, Sales forecasting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Salesforce",
+        "Contract negotiation",
+        "Sales forecasting"
+      ]
+    }
+  }
+}

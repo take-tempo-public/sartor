@@ -1,0 +1,221 @@
+{
+  "candidate": {
+    "email": "casey.kowalski@example.com",
+    "linkedin_url": "linkedin.com/in/example-casey-registered-nurse-entry",
+    "name": "Casey Kowalski",
+    "notes": null,
+    "phone": "(555) 010-2697",
+    "profile_text": null,
+    "username": "gold_registered_nurse_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_registered_nurse_entry",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2025",
+      "issuer": "State Board of Nursing",
+      "name": "Registered Nurse Licence"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "Resuscitation Training Council",
+      "name": "Basic Life Support Card"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.N.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Nursing",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Documents care planning updates in the clinic record at each visit, reducing charting errors found in audits by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Gives bedside shift handoff reports that summarize vital signs monitoring trends, so the incoming nurse has current readings for each patient."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Completes a patient assessment before each medication administration, cutting medication timing delays by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates with physicians on discharge planning, confirming orders, follow-up appointments and home care instructions before patients leave the clinic."
+        }
+      ],
+      "company": "Harborview Community Clinic",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Graduate Registered Nurse at Harborview Community Clinic, charting assessments and care notes in the patient record under the supervision of senior nursing staff."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Provides direct patient care at Harborview Community Clinic with a focus on safe medication administration, guided by experienced registered nurses."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Graduate Registered Nurse",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Bedside handoff",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Care planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Discharge planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Medication administration",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Patient assessment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Patient education",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Triage",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Vital signs monitoring",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Entry-level graduate registered nurse with about 2 years of experience in community clinic care, working alongside a supervising nurse on an assigned share of patients. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Graduate registered nurse with about 2 years of hands-on clinical experience, holding a Registered Nurse Licence and a Basic Life Support Card. Handles a small patient assignment under close supervision, contributing bedside handoff, vital signs monitoring and care planning."
+    }
+  ],
+  "tags": []
+}

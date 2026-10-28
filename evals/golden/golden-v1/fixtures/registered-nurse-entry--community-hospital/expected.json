@@ -1,0 +1,58 @@
+{
+  "candidate_name": "Casey Kowalski",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Clinical documentation, in work or side projects",
+      "any exposure to Infection control, in work or side projects",
+      "any progress toward Advanced Cardiac Life Support Card",
+      "any progress toward Nurse Manager Certificate"
+    ],
+    "scope_probes": [
+      "Graduate Registered Nurse at Harborview Community Clinic: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Clinical\\ documentation",
+    "(?i)Infection\\ control",
+    "(?i)Advanced\\ Cardiac\\ Life\\ Support\\ Card",
+    "(?i)Nurse\\ Manager\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
+      },
+      "edit_replacement": "Gives bedside shift handoff reports that summarize vital signs monitoring, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "Gives bedside shift handoff reports that summarize vital signs monitoring",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Clinical documentation exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "care planning",
+    "patient assessment",
+    "triage",
+    "vital signs monitoring"
+  ],
+  "notes": "entry-level nursing. The profile has no Clinical documentation, Infection control, Advanced Cardiac Life Support Card, Nurse Manager Certificate; generation must not claim them."
+}

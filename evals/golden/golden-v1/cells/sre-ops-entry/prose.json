@@ -1,0 +1,36 @@
+{
+  "cell": "sre-ops-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:6738ec07e01e80592fe7fb6b24e795cec302b825b5e09162c099583d4bd19e3b",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNr2ypSxfwj7q4VkvAf"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2861,
+      "output_tokens": 1814
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.managed-services.about": "Position summary\nBrennan IT Services, a managed services provider, seeks a Junior Systems Administrator to support client infrastructure in a hybrid arrangement based in Atlanta, GA. The role maintains servers, monitoring and patching under the guidance of senior engineers. At minimum, candidates need scripting experience, familiarity with cloud platforms and a recognised systems administration certification. Preferred candidates also hold a cloud operations certification.",
+    "jd.managed-services.duties": "Responsibilities\n- Support capacity planning by tracking resource usage across client environments and reporting trends to senior engineers.\n- Tune monitoring alerts to reduce noise and make sure actionable issues reach the right team.\n- Run scheduled patching cycles for client servers and confirm systems return to service afterward.\n- Document changes and follow the change approval process for all production work.\n- Respond to service tickets and escalate complex incidents to senior staff.",
+    "jd.managed-services.needs": "Minimum and preferred qualifications\n- Required: 2 or more years of experience in systems administration or IT operations.\n- Required: working knowledge of Python and Bash scripting for routine automation.\n- Required: experience with Prometheus monitoring, Microsoft Azure, Terraform and Kubernetes.\n- Required: Systems Administrator Certificate or an equivalent licence or certification.\n- Preferred: Cloud Operations Certificate.",
+    "r1.b1": "Runs backup and recovery tests on Microsoft Azure, cutting the time needed to verify restores by 40 percent.",
+    "r1.b2": "Prepares change approval requests for Ansible playbook updates, with a senior administrator reviewing each change before rollout.",
+    "r1.b3": "Coordinates patching cycles for servers managed through Active Directory, reducing missed patches by 40 percent.",
+    "r1.b4": "Takes part in the on-call rotation, handling backup and recovery requests and escalating complex issues to senior staff.",
+    "r1.i1": "Supports change approvals at Oakmont Systems as a Junior Systems Administrator, preparing change requests for review by senior staff.",
+    "r1.i2": "Works as a Junior Systems Administrator at Oakmont Systems, tuning monitoring alerts so the operations team sees fewer false alarms.",
+    "summary.1": "Entry-level site reliability and IT operations professional with about 2 years of experience automating routine tasks with Ansible and Python. Builds Grafana dashboards and handles small, well-defined parts of the work with a senior colleague reviewing.",
+    "summary.2": "IT operations and site reliability professional at the entry level, with about 2 years of experience in monitoring and automation. Takes on clearly scoped tasks using Python scripts, Ansible playbooks and Grafana dashboards, with each change reviewed by a senior colleague."
+  }
+}

@@ -1,0 +1,425 @@
+{
+  "candidate": {
+    "email": "quinn.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-quinn-accounting-mid",
+    "name": "Quinn Mehta",
+    "phone": "(555) 010-6133",
+    "username": "gold_accounting_mid"
+  },
+  "cell": "accounting-mid",
+  "cell_seed": 1862232774,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Journal entries on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Journal entries, in work or side projects",
+        "any exposure to SAP, in work or side projects",
+        "any progress toward Certified Public Accountant Licence"
+      ],
+      "scope_probes": [
+        "Accountant at Harborview Community Clinic: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Journal\\ entries",
+      "(?i)SAP",
+      "(?i)Certified\\ Public\\ Accountant\\ Licence",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "accounts receivable",
+      "budget variance analysis",
+      "fixed asset tracking",
+      "microsoft excel"
+    ],
+    "notes": "mid-level accounting. The profile has no Journal entries, SAP, Certified Public Accountant Licence; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning a recurring process from request to completion.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning a recurring process from request to completion",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Journal entries exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Accountant",
+        "Kensington Manufacturing Group — On site, Milwaukee, WI"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.manufacturer.about",
+        "jd.manufacturer.duties",
+        "jd.manufacturer.needs"
+      ],
+      "slug": "manufacturer"
+    }
+  ],
+  "level": "mid",
+  "profession": "accounting",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Fixed asset tracking in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Accountant"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Northfield Group",
+          "end": "2025-03",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2022-03",
+          "title": "Staff Accountant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Accounting",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2022"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Accounting Training Council",
+          "name": "Bookkeeping Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Fixed asset tracking",
+        "Month-end close",
+        "Account reconciliation",
+        "QuickBooks",
+        "Microsoft Excel",
+        "Budget variance analysis",
+        "Sales tax filing",
+        "Accounts receivable"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Fixed asset tracking"
+    },
+    {
+      "category": "method",
+      "name": "Month-end close"
+    },
+    {
+      "category": "method",
+      "name": "Account reconciliation"
+    },
+    {
+      "category": "tool",
+      "name": "QuickBooks"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "method",
+      "name": "Budget variance analysis"
+    },
+    {
+      "category": "method",
+      "name": "Sales tax filing"
+    },
+    {
+      "category": "method",
+      "name": "Accounts receivable"
+    }
+  ],
+  "slots": {
+    "jd.manufacturer.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Accountant at Kensington Manufacturing Group, a manufacturer. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.manufacturer.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Accountant, about invoice review, tax schedules, audit preparation. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.manufacturer.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Budget variance analysis, Fixed asset tracking, Accounts receivable, Microsoft Excel, SAP, Journal entries, and 5 or more years of experience. State Bookkeeping Certificate as a required licence or certification. State Certified Public Accountant Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Budget variance analysis",
+        "Fixed asset tracking",
+        "Accounts receivable",
+        "Microsoft Excel",
+        "SAP",
+        "Journal entries",
+        "Bookkeeping Certificate",
+        "Certified Public Accountant Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Accountant at Harborview Community Clinic: audit preparation, using Sales tax filing. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Sales tax filing",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accountant at Harborview Community Clinic: month-end close, using QuickBooks. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "QuickBooks"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Accountant at Harborview Community Clinic: budget variance reports, using Account reconciliation. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Account reconciliation",
+        "15"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accountant at Harborview Community Clinic: tax schedules, using Accounts receivable. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Accounts receivable"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Accountant at Harborview Community Clinic, about preparing statements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Accountant at Harborview Community Clinic, about audit preparation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: bank reconciliations, using Month-end close. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Month-end close",
+        "20"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: invoice review, using Fixed asset tracking. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Fixed asset tracking"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: preparing statements, using Budget variance analysis. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Budget variance analysis",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: audit preparation, using Microsoft Excel. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Excel"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Staff Accountant at Northfield Group, about audit preparation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Staff Accountant at Northfield Group, about bank reconciliations. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a specialist-level accounting professional with about 5 years of experience, scope: owning a recurring process from request to completion. Mention Fixed asset tracking, Month-end close, Account reconciliation.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Fixed asset tracking",
+        "Month-end close",
+        "Account reconciliation"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a specialist-level accounting professional with about 5 years of experience, scope: owning a recurring process from request to completion. Mention Fixed asset tracking, Month-end close, Account reconciliation.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Fixed asset tracking",
+        "Month-end close",
+        "Account reconciliation"
+      ]
+    }
+  }
+}

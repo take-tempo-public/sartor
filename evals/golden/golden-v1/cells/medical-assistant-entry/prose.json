@@ -1,0 +1,36 @@
+{
+  "cell": "medical-assistant-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:13f0a2b9748ee577f48695bfc9a4f18f9308c9b13b4e849c6d80a91976bf6996",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNZcg9YvzSWKqijcgTf"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2843,
+      "output_tokens": 2267
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.family-practice.about": "Maplewood Family Practice is a private, owner-run family practice in Dayton, Ohio. We care for patients of all ages, and many of them have been with us for years. We are looking for a clinical assistant to join our small team on site. You will help our providers keep the day running smoothly and make sure every patient feels looked after.",
+    "jd.family-practice.duties": "What the job involves\n- Room patients and prepare them for the provider\n- Schedule follow-up visits before patients leave and confirm them by phone or message\n- Complete insurance forms accurately and send them on time\n- Keep exam rooms clean, tidy and stocked\n- Update patient charts after each visit",
+    "jd.family-practice.needs": "What you need\n- 2 or more years of experience as a clinical or medical assistant\n- Skill in patient intake, vital signs, EKG testing and injections\n- Experience keeping medical records accurate and handling prior authorizations\n- Certified Medical Assistant Credential (required)\n- Phlebotomy Certificate (preferred)",
+    "r1.b1": "Coordinates appointment scheduling for clinic and lab visits, reducing gaps in the daily schedule by 15 percent.",
+    "r1.b2": "Rooms patients and completes patient intake, recording the reason for each visit before the provider comes in.",
+    "r1.b3": "Stocks exam rooms between visits and handles insurance verification ahead of appointments, cutting check-in delays by 35 percent.",
+    "r1.b4": "Schedules follow-up visits and updates medical records in Epic Systems so each plan of care is documented.",
+    "r1.i1": "Supports the clinical team at Riverbend Health Network by scheduling follow-up visits and keeping patients informed of the next steps in their care.",
+    "r1.i2": "Completes insurance forms for patients at Riverbend Health Network, working under supervision to keep coverage details accurate before each visit.",
+    "summary.1": "Entry-level medical assistant with about 2 years of experience handling patient messaging, appointment scheduling and medical records in a clinic setting. Works alongside a supervising clinician on a defined share of daily tasks and holds the Certified Medical Assistant Credential.",
+    "summary.2": "Medical assisting professional with about 2 years in clinical support, trained at Lakeshore Career College. Handles patient messaging, appointment scheduling and medical records with a supervisor close by, taking on a small part of the daily workload."
+  }
+}

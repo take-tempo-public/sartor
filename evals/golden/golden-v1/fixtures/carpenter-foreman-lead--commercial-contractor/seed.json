@@ -1,0 +1,450 @@
+{
+  "candidate": {
+    "email": "alex.silva@example.com",
+    "linkedin_url": "linkedin.com/in/example-alex-carpenter-foreman-lead",
+    "name": "Alex Silva",
+    "notes": null,
+    "phone": "(555) 010-1612",
+    "profile_text": null,
+    "username": "gold_carpenter_foreman_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_carpenter_foreman_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2020",
+      "issuer": "Safety Training Council",
+      "name": "Construction Safety Card"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2023",
+      "issuer": "State Apprenticeship Council",
+      "name": "Apprenticeship Completion Certificate"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2016",
+      "issuer": "Carpenters Training Council",
+      "name": "Lead Carpenter Certificate"
+    },
+    {
+      "display_order": 3,
+      "expires": null,
+      "id": 804,
+      "is_active": true,
+      "issued": "2020",
+      "issuer": "Carpenters Training Council",
+      "name": "Crew Supervisor Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Apprenticeship Certificate",
+      "display_order": 0,
+      "end_date": "2015",
+      "field": "Carpentry",
+      "id": 701,
+      "institution": "Cedar Valley Trades Academy",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Enforce daily site safety checks on framing work, cutting recordable incidents by 45 percent across crew projects."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Use material takeoffs to plan door, window and trim installs so crews have the right stock on hand before each job starts."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Build concrete forms through careful blueprint reading of foundation plans, reducing form rework by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Order lumber and materials for door and window installation, matching quantities to the plans for each job."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plan job sequences and lumber orders around concrete forming work, lowering material waste by 15 percent."
+        }
+      ],
+      "company": "Marlow Remodeling",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads carpentry crews at Marlow Remodeling as foreman, with responsibility for keeping every jobsite safe and orderly."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Directs the installation of doors, windows and trim at Marlow Remodeling while running the carpentry crew as foreman."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Carpentry Foreman",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Framed walls and floors and handled cabinet installation in finished rooms, cutting framing callbacks by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Directed crews and apprentices through scaffold erection, assigning tasks and checking each setup before work began."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans and laid out measurements for cuts, applying careful power tool use to reduce measuring errors by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept the site safe during framing by inspecting work areas, clearing debris and correcting unsafe practices on the spot."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed doors, windows and trim using material takeoffs to order exact quantities, lowering trim waste by 15 percent."
+        }
+      ],
+      "company": "Copperfield Construction",
+      "display_order": 1,
+      "end_date": "2023-07",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Installed doors, windows and trim as Master Carpenter at Copperfield Construction, finishing each opening to plan."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Served as Master Carpenter at Copperfield Construction, directing crews and apprentices through daily carpentry work."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Master Carpenter",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Framed walls and floors from blueprint reading, cutting layout time by 50 percent on new homes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans and measured rough openings ahead of door and window installation to confirm fit."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept concrete forming areas safe by bracing forms and clearing trip hazards, reducing site incidents by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed doors, windows and trim alongside cabinet installation in finished rooms."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built forms for concrete and handled scaffold erection for elevated pours, shortening form setup by 25 percent."
+        }
+      ],
+      "company": "Oakmont Homes",
+      "display_order": 2,
+      "end_date": "2021-11",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2015-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked as Journeyman Carpenter at Oakmont Homes, ordering lumber and materials to keep framing and finish work on schedule."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Built forms for concrete as Journeyman Carpenter at Oakmont Homes, supporting foundation work ahead of framing."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Journeyman Carpenter",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Blueprint reading",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Cabinet installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Concrete forming",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Door and window installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Framing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Material takeoffs",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Power tool use",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Scaffold erection",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Carpentry foreman with 12 years of experience running crews and answering for the quality, safety and schedule of each job. Brings blueprint reading, door and window installation and power tool use to every stage, from layout through finish carpentry."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead carpenter with 12 years in the trade who runs the crew and takes responsibility for the job from start to handover. Skilled in blueprint reading, door and window installation and power tool use, backed by crew supervisor and lead carpenter certificates."
+    }
+  ],
+  "tags": []
+}

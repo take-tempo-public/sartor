@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "casey.park@example.com",
+    "linkedin": "linkedin.com/in/example-casey-hardware-embedded-entry",
+    "name": "Casey Park",
+    "phone": "(555) 010-9901",
+    "username": "gold_hardware_embedded_entry"
+  },
+  "cell": "hardware-embedded-entry",
+  "cell_seed": 515547176,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Embedded C on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Embedded C, in work or side projects",
+        "any exposure to Verilog, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior Hardware Engineer at Harlow and Daughters: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Embedded\\ C",
+      "(?i)Verilog",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "linux",
+      "oscilloscope debugging",
+      "pcb layout",
+      "rtos"
+    ],
+    "notes": "entry-level hardware and embedded engineering. The profile has no Embedded C, Verilog; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Embedded C exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Hardware Engineer",
+        "Granite Instruments — On site, Rochester, NY"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.instruments-maker.about",
+        "jd.instruments-maker.duties",
+        "jd.instruments-maker.needs"
+      ],
+      "slug": "instruments-maker"
+    }
+  ],
+  "level": "entry",
+  "profession": "hardware-embedded",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention VHDL in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Harlow and Daughters",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-04",
+          "title": "Junior Hardware Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Electrical Engineering",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "VHDL",
+        "Signal integrity",
+        "PCB layout",
+        "JTAG debugging",
+        "MATLAB",
+        "Linux",
+        "RTOS",
+        "Firmware bring-up",
+        "Oscilloscope debugging",
+        "Python"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "VHDL"
+    },
+    {
+      "category": "method",
+      "name": "Signal integrity"
+    },
+    {
+      "category": "method",
+      "name": "PCB layout"
+    },
+    {
+      "category": "method",
+      "name": "JTAG debugging"
+    },
+    {
+      "category": "tool",
+      "name": "MATLAB"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "platform",
+      "name": "RTOS"
+    },
+    {
+      "category": "method",
+      "name": "Firmware bring-up"
+    },
+    {
+      "category": "method",
+      "name": "Oscilloscope debugging"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    }
+  ],
+  "slots": {
+    "jd.instruments-maker.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Junior Hardware Engineer at Granite Instruments, a test-equipment manufacturer. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.instruments-maker.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Junior Hardware Engineer, about component selection with suppliers, specification writing, firmware updates. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.instruments-maker.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require PCB layout, Oscilloscope debugging, Linux, RTOS, Embedded C, Verilog, and 2 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "PCB layout",
+        "Oscilloscope debugging",
+        "Linux",
+        "RTOS",
+        "Embedded C",
+        "Verilog"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Harlow and Daughters: design reviews, using Signal integrity. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Signal integrity",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Harlow and Daughters: board bring-up, using JTAG debugging. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "JTAG debugging"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Harlow and Daughters: prototype testing, using Oscilloscope debugging. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Oscilloscope debugging",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Hardware Engineer at Harlow and Daughters: component selection with suppliers, using Firmware bring-up. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firmware bring-up"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Hardware Engineer at Harlow and Daughters, about firmware updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Hardware Engineer at Harlow and Daughters, about design reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level hardware and embedded engineering professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention VHDL, Signal integrity, PCB layout.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "VHDL",
+        "Signal integrity",
+        "PCB layout"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level hardware and embedded engineering professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention VHDL, Signal integrity, PCB layout.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "VHDL",
+        "Signal integrity",
+        "PCB layout"
+      ]
+    }
+  }
+}

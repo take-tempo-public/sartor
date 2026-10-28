@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "taylor.chen@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-mobile-mid",
+    "name": "Taylor Chen",
+    "phone": "(555) 010-0470",
+    "username": "gold_mobile_mid"
+  },
+  "cell": "mobile-mid",
+  "cell_seed": 396180933,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Gradle on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Gradle, in work or side projects",
+        "any exposure to Push notifications, in work or side projects"
+      ],
+      "scope_probes": [
+        "Mobile Developer at Fairhaven Works: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Gradle",
+      "(?i)Push\\ notifications",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "app store release",
+      "fastlane",
+      "kotlin",
+      "swift"
+    ],
+    "notes": "mid-level mobile app engineering. The profile has no Gradle, Push notifications; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Gradle exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Mobile Developer",
+        "Lumen Reader — Hybrid, Austin, TX"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.publishing-startup.about",
+        "jd.publishing-startup.duties",
+        "jd.publishing-startup.needs"
+      ],
+      "slug": "publishing-startup"
+    }
+  ],
+  "level": "mid",
+  "profession": "mobile",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Kotlin in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Fairhaven Works",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Mobile Developer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Brightwater Labs",
+          "end": "2024-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2023-01",
+          "title": "Junior Mobile Developer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2023"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Kotlin",
+        "Firebase",
+        "GraphQL",
+        "Crash reporting",
+        "Core Data",
+        "Fastlane",
+        "Jetpack Compose",
+        "Xcode",
+        "Swift",
+        "App Store release"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Kotlin"
+    },
+    {
+      "category": "platform",
+      "name": "Firebase"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "method",
+      "name": "Crash reporting"
+    },
+    {
+      "category": "framework",
+      "name": "Core Data"
+    },
+    {
+      "category": "tool",
+      "name": "Fastlane"
+    },
+    {
+      "category": "framework",
+      "name": "Jetpack Compose"
+    },
+    {
+      "category": "tool",
+      "name": "Xcode"
+    },
+    {
+      "category": "language",
+      "name": "Swift"
+    },
+    {
+      "category": "method",
+      "name": "App Store release"
+    }
+  ],
+  "slots": {
+    "jd.publishing-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Mobile Developer at Lumen Reader, a digital publishing startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.publishing-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Mobile Developer, about accessibility fixes, API integration, offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.publishing-startup.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Fastlane, Swift, App Store release, Kotlin, Gradle, Push notifications, and 4 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Fastlane",
+        "Swift",
+        "App Store release",
+        "Kotlin",
+        "Gradle",
+        "Push notifications"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Fairhaven Works: accessibility fixes, using Crash reporting. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Crash reporting",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Fairhaven Works: app start-up time, using Swift. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Swift"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Fairhaven Works: offline sync, using Fastlane. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Fastlane",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Fairhaven Works: release pipeline, using Xcode. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Xcode"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Mobile Developer at Fairhaven Works, about device testing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Mobile Developer at Fairhaven Works, about API integration. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Brightwater Labs: crash triage, using Jetpack Compose. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Jetpack Compose",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Brightwater Labs: device testing, using Firebase. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firebase"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Brightwater Labs: API integration, using App Store release. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "App Store release",
+        "35"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Brightwater Labs: accessibility fixes, using Core Data. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Core Data"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Mobile Developer at Brightwater Labs, about API integration. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Mobile Developer at Brightwater Labs, about offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level mobile app engineering professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kotlin, Firebase, GraphQL.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kotlin",
+        "Firebase",
+        "GraphQL"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level mobile app engineering professional with about 4 years of experience, scope: owning one service or workstream end to end. Mention Kotlin, Firebase, GraphQL.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Kotlin",
+        "Firebase",
+        "GraphQL"
+      ]
+    }
+  }
+}

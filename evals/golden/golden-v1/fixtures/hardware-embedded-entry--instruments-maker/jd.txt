@@ -1,0 +1,21 @@
+Junior Hardware Engineer
+Granite Instruments — On site, Rochester, NY
+
+Position summary
+Granite Instruments, a manufacturer of test equipment, seeks a Junior Hardware Engineer to join its engineering team on site in Rochester, NY. The engineer will support the design, testing and maintenance of instrument hardware under the guidance of senior engineering staff.
+Minimum: a bachelor's degree in electrical engineering or a related field, and working knowledge of board-level hardware.
+Preferred: experience with embedded firmware.
+
+Responsibilities
+- Work with suppliers to evaluate and select electronic components that meet product, cost and availability requirements.
+- Write and maintain hardware specifications for instrument boards and subassemblies.
+- Prepare, test and release firmware updates for existing instrument products.
+- Participate in design reviews and document findings and corrective actions.
+- Support prototype testing and help resolve issues found during validation.
+
+Minimum and preferred qualifications
+- 2 or more years of experience in hardware or embedded engineering.
+- Experience with PCB layout for mixed-signal boards.
+- Oscilloscope debugging skills for board-level fault finding.
+- Working knowledge of Linux and an RTOS in embedded environments.
+- Proficiency in Embedded C; experience with Verilog is preferred.

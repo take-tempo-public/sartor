@@ -1,0 +1,507 @@
+{
+  "candidate": {
+    "email": "alex.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-alex-admin-assistant-senior",
+    "name": "Alex Okafor",
+    "phone": "(555) 010-2275",
+    "username": "gold_admin_assistant_senior"
+  },
+  "cell": "admin-assistant-senior",
+  "cell_seed": 1507111483,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Records filing on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Records filing, in work or side projects",
+        "any exposure to Travel booking, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Administrative Specialist at Tillman Brothers: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Records\\ filing",
+      "(?i)Travel\\ booking",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "calendar management",
+      "invoice processing",
+      "microsoft excel",
+      "purchase ordering"
+    ],
+    "notes": "senior-level administrative support. The profile has no Records filing, Travel booking; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting how the team handles one area of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting how the team handles one area of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Records filing exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Administrative Specialist",
+        "Ashgrove City Clerk's Office — On site, Ashgrove, OH"
+      ],
+      "setting": "public-sector",
+      "slots": [
+        "jd.city-clerk.about",
+        "jd.city-clerk.duties",
+        "jd.city-clerk.needs"
+      ],
+      "slug": "city-clerk"
+    }
+  ],
+  "level": "senior",
+  "profession": "admin-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Invoice processing in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Tillman Brothers",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2022-06",
+          "title": "Senior Administrative Specialist"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Harlow and Daughters",
+          "end": "2022-06",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-08",
+          "title": "Administrative Assistant"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Sutter Street Shop",
+          "end": "2020-08",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2019-03",
+          "title": "Office Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.S.",
+          "field": "Business Administration",
+          "institution": "State University",
+          "slots": [],
+          "year": "2019"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Business Skills Academy",
+          "name": "Office Administration Certificate",
+          "year": "2022"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Invoice processing",
+        "Google Workspace",
+        "Purchase ordering",
+        "Calendar management",
+        "Microsoft Excel",
+        "Document formatting",
+        "Meeting minutes",
+        "Microsoft Outlook"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Invoice processing"
+    },
+    {
+      "category": "tool",
+      "name": "Google Workspace"
+    },
+    {
+      "category": "method",
+      "name": "Purchase ordering"
+    },
+    {
+      "category": "method",
+      "name": "Calendar management"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "method",
+      "name": "Document formatting"
+    },
+    {
+      "category": "method",
+      "name": "Meeting minutes"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Outlook"
+    }
+  ],
+  "slots": {
+    "jd.city-clerk.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Duties' paragraph of a job description for a Senior Administrative Specialist at Ashgrove City Clerk's Office, a city government office. Write in the voice of a fictional county or city agency posting; name no real agency, statute or pay table. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.city-clerk.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities of the position' heading and four to six bullet lines for a Senior Administrative Specialist, about scheduling for managers, training new administrative staff, ordering supplies. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.city-clerk.needs": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Invoice processing, Microsoft Excel, Calendar management, Purchase ordering, Records filing, Travel booking, and 8 or more years of experience. State Office Administration Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Invoice processing",
+        "Microsoft Excel",
+        "Calendar management",
+        "Purchase ordering",
+        "Records filing",
+        "Travel booking",
+        "Office Administration Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: managing office budgets and vendors, using Microsoft Outlook. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Outlook",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: travel and event arrangements, using Calendar management. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Calendar management"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: scheduling for managers, using Invoice processing. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Invoice processing",
+        "45"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: training new administrative staff, using Purchase ordering. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Purchase ordering"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Administrative Specialist at Tillman Brothers, about managing office budgets and vendors. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Administrative Specialist at Tillman Brothers, about phone and visitor coverage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Harlow and Daughters: ordering supplies, using Google Workspace. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Google Workspace",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Harlow and Daughters: filing and records upkeep, using Meeting minutes. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Meeting minutes"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Harlow and Daughters: meeting notes, using Document formatting. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Document formatting",
+        "20"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Harlow and Daughters: travel and event arrangements, using Microsoft Excel. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Excel"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Administrative Assistant at Harlow and Daughters, about processing expense reports. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Administrative Assistant at Harlow and Daughters, about travel and event arrangements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Sutter Street Shop: scheduling for managers, using Microsoft Outlook. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Outlook",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Sutter Street Shop: phone and visitor coverage, using Calendar management. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Calendar management"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Sutter Street Shop: processing expense reports, using Invoice processing. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Invoice processing",
+        "35"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Sutter Street Shop: ordering supplies, using Purchase ordering. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Purchase ordering"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Office Assistant at Sutter Street Shop, about travel and event arrangements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Office Assistant at Sutter Street Shop, about filing and records upkeep. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level administrative support professional with about 8 years of experience, scope: setting how the team handles one area of the work. Mention Invoice processing, Google Workspace, Purchase ordering.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Invoice processing",
+        "Google Workspace",
+        "Purchase ordering"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level administrative support professional with about 8 years of experience, scope: setting how the team handles one area of the work. Mention Invoice processing, Google Workspace, Purchase ordering.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Invoice processing",
+        "Google Workspace",
+        "Purchase ordering"
+      ]
+    }
+  }
+}

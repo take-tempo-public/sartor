@@ -1,0 +1,42 @@
+{
+  "cell": "hr-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:aac5aeea693707fca051625f089ab305ac6838e72d1d8c3f4773e86ce09d1ef7",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNTCXAL9nBjJDbHAqeP"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3688,
+      "output_tokens": 2410
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.community-hospital.about": "Summary\nClearwater Community Hospital provides compassionate, accessible care to every member of the community it serves. We are seeking an on-site HR Generalist in Boise, ID to support hiring, onboarding and employee records for our clinical and support staff. Candidates must hold the HR Practitioner Certificate.",
+    "jd.community-hospital.duties": "Duties\n- Schedule interviews between candidates and hiring managers across hospital departments.\n- Screen applications and resumes against position requirements and forward qualified candidates.\n- Maintain accurate and confidential HR records for all employees.\n- Coordinate onboarding steps for new hires, including paperwork and orientation.\n- Respond to employee questions about policies and procedures.\n- Support compliance with hospital and regulatory HR requirements.",
+    "jd.community-hospital.needs": "Licensure and qualifications\n- HR Practitioner Certificate required; Senior HR Practitioner Certificate preferred.\n- 4 or more years of experience in human resources.\n- Working knowledge of applicant tracking, interview scheduling and new hire onboarding.\n- Experience using Workday for employee records and HR processes.\n- Familiarity with performance review cycles and benefits administration.",
+    "r1.b1": "Updates HR policies and publishes revisions through applicant tracking workflows, reducing outdated policy references in candidate communications by 10 percent.",
+    "r1.b2": "Coordinates interview scheduling between candidates and hiring managers, confirming times and sending calendar details for each open role.",
+    "r1.b3": "Processes new hire paperwork alongside payroll coordination, cutting paperwork turnaround time by 50 percent before first pay runs.",
+    "r1.b4": "Maintains accurate HR records for new hire onboarding, filing signed forms and tracking completed steps for each employee.",
+    "r1.i1": "As HR Generalist at Halcyon Services, coordinates interviews between candidates and hiring managers and keeps hiring timelines on track.",
+    "r1.i2": "Serves as a point of contact for employee concerns at Halcyon Services, listening to issues and guiding them toward resolution.",
+    "r2.b1": "Screened candidates from job postings against role requirements, increasing the share of qualified applicants by 40 percent.",
+    "r2.b2": "Logged and tracked employee concerns in ADP Workforce Now, routing each case to the right contact for follow-up.",
+    "r2.b3": "Answered employee benefits questions and supported compliance reporting, reducing unanswered inquiries by 40 percent.",
+    "r2.b4": "Published policy updates in Workday and confirmed employee acknowledgment of revised guidelines.",
+    "r2.i1": "As HR Coordinator at Juniper Row, handled employee concerns and connected staff with the right resources.",
+    "r2.i2": "Answered benefits questions for employees at Juniper Row, explaining coverage options and pointing staff to enrollment resources.",
+    "summary.1": "Human resources specialist with 4 years of experience owning recurring HR processes from request to completion. Skilled in compliance reporting, interview scheduling and Workday, keeping records accurate and deadlines met.",
+    "summary.2": "HR professional with about 4 years of experience managing recurring processes such as interview scheduling from first request through completion. Uses Workday to keep records current and handles compliance reporting with attention to accuracy and deadlines."
+  }
+}
