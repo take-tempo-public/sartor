@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Casey Lindqvist",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Building automation, in work or side projects",
+      "any exposure to Thermostat installation, in work or side projects",
+      "any exposure to Brazing and soldering, in work or side projects",
+      "any exposure to Heat pump service, in work or side projects",
+      "any exposure to Controls Technician Certificate, in work or side projects"
+    ],
+    "scope_probes": [
+      "HVAC Apprentice at Summit Mechanical Services: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Building\\ automation",
+    "(?i)Thermostat\\ installation",
+    "(?i)Brazing\\ and\\ soldering",
+    "(?i)Heat\\ pump\\ service",
+    "(?i)Controls\\ Technician\\ Certificate",
+    "(?i)Load\\ calculations",
+    "(?i)HVAC\\ Technician\\ Licence",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Building automation",
+    "Thermostat installation",
+    "Brazing and soldering",
+    "Heat pump service",
+    "Controls Technician Certificate"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "leak testing",
+    "system diagnostics"
+  ],
+  "notes": "Mismatched pair (advance): the hvac-technician-entry résumé against the hvac-technician-mid job description. The entry-tier heating and cooling service résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Building automation, Thermostat installation, Brazing and soldering, Heat pump service, Controls Technician Certificate. The output must claim none of it.",
+  "pair": {
+    "id": "hvac-technician-entry-to-hvac-technician-mid",
+    "jd_cell": "hvac-technician-mid",
+    "jd_fixture": "hvac-technician-mid--residential-hvac",
+    "kind": "advance",
+    "resume_cell": "hvac-technician-entry",
+    "resume_fixture": "hvac-technician-entry--family-hvac",
+    "transferable": [
+      "leak testing",
+      "system diagnostics"
+    ]
+  }
+}

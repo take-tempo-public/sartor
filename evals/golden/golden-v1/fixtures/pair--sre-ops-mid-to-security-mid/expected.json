@@ -1,0 +1,58 @@
+{
+  "candidate_name": "Quinn Lindqvist",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Vulnerability scanning, in work or side projects",
+      "any exposure to Splunk, in work or side projects",
+      "any exposure to Penetration testing, in work or side projects",
+      "any exposure to Incident response, in work or side projects",
+      "any exposure to Security Analyst Certificate, in work or side projects",
+      "any exposure to Incident Handler Certificate, in work or side projects"
+    ],
+    "scope_probes": [
+      "Systems Engineer at Lantern Hill: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Vulnerability\\ scanning",
+    "(?i)Splunk",
+    "(?i)Penetration\\ testing",
+    "(?i)Incident\\ response",
+    "(?i)Security\\ Analyst\\ Certificate",
+    "(?i)Incident\\ Handler\\ Certificate",
+    "(?i)ServiceNow",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Vulnerability scanning",
+    "Splunk",
+    "Penetration testing",
+    "Incident response",
+    "Security Analyst Certificate",
+    "Incident Handler Certificate"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "powershell",
+    "python"
+  ],
+  "notes": "Mismatched pair (change): the sre-ops-mid résumé against the security-mid job description. An operations engineer moving into security: shared systems and monitoring skills, without the threat-analysis work. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Vulnerability scanning, Splunk, Penetration testing, Incident response, Security Analyst Certificate, Incident Handler Certificate. The output must claim none of it.",
+  "pair": {
+    "id": "sre-ops-mid-to-security-mid",
+    "jd_cell": "security-mid",
+    "jd_fixture": "security-mid--state-agency",
+    "kind": "change",
+    "resume_cell": "sre-ops-mid",
+    "resume_fixture": "sre-ops-mid--cloud-hosting",
+    "transferable": [
+      "powershell",
+      "python"
+    ]
+  }
+}

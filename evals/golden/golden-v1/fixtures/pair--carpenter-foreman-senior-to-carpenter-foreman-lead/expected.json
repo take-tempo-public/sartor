@@ -1,0 +1,47 @@
+{
+  "candidate_name": "Priya Haddad",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Power tool use, in work or side projects",
+      "any exposure to Cabinet installation, in work or side projects"
+    ],
+    "scope_probes": [
+      "Master Carpenter at Marlow Remodeling: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Power\\ tool\\ use",
+    "(?i)Cabinet\\ installation",
+    "(?i)Subfloor\\ installation",
+    "(?i)Crew\\ Supervisor\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Power tool use",
+    "Cabinet installation"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "framing",
+    "jobsite safety"
+  ],
+  "notes": "Mismatched pair (advance): the carpenter-foreman-senior résumé against the carpenter-foreman-lead job description. The senior-tier carpentry résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Power tool use, Cabinet installation. The output must claim none of it.",
+  "pair": {
+    "id": "carpenter-foreman-senior-to-carpenter-foreman-lead",
+    "jd_cell": "carpenter-foreman-lead",
+    "jd_fixture": "carpenter-foreman-lead--commercial-contractor",
+    "kind": "advance",
+    "resume_cell": "carpenter-foreman-senior",
+    "resume_fixture": "carpenter-foreman-senior--residential-builder",
+    "transferable": [
+      "framing",
+      "jobsite safety"
+    ]
+  }
+}

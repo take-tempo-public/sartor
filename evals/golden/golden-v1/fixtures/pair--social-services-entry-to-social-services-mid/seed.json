@@ -1,0 +1,212 @@
+{
+  "candidate": {
+    "email": "jordan.reyes@example.com",
+    "linkedin_url": "linkedin.com/in/example-jordan-social-services-entry",
+    "name": "Jordan Reyes",
+    "notes": null,
+    "phone": "(555) 010-8697",
+    "profile_text": null,
+    "username": "gold_social_services_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_social_services_entry",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "State Child Welfare Board",
+      "name": "Mandated Reporter Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.W.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Social Work",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates with schools and clinics through referral coordination for resident families, raising the share of completed referrals by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Conducts intake interviews and needs assessments with residents and drafts court reports that summarize household circumstances for supervisor review."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains case records in Microsoft Access, reducing the time needed to locate and update client files by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Refers families to housing and food programs and applies crisis intervention when households face an urgent risk of losing shelter."
+        }
+      ],
+      "company": "Stonegate Housing Authority",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Conducts intake interviews and needs assessments for residents seeking housing support at Stonegate Housing Authority, working under close supervision."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Writes service plans for resident families at Stonegate Housing Authority, turning assessment findings into clear steps reviewed with a supervisor."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Case Aide",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Benefits enrollment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Client advocacy",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Court reports",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Crisis intervention",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Intake interviews",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Microsoft Access",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Needs assessments",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Referral coordination",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Entry-level social services caseworker with about 1 year of experience supporting housing authority clients under close supervision. Brings client advocacy, needs assessments and record keeping in Microsoft Access to a small, supervised share of the caseload."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Case aide with about 1 year of experience handling a small share of casework alongside a supervisor in public housing services. Applies needs assessments, client advocacy and Microsoft Access to intake, referrals and case records."
+    }
+  ],
+  "tags": []
+}

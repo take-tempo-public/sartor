@@ -688,6 +688,150 @@
     "fixtures/mobile-senior--bank-mobile/jd.txt": "sha256:2d998159400fde94903594051f16fff542a399b8f1e78b1264fa25ab19a75517",
     "fixtures/mobile-senior--bank-mobile/resume.md": "sha256:57400cbe507f868d3fc3a3b91faf1578cad6eb3aff4c484510062cc15d58de68",
     "fixtures/mobile-senior--bank-mobile/seed.json": "sha256:cbbd26a5fd71665fb17cb0d89a7dd7aad26cf10d50c11555c4ea5cbfe0674a0a",
+    "fixtures/pair--accounting-entry-to-accounting-mid/expected.json": "sha256:e09ae2869609a84a2da1f1e3397b3a92e37e5458f72d04bbf7517e9793126b83",
+    "fixtures/pair--accounting-entry-to-accounting-mid/jd.txt": "sha256:977f1ba26058307ac47c3689659cdafc7f36a021f0931f4e0a1d9a24cc807326",
+    "fixtures/pair--accounting-entry-to-accounting-mid/resume.md": "sha256:33c26b17b3b1c4619e68699497eed81d4c7082f9a9bf7df81a818583f4bd7fca",
+    "fixtures/pair--accounting-entry-to-accounting-mid/seed.json": "sha256:aa8af802cf7d897bff45ed0f2d9ce43a875a6c08295feceae059710267c22c1d",
+    "fixtures/pair--accounting-senior-to-project-mgmt-mid/expected.json": "sha256:b2c02ea45489866996124ff1ba74c73a81cc5b6128fe2727723df5c46e741d0f",
+    "fixtures/pair--accounting-senior-to-project-mgmt-mid/jd.txt": "sha256:810c15d581f5f4655aace5aba5661842e7b995c212b2c1bf6ece93162d2e3354",
+    "fixtures/pair--accounting-senior-to-project-mgmt-mid/resume.md": "sha256:37e6f06ea1a52e469a674d607295d687f66f3d5b07e13ab6315ddb00d6cf5b1f",
+    "fixtures/pair--accounting-senior-to-project-mgmt-mid/seed.json": "sha256:d58c8d4f33faeab21181e19607bd223d84393f2c60ec7fba60a662aea55fa1fa",
+    "fixtures/pair--admin-assistant-mid-to-admin-assistant-senior/expected.json": "sha256:12a8571db2dd52ef4f07de8a74e49ac5ffcf142269ba426aed0d41b281946fac",
+    "fixtures/pair--admin-assistant-mid-to-admin-assistant-senior/jd.txt": "sha256:170301d1386804fb71cad7174e3ad3a58d93472000cd16262723a3c2f538851a",
+    "fixtures/pair--admin-assistant-mid-to-admin-assistant-senior/resume.md": "sha256:6bf5c381f97b2ebdf81e5e71dbdb5e37f74f8407adaa8a151af2b9c69b9d957e",
+    "fixtures/pair--admin-assistant-mid-to-admin-assistant-senior/seed.json": "sha256:b8f2b4e5bd11624d4718bb0c1c7dc255d98b35148e46e23c88ea5a728b5ed07b",
+    "fixtures/pair--admin-assistant-mid-to-hr-mid/expected.json": "sha256:78582f4e4900704577d61318dbafe3dfbb2ddd0b9e561f33278ce1622b62a140",
+    "fixtures/pair--admin-assistant-mid-to-hr-mid/jd.txt": "sha256:28accedaef82e4ce60d6b39f9240845ee9391565eccb655ddcefc2c41179e755",
+    "fixtures/pair--admin-assistant-mid-to-hr-mid/resume.md": "sha256:6bf5c381f97b2ebdf81e5e71dbdb5e37f74f8407adaa8a151af2b9c69b9d957e",
+    "fixtures/pair--admin-assistant-mid-to-hr-mid/seed.json": "sha256:b8f2b4e5bd11624d4718bb0c1c7dc255d98b35148e46e23c88ea5a728b5ed07b",
+    "fixtures/pair--carpenter-foreman-mid-to-construction-pm-mid/expected.json": "sha256:502a383d224439694b1f675a373084f0ca0102edbec0b41d8824a628ea4f9164",
+    "fixtures/pair--carpenter-foreman-mid-to-construction-pm-mid/jd.txt": "sha256:2438e286e016022f7eaaf46b02574d90713d047f6156322d5d60d992a6eb1f7e",
+    "fixtures/pair--carpenter-foreman-mid-to-construction-pm-mid/resume.md": "sha256:4aedb3d70f3c370c1e654172740813babd9782960a5bc815c5f82b9c1f81b7cb",
+    "fixtures/pair--carpenter-foreman-mid-to-construction-pm-mid/seed.json": "sha256:fe76f7d585760316581960acdb366686b253b1d9d17f88b39a1187514e52ad8d",
+    "fixtures/pair--carpenter-foreman-senior-to-carpenter-foreman-lead/expected.json": "sha256:285136be662ce305de3cafdbea4a615b0a78e7913441cdbc7e2d25430fb5a5f6",
+    "fixtures/pair--carpenter-foreman-senior-to-carpenter-foreman-lead/jd.txt": "sha256:50ee11a189aa3642e258206d2a18ed46c483f55269b2a39120cc86b9a3cabc62",
+    "fixtures/pair--carpenter-foreman-senior-to-carpenter-foreman-lead/resume.md": "sha256:e1113ff9e2dda34a3c906ae9017067ad56ba4a32bc0785a62003bdcb0c291838",
+    "fixtures/pair--carpenter-foreman-senior-to-carpenter-foreman-lead/seed.json": "sha256:e0f656e1d6c70a431e3824b3842da3e02df751c3876554895ec61d4a5c3cf71b",
+    "fixtures/pair--construction-pm-entry-to-construction-pm-mid/expected.json": "sha256:a263f945c9099deb1586ead5b7d8ef5140e4e8fd8855451c9f565e9123efac5f",
+    "fixtures/pair--construction-pm-entry-to-construction-pm-mid/jd.txt": "sha256:2438e286e016022f7eaaf46b02574d90713d047f6156322d5d60d992a6eb1f7e",
+    "fixtures/pair--construction-pm-entry-to-construction-pm-mid/resume.md": "sha256:6cc16914c4e51f9df29f5fa0523be731548581c9f66704c6a6134653e0ebb0e7",
+    "fixtures/pair--construction-pm-entry-to-construction-pm-mid/seed.json": "sha256:7bfe07a50ce202d2486294eb2f5708df6c7837131986157e5ba6077c8b96b996",
+    "fixtures/pair--customer-support-mid-to-customer-support-senior/expected.json": "sha256:5305a96e0f7804be087c6bd08c3eaa7a2ae89a568bb9bf27dbbcfa7641a1dc39",
+    "fixtures/pair--customer-support-mid-to-customer-support-senior/jd.txt": "sha256:7eeae0624e8c461905d7a6b24d26bc641b226dd439246f04a380b43acf5300a2",
+    "fixtures/pair--customer-support-mid-to-customer-support-senior/resume.md": "sha256:c9889bcb33f04d9d67c08fd0782fc5e0d31c4645799885f8a8e1a7223df4366e",
+    "fixtures/pair--customer-support-mid-to-customer-support-senior/seed.json": "sha256:0f2e7761f15e8329c71c6859368eab5e24f6ba6f6744f6668e68ca251f7378db",
+    "fixtures/pair--customer-support-senior-to-sales-mid/expected.json": "sha256:06a584f4e0c0a9a0c5a4c648bc5deb1ce5dc6ce5a5687814ae28376efe2c6a69",
+    "fixtures/pair--customer-support-senior-to-sales-mid/jd.txt": "sha256:348fe895a9b291ed1c313ec6a8172eb1978f84bbde5bfeb4c512955d584ceca5",
+    "fixtures/pair--customer-support-senior-to-sales-mid/resume.md": "sha256:f75ceb4386262800ba92bdda96fa0a4ff82a4f89a6c948df2ab2a0790fa6983f",
+    "fixtures/pair--customer-support-senior-to-sales-mid/seed.json": "sha256:2356a983b42481016f6dc702788de787d5d54cedacf793ae7cc902223cbb3a3f",
+    "fixtures/pair--data-ml-senior-to-data-ml-lead/expected.json": "sha256:ab8833997c5c340637ae2fc96d61937fc853edad6e6da32646d2295ee238887b",
+    "fixtures/pair--data-ml-senior-to-data-ml-lead/jd.txt": "sha256:7b4337f64d406bc6394be7556bc3b05bd638918e9370e38a14285eaaf473a6b5",
+    "fixtures/pair--data-ml-senior-to-data-ml-lead/resume.md": "sha256:b4b3b4184c4593a95fe9a621f306f6824b58aaa7cbf69acd216367041a671ba3",
+    "fixtures/pair--data-ml-senior-to-data-ml-lead/seed.json": "sha256:c261458692098b1d2b921b9cb1903ba235f010624b56ab48723c1c9c84fb52a0",
+    "fixtures/pair--electrician-entry-to-electrician-mid/expected.json": "sha256:fe33a1c2ea238b36fd3f469e02247f4978a5ae9bbb954058a9bf758349980c12",
+    "fixtures/pair--electrician-entry-to-electrician-mid/jd.txt": "sha256:68228b5357c5a973650391ca33e570854d367e7cffba803c91957e5b02a1067f",
+    "fixtures/pair--electrician-entry-to-electrician-mid/resume.md": "sha256:c98fc0b752be88ceb8c2a2966304f487961a5b2642d4200ef4f76125ee4cf857",
+    "fixtures/pair--electrician-entry-to-electrician-mid/seed.json": "sha256:8fc66b25abce1575582fc2c024d91a2f3a1e0aec96cb15b93f4c755fea6a8292",
+    "fixtures/pair--electrician-senior-to-hvac-technician-mid/expected.json": "sha256:6b79949b096bb5606a66ac913288dcde04b19c022c514a0abec406b31e91f0a6",
+    "fixtures/pair--electrician-senior-to-hvac-technician-mid/jd.txt": "sha256:611a07719021dc564aebebaca68b63954e403d2cd2e6cdc562281dab0230f89f",
+    "fixtures/pair--electrician-senior-to-hvac-technician-mid/resume.md": "sha256:f569982fe7ee05669a02ba75cc1cf54bdac098fa3125a8171f9c56470ced9c22",
+    "fixtures/pair--electrician-senior-to-hvac-technician-mid/seed.json": "sha256:2e1640b5f3c8a8d730eac7041a874d9f823c45d21c201930329f8203f21dcced",
+    "fixtures/pair--hardware-embedded-mid-to-hardware-embedded-senior/expected.json": "sha256:35757d0feb30fa4df3b15c8dc8a897818b41876b7ca9730866d18627827dcee8",
+    "fixtures/pair--hardware-embedded-mid-to-hardware-embedded-senior/jd.txt": "sha256:2c8fc2debb113a92aa7c3647d2879b82f4a09a3070c4d39befe93548de8be7f2",
+    "fixtures/pair--hardware-embedded-mid-to-hardware-embedded-senior/resume.md": "sha256:c90c359c125488a37829b4f30d6866067328a82491108dbc61ead85675a30180",
+    "fixtures/pair--hardware-embedded-mid-to-hardware-embedded-senior/seed.json": "sha256:16be420fe305679d36b971156e0d208ace289a73c6975850e8e396a32526bb8a",
+    "fixtures/pair--hr-senior-to-hr-lead/expected.json": "sha256:6bfe5743ebea0dee7b8eaf3e96569c1b07568d9a0bf54d9f54a766c8c4685111",
+    "fixtures/pair--hr-senior-to-hr-lead/jd.txt": "sha256:5fda5f55fe9248057e05713a600b4899cbf60e4ca161c876fa2a0de165306822",
+    "fixtures/pair--hr-senior-to-hr-lead/resume.md": "sha256:e7eefff8e82d500815bab58f756e69bb455e0d6b3e923ef7bcf165b1ee6852f4",
+    "fixtures/pair--hr-senior-to-hr-lead/seed.json": "sha256:dfca4a91663db4bd0ff8366f3b12bdecff25d5ff18e136c7f2b456823ad8ac10",
+    "fixtures/pair--hvac-technician-entry-to-hvac-technician-mid/expected.json": "sha256:96fd5d08782aefdd11499e02c5600b3a34ff16ec80f48a2a51c7589c98124d4b",
+    "fixtures/pair--hvac-technician-entry-to-hvac-technician-mid/jd.txt": "sha256:611a07719021dc564aebebaca68b63954e403d2cd2e6cdc562281dab0230f89f",
+    "fixtures/pair--hvac-technician-entry-to-hvac-technician-mid/resume.md": "sha256:460c93cf598547a4e4f06ca916efb6c2f44ec46e242f93aa4e752700382caa9a",
+    "fixtures/pair--hvac-technician-entry-to-hvac-technician-mid/seed.json": "sha256:905554d91b6cbc89591a18cb5db25fcc41643b24e1c6a518a258d3479f959bf0",
+    "fixtures/pair--logistics-driving-mid-to-logistics-driving-senior/expected.json": "sha256:eae794f266e958161624b94c8208bc5b51f41a454a125ad4896395393d21598e",
+    "fixtures/pair--logistics-driving-mid-to-logistics-driving-senior/jd.txt": "sha256:ea31b166502ffbe7a293a42a89319c68797f28bd84da0465d5dc62a0288d1e35",
+    "fixtures/pair--logistics-driving-mid-to-logistics-driving-senior/resume.md": "sha256:2a1a92ecc555f09e83e512bf0bc2a3b93c887fac271fb89317d7c7412fa9133e",
+    "fixtures/pair--logistics-driving-mid-to-logistics-driving-senior/seed.json": "sha256:5b3fca4da5070469209fad3fb7327e6bd4caeb5c010d86c4d084669e341dd110",
+    "fixtures/pair--medical-assistant-senior-to-medical-assistant-lead/expected.json": "sha256:f88df50ab57cf6a061d751ae2f7ddd8af8942ae682179a3394c61536411e9b32",
+    "fixtures/pair--medical-assistant-senior-to-medical-assistant-lead/jd.txt": "sha256:5b3fc304dfc934de7bb8e420291b60a8c0f2d5492c3deba3ea00cc65b3b6c29f",
+    "fixtures/pair--medical-assistant-senior-to-medical-assistant-lead/resume.md": "sha256:ac3cb1e540bdcc7bb053648e5c6e665d04d280dbdf288a321d8406551ae7a9b5",
+    "fixtures/pair--medical-assistant-senior-to-medical-assistant-lead/seed.json": "sha256:abcb9507eaebeafb2e8d22404ea7bb5faea42dc3e52ec12561b50a68f5ec2379",
+    "fixtures/pair--mobile-entry-to-mobile-mid/expected.json": "sha256:8cbcd9bfd9bd0324864071c9a110a5c837bd60f48f506c09abd22e3c2a3303d8",
+    "fixtures/pair--mobile-entry-to-mobile-mid/jd.txt": "sha256:7487a94b019fad6f5d565ab876b6eae5bcaa4d1ef106b030dc8be7a79be0da4d",
+    "fixtures/pair--mobile-entry-to-mobile-mid/resume.md": "sha256:197eb72913be2000ec737fe01d67b360db3030be52475c290eecf50cc9d6e097",
+    "fixtures/pair--mobile-entry-to-mobile-mid/seed.json": "sha256:40232a078628170c5ac53175586bdebb06ba28e1d131ee9d981e938054a38fb2",
+    "fixtures/pair--mobile-lead-to-ux-design-lead/expected.json": "sha256:09ba6efe73b2f182204e4bde3663e36d4bee842eeca959230667d0270ae8877b",
+    "fixtures/pair--mobile-lead-to-ux-design-lead/jd.txt": "sha256:7971bdae941253b7afd05a62e6cb69895f3320052a4b225f209de929eaa8ae58",
+    "fixtures/pair--mobile-lead-to-ux-design-lead/resume.md": "sha256:ee22226658dd96a0542a5366e7974e65eb5a0762cd2a466501103ec7e0b1de54",
+    "fixtures/pair--mobile-lead-to-ux-design-lead/seed.json": "sha256:840231f23cd25b5301b130dcbc01899bee3f774b7fd445e58598a6f13914986f",
+    "fixtures/pair--product-mgmt-mid-to-product-mgmt-senior/expected.json": "sha256:2af8b8f57d75dbc0c0b3ceb1dc69215c0bb1072bdd7d529653a9800a94e2d568",
+    "fixtures/pair--product-mgmt-mid-to-product-mgmt-senior/jd.txt": "sha256:7208114b61b40d61de6e353c3a00adc36628ba3d538f877ef4479f9d7d2e521e",
+    "fixtures/pair--product-mgmt-mid-to-product-mgmt-senior/resume.md": "sha256:c45d3cd4188a04930583f424034f7ccbe215ba2c4994753ad99b30273f3fd4e2",
+    "fixtures/pair--product-mgmt-mid-to-product-mgmt-senior/seed.json": "sha256:ccaa740256d6ce936cbb0e1524fbe6d29773c3a84a876d894c1ab28e95842c2a",
+    "fixtures/pair--product-mgmt-mid-to-project-mgmt-mid/expected.json": "sha256:7e1f297e91b9f2a085602f9d762eb659bebf89d3d5b92a84e35a53e44dbd3aa6",
+    "fixtures/pair--product-mgmt-mid-to-project-mgmt-mid/jd.txt": "sha256:810c15d581f5f4655aace5aba5661842e7b995c212b2c1bf6ece93162d2e3354",
+    "fixtures/pair--product-mgmt-mid-to-project-mgmt-mid/resume.md": "sha256:c45d3cd4188a04930583f424034f7ccbe215ba2c4994753ad99b30273f3fd4e2",
+    "fixtures/pair--product-mgmt-mid-to-project-mgmt-mid/seed.json": "sha256:ccaa740256d6ce936cbb0e1524fbe6d29773c3a84a876d894c1ab28e95842c2a",
+    "fixtures/pair--project-mgmt-senior-to-project-mgmt-lead/expected.json": "sha256:08c054aabf9d3a31c439ee21580901d02ab3d0346bfe4a22096885bf6183c0a0",
+    "fixtures/pair--project-mgmt-senior-to-project-mgmt-lead/jd.txt": "sha256:baa27f4c5b30660564f9cad336c866214b5e6fa854ba36b385cf8fd359413865",
+    "fixtures/pair--project-mgmt-senior-to-project-mgmt-lead/resume.md": "sha256:ca8160da53e945f0dec1276f0120d7b02bfa832b3d29ef724bd2d4794f360bf5",
+    "fixtures/pair--project-mgmt-senior-to-project-mgmt-lead/seed.json": "sha256:a9c114af74b5a9b1d00f8bfda1483548faa8f138354a70030a6f4860f1344f66",
+    "fixtures/pair--registered-nurse-entry-to-registered-nurse-mid/expected.json": "sha256:98dd23c873260d985869e3f226ed8ed9f1b24ea04979fcc1ebe110d720d49559",
+    "fixtures/pair--registered-nurse-entry-to-registered-nurse-mid/jd.txt": "sha256:1f9244c9c0e22463f565791636a9978eda38d62fb4bd41ade55dd635a03028d6",
+    "fixtures/pair--registered-nurse-entry-to-registered-nurse-mid/resume.md": "sha256:a9cca93c12e3cddf94b2bddf94458bec4940f6c69dead5ac4b228e9c69a7f70e",
+    "fixtures/pair--registered-nurse-entry-to-registered-nurse-mid/seed.json": "sha256:4ffedd3ee8447eac9a76c4caac9e33068d8c0aa16053512475d9c4e5a7481457",
+    "fixtures/pair--registered-nurse-mid-to-medical-assistant-mid/expected.json": "sha256:45275b3b5bed2ff23b32733b660ee33692738331c42bca25a1627920e47a0360",
+    "fixtures/pair--registered-nurse-mid-to-medical-assistant-mid/jd.txt": "sha256:d4eeae49b6b690957337901bc828c25e3b99a26ed51918725b9b0d66fac968a4",
+    "fixtures/pair--registered-nurse-mid-to-medical-assistant-mid/resume.md": "sha256:044419a9ab1761c48bb345f5843bd6dc812c3a11d5752e1ce5c12775112e2150",
+    "fixtures/pair--registered-nurse-mid-to-medical-assistant-mid/seed.json": "sha256:88df6947bcebaa049c684b8e131bc228993b89092712d6b5cdd2ac9d261eaf74",
+    "fixtures/pair--sales-mid-to-sales-senior/expected.json": "sha256:958afddbb50dc87105e1c90a75fa716c2cc593fb1e7c9ae27aac50a7597aebeb",
+    "fixtures/pair--sales-mid-to-sales-senior/jd.txt": "sha256:1cd002c4faf7e31c86f4d1014bd6b8248269e0011760070d240eb25959790fb9",
+    "fixtures/pair--sales-mid-to-sales-senior/resume.md": "sha256:c334131fc94310347a32ca6104ea8f3f0021b0d16b11abd1e0a08fb4047e70be",
+    "fixtures/pair--sales-mid-to-sales-senior/seed.json": "sha256:3daeaaa02d5587d26eaf7c15d6db779b84cd866583a9d1136ffb33302213499f",
+    "fixtures/pair--security-senior-to-security-lead/expected.json": "sha256:474921efc603672f106be4ed0a0daa6d3df9ef141a2c5d0ca62320a92e5a8606",
+    "fixtures/pair--security-senior-to-security-lead/jd.txt": "sha256:b2c7db9fe61e07923212fe9661716408284fe5eb0fee00b5a8765bf1b93a5417",
+    "fixtures/pair--security-senior-to-security-lead/resume.md": "sha256:1ff1c107f9a70a565d838b5a4c16bfc7048cb6aa26361bbb4051e44eeb55e1bb",
+    "fixtures/pair--security-senior-to-security-lead/seed.json": "sha256:e4f82c362e8a55490d8ebed5a0a48cfcdbf211b4ddc706a35a84be943b892feb",
+    "fixtures/pair--social-services-entry-to-social-services-mid/expected.json": "sha256:74fd59310fc5d5f61ce7f6a9bfdd5ca426d2f11963e8b4f930c01a08b93e80f8",
+    "fixtures/pair--social-services-entry-to-social-services-mid/jd.txt": "sha256:90ec4f6dfdf9e50f914457133e0985ebe88636d2f21f897f3d701bb4ce83c99d",
+    "fixtures/pair--social-services-entry-to-social-services-mid/resume.md": "sha256:dc8675dcd766f5b28de2d7dc1b69bf7c5d3ec48ae0e68d91d465f4608815a3fb",
+    "fixtures/pair--social-services-entry-to-social-services-mid/seed.json": "sha256:7e5240fd39222de0b6fd43d894e3b042c498dc8a14f9d1859e1a40f0985cba94",
+    "fixtures/pair--sre-ops-mid-to-security-mid/expected.json": "sha256:2a1115fa0e8494938c8570196ebe83b115e3493d15d9733f0d5c52c451264488",
+    "fixtures/pair--sre-ops-mid-to-security-mid/jd.txt": "sha256:f1d7af8c7e609d01ff73aaa3416a50c9092c5d38874ca77aa8cbbbbb69850b46",
+    "fixtures/pair--sre-ops-mid-to-security-mid/resume.md": "sha256:1fa25a3520fd24db0e1ce98434c14438538398fad2aac7fe12480a9baad64b9f",
+    "fixtures/pair--sre-ops-mid-to-security-mid/seed.json": "sha256:431111e2ce6de853cfdb746073963a0fbd665824db578269574523e6a0234674",
+    "fixtures/pair--sre-ops-mid-to-sre-ops-senior/expected.json": "sha256:de7c640ff01cc6708a726236f39ddd05210866b6017a9bb8f9d7b6fe52ef7484",
+    "fixtures/pair--sre-ops-mid-to-sre-ops-senior/jd.txt": "sha256:804cd1fa7b80d1571238326b0f433ee4a21f564a1347a01c5a14d8718459d30f",
+    "fixtures/pair--sre-ops-mid-to-sre-ops-senior/resume.md": "sha256:1fa25a3520fd24db0e1ce98434c14438538398fad2aac7fe12480a9baad64b9f",
+    "fixtures/pair--sre-ops-mid-to-sre-ops-senior/seed.json": "sha256:431111e2ce6de853cfdb746073963a0fbd665824db578269574523e6a0234674",
+    "fixtures/pair--teacher-mid-to-social-services-mid/expected.json": "sha256:5b10355a7e1ae73b2756a3d681a089f6983dc128e58490278e9d1bd463afd112",
+    "fixtures/pair--teacher-mid-to-social-services-mid/jd.txt": "sha256:90ec4f6dfdf9e50f914457133e0985ebe88636d2f21f897f3d701bb4ce83c99d",
+    "fixtures/pair--teacher-mid-to-social-services-mid/resume.md": "sha256:a06e4b84eaae03859125423db53619c9a7985837c0148bebb39abee66b93b136",
+    "fixtures/pair--teacher-mid-to-social-services-mid/seed.json": "sha256:701c73665d0e1ec5c98948f69f09f5c86fbbb9ca3c976b945cb39f3cca70e83f",
+    "fixtures/pair--teacher-senior-to-teacher-lead/expected.json": "sha256:65cc147013ad7e77a475d8b17a212c69ec5919cf35be041c65d2d7d30b3b9bcf",
+    "fixtures/pair--teacher-senior-to-teacher-lead/jd.txt": "sha256:eb850ed0b0aaa2aa77ab1647ab4f26878d9cb9ffd7cf7b5b798fea9aea1f7e7c",
+    "fixtures/pair--teacher-senior-to-teacher-lead/resume.md": "sha256:6e743e0a9537305d8036f07fc466ea39f4998898502a85086fda73701c42a0e0",
+    "fixtures/pair--teacher-senior-to-teacher-lead/seed.json": "sha256:3d2c9313813c3d869753becefbce5825b112c88b0a14d21066e0106305058a92",
+    "fixtures/pair--ux-design-entry-to-ux-design-mid/expected.json": "sha256:b6ede1c66653965ab0449e9cb6c0eb08b5db15d63e1459e1d79e2176a8b0e6a4",
+    "fixtures/pair--ux-design-entry-to-ux-design-mid/jd.txt": "sha256:94f987cd5d8b5cc04f278977e26ed832f53418b5e4af0ec7a7508e386467355a",
+    "fixtures/pair--ux-design-entry-to-ux-design-mid/resume.md": "sha256:5ad712ce8e999f02b655aef57559d909950045fe85e138e6adcdd035194442bf",
+    "fixtures/pair--ux-design-entry-to-ux-design-mid/seed.json": "sha256:018598a5dba49b9824db7f888b6f96f37ab267ab6b01ac49f06eeed86c52c81b",
+    "fixtures/pair--ux-design-mid-to-visual-design-mid/expected.json": "sha256:a04fa163705f022246a9e4ab263d2821d9aa1c9ce145761ee787cd9ff661a525",
+    "fixtures/pair--ux-design-mid-to-visual-design-mid/jd.txt": "sha256:bfe4323d1591dcac519eea1576b1897724d2a7a5b80824829d96241a12cca445",
+    "fixtures/pair--ux-design-mid-to-visual-design-mid/resume.md": "sha256:52e5a4e49feef3a855259984170605034d8ba356be7c8efe48a3fc1684d4fb92",
+    "fixtures/pair--ux-design-mid-to-visual-design-mid/seed.json": "sha256:bf26f7466a276714411d38e2c795c892cce09c1343763c2fa70b4f39e5c42900",
+    "fixtures/pair--visual-design-mid-to-visual-design-senior/expected.json": "sha256:e9fe69c91b8316f3b424cf1ee68451a5316d1d46043273db3eadea6679e1b8f5",
+    "fixtures/pair--visual-design-mid-to-visual-design-senior/jd.txt": "sha256:841999a786924e99319176f1dbc625225b19b62003aff3084712c59eedeb2447",
+    "fixtures/pair--visual-design-mid-to-visual-design-senior/resume.md": "sha256:fb9735a45c636e22c3a986aade1ad116a589bd34e69b91e37aac0d55477ab061",
+    "fixtures/pair--visual-design-mid-to-visual-design-senior/seed.json": "sha256:ba13e91aa7af5c4c123478982b05e42122c4e0fb44f7a65541791f1a4f6d963d",
+    "fixtures/pair--web-backend-mid-to-data-ml-mid/expected.json": "sha256:15e5d03e289654408f01761ec73a912bad7ea3a7e168fd4eb5afcbecf47c1745",
+    "fixtures/pair--web-backend-mid-to-data-ml-mid/jd.txt": "sha256:a9407d85e77f90aff005c3b2edbc8c066ea6a8227292f7e0cf55b782d2de5b8a",
+    "fixtures/pair--web-backend-mid-to-data-ml-mid/resume.md": "sha256:c3414c7660600683bd6d2e91fda29945a24daddfbc766acdc0c611dbd0218441",
+    "fixtures/pair--web-backend-mid-to-data-ml-mid/seed.json": "sha256:733472bc7ec02c207945c12b0ded97567c59fea2268ec76d54eb2ee986a513d8",
+    "fixtures/pair--web-backend-senior-to-web-backend-lead/expected.json": "sha256:b1bdd025acfc32de3c3e5334321c72f5e0f1153154d6ecd783eebca3b88c3607",
+    "fixtures/pair--web-backend-senior-to-web-backend-lead/jd.txt": "sha256:dce2d3836972defb458967401374be7650cf816a4b81f670ac49318027d8539f",
+    "fixtures/pair--web-backend-senior-to-web-backend-lead/resume.md": "sha256:8d86a6747110b27dae430f530b9cbad0af399eb361ead60c1b5d1374a6f1fff1",
+    "fixtures/pair--web-backend-senior-to-web-backend-lead/seed.json": "sha256:f0a6d01deaa73da72369eb944744afda18ed1f88b17b751ab1354cb5749c020c",
     "fixtures/product-mgmt-entry--workflow-startup/expected.json": "sha256:7785e48dfceae380c44e015795ee06251d9fe21536f5c0b173117f4a25521cf4",
     "fixtures/product-mgmt-entry--workflow-startup/jd.txt": "sha256:0c778974fabfd9bcd2a5ea6f4d45d9692557e42abb213ca4de066b7c055ee978",
     "fixtures/product-mgmt-entry--workflow-startup/resume.md": "sha256:9539806ae09c721641d1fa5f660174d7760b5fb854502be5cfdb497ef78e583a",
@@ -887,7 +1031,396 @@
     "license_url": "https://www.onetcenter.org/license_db.html",
     "scope_note": "The licence's 'License Exceptions' limit it to the downloadable files on three pages. Step 3a used only occupation codes and titles read on the O*NET OnLine site. Step 3b-ii reads the downloadable database files (the six tables listed) to choose each profession's tools, tasks and titles; the attribution below is carried."
   },
-  "pairs": [],
+  "pairs": [
+    {
+      "id": "accounting-entry-to-accounting-mid",
+      "jd_fixture": "accounting-mid--manufacturer",
+      "kind": "advance",
+      "note": "The entry-tier accounting résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "accounting-entry--tax-firm",
+      "transferable": [
+        "Microsoft Excel",
+        "Journal entries"
+      ]
+    },
+    {
+      "id": "admin-assistant-mid-to-admin-assistant-senior",
+      "jd_fixture": "admin-assistant-senior--city-clerk",
+      "kind": "advance",
+      "note": "The mid-tier administrative support résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "admin-assistant-mid--freight-company",
+      "transferable": [
+        "Purchase ordering",
+        "Travel booking"
+      ]
+    },
+    {
+      "id": "carpenter-foreman-senior-to-carpenter-foreman-lead",
+      "jd_fixture": "carpenter-foreman-lead--commercial-contractor",
+      "kind": "advance",
+      "note": "The senior-tier carpentry résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "carpenter-foreman-senior--residential-builder",
+      "transferable": [
+        "Framing",
+        "Jobsite safety"
+      ]
+    },
+    {
+      "id": "construction-pm-entry-to-construction-pm-mid",
+      "jd_fixture": "construction-pm-mid--residential-builder",
+      "kind": "advance",
+      "note": "The entry-tier construction project management résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "construction-pm-entry--general-contractor",
+      "transferable": [
+        "Contract administration",
+        "Safety planning"
+      ]
+    },
+    {
+      "id": "customer-support-mid-to-customer-support-senior",
+      "jd_fixture": "customer-support-senior--health-plan",
+      "kind": "advance",
+      "note": "The mid-tier customer support résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "customer-support-mid--utility-services",
+      "transferable": [
+        "Phone support",
+        "Zendesk"
+      ]
+    },
+    {
+      "id": "data-ml-senior-to-data-ml-lead",
+      "jd_fixture": "data-ml-lead--retail-analytics",
+      "kind": "advance",
+      "note": "The senior-tier Data science and machine learning résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "data-ml-senior--insurance-analytics",
+      "transferable": [
+        "SQL",
+        "Snowflake"
+      ]
+    },
+    {
+      "id": "electrician-entry-to-electrician-mid",
+      "jd_fixture": "electrician-mid--residential-electric",
+      "kind": "advance",
+      "note": "The entry-tier electrical work résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "electrician-entry--family-contractor",
+      "transferable": [
+        "Troubleshooting",
+        "Load calculations"
+      ]
+    },
+    {
+      "id": "hardware-embedded-mid-to-hardware-embedded-senior",
+      "jd_fixture": "hardware-embedded-senior--aerospace-supplier",
+      "kind": "advance",
+      "note": "The mid-tier hardware and embedded engineering résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "hardware-embedded-mid--device-maker",
+      "transferable": [
+        "PCB layout",
+        "Embedded C"
+      ]
+    },
+    {
+      "id": "hr-senior-to-hr-lead",
+      "jd_fixture": "hr-lead--cloud-software",
+      "kind": "advance",
+      "note": "The senior-tier human resources résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "hr-senior--staffing",
+      "transferable": [
+        "New hire onboarding",
+        "Policy writing"
+      ]
+    },
+    {
+      "id": "hvac-technician-entry-to-hvac-technician-mid",
+      "jd_fixture": "hvac-technician-mid--residential-hvac",
+      "kind": "advance",
+      "note": "The entry-tier heating and cooling service résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "hvac-technician-entry--family-hvac",
+      "transferable": [
+        "System diagnostics",
+        "Leak testing"
+      ]
+    },
+    {
+      "id": "logistics-driving-mid-to-logistics-driving-senior",
+      "jd_fixture": "logistics-driving-senior--produce-hauler",
+      "kind": "advance",
+      "note": "The mid-tier truck driving and dispatch résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "logistics-driving-mid--freight-carrier",
+      "transferable": [
+        "Route planning",
+        "Defensive driving"
+      ]
+    },
+    {
+      "id": "medical-assistant-senior-to-medical-assistant-lead",
+      "jd_fixture": "medical-assistant-lead--medical-group",
+      "kind": "advance",
+      "note": "The senior-tier medical assisting résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "medical-assistant-senior--urgent-care",
+      "transferable": [
+        "Blood draws",
+        "Injections"
+      ]
+    },
+    {
+      "id": "mobile-entry-to-mobile-mid",
+      "jd_fixture": "mobile-mid--publishing-startup",
+      "kind": "advance",
+      "note": "The entry-tier mobile app engineering résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "mobile-entry--fitness-startup",
+      "transferable": [
+        "Push notifications",
+        "Fastlane"
+      ]
+    },
+    {
+      "id": "product-mgmt-mid-to-product-mgmt-senior",
+      "jd_fixture": "product-mgmt-senior--health-services",
+      "kind": "advance",
+      "note": "The mid-tier Product management résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "product-mgmt-mid--commerce-enterprise",
+      "transferable": [
+        "Tableau",
+        "Figma"
+      ]
+    },
+    {
+      "id": "project-mgmt-senior-to-project-mgmt-lead",
+      "jd_fixture": "project-mgmt-lead--regional-utility",
+      "kind": "advance",
+      "note": "The senior-tier project management résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "project-mgmt-senior--medical-center",
+      "transferable": [
+        "Status reporting",
+        "Confluence"
+      ]
+    },
+    {
+      "id": "registered-nurse-entry-to-registered-nurse-mid",
+      "jd_fixture": "registered-nurse-mid--hospital-company",
+      "kind": "advance",
+      "note": "The entry-tier nursing résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "registered-nurse-entry--community-hospital",
+      "transferable": [
+        "Bedside handoff",
+        "Care planning"
+      ]
+    },
+    {
+      "id": "sales-mid-to-sales-senior",
+      "jd_fixture": "sales-senior--industrial-equipment",
+      "kind": "advance",
+      "note": "The mid-tier business-to-business sales résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "sales-mid--workflow-software",
+      "transferable": [
+        "Salesforce",
+        "Contract negotiation"
+      ]
+    },
+    {
+      "id": "security-senior-to-security-lead",
+      "jd_fixture": "security-lead--hospital-security",
+      "kind": "advance",
+      "note": "The senior-tier information security analysis résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "security-senior--retail-holdings",
+      "transferable": [
+        "Incident response",
+        "Splunk"
+      ]
+    },
+    {
+      "id": "social-services-entry-to-social-services-mid",
+      "jd_fixture": "social-services-mid--family-center",
+      "kind": "advance",
+      "note": "The entry-tier social services casework résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "social-services-entry--county-human-services",
+      "transferable": [
+        "Needs assessments",
+        "Microsoft Access"
+      ]
+    },
+    {
+      "id": "sre-ops-mid-to-sre-ops-senior",
+      "jd_fixture": "sre-ops-senior--insurance-carrier",
+      "kind": "advance",
+      "note": "The mid-tier Site reliability and IT operations résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "sre-ops-mid--cloud-hosting",
+      "transferable": [
+        "Kubernetes",
+        "Microsoft Azure"
+      ]
+    },
+    {
+      "id": "teacher-senior-to-teacher-lead",
+      "jd_fixture": "teacher-lead--school-network",
+      "kind": "advance",
+      "note": "The senior-tier elementary teaching résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "teacher-senior--private-school",
+      "transferable": [
+        "Nearpod",
+        "Google Classroom"
+      ]
+    },
+    {
+      "id": "ux-design-entry-to-ux-design-mid",
+      "jd_fixture": "ux-design-mid--insurance-digital",
+      "kind": "advance",
+      "note": "The entry-tier product and UX design résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "ux-design-entry--consumer-app",
+      "transferable": [
+        "Design critique",
+        "Figma"
+      ]
+    },
+    {
+      "id": "visual-design-mid-to-visual-design-senior",
+      "jd_fixture": "visual-design-senior--home-goods",
+      "kind": "advance",
+      "note": "The mid-tier visual and brand design résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "visual-design-mid--food-startup",
+      "transferable": [
+        "Adobe After Effects",
+        "Packaging design"
+      ]
+    },
+    {
+      "id": "web-backend-senior-to-web-backend-lead",
+      "jd_fixture": "web-backend-lead--freight-startup",
+      "kind": "advance",
+      "note": "The senior-tier backend software engineering résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not.",
+      "resume_fixture": "web-backend-senior--health-system",
+      "transferable": [
+        "Linux",
+        "Spring Boot"
+      ]
+    },
+    {
+      "id": "web-backend-mid-to-data-ml-mid",
+      "jd_fixture": "data-ml-mid--health-research",
+      "kind": "change",
+      "note": "A backend engineer moving toward data and machine learning: the same languages and data stores, a different craft.",
+      "resume_fixture": "web-backend-mid--retail-enterprise",
+      "transferable": [
+        "Python"
+      ]
+    },
+    {
+      "id": "mobile-lead-to-ux-design-lead",
+      "jd_fixture": "ux-design-lead--learning-design",
+      "kind": "change",
+      "note": "A mobile developer moving toward product design: close to the interface, far from the research and critique practice.",
+      "resume_fixture": "mobile-lead--airline-mobile",
+      "transferable": [
+        "team"
+      ]
+    },
+    {
+      "id": "sre-ops-mid-to-security-mid",
+      "jd_fixture": "security-mid--state-agency",
+      "kind": "change",
+      "note": "An operations engineer moving into security: shared systems and monitoring skills, without the threat-analysis work.",
+      "resume_fixture": "sre-ops-mid--cloud-hosting",
+      "transferable": [
+        "PowerShell",
+        "Python"
+      ]
+    },
+    {
+      "id": "product-mgmt-mid-to-project-mgmt-mid",
+      "jd_fixture": "project-mgmt-mid--software-company",
+      "kind": "change",
+      "note": "A product manager taking a delivery role: the planning overlaps, the scheduling and risk-register practice does not.",
+      "resume_fixture": "product-mgmt-mid--commerce-enterprise",
+      "transferable": [
+        "team",
+        "planning"
+      ]
+    },
+    {
+      "id": "ux-design-mid-to-visual-design-mid",
+      "jd_fixture": "visual-design-mid--food-startup",
+      "kind": "change",
+      "note": "A product designer moving to brand and visual work: shared tools, a different discipline.",
+      "resume_fixture": "ux-design-mid--insurance-digital",
+      "transferable": [
+        "team"
+      ]
+    },
+    {
+      "id": "customer-support-senior-to-sales-mid",
+      "jd_fixture": "sales-mid--workflow-software",
+      "kind": "change",
+      "note": "A support specialist moving into sales: strong customer contact, no quota or pipeline history.",
+      "resume_fixture": "customer-support-senior--health-plan",
+      "transferable": [
+        "team"
+      ]
+    },
+    {
+      "id": "admin-assistant-mid-to-hr-mid",
+      "jd_fixture": "hr-mid--community-hospital",
+      "kind": "change",
+      "note": "An administrative specialist moving into human resources: records and scheduling carry over, employee relations does not.",
+      "resume_fixture": "admin-assistant-mid--freight-company",
+      "transferable": [
+        "schedule",
+        "records"
+      ]
+    },
+    {
+      "id": "accounting-senior-to-project-mgmt-mid",
+      "jd_fixture": "project-mgmt-mid--software-company",
+      "kind": "change",
+      "note": "An accountant moving into project management: budgets and reporting carry over, scheduling and vendor work do not.",
+      "resume_fixture": "accounting-senior--distributor",
+      "transferable": [
+        "team"
+      ]
+    },
+    {
+      "id": "registered-nurse-mid-to-medical-assistant-mid",
+      "jd_fixture": "medical-assistant-mid--health-center",
+      "kind": "change",
+      "note": "A nurse applying for a medical assistant role: the clinical skills overlap and the licence level differs.",
+      "resume_fixture": "registered-nurse-mid--hospital-company",
+      "transferable": [
+        "team",
+        "patients"
+      ]
+    },
+    {
+      "id": "teacher-mid-to-social-services-mid",
+      "jd_fixture": "social-services-mid--family-center",
+      "kind": "change",
+      "note": "A teacher moving into social services: work with families carries over, casework and service planning do not.",
+      "resume_fixture": "teacher-mid--school-district",
+      "transferable": [
+        "families"
+      ]
+    },
+    {
+      "id": "electrician-senior-to-hvac-technician-mid",
+      "jd_fixture": "hvac-technician-mid--residential-hvac",
+      "kind": "change",
+      "note": "An electrician moving to heating and cooling service: the electrical work carries over, refrigerant work does not.",
+      "resume_fixture": "electrician-senior--industrial-contractor",
+      "transferable": [
+        "customer"
+      ]
+    },
+    {
+      "id": "carpenter-foreman-mid-to-construction-pm-mid",
+      "jd_fixture": "construction-pm-mid--residential-builder",
+      "kind": "change",
+      "note": "A carpentry foreman moving to project management: crews and plans carry over, contracts and cost tracking do not.",
+      "resume_fixture": "carpenter-foreman-mid--remodeling",
+      "transferable": [
+        "safety"
+      ]
+    }
+  ],
   "pilot_waivers": [],
   "professions": {
     "accounting": {

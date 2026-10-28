@@ -1,0 +1,44 @@
+{
+  "candidate_name": "Morgan Novak",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Schematic capture, in work or side projects"
+    ],
+    "scope_probes": [
+      "Hardware Engineer at Dunmore Technologies: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Schematic\\ capture",
+    "(?i)MATLAB",
+    "(?i)SPICE\\ simulation",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Schematic capture"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "embedded c",
+    "pcb layout"
+  ],
+  "notes": "Mismatched pair (advance): the hardware-embedded-mid résumé against the hardware-embedded-senior job description. The mid-tier hardware and embedded engineering résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Schematic capture. The output must claim none of it.",
+  "pair": {
+    "id": "hardware-embedded-mid-to-hardware-embedded-senior",
+    "jd_cell": "hardware-embedded-senior",
+    "jd_fixture": "hardware-embedded-senior--aerospace-supplier",
+    "kind": "advance",
+    "resume_cell": "hardware-embedded-mid",
+    "resume_fixture": "hardware-embedded-mid--device-maker",
+    "transferable": [
+      "embedded c",
+      "pcb layout"
+    ]
+  }
+}

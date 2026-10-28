@@ -1,0 +1,65 @@
+{
+  "candidate_name": "Avery Novak",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Asana, in work or side projects",
+      "any exposure to Resource planning, in work or side projects",
+      "any exposure to Vendor negotiation, in work or side projects",
+      "any exposure to Jira, in work or side projects",
+      "any exposure to Stakeholder communication, in work or side projects",
+      "any exposure to Change control, in work or side projects",
+      "any exposure to Project Practitioner Certificate, in work or side projects",
+      "any exposure to Agile Delivery Certificate, in work or side projects"
+    ],
+    "scope_probes": [
+      "Product Manager at Riverbend Health Network: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Asana",
+    "(?i)Resource\\ planning",
+    "(?i)Vendor\\ negotiation",
+    "(?i)Jira",
+    "(?i)Stakeholder\\ communication",
+    "(?i)Change\\ control",
+    "(?i)Project\\ Practitioner\\ Certificate",
+    "(?i)Agile\\ Delivery\\ Certificate",
+    "(?i)Go\\-to\\-market\\ planning",
+    "(?i)User\\ interviews",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Asana",
+    "Resource planning",
+    "Vendor negotiation",
+    "Jira",
+    "Stakeholder communication",
+    "Change control",
+    "Project Practitioner Certificate",
+    "Agile Delivery Certificate"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "planning",
+    "team"
+  ],
+  "notes": "Mismatched pair (change): the product-mgmt-mid résumé against the project-mgmt-mid job description. A product manager taking a delivery role: the planning overlaps, the scheduling and risk-register practice does not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Asana, Resource planning, Vendor negotiation, Jira, Stakeholder communication, Change control, Project Practitioner Certificate, Agile Delivery Certificate. The output must claim none of it.",
+  "pair": {
+    "id": "product-mgmt-mid-to-project-mgmt-mid",
+    "jd_cell": "project-mgmt-mid",
+    "jd_fixture": "project-mgmt-mid--software-company",
+    "kind": "change",
+    "resume_cell": "product-mgmt-mid",
+    "resume_fixture": "product-mgmt-mid--commerce-enterprise",
+    "transferable": [
+      "planning",
+      "team"
+    ]
+  }
+}

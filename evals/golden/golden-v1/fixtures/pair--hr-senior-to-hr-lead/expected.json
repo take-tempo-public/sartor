@@ -1,0 +1,47 @@
+{
+  "candidate_name": "Taylor Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Compliance reporting, in work or side projects",
+      "any exposure to ADP Workforce Now, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior HR Business Partner at Kestrel Works: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Compliance\\ reporting",
+    "(?i)ADP\\ Workforce\\ Now",
+    "(?i)Applicant\\ tracking",
+    "(?i)Employee\\ relations",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Compliance reporting",
+    "ADP Workforce Now"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "new hire onboarding",
+    "policy writing"
+  ],
+  "notes": "Mismatched pair (advance): the hr-senior résumé against the hr-lead job description. The senior-tier human resources résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Compliance reporting, ADP Workforce Now. The output must claim none of it.",
+  "pair": {
+    "id": "hr-senior-to-hr-lead",
+    "jd_cell": "hr-lead",
+    "jd_fixture": "hr-lead--cloud-software",
+    "kind": "advance",
+    "resume_cell": "hr-senior",
+    "resume_fixture": "hr-senior--staffing",
+    "transferable": [
+      "new hire onboarding",
+      "policy writing"
+    ]
+  }
+}

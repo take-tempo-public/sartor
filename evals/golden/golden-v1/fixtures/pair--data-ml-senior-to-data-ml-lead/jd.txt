@@ -1,0 +1,19 @@
+Data Science Manager
+Quillon Analytics — Remote (US)
+
+About the role
+Quillon Analytics helps retailers make sense of their data. We need a Data Science Manager to lead our team of analysts and scientists and own how we run experiments and build forecasts. You'll keep our work honest and useful for clients. You'll get hands-on when it counts and coach the team the rest of the time.
+
+What you'll do
+- Own experiment analysis for retail clients, from test readouts to clear recommendations
+- Mentor analysts and data scientists through code reviews, pairing and regular feedback
+- Build and improve demand forecasting models that clients use for planning
+- Set priorities for the team and keep its work tied to client needs
+- Partner with product and engineering to move models into production
+
+What we're looking for
+- 14 or more years of experience in data science, including time leading a team
+- Strong Python and SQL for both analysis and production work
+- Hands-on experience with Snowflake and Airflow
+- Feature engineering for predictive and forecasting models
+- Experiment design and analysis, from setting up tests to explaining results

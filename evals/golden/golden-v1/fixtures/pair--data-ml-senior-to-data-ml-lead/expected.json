@@ -1,0 +1,46 @@
+{
+  "candidate_name": "Priya Kowalski",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Python, in work or side projects",
+      "any exposure to Experiment design, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior Data Scientist at Pinecrest Labs: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Python",
+    "(?i)Experiment\\ design",
+    "(?i)Tableau",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Python",
+    "Experiment design"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "snowflake",
+    "sql"
+  ],
+  "notes": "Mismatched pair (advance): the data-ml-senior résumé against the data-ml-lead job description. The senior-tier Data science and machine learning résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Python, Experiment design. The output must claim none of it.",
+  "pair": {
+    "id": "data-ml-senior-to-data-ml-lead",
+    "jd_cell": "data-ml-lead",
+    "jd_fixture": "data-ml-lead--retail-analytics",
+    "kind": "advance",
+    "resume_cell": "data-ml-senior",
+    "resume_fixture": "data-ml-senior--insurance-analytics",
+    "transferable": [
+      "snowflake",
+      "sql"
+    ]
+  }
+}

@@ -1660,17 +1660,26 @@ class TestCommittedSuite:
             kind = gs.load_cell(gs.SUITE_DIR, cell)[1]["provenance"]["kind"]
             assert kind == "generated", cell
 
-    def test_every_committed_pair_uses_the_target_cells_own_traps(self) -> None:
+    def test_every_committed_pair_traps_what_the_resume_lacks_and_not_what_it_has(self) -> None:
         manifest = gs.load_manifest(gs.SUITE_DIR)
+        assert manifest["pairs"], "the set has pairs once the pairs step has run"
+        fixtures = gs.SUITE_DIR / "fixtures"
         for pair in manifest["pairs"]:
-            fixtures = gs.SUITE_DIR / "fixtures"
             expected = json.loads(
                 (fixtures / gs.pair_fixture_name(pair["id"]) / "expected.json").read_text("utf-8")
             )
-            target = json.loads(
-                (fixtures / pair["jd_fixture"] / "expected.json").read_text("utf-8")
+            resume = json.loads(
+                (fixtures / pair["resume_fixture"] / "expected.json").read_text("utf-8")
             )
-            assert set(target["forbidden_inventions"]) <= set(expected["forbidden_inventions"])
+            traps = expected["forbidden_inventions"]
+            # The posting's requirements the resume does not show are inventions to avoid ...
+            for missing in expected["jd_requirements_not_shown"]:
+                assert "(?i)" + re.escape(missing) in traps, (pair["id"], missing)
+            # ... the resume cell's own traps still stand ...
+            assert set(resume["forbidden_inventions"]) <= set(traps), pair["id"]
+            # ... and a term the candidate truly has, which the pair lists as transferable, is never trapped.
+            for term in pair["transferable"]:
+                assert "(?i)" + re.escape(term) not in traps, (pair["id"], term)
             assert (
                 expected["must_keywords"] == sorted({t.lower() for t in pair["transferable"]})[:6]
             )

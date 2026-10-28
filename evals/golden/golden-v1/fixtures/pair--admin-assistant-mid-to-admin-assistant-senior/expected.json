@@ -1,0 +1,44 @@
+{
+  "candidate_name": "Jordan Mehta",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Calendar management, in work or side projects"
+    ],
+    "scope_probes": [
+      "Administrative Assistant at Elmstead Partners: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Calendar\\ management",
+    "(?i)Meeting\\ minutes",
+    "(?i)Microsoft\\ Outlook",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Calendar management"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "purchase ordering",
+    "travel booking"
+  ],
+  "notes": "Mismatched pair (advance): the admin-assistant-mid résumé against the admin-assistant-senior job description. The mid-tier administrative support résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Calendar management. The output must claim none of it.",
+  "pair": {
+    "id": "admin-assistant-mid-to-admin-assistant-senior",
+    "jd_cell": "admin-assistant-senior",
+    "jd_fixture": "admin-assistant-senior--city-clerk",
+    "kind": "advance",
+    "resume_cell": "admin-assistant-mid",
+    "resume_fixture": "admin-assistant-mid--freight-company",
+    "transferable": [
+      "purchase ordering",
+      "travel booking"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+Data Scientist
+Cedarpoint Health Research — Hybrid, Boston, MA
+
+Cedarpoint Health Research is a nonprofit dedicated to improving patient health through rigorous, independent research. We are seeking a Data Scientist to join our team in a hybrid role based in Boston, MA. The Data Scientist builds and validates statistical models, analyzes research experiments, and shares findings with investigators and program staff to support studies across the organization.
+
+Duties
+- Select and evaluate features for predictive models using research and clinical datasets.
+- Validate models through holdout testing, cross-validation and calibration checks.
+- Analyze the results of research experiments and report effect sizes with clear uncertainty estimates.
+- Document modeling decisions and validation results for review by investigators.
+- Present findings to research teams in written reports and visualizations.
+
+Licensure and qualifications
+- 3 or more years of experience in data science or a related analytical role.
+- Proficiency in Python and SQL for analysis and data preparation.
+- Experience working in Jupyter notebooks for reproducible analysis.
+- Hands-on experience with TensorFlow for building and training models.
+- Demonstrated skill in feature engineering and experiment design.
