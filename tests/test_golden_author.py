@@ -142,15 +142,62 @@ class TestConstants:
     def test_the_prompt_text_has_not_moved(self) -> None:
         # Step 3b-ii changes the generator's guards, not what the model is told. A real change to
         # AUTHOR_SYSTEM_PROMPT or build_user_prompt must bump AUTHOR_PROMPT_VERSION and re-pin these.
-        profile, _ = _built("mid")
+        # The user prompt is pinned on a fixed literal profile, not on the builder's output, so that a
+        # change to how a profile is built (which changes the briefs, not the prompt's shape) is not
+        # mistaken for a change to the prompt.
+        profile = {
+            "level": "mid",
+            "sections": [
+                {
+                    "kind": "experience",
+                    "roles": [
+                        {
+                            "title": "Operator",
+                            "company": "Alder Systems",
+                            "start": "2024-01",
+                            "end": None,
+                        }
+                    ],
+                },
+                {
+                    "kind": "education",
+                    "items": [
+                        {
+                            "degree": "B.S.",
+                            "field": "Operations",
+                            "institution": "State University",
+                            "year": "2020",
+                        }
+                    ],
+                },
+                {
+                    "kind": "certifications",
+                    "items": [{"name": "Safety Card", "issuer": "Safety Council", "year": "2022"}],
+                },
+            ],
+            "skills": [{"name": "Alphaflow"}],
+            "jds": [
+                {"slug": "bank", "header_lines": ["Operator", "Cedar Bank — Hybrid, Charlotte, NC"]}
+            ],
+            "slots": {
+                "r1.b1": {
+                    "kind": "bullet",
+                    "brief": "One bullet.",
+                    "must_include": ["Alphaflow"],
+                    "allowed_numbers": [],
+                    "min_words": 8,
+                    "max_words": 40,
+                }
+            },
+        }
         assert ga.AUTHOR_PROMPT_VERSION == "golden-author-1"
         assert (
             gs.sha256_text(ga.AUTHOR_SYSTEM_PROMPT)
             == "sha256:8551f43a3fc7970a648027fabacc3385512c124d94672cd463e3d5cfceaf8d1a"
         )
         assert (
-            gs.sha256_text(ga.build_user_prompt(profile, sorted(profile["slots"])))
-            == "sha256:a04e5dfc353e70255f7a90a9b3002a185bc5267c0ad66e80e268d40512d8f9eb"
+            gs.sha256_text(ga.build_user_prompt(profile, ["r1.b1"]))
+            == "sha256:3d71f24d45220f2f76ec927c0b725cf1350cd6f5182a3f2784aef5a3c393e7e5"
         )
 
     def test_the_author_model_is_priced(self) -> None:

@@ -38,6 +38,10 @@
       "slug": "telecom"
     }
   ],
+  "leadership_themes": [
+    "coaching new agents",
+    "setting support schedules and goals"
+  ],
   "profession": "customer-support",
   "settings": [
     "startup",
@@ -114,7 +118,6 @@
     "documenting tickets",
     "escalating bugs to engineering",
     "updating help articles",
-    "coaching new agents",
     "tracking satisfaction scores"
   ]
 }

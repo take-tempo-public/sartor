@@ -50,6 +50,10 @@
       "slug": "hospital-security"
     }
   ],
+  "leadership_themes": [
+    "leading incident response drills",
+    "advising leaders on security risk"
+  ],
   "profession": "security",
   "settings": [
     "enterprise",

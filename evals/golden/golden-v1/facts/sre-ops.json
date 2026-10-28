@@ -50,6 +50,10 @@
       "slug": "hospital-network"
     }
   ],
+  "leadership_themes": [
+    "running the on-call rotation for the team",
+    "setting reliability targets with product teams"
+  ],
   "profession": "sre-ops",
   "settings": [
     "enterprise",

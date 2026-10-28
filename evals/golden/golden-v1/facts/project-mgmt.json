@@ -50,6 +50,10 @@
       "slug": "regional-utility"
     }
   ],
+  "leadership_themes": [
+    "reporting to the steering committee",
+    "managing a portfolio of related projects"
+  ],
   "profession": "project-mgmt",
   "settings": [
     "enterprise",
@@ -124,7 +128,6 @@
     "tracking schedules and milestones",
     "risk and issue logs",
     "budget reviews",
-    "steering committee updates",
     "vendor coordination",
     "change requests",
     "project close-out"

@@ -441,6 +441,125 @@ class TestOneJdPerTier:
         assert any("industry 'hospital': level" in p for p in gs.validate_facts(facts))
 
 
+LEADERSHIP = "directing the weekly crew huddle"
+LEADER_FACTS: dict[str, Any] = FACTS | {"leadership_themes": [LEADERSHIP]}
+
+
+def _briefs(profile: dict[str, Any]) -> dict[str, str]:
+    return {sid: slot["brief"] for sid, slot in profile["slots"].items()}
+
+
+class TestLeadershipThemes:
+    """An apprentice does not direct a crew: some work only reads true from the senior tiers up."""
+
+    def test_the_theme_is_never_given_to_an_entry_or_mid_cell(self) -> None:
+        for level in ("entry", "mid"):
+            briefs = _briefs(gs.build_profile(LEADER_FACTS, _ladder(level), level))
+            assert not [sid for sid, brief in briefs.items() if LEADERSHIP in brief], level
+
+    def test_a_lower_role_of_a_lead_cell_does_not_get_it_either(self) -> None:
+        profile = gs.build_profile(LEADER_FACTS, _ladder("lead"), "lead")
+        roles = profile["sections"][1]["roles"]  # newest first: lead, senior, mid
+        used = [
+            any(LEADERSHIP in profile["slots"][sid]["brief"] for sid in role["bullet_slots"])
+            for role in roles
+        ]
+        assert used[0] or used[1]
+        assert used[2] is False, "the mid-tier role must not direct a crew"
+
+    def test_a_lead_cell_does_use_it(self) -> None:
+        briefs = _briefs(gs.build_profile(LEADER_FACTS, _ladder("lead"), "lead"))
+        assert [sid for sid, brief in briefs.items() if LEADERSHIP in brief]
+
+    @pytest.mark.parametrize("bad", [[], [""], "leading", ["a", "a"]])
+    def test_bad_leadership_themes_are_found(self, bad: Any) -> None:
+        assert any(
+            "leadership_themes" in p for p in gs.validate_facts(FACTS | {"leadership_themes": bad})
+        )
+
+
+class TestEvenCoverage:
+    """Skills and themes are used evenly, not drawn with replacement (one skill in 6 of 12 bullets)."""
+
+    def _bullets(self, level: str) -> list[dict[str, Any]]:
+        profile = gs.build_profile(FACTS, _ladder(level), level)
+        return [
+            profile["slots"][sid]
+            for sec in profile["sections"]
+            if sec["kind"] == "experience"
+            for role in sec["roles"]
+            for sid in role["bullet_slots"]
+        ]
+
+    def test_no_skill_is_used_twice_before_all_are_used_once(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("lead"), "lead")
+        listed = [s["name"] for s in profile["skills"]]
+        used = [
+            next(s for s in listed if f"using {s}." in slot["brief"])
+            for slot in self._bullets("lead")
+        ]
+        assert (
+            len(used) == 12 and len(listed) == 8
+        )  # three roles of four bullets, eight skills listed
+        assert set(used[: len(listed)]) == set(listed), used
+        assert max(used.count(s) for s in listed) == 2  # four skills twice, four once
+
+    def test_no_theme_is_used_twice_before_all_are_used_once(self) -> None:
+        pool = FACTS["work_themes"]
+        briefs = [slot["brief"] for slot in self._bullets("lead")]
+        used = [next(t for t in pool if f": {t}," in b) for b in briefs]
+        assert set(used[: len(pool)]) == set(pool), used
+        assert max(used.count(t) for t in pool) == 2  # 12 bullets over 6 themes: each exactly twice
+
+    def test_the_two_intro_variants_of_a_role_differ(self) -> None:
+        profile = gs.build_profile(FACTS, _ladder("senior"), "senior")
+        for role in profile["sections"][1]["roles"]:
+            one, two = (profile["slots"][sid]["brief"] for sid in role["intro_slots"])
+            theme = lambda brief: brief.rsplit("about ", 1)[1]  # noqa: E731
+            assert theme(one) != theme(two)
+
+    def test_it_is_still_a_pure_function_of_the_facts(self) -> None:
+        one = gs.build_profile(FACTS, _ladder("senior"), "senior")
+        two = gs.build_profile(copy.deepcopy(FACTS), _ladder("senior"), "senior")
+        assert gs.canonical_json(one) == gs.canonical_json(two)
+
+
+class TestACellIsTheFunctionOfItsFacts:
+    """A generated cell is rebuilt from its facts when the suite is checked, so editing the facts afterwards,
+    which would leave the cell describing a profession the facts no longer say, is found."""
+
+    def _suite_with_facts(self, tmp_path: Path) -> Path:
+        return _suite(tmp_path)
+
+    def test_a_cell_built_from_the_facts_passes(self, tmp_path: Path) -> None:
+        assert gs.check_suite(self._suite_with_facts(tmp_path)) == []
+
+    def test_changing_the_facts_after_the_cell_was_written_is_found(self, tmp_path: Path) -> None:
+        root = self._suite_with_facts(tmp_path)
+        changed = copy.deepcopy(FACTS)
+        changed["work_themes"] = [*changed["work_themes"], "a theme added afterwards"]
+        _put(root / "facts" / "demo-ops.json", gs.canonical_json(changed))
+        gs.write_manifest(root, gs.load_manifest(root))
+        assert any(
+            "demo-ops-mid" in p and "differs from a fresh build" in p for p in gs.check_suite(root)
+        )
+
+    def test_a_generated_cell_whose_facts_are_gone_is_found(self, tmp_path: Path) -> None:
+        root = self._suite_with_facts(tmp_path)
+        (root / "facts" / "demo-ops.json").unlink()
+        gs.write_manifest(root, gs.load_manifest(root))
+        assert any("demo-ops-mid" in p and "facts/demo-ops.json" in p for p in gs.check_suite(root))
+
+    def test_a_converted_cell_is_not_rebuilt(self, tmp_path: Path) -> None:
+        profile, _ = _built()
+        converted = _prose(profile, kind="converted")
+        root = tmp_path / "golden-v1"
+        gs.write_cell(root, profile, converted)
+        (root / "facts").mkdir(parents=True)
+        gs.write_manifest(root, _manifest())
+        assert not any("fresh build" in p for p in gs.check_suite(root))
+
+
 class TestSetting:
     """Where a job sits sets its employers, its JD register and its place (not a tech startup by default)."""
 
@@ -549,6 +668,12 @@ def _pair_suite(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
         gs.write_cell(root, profile, _prose(profile))
     manifest = _manifest()
     manifest["professions"]["demo-ap"] = {"display": "administration", "family": "demo"}
+    for facts in (
+        FACTS,
+        FACTS_AP,
+    ):  # a generated cell is rebuilt from its facts when the suite is checked
+        (root / "facts").mkdir(parents=True, exist_ok=True)
+        _put(root / "facts" / f"{facts['profession']}.json", gs.canonical_json(facts))
 
     def text(cell: str, slug: str, name: str) -> str:
         return (root / "fixtures" / f"{cell}--{slug}" / name).read_text(encoding="utf-8")

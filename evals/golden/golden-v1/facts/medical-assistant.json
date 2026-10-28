@@ -54,6 +54,10 @@
       "slug": "medical-group"
     }
   ],
+  "leadership_themes": [
+    "training new medical assistants",
+    "managing clinic supplies and schedules"
+  ],
   "profession": "medical-assistant",
   "settings": [
     "small-business",

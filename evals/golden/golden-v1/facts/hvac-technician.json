@@ -67,6 +67,10 @@
       "slug": "service-company"
     }
   ],
+  "leadership_themes": [
+    "training apprentices",
+    "scheduling service calls for the crew"
+  ],
   "profession": "hvac-technician",
   "settings": [
     "small-business",
@@ -142,7 +146,6 @@
     "preventive maintenance visits",
     "testing for leaks",
     "estimating jobs for customers",
-    "keeping work orders",
-    "training apprentices"
+    "keeping work orders"
   ]
 }

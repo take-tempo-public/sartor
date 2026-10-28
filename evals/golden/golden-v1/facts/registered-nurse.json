@@ -60,6 +60,10 @@
       "slug": "childrens-hospital"
     }
   ],
+  "leadership_themes": [
+    "supervising nursing aides",
+    "serving as charge nurse for a shift"
+  ],
   "profession": "registered-nurse",
   "settings": [
     "health-nonprofit",
@@ -135,7 +139,6 @@
     "charting in the record",
     "coordinating with physicians",
     "teaching patients and families",
-    "shift handoff",
-    "supervising nursing aides"
+    "shift handoff"
   ]
 }

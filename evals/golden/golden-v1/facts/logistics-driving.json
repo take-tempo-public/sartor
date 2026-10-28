@@ -72,6 +72,10 @@
       "slug": "distribution"
     }
   ],
+  "leadership_themes": [
+    "training new drivers",
+    "building driver schedules and routes"
+  ],
   "profession": "logistics-driving",
   "settings": [
     "enterprise",

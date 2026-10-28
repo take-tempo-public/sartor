@@ -823,6 +823,38 @@ def _check_ladders(manifest: dict[str, Any]) -> list[str]:
     return problems
 
 
+def _check_cell_matches_facts(
+    root: Path, manifest: dict[str, Any], cell: str, profile: dict[str, Any]
+) -> list[str]:
+    """A generated cell must be the rebuild of its facts: the profile is a pure function of them.
+
+    Facts edited after a cell was written would leave a cell that no longer describes the profession the
+    facts say, and a paid reply that cannot be reproduced. A converted pilot has no such source, so the
+    caller does not ask.
+    """
+    profession, level = profile.get("profession"), profile.get("level")
+    path = root / "facts" / f"{profession}.json"
+    if not path.is_file():
+        return [f"{cell}: facts/{profession}.json is missing, so the cell cannot be rebuilt"]
+    try:
+        fresh = build_profile(
+            _read_json(path), ladder_for(manifest, str(profession), str(level)), str(level)
+        )
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ) as exc:  # a malformed ladder is reported elsewhere
+        return [f"{cell}: cannot be rebuilt from facts/{profession}.json ({exc})"]
+    if canonical_json(fresh) != canonical_json(profile):
+        return [
+            f"{cell}: the stored profile differs from a fresh build of facts/{profession}.json; "
+            "the facts or the ladder changed after the cell was written"
+        ]
+    return []
+
+
 def _check_facts_files(root: Path, manifest: dict[str, Any]) -> list[str]:
     """Every way a ``facts/*.json`` file can be wrong, found before a cell is built from it.
 
@@ -1096,6 +1128,8 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
             )
         provenance = prose.get("provenance", {})
         if provenance.get("kind") == "generated":
+            if not validate_profile(profile):
+                problems += _check_cell_matches_facts(root, manifest, cell, profile)
             version = provenance.get("prompt_version")
             want = (author_prompt_sha or {}).get(version)
             recorded = manifest.get("author", {}).get("prompt_versions", {}).get(version)
@@ -1438,6 +1472,16 @@ def _sample(seq: list[str], count: int, seed: int, label: str) -> list[str]:
     return ranked[:count]
 
 
+def _cycle(seq: list[str], seed: int, label: str, start: int, count: int) -> list[str]:
+    """``count`` items from a hashed order, beginning ``start`` places in and wrapping.
+
+    Every item is used once before any is used twice. Drawing each bullet's skill and theme independently
+    (as `_pick` does) repeated one skill in half the bullets of a résumé; walking one hashed order does not.
+    """
+    ranked = sorted(seq, key=lambda item: _hash_int(seed, f"{label}:{item}"))
+    return [ranked[(start + i) % len(ranked)] for i in range(count)]
+
+
 def validate_facts(facts: dict[str, Any]) -> list[str]:
     """Problems with a profession's facts file, empty when it is sound. Never raises on bad content."""
     required = (
@@ -1518,6 +1562,17 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
         or not all(isinstance(i, str) and i for i in institutions)
     ):
         problems.append("education.institutions, when given, is a non-empty list of names")
+    leadership = facts.get("leadership_themes")
+    if leadership is not None and (
+        not isinstance(leadership, list)
+        or not leadership
+        or not all(isinstance(t, str) and t for t in leadership)
+        or len(set(leadership)) != len(leadership)
+        or set(leadership) & set(facts["work_themes"])
+    ):
+        problems.append(
+            "leadership_themes, when given, is a non-empty list of distinct themes that work_themes does not hold"
+        )
     employers = facts.get("employers")
     if employers is not None and (
         not isinstance(employers, list)
@@ -1656,23 +1711,36 @@ def build_profile(
         [s["name"] for s in facts["skills"]], ladder["skill_count"], seed, "skills"
     )
     category = {s["name"]: s["category"] for s in facts["skills"]}
-    themes = list(facts["work_themes"])
     employers = _employers_for(facts, seed, ladder["roles"])
+
+    def themes_for(tier: str) -> list[str]:
+        """The work a role at ``tier`` can truthfully describe: leading and directing only from senior up."""
+        pool = list(facts["work_themes"])
+        if LEVELS.index(tier) >= LEVELS.index("senior"):
+            pool += list(facts.get("leadership_themes", []))
+        return pool
+
     # Dates run back from ASOF: the newest role is current, each older one ends where the next began.
-    titles = [
-        facts["titles"][LEVELS[max(LEVELS.index(level) - i, 0)]] for i in range(ladder["roles"])
-    ]
+    role_tiers = [LEVELS[max(LEVELS.index(level) - i, 0)] for i in range(ladder["roles"])]
+    titles = [facts["titles"][tier] for tier in role_tiers]
+    themes = themes_for(level)  # the cell's own tier: what its job description can ask for
     roles: list[dict[str, Any]] = []
     end: str | None = None
     cursor = _months(ASOF)
     total_months = 0
+    used = 0  # bullets written so far across roles, newest first, so a skill or theme is not repeated early
     for index, duration in enumerate(_tenures(seed, ladder)):
         start_months = cursor - duration
         total_months += duration
         bullet_slots: list[str] = []
-        for b in range(1, ladder["bullets_per_role"] + 1):
-            theme = _pick(themes, seed, f"theme:{index}:{b}")
-            skill = _pick(skill_names, seed, f"skill:{index}:{b}")
+        role_pool = themes_for(role_tiers[index])
+        bullet_count = int(ladder["bullets_per_role"])
+        role_themes = _cycle(role_pool, seed, "theme-order", used, bullet_count)
+        role_skills = _cycle(skill_names, seed, "skill-order", used, bullet_count)
+        used += bullet_count
+        for b in range(1, bullet_count + 1):
+            theme = role_themes[b - 1]
+            skill = role_skills[b - 1]
             outcome = b % 2 == 1
             figure = str(10 + 5 * (_hash_int(seed, f"figure:{index}:{b}") % 10))
             slot_id = f"r{index + 1}.b{b}"
@@ -1692,9 +1760,10 @@ def build_profile(
                 slots[slot_id] = _slot("bullet", brief, must=[skill], lo=8, hi=40)
             bullet_slots.append(slot_id)
         intro_slots: list[str] = []
+        intro_themes = _cycle(role_pool, seed, "intro-order", index, int(ladder["intro_variants"]))
         for v in range(1, ladder["intro_variants"] + 1):
             slot_id = f"r{index + 1}.i{v}"
-            theme = _pick(themes, seed, f"intro:{index}:{v}")
+            theme = intro_themes[v - 1]
             slots[slot_id] = _slot(
                 "intro",
                 f"Variant {v} of a one-sentence role introduction for a {titles[index]} at {employers[index]}, about {theme}. Include no number.",

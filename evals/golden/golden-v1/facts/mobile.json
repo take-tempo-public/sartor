@@ -38,6 +38,10 @@
       "slug": "airline-mobile"
     }
   ],
+  "leadership_themes": [
+    "mentoring developers on the team",
+    "planning releases with product and design"
+  ],
   "profession": "mobile",
   "settings": [
     "startup",

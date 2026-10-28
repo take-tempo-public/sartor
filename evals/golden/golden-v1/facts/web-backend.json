@@ -38,6 +38,10 @@
       "slug": "freight-startup"
     }
   ],
+  "leadership_themes": [
+    "mentoring engineers through code review",
+    "setting the team's technical roadmap"
+  ],
   "profession": "web-backend",
   "settings": [
     "startup",
@@ -114,7 +118,6 @@
     "service reliability and on-call",
     "tuning slow queries",
     "deployment pipeline automation",
-    "code review and mentoring",
     "incident follow-up and runbooks"
   ]
 }

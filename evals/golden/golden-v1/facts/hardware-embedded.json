@@ -38,6 +38,10 @@
       "slug": "robotics-startup"
     }
   ],
+  "leadership_themes": [
+    "leading design reviews",
+    "mentoring junior engineers"
+  ],
   "profession": "hardware-embedded",
   "settings": [
     "enterprise",

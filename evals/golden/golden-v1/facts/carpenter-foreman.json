@@ -72,6 +72,10 @@
       "slug": "commercial-contractor"
     }
   ],
+  "leadership_themes": [
+    "directing crews and apprentices",
+    "planning jobs and ordering lumber"
+  ],
   "profession": "carpenter-foreman",
   "settings": [
     "small-business",
@@ -147,7 +151,6 @@
     "reading plans and measuring",
     "ordering lumber and materials",
     "keeping the site safe",
-    "building forms for concrete",
-    "directing crews and apprentices"
+    "building forms for concrete"
   ]
 }

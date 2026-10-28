@@ -72,6 +72,10 @@
       "slug": "municipal-utility"
     }
   ],
+  "leadership_themes": [
+    "directing helpers and apprentices",
+    "planning jobs and ordering materials"
+  ],
   "profession": "electrician",
   "settings": [
     "small-business",
@@ -147,7 +151,6 @@
     "installing panels and fixtures",
     "testing circuits",
     "reading plans",
-    "tracing faults",
-    "directing helpers and apprentices"
+    "tracing faults"
   ]
 }

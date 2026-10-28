@@ -130,6 +130,9 @@ Found while enumerating (each changes the plan):
 | 22 | `evals/README.md` golden-set sections, `CHANGELOG.md`, `docs/dev/eval-redesign-design.md` 6.4 | update | the new flags, facts, families, counts, the measured cost, and the staging. |
 | 23 | `.gitignore` | no change | `logs/` is already ignored and the rejects directory is under it. |
 | 24 | work items: 191 (updates), a new follow-on item, epic 180 | update | item ids are allocated at commit time. |
+| 25 | `evals/golden_set.py` `build_profile`: the theme and skill picks, the role-tier theme pool | update (added after stage 2) | `_cycle` replaces `_pick` for a bullet's skill and theme and for an intro's theme; `leadership_themes` joins the pool for roles at senior tier or above only. This **changes the bytes of every built profile** (pre-freeze, on purpose), so every cell written before it is stale; the five such cells were deleted and regenerated. `cell_seed_for`, `_tenures`, employers and figures are untouched. Consumers: `build_profile` callers are `golden_author.main`, `check_suite` (new) and the tests (grep above). |
+| 26 | `evals/golden_set.py` new `_check_cell_matches_facts`, called from `check_suite` | new | a generated cell must equal `build_profile(facts, ladder, level)`; a converted pilot is exempt. Tests that built cells from inputs the manifest does not record (a second profession without a facts file, a ladder override) were updated to record them (`_pair_suite`, `_built_suite`). |
+| 27 | `tests/test_golden_author.py::TestConstants::test_the_prompt_text_has_not_moved` | update | its user-prompt hash was computed from builder output, which row 25 changed; it now pins `build_user_prompt` on a fixed literal profile, so a builder change is not mistaken for a prompt change. |
 
 ---
 
@@ -183,6 +186,36 @@ nearer 350,000 input tokens than 247,000), and the 420 s timeout was set against
 (now 180 s). A projection from this one cell, assuming thinking is between a third and all of its observed size on the
 lighter tiers: $0.044 to $0.075 for an entry cell, $0.064 to $0.082 for mid, $0.083 to $0.089 for senior, and
 $0.088 for lead, so **about $6.7 to $8.0 for the 96**. One sample is not a distribution; stage 2 adds four more.
+
+**Stage 2, observed (four cells, 2026-10-28):** `teacher-mid` (public-sector JD, own employers) $0.0655 in 23.2 s,
+`electrician-entry` $0.0446 in 16.3 s, `accounting-senior` $0.0815 in 27.0 s, `ux-design-senior` $0.0790 in 31.5 s.
+All four accepted on the first attempt, no rewrite, no refusal, `end_turn`, counted equal to logged ($0.2707 for the run,
+$0.3589 for the five cells). Cost tracks slot count: $0.0040, $0.0039, $0.0035, $0.0034 and $0.0034 a slot for 11, 17,
+23, 23 and 26 slots. That puts one profession at about $0.28 and the 96 cells at about **$6.7**, the low end of the
+projection above.
+
+**What hand-reading the five cells found, and what was done.** Three things, two of them defects of the builder or the
+facts, found at cell 5 and not cell 96:
+
+1. *Leadership leaked into entry roles.* `electrician-entry`: an apprentice "directs helpers and apprentices on daily
+   tasks", which contradicts the ladder's own scope for that tier ("working under a journeyman who checks the work").
+   Cause: `work_themes` is one pool every tier draws from, and seven professions had leadership work in it. Fix:
+   an optional `leadership_themes` in the facts, offered only to roles at senior tier or above, and the seven themes
+   moved out of `work_themes`; every profession now has one or two (`tests/test_golden_set.py::TestLeadershipThemes`).
+2. *The same skill or theme filled half a résumé.* `accounting-senior` names "Month-end close" in 6 of its 12 bullets,
+   `web-backend-lead` repeats "API versioning" in 4 of 15, `teacher-mid` repeats "Nearpod" in 3 of 8. Cause: each
+   bullet's skill and theme was drawn independently with replacement. Fix: `_cycle` walks one hashed order, so no item
+   is used twice before all are used once (`TestEvenCoverage`).
+3. *Skill names are capitalised in mid-sentence* ("Working knowledge of Math manipulatives"). Cause: the author prompt's
+   rule 3 says required strings appear "spelled as given" while the check is case-insensitive. **Left unchanged:** a
+   prompt change bumps `AUTHOR_PROMPT_VERSION` and a lower-case rule is untested; the owner can decide whether it is
+   worth a cell's cost to try. It is a readability quirk, not a grounding fault.
+
+Because both builder changes alter the stored profile, all five cells no longer matched a fresh build of their facts.
+That exposed a gap: nothing checked that a generated cell **is** the rebuild of its facts, so editing the facts after
+generation would have left a cell describing a profession the facts no longer say. `check_suite` now rebuilds every
+generated cell and compares (`TestACellIsTheFunctionOfItsFacts`). The five cells were discarded and are regenerated:
+**$0.3589 of the $3 was spent on cells that did not survive**, the price of learning this from five cells.
 
 ---
 

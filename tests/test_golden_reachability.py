@@ -318,6 +318,8 @@ def _built_suite(tmp_path: Path, **ladder_override: Any) -> tuple[Path, dict[str
     with (root / "facts" / "demo-ops.json").open("w", encoding="utf-8", newline="\n") as fh:
         fh.write(gs.canonical_json(FACTS))
     manifest = _manifest()
+    # The suite check rebuilds a generated cell from its facts and ladder, so the ladder must say what built it.
+    manifest["families"]["demo"]["levels"]["mid"].update(ladder_override)
     manifest["author"]["prompt_versions"] = {ga.AUTHOR_PROMPT_VERSION: ga.author_prompt_sha()}
     if "summary_variants" in ladder_override:
         manifest["pilot_waivers"] = [
