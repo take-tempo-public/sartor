@@ -3558,3 +3558,29 @@ changes no fixture (6.4 says so). No page cites the design doc. This is a read f
 **Gates run on the result:** `scripts.wiki_cites` OK; `tests/test_wiki_cites.py`, `test_wiki_source.py`, `test_wiki_freshness_gate.py`, `test_wiki_relevance_classification.py`, `test_doc_lints.py`, `test_doc_links.py` and `test_doc_single_home_gate.py` pass (92); `scripts/check_doc_links.py` OK (737 files); `scripts.wiki_freshness` OK (48 files since the last ingest, below the 75 block threshold). **`/wiki-lint` was not run as the prompt-driven command.** No backlink was added or removed.
 
 **Not verified:** `eval-harness` was audited over the golden-set section and `code-module-map` over two rows, not read whole; `evals/README.md`, `CHANGELOG.md`, the design doc and the dossier were edited by hand and are not wiki pages, so nothing audited them; the claims about the generator describe code that has never made a real call; nothing here says how the judge weights a mismatched pair, which is steps 8 and 9.
+
+## 2026-10-28 — scoped self-update for item 191: the golden set built (`feat/eval-dataset-v1`)
+
+**Mode: scoped to this branch's own diff, hand-edited, audited by a separate agent.** The two wiki-relevant paths this branch touches
+are `evals/golden_set.py` and `evals/golden_author.py` (`is_wiki_relevant`); the 96 cells, 24 facts files and the manifest are data under
+`evals/golden/`, which the classifier already treats as irrelevant. Edited: [`pages/eval-harness.md`](pages/eval-harness.md) (the golden-set
+section) and [`pages/code-module-map.md`](pages/code-module-map.md) (two rows).
+
+- **What changed on the pages:** the false statement that the generator "has never made a real call" and is "stub-tested only" (it wrote the
+  committed 96 cells; the tests still use a stub); "the pilot waivers" (now "any waivers": the pilots were replaced); the generator's command line
+  (`--cell`, `--skip-existing`, `--max-total-spend`, spend read from the call log); the facts checks (`employers`, `leadership_themes`, a `level` on
+  each industry so a cell has one JD, skill-name rules), `_cycle`, the case-insensitive skill and certification traps, and the new `check_suite`
+  steps (validate every facts file; rebuild each generated cell from its facts). The module docstring of `evals/golden_author.py`, which made the same
+  false claim, was corrected in the same change.
+- **Audit:** one `sartor:wiki-grounding-auditor` pass over the changed passages only (author ≠ auditor): 19 claims, 19 SUPPORTED, 0 DRIFTED, 0 UNSUPPORTED.
+  I did not re-verify its line citations beyond the deterministic check below. No separate review pass was made, so the auditor's catch rate for this
+  change is unmeasured.
+
+**Gates run on the result:** `scripts.wiki_cites` OK (0 violations); `tests/test_wiki_cites.py`, `test_wiki_source.py`, `test_wiki_freshness_gate.py`,
+`test_wiki_relevance_classification.py`, `test_doc_lints.py`, `test_doc_links.py` and `test_doc_single_home_gate.py` pass (92); `scripts/check_doc_links.py`
+OK (867 files); `scripts.wiki_freshness` OK (48 files since the last ingest, below the 75 block threshold). **`/wiki-lint` was not run as the prompt-driven
+command.** No backlink was added or removed.
+
+**Not verified:** the pages were audited over the changed passages, not read whole; `evals/README.md`, `CHANGELOG.md`, the design doc and the dossier are
+not wiki pages and nothing audited them; the wiki says nothing about how the judge weights a mismatched pair (steps 8 and 9), and nothing about the
+unfixed certification-requirement defect (item 194).

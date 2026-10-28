@@ -514,9 +514,12 @@ passing `--mode generate`) leaves the historical path **byte-identical**.
 `evals/fixtures/synthetic/` (design doc 5.4 and 6.4; owner decisions 2026-10-20 to 2026-10-27). It is a
 **profession by level matrix**, all authored: no third-party résumé or posting text is committed, and nothing
 is fetched. It exists to measure performance across many job fields, not one band of tech job hunters. Step 3a
-built the format and three **pilot cells** converted from the existing personas; step 3b-i (item 193) widened
-the format (a ladder per family, a setting for every job, certifications, mismatched pairs); the other
-professions and the paid generation are step 3b-ii (item 191). Until then the suite is `draft`.
+built the format; step 3b-i (item 193) widened it (a ladder per family, a setting for every job,
+certifications, mismatched pairs); step 3b-ii (item 191) wrote the facts for **24 professions in four groups**
+(tech and product 9, business and office 6, health, education and community 4, trades and construction 5),
+generated all **96 cells** (24 professions by 4 tiers, one job description each) and derived **36 pairs**
+(24 advance, 12 change), so the suite holds 132 fixtures. It is still `draft`: the calibration run, the final
+tier sizes, retiring `evals/fixtures/synthetic/` and the freeze belong to the follow-on item.
 
 - **A cell** is one profession at one level. Its source is `cells/<cell>/profile.json` (written by code: the
   candidate, the ordered résumé sections, every prose slot with the facts and numbers it may hold, the JDs, the
@@ -544,10 +547,18 @@ professions and the paid generation are step 3b-ii (item 191). Until then the su
   holds them. A candidate holds the ones at or below the cell's tier; the next one is a forbidden invention and a
   clarification probe, and the JD names a held one as required and the next as preferred. `education.institutions`
   lets a trade school or apprenticeship programme stand in for a university.
-- **A profession's facts file** (`facts/<profession>.json`, written in step 3b-ii) is checked by
-  `validate_facts` before any cell is built: `profession`, `display`, `titles` (one per tier), `skills`
-  (`name`, `category`), `work_themes`, `education` (`degree`, `field`, optional `institutions`), `settings`,
-  `industries` (`slug`, `company`, `phrase`, `setting`, `location`) and optional `certifications`.
+- **A profession's facts file** (`facts/<profession>.json`) is checked by `validate_facts` before any cell is
+  built, and `check` validates every one: `profession`, `display`, `titles` (one per tier), `skills` (`name`,
+  `category`; a name has no digit, at least three characters, and sits inside no other skill or certification
+  name, because the traps and required facts are substring tests), `work_themes`, `education` (`degree`,
+  `field`, optional `institutions`), `settings`, `industries` (`slug`, `company`, `phrase`, `setting`,
+  `location`, and a `level`, so each tier has exactly one industry and a cell exactly one JD) and optional
+  `certifications`, `employers` (who hires this profession, used instead of the generic setting pool) and
+  `leadership_themes` (work only the senior tiers can truthfully describe; an apprentice does not direct a
+  crew). A bullet's skill and theme are walked through a hashed order, so none repeats before all are used.
+  The groups and the O\*NET mapping (18 `exact`, 6 `nearest`, each with the evidence read) are in `manifest.json`.
+- **A cell is the rebuild of its facts.** `check` rebuilds every generated cell from `facts/` and the ladder and
+  refuses a cell whose stored profile differs, so editing the facts after a cell was written is found.
 - **Mismatched pairs** test the people the tool is for who are not applying to the job they already do: a
   career **change** (a résumé of one profession against another's posting) and a career **advance** (the same
   profession, the posting one tier up). A pair is listed in the manifest (`pairs[]`: `id`, `kind`,
@@ -562,13 +573,22 @@ professions and the paid generation are step 3b-ii (item 191). Until then the su
   `tests/test_golden_reachability.py` runs every cell and pair through the real pipeline against a stub client
   and asserts the right calls fire. Measured (2026-10-27, a synthetic suite in a temp directory): 96 cells with
   one JD each plus 24 pairs (120 fixtures, 2.6 MB) checks in about 1.4 s, 0.3 s of it the pairs.
-- **Pilot waivers.** A converted persona has one summary, no role intros, no refinement notes and no
-  clarifications, so four richness checks fail for it; `manifest.json` lists them, the checker requires the
-  list to be exact, and a `frozen` suite may list none. They are why `recommend_summary` does not fire for a
-  pilot in assemble mode.
-- **The prose generator** (`python -m evals.golden_author`) is **paid and has never been run**. It needs
-  `--confirm-paid` and `--max-spend USD`, refuses a cell that already exists, and writes the cell only when
-  every slot passes the checks. Its model is `claude-opus-5-5`, a pin of its own. Run it in step 3b, not before.
+- **Waivers.** A converted persona has one summary, no role intros, no refinement notes and no
+  clarifications, so four richness checks fail for it; a waiver in `manifest.json` names each one, the checker
+  requires the list to be exact, and a `frozen` suite may list none. The three converted pilots were replaced by
+  generated cells in item 191, so the list is empty; the mechanism stays for a converted cell.
+- **The prose generator** (`python -m evals.golden_author`) is **paid**. Its model is `claude-opus-5-5`, a pin of
+  its own, at effort `medium` with adaptive thinking (Opus 5.5 cannot turn thinking off; effort is the only
+  lever). It wrote the committed set under prompt `golden-author-2`. Name the cells with `--cell PROFESSION:LEVEL`
+  (repeatable) or `--profession` with `--level`; it needs `--confirm-paid`, `--max-spend USD` (this run) and
+  `--max-total-spend USD` (all author spend in the call log, across runs, counting the requests of cells that were
+  rejected). It refuses a cell that exists, or passes over it with `--skip-existing`, so a stopped run starts
+  again where it stopped; it writes a cell only when every slot passes the checks, makes one attempt per request
+  with a bounded wait, stops after two rejected cells in a row, keeps a rejected reply under `logs/golden_rejects/`,
+  and asks Windows not to sleep during the run. Observed cost: the 96 committed cells cost $7.08 (entry $0.052, mid $0.067,
+  senior $0.085 and lead $0.091 a cell), and the call log holds $7.88 for 110 requests because $0.80 went on cells
+  that were discarded or lost to a fault; about three quarters of the output tokens are thinking, which is
+  billed as output. A dry run (no `--confirm-paid`) prints the cells and sends nothing.
 - **Attribution.** Occupation codes and titles come from the O\*NET 31.0 Database and O\*NET OnLine
   (CC BY 4.0, U.S. Department of Labor, Employment and Training Administration); `manifest.json` carries the
   credit text and what was read on which day. Every name, employer and address in the set is invented.

@@ -1,8 +1,8 @@
 """The golden-set prose generator: a model writes the text of a cell's slots, code checks every word.
 
-Step 3a builds and tests this against a stub client. **It has never made a real call**: no paid call
-was authorized for 3a, so the live request shape (the ``thinking`` and ``output_config`` values below)
-is as documented, not observed. Step 3b is the first real run, under ``--max-spend``.
+Step 3a built and tested this against a stub client. Step 3b-ii made the first real calls (2026-10-28,
+item 191): 96 cells, at about $0.05 to $0.09 each, all at effort ``medium``. The request shape below was
+accepted as documented. The tests still use a stub; nothing in the test suite spends money.
 
 **Why this lives beside the judges, not in ``analyzer.py``.** ``AGENTS.md`` says every product LLM call
 lives in ``analyzer.py``. This is not a product call: it writes the eval dataset. It follows the judge
@@ -28,8 +28,11 @@ would make the recorded ``model`` wrong for the text it wrote. A refusal on rés
 to look at, so it raises ``AuthorError`` and the cell is not written.
 
 **Bounded.** One request per cell; a second only for the slots that failed the checks; then it raises
-``AuthorRejected``. The CLI needs ``--confirm-paid`` and ``--max-spend``, and stops before the next cell
-once the spend reaches the cap (it can overshoot by one cell).
+``AuthorRejected``. A request is made once (no SDK retry) with a bounded wait, and a paid run asks Windows
+not to sleep. The CLI needs ``--confirm-paid``, ``--max-spend`` and ``--max-total-spend``. The total cap
+is read from the call log, so it spans runs and counts the requests of cells that were rejected; before
+each cell the run stops if that cell, priced like the dearest so far, would reach either cap. A batch
+resumes with ``--skip-existing``, stops after repeated rejections, and keeps a rejected reply.
 """
 
 from __future__ import annotations

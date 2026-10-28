@@ -252,6 +252,19 @@ senior $0.083, lead $0.093). Sweep 3 wrote 14 of its 23 cells and stopped on its
    afterwards, on every exit path (`TestStagedRun`); the real call was confirmed to take effect on this machine.
    **Unverified:** that it prevents Modern Standby here, and a closed lid can still sleep a machine set to.
 
+**The end state, and a third defect found by sampling the final cells.** After sweeps 3 and 4: 96 cells and 96 fixtures,
+24 at each tier, all under prompt `golden-author-2`; 94 accepted on the first attempt and 2 after one rewrite; 36 pairs
+(24 advance, 12 change) derived from the finished cells, 132 fixtures, 6 MB. 110 author requests logged $7.8797, of which the
+96 kept cells cost $7.0812 and $0.7985 went on cells that were discarded or lost (the two discarded rounds, one reply lost to
+a code fence). Hand-reading three more final cells (a lead electrician, a mid security analyst, an entry caseworker; the second
+and third are public-sector postings) found the prose grounded and plausible and found one fault no check can see: the foreman
+posting requires the entry-level Apprentice Registration Card, because the builder asks the posting to require the *lowest*-tier
+certification a candidate holds (`held_certs[:1]` at the `asked_certs` line of `build_profile`). Counted from the profiles, **37
+of the 56 cells that hold certifications are affected**. It is a realism fault, not a grounding one. It is not fixed here: the
+fix changes those cells' profiles and so means regenerating them (about $2.8) with $2.12 left of the owner's $10.00. It is filed
+as item 194, scope 1, for the owner to decide. Only four of the 96 final cells have been hand-read; item 194, scope 2, reads a
+stratified sample before the freeze.
+
 ---
 
 ## Deferred
