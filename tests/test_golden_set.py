@@ -1652,20 +1652,25 @@ class TestCommittedSuite:
             pytest.skip("no committed suite yet")
         assert gs.check_suite(gs.SUITE_DIR) == []
 
-    def test_the_committed_pairs_cross_the_pilots_and_use_the_target_cells_own_traps(self) -> None:
-        pairs = gs.load_manifest(gs.SUITE_DIR)["pairs"]
-        assert [p["kind"] for p in pairs] == ["change", "change"]
-        fixtures = gs.SUITE_DIR / "fixtures"
-        expected = json.loads(
-            (fixtures / "pair--sre-ops-mid-to-product-mgmt-senior" / "expected.json").read_text(
-                "utf-8"
+    def test_no_converted_pilot_is_left_and_no_waiver_with_it(self) -> None:
+        # The three converted pilots were replaced by generated cells (item 191); a frozen suite has none.
+        manifest = gs.load_manifest(gs.SUITE_DIR)
+        assert manifest["pilot_waivers"] == []
+        for cell in gs.cell_names(gs.SUITE_DIR):
+            kind = gs.load_cell(gs.SUITE_DIR, cell)[1]["provenance"]["kind"]
+            assert kind == "generated", cell
+
+    def test_every_committed_pair_uses_the_target_cells_own_traps(self) -> None:
+        manifest = gs.load_manifest(gs.SUITE_DIR)
+        for pair in manifest["pairs"]:
+            fixtures = gs.SUITE_DIR / "fixtures"
+            expected = json.loads(
+                (fixtures / gs.pair_fixture_name(pair["id"]) / "expected.json").read_text("utf-8")
             )
-        )
-        target = json.loads(
-            (fixtures / "product-mgmt-senior--atrium-health" / "expected.json").read_text("utf-8")
-        )
-        # A converted pilot's keywords are vocabulary, not claims: they are listed, never trapped.
-        assert set(target["forbidden_inventions"]) <= set(expected["forbidden_inventions"])
-        assert "(?i)workflow" not in expected["forbidden_inventions"]
-        assert "workflow" in expected["jd_requirements_not_shown"]
-        assert expected["must_keywords"] == ["customer", "platform"]
+            target = json.loads(
+                (fixtures / pair["jd_fixture"] / "expected.json").read_text("utf-8")
+            )
+            assert set(target["forbidden_inventions"]) <= set(expected["forbidden_inventions"])
+            assert (
+                expected["must_keywords"] == sorted({t.lower() for t in pair["transferable"]})[:6]
+            )

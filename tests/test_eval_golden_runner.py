@@ -230,7 +230,7 @@ class TestRunSuite:
             for fdir, seen in zip(_golden(), fake.seen, strict=True)
             if fdir.name.startswith(gs.PAIR_PREFIX)
         }
-        assert len(pair_runs) == len(_pairs()) > 0
+        assert len(pair_runs) == len(_pairs())
         by_name = {fdir.name: seen for fdir, seen in zip(_golden(), fake.seen, strict=True)}
         for pair in _pairs():
             resume_run = by_name[pair["resume_fixture"]]

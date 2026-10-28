@@ -266,12 +266,6 @@
   "files": {
     "cells/accounting-senior/profile.json": "sha256:7ea7fdf415cd3c9ec5334656926142905a7e11f2888f60044f9bd2099a37b3c6",
     "cells/accounting-senior/prose.json": "sha256:f21e01df2ed9e750458f98613fbd06a28272e5a4b307e144773f4b5bcf434d4c",
-    "cells/data-ml-entry/profile.json": "sha256:dbeefe71ef987c8dd927454be09f984a60df0b8e6d19cb580083462502948888",
-    "cells/data-ml-entry/prose.json": "sha256:b4ec5b07181cb28bde1f9ea841ad8f0d22917f66b1c884123b1947e1eb3f2656",
-    "cells/product-mgmt-senior/profile.json": "sha256:babca0c7eae2917f43885da2f05a540a3f233b37649f8f90d16e60754dcd70f7",
-    "cells/product-mgmt-senior/prose.json": "sha256:5bd6b8638f2f041783dc07924207fa4fcde25709951420b6d76c95b8e6a27711",
-    "cells/sre-ops-mid/profile.json": "sha256:7d143e2f015405dd61caf9640cace3263739b2794cbcbad070beb3d67d329118",
-    "cells/sre-ops-mid/prose.json": "sha256:848a05c8fe763374976045020ce6f8ddd033ec03b3182f1a2c5f7d0d9e4d7251",
     "cells/teacher-mid/profile.json": "sha256:ccdc246f87767a2281c291e3f7725e34c7eb3302e4673a4a64e213128ca26df1",
     "cells/teacher-mid/prose.json": "sha256:e1c52c24109f6d18fa66ee4f40d6bb1e106ddeb09d1b058bd1a3f6f8e6199a6c",
     "facts/accounting.json": "sha256:6e981047f868c5ff919c65a08ff345dff5ceaa793522b72e45c3aaf062716a7f",
@@ -302,26 +296,6 @@
     "fixtures/accounting-senior--distributor/jd.txt": "sha256:ff7810c54116f26517b75106f3019eafc5994c1097eb1abcacd49934427496dc",
     "fixtures/accounting-senior--distributor/resume.md": "sha256:37e6f06ea1a52e469a674d607295d687f66f3d5b07e13ab6315ddb00d6cf5b1f",
     "fixtures/accounting-senior--distributor/seed.json": "sha256:d58c8d4f33faeab21181e19607bd223d84393f2c60ec7fba60a662aea55fa1fa",
-    "fixtures/data-ml-entry--borealis-labs/expected.json": "sha256:f9dae33f8b9c3f9f87c644e0a2f3dc5fda91698e07065a2d96bf7bac0148cfba",
-    "fixtures/data-ml-entry--borealis-labs/jd.txt": "sha256:d314d7df3d0a0a5ed15a86c8687b808bb9bde751c1d42e0eaae7190047427dad",
-    "fixtures/data-ml-entry--borealis-labs/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
-    "fixtures/data-ml-entry--borealis-labs/seed.json": "sha256:6d3c9df26a71de07b27486d7908b20a14d19afc87557d8953cb58f7de38f7360",
-    "fixtures/pair--data-ml-entry-to-sre-ops-mid/expected.json": "sha256:5094dca990190ab482399a51898a8ebb841da222a51e084d37cbb1fc346a3a1f",
-    "fixtures/pair--data-ml-entry-to-sre-ops-mid/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
-    "fixtures/pair--data-ml-entry-to-sre-ops-mid/resume.md": "sha256:a8fdc6f3b06cf35355a5e720702234ff2ba2f8cda8d39cac4722bc937824a2d6",
-    "fixtures/pair--data-ml-entry-to-sre-ops-mid/seed.json": "sha256:6d3c9df26a71de07b27486d7908b20a14d19afc87557d8953cb58f7de38f7360",
-    "fixtures/pair--sre-ops-mid-to-product-mgmt-senior/expected.json": "sha256:e3bf3e7db7ebdbeef367c9cc2a072d008aa5104c73b6176171d72a5ca0ffa3e7",
-    "fixtures/pair--sre-ops-mid-to-product-mgmt-senior/jd.txt": "sha256:1ad54e1c960830972a1b8ff3965f73c54e744948e93c6fcf42d395b5fd567490",
-    "fixtures/pair--sre-ops-mid-to-product-mgmt-senior/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
-    "fixtures/pair--sre-ops-mid-to-product-mgmt-senior/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd",
-    "fixtures/product-mgmt-senior--atrium-health/expected.json": "sha256:aa3c2bc37f3d498a3e2ebc7b2dd6d1b67615fbb41f75f205d26fec59adf633db",
-    "fixtures/product-mgmt-senior--atrium-health/jd.txt": "sha256:1ad54e1c960830972a1b8ff3965f73c54e744948e93c6fcf42d395b5fd567490",
-    "fixtures/product-mgmt-senior--atrium-health/resume.md": "sha256:d66d93197e8811a128f7f0164703af25928c11aeafefc896cc4293f39e71b2b1",
-    "fixtures/product-mgmt-senior--atrium-health/seed.json": "sha256:ee485c8dbd9eb3751e2ee2c12e15a4f7ff7f682f024382fe9b6d909088e940c8",
-    "fixtures/sre-ops-mid--lattice-cloud/expected.json": "sha256:1fb5ef47813203f81f2ec8e7b0d8f37f3336dadac882f793ab59c8281d2fe0ac",
-    "fixtures/sre-ops-mid--lattice-cloud/jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
-    "fixtures/sre-ops-mid--lattice-cloud/resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909",
-    "fixtures/sre-ops-mid--lattice-cloud/seed.json": "sha256:3f6523c380b22a87db8c7637fc2c514de80f5a03e1950cce6aacd32e007ce3fd",
     "fixtures/teacher-mid--school-district/expected.json": "sha256:00b100361a3f19c7f8bcaedaff92db7de6d4f6124ec81b991d12afb5b378edd1",
     "fixtures/teacher-mid--school-district/jd.txt": "sha256:71601979127003a4432e6a7c38047dc0b89de787f3c7ffaa664977d299965bca",
     "fixtures/teacher-mid--school-district/resume.md": "sha256:a06e4b84eaae03859125423db53619c9a7985837c0148bebb39abee66b93b136",
@@ -349,44 +323,8 @@
     "license_url": "https://www.onetcenter.org/license_db.html",
     "scope_note": "The licence's 'License Exceptions' limit it to the downloadable files on three pages. Step 3a used only occupation codes and titles read on the O*NET OnLine site. Step 3b-ii reads the downloadable database files (the six tables listed) to choose each profession's tools, tasks and titles; the attribution below is carried."
   },
-  "pairs": [
-    {
-      "id": "data-ml-entry-to-sre-ops-mid",
-      "jd_fixture": "sre-ops-mid--lattice-cloud",
-      "kind": "change",
-      "note": "An entry-level data scientist applying to a senior site-reliability role: adjacent in tooling, far in scope. Python and data pipelines are the honest overlap.",
-      "resume_fixture": "data-ml-entry--borealis-labs",
-      "transferable": [
-        "Python",
-        "pipeline"
-      ]
-    },
-    {
-      "id": "sre-ops-mid-to-product-mgmt-senior",
-      "jd_fixture": "product-mgmt-senior--atrium-health",
-      "kind": "change",
-      "note": "A mid-level site-reliability engineer applying to a senior product-management role in a regulated health-care domain: a distant change. The résumé and the posting share only customer and platform.",
-      "resume_fixture": "sre-ops-mid--lattice-cloud",
-      "transferable": [
-        "customer",
-        "platform"
-      ]
-    }
-  ],
-  "pilot_waivers": [
-    "data-ml-entry--borealis-labs:clarifications",
-    "data-ml-entry--borealis-labs:refinement_notes",
-    "data-ml-entry--borealis-labs:role_intro_variants",
-    "data-ml-entry--borealis-labs:summary_variants",
-    "product-mgmt-senior--atrium-health:clarifications",
-    "product-mgmt-senior--atrium-health:refinement_notes",
-    "product-mgmt-senior--atrium-health:role_intro_variants",
-    "product-mgmt-senior--atrium-health:summary_variants",
-    "sre-ops-mid--lattice-cloud:clarifications",
-    "sre-ops-mid--lattice-cloud:refinement_notes",
-    "sre-ops-mid--lattice-cloud:role_intro_variants",
-    "sre-ops-mid--lattice-cloud:summary_variants"
-  ],
+  "pairs": [],
+  "pilot_waivers": [],
   "professions": {
     "accounting": {
       "display": "accounting",
