@@ -285,6 +285,37 @@ def all_slot_ids(profile: dict[str, Any]) -> list[str]:
     return resume_slots(profile) + seed_only_slots(profile) + jd_slots(profile)
 
 
+def _certification_problems(profile: dict[str, Any]) -> list[str]:
+    """The two certification faults a profile can show on its own, found before a paid request is made.
+
+    The items are listed lowest tier first, so their years must not fall down the list (a Master licence dated
+    before the Journeyman licence), and every posting must ask for the last one, the highest held. The third
+    fault, a credential dated after the role that needs it, takes the facts' tier map and is checked by
+    ``tests/test_golden_facts.py``, not here.
+    """
+    items = [
+        c
+        for s in profile["sections"]
+        if s.get("kind") == "certifications"
+        for c in s.get("items", [])
+    ]
+    if not items:
+        return []
+    problems: list[str] = []
+    years = [str(c.get("year", "")) for c in items]
+    if not all(y.isdigit() for y in years):
+        problems.append(f"certification years must be digits, got {years}")
+    elif [int(y) for y in years] != sorted(int(y) for y in years):
+        problems.append(f"certification years fall down the tier-sorted list: {years}")
+    wanted = f"State {items[-1].get('name')} as a required"
+    for slot_id, slot in profile["slots"].items():
+        if slot_id.endswith(".needs") and wanted not in str(slot.get("brief", "")):
+            problems.append(
+                f"slot {slot_id!r}: the posting must require the highest certification held ({wanted!r})"
+            )
+    return problems
+
+
 def validate_profile(profile: dict[str, Any]) -> list[str]:
     """Problems with a profile's shape, empty when it is sound. Never raises on bad content."""
     problems: list[str] = []
@@ -341,6 +372,7 @@ def validate_profile(profile: dict[str, Any]) -> list[str]:
     for jd in profile["jds"]:
         if not re.fullmatch(r"[a-z0-9-]+", jd["slug"]):
             problems.append(f"JD slug {jd['slug']!r} must be lowercase letters, digits and hyphens")
+    problems += _certification_problems(profile)
     expected = profile.get("expected", {})
     if not expected.get("must_keywords"):
         problems.append("expected.must_keywords is empty")

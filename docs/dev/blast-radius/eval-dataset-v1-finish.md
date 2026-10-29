@@ -252,6 +252,15 @@ failed it (21 of 37 disordered, 28 of 37 late); that is a count from my audits, 
 **Unenforced and said plainly:** entry-tier credentials are unbound (13 of 37 under the strict rule), and whether prose reads as
 real is still a judgment that only a hand-read supplies.
 
+**A guard at the point of spend (C-11, added at close-out).** Paying for one cell three times was the cost of finding these
+faults one at a time, and a test in the gate runs after a paid request, not before. `validate_profile`
+(`golden_set.py`, `_certification_problems`) now refuses a profile whose certification years fall down the tier-sorted list or
+whose posting does not require the last (highest) credential; `author_cell` already calls `validate_profile` before the request
+(`golden_author.py:302`), so a regression fails before money is spent. Tested by
+`TestCertifications::test_validate_profile_refuses_the_certification_faults_before_a_paid_request`; all 96 committed profiles
+pass it (`check` OK). **Not covered, by construction:** the role cap needs the facts' tier map (a profile carries only names,
+issuers and years), so that invariant stays in the gate's tests and is **not** checked before a paid request.
+
 ## Scope 2: the stratified hand-read (no spend)
 
 **Sample (chosen by `scratchpad/pick_sample.py`, deterministic):** one cell per group x tier = 16, none already read; 9

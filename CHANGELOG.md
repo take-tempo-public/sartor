@@ -28,7 +28,10 @@ approved), and no dependency was added.** `evals/golden/golden-v1/` is still `dr
   20 pair fixtures re-derived, and the authored `transferable` terms of three pairs re-picked because the new prose no longer contained them. The
   `prompt_version` of every cell is still `golden-author-2`. `check` reports `OK (96 cells)`.
 - **A guard over the real matrix** (`tests/test_golden_facts.py`, 24 cases): the posting requires the highest credential held, years do not fall with the
-  tier, and no mid-or-higher credential is dated after its role. It fails if a profession's facts recreate any of the three.
+  tier, and no mid-or-higher credential is dated after its role. It fails if a profession's facts recreate any of the three. Two of the three
+  (years in tier order, the posting requiring the highest credential) are also checked by `validate_profile`, which `author_cell` calls before it
+  spends, so they now fail closed at the point of spend. The third needs the facts' tier map, which a profile does not carry, so it is checked in the
+  gate's tests and not before a paid request.
 - **Hand-read, 16 more cells, 21 final cells in all after regeneration** (23 of 96 with two from item 191): every group, tier and setting, purposive and
   not random. No grounding fault. Three realism findings are open for the owner in item 194, each measured over all 96 cells: an entry-tier credential
   dated after the career began (23 credentials in 22 cells), a posting that calls a credential both preferred and required (2 confirmed by reading, up

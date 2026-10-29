@@ -1027,6 +1027,21 @@ class TestCertifications:
             f"{len(disordered)} of 40 cells date a higher tier first: {disordered[:3]}"
         )
 
+    def test_validate_profile_refuses_the_certification_faults_before_a_paid_request(self) -> None:
+        # author_cell calls validate_profile before it spends, so these two fail closed at the point of spend.
+        profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        control(gs.validate_profile(profile) == [], "a built cell must be sound")
+        control(len(_cert_names(profile)) == 3, "the cell must hold three certifications")
+        disordered = copy.deepcopy(profile)
+        items = next(s for s in disordered["sections"] if s["kind"] == "certifications")["items"]
+        items[0]["year"], items[-1]["year"] = "2026", "2013"
+        assert any("fall down" in p for p in gs.validate_profile(disordered))
+        lowest = copy.deepcopy(profile)
+        for slot_id, slot in lowest["slots"].items():
+            if slot_id.endswith(".needs"):
+                slot["brief"] = slot["brief"].replace("Master Licence", "OSHA 30-Hour Card")
+        assert any("highest certification" in p for p in gs.validate_profile(lowest))
+
     def test_a_credential_is_dated_no_later_than_the_role_titled_for_its_tier(self) -> None:
         # A Journeyman Operator licence dated after the candidate's Operator role began is a fault no check
         # of the prose can see. The years are hash draws, so try forty seeds on a lead cell (lead, senior, mid).
