@@ -1,0 +1,413 @@
+{
+  "candidate": {
+    "email": "priya.ito@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-sre-ops-senior",
+    "name": "Priya Ito",
+    "notes": null,
+    "phone": "(555) 010-0338",
+    "profile_text": null,
+    "username": "gold_sre_ops_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_sre_ops_senior",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2020",
+      "issuer": "Open Systems Training Board",
+      "name": "Systems Administrator Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2021",
+      "issuer": "Cloud Skills Institute",
+      "name": "Cloud Operations Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2020",
+      "field": "Information Technology",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans infrastructure capacity using Prometheus usage trends and forecasts, reducing unplanned capacity shortfalls by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs the team's on-call rotation for Kubernetes workloads, maintaining runbooks and shift handoff notes."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tunes Splunk alert searches that feed the on-call rotation, reducing after-hours pages by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates Linux patching cycles across production servers, scheduling maintenance windows with application owners."
+        }
+      ],
+      "company": "Cedar Hollow Hospice",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads patching cycles for the server estate as Senior Site Reliability Engineer at Cedar Hollow Hospice."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Oversees backup and recovery tests for critical systems as Senior Site Reliability Engineer at Cedar Hollow Hospice."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Site Reliability Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automated log collection for post-incident write-ups with Bash scripting, cutting report preparation time by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tuned monitoring alerts for Active Directory authentication and replication, removing duplicate notifications sent to the operations team."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Streamlined change approvals with PowerShell checks that validated configurations before review, shortening approval turnaround by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Forecasted capacity needs for Microsoft Azure workloads, sizing compute and storage ahead of planned growth."
+        }
+      ],
+      "company": "Dunmore Technologies",
+      "display_order": 1,
+      "end_date": "2024-11",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Ran backup and recovery tests for company systems as a Systems Engineer at Dunmore Technologies."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Managed change approvals for infrastructure updates as a Systems Engineer at Dunmore Technologies."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Systems Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Joined the on-call rotation and used Ansible playbooks to resolve recurring alerts, reducing escalations by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supported patching cycles by updating Terraform configurations for test environments before production rollout."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran backup and recovery tests tracked with Prometheus metrics, raising recovery test success rates by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Drafted post-incident write-ups for Kubernetes service disruptions, documenting timelines, causes and follow-up actions."
+        }
+      ],
+      "company": "Oakmont Systems",
+      "display_order": 2,
+      "end_date": "2023-04",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Prepared and tracked change approvals for system updates as a Junior Systems Administrator at Oakmont Systems."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Took part in the on-call rotation for production systems as a Junior Systems Administrator at Oakmont Systems."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Systems Administrator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "platform",
+      "id": 604,
+      "name": "Active Directory",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Ansible",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 607,
+      "name": "Bash scripting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 601,
+      "name": "Kubernetes",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 606,
+      "name": "Linux",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 603,
+      "name": "Microsoft Azure",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 609,
+      "name": "PowerShell",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Prometheus",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Splunk",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Terraform",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior site reliability and IT operations professional with 6 years of experience setting the technical direction for a product area. Works with Kubernetes, Prometheus and Microsoft Azure to plan capacity, run on-call and keep patching and recovery practices consistent."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Site reliability and IT operations engineer at the senior level with about 6 years of experience guiding technical direction for a product area. Builds and monitors services on Kubernetes, Prometheus and Microsoft Azure, with a focus on reliability targets, change control and tested recovery."
+    }
+  ],
+  "tags": []
+}

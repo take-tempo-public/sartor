@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Avery Novak",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Client advocacy, in work or side projects",
+      "any exposure to Service planning, in work or side projects"
+    ],
+    "scope_probes": [
+      "Program Manager at Cedar Hollow Hospice: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Client\\ advocacy",
+    "(?i)Service\\ planning",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Leading a team or program and answering for its results."
+      },
+      "edit_replacement": "contacts and service histories current for the hospice team., leading a team or program and answering for its results",
+      "edit_target_substring": "contacts and service histories current for the hospice team.",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Client advocacy exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "case notes",
+    "caseload tracking",
+    "microsoft access",
+    "needs assessments"
+  ],
+  "notes": "lead-level social services casework. The profile has no Client advocacy, Service planning; generation must not claim them."
+}

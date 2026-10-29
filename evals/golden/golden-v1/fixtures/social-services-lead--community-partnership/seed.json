@@ -1,0 +1,441 @@
+{
+  "candidate": {
+    "email": "avery.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-social-services-lead",
+    "name": "Avery Novak",
+    "notes": null,
+    "phone": "(555) 010-9345",
+    "profile_text": null,
+    "username": "gold_social_services_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_social_services_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2013",
+      "issuer": "State Child Welfare Board",
+      "name": "Mandated Reporter Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2013",
+      "issuer": "Human Services Training Council",
+      "name": "Case Management Certificate"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2019",
+      "issuer": "Human Services Training Council",
+      "name": "Human Services Supervisor Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.W.",
+      "display_order": 0,
+      "end_date": "2013",
+      "field": "Social Work",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads intake and assessments for hospice families, folding benefits enrollment into the first visit and raising completed applications by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains case records in Microsoft Access, keeping notes, contacts and service histories current for the hospice team."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Conducts home visits with patients and families, applying motivational interviewing to raise care plan follow-through by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates with local schools and clinics through referral coordination, so families receive timely support during and after hospice care."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Manages program budgets and reports, using caseload tracking to cut reporting time by 35 percent."
+        }
+      ],
+      "company": "Cedar Hollow Hospice",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Manages the program at Cedar Hollow Hospice, overseeing home visits that bring care planning and family support to patients where they live."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads the program at Cedar Hollow Hospice and prepares the case reports that staff and families rely on for hearings."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Program Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supervised a team of case workers, standardizing needs assessments and raising on-time assessment completion by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared reports for hearings drawn from home visits, giving courts clear accounts of family circumstances and progress."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Referred families to housing and food programs, using case notes to track each referral and raising completed placements by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote service plans that built benefits enrollment into each family's goals and next steps."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Streamlined intake and assessments in Microsoft Access, cutting the time from first contact to completed assessment by 20 percent."
+        }
+      ],
+      "company": "Riverbend Health Network",
+      "display_order": 1,
+      "end_date": "2020-11",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2016-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Served as Senior Case Manager at Riverbend Health Network, supervising casework and preparing case reports for hearings."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Managed complex cases at Riverbend Health Network, connecting families with housing and food programs and following each referral through."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Case Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with schools and clinics on shared clients, using motivational interviewing to raise family attendance at referred appointments by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Drafted reports for hearings that documented referral coordination and the services each family had received."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Referred families to housing and food programs, using caseload tracking to raise completed referrals by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote service plans grounded in needs assessments, setting clear goals with each client and family."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Handled intake and assessments during home visits, shortening the wait for a first assessment by 15 percent."
+        }
+      ],
+      "company": "Harborview Community Clinic",
+      "display_order": 2,
+      "end_date": "2016-12",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2013-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked as Case Manager at Harborview Community Clinic, linking families to housing and food programs and following up on each referral."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Carried a caseload at Harborview Community Clinic and kept accurate, timely case records for every client served."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Case Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Benefits enrollment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Case notes",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Caseload tracking",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Home visits",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Microsoft Access",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Motivational interviewing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Needs assessments",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Referral coordination",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Social services casework lead with 14 years of experience running programs and answering for their results across hospice, health network and clinic settings. Brings referral coordination, case notes and motivational interviewing to team supervision, home visits and needs assessments."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Program manager with 14 years in social services casework, accountable for team performance and program outcomes. Known for disciplined case notes, steady referral coordination and motivational interviewing that keep families engaged from intake to closure."
+    }
+  ],
+  "tags": []
+}

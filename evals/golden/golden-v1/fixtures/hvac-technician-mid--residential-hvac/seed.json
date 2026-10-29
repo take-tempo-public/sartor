@@ -1,0 +1,310 @@
+{
+  "candidate": {
+    "email": "riley.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-hvac-technician-mid",
+    "name": "Riley Novak",
+    "notes": null,
+    "phone": "(555) 010-5702",
+    "profile_text": null,
+    "username": "gold_hvac_technician_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_hvac_technician_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2023",
+      "issuer": "Environmental Compliance Board",
+      "name": "Refrigerant Compliance Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2023",
+      "issuer": "State Licensing Board",
+      "name": "HVAC Technician Licence"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Heating and Cooling Technology",
+      "id": 701,
+      "institution": "Northern Plains Technical College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Keep work orders complete and up to date for furnace repair calls, cutting repeat visits by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Carry out preventive maintenance visits, using brazing and soldering to repair lines and fittings before they fail."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Install new heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Estimate jobs for customers on site, including thermostat installation, and explain the scope and cost before work begins."
+        }
+      ],
+      "company": "Evergreen Climate Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Handles preventive maintenance visits on residential heating and cooling systems for Evergreen Climate Services customers."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Tests heating and cooling systems for refrigerant leaks and repairs them to code for Evergreen Climate Services customers."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Technician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Diagnosed heating and cooling faults with leak testing, cutting the time to find refrigerant leaks by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supported leak checks on service calls and used electrical testing to rule out wiring and control faults."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept work orders for building automation service calls accurate, reducing missing job details by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assisted on preventive maintenance visits, cleaning, inspecting and adjusting furnaces and air conditioners under supervision."
+        }
+      ],
+      "company": "Tillman Mechanical",
+      "display_order": 1,
+      "end_date": "2023-12",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Tested heating and cooling systems for leaks while training under licensed technicians at Tillman Mechanical."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Kept work orders and service records up to date while learning the trade as an apprentice at Tillman Mechanical."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Apprentice",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Brazing and soldering",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Building automation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Electrical testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Furnace repair",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Leak testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Load calculations",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Preventive maintenance",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Thermostat installation",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "HVAC technician with about 4 years of experience who completes service work to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds an HVAC Technician Licence and a Refrigerant Compliance Certificate."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Journeyman-level heating and cooling service technician with about 4 years of hands-on experience, working independently and to code. Brings furnace repair, electrical testing and building automation skills, backed by a certificate in heating and cooling technology."
+    }
+  ],
+  "tags": []
+}

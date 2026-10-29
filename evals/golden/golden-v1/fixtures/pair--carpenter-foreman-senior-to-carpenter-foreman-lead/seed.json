@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2021",
+      "issued": "2019",
       "issuer": "State Apprenticeship Council",
       "name": "Apprenticeship Completion Certificate"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2017",
+      "issued": "2021",
       "issuer": "Carpenters Training Council",
       "name": "Lead Carpenter Certificate"
     }
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Frame walls and floors on remodeling jobs, checking framing layouts before cutting to shorten wall and floor framing time by 20 percent."
+          "text": "Leads framing of walls and floors on home remodels, cutting rework by 20 percent through careful checks before sheathing goes on."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Run daily site walk-throughs and keep jobsite safety standards in place for every crew working on remodeling jobs."
+          "text": "Enforces jobsite safety on every remodeling site, checking ladders, tools and walkways with the crew before work begins."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Install doors, windows and trim, and use concrete forming where openings sit on new footings, reducing callbacks on installed openings by 50 percent."
+          "text": "Sets doors, windows and trim on remodels and handles concrete forming for new steps and thresholds, reducing installation callbacks by 50 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plan jobs, order lumber against the plans, and schedule scaffold erection so crews can start exterior work without delay."
+          "text": "Plans jobs and orders lumber ahead of each phase, scheduling scaffold erection so exterior work starts without delays."
         }
       ],
       "company": "Marlow Remodeling",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Lead carpentry work at Marlow Remodeling, framing walls and floors for home remodeling jobs."
+          "text": "At Marlow Remodeling, frames walls and floors for home remodels and checks the work of the crew."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Build forms for concrete at Marlow Remodeling and set them to line and level before each pour."
+          "text": "Builds and sets forms for concrete footings, slabs and steps on remodeling projects at Marlow Remodeling."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built concrete forms for footings and steps and applied stair building skills to set rise and run, cutting form rework by 25 percent."
+          "text": "Built forms for concrete stair landings and handled stair building on framing jobs, cutting form setup time by 25 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ordered lumber and materials for framing crews, using layout and measuring to take accurate counts from plans and limit overorders."
+          "text": "Ordered lumber and materials for each job based on careful layout and measuring, keeping waste and return trips low."
         },
         {
           "display_order": 2,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Kept openings guarded and the site safe during door and window installation, securing frames before crews left each day."
+          "text": "Kept work areas safe during door and window installation by bracing openings and clearing debris from walkways."
         }
       ],
       "company": "Harlow Framing Company",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Built forms for concrete footings and walls as a journeyman carpenter at Harlow Framing Company."
+          "text": "Built forms for concrete footings and walls as part of the framing crews at Harlow Framing Company."
         },
         {
           "display_order": 1,
@@ -216,7 +216,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Kept the site safe for framing crews at Harlow Framing Company while carrying out journeyman carpentry work."
+          "text": "Kept framing sites safe at Harlow Framing Company while working as a journeyman on walls, floors and roofs."
         }
       ],
       "titles": [
@@ -242,7 +242,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Installed doors, windows and trim after framing rough openings to size, cutting installation time by 45 percent."
+          "text": "Installed doors, windows and trim after framing rough openings, cutting installation time by 45 percent under journeyman guidance."
         },
         {
           "display_order": 1,
@@ -253,7 +253,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Read plans and took measurements under journeyman supervision while following jobsite safety rules on every task."
+          "text": "Read plans and took measurements for layout while following jobsite safety rules on tools, ladders and cuts."
         },
         {
           "display_order": 2,
@@ -264,7 +264,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built forms for concrete footings and slabs, learning concrete forming methods that reduced form material waste by 10 percent."
+          "text": "Assisted with concrete forming for footings and walls, reducing form material waste by 10 percent."
         },
         {
           "display_order": 3,
@@ -275,7 +275,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ordered lumber and materials for crews and staged parts for scaffold erection ahead of exterior work."
+          "text": "Ordered lumber and materials for jobs, including the planks and frames needed for scaffold erection."
         }
       ],
       "company": "Tillman Brothers Carpentry",
@@ -295,7 +295,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Kept the site safe and tidy while learning the carpentry trade as an apprentice at Tillman Brothers Carpentry."
+          "text": "Learned to keep the site safe at Tillman Brothers Carpentry while training as an apprentice carpenter."
         },
         {
           "display_order": 1,
@@ -305,7 +305,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Helped order lumber and materials for carpentry crews as an apprentice at Tillman Brothers Carpentry."
+          "text": "Helped order lumber and materials for jobs at Tillman Brothers Carpentry during a carpentry apprenticeship."
         }
       ],
       "titles": [
@@ -390,7 +390,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, with a record of keeping work square, level and to plan."
+      "text": "Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, and holds a Lead Carpenter Certificate."
     },
     {
       "display_order": 1,
@@ -401,7 +401,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Carpentry professional at master level with 9 years in the trade, planning jobs and inspecting the work of others before sign-off. Brings layout and measuring, framing and jobsite safety to every site, from first cut to final check."
+      "text": "Carpentry professional at master level with about 9 years in the trade, planning jobs from layout to finish and checking the work of others. Brings hands-on skill in layout and measuring, framing and jobsite safety on remodeling and framing sites."
     }
   ],
   "tags": []

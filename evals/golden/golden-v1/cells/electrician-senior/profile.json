@@ -1,0 +1,522 @@
+{
+  "candidate": {
+    "email": "riley.silva@example.com",
+    "linkedin": "linkedin.com/in/example-riley-electrician-senior",
+    "name": "Riley Silva",
+    "phone": "(555) 010-5628",
+    "username": "gold_electrician_senior"
+  },
+  "cell": "electrician-senior",
+  "cell_seed": 1206524291,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Fire alarm wiring on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Fire alarm wiring, in work or side projects",
+        "any exposure to Motor controls, in work or side projects"
+      ],
+      "scope_probes": [
+        "Master Electrician at Copperfield Electric: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Fire\\ alarm\\ wiring",
+      "(?i)Motor\\ controls",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "circuit testing",
+      "code compliance",
+      "lighting installation",
+      "load calculations"
+    ],
+    "notes": "senior-level electrical work. The profile has no Fire alarm wiring, Motor controls; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Planning jobs and checking the work of others.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, planning jobs and checking the work of others",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Fire alarm wiring exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Master Electrician",
+        "Ironvale Industrial Contractors — On site, Houston, TX"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.industrial-contractor.about",
+        "jd.industrial-contractor.duties",
+        "jd.industrial-contractor.needs"
+      ],
+      "slug": "industrial-contractor"
+    }
+  ],
+  "level": "senior",
+  "profession": "electrician",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Blueprint reading in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Copperfield Electric",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2021-11",
+          "title": "Master Electrician"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Ashford Industrial Electric",
+          "end": "2021-11",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2019-01",
+          "title": "Journeyman Electrician"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Brightline Wiring Company",
+          "end": "2019-01",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-06",
+          "title": "Apprentice Electrician"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Electrical Construction",
+          "institution": "Northern Plains Electrical Training Center",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprentice Registration Card",
+          "year": "2017"
+        },
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2017"
+        },
+        {
+          "issuer": "State Licensing Board",
+          "name": "Journeyman Electrician Licence",
+          "year": "2019"
+        },
+        {
+          "issuer": "State Licensing Board",
+          "name": "Master Electrician Licence",
+          "year": "2019"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Blueprint reading",
+        "Code compliance",
+        "Troubleshooting",
+        "Load calculations",
+        "Conduit bending",
+        "Grounding and bonding",
+        "Lighting installation",
+        "Circuit testing"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "method",
+      "name": "Code compliance"
+    },
+    {
+      "category": "method",
+      "name": "Troubleshooting"
+    },
+    {
+      "category": "method",
+      "name": "Load calculations"
+    },
+    {
+      "category": "method",
+      "name": "Conduit bending"
+    },
+    {
+      "category": "method",
+      "name": "Grounding and bonding"
+    },
+    {
+      "category": "method",
+      "name": "Lighting installation"
+    },
+    {
+      "category": "method",
+      "name": "Circuit testing"
+    }
+  ],
+  "slots": {
+    "jd.industrial-contractor.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Master Electrician at Ironvale Industrial Contractors, an industrial contractor. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.industrial-contractor.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Master Electrician, about pulling and terminating wire, planning jobs and ordering materials, installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.industrial-contractor.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Code compliance, Lighting installation, Circuit testing, Load calculations, Motor controls, Fire alarm wiring, and 9 or more years of experience. State Master Electrician Licence as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Code compliance",
+        "Lighting installation",
+        "Circuit testing",
+        "Load calculations",
+        "Motor controls",
+        "Fire alarm wiring",
+        "Master Electrician Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: planning jobs and ordering materials, using Code compliance. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Code compliance",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: testing circuits, using Lighting installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Lighting installation"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: directing helpers and apprentices, using Blueprint reading. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "40"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: pulling and terminating wire, using Circuit testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Circuit testing"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Master Electrician at Copperfield Electric, about running conduit. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Master Electrician at Copperfield Electric, about directing helpers and apprentices. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Ashford Industrial Electric: running conduit, using Load calculations. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Load calculations",
+        "20"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Ashford Industrial Electric: installing panels and fixtures, using Conduit bending. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Conduit bending"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Ashford Industrial Electric: testing circuits, using Troubleshooting. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Troubleshooting",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Ashford Industrial Electric: pulling and terminating wire, using Grounding and bonding. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Grounding and bonding"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Journeyman Electrician at Ashford Industrial Electric, about pulling and terminating wire. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Journeyman Electrician at Ashford Industrial Electric, about installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Brightline Wiring Company: tracing faults, using Code compliance. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Code compliance",
+        "15"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Brightline Wiring Company: reading plans, using Lighting installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Lighting installation"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Brightline Wiring Company: running conduit, using Blueprint reading. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "25"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Brightline Wiring Company: installing panels and fixtures, using Circuit testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Circuit testing"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Apprentice Electrician at Brightline Wiring Company, about installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Apprentice Electrician at Brightline Wiring Company, about testing circuits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a master-level electrical work professional with about 9 years of experience, scope: planning jobs and checking the work of others. Mention Blueprint reading, Code compliance, Troubleshooting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blueprint reading",
+        "Code compliance",
+        "Troubleshooting"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a master-level electrical work professional with about 9 years of experience, scope: planning jobs and checking the work of others. Mention Blueprint reading, Code compliance, Troubleshooting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blueprint reading",
+        "Code compliance",
+        "Troubleshooting"
+      ]
+    }
+  }
+}

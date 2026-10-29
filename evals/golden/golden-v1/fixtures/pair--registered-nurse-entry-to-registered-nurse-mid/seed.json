@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Documents care planning updates in the clinic record at each visit, reducing charting errors found in audits by 15 percent."
+          "text": "Charts care planning notes in the clinic record after each patient visit, reducing documentation gaps by 15 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Gives bedside shift handoff reports that summarize vital signs monitoring trends, so the incoming nurse has current readings for each patient."
+          "text": "Reports vital signs monitoring trends during shift handoff so incoming nurses can act quickly on changes in patient condition."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Completes a patient assessment before each medication administration, cutting medication timing delays by 20 percent."
+          "text": "Completes patient assessment before giving medications, reducing medication timing errors by 20 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with physicians on discharge planning, confirming orders, follow-up appointments and home care instructions before patients leave the clinic."
+          "text": "Coordinates with physicians on discharge planning, confirming orders and follow-up instructions before patients leave the clinic."
         }
       ],
       "company": "Harborview Community Clinic",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Graduate Registered Nurse at Harborview Community Clinic, charting assessments and care notes in the patient record under the supervision of senior nursing staff."
+          "text": "Provides direct patient care at Harborview Community Clinic, keeping charting in the patient record accurate and current after each visit."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Provides direct patient care at Harborview Community Clinic with a focus on safe medication administration, guided by experienced registered nurses."
+          "text": "Supports patients at Harborview Community Clinic by giving medications as ordered and checking each dose against the patient record."
         }
       ],
       "titles": [
@@ -203,7 +203,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level graduate registered nurse with about 2 years of experience in community clinic care, working alongside a supervising nurse on an assigned share of patients. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University."
+      "text": "Entry-level registered nurse with about 2 years of experience providing patient care under close supervision on a defined share of the unit's work. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University."
     },
     {
       "display_order": 1,
@@ -214,7 +214,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Graduate registered nurse with about 2 years of hands-on clinical experience, holding a Registered Nurse Licence and a Basic Life Support Card. Handles a small patient assignment under close supervision, contributing bedside handoff, vital signs monitoring and care planning."
+      "text": "Graduate registered nurse with about 2 years of experience working alongside a supervising nurse on a small portion of daily patient care. Contributes through bedside handoff, vital signs monitoring and care planning, and holds a current Basic Life Support Card."
     }
   ],
   "tags": []

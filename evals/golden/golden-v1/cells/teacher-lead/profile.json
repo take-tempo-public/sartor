@@ -1,0 +1,562 @@
+{
+  "candidate": {
+    "email": "casey.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-casey-teacher-lead",
+    "name": "Casey Mehta",
+    "phone": "(555) 010-2538",
+    "username": "gold_teacher_lead"
+  },
+  "cell": "teacher-lead",
+  "cell_seed": 1215048898,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Formative assessment on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Formative assessment, in work or side projects",
+        "any exposure to Reading intervention, in work or side projects"
+      ],
+      "scope_probes": [
+        "Instructional Coach at Cedar Grove Academy: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Formative\\ assessment",
+      "(?i)Reading\\ intervention",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "google classroom",
+      "nearpod",
+      "phonics instruction",
+      "small-group instruction"
+    ],
+    "notes": "lead-level elementary teaching. The profile has no Formative assessment, Reading intervention; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team or program and answering for its results.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team or program and answering for its results",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Formative assessment exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Instructional Coach",
+        "Northfield Learning Network — Hybrid, Minneapolis, MN"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.school-network.about",
+        "jd.school-network.duties",
+        "jd.school-network.needs"
+      ],
+      "slug": "school-network"
+    }
+  ],
+  "level": "lead",
+  "profession": "teacher",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Nearpod in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Cedar Grove Academy",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-12",
+          "title": "Instructional Coach"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Willowbrook Elementary School",
+          "end": "2024-12",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2017-10",
+          "title": "Lead Teacher"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Maple Street School",
+          "end": "2017-10",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2014-07",
+          "title": "Classroom Teacher"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Elementary Education",
+          "institution": "State University",
+          "slots": [],
+          "year": "2014"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Department of Education",
+          "name": "State Teaching Licence",
+          "year": "2014"
+        },
+        {
+          "issuer": "State Department of Education",
+          "name": "Reading Specialist Endorsement",
+          "year": "2014"
+        },
+        {
+          "issuer": "State Department of Education",
+          "name": "Instructional Leadership Endorsement",
+          "year": "2015"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Nearpod",
+        "Google Classroom",
+        "Small-group instruction",
+        "Lesson planning",
+        "Classroom management",
+        "Math manipulatives",
+        "Phonics instruction",
+        "Seesaw"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Nearpod"
+    },
+    {
+      "category": "tool",
+      "name": "Google Classroom"
+    },
+    {
+      "category": "method",
+      "name": "Small-group instruction"
+    },
+    {
+      "category": "method",
+      "name": "Lesson planning"
+    },
+    {
+      "category": "method",
+      "name": "Classroom management"
+    },
+    {
+      "category": "method",
+      "name": "Math manipulatives"
+    },
+    {
+      "category": "method",
+      "name": "Phonics instruction"
+    },
+    {
+      "category": "tool",
+      "name": "Seesaw"
+    }
+  ],
+  "slots": {
+    "jd.school-network.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Instructional Coach at Northfield Learning Network, a nonprofit school network. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.school-network.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Instructional Coach, about adapting work for different learners, planning daily lessons, parent conferences. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.school-network.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Google Classroom, Small-group instruction, Nearpod, Phonics instruction, Formative assessment, Reading intervention, and 12 or more years of experience. State Instructional Leadership Endorsement as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Google Classroom",
+        "Small-group instruction",
+        "Nearpod",
+        "Phonics instruction",
+        "Formative assessment",
+        "Reading intervention",
+        "Instructional Leadership Endorsement"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Instructional Coach at Cedar Grove Academy: small-group reading, using Math manipulatives. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Math manipulatives",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Instructional Coach at Cedar Grove Academy: planning daily lessons, using Classroom management. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Classroom management"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Instructional Coach at Cedar Grove Academy: classroom routines, using Google Classroom. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Google Classroom",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Instructional Coach at Cedar Grove Academy: leading grade-level planning, using Seesaw. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Seesaw"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Instructional Coach at Cedar Grove Academy: coaching colleagues on instruction, using Phonics instruction. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Phonics instruction",
+        "20"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Instructional Coach at Cedar Grove Academy, about parent conferences. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Instructional Coach at Cedar Grove Academy, about assessing student progress. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Lead Teacher at Willowbrook Elementary School: parent conferences, using Nearpod. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Nearpod",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Lead Teacher at Willowbrook Elementary School: team planning with colleagues, using Small-group instruction. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Small-group instruction"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Lead Teacher at Willowbrook Elementary School: assessing student progress, using Lesson planning. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Lesson planning",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Lead Teacher at Willowbrook Elementary School: adapting work for different learners, using Math manipulatives. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Math manipulatives"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Lead Teacher at Willowbrook Elementary School: small-group reading, using Classroom management. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Classroom management",
+        "50"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Lead Teacher at Willowbrook Elementary School, about assessing student progress. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Lead Teacher at Willowbrook Elementary School, about adapting work for different learners. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Classroom Teacher at Maple Street School: parent conferences, using Google Classroom. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Google Classroom",
+        "40"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Classroom Teacher at Maple Street School: team planning with colleagues, using Seesaw. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Seesaw"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Classroom Teacher at Maple Street School: assessing student progress, using Phonics instruction. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Phonics instruction",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Classroom Teacher at Maple Street School: adapting work for different learners, using Nearpod. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Nearpod"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Classroom Teacher at Maple Street School: small-group reading, using Small-group instruction. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Small-group instruction",
+        "20"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Classroom Teacher at Maple Street School, about adapting work for different learners. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Classroom Teacher at Maple Street School, about small-group reading. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level elementary teaching professional with about 12 years of experience, scope: leading a team or program and answering for its results. Mention Nearpod, Google Classroom, Small-group instruction.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Nearpod",
+        "Google Classroom",
+        "Small-group instruction"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level elementary teaching professional with about 12 years of experience, scope: leading a team or program and answering for its results. Mention Nearpod, Google Classroom, Small-group instruction.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Nearpod",
+        "Google Classroom",
+        "Small-group instruction"
+      ]
+    }
+  }
+}

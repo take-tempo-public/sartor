@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "casey.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-casey-sre-ops-lead",
+    "name": "Casey Kowalski",
+    "phone": "(555) 010-6811",
+    "username": "gold_sre_ops_lead"
+  },
+  "cell": "sre-ops-lead",
+  "cell_seed": 1141390451,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Grafana on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Grafana, in work or side projects",
+        "any exposure to PowerShell, in work or side projects"
+      ],
+      "scope_probes": [
+        "Infrastructure Manager at Bluebird Family Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Grafana",
+      "(?i)PowerShell",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "linux",
+      "microsoft azure",
+      "prometheus",
+      "splunk"
+    ],
+    "notes": "lead-level site reliability and IT operations. The profile has no Grafana, PowerShell; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Grafana exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Infrastructure Manager",
+        "Pinegrove Health System — On site, Nashville, TN"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.hospital-network.about",
+        "jd.hospital-network.duties",
+        "jd.hospital-network.needs"
+      ],
+      "slug": "hospital-network"
+    }
+  ],
+  "level": "lead",
+  "profession": "sre-ops",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Microsoft Azure in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Bluebird Family Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-08",
+          "title": "Infrastructure Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Dunmore Technologies",
+          "end": "2024-08",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2018-04",
+          "title": "Senior Site Reliability Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Calloway Group",
+          "end": "2018-04",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-01",
+          "title": "Systems Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Information Technology",
+          "institution": "State University",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Open Systems Training Board",
+          "name": "Systems Administrator Certificate",
+          "year": "2013"
+        },
+        {
+          "issuer": "Cloud Skills Institute",
+          "name": "Cloud Operations Certificate",
+          "year": "2013"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Microsoft Azure",
+        "ServiceNow",
+        "Active Directory",
+        "Backup and recovery",
+        "Python",
+        "Prometheus",
+        "Linux",
+        "Ansible",
+        "Terraform",
+        "Splunk"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Microsoft Azure"
+    },
+    {
+      "category": "tool",
+      "name": "ServiceNow"
+    },
+    {
+      "category": "platform",
+      "name": "Active Directory"
+    },
+    {
+      "category": "method",
+      "name": "Backup and recovery"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "Prometheus"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "tool",
+      "name": "Ansible"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "tool",
+      "name": "Splunk"
+    }
+  ],
+  "slots": {
+    "jd.hospital-network.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Infrastructure Manager at Pinegrove Health System, a multi-hospital health system. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.hospital-network.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Infrastructure Manager, about change approvals, tuning monitoring alerts, setting reliability targets with product teams. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.hospital-network.needs": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Microsoft Azure, Linux, Splunk, Prometheus, PowerShell, Grafana, and 14 or more years of experience. State Cloud Operations Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Microsoft Azure",
+        "Linux",
+        "Splunk",
+        "Prometheus",
+        "PowerShell",
+        "Grafana",
+        "Cloud Operations Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Infrastructure Manager at Bluebird Family Services: change approvals, using Active Directory. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Active Directory",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Infrastructure Manager at Bluebird Family Services: post-incident write-ups, using Splunk. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Splunk"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Infrastructure Manager at Bluebird Family Services: patching cycles, using Backup and recovery. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Backup and recovery",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Infrastructure Manager at Bluebird Family Services: running the on-call rotation for the team, using Microsoft Azure. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Azure"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Infrastructure Manager at Bluebird Family Services: on-call rotation, using Python. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Python",
+        "50"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Infrastructure Manager at Bluebird Family Services, about running the on-call rotation for the team. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Infrastructure Manager at Bluebird Family Services, about change approvals. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Site Reliability Engineer at Dunmore Technologies: capacity planning, using ServiceNow. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "ServiceNow",
+        "50"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Site Reliability Engineer at Dunmore Technologies: setting reliability targets with product teams, using Terraform. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Terraform"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Site Reliability Engineer at Dunmore Technologies: tuning monitoring alerts, using Prometheus. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Prometheus",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Site Reliability Engineer at Dunmore Technologies: backup and recovery tests, using Linux. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Linux"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Senior Site Reliability Engineer at Dunmore Technologies: change approvals, using Ansible. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Ansible",
+        "35"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Site Reliability Engineer at Dunmore Technologies, about change approvals. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Site Reliability Engineer at Dunmore Technologies, about patching cycles. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Systems Engineer at Calloway Group: on-call rotation, using Active Directory. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Active Directory",
+        "45"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Systems Engineer at Calloway Group: capacity planning, using Splunk. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Splunk"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Systems Engineer at Calloway Group: tuning monitoring alerts, using Backup and recovery. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Backup and recovery",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Systems Engineer at Calloway Group: backup and recovery tests, using Microsoft Azure. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Azure"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Systems Engineer at Calloway Group: change approvals, using Python. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Python",
+        "40"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Systems Engineer at Calloway Group, about backup and recovery tests. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Systems Engineer at Calloway Group, about post-incident write-ups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level site reliability and IT operations professional with about 14 years of experience, scope: leading a team and owning the roadmap for the area. Mention Microsoft Azure, ServiceNow, Active Directory.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Microsoft Azure",
+        "ServiceNow",
+        "Active Directory"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level site reliability and IT operations professional with about 14 years of experience, scope: leading a team and owning the roadmap for the area. Mention Microsoft Azure, ServiceNow, Active Directory.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Microsoft Azure",
+        "ServiceNow",
+        "Active Directory"
+      ]
+    }
+  }
+}

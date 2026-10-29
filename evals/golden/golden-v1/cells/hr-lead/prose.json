@@ -1,0 +1,51 @@
+{
+  "cell": "hr-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:25c9383932e593639a0fd8b5a903fbb7681a8989fea30c8538da0eb71c6a32f1",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjsLFN5MiByc34oAAZ1"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5075,
+      "output_tokens": 3625
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.cloud-software.about": "About the role\nWe're Nimbus Cloud Software, and we're growing fast. We need an HR Manager who can keep our people practices simple, fair and compliant while we scale. You'll work remotely across the US, be the go-to person for managers and employees, and build the processes we don't have yet. If you like rolling up your sleeves and getting things done, you'll fit right in.",
+    "jd.cloud-software.duties": "What you'll do\n- Advise managers on employee relations, from tricky conversations to formal investigations\n- Be the first stop for employee concerns and see each one through to resolution\n- Write and roll out policy updates as we grow, and explain them in plain language\n- Coach managers on documentation and consistent decisions\n- Spot patterns in employee concerns and suggest fixes before they become bigger problems",
+    "jd.cloud-software.needs": "What we're looking for\n- 13 or more years of HR experience\n- Senior HR Practitioner Certificate (required)\n- Solid compliance reporting and policy writing skills\n- Hands-on experience with job postings, interview scheduling and new hire onboarding\n- Day-to-day experience with ADP Workforce Now",
+    "r1.b1": "Advises managers on employee relations cases and uses compliance reporting to flag recurring issues early, cutting open cases by 40 percent.",
+    "r1.b2": "Leads hiring plans with department heads and ties each plan to payroll coordination so new roles are budgeted before posting.",
+    "r1.b3": "Screens candidates against role requirements and moves hires into new hire onboarding, reducing first-week paperwork gaps by 55 percent.",
+    "r1.b4": "Schedules interviews across hiring teams and runs exit interviews, feeding departure themes back into interview questions.",
+    "r1.b5": "Updates HR policies and aligns job postings with each change, reducing candidate questions about role terms by 45 percent.",
+    "r1.i1": "Advises managers at Oakmont Systems on employee relations, from early concerns through formal cases.",
+    "r1.i2": "Oversees new hire paperwork at Oakmont Systems so every hire starts with complete, accurate records.",
+    "r2.b1": "Kept HR records current through each round of performance review cycles, reducing missing review files by 35 percent.",
+    "r2.b2": "Answered employee benefits questions and drafted offer letters that set out benefits terms clearly for new hires.",
+    "r2.b3": "Handled employee concerns and used policy writing to clarify grievance steps, lowering repeat complaints by 15 percent.",
+    "r2.b4": "Processed new hire paperwork and tracked completion through compliance reporting for each hiring group.",
+    "r2.b5": "Advised managers on employee relations and used payroll coordination to resolve pay disputes, reducing payroll escalations by 10 percent.",
+    "r2.i1": "Managed new hire paperwork at Lantern Hill as Senior HR Business Partner, keeping files complete for each new start.",
+    "r2.i2": "Served as the main contact for benefits questions at Lantern Hill, giving employees and managers clear answers.",
+    "r3.b1": "Maintained HR records for new hire onboarding and cut incomplete employee files by 55 percent.",
+    "r3.b2": "Responded to staff benefits questions and conducted exit interviews to explain benefits continuation for departing employees.",
+    "r3.b3": "Addressed employee concerns about internal openings by rewriting job postings, raising internal applications by 20 percent.",
+    "r3.b4": "Completed new hire paperwork and enrolled each new employee in performance review cycles from their start date.",
+    "r3.b5": "Screened candidates and prepared offer letters promptly, shortening time from final interview to offer by 45 percent.",
+    "r3.i1": "Screened candidates for open positions at Eastgate Regional Hospital and passed qualified applicants to hiring managers.",
+    "r3.i2": "Kept HR records accurate and up to date for staff at Eastgate Regional Hospital.",
+    "summary.1": "HR manager with 13 years of experience leading a team and answering for the results of the human resources function. Runs performance review cycles, compliance reporting and job postings, and holds the Senior HR Practitioner Certificate.",
+    "summary.2": "Human resources leader with 13 years of experience across hospital, business partner and management roles, accountable for team output and function results. Brings hands-on depth in performance review cycles, compliance reporting, job postings and policy writing."
+  }
+}

@@ -193,3 +193,61 @@ are regenerated with the rest, because the suite check refuses a profile that di
 forbids hand-editing a cell. Cost about $0.23, within the $13.00 cap; the plan's projection was 37 cells, it is now 40
 (36 not yet redone + `electrician-lead` a third time + the 3). The earlier statement above that the fix leaves "no cell
 outside the 37" was true of the sort fix and is **false of the role cap**.
+
+**Paid run A3, `electrician-lead` with all three fixes (2026-10-28):** exit 0, **$0.0870**, `$8.1499 of $13.0000 in all`
+(three requests for this one cell: $0.0877 + $0.0956 + $0.0870 = $0.2703; the first two are discarded output kept in the
+scratchpad). Hand-read: the posting says "Current Master Electrician Licence required"; the certifications read Apprentice
+Card 2013, Safety Card 2013, Journeyman Licence 2013 (role from January 2013), Master Licence 2017 (role from November
+2020). Dates now agree with the titles and ascend with tier. `golden_set check` reports 0 cells that differ from a fresh
+build. Four credentials in one year (2013) is the cap working on a cell whose oldest role is already Journeyman-titled; it
+reads as a person who started the job licensed, which the title ladder says.
+
+**Paid run B, four cells (2026-10-28):** `--cell registered-nurse:entry --cell teacher:mid --cell sre-ops:senior --cell
+social-services:lead --max-spend 0.50 --max-total-spend 13`, exit 0, 4 written, none rejected, **$0.2737** (entry $0.0482,
+mid $0.0672, senior $0.0729, lead $0.0853), `$8.4237 of $13.0000 in all`. **Hand-read, all four, whole résumé and posting:**
+every posting requires the credential at the top of the candidate's tier (Reading Specialist Endorsement; Cloud Operations
+Certificate; Human Services Supervisor Certificate; the nurse's licence and Basic Life Support card); every mid-or-higher
+credential is dated no later than its role (Reading Specialist 2025 / Classroom Teacher from January 2025; Supervisor
+Certificate 2019 / Program Manager from November 2020); bullets are grounded in the listed skills and read as the work.
+**Faults seen, none systematic:** (1) the nurse's Basic Life Support card is dated 2026, a year after her first role began
+(March 2025): the entry-tier credential the owner's rule leaves unbound (the strict-rule residue); (2) a past employer,
+"Riverbend Health Network", shares a stem with the target employer, "Riverbend Community Partnership" (social-services-lead),
+because the employer pool and the industry names are drawn separately; (3) a hospice employs a Senior Site Reliability
+Engineer (sre-ops-senior), odd but possible. A Graduate Registered Nurse posting asking for "2 or more years of experience
+as a registered nurse" comes from the entry ladder (0 to 2 years) and was already so in the earlier version.
+Hand-read count so far in this branch: 5 final cells (electrician-lead and these four).
+
+**Checkpoint (c), measured.** Final-cell costs this branch: entry $0.0482 (1), mid $0.0672 (1), senior $0.0729 (1), lead
+$0.0870 and $0.0853 (2). Remaining after run B: **35 cells**, because the set to redo is 40, not 37 (the 37 + the 3 the role
+cap reaches), and 5 are done: entry 1, mid 10, senior 12, lead 12. Priced at item 191's higher per-tier means (entry
+$0.052, mid $0.069, senior $0.083, lead $0.093) that is **$2.85**, so the projected total is **$11.28** of $13.00, leaving
+$1.72. The conditions in the plan to continue without asking are met: projection under the cap, 0 of 5 rejected. Stated
+limit: five requests are not a distribution, and a rewrite costs a further request.
+
+**Paid run C, the sweep of the remaining 35 cells (2026-10-28):** `--cell` x 35 (tiers interleaved) `--skip-existing
+--max-spend 3.50 --max-total-spend 13 --confirm-paid`, the log's own marker `SWEEP_EXIT=0`, 35 written, **none rejected, no
+rewrite**, **$2.7867** (projection $2.85), `$11.2104 of $13.0000 in all`. About 40 seconds a cell. **Branch total on author
+spend: $3.3307** ($11.2104 minus the $7.8797 logged at the start): $3.1474 on the 40 kept cells and **$0.1833 on the two
+discarded `electrician-lead` outputs** (runs A and A2, kept in the scratchpad). The call log's total includes the one request
+of item 191 whose billing is unknown. Every cell carries `prompt_version golden-author-2`, effort `medium`.
+
+**Four pairs were unsound after regeneration, found by `pairs`.** A pair's authored `transferable` terms must appear in both
+the résumé and the posting, and fresh prose no longer contained some: `registered-nurse-entry-to-registered-nurse-mid`
+("Bedside handoff" not in the posting), `sre-ops-mid-to-sre-ops-senior` ("Kubernetes" and "Microsoft Azure" not in the
+posting) and `registered-nurse-mid-to-medical-assistant-mid` ("team" not in the résumé). Re-picked, keeping any term that
+still held, from skill names that appear in both documents (`scratchpad/pair_terms.py`): `Care planning` + `Patient
+assessment`; `Ansible` + `Backup and recovery`; `patients` + `Vital signs`. Written with `load_manifest`/`write_manifest`,
+not by hand. These are authored fields, so this is a judgment, not a derivation: the terms are real overlaps, and a different
+reasonable pick exists. `pairs`, `manifest` and `check` then ran clean: **`OK (96 cells)`**.
+
+**The diff against `b62c704`:** 40 cells, 60 fixture directories (40 cell fixtures + **20** pair fixtures, not 18: the two
+extra are `construction-pm-entry-to-construction-pm-mid` and `product-mgmt-mid-to-project-mgmt-mid`, which use the three cells
+the role cap reached), `manifest.json`, the code, the tests and docs. Nothing else.
+
+**A guard over the real matrix (C-11, the recurrence of "a check passed data a person could see was wrong").**
+`tests/test_golden_facts.py::test_a_cells_credentials_are_asked_dated_and_ordered_like_a_real_career`, per profession over all
+four tiers: the posting requires the highest credential held, years do not fall with the tier, and a mid-or-higher credential
+is not dated after the earliest role titled for its tier. 24 cases, pass. The old stored profiles from `b62c704` would have
+failed it (21 of 37 disordered, 28 of 37 late); that is a count from my audits, not a run of this test against them.
+**Unenforced and said plainly:** entry-tier credentials are unbound (13 of 37 under the strict rule), and whether prose reads as
+real is still a judgment that only a hand-read supplies.

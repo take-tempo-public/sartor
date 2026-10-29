@@ -1,0 +1,310 @@
+{
+  "candidate": {
+    "email": "riley.silva@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-logistics-driving-mid",
+    "name": "Riley Silva",
+    "notes": null,
+    "phone": "(555) 010-4750",
+    "profile_text": null,
+    "username": "gold_logistics_driving_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_logistics_driving_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2022",
+      "issuer": "Driver Safety Council",
+      "name": "Driver Safety Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2022",
+      "issuer": "State Motor Vehicle Agency",
+      "name": "Commercial Driver Licence"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Commercial Driving",
+      "id": 701,
+      "institution": "Lakeshore Trucking School",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinate with dispatch on route changes and apply defensive driving techniques on every run, cutting preventable delay incidents by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Report vehicle defects to maintenance after each shift and apply load securement checks to keep cargo stable and the truck roadworthy."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Keep accurate driver logs and reconcile bills of lading at each stop, reducing paperwork discrepancies by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Secure and check every load before departure and adjust delivery scheduling with receivers when inspections require extra time."
+        }
+      ],
+      "company": "Stonebridge Logistics",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Hauls freight as a Class A driver for Stonebridge Logistics, delivering loads to customers on time across regular routes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Operates Class A equipment for Stonebridge Logistics and reports vehicle defects promptly so trucks stay safe and in service."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Class A Truck Driver",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Delivered freight to customers on schedule, applying hazmat handling procedures for regulated loads and raising on-time delivery rates by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used route planning to sequence daily stops around traffic patterns and receiver hours, keeping deliveries on schedule."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Performed pre-trip vehicle inspections and checked trailer coupling before each run, reducing roadside inspection findings by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with dispatch on load assignments and kept hours-of-service logging current to stay within driving limits."
+        }
+      ],
+      "company": "Prairie Freight Lines",
+      "display_order": 1,
+      "end_date": "2023-10",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Drove delivery routes for Prairie Freight Lines and reported vehicle defects to keep the fleet safe and roadworthy."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handled local deliveries for Prairie Freight Lines, planning routes each day to reach customers efficiently."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Delivery Driver",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Bills of lading",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Defensive driving",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Delivery scheduling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Hazmat handling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Hours-of-service logging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Load securement",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Route planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Trailer coupling",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Truck driving and dispatch professional with about 5 years of experience handling a full route schedule without close supervision. Skilled in trailer coupling, route planning and defensive driving, with a record of safe, on-time freight delivery."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Class A truck driver with about 5 years of experience in driving and dispatch coordination, managing a full load schedule independently. Applies route planning, defensive driving and trailer coupling to move freight safely and on schedule."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "accounting-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:79db018ee41946f5fbff2e09f1e93fe03c4d50dd5bc2350ffef394bb89f3af18",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjYG5pHFmN9R3vJVJms"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5087,
+      "output_tokens": 3142
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.foundation.about": "Summary\nEvergreen Community Foundation connects local donors with the causes that strengthen our region. The Accounting Manager leads day-to-day accounting for the foundation, oversees the close, prepares for the annual audit and keeps grant and donor funds accurately recorded. This hybrid role is based in Seattle, WA. A Certified Public Accountant Licence is required.",
+    "jd.foundation.duties": "Duties\n- Lead audit preparation, including schedules, supporting documents and responses to auditor requests.\n- Complete bank reconciliations each month and resolve differences promptly.\n- Review vendor invoices against approvals and contracts before payment.\n- Oversee the month-end close and review entries prepared by staff.\n- Prepare financial reports for leadership and the finance committee.\n- Maintain internal controls over cash, payables and receivables.",
+    "jd.foundation.needs": "Licensure and qualifications\n- Certified Public Accountant Licence required.\n- 14 or more years of accounting experience.\n- Experience with audit support, accounts payable and sales tax filing.\n- Strong command of journal entries and account reconciliation.\n- Advanced working knowledge of Microsoft Excel.",
+    "r1.b1": "Runs the month-end close with fixed asset tracking built into the schedule, cutting close time by 40 percent.",
+    "r1.b2": "Reconciles bank accounts each month and ties the balances to the financial statements before they go to leadership.",
+    "r1.b3": "Prepares audit schedules and accounts payable support ahead of fieldwork, reducing auditor follow-up requests by 25 percent.",
+    "r1.b4": "Reviews vendor invoices in QuickBooks against approvals and contracts before payment is released.",
+    "r1.b5": "Produces monthly statements from accounts receivable records, lowering past-due balances by 10 percent.",
+    "r1.i1": "Leads the accounting function at Cedar Hollow Hospice, with responsibility for audit preparation and year-end support.",
+    "r1.i2": "Manages accounting at Cedar Hollow Hospice and prepares budget variance reports for department leaders.",
+    "r2.b1": "Reviewed journal entries prepared by staff accountants before posting, reducing correcting entries by 45 percent.",
+    "r2.b2": "Prepared budget variance reports alongside sales tax filing, flagging tax accruals that differed from budget.",
+    "r2.b3": "Built tax schedules used in audit support, cutting preparation time by 15 percent.",
+    "r2.b4": "Owned the team close calendar and set deadlines for fixed asset tracking and account reviews.",
+    "r2.b5": "Shortened the month-end close by 30 percent by standardising review of the financial statements.",
+    "r2.i1": "Prepared budget variance reports for management as Senior Accountant at Redfern Family Trades.",
+    "r2.i2": "Reviewed the work of staff accountants and kept their entries accurate as Senior Accountant at Redfern Family Trades.",
+    "r3.b1": "Reviewed vendor invoices before entry into accounts payable, reducing payment errors by 20 percent.",
+    "r3.b2": "Prepared monthly financial statements in QuickBooks for management review.",
+    "r3.b3": "Compiled budget variance reports from accounts receivable data, reducing unexplained variances by 50 percent.",
+    "r3.b4": "Maintained tax schedules and posted the supporting journal entries each period.",
+    "r3.b5": "Completed sales tax filing within the month-end close, shortening the close by 10 percent.",
+    "r3.i1": "Prepared tax schedules and supporting records as an Accountant at Neighborhood Table Services.",
+    "r3.i2": "Handled invoice review and vendor records as an Accountant at Neighborhood Table Services.",
+    "summary.1": "Accounting manager with 14 years of experience who leads a team and answers for the results of the accounting function. Background covers financial statements, accounts receivable and QuickBooks, along with audit support and the month-end close.",
+    "summary.2": "Licensed CPA with 14 years in accounting, currently managing a team and owning the results of the function at a hospice. Prepares financial statements, oversees accounts receivable and keeps the books in QuickBooks."
+  }
+}

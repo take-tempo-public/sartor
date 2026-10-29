@@ -1,0 +1,48 @@
+{
+  "cell": "security-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:54d2cbf24a69444cbbd25d2524b7c4db90915646f2c8fa93d185e8b916e072f9",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkUUwUEfobXodfHcyME"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4570,
+      "output_tokens": 3213
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.retail-holdings.about": "Position summary\nOakhurst Retail Holdings, a national retailer, seeks a Senior Security Engineer to protect its stores, systems and customer data. The engineer will track vulnerability remediation, maintain security policy and deliver security awareness training across the company. Minimum qualifications include incident response, penetration testing and access review experience. An incident handling certification is required. Retail industry experience is preferred.",
+    "jd.retail-holdings.duties": "Responsibilities\n- Track vulnerability fixes from discovery through verified closure and report remediation status to technology leaders.\n- Write, review and maintain security policy documentation, standards and procedures.\n- Design and deliver security awareness training for store, distribution and corporate staff.\n- Coordinate with engineering teams to prioritize remediation of high-risk findings.\n- Keep security procedures current as systems and threats change.",
+    "jd.retail-holdings.needs": "Minimum and preferred qualifications\n- 8 or more years of experience in information security.\n- Hands-on experience with incident response, penetration testing and vulnerability scanning.\n- Experience running phishing simulation programs and access reviews.\n- Working knowledge of Python for security automation.\n- Incident Handler Certificate required.\n- Experience in a retail environment preferred.",
+    "r1.b1": "Leads access reviews using log analysis to confirm actual account use, cutting stale permissions by 35 percent.",
+    "r1.b2": "Directs incident response drills, using Wireshark captures to walk responders through containment of simulated network intrusions.",
+    "r1.b3": "Feeds penetration testing findings into alert triage, tuning detection priorities and reducing false positives by 55 percent.",
+    "r1.b4": "Advises leadership on security risk, building Splunk dashboards that summarize exposure trends for planning decisions.",
+    "r1.i1": "Leads alert triage at Bluebird Family Services as Senior Security Engineer, setting priorities for how security events are investigated and escalated.",
+    "r1.i2": "Runs risk assessments for Bluebird Family Services, translating technical findings into prioritized remediation plans for leadership.",
+    "r2.b1": "Ran phishing simulation campaigns as part of security awareness training, lowering employee click rates by 40 percent.",
+    "r2.b2": "Combined access reviews with log monitoring to flag dormant and over-privileged accounts for removal.",
+    "r2.b3": "Applied incident response findings to risk assessments, shortening time to remediate high-risk issues by 15 percent.",
+    "r2.b4": "Scanned systems with Nessus during access reviews to tie vulnerable hosts to account owners and confirm remediation.",
+    "r2.i1": "Performed risk assessments at Northfield Group as Security Analyst, evaluating threats to business systems and recommending controls.",
+    "r2.i2": "Maintained security policy documentation for Northfield Group, keeping standards and procedures aligned with current controls.",
+    "r3.b1": "Refined firewall rules based on alert triage patterns, reducing noisy alerts by 40 percent.",
+    "r3.b2": "Used threat modeling to prioritize vulnerability fixes and tracked each remediation through to closure.",
+    "r3.b3": "Drew on log analysis to update security policy documentation, cutting policy exceptions by 45 percent.",
+    "r3.b4": "Built security awareness training sessions around Wireshark captures that showed staff how unencrypted traffic exposes data.",
+    "r3.i1": "Drafted and maintained security policy documentation at Maple Court Care as a Junior Security Analyst.",
+    "r3.i2": "Supported access reviews at Maple Court Care as a Junior Security Analyst, checking user permissions against role requirements.",
+    "summary.1": "Senior information security professional with 8 years of experience setting technical direction for the security of a product area. Brings hands-on depth in incident response, penetration testing and network analysis with Wireshark.",
+    "summary.2": "Security engineer with 8 years of experience in information security analysis, currently setting the technical direction for security within a product area. Applies penetration testing, incident response and Wireshark traffic analysis to find and close gaps before they reach production."
+  }
+}

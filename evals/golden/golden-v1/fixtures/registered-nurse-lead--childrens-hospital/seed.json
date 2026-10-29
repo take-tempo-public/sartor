@@ -1,0 +1,450 @@
+{
+  "candidate": {
+    "email": "avery.brandt@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-registered-nurse-lead",
+    "name": "Avery Brandt",
+    "notes": null,
+    "phone": "(555) 010-2565",
+    "profile_text": null,
+    "username": "gold_registered_nurse_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_registered_nurse_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2014",
+      "issuer": "State Board of Nursing",
+      "name": "Registered Nurse Licence"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2014",
+      "issuer": "Resuscitation Training Council",
+      "name": "Basic Life Support Card"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2014",
+      "issuer": "Resuscitation Training Council",
+      "name": "Advanced Cardiac Life Support Card"
+    },
+    {
+      "display_order": 3,
+      "expires": null,
+      "id": 804,
+      "is_active": true,
+      "issued": "2016",
+      "issuer": "Nursing Leadership Council",
+      "name": "Nurse Manager Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.N.",
+      "display_order": 0,
+      "end_date": "2014",
+      "field": "Nursing",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates medication administration with physicians across the unit, cutting medication timing errors by 20 percent through shared review of orders."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supervises nursing aides and reviews their clinical documentation each shift, giving direct feedback so records stay complete and accurate."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Oversees how nurses assess each patient and record findings in Epic Systems, raising the share of assessments completed on schedule by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Teaches patients and families what to expect at home, building discharge planning into care from the first day of each stay."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Charts IV therapy in the patient record with staff using a standard template, reducing missing line entries by 45 percent."
+        }
+      ],
+      "company": "Bluebird Family Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Manages the nursing team at Bluebird Family Services, with a focus on clear and consistent shift handoff between staff."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Oversees safe medication practice for the nursing staff at Bluebird Family Services, from order review to giving medications at the bedside."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Nurse Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Added patient education points to shift handoff, which cut repeat questions from patients by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Served as charge nurse for assigned shifts and ran bedside handoff with each incoming nurse to confirm plans of care."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used triage to set the order of medication rounds, reducing late doses by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Worked with physicians to clarify orders and keep medication administration aligned with each patient's current plan."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supervised nursing aides and trained them in clinical documentation, lowering incomplete entries by 50 percent."
+        }
+      ],
+      "company": "Halcyon Services",
+      "display_order": 1,
+      "end_date": "2023-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Directed shift operations as charge nurse at Halcyon Services, including oversight of giving medications on time and as ordered."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Led a shift team at Halcyon Services as charge nurse, with daily responsibility for assessing patients and escalating concerns."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Charge Nurse",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Standardised shift handoff notes in Epic Systems, reducing handoff omissions by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Gave scheduled medications and reviewed each regimen with patients as part of discharge planning before they left the unit."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with physicians on IV therapy orders, shortening the time to start infusions by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assessed patients at the start of each shift and tailored patient education to their condition and questions."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Taught patients and families during bedside handoff, raising family understanding of care plans by 55 percent."
+        }
+      ],
+      "company": "Dunmore Technologies",
+      "display_order": 2,
+      "end_date": "2017-06",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2014-08",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Provided direct care as a registered nurse at Dunmore Technologies, assessing patients and reporting changes in condition."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Worked as a registered nurse at Dunmore Technologies, charting care, assessments and medications in the patient record."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Registered Nurse",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Bedside handoff",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Clinical documentation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Discharge planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Epic Systems",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "IV therapy",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Medication administration",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Patient education",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Triage",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Nurse manager with 12 years of experience leading nursing teams and answering for unit results in safety and quality. Brings hands-on strength in medication administration, patient education and Epic Systems documentation."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead-level nursing professional with 12 years in clinical care, including charge nurse and nurse manager roles accountable for team performance. Skilled in medication administration, patient education and Epic Systems, with a focus on safe handoffs and clear records."
+    }
+  ],
+  "tags": []
+}

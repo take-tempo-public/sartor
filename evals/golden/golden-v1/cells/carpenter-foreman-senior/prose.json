@@ -1,0 +1,48 @@
+{
+  "cell": "carpenter-foreman-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:65e83ca99ac7453213317331d6b161ebba6d32d9de6dc29d5fe93428c33b9631",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjc6SFG1TsUe5w4otLR"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4797,
+      "output_tokens": 3196
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.residential-builder.about": "Fieldstone Builders is an owner-run residential builder in Lancaster, PA. We build homes with our own crews, and the work is on site. We are looking for a Master Carpenter to run the carpentry on our jobs, from layout and framing through finish work, and to help train the people coming up in the trade.",
+    "jd.residential-builder.duties": "What the job involves\n- Direct carpentry crews on site and assign daily tasks\n- Train apprentices and check their work\n- Keep the site safe and make sure everyone follows safety rules\n- Order lumber and materials and track deliveries\n- Read plans and lay out each job before work starts\n- Check finished work against the plans before other trades come in",
+    "jd.residential-builder.needs": "What you need\n- 9 or more years of carpentry experience\n- Rafter cutting, stair building and concrete forming\n- Door and window installation, subfloor installation and cabinet installation\n- Lead Carpenter Certificate (required)\n- Crew Supervisor Certificate (preferred)",
+    "r1.b1": "Leads framing of walls and floors on home remodels, cutting rework by 20 percent through careful checks before sheathing goes on.",
+    "r1.b2": "Enforces jobsite safety on every remodeling site, checking ladders, tools and walkways with the crew before work begins.",
+    "r1.b3": "Sets doors, windows and trim on remodels and handles concrete forming for new steps and thresholds, reducing installation callbacks by 50 percent.",
+    "r1.b4": "Plans jobs and orders lumber ahead of each phase, scheduling scaffold erection so exterior work starts without delays.",
+    "r1.i1": "At Marlow Remodeling, frames walls and floors for home remodels and checks the work of the crew.",
+    "r1.i2": "Builds and sets forms for concrete footings, slabs and steps on remodeling projects at Marlow Remodeling.",
+    "r2.b1": "Built forms for concrete stair landings and handled stair building on framing jobs, cutting form setup time by 25 percent.",
+    "r2.b2": "Ordered lumber and materials for each job based on careful layout and measuring, keeping waste and return trips low.",
+    "r2.b3": "Framed walls and floors and handled rafter cutting for roof systems, raising daily framing output by 45 percent.",
+    "r2.b4": "Kept work areas safe during door and window installation by bracing openings and clearing debris from walkways.",
+    "r2.i1": "Built forms for concrete footings and walls as part of the framing crews at Harlow Framing Company.",
+    "r2.i2": "Kept framing sites safe at Harlow Framing Company while working as a journeyman on walls, floors and roofs.",
+    "r3.b1": "Installed doors, windows and trim after framing rough openings, cutting installation time by 45 percent under journeyman guidance.",
+    "r3.b2": "Read plans and took measurements for layout while following jobsite safety rules on tools, ladders and cuts.",
+    "r3.b3": "Assisted with concrete forming for footings and walls, reducing form material waste by 10 percent.",
+    "r3.b4": "Ordered lumber and materials for jobs, including the planks and frames needed for scaffold erection.",
+    "r3.i1": "Learned to keep the site safe at Tillman Brothers Carpentry while training as an apprentice carpenter.",
+    "r3.i2": "Helped order lumber and materials for jobs at Tillman Brothers Carpentry during a carpentry apprenticeship.",
+    "summary.1": "Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, and holds a Lead Carpenter Certificate.",
+    "summary.2": "Carpentry professional at master level with about 9 years in the trade, planning jobs from layout to finish and checking the work of others. Brings hands-on skill in layout and measuring, framing and jobsite safety on remodeling and framing sites."
+  }
+}

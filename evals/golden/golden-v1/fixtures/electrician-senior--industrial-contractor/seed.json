@@ -1,0 +1,417 @@
+{
+  "candidate": {
+    "email": "riley.silva@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-electrician-senior",
+    "name": "Riley Silva",
+    "notes": null,
+    "phone": "(555) 010-5628",
+    "profile_text": null,
+    "username": "gold_electrician_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_electrician_senior",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2017",
+      "issuer": "State Apprenticeship Council",
+      "name": "Apprentice Registration Card"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2017",
+      "issuer": "Safety Training Council",
+      "name": "Construction Safety Card"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2019",
+      "issuer": "State Licensing Board",
+      "name": "Journeyman Electrician Licence"
+    },
+    {
+      "display_order": 3,
+      "expires": null,
+      "id": 804,
+      "is_active": true,
+      "issued": "2019",
+      "issuer": "State Licensing Board",
+      "name": "Master Electrician Licence"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Apprenticeship Certificate",
+      "display_order": 0,
+      "end_date": "2017",
+      "field": "Electrical Construction",
+      "id": 701,
+      "institution": "Northern Plains Electrical Training Center",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans jobs and orders materials against code compliance requirements before each start, cutting material returns by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tests circuits on completed work, including lighting installation in new and renovated spaces, before handing systems over to the customer."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Directs helpers and apprentices through blueprint reading on each job, reducing layout errors by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pulls and terminates wire on branch and feeder runs, confirming each connection through circuit testing before energizing."
+        }
+      ],
+      "company": "Copperfield Electric",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Runs conduit and oversees electrical installations at Copperfield Electric as a Master Electrician."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads helpers and apprentices on Copperfield Electric job sites, assigning tasks and checking their work as Master Electrician."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Master Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran conduit for new circuits, using load calculations to size runs and fill, and cut rework on conduit routes by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed panels and fixtures, applying conduit bending to route feeds cleanly around structural obstacles."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested circuits with methodical troubleshooting, reducing time spent locating faults by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pulled and terminated wire on industrial circuits, applying grounding and bonding practices to each installation."
+        }
+      ],
+      "company": "Ashford Industrial Electric",
+      "display_order": 1,
+      "end_date": "2021-11",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2019-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Pulled and terminated wire on industrial projects at Ashford Industrial Electric as a Journeyman Electrician."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Installed panels and fixtures for Ashford Industrial Electric customers while working as a Journeyman Electrician."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Journeyman Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Traced faults in existing wiring with attention to code compliance, cutting repeat service calls by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans to locate fixtures and switching, supporting lighting installation under journeyman supervision."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran conduit from plan layouts using blueprint reading, reducing wasted material by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed panels and fixtures and verified each connection through circuit testing before final inspection."
+        }
+      ],
+      "company": "Brightline Wiring Company",
+      "display_order": 2,
+      "end_date": "2019-01",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Installed panels and fixtures at Brightline Wiring Company while completing an electrical construction apprenticeship."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Tested circuits and supported licensed electricians at Brightline Wiring Company as an Apprentice Electrician."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Apprentice Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Blueprint reading",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Circuit testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Code compliance",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Conduit bending",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Grounding and bonding",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Lighting installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Load calculations",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Troubleshooting",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Master Electrician with about 9 years of experience planning jobs and checking the work of helpers, apprentices and journeymen. Applies blueprint reading, code compliance and troubleshooting to keep installations accurate and ready for inspection."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Licensed master electrician with 9 years in electrical construction, from apprenticeship through journeyman and master roles. Plans jobs, reviews the work of others, and relies on blueprint reading, code compliance and troubleshooting on each project."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "project-mgmt-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:60150ac0a7b65269ea2b7a8298dc009ce374eb278b44f2c3164d674f30c1d654",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkHtNpiax6uGAS9KZPe"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5019,
+      "output_tokens": 3742
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.regional-utility.about": "Position summary: Armitage Utilities, a regional utility, seeks a Program Manager to lead a portfolio of related projects on a hybrid basis from Kansas City, MO. The Program Manager will coordinate schedules, budgets, risks and vendors, and will report program progress to the steering committee. Candidates must meet the minimum qualifications listed below; a shorter list of preferred qualifications is also provided.",
+    "jd.regional-utility.duties": "Responsibilities\n- Maintain risk and issue logs for all projects in the program and drive timely resolution of open items.\n- Track schedules and milestones across related projects and identify slippage early.\n- Prepare and present regular progress reports to the steering committee.\n- Escalate decisions, risks and dependencies to the steering committee with clear recommendations.\n- Coordinate project managers and vendors to keep delivery aligned with approved scope and budget.",
+    "jd.regional-utility.needs": "Minimum and preferred qualifications\n- Minimum: 14 or more years of experience in project or program management.\n- Minimum: Demonstrated status reporting and stakeholder communication with senior leadership.\n- Minimum: Working knowledge of Microsoft Project, Confluence and Asana.\n- Minimum: Proven vendor negotiation experience.\n- Required certification: Agile Delivery Certificate.\n- Preferred: Prior program management experience at a regional utility.",
+    "r1.b1": "Manage a portfolio of related projects, using risk registers to surface cross-project dependencies early and cutting schedule slippage by 20 percent.",
+    "r1.b2": "Track schedules and milestones across the program and apply change control to every scope adjustment before it reaches the plan.",
+    "r1.b3": "Report to the steering committee through Confluence pages, reducing time spent preparing decision papers by 15 percent.",
+    "r1.b4": "Lead project close-out, using status reporting to confirm deliverables, record lessons learned and hand over open items.",
+    "r1.b5": "Maintain risk and issue logs and apply vendor negotiation to resolve supplier-related issues, lowering open vendor issues by 45 percent.",
+    "r1.i1": "At Ironbridge Co, leads a portfolio of related projects and reports progress, risks and decisions to the steering committee.",
+    "r1.i2": "Oversees a program at Ironbridge Co where risk and issue logs guide decisions on priorities and escalations.",
+    "r2.b1": "Managed change requests in Microsoft Project, modelling schedule impact before approval and shortening review turnaround by 30 percent.",
+    "r2.b2": "Ran budget reviews with project sponsors, using budget tracking to flag variances and agree corrective actions.",
+    "r2.b3": "Coordinated vendors through shared Jira boards, cutting late vendor deliverables by 30 percent.",
+    "r2.b4": "Oversaw a portfolio of related projects, maintaining risk registers that gave sponsors a single view of exposure across the portfolio.",
+    "r2.b5": "Tracked schedules and milestones under formal change control, improving on-time milestone delivery by 10 percent.",
+    "r2.i1": "As Senior Project Manager at Fairhaven Works, kept risk and issue logs current across concurrent projects and escalated items to sponsors.",
+    "r2.i2": "Led delivery at Fairhaven Works with a focus on tracking schedules and milestones across a set of related projects.",
+    "r3.b1": "Prepared budget reviews in Confluence, giving finance a single source of figures and cutting review preparation time by 55 percent.",
+    "r3.b2": "Coordinated external vendors and used status reporting to keep internal stakeholders informed of delivery progress.",
+    "r3.b3": "Kept schedules and milestones on track by using vendor negotiation to secure firmer delivery dates, reducing milestone delays by 10 percent.",
+    "r3.b4": "Closed out projects in Microsoft Project, confirming completed tasks, archiving baselines and releasing resources.",
+    "r3.b5": "Logged risks and issues alongside budget tracking, catching cost overruns earlier and reducing unplanned spend by 20 percent.",
+    "r3.i1": "As Project Manager at Riverbend Health Network, prepared and led budget reviews for projects across the network.",
+    "r3.i2": "Managed change requests at Riverbend Health Network, assessing scope, cost and schedule impact before decisions were made.",
+    "summary.1": "Program manager with 14 years of experience leading project teams and answering for the results of the project management function. Plans with Microsoft Project and Jira, and uses vendor negotiation and risk registers to keep delivery on budget and on schedule.",
+    "summary.2": "Project management leader with about 14 years of experience who manages a team and is accountable for the delivery results of the function. Brings working depth in Microsoft Project, Jira, vendor negotiation, change control and status reporting."
+  }
+}

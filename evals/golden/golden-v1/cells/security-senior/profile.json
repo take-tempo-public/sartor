@@ -1,0 +1,522 @@
+{
+  "candidate": {
+    "email": "taylor.ito@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-security-senior",
+    "name": "Taylor Ito",
+    "phone": "(555) 010-8084",
+    "username": "gold_security_senior"
+  },
+  "cell": "security-senior",
+  "cell_seed": 1419998735,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Python on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Python, in work or side projects",
+        "any exposure to Vulnerability scanning, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Security Engineer at Bluebird Family Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Python",
+      "(?i)Vulnerability\\ scanning",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "access reviews",
+      "incident response",
+      "penetration testing",
+      "phishing simulation"
+    ],
+    "notes": "senior-level information security analysis. The profile has no Python, Vulnerability scanning; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Python exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Security Engineer",
+        "Oakhurst Retail Holdings — Remote (US)"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.retail-holdings.about",
+        "jd.retail-holdings.duties",
+        "jd.retail-holdings.needs"
+      ],
+      "slug": "retail-holdings"
+    }
+  ],
+  "level": "senior",
+  "profession": "security",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Wireshark in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Bluebird Family Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-06",
+          "title": "Senior Security Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Northfield Group",
+          "end": "2024-06",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-05",
+          "title": "Security Analyst"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Maple Court Care",
+          "end": "2021-05",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2018-09",
+          "title": "Junior Security Analyst"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Cybersecurity",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2018"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Information Assurance Guild",
+          "name": "Security Analyst Certificate",
+          "year": "2019"
+        },
+        {
+          "issuer": "Incident Response Society",
+          "name": "Incident Handler Certificate",
+          "year": "2024"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Wireshark",
+        "Incident response",
+        "Penetration testing",
+        "Firewall rules",
+        "Splunk",
+        "Access reviews",
+        "Nessus",
+        "Phishing simulation",
+        "Log analysis",
+        "Threat modeling"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Wireshark"
+    },
+    {
+      "category": "method",
+      "name": "Incident response"
+    },
+    {
+      "category": "method",
+      "name": "Penetration testing"
+    },
+    {
+      "category": "method",
+      "name": "Firewall rules"
+    },
+    {
+      "category": "tool",
+      "name": "Splunk"
+    },
+    {
+      "category": "method",
+      "name": "Access reviews"
+    },
+    {
+      "category": "tool",
+      "name": "Nessus"
+    },
+    {
+      "category": "method",
+      "name": "Phishing simulation"
+    },
+    {
+      "category": "method",
+      "name": "Log analysis"
+    },
+    {
+      "category": "method",
+      "name": "Threat modeling"
+    }
+  ],
+  "slots": {
+    "jd.retail-holdings.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Senior Security Engineer at Oakhurst Retail Holdings, a national retailer. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.retail-holdings.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Senior Security Engineer, about tracking vulnerability fixes, policy documentation, security awareness training. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.retail-holdings.needs": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Phishing simulation, Access reviews, Penetration testing, Incident response, Python, Vulnerability scanning, and 8 or more years of experience. State Incident Handler Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Phishing simulation",
+        "Access reviews",
+        "Penetration testing",
+        "Incident response",
+        "Python",
+        "Vulnerability scanning",
+        "Incident Handler Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Senior Security Engineer at Bluebird Family Services: access reviews, using Log analysis. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Log analysis",
+        "35"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Security Engineer at Bluebird Family Services: leading incident response drills, using Wireshark. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Wireshark"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Security Engineer at Bluebird Family Services: alert triage, using Penetration testing. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Penetration testing",
+        "55"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Security Engineer at Bluebird Family Services: advising leaders on security risk, using Splunk. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Splunk"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Security Engineer at Bluebird Family Services, about alert triage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Security Engineer at Bluebird Family Services, about risk assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Security Analyst at Northfield Group: security awareness training, using Phishing simulation. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Phishing simulation",
+        "40"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Analyst at Northfield Group: log monitoring, using Access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Access reviews"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Security Analyst at Northfield Group: risk assessments, using Incident response. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Incident response",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Analyst at Northfield Group: access reviews, using Nessus. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Nessus"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Security Analyst at Northfield Group, about risk assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Security Analyst at Northfield Group, about policy documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Security Analyst at Maple Court Care: alert triage, using Firewall rules. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firewall rules",
+        "40"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Security Analyst at Maple Court Care: tracking vulnerability fixes, using Threat modeling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Threat modeling"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Junior Security Analyst at Maple Court Care: policy documentation, using Log analysis. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Log analysis",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Security Analyst at Maple Court Care: security awareness training, using Wireshark. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Wireshark"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Security Analyst at Maple Court Care, about policy documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Security Analyst at Maple Court Care, about access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level information security analysis professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Wireshark, Incident response, Penetration testing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Wireshark",
+        "Incident response",
+        "Penetration testing"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level information security analysis professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Wireshark, Incident response, Penetration testing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Wireshark",
+        "Incident response",
+        "Penetration testing"
+      ]
+    }
+  }
+}

@@ -1,0 +1,324 @@
+{
+  "candidate": {
+    "email": "quinn.lindqvist@example.com",
+    "linkedin_url": "linkedin.com/in/example-quinn-sre-ops-mid",
+    "name": "Quinn Lindqvist",
+    "notes": null,
+    "phone": "(555) 010-6566",
+    "profile_text": null,
+    "username": "gold_sre_ops_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_sre_ops_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2022",
+      "issuer": "Open Systems Training Board",
+      "name": "Systems Administrator Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2022",
+      "issuer": "Cloud Skills Institute",
+      "name": "Cloud Operations Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Information Technology",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tunes monitoring alerts with PowerShell scripts that group duplicate notifications, cutting non-actionable pages by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Writes post-incident write-ups backed by Grafana dashboards that show the timeline, impact and follow-up actions for each outage."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans patching cycles around backup and recovery checkpoints, shortening maintenance windows by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automates backup and recovery tests in Python, confirming that restores complete and restored data matches the source."
+        }
+      ],
+      "company": "Lantern Hill",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Systems Engineer at Lantern Hill, responsible for tuning monitoring alerts so the team responds to real problems."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Systems Engineer at Lantern Hill who writes post-incident write-ups that turn outages into clear follow-up work."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Systems Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used Bash scripting to collect disk and memory usage for capacity planning, reducing unplanned storage expansions by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Joined the on-call rotation for Kubernetes workloads, triaging pod failures and escalating issues with clear notes."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Defined infrastructure changes in Terraform so plans could be reviewed during change approvals, cutting approval turnaround by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tuned monitoring alerts in Microsoft Azure, removing noisy thresholds so the team focused on actionable warnings."
+        }
+      ],
+      "company": "Stonebridge Community Trust",
+      "display_order": 1,
+      "end_date": "2024-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-06",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Junior Systems Administrator at Stonebridge Community Trust who drafted post-incident write-ups after service disruptions."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Junior Systems Administrator at Stonebridge Community Trust who ran backup and recovery tests to confirm restores worked as expected."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Systems Administrator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Ansible",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 610,
+      "name": "Backup and recovery",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 608,
+      "name": "Bash scripting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Grafana",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 601,
+      "name": "Kubernetes",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 603,
+      "name": "Microsoft Azure",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 602,
+      "name": "PowerShell",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "Prometheus",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 606,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "Terraform",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Site reliability and IT operations professional with about 4 years of experience running infrastructure on Kubernetes and Microsoft Azure. Owns a service end to end, from PowerShell automation and monitoring to post-incident write-ups and backup and recovery testing."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "IT operations and site reliability engineer with about 4 years of experience across Microsoft Azure and Kubernetes environments. Takes one workstream from planning through operation, using PowerShell, Terraform and Prometheus to automate changes and keep alerting useful."
+    }
+  ],
+  "tags": []
+}

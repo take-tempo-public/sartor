@@ -1,0 +1,450 @@
+{
+  "candidate": {
+    "email": "taylor.park@example.com",
+    "linkedin_url": "linkedin.com/in/example-taylor-logistics-driving-lead",
+    "name": "Taylor Park",
+    "notes": null,
+    "phone": "(555) 010-4012",
+    "profile_text": null,
+    "username": "gold_logistics_driving_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_logistics_driving_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "Driver Safety Council",
+      "name": "Driver Safety Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "State Motor Vehicle Agency",
+      "name": "Commercial Driver Licence"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "State Motor Vehicle Agency",
+      "name": "Hazardous Materials Endorsement"
+    },
+    {
+      "display_order": 3,
+      "expires": null,
+      "id": 804,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "Freight Operations Council",
+      "name": "Dispatch Coordinator Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2011",
+      "field": "Commercial Driving",
+      "id": 701,
+      "institution": "Lakeshore Trucking School",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates with dispatch on load assignments and trailer coupling checks, cutting yard turnaround time by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Trains new drivers in cargo documentation and reviews their paperwork until they complete it accurately on their own."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supervises load securement checks and hours-of-service logging, reducing load-related compliance findings by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reviews driver logs each week and pairs the findings with defensive driving coaching for drivers who need it."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Enforces pre-trip inspections across the fleet, raising on-time customer deliveries by 45 percent."
+        }
+      ],
+      "company": "Tidewater Haulers",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2018-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads the transportation team at Tidewater Haulers and works with dispatch daily to match drivers, trailers and loads."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supervises drivers at Tidewater Haulers and runs the process for reporting and tracking vehicle defects until repairs are closed."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Transportation Supervisor",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used route planning to choose regional delivery routes, cutting empty miles by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reported vehicle and trailer defects before hazardous loads, applying hazmat handling rules to keep unsafe equipment off the road."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built driver schedules and routes from fuel and mileage logs, lowering fuel cost per mile by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Performed pre-trip vehicle inspections, including trailer coupling checks before every departure."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with dispatch on pickups and drop-offs, keeping cargo documentation complete and cutting paperwork holds by 30 percent."
+        }
+      ],
+      "company": "Granite Ridge Transport",
+      "display_order": 1,
+      "end_date": "2018-05",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2014-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Drove as a senior driver at Granite Ridge Transport and reported vehicle defects promptly so repairs were scheduled before the next run."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Served as a senior driver at Granite Ridge Transport, training new drivers on safe operation and company procedures alongside regular routes."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Truck Driver",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept accurate hours-of-service logging on every route, improving on-time customer deliveries by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Planned routes around traffic and weather risks, applying defensive driving on every trip."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Completed pre-trip inspections before each shift and reported defects early, reducing roadside breakdowns by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Checked tires, brakes and lights during pre-trip vehicle inspections and used route planning to set departure times."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with dispatch on hazardous loads, following hazmat handling procedures and reducing loading delays by 30 percent."
+        }
+      ],
+      "company": "Stonebridge Logistics",
+      "display_order": 2,
+      "end_date": "2014-12",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2011-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Operated Class A trucks for Stonebridge Logistics, completing a full pre-trip vehicle inspection before every departure."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Drove Class A routes for Stonebridge Logistics and planned each trip to meet delivery windows and driving-hour limits."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Class A Truck Driver",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Cargo documentation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Defensive driving",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Fuel and mileage logs",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Hazmat handling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Hours-of-service logging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Pre-trip inspections",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Route planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Trailer coupling",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Transportation supervisor with 15 years in truck driving and dispatch, leading a driver team and answering for its safety and delivery results. Brings hands-on skill in cargo documentation, trailer coupling and defensive driving, backed by a commercial driver licence and hazardous materials endorsement."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead-level truck driving and dispatch professional with 15 years of experience, currently supervising transportation operations at Tidewater Haulers. Holds drivers to clear standards in cargo documentation, trailer coupling and defensive driving and owns the team's results."
+    }
+  ],
+  "tags": []
+}

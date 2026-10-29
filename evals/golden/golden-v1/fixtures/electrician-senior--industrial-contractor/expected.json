@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Riley Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Fire alarm wiring, in work or side projects",
+      "any exposure to Motor controls, in work or side projects"
+    ],
+    "scope_probes": [
+      "Master Electrician at Copperfield Electric: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Fire\\ alarm\\ wiring",
+    "(?i)Motor\\ controls",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Planning jobs and checking the work of others."
+      },
+      "edit_replacement": "including lighting installation in new and renovated spaces, planning jobs and checking the work of others",
+      "edit_target_substring": "including lighting installation in new and renovated spaces",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Fire alarm wiring exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "circuit testing",
+    "code compliance",
+    "lighting installation",
+    "load calculations"
+  ],
+  "notes": "senior-level electrical work. The profile has no Fire alarm wiring, Motor controls; generation must not claim them."
+}

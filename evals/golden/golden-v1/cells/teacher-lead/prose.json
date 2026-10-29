@@ -1,0 +1,51 @@
+{
+  "cell": "teacher-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:3d734d82fe5c85dac6a860bf68c2d95bd2a52740c68d8b76cc08f4b806dbb5f0",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVketNu6MNZLXUYuqoDj"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5147,
+      "output_tokens": 3409
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.school-network.about": "Summary\nNorthfield Learning Network is a nonprofit school network working so every child reads, reasons and learns with confidence. The Instructional Coach works alongside teachers in a hybrid role based in Minneapolis, MN, supporting lesson planning, classroom practice and student progress across our schools. A current state teaching licence and the Instructional Leadership Endorsement are required for this position.",
+    "jd.school-network.duties": "Duties\n- Coach teachers on adapting work for different learners, including students who need extra support or extension.\n- Support teachers in planning daily lessons that align with network curriculum and student needs.\n- Help teachers prepare for parent conferences with clear evidence of student progress.\n- Observe classrooms and give practical feedback on instruction and routines.\n- Lead planning meetings with grade-level teams to share strategies and student work.",
+    "jd.school-network.needs": "Licensure and qualifications\n- Instructional Leadership Endorsement required.\n- 12 or more years of experience in elementary education, including coaching or lead teaching.\n- Working knowledge of Google Classroom and Nearpod.\n- Small-group instruction and phonics instruction experience in the early grades.\n- Formative assessment and reading intervention skills, with the ability to coach others in both.",
+    "r1.b1": "Leads small-group reading and numeracy blocks built around math manipulatives, lifting student benchmark scores by 25 percent.",
+    "r1.b2": "Plans daily lessons with teachers that build in classroom management routines, keeping instruction time focused.",
+    "r1.b3": "Sets up classroom routines in Google Classroom for posting assignments and feedback, cutting late submissions by 10 percent.",
+    "r1.b4": "Guides grade-level planning meetings and uses Seesaw to share student work samples that shape upcoming units.",
+    "r1.b5": "Coaches colleagues on phonics instruction through modeling and feedback cycles, raising early reading screening pass rates by 20 percent.",
+    "r1.i1": "Supports teachers at Cedar Grove Academy in preparing for and leading parent conferences with clear evidence of each student's progress.",
+    "r1.i2": "Coaches teachers at Cedar Grove Academy on assessing student progress and using the results to adjust instruction.",
+    "r2.b1": "Ran parent conferences using Nearpod lesson reports to show student work, increasing conference attendance by 25 percent.",
+    "r2.b2": "Led team planning with grade-level colleagues to align small-group instruction across classrooms.",
+    "r2.b3": "Tracked student progress through regular checks tied to lesson planning, cutting the number of students below benchmark by 50 percent.",
+    "r2.b4": "Adapted math work for different learners with math manipulatives, giving each student a concrete entry point to new concepts.",
+    "r2.b5": "Built small-group reading blocks on steady classroom management, reducing off-task interruptions by 50 percent.",
+    "r2.i1": "Led a classroom and teaching team at Willowbrook Elementary School, with a focus on assessing student progress and acting on the findings.",
+    "r2.i2": "Served as lead teacher at Willowbrook Elementary School, adapting work so different learners could reach grade-level goals.",
+    "r3.b1": "Shared student work through Google Classroom ahead of parent conferences, raising family participation by 40 percent.",
+    "r3.b2": "Planned units with grade-level colleagues and used Seesaw to collect and compare student work.",
+    "r3.b3": "Assessed student progress in phonics instruction with weekly checks, increasing the share of students reading at grade level by 45 percent.",
+    "r3.b4": "Adapted lessons for different learners with Nearpod, offering varied practice and pacing within a single lesson.",
+    "r3.b5": "Delivered small-group instruction in reading for students below benchmark, raising their fluency scores by 20 percent.",
+    "r3.i1": "Taught at Maple Street School, adapting work for different learners across reading and math.",
+    "r3.i2": "Classroom teacher at Maple Street School who ran daily small-group reading for students at a range of levels.",
+    "summary.1": "Lead-level elementary educator with 12 years of experience teaching, leading teams and coaching teachers. Answers for program results through small-group instruction, phonics work and digital tools such as Nearpod and Google Classroom.",
+    "summary.2": "Elementary teaching professional with 12 years in classrooms and coaching, currently leading instructional work and owning its outcomes. Uses small-group instruction, Nearpod and Google Classroom to plan lessons, track progress and support colleagues."
+  }
+}

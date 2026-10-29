@@ -1,0 +1,450 @@
+{
+  "candidate": {
+    "email": "harper.reyes@example.com",
+    "linkedin_url": "linkedin.com/in/example-harper-electrician-lead",
+    "name": "Harper Reyes",
+    "notes": null,
+    "phone": "(555) 010-5909",
+    "profile_text": null,
+    "username": "gold_electrician_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_electrician_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2013",
+      "issuer": "State Apprenticeship Council",
+      "name": "Apprentice Registration Card"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2013",
+      "issuer": "Safety Training Council",
+      "name": "Construction Safety Card"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2013",
+      "issuer": "State Licensing Board",
+      "name": "Journeyman Electrician Licence"
+    },
+    {
+      "display_order": 3,
+      "expires": null,
+      "id": 804,
+      "is_active": true,
+      "issued": "2017",
+      "issuer": "State Licensing Board",
+      "name": "Master Electrician Licence"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Apprenticeship Certificate",
+      "display_order": 0,
+      "end_date": "2013",
+      "field": "Electrical Construction",
+      "id": 701,
+      "institution": "Cedar Valley Trades Academy",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tests circuits on industrial installations and sets crew standards for power tool use, cutting rework on finished circuits by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Traces faults in new and existing fixtures during lighting installation, isolating failed components before crews close up ceilings and walls."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Directs helpers and apprentices through step-by-step troubleshooting on live jobs, reducing call-backs for repeat faults by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Oversees pulling and terminating wire for motor controls, checking each termination against the drawings before equipment is energized."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans jobs and orders materials with code compliance built into each takeoff, lowering material waste by 10 percent."
+        }
+      ],
+      "company": "Ashford Industrial Electric",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads the crew installing panels and fixtures on industrial projects as Electrical Foreman at Ashford Industrial Electric."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Runs circuit testing and sign-off for crew work at Ashford Industrial Electric, confirming installations are safe before handover."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Electrical Foreman",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed panels and fixtures and planned wire pulling routes ahead of each job, cutting installation time by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran conduit to plan and followed each run with circuit testing to confirm continuity and correct connections."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans before each job and paired them with careful multimeter use at every checkpoint, reducing wiring errors at inspection by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested circuits after installation and kept power tool use safe and consistent across the crew's daily work."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Traced faults in fixtures and wiring during lighting installation, shortening fault-finding time by 25 percent."
+        }
+      ],
+      "company": "Copperfield Electric",
+      "display_order": 1,
+      "end_date": "2022-10",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Tested circuits and verified completed installations as Master Electrician at Copperfield Electric."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Planned jobs and ordered materials for installation work as Master Electrician at Copperfield Electric."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Master Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran conduit on installation projects and used troubleshooting to resolve routing conflicts early, cutting conduit rework by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans to wire and connect motor controls, matching each connection to the drawings."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested circuits against code compliance requirements, raising first-pass inspection results by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Traced faults back through cable runs during wire pulling, finding damaged conductors before termination."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pulled and terminated wire and completed circuit testing on each run, reducing termination faults by 10 percent."
+        }
+      ],
+      "company": "Summit Power Contractors",
+      "display_order": 2,
+      "end_date": "2020-11",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2013-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Ran conduit and installed wiring as Journeyman Electrician at Summit Power Contractors."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Traced faults and repaired wiring issues as Journeyman Electrician at Summit Power Contractors."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Journeyman Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Circuit testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Code compliance",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Lighting installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Motor controls",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Multimeter use",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Power tool use",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Troubleshooting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Wire pulling",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Electrical foreman with 14 years of experience running crews and answering for the quality, safety and schedule of each job. Brings hands-on skill in motor controls, wire pulling and multimeter use, backed by a Master Electrician Licence."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Licensed master electrician with 14 years in the trade, now leading crews as foreman and taking responsibility for finished work. Directs installation and testing with practical strength in wire pulling, motor controls and multimeter use."
+    }
+  ],
+  "tags": []
+}

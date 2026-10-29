@@ -1,0 +1,435 @@
+{
+  "candidate": {
+    "email": "alex.novak@example.com",
+    "linkedin": "linkedin.com/in/example-alex-electrician-mid",
+    "name": "Alex Novak",
+    "phone": "(555) 010-5805",
+    "username": "gold_electrician_mid"
+  },
+  "cell": "electrician-mid",
+  "cell_seed": 2017436042,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Load calculations on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Load calculations, in work or side projects",
+        "any exposure to Troubleshooting, in work or side projects",
+        "any progress toward Master Electrician Licence"
+      ],
+      "scope_probes": [
+        "Journeyman Electrician at Redfern Electrical Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Load\\ calculations",
+      "(?i)Troubleshooting",
+      "(?i)Master\\ Electrician\\ Licence",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "blueprint reading",
+      "circuit testing",
+      "code compliance",
+      "grounding and bonding"
+    ],
+    "notes": "mid-level electrical work. The profile has no Load calculations, Troubleshooting, Master Electrician Licence; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Doing the work to code on my own.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, doing the work to code on my own",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Load calculations exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Journeyman Electrician",
+        "Marlow Residential Electric — On site, Spokane, WA"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.residential-electric.about",
+        "jd.residential-electric.duties",
+        "jd.residential-electric.needs"
+      ],
+      "slug": "residential-electric"
+    }
+  ],
+  "level": "mid",
+  "profession": "electrician",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Code compliance in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Redfern Electrical Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-01",
+          "title": "Journeyman Electrician"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Summit Power Contractors",
+          "end": "2024-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-12",
+          "title": "Apprentice Electrician"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Electrical Construction",
+          "institution": "Cedar Valley Trades Academy",
+          "slots": [],
+          "year": "2021"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprentice Registration Card",
+          "year": "2021"
+        },
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2022"
+        },
+        {
+          "issuer": "State Licensing Board",
+          "name": "Journeyman Electrician Licence",
+          "year": "2024"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Code compliance",
+        "Multimeter use",
+        "Blueprint reading",
+        "Panel installation",
+        "Grounding and bonding",
+        "Conduit bending",
+        "Circuit testing",
+        "Power tool use"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Code compliance"
+    },
+    {
+      "category": "tool",
+      "name": "Multimeter use"
+    },
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "method",
+      "name": "Panel installation"
+    },
+    {
+      "category": "method",
+      "name": "Grounding and bonding"
+    },
+    {
+      "category": "method",
+      "name": "Conduit bending"
+    },
+    {
+      "category": "method",
+      "name": "Circuit testing"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    }
+  ],
+  "slots": {
+    "jd.residential-electric.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Journeyman Electrician at Marlow Residential Electric, a residential electrical contractor. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.residential-electric.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Journeyman Electrician, about reading plans, pulling and terminating wire, installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.residential-electric.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Grounding and bonding, Circuit testing, Code compliance, Blueprint reading, Load calculations, Troubleshooting, and 5 or more years of experience. State Journeyman Electrician Licence as a required licence or certification. State Master Electrician Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Grounding and bonding",
+        "Circuit testing",
+        "Code compliance",
+        "Blueprint reading",
+        "Load calculations",
+        "Troubleshooting",
+        "Journeyman Electrician Licence",
+        "Master Electrician Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Redfern Electrical Services: pulling and terminating wire, using Power tool use. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Power tool use",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Redfern Electrical Services: running conduit, using Code compliance. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Code compliance"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Redfern Electrical Services: installing panels and fixtures, using Multimeter use. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Multimeter use",
+        "45"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Redfern Electrical Services: tracing faults, using Circuit testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Circuit testing"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Journeyman Electrician at Redfern Electrical Services, about installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Journeyman Electrician at Redfern Electrical Services, about tracing faults. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: reading plans, using Grounding and bonding. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Grounding and bonding",
+        "30"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: testing circuits, using Panel installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Panel installation"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: pulling and terminating wire, using Blueprint reading. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: running conduit, using Conduit bending. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Conduit bending"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Apprentice Electrician at Summit Power Contractors, about tracing faults. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Apprentice Electrician at Summit Power Contractors, about running conduit. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a journeyman-level electrical work professional with about 5 years of experience, scope: doing the work to code on my own. Mention Code compliance, Multimeter use, Blueprint reading.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Code compliance",
+        "Multimeter use",
+        "Blueprint reading"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a journeyman-level electrical work professional with about 5 years of experience, scope: doing the work to code on my own. Mention Code compliance, Multimeter use, Blueprint reading.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Code compliance",
+        "Multimeter use",
+        "Blueprint reading"
+      ]
+    }
+  }
+}

@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "taylor.park@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-logistics-driving-lead",
+    "name": "Taylor Park",
+    "phone": "(555) 010-4012",
+    "username": "gold_logistics_driving_lead"
+  },
+  "cell": "logistics-driving-lead",
+  "cell_seed": 799351443,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Delivery scheduling on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Delivery scheduling, in work or side projects",
+        "any exposure to Dispatch software, in work or side projects"
+      ],
+      "scope_probes": [
+        "Transportation Supervisor at Tidewater Haulers: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Delivery\\ scheduling",
+      "(?i)Dispatch\\ software",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "hazmat handling",
+      "hours-of-service logging",
+      "pre-trip inspections",
+      "route planning"
+    ],
+    "notes": "lead-level truck driving and dispatch. The profile has no Delivery scheduling, Dispatch software; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team or program and answering for its results.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team or program and answering for its results",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Delivery scheduling exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Transportation Supervisor",
+        "Beacon Distribution Group — On site, Kansas City, MO"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.distribution.about",
+        "jd.distribution.duties",
+        "jd.distribution.needs"
+      ],
+      "slug": "distribution"
+    }
+  ],
+  "level": "lead",
+  "profession": "logistics-driving",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Cargo documentation in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Tidewater Haulers",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2018-05",
+          "title": "Transportation Supervisor"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Granite Ridge Transport",
+          "end": "2018-05",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2014-12",
+          "title": "Senior Truck Driver"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Stonebridge Logistics",
+          "end": "2014-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2011-07",
+          "title": "Class A Truck Driver"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Commercial Driving",
+          "institution": "Lakeshore Trucking School",
+          "slots": [],
+          "year": "2011"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Driver Safety Council",
+          "name": "Driver Safety Certificate",
+          "year": "2011"
+        },
+        {
+          "issuer": "State Motor Vehicle Agency",
+          "name": "Commercial Driver Licence",
+          "year": "2011"
+        },
+        {
+          "issuer": "State Motor Vehicle Agency",
+          "name": "Hazardous Materials Endorsement",
+          "year": "2011"
+        },
+        {
+          "issuer": "Freight Operations Council",
+          "name": "Dispatch Coordinator Certificate",
+          "year": "2011"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Cargo documentation",
+        "Trailer coupling",
+        "Defensive driving",
+        "Fuel and mileage logs",
+        "Hazmat handling",
+        "Route planning",
+        "Pre-trip inspections",
+        "Hours-of-service logging"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Cargo documentation"
+    },
+    {
+      "category": "method",
+      "name": "Trailer coupling"
+    },
+    {
+      "category": "method",
+      "name": "Defensive driving"
+    },
+    {
+      "category": "method",
+      "name": "Fuel and mileage logs"
+    },
+    {
+      "category": "method",
+      "name": "Hazmat handling"
+    },
+    {
+      "category": "method",
+      "name": "Route planning"
+    },
+    {
+      "category": "method",
+      "name": "Pre-trip inspections"
+    },
+    {
+      "category": "method",
+      "name": "Hours-of-service logging"
+    }
+  ],
+  "slots": {
+    "jd.distribution.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Transportation Supervisor at Beacon Distribution Group, a distribution company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.distribution.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Transportation Supervisor, about securing and checking loads, coordinating with dispatch, keeping driver logs. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.distribution.needs": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Hours-of-service logging, Route planning, Hazmat handling, Pre-trip inspections, Delivery scheduling, Dispatch software, and 15 or more years of experience. State Dispatch Coordinator Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Hours-of-service logging",
+        "Route planning",
+        "Hazmat handling",
+        "Pre-trip inspections",
+        "Delivery scheduling",
+        "Dispatch software",
+        "Dispatch Coordinator Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Transportation Supervisor at Tidewater Haulers: coordinating with dispatch, using Trailer coupling. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Trailer coupling",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Transportation Supervisor at Tidewater Haulers: training new drivers, using Cargo documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Cargo documentation"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Transportation Supervisor at Tidewater Haulers: securing and checking loads, using Hours-of-service logging. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Hours-of-service logging",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Transportation Supervisor at Tidewater Haulers: keeping driver logs, using Defensive driving. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Defensive driving"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Transportation Supervisor at Tidewater Haulers: delivering to customers on time, using Pre-trip inspections. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Pre-trip inspections",
+        "45"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Transportation Supervisor at Tidewater Haulers, about coordinating with dispatch. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Transportation Supervisor at Tidewater Haulers, about reporting vehicle defects. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Truck Driver at Granite Ridge Transport: planning routes, using Route planning. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Route planning",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Truck Driver at Granite Ridge Transport: reporting vehicle defects, using Hazmat handling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Hazmat handling"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Truck Driver at Granite Ridge Transport: building driver schedules and routes, using Fuel and mileage logs. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Fuel and mileage logs",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Truck Driver at Granite Ridge Transport: pre-trip vehicle inspections, using Trailer coupling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Trailer coupling"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Senior Truck Driver at Granite Ridge Transport: coordinating with dispatch, using Cargo documentation. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Cargo documentation",
+        "30"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Truck Driver at Granite Ridge Transport, about reporting vehicle defects. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Truck Driver at Granite Ridge Transport, about training new drivers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: delivering to customers on time, using Hours-of-service logging. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Hours-of-service logging",
+        "10"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: planning routes, using Defensive driving. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Defensive driving"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: reporting vehicle defects, using Pre-trip inspections. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Pre-trip inspections",
+        "50"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: pre-trip vehicle inspections, using Route planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Route planning"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Class A Truck Driver at Stonebridge Logistics: coordinating with dispatch, using Hazmat handling. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Hazmat handling",
+        "30"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Class A Truck Driver at Stonebridge Logistics, about pre-trip vehicle inspections. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Class A Truck Driver at Stonebridge Logistics, about planning routes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level truck driving and dispatch professional with about 15 years of experience, scope: leading a team or program and answering for its results. Mention Cargo documentation, Trailer coupling, Defensive driving.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Cargo documentation",
+        "Trailer coupling",
+        "Defensive driving"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level truck driving and dispatch professional with about 15 years of experience, scope: leading a team or program and answering for its results. Mention Cargo documentation, Trailer coupling, Defensive driving.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Cargo documentation",
+        "Trailer coupling",
+        "Defensive driving"
+      ]
+    }
+  }
+}

@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "harper.reyes@example.com",
+    "linkedin": "linkedin.com/in/example-harper-electrician-lead",
+    "name": "Harper Reyes",
+    "phone": "(555) 010-5909",
+    "username": "gold_electrician_lead"
+  },
+  "cell": "electrician-lead",
+  "cell_seed": 846438268,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Blueprint reading on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Blueprint reading, in work or side projects",
+        "any exposure to Load calculations, in work or side projects"
+      ],
+      "scope_probes": [
+        "Electrical Foreman at Ashford Industrial Electric: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Blueprint\\ reading",
+      "(?i)Load\\ calculations",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "code compliance",
+      "lighting installation",
+      "troubleshooting",
+      "wire pulling"
+    ],
+    "notes": "lead-level electrical work. The profile has no Blueprint reading, Load calculations; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Running the crew and answering for the job.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, running the crew and answering for the job",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Blueprint reading exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Electrical Foreman",
+        "Northplain Municipal Utilities — On site, Northplain, IA"
+      ],
+      "setting": "public-sector",
+      "slots": [
+        "jd.municipal-utility.about",
+        "jd.municipal-utility.duties",
+        "jd.municipal-utility.needs"
+      ],
+      "slug": "municipal-utility"
+    }
+  ],
+  "level": "lead",
+  "profession": "electrician",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Motor controls in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Ashford Industrial Electric",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2022-10",
+          "title": "Electrical Foreman"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Copperfield Electric",
+          "end": "2022-10",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-11",
+          "title": "Master Electrician"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Summit Power Contractors",
+          "end": "2020-11",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-01",
+          "title": "Journeyman Electrician"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Electrical Construction",
+          "institution": "Cedar Valley Trades Academy",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprentice Registration Card",
+          "year": "2013"
+        },
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2013"
+        },
+        {
+          "issuer": "State Licensing Board",
+          "name": "Journeyman Electrician Licence",
+          "year": "2013"
+        },
+        {
+          "issuer": "State Licensing Board",
+          "name": "Master Electrician Licence",
+          "year": "2017"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Motor controls",
+        "Wire pulling",
+        "Multimeter use",
+        "Code compliance",
+        "Troubleshooting",
+        "Circuit testing",
+        "Lighting installation",
+        "Power tool use"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Motor controls"
+    },
+    {
+      "category": "method",
+      "name": "Wire pulling"
+    },
+    {
+      "category": "tool",
+      "name": "Multimeter use"
+    },
+    {
+      "category": "method",
+      "name": "Code compliance"
+    },
+    {
+      "category": "method",
+      "name": "Troubleshooting"
+    },
+    {
+      "category": "method",
+      "name": "Circuit testing"
+    },
+    {
+      "category": "method",
+      "name": "Lighting installation"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    }
+  ],
+  "slots": {
+    "jd.municipal-utility.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Duties' paragraph of a job description for a Electrical Foreman at Northplain Municipal Utilities, a municipal utility. Write in the voice of a fictional county or city agency posting; name no real agency, statute or pay table. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.municipal-utility.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities of the position' heading and four to six bullet lines for a Electrical Foreman, about directing helpers and apprentices, reading plans, planning jobs and ordering materials. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.municipal-utility.needs": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Wire pulling, Troubleshooting, Lighting installation, Code compliance, Load calculations, Blueprint reading, and 14 or more years of experience. State Master Electrician Licence as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Wire pulling",
+        "Troubleshooting",
+        "Lighting installation",
+        "Code compliance",
+        "Load calculations",
+        "Blueprint reading",
+        "Master Electrician Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Electrical Foreman at Ashford Industrial Electric: testing circuits, using Power tool use. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Power tool use",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Electrical Foreman at Ashford Industrial Electric: tracing faults, using Lighting installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Lighting installation"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Electrical Foreman at Ashford Industrial Electric: directing helpers and apprentices, using Troubleshooting. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Troubleshooting",
+        "55"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Electrical Foreman at Ashford Industrial Electric: pulling and terminating wire, using Motor controls. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Motor controls"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Electrical Foreman at Ashford Industrial Electric: planning jobs and ordering materials, using Code compliance. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Code compliance",
+        "10"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Electrical Foreman at Ashford Industrial Electric, about installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Electrical Foreman at Ashford Industrial Electric, about testing circuits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: installing panels and fixtures, using Wire pulling. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Wire pulling",
+        "55"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: running conduit, using Circuit testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Circuit testing"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: reading plans, using Multimeter use. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Multimeter use",
+        "30"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: testing circuits, using Power tool use. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Power tool use"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Master Electrician at Copperfield Electric: tracing faults, using Lighting installation. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Lighting installation",
+        "25"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Master Electrician at Copperfield Electric, about testing circuits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Master Electrician at Copperfield Electric, about planning jobs and ordering materials. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Summit Power Contractors: running conduit, using Troubleshooting. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Troubleshooting",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Summit Power Contractors: reading plans, using Motor controls. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Motor controls"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Summit Power Contractors: testing circuits, using Code compliance. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Code compliance",
+        "40"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Electrician at Summit Power Contractors: tracing faults, using Wire pulling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Wire pulling"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Journeyman Electrician at Summit Power Contractors: pulling and terminating wire, using Circuit testing. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Circuit testing",
+        "10"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Journeyman Electrician at Summit Power Contractors, about running conduit. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Journeyman Electrician at Summit Power Contractors, about tracing faults. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a foreman-level electrical work professional with about 14 years of experience, scope: running the crew and answering for the job. Mention Motor controls, Wire pulling, Multimeter use.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Motor controls",
+        "Wire pulling",
+        "Multimeter use"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a foreman-level electrical work professional with about 14 years of experience, scope: running the crew and answering for the job. Mention Motor controls, Wire pulling, Multimeter use.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Motor controls",
+        "Wire pulling",
+        "Multimeter use"
+      ]
+    }
+  }
+}

@@ -1,0 +1,557 @@
+{
+  "candidate": {
+    "email": "taylor.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-accounting-lead",
+    "name": "Taylor Brandt",
+    "phone": "(555) 010-9040",
+    "username": "gold_accounting_lead"
+  },
+  "cell": "accounting-lead",
+  "cell_seed": 1919820124,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Account reconciliation on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Account reconciliation, in work or side projects",
+        "any exposure to Microsoft Excel, in work or side projects"
+      ],
+      "scope_probes": [
+        "Accounting Manager at Cedar Hollow Hospice: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Account\\ reconciliation",
+      "(?i)Microsoft\\ Excel",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "accounts payable",
+      "audit support",
+      "journal entries",
+      "sales tax filing"
+    ],
+    "notes": "lead-level accounting. The profile has no Account reconciliation, Microsoft Excel; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Managing a team and answering for the results of the function.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, managing a team and answering for the results of the function",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Account reconciliation exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Accounting Manager",
+        "Evergreen Community Foundation — Hybrid, Seattle, WA"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.foundation.about",
+        "jd.foundation.duties",
+        "jd.foundation.needs"
+      ],
+      "slug": "foundation"
+    }
+  ],
+  "level": "lead",
+  "profession": "accounting",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Financial statements in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Cedar Hollow Hospice",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2021-01",
+          "title": "Accounting Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Redfern Family Trades",
+          "end": "2021-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2017-09",
+          "title": "Senior Accountant"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Neighborhood Table Services",
+          "end": "2017-09",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2012-11",
+          "title": "Accountant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Accounting",
+          "institution": "State University",
+          "slots": [],
+          "year": "2012"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Accounting Training Council",
+          "name": "Bookkeeping Certificate",
+          "year": "2014"
+        },
+        {
+          "issuer": "State Board of Accountancy",
+          "name": "Certified Public Accountant Licence",
+          "year": "2017"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Financial statements",
+        "Accounts receivable",
+        "QuickBooks",
+        "Journal entries",
+        "Fixed asset tracking",
+        "Sales tax filing",
+        "Accounts payable",
+        "Audit support"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Financial statements"
+    },
+    {
+      "category": "method",
+      "name": "Accounts receivable"
+    },
+    {
+      "category": "tool",
+      "name": "QuickBooks"
+    },
+    {
+      "category": "method",
+      "name": "Journal entries"
+    },
+    {
+      "category": "method",
+      "name": "Fixed asset tracking"
+    },
+    {
+      "category": "method",
+      "name": "Sales tax filing"
+    },
+    {
+      "category": "method",
+      "name": "Accounts payable"
+    },
+    {
+      "category": "method",
+      "name": "Audit support"
+    }
+  ],
+  "slots": {
+    "jd.foundation.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Accounting Manager at Evergreen Community Foundation, a community foundation. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.foundation.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Accounting Manager, about audit preparation, bank reconciliations, invoice review. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.foundation.needs": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Audit support, Accounts payable, Sales tax filing, Journal entries, Account reconciliation, Microsoft Excel, and 14 or more years of experience. State Certified Public Accountant Licence as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Audit support",
+        "Accounts payable",
+        "Sales tax filing",
+        "Journal entries",
+        "Account reconciliation",
+        "Microsoft Excel",
+        "Certified Public Accountant Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Accounting Manager at Cedar Hollow Hospice: month-end close, using Fixed asset tracking. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Fixed asset tracking",
+        "40"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accounting Manager at Cedar Hollow Hospice: bank reconciliations, using Financial statements. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Financial statements"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Accounting Manager at Cedar Hollow Hospice: audit preparation, using Accounts payable. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accounts payable",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accounting Manager at Cedar Hollow Hospice: invoice review, using QuickBooks. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "QuickBooks"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Accounting Manager at Cedar Hollow Hospice: preparing statements, using Accounts receivable. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accounts receivable",
+        "10"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Accounting Manager at Cedar Hollow Hospice, about audit preparation. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Accounting Manager at Cedar Hollow Hospice, about budget variance reports. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Accountant at Redfern Family Trades: reviewing the work of staff accountants, using Journal entries. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Journal entries",
+        "45"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Accountant at Redfern Family Trades: budget variance reports, using Sales tax filing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Sales tax filing"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Accountant at Redfern Family Trades: tax schedules, using Audit support. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Audit support",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Accountant at Redfern Family Trades: owning the close calendar for the team, using Fixed asset tracking. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Fixed asset tracking"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Senior Accountant at Redfern Family Trades: month-end close, using Financial statements. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Financial statements",
+        "30"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Accountant at Redfern Family Trades, about budget variance reports. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Accountant at Redfern Family Trades, about reviewing the work of staff accountants. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Accountant at Neighborhood Table Services: invoice review, using Accounts payable. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accounts payable",
+        "20"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accountant at Neighborhood Table Services: preparing statements, using QuickBooks. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "QuickBooks"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Accountant at Neighborhood Table Services: budget variance reports, using Accounts receivable. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Accounts receivable",
+        "50"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Accountant at Neighborhood Table Services: tax schedules, using Journal entries. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Journal entries"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Accountant at Neighborhood Table Services: month-end close, using Sales tax filing. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Sales tax filing",
+        "10"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Accountant at Neighborhood Table Services, about tax schedules. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Accountant at Neighborhood Table Services, about invoice review. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a manager-level accounting professional with about 14 years of experience, scope: managing a team and answering for the results of the function. Mention Financial statements, Accounts receivable, QuickBooks.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Financial statements",
+        "Accounts receivable",
+        "QuickBooks"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a manager-level accounting professional with about 14 years of experience, scope: managing a team and answering for the results of the function. Mention Financial statements, Accounts receivable, QuickBooks.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Financial statements",
+        "Accounts receivable",
+        "QuickBooks"
+      ]
+    }
+  }
+}

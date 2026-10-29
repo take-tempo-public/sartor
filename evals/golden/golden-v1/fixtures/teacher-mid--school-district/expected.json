@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Casey Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Phonics instruction, in work or side projects",
+      "any exposure to Reading intervention, in work or side projects",
+      "any progress toward Instructional Leadership Endorsement"
+    ],
+    "scope_probes": [
+      "Classroom Teacher at Hillcrest Elementary School: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Phonics\\ instruction",
+    "(?i)Reading\\ intervention",
+    "(?i)Instructional\\ Leadership\\ Endorsement",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
+      },
+      "edit_replacement": "Tracks student progress through regular checks of classwork and reading, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Tracks student progress through regular checks of classwork and reading",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Phonics instruction exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "classroom management",
+    "differentiated instruction",
+    "math manipulatives",
+    "parent communication"
+  ],
+  "notes": "mid-level elementary teaching. The profile has no Phonics instruction, Reading intervention, Instructional Leadership Endorsement; generation must not claim them."
+}

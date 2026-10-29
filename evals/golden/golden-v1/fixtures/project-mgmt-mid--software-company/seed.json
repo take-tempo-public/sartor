@@ -1,0 +1,301 @@
+{
+  "candidate": {
+    "email": "devon.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-devon-project-mgmt-mid",
+    "name": "Devon Novak",
+    "notes": null,
+    "phone": "(555) 010-5314",
+    "profile_text": null,
+    "username": "gold_project_mgmt_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_project_mgmt_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "Project Practice Institute",
+      "name": "Project Practitioner Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2023",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs budget reviews for active projects, using resource planning to match staff to scope and reducing budget variance by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads project close-out, using status reporting to confirm deliverables, sign-offs and open items before each project is handed over."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracks schedules and milestones on vendor-dependent work, applying vendor negotiation to reset delivery dates and raising on-time milestone completion by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates vendors in Asana, assigning tasks, deadlines and owners so deliveries stay visible to the project team."
+        }
+      ],
+      "company": "Granite Ridge",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Manages projects at Granite Ridge and maintains risk and issue logs that keep owners aware of open problems and agreed responses."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Oversees Granite Ridge projects through close-out, confirming that deliverables are accepted and project records are complete."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Project Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintained risk registers for active projects, logging issues and owners each week and reducing overdue issue resolution by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracked change requests in Smartsheet, recording the impact on scope, schedule and cost before each request went for approval."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared budget reviews in Microsoft Project, comparing planned and actual costs and reducing budget overruns by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Closed out completed projects in Jira, verifying that every ticket was resolved and handover notes were filed."
+        }
+      ],
+      "company": "Kestrel Works",
+      "display_order": 1,
+      "end_date": "2024-07",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported project close-out at Kestrel Works, gathering sign-offs and archiving project records as work finished."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Coordinated change requests at Kestrel Works, logging each request and tracking it through review and approval."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Project Coordinator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Asana",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Jira",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "Microsoft Project",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Resource planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Risk registers",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Smartsheet",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Status reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Vendor negotiation",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Project management professional with 3 years of experience owning a recurring process from request to completion. Uses status reporting, Smartsheet and vendor negotiation to keep work on schedule and stakeholders informed."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Project specialist with about 3 years of experience running a repeating process from first request through to completion. Brings status reporting, vendor negotiation and Smartsheet tracking to each stage of delivery."
+    }
+  ],
+  "tags": []
+}

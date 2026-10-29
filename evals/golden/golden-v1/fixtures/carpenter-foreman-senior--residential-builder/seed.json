@@ -1,0 +1,408 @@
+{
+  "candidate": {
+    "email": "priya.haddad@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-carpenter-foreman-senior",
+    "name": "Priya Haddad",
+    "notes": null,
+    "phone": "(555) 010-4484",
+    "profile_text": null,
+    "username": "gold_carpenter_foreman_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_carpenter_foreman_senior",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2017",
+      "issuer": "Safety Training Council",
+      "name": "Construction Safety Card"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2019",
+      "issuer": "State Apprenticeship Council",
+      "name": "Apprenticeship Completion Certificate"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2021",
+      "issuer": "Carpenters Training Council",
+      "name": "Lead Carpenter Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Apprenticeship Certificate",
+      "display_order": 0,
+      "end_date": "2017",
+      "field": "Carpentry",
+      "id": 701,
+      "institution": "Northern Plains Technical College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads framing of walls and floors on home remodels, cutting rework by 20 percent through careful checks before sheathing goes on."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Enforces jobsite safety on every remodeling site, checking ladders, tools and walkways with the crew before work begins."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Sets doors, windows and trim on remodels and handles concrete forming for new steps and thresholds, reducing installation callbacks by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans jobs and orders lumber ahead of each phase, scheduling scaffold erection so exterior work starts without delays."
+        }
+      ],
+      "company": "Marlow Remodeling",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-02",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Marlow Remodeling, frames walls and floors for home remodels and checks the work of the crew."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Builds and sets forms for concrete footings, slabs and steps on remodeling projects at Marlow Remodeling."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Master Carpenter",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built forms for concrete stair landings and handled stair building on framing jobs, cutting form setup time by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ordered lumber and materials for each job based on careful layout and measuring, keeping waste and return trips low."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Framed walls and floors and handled rafter cutting for roof systems, raising daily framing output by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept work areas safe during door and window installation by bracing openings and clearing debris from walkways."
+        }
+      ],
+      "company": "Harlow Framing Company",
+      "display_order": 1,
+      "end_date": "2024-02",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Built forms for concrete footings and walls as part of the framing crews at Harlow Framing Company."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Kept framing sites safe at Harlow Framing Company while working as a journeyman on walls, floors and roofs."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Journeyman Carpenter",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed doors, windows and trim after framing rough openings, cutting installation time by 45 percent under journeyman guidance."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans and took measurements for layout while following jobsite safety rules on tools, ladders and cuts."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assisted with concrete forming for footings and walls, reducing form material waste by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ordered lumber and materials for jobs, including the planks and frames needed for scaffold erection."
+        }
+      ],
+      "company": "Tillman Brothers Carpentry",
+      "display_order": 2,
+      "end_date": "2021-12",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Learned to keep the site safe at Tillman Brothers Carpentry while training as an apprentice carpenter."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Helped order lumber and materials for jobs at Tillman Brothers Carpentry during a carpentry apprenticeship."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Apprentice Carpenter",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Concrete forming",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Door and window installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Framing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Jobsite safety",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Layout and measuring",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Rafter cutting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Scaffold erection",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Stair building",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, and holds a Lead Carpenter Certificate."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Carpentry professional at master level with about 9 years in the trade, planning jobs from layout to finish and checking the work of others. Brings hands-on skill in layout and measuring, framing and jobsite safety on remodeling and framing sites."
+    }
+  ],
+  "tags": []
+}

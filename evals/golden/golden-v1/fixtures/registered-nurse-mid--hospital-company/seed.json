@@ -1,0 +1,319 @@
+{
+  "candidate": {
+    "email": "harper.mehta@example.com",
+    "linkedin_url": "linkedin.com/in/example-harper-registered-nurse-mid",
+    "name": "Harper Mehta",
+    "notes": null,
+    "phone": "(555) 010-6135",
+    "profile_text": null,
+    "username": "gold_registered_nurse_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_registered_nurse_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2023",
+      "issuer": "State Board of Nursing",
+      "name": "Registered Nurse Licence"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "Resuscitation Training Council",
+      "name": "Basic Life Support Card"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "Resuscitation Training Council",
+      "name": "Advanced Cardiac Life Support Card"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.N.",
+      "display_order": 0,
+      "end_date": "2023",
+      "field": "Nursing",
+      "id": 701,
+      "institution": "Ridgeway College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Documents medication administration in the patient record at the point of care, reducing charting omissions by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Uses triage findings to teach patients and families which symptoms need same-day care and how to manage minor conditions at home."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pairs vital signs monitoring trends with each shift handoff, cutting missed follow-up checks by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assesses patients at each visit and provides wound care, tracking healing progress and escalating signs of infection to the provider."
+        }
+      ],
+      "company": "Harborview Community Clinic",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Provides outpatient nursing care at a community clinic, assessing patients on arrival and identifying needs for follow-up."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Delivers clinic nursing care with a focus on accurate, timely charting in the patient record after every encounter."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Registered Nurse",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Administered scheduled and as-needed medications and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated with physicians on symptom changes, using patient assessment findings to support updates to comfort-focused care plans."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Completed record entries during bedside handoff with incoming nurses, raising same-shift chart completion by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Taught patients and families about medications and comfort measures, using education materials from Epic Systems to reinforce each session."
+        }
+      ],
+      "company": "Cedar Hollow Hospice",
+      "display_order": 1,
+      "end_date": "2024-05",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Provided hospice nursing care as a graduate nurse, keeping the patient record current with assessments, interventions and family communication."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supported hospice patients as a graduate nurse, giving scheduled and as-needed medications focused on comfort and symptom relief."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Graduate Registered Nurse",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Bedside handoff",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Clinical documentation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Epic Systems",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Medication administration",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Patient assessment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Triage",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Vital signs monitoring",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Wound care",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Registered nurse with about 4 years of experience carrying a full patient caseload without close supervision across clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with steady attention to patient assessment and safe handoffs."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Nursing professional with roughly 4 years of experience managing a full caseload independently in community clinic and hospice care. Applies triage to prioritise patients, handles medication administration safely and keeps clinical documentation complete and timely."
+    }
+  ],
+  "tags": []
+}

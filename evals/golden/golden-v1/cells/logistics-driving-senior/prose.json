@@ -1,0 +1,48 @@
+{
+  "cell": "logistics-driving-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:18b8600db90d8b44031da8d7b08c2ad597f114132c1fb8418306460bc23bb215",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVk3x1hjf2SkiAM17kP9"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4916,
+      "output_tokens": 3042
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.produce-hauler.about": "Stillwater Produce Haulers is a family-owned business that moves fresh produce by truck. We are looking for a Senior Truck Driver to join our team. This is an on-site job in Fresno, CA. You will work out of our yard alongside our drivers and dispatch staff, and you will help keep our loads moving safely and on schedule.",
+    "jd.produce-hauler.duties": "What the job involves\n- Train new drivers on safe driving, inspections and our daily routines\n- Deliver produce to customers on time and in good condition\n- Coordinate with dispatch on pickups, drop-offs and schedule changes\n- Check loads and paperwork before each run\n- Report vehicle problems so trucks are repaired before they go back on the road",
+    "jd.produce-hauler.needs": "What you need\n- 9 or more years of experience as a truck driver\n- Hands-on skill in pre-trip inspections and vehicle maintenance checks\n- Solid habits in defensive driving and route planning\n- Accurate cargo documentation and fuel and mileage logs\n- A current Hazardous Materials Endorsement (required)\n- A Dispatch Coordinator Certificate (preferred)",
+    "r1.b1": "Trains new drivers on pre-trip inspections and safe vehicle handling, cutting inspection-related delays by 50 percent.",
+    "r1.b2": "Carries out pre-trip vehicle inspections and checks bills of lading against each load before leaving the yard.",
+    "r1.b3": "Secures and checks every load, applying careful trailer coupling to reduce load shift incidents by 40 percent.",
+    "r1.b4": "Coordinates with dispatch on pickups and drop-offs, keeping cargo documentation complete and current for each run.",
+    "r1.i1": "Builds driver schedules and routes for the Granite Ridge Transport team while driving as a Senior Truck Driver.",
+    "r1.i2": "Drives as a Senior Truck Driver at Granite Ridge Transport and reports vehicle defects promptly so trucks are repaired before they return to the road.",
+    "r2.b1": "Kept accurate driver logs and practised defensive driving on every route, lowering incident reports by 20 percent.",
+    "r2.b2": "Reported vehicle defects to maintenance as soon as they were found, using hours-of-service logging to record downtime accurately.",
+    "r2.b3": "Planned routes ahead of each run and confirmed customer signoff at delivery, reducing disputed deliveries by 35 percent.",
+    "r2.b4": "Performed pre-trip vehicle inspections and kept fuel and mileage logs up to date for each truck.",
+    "r2.i1": "Planned routes for Class A loads at Tidewater Haulers, balancing delivery windows with safe driving time.",
+    "r2.i2": "Drove Class A trucks for Tidewater Haulers and kept complete, accurate driver logs for every trip.",
+    "r3.b1": "Secured and checked loads before departure, using pre-trip inspections to cut damaged deliveries by 50 percent.",
+    "r3.b2": "Coordinated with dispatch on delivery changes and kept bills of lading matched to each shipment.",
+    "r3.b3": "Delivered to customers on time, using quick and correct trailer coupling to shorten yard departures by 20 percent.",
+    "r3.b4": "Maintained driver logs alongside cargo documentation for every stop on the delivery route.",
+    "r3.i1": "Kept daily driver logs as a Delivery Driver for Stonebridge Logistics, recording each stop and shift accurately.",
+    "r3.i2": "Delivered goods to Stonebridge Logistics customers on time, working to agreed delivery windows on each assigned route.",
+    "summary.1": "Senior truck driver with about 9 years of experience in commercial driving and dispatch support, guiding newer drivers and taking on the hardest loads and routes. Skilled in trailer coupling, fuel and mileage logs and hours-of-service logging, and holds a Commercial Driver Licence and Hazardous Materials Endorsement.",
+    "summary.2": "Truck driving and dispatch professional with about 9 years on the road, the person colleagues turn to for advice and for the most difficult deliveries. Keeps trailer coupling safe, fuel and mileage logs accurate and hours-of-service logging complete on every run."
+  }
+}

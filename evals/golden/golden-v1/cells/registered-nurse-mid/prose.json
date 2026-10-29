@@ -1,0 +1,42 @@
+{
+  "cell": "registered-nurse-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:e00e9a59e7e6e0e58ac043f402c6be2ef9bea79dee2c180fb46355e24f500b18",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkE6q4cUBRGV1FeNHMS"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3864,
+      "output_tokens": 2905
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.hospital-company.about": "Position summary\nSummit Health Partners, a multi-state hospital company, seeks a Registered Nurse to deliver safe, evidence-based patient care on site in Charlotte, NC. The Registered Nurse assesses patients, administers medications, educates patients and families, and maintains accurate records in collaboration with the interdisciplinary care team. Minimum qualifications include an active registered nurse licence, current resuscitation certification and relevant clinical experience. Preferred qualifications include leadership training.",
+    "jd.hospital-company.duties": "Responsibilities\n- Teach patients and families about diagnoses, medications, self-care and discharge instructions, confirming understanding before each patient leaves.\n- Chart assessments, interventions and outcomes accurately and promptly in the electronic health record.\n- Administer medications safely according to provider orders, policy and the rights of medication administration.\n- Monitor patient responses to treatment and report significant changes to the provider and charge nurse.\n- Communicate patient status clearly at shift change to support continuity of care.",
+    "jd.hospital-company.needs": "Minimum and preferred qualifications\n- Minimum: 4 or more years of experience as a registered nurse.\n- Minimum: working proficiency in Epic Systems and clinical documentation standards.\n- Minimum: demonstrated skill in triage, patient assessment, care planning and telemetry monitoring.\n- Minimum: active registered nurse licence and a current Advanced Cardiac Life Support Card.\n- Preferred: Nurse Manager Certificate.",
+    "r1.b1": "Documents medication administration in the patient record at the point of care, reducing charting omissions by 55 percent.",
+    "r1.b2": "Uses triage findings to teach patients and families which symptoms need same-day care and how to manage minor conditions at home.",
+    "r1.b3": "Pairs vital signs monitoring trends with each shift handoff, cutting missed follow-up checks by 30 percent.",
+    "r1.b4": "Assesses patients at each visit and provides wound care, tracking healing progress and escalating signs of infection to the provider.",
+    "r1.i1": "Provides outpatient nursing care at a community clinic, assessing patients on arrival and identifying needs for follow-up.",
+    "r1.i2": "Delivers clinic nursing care with a focus on accurate, timely charting in the patient record after every encounter.",
+    "r2.b1": "Administered scheduled and as-needed medications and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent.",
+    "r2.b2": "Coordinated with physicians on symptom changes, using patient assessment findings to support updates to comfort-focused care plans.",
+    "r2.b3": "Completed record entries during bedside handoff with incoming nurses, raising same-shift chart completion by 55 percent.",
+    "r2.b4": "Taught patients and families about medications and comfort measures, using education materials from Epic Systems to reinforce each session.",
+    "r2.i1": "Provided hospice nursing care as a graduate nurse, keeping the patient record current with assessments, interventions and family communication.",
+    "r2.i2": "Supported hospice patients as a graduate nurse, giving scheduled and as-needed medications focused on comfort and symptom relief.",
+    "summary.1": "Registered nurse with about 4 years of experience carrying a full patient caseload without close supervision across clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with steady attention to patient assessment and safe handoffs.",
+    "summary.2": "Nursing professional with roughly 4 years of experience managing a full caseload independently in community clinic and hospice care. Applies triage to prioritise patients, handles medication administration safely and keeps clinical documentation complete and timely."
+  }
+}

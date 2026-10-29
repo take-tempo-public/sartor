@@ -1,0 +1,319 @@
+{
+  "candidate": {
+    "email": "alex.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-alex-electrician-mid",
+    "name": "Alex Novak",
+    "notes": null,
+    "phone": "(555) 010-5805",
+    "profile_text": null,
+    "username": "gold_electrician_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_electrician_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2021",
+      "issuer": "State Apprenticeship Council",
+      "name": "Apprentice Registration Card"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2022",
+      "issuer": "Safety Training Council",
+      "name": "Construction Safety Card"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "State Licensing Board",
+      "name": "Journeyman Electrician Licence"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Apprenticeship Certificate",
+      "display_order": 0,
+      "end_date": "2021",
+      "field": "Electrical Construction",
+      "id": 701,
+      "institution": "Cedar Valley Trades Academy",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pulls and terminates wire with careful power tool use, cutting rework on terminations by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs conduit for new circuits, checking code compliance on each run before inspection."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installs panels and fixtures and verifies every connection through multimeter use, reducing callbacks by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Traces faults in existing wiring through methodical circuit testing, isolating the problem before any repair begins."
+        }
+      ],
+      "company": "Redfern Electrical Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Installs service panels and fixtures for Redfern Electrical Services as a licensed journeyman, working to code without direct supervision."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Traces and repairs electrical faults for Redfern Electrical Services, working independently on site as a journeyman electrician."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Journeyman Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Read plans to lay out grounding and bonding paths, cutting layout corrections by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested circuits after supervised panel installation, confirming breaker labelling and continuity before energising."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Pulled and terminated wire guided by blueprint reading, reducing material waste by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran conduit across job sites, using conduit bending to fit offsets and saddles under journeyman supervision."
+        }
+      ],
+      "company": "Summit Power Contractors",
+      "display_order": 1,
+      "end_date": "2024-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Helped trace electrical faults at Summit Power Contractors while learning the trade as a registered apprentice."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Ran conduit and supported installations at Summit Power Contractors as an apprentice working under licensed journeymen."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Apprentice Electrician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Blueprint reading",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Circuit testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Code compliance",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Conduit bending",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Grounding and bonding",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Multimeter use",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Panel installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Power tool use",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Journeyman electrician with about 5 years in the trade, licensed to complete installations to code without supervision. Brings code compliance, multimeter use and blueprint reading to every job from rough-in to final inspection."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Licensed journeyman electrician with about 5 years of hands-on electrical work, from apprenticeship to independent installations. Relies on blueprint reading, multimeter use and code compliance to finish each job correctly and pass inspection."
+    }
+  ],
+  "tags": []
+}

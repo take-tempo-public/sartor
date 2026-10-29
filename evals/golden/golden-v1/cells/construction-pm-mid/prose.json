@@ -1,0 +1,42 @@
+{
+  "cell": "construction-pm-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:47b0002238ad59f26d53b586ee980c3fa779ee17d9ac36292fc2251b7024fd6d",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjaGURoDYV6RT57dQLL"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3676,
+      "output_tokens": 2678
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.residential-builder.about": "Elmcrest Builders is an owner-run residential builder in Boise. We are looking for a Project Manager to run our home builds on site from start to finish. You will work closely with our crews, our trade partners and the homeowners we build for, and you will report directly to the owners.",
+    "jd.residential-builder.duties": "What the job involves\n- Schedule permits and inspections so each stage of the build stays on track\n- Run regular meetings with homeowners to review progress, decisions and changes\n- Coordinate subcontractors and suppliers on site so trades arrive in the right order\n- Keep the schedule and budget for each home up to date\n- Walk the site often and deal with problems before they slow the work",
+    "jd.residential-builder.needs": "What you need\n- 4 or more years of experience managing construction projects\n- Working knowledge of Oracle Primavera, Procore and Bluebeam Revu\n- Safety planning experience on active job sites\n- Contract administration skills, including handling scope changes with owners and trades\n- Punch list closeout experience through final walkthrough and handover\n- Required certification: Construction Safety Manager Certificate",
+    "r1.b1": "Schedules permits and inspections around safety planning for each phase of work, cutting inspection delays by 30 percent.",
+    "r1.b2": "Coordinates subcontractor sequencing in Oracle Primavera, keeping trades and site work aligned with the project schedule.",
+    "r1.b3": "Reviews submittals against the budget using cost tracking, reducing submittal review time by 30 percent.",
+    "r1.b4": "Leads site safety walks and records field conditions that lead to change orders, so scope changes are documented before work proceeds.",
+    "r1.i1": "As Project Manager at Meridian Cross, reviews submittals from subcontractors and suppliers and keeps approvals moving with the project schedule.",
+    "r1.i2": "Tracks project budgets and schedules at Meridian Cross, reporting cost and timeline status to the project team and owners.",
+    "r2.b1": "Ran owner meetings and handled permit management for active projects, cutting permit approval turnaround by 55 percent.",
+    "r2.b2": "Tracked budgets and schedules alongside submittal tracking, flagging late items before they affected cost or timeline.",
+    "r2.b3": "Priced change orders from marked-up drawings in Bluebeam Revu, reducing pricing turnaround by 25 percent.",
+    "r2.b4": "Scheduled permits and inspections in Procore, keeping field teams informed of upcoming inspection dates.",
+    "r2.i1": "Supported project managers at Tillman Brothers by tracking budgets and schedules for active construction projects.",
+    "r2.i2": "Priced change orders at Tillman Brothers, preparing cost breakdowns for project managers and owners to review.",
+    "summary.1": "Construction project manager with about 4 years of experience owning permit and submittal processes from request to completion. Uses permit management, submittal tracking and Bluebeam Revu to keep approvals moving and projects on schedule.",
+    "summary.2": "Project management professional with about 4 years in construction, handling recurring approval work from first request through final completion. Brings hands-on skill in permit management, Bluebeam Revu markups and submittal tracking."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "cell": "logistics-driving-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:fa5c29a09de64bdc8b22bd134dd38043a727f91e712a4c93a65f27ff4267c5ed",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjujFGtkVQqCHwvDrPs"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3872,
+      "output_tokens": 2734
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.freight-carrier.about": "Position summary\nIronwood Freight Systems, a regional freight carrier, seeks a Class A Truck Driver to transport freight safely and on schedule from our Memphis, TN location. The driver will operate company equipment, maintain accurate records and communicate with dispatch and customers throughout each assignment. At minimum, candidates must hold a valid Commercial Driver Licence and demonstrate safe driving and route planning. Preferred candidates will also hold a Hazardous Materials Endorsement.",
+    "jd.freight-carrier.duties": "Responsibilities\n- Keep accurate driver logs and record hours of service in line with federal and company requirements.\n- Conduct pre-trip and post-trip inspections and report vehicle defects to maintenance promptly.\n- Plan routes that account for traffic, weather, road restrictions and customer receiving hours.\n- Secure loads properly and confirm cargo condition before departure and at each stop.\n- Coordinate with dispatch on schedule changes, delays and delivery confirmations.\n- Complete shipping paperwork and obtain customer signatures at delivery.",
+    "jd.freight-carrier.needs": "Minimum and preferred qualifications\n- Required: valid Commercial Driver Licence with a clean driving record.\n- Required: 5 or more years of commercial driving experience.\n- Required: demonstrated defensive driving, route planning and delivery scheduling skills.\n- Required: hazmat handling knowledge, routine pre-trip inspections and accurate customer signoff at each delivery.\n- Preferred: Hazardous Materials Endorsement.",
+    "r1.b1": "Coordinate with dispatch on route changes and apply defensive driving techniques on every run, cutting preventable delay incidents by 50 percent.",
+    "r1.b2": "Report vehicle defects to maintenance after each shift and apply load securement checks to keep cargo stable and the truck roadworthy.",
+    "r1.b3": "Keep accurate driver logs and reconcile bills of lading at each stop, reducing paperwork discrepancies by 25 percent.",
+    "r1.b4": "Secure and check every load before departure and adjust delivery scheduling with receivers when inspections require extra time.",
+    "r1.i1": "Hauls freight as a Class A driver for Stonebridge Logistics, delivering loads to customers on time across regular routes.",
+    "r1.i2": "Operates Class A equipment for Stonebridge Logistics and reports vehicle defects promptly so trucks stay safe and in service.",
+    "r2.b1": "Delivered freight to customers on schedule, applying hazmat handling procedures for regulated loads and raising on-time delivery rates by 20 percent.",
+    "r2.b2": "Used route planning to sequence daily stops around traffic patterns and receiver hours, keeping deliveries on schedule.",
+    "r2.b3": "Performed pre-trip vehicle inspections and checked trailer coupling before each run, reducing roadside inspection findings by 10 percent.",
+    "r2.b4": "Coordinated with dispatch on load assignments and kept hours-of-service logging current to stay within driving limits.",
+    "r2.i1": "Drove delivery routes for Prairie Freight Lines and reported vehicle defects to keep the fleet safe and roadworthy.",
+    "r2.i2": "Handled local deliveries for Prairie Freight Lines, planning routes each day to reach customers efficiently.",
+    "summary.1": "Truck driving and dispatch professional with about 5 years of experience handling a full route schedule without close supervision. Skilled in trailer coupling, route planning and defensive driving, with a record of safe, on-time freight delivery.",
+    "summary.2": "Class A truck driver with about 5 years of experience in driving and dispatch coordination, managing a full load schedule independently. Applies route planning, defensive driving and trailer coupling to move freight safely and on schedule."
+  }
+}

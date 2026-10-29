@@ -4,6 +4,7 @@
     "experience_probes": [
       "any exposure to Grounding and bonding, in work or side projects",
       "any exposure to Circuit testing, in work or side projects",
+      "any exposure to Journeyman Electrician Licence, in work or side projects",
       "any exposure to Master Electrician Licence, in work or side projects"
     ],
     "scope_probes": [
@@ -13,9 +14,9 @@
   "forbidden_inventions": [
     "(?i)Grounding\\ and\\ bonding",
     "(?i)Circuit\\ testing",
+    "(?i)Journeyman\\ Electrician\\ Licence",
     "(?i)Master\\ Electrician\\ Licence",
     "(?i)Fire\\ alarm\\ wiring",
-    "(?i)Journeyman\\ Electrician\\ Licence",
     "PhD",
     "Master'?s? (degree|in)",
     "managed [0-9]+",
@@ -24,6 +25,7 @@
   "jd_requirements_not_shown": [
     "Grounding and bonding",
     "Circuit testing",
+    "Journeyman Electrician Licence",
     "Master Electrician Licence"
   ],
   "min_ats_format_score": 4,
@@ -34,7 +36,7 @@
     "load calculations",
     "troubleshooting"
   ],
-  "notes": "Mismatched pair (advance): the electrician-entry résumé against the electrician-mid job description. The entry-tier electrical work résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Grounding and bonding, Circuit testing, Master Electrician Licence. The output must claim none of it.",
+  "notes": "Mismatched pair (advance): the electrician-entry résumé against the electrician-mid job description. The entry-tier electrical work résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Grounding and bonding, Circuit testing, Journeyman Electrician Licence, Master Electrician Licence. The output must claim none of it.",
   "pair": {
     "id": "electrician-entry-to-electrician-mid",
     "jd_cell": "electrician-mid",

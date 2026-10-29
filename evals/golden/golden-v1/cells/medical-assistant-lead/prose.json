@@ -1,0 +1,51 @@
+{
+  "cell": "medical-assistant-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:a5f78b0cdcc6bface17d308f931b35722f98d524a89ef72dc503001abedc73f5",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkBuvfcPjmLtSfBZ51b"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5156,
+      "output_tokens": 3389
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.medical-group.about": "Stonehaven Medical Group brings steady, accessible care to every neighbourhood it serves. We are seeking a Clinic Supervisor to lead daily operations at our on-site clinic in Savannah, GA, guiding medical assistants and supporting providers across a busy patient schedule within our multi-clinic group. A current Phlebotomy Certificate is required for this position.",
+    "jd.medical-group.duties": "Duties\n- Manage clinic supplies, ordering and inventory so care is never delayed by missing items\n- Build and adjust staff and patient schedules to keep clinic flow steady\n- Stock exam rooms before each session and check them between visits\n- Take vital signs and confirm accurate entry in the patient record\n- Guide and support medical assistants through daily clinic tasks",
+    "jd.medical-group.needs": "Licensure and qualifications\n- Phlebotomy Certificate required\n- 13 or more years of experience in medical assisting or clinic operations\n- Proficiency with injections and blood draws\n- Working knowledge of Epic Systems, including patient messaging\n- Experience handling prior authorizations and patient intake",
+    "r1.b1": "Supervises patient rooming and blood draws for hospice visits, cutting average time from check-in to completed draw by 25 percent.",
+    "r1.b2": "Schedules follow-up visits around specimen handling and lab pickup times so results reach physicians before each return appointment.",
+    "r1.b3": "Relays physician instructions to staff and patients after EKG testing, reducing repeat tests caused by miscommunication by 20 percent.",
+    "r1.b4": "Takes vital signs and administers injections during clinic visits, and coaches staff on documenting both accurately.",
+    "r1.b5": "Completes insurance forms directly in Epic Systems, shortening form turnaround time by 50 percent.",
+    "r1.i1": "Leads clinic operations at Cedar Hollow Hospice, coordinating follow-up visit schedules so patients and families receive timely, consistent care.",
+    "r1.i2": "Supervises the clinic team at Cedar Hollow Hospice, setting the process for rooming patients so visits start promptly and comfortably.",
+    "r2.b1": "Trained new medical assistants in medical coding practices, lowering coding errors on their charts by 15 percent.",
+    "r2.b2": "Drew blood for outpatient lab orders and secured prior authorizations for tests before scheduled draws.",
+    "r2.b3": "Managed clinic supplies and staff schedules while covering vital signs intake, reducing patient wait times by 15 percent.",
+    "r2.b4": "Stocked exam rooms with supplies needed for blood draws, keeping each room ready before patient arrival.",
+    "r2.b5": "Roomed patients and oversaw specimen handling for collected samples, cutting rejected specimens by 10 percent.",
+    "r2.i1": "Served as a Senior Medical Assistant at Riverbend Health Network, rooming patients and preparing them for provider visits.",
+    "r2.i2": "Took on training new medical assistants at Riverbend Health Network as a Senior Medical Assistant while continuing direct patient care.",
+    "r3.b1": "Took vital signs and performed EKG testing for adult patients, reducing incomplete intake records by 55 percent.",
+    "r3.b2": "Completed insurance forms for injections given in clinic, ensuring each dose was documented for billing.",
+    "r3.b3": "Drew blood and logged each collection in Epic Systems, raising same-day result availability by 25 percent.",
+    "r3.b4": "Restocked exam rooms between visits and applied medical coding to completed encounters for billing review.",
+    "r3.b5": "Roomed patients and submitted prior authorizations for ordered services, reducing appointment delays by 10 percent.",
+    "r3.i1": "Worked as a Medical Assistant at Harborview Community Clinic, completing insurance forms and supporting front and back office tasks.",
+    "r3.i2": "Began clinical work at Harborview Community Clinic as a Medical Assistant, drawing blood and assisting providers with daily patient care.",
+    "summary.1": "Clinic supervisor with 13 years of medical assisting experience who leads clinical teams and answers for clinic performance. Skilled in vital signs, medical coding, prior authorizations, and Epic Systems.",
+    "summary.2": "Medical assisting leader with 13 years of experience, currently supervising a hospice clinic team and owning its daily results. Brings hands-on strength in vital signs, medical coding, and prior authorizations, along with blood draws and EKG testing."
+  }
+}

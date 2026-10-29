@@ -1,0 +1,441 @@
+{
+  "candidate": {
+    "email": "avery.brandt@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-hvac-technician-lead",
+    "name": "Avery Brandt",
+    "notes": null,
+    "phone": "(555) 010-6169",
+    "profile_text": null,
+    "username": "gold_hvac_technician_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_hvac_technician_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "Environmental Compliance Board",
+      "name": "Refrigerant Compliance Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "State Licensing Board",
+      "name": "HVAC Technician Licence"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2011",
+      "issuer": "Controls Training Institute",
+      "name": "Controls Technician Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2011",
+      "field": "Heating and Cooling Technology",
+      "id": 701,
+      "institution": "Cedar Valley Trades Academy",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Diagnoses heating and cooling faults on service calls and prepares customer estimates on site, cutting the time from diagnosis to approved repair by 35 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Keeps work orders current for each job, recording brazing and soldering repairs, parts used and test results before closing the ticket."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads preventive maintenance visits and handles duct installation fixes found during them, reducing repeat airflow complaints by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installs new heating and cooling equipment and connects it to building automation controls, checking setpoints and schedules with the customer before sign-off."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedules service calls for the crew and assigns electrical testing work by skill, raising completed calls per day by 20 percent."
+        }
+      ],
+      "company": "Summit Mechanical Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads the service crew at Summit Mechanical Services and prepares estimates for customers before work begins."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Runs service work at Summit Mechanical Services, keeping work orders accurate and complete from first call to final sign-off."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Service Lead",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Trained apprentices in furnace repair on live service calls, cutting callbacks on their work by 35 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested systems for leaks after thermostat installation and equipment changes, confirming tight connections before leaving each site."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared job estimates for customers backed by leak testing results, raising accepted quotes by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Diagnosed heating and cooling faults and wrote customer estimates that explained the cause, the repair and the options in plain terms."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept detailed work orders for brazing and soldering repairs, reducing billing questions from the office by 40 percent."
+        }
+      ],
+      "company": "Fairhaven Air and Heat",
+      "display_order": 1,
+      "end_date": "2024-10",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2019-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Handled service and repair work at Fairhaven Air and Heat, keeping work orders complete and accurate for each job."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Diagnosed heating and cooling faults at Fairhaven Air and Heat and carried repairs through to completion as a senior technician."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior HVAC Technician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested ductwork for leaks during duct installation jobs and sealed problem joints, lowering measured air loss by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Estimated jobs for customers, including building automation upgrades, with a clear scope and parts list for each quote."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Diagnosed heating and cooling faults using electrical testing on motors, capacitors and controls, cutting repeat visits by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept work orders up to date for furnace repair jobs, logging parts, labour and findings at the end of each visit."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Performed preventive maintenance visits and thermostat installation for customers, reducing emergency calls on maintained systems by 45 percent."
+        }
+      ],
+      "company": "Redfern Comfort Systems",
+      "display_order": 2,
+      "end_date": "2019-10",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2011-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Started at Redfern Comfort Systems diagnosing heating and cooling faults and carrying out repairs on service calls."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Worked as a technician at Redfern Comfort Systems, testing systems for leaks and repairing them on service and installation jobs."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Technician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Brazing and soldering",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Building automation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Customer estimates",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Duct installation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Electrical testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Furnace repair",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Leak testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Thermostat installation",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Heating and cooling service lead with 15 years of experience running crews and answering for each job from estimate to sign-off. Brings hands-on skill in electrical testing, building automation, and brazing and soldering, backed by HVAC licensing and controls certification."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Foreman-level HVAC professional with 15 years in heating and cooling service, responsible for directing the crew and standing behind the finished job. Uses electrical testing, building automation, and brazing and soldering daily to diagnose faults and complete repairs correctly."
+    }
+  ],
+  "tags": []
+}

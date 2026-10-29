@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2017",
       "issuer": "State Apprenticeship Council",
       "name": "Apprentice Registration Card"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2018",
+      "issued": "2017",
       "issuer": "Safety Training Council",
       "name": "Construction Safety Card"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2021",
+      "issued": "2019",
       "issuer": "State Licensing Board",
       "name": "Journeyman Electrician Licence"
     },
@@ -43,7 +43,7 @@
       "expires": null,
       "id": 804,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2019",
       "issuer": "State Licensing Board",
       "name": "Master Electrician Licence"
     }
@@ -73,7 +73,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans jobs and orders materials from approved drawings with code compliance checked at each stage, cutting material waste by 15 percent across projects."
+          "text": "Plans jobs and orders materials against code compliance requirements before each start, cutting material returns by 15 percent."
         },
         {
           "display_order": 1,
@@ -84,7 +84,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tests circuits after lighting installation work to confirm correct operation before handing systems over to the customer."
+          "text": "Tests circuits on completed work, including lighting installation in new and renovated spaces, before handing systems over to the customer."
         },
         {
           "display_order": 2,
@@ -95,7 +95,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Directs helpers and apprentices, using blueprint reading to assign tasks and sequence work, reducing rework on job sites by 40 percent."
+          "text": "Directs helpers and apprentices through blueprint reading on each job, reducing layout errors by 40 percent."
         },
         {
           "display_order": 3,
@@ -106,7 +106,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Pulls and terminates wire for new and existing circuits, using circuit testing to verify each connection before energising."
+          "text": "Pulls and terminates wire on branch and feeder runs, confirming each connection through circuit testing before energizing."
         }
       ],
       "company": "Copperfield Electric",
@@ -126,7 +126,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Master Electrician at Copperfield Electric, running conduit and overseeing electrical installations from planning through final inspection."
+          "text": "Runs conduit and oversees electrical installations at Copperfield Electric as a Master Electrician."
         },
         {
           "display_order": 1,
@@ -136,7 +136,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Master Electrician at Copperfield Electric who directs helpers and apprentices on daily tasks and checks their work against plans and code."
+          "text": "Leads helpers and apprentices on Copperfield Electric job sites, assigning tasks and checking their work as Master Electrician."
         }
       ],
       "titles": [
@@ -162,7 +162,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran conduit on routes sized through load calculations, reducing material overruns by 20 percent on assigned jobs."
+          "text": "Ran conduit for new circuits, using load calculations to size runs and fill, and cut rework on conduit routes by 20 percent."
         },
         {
           "display_order": 1,
@@ -173,7 +173,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Installed panels and fixtures, using conduit bending to fit runs cleanly around existing structures."
+          "text": "Installed panels and fixtures, applying conduit bending to route feeds cleanly around structural obstacles."
         },
         {
           "display_order": 2,
@@ -184,7 +184,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tested circuits and applied troubleshooting methods to locate faults, cutting repair time by 40 percent."
+          "text": "Tested circuits with methodical troubleshooting, reducing time spent locating faults by 40 percent."
         },
         {
           "display_order": 3,
@@ -195,7 +195,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Pulled and terminated wire with grounding and bonding completed to code on each installation."
+          "text": "Pulled and terminated wire on industrial circuits, applying grounding and bonding practices to each installation."
         }
       ],
       "company": "Ashford Industrial Electric",
@@ -215,7 +215,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Journeyman Electrician at Ashford Industrial Electric responsible for pulling and terminating wire on electrical installations."
+          "text": "Pulled and terminated wire on industrial projects at Ashford Industrial Electric as a Journeyman Electrician."
         },
         {
           "display_order": 1,
@@ -225,7 +225,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Installed panels and fixtures as a journeyman electrician at Ashford Industrial Electric, working from drawings to finish each job to code."
+          "text": "Installed panels and fixtures for Ashford Industrial Electric customers while working as a Journeyman Electrician."
         }
       ],
       "titles": [
@@ -251,7 +251,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Traced faults under supervision with close attention to code compliance, reducing failed inspections by 15 percent."
+          "text": "Traced faults in existing wiring with attention to code compliance, cutting repeat service calls by 15 percent."
         },
         {
           "display_order": 1,
@@ -262,7 +262,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Read plans to lay out lighting installation work and placed fixtures as drawn."
+          "text": "Read plans to locate fixtures and switching, supporting lighting installation under journeyman supervision."
         },
         {
           "display_order": 2,
@@ -273,7 +273,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran conduit guided by blueprint reading of layout drawings, shortening installation time by 25 percent."
+          "text": "Ran conduit from plan layouts using blueprint reading, reducing wasted material by 25 percent."
         },
         {
           "display_order": 3,
@@ -284,7 +284,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assisted with installing panels and fixtures, using circuit testing to confirm each circuit before energising."
+          "text": "Installed panels and fixtures and verified each connection through circuit testing before final inspection."
         }
       ],
       "company": "Brightline Wiring Company",
@@ -304,7 +304,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Apprentice Electrician at Brightline Wiring Company, installing panels and fixtures under the guidance of licensed electricians."
+          "text": "Installed panels and fixtures at Brightline Wiring Company while completing an electrical construction apprenticeship."
         },
         {
           "display_order": 1,
@@ -314,7 +314,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Tested circuits as an apprentice at Brightline Wiring Company, learning to verify wiring before systems were energised."
+          "text": "Tested circuits and supported licensed electricians at Brightline Wiring Company as an Apprentice Electrician."
         }
       ],
       "titles": [
@@ -399,7 +399,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Master electrician with about 9 years of experience planning jobs and checking the work of others on electrical installations. Applies blueprint reading, code compliance and troubleshooting to keep projects accurate and ready for inspection."
+      "text": "Master Electrician with about 9 years of experience planning jobs and checking the work of helpers, apprentices and journeymen. Applies blueprint reading, code compliance and troubleshooting to keep installations accurate and ready for inspection."
     },
     {
       "display_order": 1,
@@ -410,7 +410,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Licensed master electrician with about 9 years in the trade, from apprenticeship to leading crews. Plans jobs, reviews the work of helpers and apprentices, and relies on blueprint reading, code compliance and troubleshooting to deliver installations that pass inspection."
+      "text": "Licensed master electrician with 9 years in electrical construction, from apprenticeship through journeyman and master roles. Plans jobs, reviews the work of others, and relies on blueprint reading, code compliance and troubleshooting on each project."
     }
   ],
   "tags": []

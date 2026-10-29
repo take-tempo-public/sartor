@@ -1,0 +1,51 @@
+{
+  "cell": "social-services-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:79215873f0b812153fcec4ff2257a4186c9697b3b48576722ed9f8a96c3e32cb",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjK4AbBo6Z7DSH3bFqv"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5176,
+      "output_tokens": 3231
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.community-partnership.about": "Summary\nRiverbend Community Partnership connects families with the services they need to stay safe, housed and well. We are seeking a Program Manager to lead our casework team, oversee case records and reporting, and coordinate with schools, clinics and community partners across the Louisville area. This hybrid role answers for program results and staff supervision. A current Human Services Supervisor Certificate is required.",
+    "jd.community-partnership.duties": "Duties\n- Maintain accurate, timely case records for every family in the program and review staff documentation for completeness.\n- Prepare clear, well-supported reports for hearings and present case information to courts and partner agencies as needed.\n- Coordinate services with schools, clinics and community providers so families receive timely referrals and follow-up.\n- Supervise case workers, set caseload priorities and support staff through regular case review.\n- Track program outcomes and prepare reports for leadership and funders.",
+    "jd.community-partnership.needs": "Licensure and qualifications\n- Human Services Supervisor Certificate required.\n- 14 or more years of experience in social services casework, including team or program leadership.\n- Skill in caseload tracking and case notes, with records kept in Microsoft Access or a similar database.\n- Experience conducting needs assessments and leading service planning with families.\n- Demonstrated client advocacy with schools, clinics, courts and community agencies.",
+    "r1.b1": "Leads intake and assessments for hospice families, folding benefits enrollment into the first visit and raising completed applications by 30 percent.",
+    "r1.b2": "Maintains case records in Microsoft Access, keeping notes, contacts and service histories current for the hospice team.",
+    "r1.b3": "Conducts home visits with patients and families, applying motivational interviewing to raise care plan follow-through by 30 percent.",
+    "r1.b4": "Coordinates with local schools and clinics through referral coordination, so families receive timely support during and after hospice care.",
+    "r1.b5": "Manages program budgets and reports, using caseload tracking to cut reporting time by 35 percent.",
+    "r1.i1": "Manages the program at Cedar Hollow Hospice, overseeing home visits that bring care planning and family support to patients where they live.",
+    "r1.i2": "Leads the program at Cedar Hollow Hospice and prepares the case reports that staff and families rely on for hearings.",
+    "r2.b1": "Supervised a team of case workers, standardizing needs assessments and raising on-time assessment completion by 55 percent.",
+    "r2.b2": "Prepared reports for hearings drawn from home visits, giving courts clear accounts of family circumstances and progress.",
+    "r2.b3": "Referred families to housing and food programs, using case notes to track each referral and raising completed placements by 25 percent.",
+    "r2.b4": "Wrote service plans that built benefits enrollment into each family's goals and next steps.",
+    "r2.b5": "Streamlined intake and assessments in Microsoft Access, cutting the time from first contact to completed assessment by 20 percent.",
+    "r2.i1": "Served as Senior Case Manager at Riverbend Health Network, supervising casework and preparing case reports for hearings.",
+    "r2.i2": "Managed complex cases at Riverbend Health Network, connecting families with housing and food programs and following each referral through.",
+    "r3.b1": "Coordinated with schools and clinics on shared clients, using motivational interviewing to raise family attendance at referred appointments by 30 percent.",
+    "r3.b2": "Drafted reports for hearings that documented referral coordination and the services each family had received.",
+    "r3.b3": "Referred families to housing and food programs, using caseload tracking to raise completed referrals by 55 percent.",
+    "r3.b4": "Wrote service plans grounded in needs assessments, setting clear goals with each client and family.",
+    "r3.b5": "Handled intake and assessments during home visits, shortening the wait for a first assessment by 15 percent.",
+    "r3.i1": "Worked as Case Manager at Harborview Community Clinic, linking families to housing and food programs and following up on each referral.",
+    "r3.i2": "Carried a caseload at Harborview Community Clinic and kept accurate, timely case records for every client served.",
+    "summary.1": "Social services casework lead with 14 years of experience running programs and answering for their results across hospice, health network and clinic settings. Brings referral coordination, case notes and motivational interviewing to team supervision, home visits and needs assessments.",
+    "summary.2": "Program manager with 14 years in social services casework, accountable for team performance and program outcomes. Known for disciplined case notes, steady referral coordination and motivational interviewing that keep families engaged from intake to closure."
+  }
+}

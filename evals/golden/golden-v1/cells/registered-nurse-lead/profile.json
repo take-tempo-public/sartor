@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "avery.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-avery-registered-nurse-lead",
+    "name": "Avery Brandt",
+    "phone": "(555) 010-2565",
+    "username": "gold_registered_nurse_lead"
+  },
+  "cell": "registered-nurse-lead",
+  "cell_seed": 774272357,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Infection control on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Infection control, in work or side projects",
+        "any exposure to Patient assessment, in work or side projects"
+      ],
+      "scope_probes": [
+        "Nurse Manager at Bluebird Family Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Infection\\ control",
+      "(?i)Patient\\ assessment",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "bedside handoff",
+      "discharge planning",
+      "iv therapy",
+      "medication administration"
+    ],
+    "notes": "lead-level nursing. The profile has no Infection control, Patient assessment; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team or program and answering for its results.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team or program and answering for its results",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Infection control exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Nurse Manager",
+        "Redstone Children's Hospital — On site, Louisville, KY"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.childrens-hospital.about",
+        "jd.childrens-hospital.duties",
+        "jd.childrens-hospital.needs"
+      ],
+      "slug": "childrens-hospital"
+    }
+  ],
+  "level": "lead",
+  "profession": "registered-nurse",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Medication administration in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Bluebird Family Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-01",
+          "title": "Nurse Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Halcyon Services",
+          "end": "2023-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2017-06",
+          "title": "Charge Nurse"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Dunmore Technologies",
+          "end": "2017-06",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2014-08",
+          "title": "Registered Nurse"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.N.",
+          "field": "Nursing",
+          "institution": "State University",
+          "slots": [],
+          "year": "2014"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Board of Nursing",
+          "name": "Registered Nurse Licence",
+          "year": "2014"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Basic Life Support Card",
+          "year": "2014"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Advanced Cardiac Life Support Card",
+          "year": "2014"
+        },
+        {
+          "issuer": "Nursing Leadership Council",
+          "name": "Nurse Manager Certificate",
+          "year": "2016"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Medication administration",
+        "Patient education",
+        "Epic Systems",
+        "IV therapy",
+        "Clinical documentation",
+        "Bedside handoff",
+        "Triage",
+        "Discharge planning"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Medication administration"
+    },
+    {
+      "category": "method",
+      "name": "Patient education"
+    },
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "IV therapy"
+    },
+    {
+      "category": "method",
+      "name": "Clinical documentation"
+    },
+    {
+      "category": "method",
+      "name": "Bedside handoff"
+    },
+    {
+      "category": "method",
+      "name": "Triage"
+    },
+    {
+      "category": "method",
+      "name": "Discharge planning"
+    }
+  ],
+  "slots": {
+    "jd.childrens-hospital.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Nurse Manager at Redstone Children's Hospital, a children's hospital. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.childrens-hospital.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Nurse Manager, about serving as charge nurse for a shift, shift handoff, charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.childrens-hospital.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Bedside handoff, Medication administration, IV therapy, Discharge planning, Infection control, Patient assessment, and 12 or more years of experience. State Nurse Manager Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Bedside handoff",
+        "Medication administration",
+        "IV therapy",
+        "Discharge planning",
+        "Infection control",
+        "Patient assessment",
+        "Nurse Manager Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Nurse Manager at Bluebird Family Services: coordinating with physicians, using Medication administration. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Medication administration",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Nurse Manager at Bluebird Family Services: supervising nursing aides, using Clinical documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Clinical documentation"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Nurse Manager at Bluebird Family Services: assessing patients, using Epic Systems. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Epic Systems",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Nurse Manager at Bluebird Family Services: teaching patients and families, using Discharge planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Discharge planning"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Nurse Manager at Bluebird Family Services: charting in the record, using IV therapy. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "IV therapy",
+        "45"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Nurse Manager at Bluebird Family Services, about shift handoff. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Nurse Manager at Bluebird Family Services, about giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Charge Nurse at Halcyon Services: shift handoff, using Patient education. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Patient education",
+        "30"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Charge Nurse at Halcyon Services: serving as charge nurse for a shift, using Bedside handoff. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Bedside handoff"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Charge Nurse at Halcyon Services: giving medications, using Triage. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Triage",
+        "40"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Charge Nurse at Halcyon Services: coordinating with physicians, using Medication administration. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Medication administration"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Charge Nurse at Halcyon Services: supervising nursing aides, using Clinical documentation. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Clinical documentation",
+        "50"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Charge Nurse at Halcyon Services, about giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Charge Nurse at Halcyon Services, about assessing patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Dunmore Technologies: shift handoff, using Epic Systems. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Epic Systems",
+        "15"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Dunmore Technologies: giving medications, using Discharge planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Discharge planning"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Dunmore Technologies: coordinating with physicians, using IV therapy. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "IV therapy",
+        "20"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Dunmore Technologies: assessing patients, using Patient education. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Patient education"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Dunmore Technologies: teaching patients and families, using Bedside handoff. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bedside handoff",
+        "55"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Registered Nurse at Dunmore Technologies, about assessing patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Registered Nurse at Dunmore Technologies, about charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level nursing professional with about 12 years of experience, scope: leading a team or program and answering for its results. Mention Medication administration, Patient education, Epic Systems.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Medication administration",
+        "Patient education",
+        "Epic Systems"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level nursing professional with about 12 years of experience, scope: leading a team or program and answering for its results. Mention Medication administration, Patient education, Epic Systems.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Medication administration",
+        "Patient education",
+        "Epic Systems"
+      ]
+    }
+  }
+}

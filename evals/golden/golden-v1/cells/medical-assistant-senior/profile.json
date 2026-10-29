@@ -1,0 +1,512 @@
+{
+  "candidate": {
+    "email": "priya.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-priya-medical-assistant-senior",
+    "name": "Priya Okafor",
+    "phone": "(555) 010-4778",
+    "username": "gold_medical_assistant_senior"
+  },
+  "cell": "medical-assistant-senior",
+  "cell_seed": 448521261,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Epic Systems on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Epic Systems, in work or side projects",
+        "any exposure to Prior authorizations, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Medical Assistant at Dunmore Technologies: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Epic\\ Systems",
+      "(?i)Prior\\ authorizations",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "appointment scheduling",
+      "blood draws",
+      "injections",
+      "specimen handling"
+    ],
+    "notes": "senior-level medical assisting. The profile has no Epic Systems, Prior authorizations; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Guiding colleagues and handling the hardest cases.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, guiding colleagues and handling the hardest cases",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Epic Systems exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Medical Assistant",
+        "Brightwell Urgent Care Group — On site, Raleigh, NC"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.urgent-care.about",
+        "jd.urgent-care.duties",
+        "jd.urgent-care.needs"
+      ],
+      "slug": "urgent-care"
+    }
+  ],
+  "level": "senior",
+  "profession": "medical-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Blood draws in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Dunmore Technologies",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2022-06",
+          "title": "Senior Medical Assistant"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Harlow and Daughters",
+          "end": "2022-06",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-08",
+          "title": "Medical Assistant"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Eastgate Regional Hospital",
+          "end": "2020-08",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-07",
+          "title": "Clinical Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Medical Assisting",
+          "institution": "Lakeshore Career College",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Medical Assisting Certification Board",
+          "name": "Certified Medical Assistant Credential",
+          "year": "2018"
+        },
+        {
+          "issuer": "Clinical Skills Council",
+          "name": "Phlebotomy Certificate",
+          "year": "2019"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Blood draws",
+        "Instrument sterilization",
+        "Injections",
+        "Specimen handling",
+        "Vital signs",
+        "Appointment scheduling",
+        "Insurance verification",
+        "EKG testing"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Blood draws"
+    },
+    {
+      "category": "method",
+      "name": "Instrument sterilization"
+    },
+    {
+      "category": "method",
+      "name": "Injections"
+    },
+    {
+      "category": "method",
+      "name": "Specimen handling"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs"
+    },
+    {
+      "category": "method",
+      "name": "Appointment scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Insurance verification"
+    },
+    {
+      "category": "method",
+      "name": "EKG testing"
+    }
+  ],
+  "slots": {
+    "jd.urgent-care.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Senior Medical Assistant at Brightwell Urgent Care Group, an urgent-care group. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.urgent-care.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Senior Medical Assistant, about managing clinic supplies and schedules, taking vital signs, scheduling follow-up visits. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.urgent-care.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Specimen handling, Appointment scheduling, Blood draws, Injections, Prior authorizations, Epic Systems, and 9 or more years of experience. State Phlebotomy Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Specimen handling",
+        "Appointment scheduling",
+        "Blood draws",
+        "Injections",
+        "Prior authorizations",
+        "Epic Systems",
+        "Phlebotomy Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Dunmore Technologies: completing insurance forms, using Injections. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Injections",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Dunmore Technologies: rooming patients, using Vital signs. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vital signs"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Dunmore Technologies: stocking exam rooms, using Instrument sterilization. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Instrument sterilization",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Medical Assistant at Dunmore Technologies: scheduling follow-up visits, using Appointment scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Appointment scheduling"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Medical Assistant at Dunmore Technologies, about managing clinic supplies and schedules. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Medical Assistant at Dunmore Technologies, about stocking exam rooms. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Medical Assistant at Harlow and Daughters: taking vital signs, using Specimen handling. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Specimen handling",
+        "35"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Medical Assistant at Harlow and Daughters: relaying physician instructions, using Blood draws. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Blood draws"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Medical Assistant at Harlow and Daughters: drawing blood, using Insurance verification. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Insurance verification",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Medical Assistant at Harlow and Daughters: completing insurance forms, using EKG testing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "EKG testing"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Medical Assistant at Harlow and Daughters, about scheduling follow-up visits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Medical Assistant at Harlow and Daughters, about completing insurance forms. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Clinical Assistant at Eastgate Regional Hospital: rooming patients, using Injections. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Injections",
+        "55"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinical Assistant at Eastgate Regional Hospital: stocking exam rooms, using Vital signs. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vital signs"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Clinical Assistant at Eastgate Regional Hospital: scheduling follow-up visits, using Instrument sterilization. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Instrument sterilization",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Clinical Assistant at Eastgate Regional Hospital: taking vital signs, using Appointment scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Appointment scheduling"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Clinical Assistant at Eastgate Regional Hospital, about completing insurance forms. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Clinical Assistant at Eastgate Regional Hospital, about taking vital signs. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level medical assisting professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Blood draws, Instrument sterilization, Injections.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blood draws",
+        "Instrument sterilization",
+        "Injections"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level medical assisting professional with about 9 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Blood draws, Instrument sterilization, Injections.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blood draws",
+        "Instrument sterilization",
+        "Injections"
+      ]
+    }
+  }
+}

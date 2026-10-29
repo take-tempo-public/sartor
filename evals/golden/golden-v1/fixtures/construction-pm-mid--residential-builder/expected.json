@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Priya Kowalski",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Contract administration, in work or side projects",
+      "any exposure to Punch list closeout, in work or side projects"
+    ],
+    "scope_probes": [
+      "Project Manager at Meridian Cross: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Contract\\ administration",
+    "(?i)Punch\\ list\\ closeout",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning a recurring process from request to completion."
+      },
+      "edit_replacement": "keeping trades and site work aligned with the project schedule., owning a recurring process from request to completion",
+      "edit_target_substring": "keeping trades and site work aligned with the project schedule.",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Contract administration exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "bluebeam revu",
+    "oracle primavera",
+    "procore",
+    "safety planning"
+  ],
+  "notes": "mid-level construction project management. The profile has no Contract administration, Punch list closeout; generation must not claim them."
+}

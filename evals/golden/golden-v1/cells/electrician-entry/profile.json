@@ -1,0 +1,347 @@
+{
+  "candidate": {
+    "email": "jordan.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-electrician-entry",
+    "name": "Jordan Brandt",
+    "phone": "(555) 010-0132",
+    "username": "gold_electrician_entry"
+  },
+  "cell": "electrician-entry",
+  "cell_seed": 554449098,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Fire alarm wiring on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Fire alarm wiring, in work or side projects",
+        "any exposure to Grounding and bonding, in work or side projects",
+        "any progress toward Journeyman Electrician Licence",
+        "any progress toward Master Electrician Licence"
+      ],
+      "scope_probes": [
+        "Apprentice Electrician at Summit Power Contractors: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Fire\\ alarm\\ wiring",
+      "(?i)Grounding\\ and\\ bonding",
+      "(?i)Journeyman\\ Electrician\\ Licence",
+      "(?i)Master\\ Electrician\\ Licence",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "blueprint reading",
+      "multimeter use",
+      "panel installation",
+      "troubleshooting"
+    ],
+    "notes": "entry-level electrical work. The profile has no Fire alarm wiring, Grounding and bonding, Journeyman Electrician Licence, Master Electrician Licence; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working under a journeyman who checks the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working under a journeyman who checks the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Fire alarm wiring exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Apprentice Electrician",
+        "Hollis and Sons Electric — On site, Dayton, OH"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.family-contractor.about",
+        "jd.family-contractor.duties",
+        "jd.family-contractor.needs"
+      ],
+      "slug": "family-contractor"
+    }
+  ],
+  "level": "entry",
+  "profession": "electrician",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Troubleshooting in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Summit Power Contractors",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-11",
+          "title": "Apprentice Electrician"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Electrical Construction",
+          "institution": "Cedar Valley Trades Academy",
+          "slots": [],
+          "year": "2024"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprentice Registration Card",
+          "year": "2025"
+        },
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Troubleshooting",
+        "Load calculations",
+        "Code compliance",
+        "Power tool use",
+        "Blueprint reading",
+        "Multimeter use",
+        "Motor controls",
+        "Panel installation"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Troubleshooting"
+    },
+    {
+      "category": "method",
+      "name": "Load calculations"
+    },
+    {
+      "category": "method",
+      "name": "Code compliance"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    },
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "tool",
+      "name": "Multimeter use"
+    },
+    {
+      "category": "method",
+      "name": "Motor controls"
+    },
+    {
+      "category": "method",
+      "name": "Panel installation"
+    }
+  ],
+  "slots": {
+    "jd.family-contractor.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Apprentice Electrician at Hollis and Sons Electric, a family electrical contractor. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.family-contractor.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Apprentice Electrician, about tracing faults, reading plans, installing panels and fixtures. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.family-contractor.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Panel installation, Troubleshooting, Blueprint reading, Multimeter use, Fire alarm wiring, Grounding and bonding, and 2 or more years of experience. State Construction Safety Card as a required licence or certification. State Journeyman Electrician Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Panel installation",
+        "Troubleshooting",
+        "Blueprint reading",
+        "Multimeter use",
+        "Fire alarm wiring",
+        "Grounding and bonding",
+        "Construction Safety Card",
+        "Journeyman Electrician Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: installing panels and fixtures, using Blueprint reading. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "40"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: running conduit, using Power tool use. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Power tool use"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: pulling and terminating wire, using Motor controls. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motor controls",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Electrician at Summit Power Contractors: tracing faults, using Multimeter use. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Multimeter use"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Apprentice Electrician at Summit Power Contractors, about tracing faults. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Apprentice Electrician at Summit Power Contractors, about reading plans. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a apprentice-level electrical work professional with about 2 years of experience, scope: working under a journeyman who checks the work. Mention Troubleshooting, Load calculations, Code compliance.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Troubleshooting",
+        "Load calculations",
+        "Code compliance"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a apprentice-level electrical work professional with about 2 years of experience, scope: working under a journeyman who checks the work. Mention Troubleshooting, Load calculations, Code compliance.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Troubleshooting",
+        "Load calculations",
+        "Code compliance"
+      ]
+    }
+  }
+}

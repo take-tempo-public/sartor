@@ -4,33 +4,33 @@ priya.haddad@example.com | (555) 010-4484 | linkedin.com/in/example-priya-carpen
 
 ## Summary
 
-Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, with a record of keeping work square, level and to plan.
+Master carpenter with 9 years of experience planning jobs and checking the work of crews and apprentices. Skilled in layout and measuring, framing and jobsite safety, and holds a Lead Carpenter Certificate.
 
 ## Experience
 
 ### Master Carpenter — Marlow Remodeling
 *February 2024 – present*
 
-- Frame walls and floors on remodeling jobs, checking framing layouts before cutting to shorten wall and floor framing time by 20 percent.
-- Run daily site walk-throughs and keep jobsite safety standards in place for every crew working on remodeling jobs.
-- Install doors, windows and trim, and use concrete forming where openings sit on new footings, reducing callbacks on installed openings by 50 percent.
-- Plan jobs, order lumber against the plans, and schedule scaffold erection so crews can start exterior work without delay.
+- Leads framing of walls and floors on home remodels, cutting rework by 20 percent through careful checks before sheathing goes on.
+- Enforces jobsite safety on every remodeling site, checking ladders, tools and walkways with the crew before work begins.
+- Sets doors, windows and trim on remodels and handles concrete forming for new steps and thresholds, reducing installation callbacks by 50 percent.
+- Plans jobs and orders lumber ahead of each phase, scheduling scaffold erection so exterior work starts without delays.
 
 ### Journeyman Carpenter — Harlow Framing Company
 *December 2021 – February 2024*
 
-- Built concrete forms for footings and steps and applied stair building skills to set rise and run, cutting form rework by 25 percent.
-- Ordered lumber and materials for framing crews, using layout and measuring to take accurate counts from plans and limit overorders.
+- Built forms for concrete stair landings and handled stair building on framing jobs, cutting form setup time by 25 percent.
+- Ordered lumber and materials for each job based on careful layout and measuring, keeping waste and return trips low.
 - Framed walls and floors and handled rafter cutting for roof systems, raising daily framing output by 45 percent.
-- Kept openings guarded and the site safe during door and window installation, securing frames before crews left each day.
+- Kept work areas safe during door and window installation by bracing openings and clearing debris from walkways.
 
 ### Apprentice Carpenter — Tillman Brothers Carpentry
 *November 2017 – December 2021*
 
-- Installed doors, windows and trim after framing rough openings to size, cutting installation time by 45 percent.
-- Read plans and took measurements under journeyman supervision while following jobsite safety rules on every task.
-- Built forms for concrete footings and slabs, learning concrete forming methods that reduced form material waste by 10 percent.
-- Ordered lumber and materials for crews and staged parts for scaffold erection ahead of exterior work.
+- Installed doors, windows and trim after framing rough openings, cutting installation time by 45 percent under journeyman guidance.
+- Read plans and took measurements for layout while following jobsite safety rules on tools, ladders and cuts.
+- Assisted with concrete forming for footings and walls, reducing form material waste by 10 percent.
+- Ordered lumber and materials for jobs, including the planks and frames needed for scaffold erection.
 
 ## Education
 
@@ -39,8 +39,8 @@ Master carpenter with 9 years of experience planning jobs and checking the work 
 ## Certifications
 
 - Construction Safety Card — Safety Training Council, 2017
-- Apprenticeship Completion Certificate — State Apprenticeship Council, 2021
-- Lead Carpenter Certificate — Carpenters Training Council, 2017
+- Apprenticeship Completion Certificate — State Apprenticeship Council, 2019
+- Lead Carpenter Certificate — Carpenters Training Council, 2021
 
 ## Skills
 

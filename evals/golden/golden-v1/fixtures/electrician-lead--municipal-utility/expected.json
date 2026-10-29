@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Harper Reyes",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Blueprint reading, in work or side projects",
+      "any exposure to Load calculations, in work or side projects"
+    ],
+    "scope_probes": [
+      "Electrical Foreman at Ashford Industrial Electric: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Blueprint\\ reading",
+    "(?i)Load\\ calculations",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Running the crew and answering for the job."
+      },
+      "edit_replacement": "Traces faults in new and existing fixtures during lighting installation, running the crew and answering for the job",
+      "edit_target_substring": "Traces faults in new and existing fixtures during lighting installation",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Blueprint reading exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "code compliance",
+    "lighting installation",
+    "troubleshooting",
+    "wire pulling"
+  ],
+  "notes": "lead-level electrical work. The profile has no Blueprint reading, Load calculations; generation must not claim them."
+}

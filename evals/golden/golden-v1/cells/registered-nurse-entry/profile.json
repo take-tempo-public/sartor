@@ -1,0 +1,347 @@
+{
+  "candidate": {
+    "email": "casey.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-casey-registered-nurse-entry",
+    "name": "Casey Kowalski",
+    "phone": "(555) 010-2697",
+    "username": "gold_registered_nurse_entry"
+  },
+  "cell": "registered-nurse-entry",
+  "cell_seed": 1949316562,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Clinical documentation on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Clinical documentation, in work or side projects",
+        "any exposure to Infection control, in work or side projects",
+        "any progress toward Advanced Cardiac Life Support Card",
+        "any progress toward Nurse Manager Certificate"
+      ],
+      "scope_probes": [
+        "Graduate Registered Nurse at Harborview Community Clinic: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Clinical\\ documentation",
+      "(?i)Infection\\ control",
+      "(?i)Advanced\\ Cardiac\\ Life\\ Support\\ Card",
+      "(?i)Nurse\\ Manager\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "care planning",
+      "patient assessment",
+      "triage",
+      "vital signs monitoring"
+    ],
+    "notes": "entry-level nursing. The profile has no Clinical documentation, Infection control, Advanced Cardiac Life Support Card, Nurse Manager Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working with a supervisor close by on a small share of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working with a supervisor close by on a small share of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Clinical documentation exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Graduate Registered Nurse",
+        "Pinebrook Medical Center — On site, Toledo, OH"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.community-hospital.about",
+        "jd.community-hospital.duties",
+        "jd.community-hospital.needs"
+      ],
+      "slug": "community-hospital"
+    }
+  ],
+  "level": "entry",
+  "profession": "registered-nurse",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Bedside handoff in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Graduate Registered Nurse"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.N.",
+          "field": "Nursing",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Board of Nursing",
+          "name": "Registered Nurse Licence",
+          "year": "2025"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Basic Life Support Card",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Bedside handoff",
+        "Vital signs monitoring",
+        "Care planning",
+        "Patient assessment",
+        "Triage",
+        "Patient education",
+        "Discharge planning",
+        "Medication administration"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Bedside handoff"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Care planning"
+    },
+    {
+      "category": "method",
+      "name": "Patient assessment"
+    },
+    {
+      "category": "method",
+      "name": "Triage"
+    },
+    {
+      "category": "method",
+      "name": "Patient education"
+    },
+    {
+      "category": "method",
+      "name": "Discharge planning"
+    },
+    {
+      "category": "method",
+      "name": "Medication administration"
+    }
+  ],
+  "slots": {
+    "jd.community-hospital.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Graduate Registered Nurse at Pinebrook Medical Center, a community hospital. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.community-hospital.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Graduate Registered Nurse, about assessing patients, coordinating with physicians, giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.community-hospital.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Patient assessment, Vital signs monitoring, Care planning, Triage, Clinical documentation, Infection control, and 2 or more years of experience. State Basic Life Support Card as a required licence or certification. State Advanced Cardiac Life Support Card as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Patient assessment",
+        "Vital signs monitoring",
+        "Care planning",
+        "Triage",
+        "Clinical documentation",
+        "Infection control",
+        "Basic Life Support Card",
+        "Advanced Cardiac Life Support Card"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Harborview Community Clinic: charting in the record, using Care planning. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Care planning",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Harborview Community Clinic: shift handoff, using Vital signs monitoring. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vital signs monitoring"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Harborview Community Clinic: giving medications, using Patient assessment. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Patient assessment",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Harborview Community Clinic: coordinating with physicians, using Discharge planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Discharge planning"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graduate Registered Nurse at Harborview Community Clinic, about charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graduate Registered Nurse at Harborview Community Clinic, about giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level nursing professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Bedside handoff, Vital signs monitoring, Care planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Bedside handoff",
+        "Vital signs monitoring",
+        "Care planning"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level nursing professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Bedside handoff, Vital signs monitoring, Care planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Bedside handoff",
+        "Vital signs monitoring",
+        "Care planning"
+      ]
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "security-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:0769dae320f5fa8fafe20e1e9c0666786bf1cc9b29b16e679f142034edabc289",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkWcu1qUssTnvUGrRdf"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5029,
+      "output_tokens": 3271
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.hospital-security.about": "Summary\nBayside Medical Network exists to deliver safe, compassionate care to every patient and community it serves. We are seeking a Security Operations Manager to lead our security operations team in a hybrid role based in Tampa, FL. This leader protects patient information and clinical systems by guiding monitoring, response and risk work across the network. An Incident Handler Certificate is required for this position.",
+    "jd.hospital-security.duties": "Duties\n- Lead regular access reviews for clinical and business systems and confirm that permissions match each staff member's role.\n- Oversee alert triage, making sure security events are reviewed, prioritized and escalated without delay.\n- Advise hospital leaders on security risk and present clear recommendations in plain language.\n- Direct incident response activity and coordinate with clinical and IT teams during security events.\n- Maintain security policies and procedures that support patient privacy and safe care.",
+    "jd.hospital-security.needs": "Licensure and qualifications\n- Incident Handler Certificate required.\n- 12 or more years of experience in security operations or a related field.\n- Proven experience with access reviews, phishing simulation and vulnerability scanning.\n- Strong skills in log analysis, including work in Splunk.\n- Working knowledge of PowerShell for scripting and automation.",
+    "r1.b1": "Monitors network and system logs with Wireshark, tracing unusual traffic to its source and cutting the time needed to confirm suspicious activity by 15 percent.",
+    "r1.b2": "Maintains security policy documentation and uses phishing simulation results to update reporting procedures and acceptable use guidance for clinic staff.",
+    "r1.b3": "Leads risk assessments across clinic systems, using Nessus findings to rank exposures and reducing open high-risk findings by 10 percent.",
+    "r1.b4": "Runs security awareness training for clinical and office staff, drawing on vulnerability scanning results to show real weaknesses in clinic systems.",
+    "r1.b5": "Triages security alerts and tunes firewall rules to filter known harmless traffic, lowering false positive alerts by 35 percent.",
+    "r1.i1": "Manages security operations at Harborview Community Clinic, leading risk assessments that guide how the clinic protects patient data and clinical systems.",
+    "r1.i2": "Leads security operations at Harborview Community Clinic, with a focus on log monitoring that keeps suspicious activity visible and addressed quickly.",
+    "r2.b1": "Advised leaders on security risk in Linux server environments, presenting hardening priorities that cut unpatched critical systems by 50 percent.",
+    "r2.b2": "Automated access reviews with Python scripts that compared account lists against role assignments and flagged stale permissions for system owners.",
+    "r2.b3": "Led incident response drills built on log analysis of past events, improving team detection of simulated attacks by 55 percent.",
+    "r2.b4": "Tracked vulnerability fixes through to closure and paired them with access reviews to confirm remediated systems kept least-privilege permissions.",
+    "r2.b5": "Monitored centralized logs and fed findings into incident response, shortening the time from first alert to containment by 55 percent.",
+    "r2.i1": "Served as Senior Security Engineer at Meridian Cross, owning log monitoring that turned raw system events into actionable security findings.",
+    "r2.i2": "Worked as Senior Security Engineer at Meridian Cross, running access reviews that kept user permissions aligned with job roles.",
+    "r3.b1": "Delivered security awareness training using Wireshark captures to show staff how unencrypted traffic is exposed, raising correct reporting of suspicious activity by 30 percent.",
+    "r3.b2": "Triaged alerts from user-reported emails and used phishing simulation campaigns to identify which teams needed follow-up coaching.",
+    "r3.b3": "Performed access reviews alongside Nessus scans of privileged systems, removing 45 percent of excess administrator accounts.",
+    "r3.b4": "Tracked vulnerability fixes from discovery to closure, using vulnerability scanning to verify each remediation before closing tickets.",
+    "r3.b5": "Monitored firewall logs and refined firewall rules based on observed traffic patterns, reducing noise in log reviews by 50 percent.",
+    "r3.i1": "Worked as Security Analyst at Kestrel Works, conducting access reviews to find and remove permissions that users no longer needed.",
+    "r3.i2": "Served as Security Analyst at Kestrel Works, handling alert triage to separate real threats from routine noise and escalate them promptly.",
+    "summary.1": "Security operations lead with about 12 years of experience in information security analysis, leading a team and owning the roadmap for security operations. Brings hands-on depth in access reviews, Python automation, log analysis and incident response.",
+    "summary.2": "Information security professional with 12 years of experience who leads an analyst team and sets the roadmap for security operations. Combines access reviews, log analysis and Python scripting to find risk early and guide remediation."
+  }
+}

@@ -8,7 +8,7 @@
       "any exposure to Patient intake, in work or side projects",
       "any exposure to Medical coding, in work or side projects",
       "any exposure to Prior authorizations, in work or side projects",
-      "any exposure to Certified Medical Assistant Credential, in work or side projects"
+      "any exposure to Phlebotomy Certificate, in work or side projects"
     ],
     "scope_probes": [
       "Registered Nurse at Harborview Community Clinic: sole owner or team member?"
@@ -21,7 +21,7 @@
     "(?i)Patient\\ intake",
     "(?i)Medical\\ coding",
     "(?i)Prior\\ authorizations",
-    "(?i)Certified\\ Medical\\ Assistant\\ Credential",
+    "(?i)Phlebotomy\\ Certificate",
     "(?i)Care\\ planning",
     "(?i)Telemetry\\ monitoring",
     "(?i)Nurse\\ Manager\\ Certificate",
@@ -37,7 +37,7 @@
     "Patient intake",
     "Medical coding",
     "Prior authorizations",
-    "Certified Medical Assistant Credential"
+    "Phlebotomy Certificate"
   ],
   "min_ats_format_score": 4,
   "min_clarification_quality_score": 4,
@@ -45,9 +45,9 @@
   "min_tone_score": 3,
   "must_keywords": [
     "patients",
-    "team"
+    "vital signs"
   ],
-  "notes": "Mismatched pair (change): the registered-nurse-mid résumé against the medical-assistant-mid job description. A nurse applying for a medical assistant role: the clinical skills overlap and the licence level differs. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Specimen handling, Appointment scheduling, Insurance verification, Patient intake, Medical coding, Prior authorizations, Certified Medical Assistant Credential. The output must claim none of it.",
+  "notes": "Mismatched pair (change): the registered-nurse-mid résumé against the medical-assistant-mid job description. A nurse applying for a medical assistant role: the clinical skills overlap and the licence level differs. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Specimen handling, Appointment scheduling, Insurance verification, Patient intake, Medical coding, Prior authorizations, Phlebotomy Certificate. The output must claim none of it.",
   "pair": {
     "id": "registered-nurse-mid-to-medical-assistant-mid",
     "jd_cell": "medical-assistant-mid",
@@ -57,7 +57,7 @@
     "resume_fixture": "registered-nurse-mid--hospital-company",
     "transferable": [
       "patients",
-      "team"
+      "vital signs"
     ]
   }
 }

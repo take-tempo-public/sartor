@@ -1,0 +1,42 @@
+{
+  "cell": "project-mgmt-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:9f73f8edcf4ec234903b9dd44c9faa402c9b6d83d8fd738a265f2b9b11437232",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVk8HTcPgwLi98hyZKFw"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3579,
+      "output_tokens": 2180
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.software-company.about": "About the role\nWe're Tandem Software, and we're hiring a Project Manager to keep our projects moving from kickoff to wrap-up. You'll work with engineering, product and outside vendors, keep everyone clear on what's happening, and spot trouble before it lands. If you like turning messy plans into finished work, we'd love to talk.",
+    "jd.software-company.duties": "What you'll do\n- Run project close-out so deliverables are accepted, records are complete and lessons are written down.\n- Take in change requests, assess their impact on scope, schedule and cost, and steer them through approval.\n- Keep risk and issue logs current, with clear owners and agreed responses.\n- Share regular status updates with the team and stakeholders.\n- Work with vendors to keep their deliveries on track.",
+    "jd.software-company.needs": "What we're looking for\n- 3+ years of experience managing projects.\n- Hands-on use of Asana and Jira for planning and tracking work.\n- Strong skills in resource planning and vendor negotiation.\n- Clear stakeholder communication and disciplined change control.\n- Required: Project Practitioner Certificate.\n- Preferred: Agile Delivery Certificate.",
+    "r1.b1": "Runs budget reviews for active projects, using resource planning to match staff to scope and reducing budget variance by 50 percent.",
+    "r1.b2": "Leads project close-out, using status reporting to confirm deliverables, sign-offs and open items before each project is handed over.",
+    "r1.b3": "Tracks schedules and milestones on vendor-dependent work, applying vendor negotiation to reset delivery dates and raising on-time milestone completion by 55 percent.",
+    "r1.b4": "Coordinates vendors in Asana, assigning tasks, deadlines and owners so deliveries stay visible to the project team.",
+    "r1.i1": "Manages projects at Granite Ridge and maintains risk and issue logs that keep owners aware of open problems and agreed responses.",
+    "r1.i2": "Oversees Granite Ridge projects through close-out, confirming that deliverables are accepted and project records are complete.",
+    "r2.b1": "Maintained risk registers for active projects, logging issues and owners each week and reducing overdue issue resolution by 15 percent.",
+    "r2.b2": "Tracked change requests in Smartsheet, recording the impact on scope, schedule and cost before each request went for approval.",
+    "r2.b3": "Prepared budget reviews in Microsoft Project, comparing planned and actual costs and reducing budget overruns by 10 percent.",
+    "r2.b4": "Closed out completed projects in Jira, verifying that every ticket was resolved and handover notes were filed.",
+    "r2.i1": "Supported project close-out at Kestrel Works, gathering sign-offs and archiving project records as work finished.",
+    "r2.i2": "Coordinated change requests at Kestrel Works, logging each request and tracking it through review and approval.",
+    "summary.1": "Project management professional with 3 years of experience owning a recurring process from request to completion. Uses status reporting, Smartsheet and vendor negotiation to keep work on schedule and stakeholders informed.",
+    "summary.2": "Project specialist with about 3 years of experience running a repeating process from first request through to completion. Brings status reporting, vendor negotiation and Smartsheet tracking to each stage of delivery."
+  }
+}

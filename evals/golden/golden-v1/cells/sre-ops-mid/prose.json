@@ -1,0 +1,42 @@
+{
+  "cell": "sre-ops-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:6b8460319b616abdda1f0ef62d2c32185b843f6f98af6b55c5a944308513e37e",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVkShhdTepVvfPukLjpF"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3740,
+      "output_tokens": 2770
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.cloud-hosting.about": "Lattice Cloud runs hosting for teams who would rather ship than babysit servers. We're a small crew, and as a Systems Engineer you'll keep our platform steady, help shape how we handle incidents and changes, and have a real say in the tooling we pick. Expect plenty of ownership and not much ceremony.",
+    "jd.cloud-hosting.duties": "What you'll do\n- Take your turn on the on-call rotation and respond when alerts fire\n- Write clear post-incident write-ups that explain what happened and what we'll change\n- Review change requests and give change approvals before work reaches production\n- Tune monitoring so alerts point to real problems instead of noise\n- Work with the rest of the team to automate routine operations work",
+    "jd.cloud-hosting.needs": "What we're looking for\n- 4 or more years of experience in systems engineering or IT operations\n- Hands-on work with Terraform and Python for infrastructure and automation\n- Experience with Prometheus for monitoring and Splunk for log search\n- Comfort with PowerShell scripting and with ServiceNow for tickets and change records\n- Cloud Operations Certificate (required)",
+    "r1.b1": "Tunes monitoring alerts with PowerShell scripts that group duplicate notifications, cutting non-actionable pages by 55 percent.",
+    "r1.b2": "Writes post-incident write-ups backed by Grafana dashboards that show the timeline, impact and follow-up actions for each outage.",
+    "r1.b3": "Plans patching cycles around backup and recovery checkpoints, shortening maintenance windows by 20 percent.",
+    "r1.b4": "Automates backup and recovery tests in Python, confirming that restores complete and restored data matches the source.",
+    "r1.i1": "Systems Engineer at Lantern Hill, responsible for tuning monitoring alerts so the team responds to real problems.",
+    "r1.i2": "Systems Engineer at Lantern Hill who writes post-incident write-ups that turn outages into clear follow-up work.",
+    "r2.b1": "Used Bash scripting to collect disk and memory usage for capacity planning, reducing unplanned storage expansions by 15 percent.",
+    "r2.b2": "Joined the on-call rotation for Kubernetes workloads, triaging pod failures and escalating issues with clear notes.",
+    "r2.b3": "Defined infrastructure changes in Terraform so plans could be reviewed during change approvals, cutting approval turnaround by 50 percent.",
+    "r2.b4": "Tuned monitoring alerts in Microsoft Azure, removing noisy thresholds so the team focused on actionable warnings.",
+    "r2.i1": "Junior Systems Administrator at Stonebridge Community Trust who drafted post-incident write-ups after service disruptions.",
+    "r2.i2": "Junior Systems Administrator at Stonebridge Community Trust who ran backup and recovery tests to confirm restores worked as expected.",
+    "summary.1": "Site reliability and IT operations professional with about 4 years of experience running infrastructure on Kubernetes and Microsoft Azure. Owns a service end to end, from PowerShell automation and monitoring to post-incident write-ups and backup and recovery testing.",
+    "summary.2": "IT operations and site reliability engineer with about 4 years of experience across Microsoft Azure and Kubernetes environments. Takes one workstream from planning through operation, using PowerShell, Terraform and Prometheus to automate changes and keep alerting useful."
+  }
+}

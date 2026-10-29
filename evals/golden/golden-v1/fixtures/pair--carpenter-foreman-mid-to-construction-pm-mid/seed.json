@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2024",
       "issuer": "Safety Training Council",
       "name": "Construction Safety Card"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2025",
       "issuer": "State Apprenticeship Council",
       "name": "Apprenticeship Completion Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Builds forms for concrete footings and walls using layout and measuring, cutting form rework by 20 percent."
+          "text": "Builds forms for concrete, using layout and measuring to set lines and grades before each pour, which has cut form rework by 20 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reads plans and measures each room before cutting finish trim, keeping joints tight and lines straight."
+          "text": "Reads plans and takes measurements before cutting finish trim, so casing and base fit tight on the first install."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Orders lumber and materials for door and window installation from plan takeoffs, reducing leftover stock by 50 percent."
+          "text": "Orders lumber and materials for door and window installation from plan takeoffs, reducing wasted stock by 50 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Frames walls and floors to plan, using blueprint reading to set openings and heights correctly."
+          "text": "Frames walls and floors to plan, using blueprint reading to check dimensions and openings before nailing off."
         }
       ],
       "company": "Wren Valley Builders",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Journeyman carpenter at Wren Valley Builders, keeping the site safe and orderly for the crew and other trades on every job."
+          "text": "Journeyman carpenter at Wren Valley Builders who keeps the site safe for the crew and the client throughout each job."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Journeyman carpenter at Wren Valley Builders, reading plans and taking measurements to build each job accurately and to code."
+          "text": "Journeyman carpenter at Wren Valley Builders who reads plans and measures carefully so each job matches the drawings."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Kept the site safe through jobsite safety checks and daily cleanup, cutting recorded near misses by 45 percent."
+          "text": "Kept the site safe by applying jobsite safety practices, including daily cleanup and tool checks, cutting reported near misses by 45 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Installed doors, windows and trim, and assisted with concrete forming for entry slabs and thresholds."
+          "text": "Installed doors, windows and trim, and assisted with concrete forming so openings lined up for the finish work."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built forms for concrete and supported cabinet installation, reducing material waste by 15 percent."
+          "text": "Built forms for concrete and assisted with cabinet installation, reducing material waste on form work by 15 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Read plans and took measurements to set heights and positions for scaffold erection and work platforms."
+          "text": "Read plans and measured heights to plan scaffold erection, setting up work platforms at the correct level for each task."
         }
       ],
       "company": "Copperfield Construction",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Apprentice carpenter at Copperfield Construction, learning to read plans and take accurate measurements under journeyman supervision."
+          "text": "Apprentice carpenter at Copperfield Construction who learned to read plans and measure accurately on active job sites."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Apprentice carpenter at Copperfield Construction, installing doors, windows and trim while building core carpentry skills."
+          "text": "Apprentice carpenter at Copperfield Construction who installed doors, windows and trim while learning the carpentry trade."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Journeyman carpenter with about 4 years of experience doing the work to code without supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety, with a completed apprenticeship and a current Construction Safety Card."
+      "text": "Journeyman carpenter with 4 years of experience who completes work to code without close supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Carpentry professional at journeyman level with about 4 years on job sites, completing work to code independently. Brings cabinet installation, layout and measuring, and jobsite safety to each project, backed by an apprenticeship certificate in carpentry."
+      "text": "Carpenter at journeyman level with about 4 years in the trade, handling each task to code independently. Brings hands-on cabinet installation, careful layout and measuring, and steady jobsite safety habits."
     }
   ],
   "tags": []

@@ -1,0 +1,51 @@
+{
+  "cell": "construction-pm-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:cddc90f3a2b6591e40d2934704c02bcd102ee7a73e398976b91b4ce189558c1e",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVjkhuRNkx945PPyKEUS"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5075,
+      "output_tokens": 3581
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.design-build.about": "Quarry Hill Design-Build is an owner-run design-build firm. We design and build our projects under one roof, and our people do their work on site, not behind a desk. As Construction Manager, you will run our jobs in the field, keep owners informed, and lead the project managers and superintendents who get the work built. The role is hybrid and based in Nashville, Tennessee.",
+    "jd.design-build.duties": "What the job involves\n- Run regular owner meetings and keep owners informed on progress, cost and schedule\n- Manage and support our project managers and superintendents\n- Price change orders carefully and review them with owners before work proceeds\n- Walk sites with superintendents to check quality, safety and progress\n- Resolve field issues with designers, trades and owners",
+    "jd.design-build.needs": "What you need\n- 11 or more years of experience in construction project management\n- Working knowledge of Oracle Primavera, Microsoft Project and Autodesk Revit\n- Permit management and contract administration experience\n- Subcontractor coordination across multiple trades\n- Construction Safety Manager Certificate (required)",
+    "r1.b1": "Lead project managers and superintendents across active jobs, building shared schedules in Oracle Primavera that cut schedule slippage by 20 percent.",
+    "r1.b2": "Run regular site safety walks with superintendents and fold the findings into safety planning for each phase of work.",
+    "r1.b3": "Present Autodesk Revit models at owner meetings to settle design questions early, reducing owner-requested rework by 10 percent.",
+    "r1.b4": "Price change orders against the current schedule in Microsoft Project so owners see cost and time impact before approval.",
+    "r1.b5": "Review subcontractor submittals and keep submittal tracking current, shortening average review turnaround by 15 percent.",
+    "r1.i1": "Manages construction at Juniper Row, scheduling permits and inspections so crews keep working without waiting on approvals.",
+    "r1.i2": "Oversees construction at Juniper Row with responsibility for tracking budgets and schedules across project teams.",
+    "r2.b1": "Negotiated contracts with owners that built permit management into the scope, cutting permit approval delays by 40 percent.",
+    "r2.b2": "Coordinated subcontractors through shared drawing markups in Bluebeam Revu, resolving trade conflicts before work reached the field.",
+    "r2.b3": "Scheduled permits and inspections around punch list closeout, reducing time from substantial completion to final inspection by 30 percent.",
+    "r2.b4": "Tracked budgets and schedules in Oracle Primavera, flagging cost and time variances for owners and project teams.",
+    "r2.b5": "Managed project managers and superintendents, setting site safety planning standards that lowered recordable incidents by 10 percent.",
+    "r2.i1": "Led projects at Marlow Contracting, tracking budgets and schedules and reporting progress to owners.",
+    "r2.i2": "Managed project managers and superintendents at Marlow Contracting, setting priorities and holding teams to schedule and budget.",
+    "r3.b1": "Reviewed submittals against Autodesk Revit models, catching coordination errors early and cutting resubmittals by 35 percent.",
+    "r3.b2": "Coordinated subcontractor start dates and handoffs using Microsoft Project, keeping trades sequenced on each job.",
+    "r3.b3": "Scheduled permits and inspections alongside submittal tracking, reducing inspection-related hold times by 30 percent.",
+    "r3.b4": "Tracked project budgets and schedules, using permit management to keep approval timelines from driving cost overruns.",
+    "r3.b5": "Led site safety walks and logged hazards with Bluebeam Revu markups, lowering open safety items by 20 percent.",
+    "r3.i1": "Ran projects at Pennywhistle Supply, coordinating subcontractors from mobilization through closeout.",
+    "r3.i2": "Managed projects at Pennywhistle Supply, leading owner meetings to review progress, decisions and open issues.",
+    "summary.1": "Construction manager with 11 years of experience leading project managers and superintendents and answering for cost, schedule and safety results. Builds schedules in Oracle Primavera, keeps submittal tracking current and makes safety planning part of every job.",
+    "summary.2": "Construction project management professional with 11 years of experience running teams and owning the outcomes of the construction function. Brings hands-on skill in safety planning, submittal tracking and Oracle Primavera scheduling to projects from preconstruction through closeout."
+  }
+}
