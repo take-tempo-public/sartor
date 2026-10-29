@@ -20,6 +20,7 @@ from db.build_context import build_context_set_from_db
 from evals import golden_set as gs
 from evals.seed_import import seeded_session
 from scripts.export_corpus_seed import export_seed
+from tests._controls import control
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PERSONAS = REPO_ROOT / "evals" / "fixtures" / "synthetic"
@@ -995,6 +996,7 @@ class TestCertifications:
 
     @pytest.mark.xfail(
         strict=True,
+        raises=AssertionError,
         reason="known defect, item 194 scope 1: the posting requires the LOWEST-tier certification held "
         "(a foreman posting requires an apprentice card), in 37 of the 56 committed cells that hold any. "
         "Fixing `asked_certs` in build_profile flips this to a strict failure: remove the marker, then "
@@ -1003,9 +1005,17 @@ class TestCertifications:
     def test_the_posting_requires_the_highest_certification_the_candidate_holds(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
         held = _cert_names(profile)  # lowest tier first
-        assert len(held) >= 2
-        needs = next(s["brief"] for sid, s in profile["slots"].items() if sid.endswith(".needs"))
-        assert f"State {held[-1]} as a required licence or certification." in needs
+        # The drive and its controls raise ControlFailed, never a bare assert: a broken setup must not
+        # read as the defect (tests/_controls.py).
+        control(
+            len(held) >= 2, f"the senior cell must hold two or more certifications, holds {held}"
+        )
+        needs_briefs = [s["brief"] for sid, s in profile["slots"].items() if sid.endswith(".needs")]
+        control(len(needs_briefs) >= 1, "the cell must have at least one posting with a needs slot")
+        # The one invariant the arm pins, a plain assert (it is the expected AssertionError): every posting
+        # of the cell requires the highest certification the candidate holds.
+        wanted = f"State {held[-1]} as a required licence or certification."
+        assert all(wanted in brief for brief in needs_briefs)
 
     @pytest.mark.parametrize(
         ("level", "held"),
