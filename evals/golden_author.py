@@ -350,7 +350,7 @@ def author_cell(client: Any, profile: dict[str, Any]) -> dict[str, Any]:
                 continue
             found = gs.check_slot_text(
                 slot_id, slot, reply[slot_id], [] if slot["kind"] == "jd" else traps
-            )
+            ) + gs.check_jd_credential_status(profile, slot_id, reply[slot_id])
             if not found and slot_id == edit_slot:
                 try:
                     gs.pick_edit_target(reply[slot_id])

@@ -80,6 +80,18 @@ Generated data the change reaches (measured, free, scratch script over `evals/go
 
 ---
 
+## Measured after the change (2026-10-29, free)
+
+Both fixes are in; the tests were red first (finding 1: 10 of 24 professions and 18 of 40 synthetic entry cells failed on the old builder; finding 2: 11 of 11 new tests failed with the symbols missing) and green after. Then `python -m evals.golden_set check` on the 96 committed cells:
+
+- **Finding 1, builder diff: 23 stale profiles, not the predicted 22.** The extra one is `electrician-senior`: its entry draw moved to the career start, and the sorted hand-out then shifted a mid-tier credential's year. The prediction counted only entry-tier credentials dated after the first role; the instrument counts every profile that no longer matches a fresh build. Every difference in all 23 is a certification `year` (31 changes); no other field of any profile differs, which also shows the hoisted phrase constants left the briefs byte-identical.
+- **Finding 2, prose check: exactly the 4 predicted cells** (`accounting-senior`, `carpenter-foreman-lead`, `construction-pm-senior`, `logistics-driving-lead`), and the 2 pairs that contain two of them (`carpenter-foreman-senior-to-carpenter-foreman-lead`, `accounting-senior-to-project-mgmt-mid`).
+- **Union: 26 cells** (overlap `accounting-senior`). Recorded last-generation cost **$1.8469**, dearest `logistics-driving-lead` $0.0981. The call log reads $11.2104; headroom under the $14.00 total is $2.7896. Projection plus the dearest cell is $1.95, inside the headroom, so the plan's stop rule does not fire.
+
+The 26: accounting-{entry,lead,mid,senior}, admin-assistant-{entry,lead,mid,senior}, carpenter-foreman-{lead,mid}, construction-pm-senior, electrician-{entry,mid,senior}, hvac-technician-mid, logistics-driving-{entry,lead,senior}, medical-assistant-senior, registered-nurse-{entry,mid,senior}, social-services-{entry,mid}, teacher-{entry,mid}.
+
+---
+
 ## Deferred
 
 - **Finding 3, the employer pool (accepted for v1, owner 2026-10-29).** 216 roles draw on 59 invented employer names; 32 names appear in two or more professions ("Riverbend Health Network" and "Ironbridge Co" in 8 each). Only 5 of 24 professions name their own employers (`carpenter-foreman`, `electrician`, `hvac-technician`, `logistics-driving`, `teacher`). The owner's reason: the names are invented, used only by a backend eval dataset, and have no effect on any eval score. The fix (an `employers` list of at least three names in the other 19 facts files, which `_employers_for` already honours) would redraw the employers of 76 of the 96 cells, about $6 of author spend; it belongs in a `golden-v2`. **Constraint:** the calibration run (item 194 scope 3) scores this set, so a later cell change invalidates it; any such change lands before that run.
