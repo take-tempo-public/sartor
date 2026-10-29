@@ -1813,16 +1813,16 @@ def build_profile(
     held_certs = [c for c in certs if LEVELS.index(c["level"]) <= tier]
     absent_certs = [c for c in certs if LEVELS.index(c["level"]) > tier]
     first_year, last_year = int(oldest_year), int(ASOF[:4])
-    cert_items = [
-        {
-            "name": c["name"],
-            "issuer": c["issuer"],
-            "year": str(
-                first_year
-                + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
-            ),
-        }
+    # Each year is the same stable draw as before, but the sorted draws are handed out in tier order, so a
+    # higher tier is never dated before a lower one (a Master licence before the Journeyman licence). A
+    # cell with one certification is unchanged, and so is a cell whose draws already ran in tier order.
+    cert_years = sorted(
+        first_year + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
         for c in held_certs
+    )
+    cert_items = [
+        {"name": c["name"], "issuer": c["issuer"], "year": str(year)}
+        for c, year in zip(held_certs, cert_years, strict=True)
     ]
     sections = [
         {"kind": "summary", "heading": "Summary", "slots": summary_slots},

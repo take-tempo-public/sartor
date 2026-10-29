@@ -62,6 +62,8 @@ carpenter-foreman-mid-to-construction-pm-mid.
 | # | Site | Decision | Rationale |
 |---|---|---|---|
 | 1 | `evals/golden_set.py` `build_profile` (the `asked_certs` / `cert_ask` lines, ~1868-1879) | **update** | The one-line fix: ask for and name `held_certs[-1]`. |
+| 1b | `evals/golden_set.py` `build_profile` (the `cert_years` / `cert_items` block, ~1815-1826) | **update** (added after the hand-read, owner's decision) | Certification years: sorted draws handed out in tier order, so a higher tier is never dated before a lower one. Changes the certification section of 22 of the 37 cells; no cell outside the 37. |
+| 1c | `tests/test_golden_set.py::TestCertifications::test_a_higher_tier_certification_is_never_dated_before_a_lower_one` | **new** | Written first; failed 30 of 40 seeds before the fix. |
 | 2 | `evals/golden_set.py` `_check_cell_matches_facts` / `check_suite` | no change | Rebuilds every generated cell from its facts. After row 1 it reports exactly the 37 stale cells, which is the free instrument run before any spend. |
 | 3 | `evals/golden_set.py` `write_pairs`, `write_manifest` (CLI `pairs`, `manifest`) | no change (re-run) | Re-derive the 18 pairs' fixtures and re-stamp `files` hashes after regeneration. Not hand-edited. |
 | 4 | `tests/test_golden_set.py::TestCertifications::test_the_posting_requires_the_highest_certification_the_candidate_holds` (line ~996) | **update** | Remove the strict `xfail` marker in the same commit that fixes the line; the test already asserts the right behaviour. |
@@ -115,3 +117,41 @@ problem lines.** The 59 other cells rebuild byte-identically, so the fix touched
 `tests/test_golden_set.py` + `tests/test_golden_facts.py` with `-x`: 226 passed, then `TestCommittedSuite::test_the_committed_suite_is_sound`
 failed with exactly those 37 (expected until the cells are regenerated). The old-behaviour test at line ~1059 was found
 by grep and rewritten with the fix (row 5).
+
+**Stale cells removed (git rm, not yet committed):** 37 cell directories and their 37 cell fixtures; 59 cells and 95
+fixtures (59 + 36 pairs) remain. The 18 affected pair fixtures are not deleted: `write_pairs` overwrites, so `pairs` after
+regeneration re-derives them.
+
+**Paid run A, `electrician-lead` (2026-10-28):** `python -u -m evals.golden_author --cell electrician:lead --max-spend 0.20
+--max-total-spend 13 --confirm-paid`, exit 0, one request, **$0.0877** (the lead-tier mean was $0.093); the log's own line:
+`$7.9674 of $13.0000 in all`. Hand-read: the foreman posting now says "A current Master Electrician Licence is required."
+(fixed). The résumé's prose is plausible for a lead, with the stuffed phrasing the earlier cells already showed ("organise
+crew power tool use around test windows").
+
+**A second defect, found by that hand-read, in the same function (certification years).** The résumé's certifications read
+Apprentice Registration Card 2023, Construction Safety Card 2020, Journeyman Licence **2026**, Master Licence **2019**, for a
+career that began in 2013: a Master licence dated seven years before the Journeyman licence. Cause, read in
+`evals/golden_set.py:1820-1823`: each held certification's year is `first_year + hash(seed, "cert-year:<name>") % span`, a
+uniform draw over the whole career and independent of the certification's tier. **Measured (free,
+`scratchpad/cert_years.py`, over the 56 cells that hold certifications, the 37 stale ones read from `HEAD`):** **21 of the 37
+cells with two or more certifications have years that are not non-decreasing by tier**; 0 of the 56 have a year outside
+`[first role start, 2026]`. Example: carpenter-foreman-lead, first role 2015: Construction Safety Card 2020, Apprenticeship
+Completion Certificate 2023, Lead Carpenter Certificate 2016, Crew Supervisor Certificate 2020. It is a realism fault, not a
+grounding one. **All 21 are among the 37 cells already being regenerated**, so fixing it before the sweep costs nothing
+extra beyond re-doing `electrician-lead`; fixing it after the sweep would regenerate those 21 a second time (about $1.8).
+Not fixed yet: it is outside the scope the owner quoted (item 194 scope 1), so the owner is asked.
+
+**Owner's decision (2026-10-28, chat): fix now, then sweep.** Fix: in `build_profile`, `cert_years = sorted(<the same hash
+draws>)` handed out in tier order (`golden_set.py`, the `cert_items` block). Test written first:
+`TestCertifications::test_a_higher_tier_certification_is_never_dated_before_a_lower_one` (forty seeds, a three-certification
+senior cell); it **failed on the unfixed code, 30 of 40 seeds disordered**, and passes after. Same row-1 surface as the
+asked-certification fix, same 37 cells.
+
+**Measured after the fix (free, `scratchpad/predict.py`, the 37 old profiles read from `HEAD` and rebuilt):** the
+certification section changes in **22** of the 37 and is identical in **15**. That is one more than the 21 tier violations
+counted above: `electrician-entry` holds two entry-tier certificates dated 2026 then 2025, which is not a tier violation, but
+the sort reorders them (2025, 2026). My earlier expectation "21" was a count of tier violations, not of changed profiles; the
+difference is that one cell, which is among the 37 regenerated anyway. One-certification and no-certification cells are
+untouched: `golden_set check` after the fix flags exactly one existing cell as stale, `electrician-lead` (the one already
+regenerated, with the old years), and none of the 58 others. The `TestCommittedSuite` tests fail until the 36 remaining
+cells are regenerated and the pairs re-derived (expected mid-regeneration state).

@@ -1009,6 +1009,24 @@ class TestCertifications:
         wanted = f"State {held[-1]} as a required licence or certification."
         assert all(wanted in brief for brief in needs_briefs)
 
+    def test_a_higher_tier_certification_is_never_dated_before_a_lower_one(self) -> None:
+        # The year is a stable hash draw, so one cell cannot show an ordering rule: try forty seeds.
+        # Each held list is sorted lowest tier first, so its years must not decrease down the list.
+        disordered: list[str] = []
+        for n in range(40):
+            facts = CERT_FACTS | {"profession": f"{CERT_FACTS['profession']}-{n}"}
+            profile = gs.build_profile(facts, _ladder("senior"), "senior")
+            certs = [
+                c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+            ]
+            control(len(certs) == 3, f"the senior cell must hold three certifications: {certs}")
+            years = [int(c["year"]) for c in certs]
+            if years != sorted(years):
+                disordered.append(f"{facts['profession']}: {years}")
+        assert not disordered, (
+            f"{len(disordered)} of 40 cells date a higher tier first: {disordered[:3]}"
+        )
+
     @pytest.mark.parametrize(
         ("level", "held"),
         [
