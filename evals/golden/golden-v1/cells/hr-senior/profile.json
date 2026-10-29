@@ -177,12 +177,12 @@
         {
           "issuer": "Workforce Practice Society",
           "name": "HR Practitioner Certificate",
-          "year": "2020"
+          "year": "2019"
         },
         {
           "issuer": "Workforce Practice Society",
           "name": "Senior HR Practitioner Certificate",
-          "year": "2025"
+          "year": "2024"
         }
       ],
       "kind": "certifications"
@@ -259,7 +259,7 @@
       "allowed_numbers": [
         "8"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Exit interviews, Performance review cycles, Workday, New hire onboarding, Employee relations, Applicant tracking, and 8 or more years of experience. State HR Practitioner Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Exit interviews, Performance review cycles, Workday, New hire onboarding, Employee relations, Applicant tracking, and 8 or more years of experience. State Senior HR Practitioner Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -271,7 +271,7 @@
         "New hire onboarding",
         "Employee relations",
         "Applicant tracking",
-        "HR Practitioner Certificate"
+        "Senior HR Practitioner Certificate"
       ]
     },
     "r1.b1": {

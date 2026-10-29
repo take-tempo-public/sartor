@@ -164,7 +164,7 @@
         {
           "issuer": "Driver Safety Council",
           "name": "Driver Safety Certificate",
-          "year": "2024"
+          "year": "2022"
         },
         {
           "issuer": "State Motor Vehicle Agency",
@@ -246,7 +246,7 @@
       "allowed_numbers": [
         "5"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Defensive driving, Route planning, Hazmat handling, Delivery scheduling, Pre-trip inspections, Customer signoff, and 5 or more years of experience. State Driver Safety Certificate as a required licence or certification. State Hazardous Materials Endorsement as preferred.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Defensive driving, Route planning, Hazmat handling, Delivery scheduling, Pre-trip inspections, Customer signoff, and 5 or more years of experience. State Commercial Driver Licence as a required licence or certification. State Hazardous Materials Endorsement as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -258,7 +258,7 @@
         "Delivery scheduling",
         "Pre-trip inspections",
         "Customer signoff",
-        "Driver Safety Certificate",
+        "Commercial Driver Licence",
         "Hazardous Materials Endorsement"
       ]
     },

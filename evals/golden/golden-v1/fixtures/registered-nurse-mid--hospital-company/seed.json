@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2023",
       "issuer": "State Board of Nursing",
       "name": "Registered Nurse Licence"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2023",
+      "issued": "2024",
       "issuer": "Resuscitation Training Council",
       "name": "Basic Life Support Card"
     },
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Charts medication administration in the clinic record at each visit, cutting documentation errors by 55 percent."
+          "text": "Documents medication administration in the patient record at the point of care, reducing charting omissions by 55 percent."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Teaches patients and families about symptoms and follow-up care during triage, helping them know when to return to the clinic."
+          "text": "Uses triage findings to teach patients and families which symptoms need same-day care and how to manage minor conditions at home."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Uses vital signs monitoring data to structure shift handoff reports, reducing missed follow-ups by 30 percent."
+          "text": "Pairs vital signs monitoring trends with each shift handoff, cutting missed follow-up checks by 30 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assesses patients at each visit and provides wound care, tracking healing progress and flagging concerns to the care team."
+          "text": "Assesses patients at each visit and provides wound care, tracking healing progress and escalating signs of infection to the provider."
         }
       ],
       "company": "Harborview Community Clinic",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Assesses patients across a community clinic caseload, identifying needs and setting priorities for care."
+          "text": "Provides outpatient nursing care at a community clinic, assessing patients on arrival and identifying needs for follow-up."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Maintains accurate and timely charting in the clinic record for every patient encounter."
+          "text": "Delivers clinic nursing care with a focus on accurate, timely charting in the patient record after every encounter."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Administered medications to hospice patients and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent."
+          "text": "Administered scheduled and as-needed medications and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with physicians on comfort and symptom management, using patient assessment findings to inform changes to care plans."
+          "text": "Coordinated with physicians on symptom changes, using patient assessment findings to support updates to comfort-focused care plans."
         },
         {
           "display_order": 2,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Recorded bedside handoff details in the patient record, improving handoff completeness by 55 percent."
+          "text": "Completed record entries during bedside handoff with incoming nurses, raising same-shift chart completion by 55 percent."
         },
         {
           "display_order": 3,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Taught patients and families about end-of-life care and medications, using Epic Systems to document each teaching session."
+          "text": "Taught patients and families about medications and comfort measures, using education materials from Epic Systems to reinforce each session."
         }
       ],
       "company": "Cedar Hollow Hospice",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Charted care for hospice patients in the medical record, keeping notes accurate for the interdisciplinary team."
+          "text": "Provided hospice nursing care as a graduate nurse, keeping the patient record current with assessments, interventions and family communication."
         },
         {
           "display_order": 1,
@@ -216,7 +216,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Gave scheduled and as-needed medications to hospice patients, focusing on comfort and symptom control."
+          "text": "Supported hospice patients as a graduate nurse, giving scheduled and as-needed medications focused on comfort and symptom relief."
         }
       ],
       "titles": [
@@ -301,7 +301,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Registered Nurse with about 4 years of experience carrying a full patient caseload without close supervision in clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with a focus on accurate charting and safe care."
+      "text": "Registered nurse with about 4 years of experience carrying a full patient caseload without close supervision across clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with steady attention to patient assessment and safe handoffs."
     },
     {
       "display_order": 1,
@@ -312,7 +312,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Nursing professional with about 4 years of experience managing a full caseload independently across community clinic and hospice care. Brings steady practice in clinical documentation, triage and medication administration, along with patient assessment and wound care."
+      "text": "Nursing professional with roughly 4 years of experience managing a full caseload independently in community clinic and hospice care. Applies triage to prioritise patients, handles medication administration safely and keeps clinical documentation complete and timely."
     }
   ],
   "tags": []

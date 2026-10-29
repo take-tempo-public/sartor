@@ -4,36 +4,36 @@ avery.novak@example.com | (555) 010-9345 | linkedin.com/in/example-avery-social-
 
 ## Summary
 
-Lead social services casework professional with 14 years of experience running case management programs and answering for their results. Skilled in referral coordination, case notes and motivational interviewing, with a record of supervising case workers and improving service outcomes.
+Social services casework lead with 14 years of experience running programs and answering for their results across hospice, health network and clinic settings. Brings referral coordination, case notes and motivational interviewing to team supervision, home visits and needs assessments.
 
 ## Experience
 
 ### Program Manager — Cedar Hollow Hospice
 *November 2020 – present*
 
-- Lead intake and assessments for hospice patients and families, using benefits enrollment support to increase completed applications by 30 percent.
-- Maintain case records in Microsoft Access, keeping client files current and ready for audits and staff review.
-- Conduct home visits with patients and caregivers, applying motivational interviewing to raise care plan follow-through by 30 percent.
-- Work with local schools and clinics through referral coordination so families receive support services without gaps.
-- Manage program budgets and reports, using caseload tracking to cut reporting time by 35 percent.
+- Leads intake and assessments for hospice families, folding benefits enrollment into the first visit and raising completed applications by 30 percent.
+- Maintains case records in Microsoft Access, keeping notes, contacts and service histories current for the hospice team.
+- Conducts home visits with patients and families, applying motivational interviewing to raise care plan follow-through by 30 percent.
+- Coordinates with local schools and clinics through referral coordination, so families receive timely support during and after hospice care.
+- Manages program budgets and reports, using caseload tracking to cut reporting time by 35 percent.
 
 ### Senior Case Manager — Riverbend Health Network
 *December 2016 – November 2020*
 
-- Supervised case workers on needs assessments, raising on-time assessment completion by 55 percent.
-- Prepared reports for hearings drawing on findings from home visits with clients and families.
-- Referred families to housing and food programs, using detailed case notes to increase completed referrals by 25 percent.
-- Wrote service plans that built benefits enrollment steps into each client's goals.
-- Streamlined intake and assessments with tracking forms in Microsoft Access, reducing intake processing time by 20 percent.
+- Supervised a team of case workers, standardizing needs assessments and raising on-time assessment completion by 55 percent.
+- Prepared reports for hearings drawn from home visits, giving courts clear accounts of family circumstances and progress.
+- Referred families to housing and food programs, using case notes to track each referral and raising completed placements by 25 percent.
+- Wrote service plans that built benefits enrollment into each family's goals and next steps.
+- Streamlined intake and assessments in Microsoft Access, cutting the time from first contact to completed assessment by 20 percent.
 
 ### Case Manager — Harborview Community Clinic
 *January 2013 – December 2016*
 
-- Coordinated with schools and clinics on shared clients, using motivational interviewing to raise family engagement in services by 30 percent.
-- Drafted reports for hearings, using referral coordination records to show which services clients had received.
-- Referred families to housing and food programs and used caseload tracking to raise follow-up completion by 55 percent.
-- Wrote service plans grounded in needs assessments completed with each client.
-- Conducted intake and assessments during home visits, cutting time from referral to first appointment by 15 percent.
+- Coordinated with schools and clinics on shared clients, using motivational interviewing to raise family attendance at referred appointments by 30 percent.
+- Drafted reports for hearings that documented referral coordination and the services each family had received.
+- Referred families to housing and food programs, using caseload tracking to raise completed referrals by 55 percent.
+- Wrote service plans grounded in needs assessments, setting clear goals with each client and family.
+- Handled intake and assessments during home visits, shortening the wait for a first assessment by 15 percent.
 
 ## Education
 
@@ -41,9 +41,9 @@ Lead social services casework professional with 14 years of experience running c
 
 ## Certifications
 
-- Mandated Reporter Certificate — State Child Welfare Board, 2025
-- Case Management Certificate — Human Services Training Council, 2026
-- Human Services Supervisor Certificate — Human Services Training Council, 2023
+- Mandated Reporter Certificate — State Child Welfare Board, 2013
+- Case Management Certificate — Human Services Training Council, 2013
+- Human Services Supervisor Certificate — Human Services Training Council, 2019
 
 ## Skills
 

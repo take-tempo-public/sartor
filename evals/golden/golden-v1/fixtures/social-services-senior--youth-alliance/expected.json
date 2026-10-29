@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
       },
-      "edit_replacement": "using intake interviews to gather the details each partner needs, guiding colleagues and handling the hardest cases",
-      "edit_target_substring": "using intake interviews to gather the details each partner needs",
+      "edit_replacement": "using intake interviews to identify each household's needs and set, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "using intake interviews to identify each household's needs and set",
       "expected_iteration_themes": {
         "experience_probes": [
           "Benefits enrollment exposure not yet covered by prior clarifications"

@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2019",
+      "issued": "2017",
       "issuer": "State Child Welfare Board",
       "name": "Mandated Reporter Certificate"
     },
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducts intake and assessments through home visits, cutting the time from referral to completed assessment by 45 percent."
+          "text": "Conducts intake and assessments through home visits, cutting the time from referral to first assessment by 45 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with schools and clinics on shared cases, using intake interviews to gather the details each partner needs before a referral."
+          "text": "Coordinates with schools and clinics, using intake interviews to identify each household's needs and set up referrals."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracks home visit schedules and notes in Microsoft Access, reducing missed visits by 50 percent."
+          "text": "Tracks home visits in Microsoft Access, reducing missed follow-up visits by 50 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Writes service plans for clients in acute need, building crisis intervention steps into each plan."
+          "text": "Writes service plans that include crisis intervention steps for households facing urgent safety or housing needs."
         }
       ],
       "company": "Northplain Water District",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Senior Case Manager at Northplain Water District who prepares reports for hearings and keeps case documentation ready for review."
+          "text": "Prepares reports for hearings as Senior Case Manager at Northplain Water District, drawing on case records and assessments."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Senior Case Manager at Northplain Water District, coordinating services with local schools and clinics to keep client support consistent."
+          "text": "Leads casework at Northplain Water District with a focus on coordinating services with local schools and clinics."
         }
       ],
       "titles": [
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared court reports for hearings, summarizing case history, service progress and client circumstances."
+          "text": "Prepared court reports for hearings, summarizing case history, services provided and progress toward goals."
         },
         {
           "display_order": 2,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducted intake and assessments, applying motivational interviewing to help clients set their own goals."
+          "text": "Conducted intake and assessments using motivational interviewing to identify client goals and barriers."
         }
       ],
       "company": "Stonegate Housing Authority",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Case Manager at Stonegate Housing Authority who coordinated with schools and clinics to support client families."
+          "text": "Coordinated casework with schools and clinics as a Case Manager at Stonegate Housing Authority."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Case Manager at Stonegate Housing Authority who handled intake and assessments for households seeking support."
+          "text": "Handled intake and assessments for households served by Stonegate Housing Authority."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with schools and clinics using findings from home visits, increasing completed follow-up appointments by 20 percent."
+          "text": "Coordinated with schools and clinics after home visits, raising on-time follow-up appointments by 20 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Carried out intake interviews during home visits, recording household needs for the case team."
+          "text": "Completed intake interviews during home visits to record household needs and eligibility details."
         },
         {
           "display_order": 2,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Documented crisis intervention contacts in case records, keeping each file complete for follow-up."
+          "text": "Maintained case records, including notes from crisis intervention contacts, so staff had accurate client histories."
         }
       ],
       "company": "Neighborhood Table Services",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Case Aide at Neighborhood Table Services who supported intake and assessments for new clients."
+          "text": "Supported intake and assessments for clients of Neighborhood Table Services as a Case Aide."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Case Aide at Neighborhood Table Services who helped write service plans with clients and the case team."
+          "text": "Assisted case managers at Neighborhood Table Services in writing service plans for clients and families."
         }
       ],
       "titles": [
@@ -381,7 +381,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior case manager with 9 years of social services casework, guiding colleagues and taking on difficult, high-risk cases. Applies service planning, motivational interviewing and caseload tracking to keep clients moving toward stable outcomes."
+      "text": "Senior social services case manager with 9 years of experience guiding colleagues and taking on complex cases. Skilled in service planning, motivational interviewing and caseload tracking, with a certificate in case management."
     },
     {
       "display_order": 1,
@@ -392,7 +392,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Casework professional with 9 years in social services, serving as a resource for colleagues and handling difficult cases. Brings service planning, motivational interviewing and caseload tracking to intake, home visits and court reports."
+      "text": "Casework professional with about 9 years in social services, handling difficult cases and mentoring other case managers. Brings service planning, motivational interviewing and caseload tracking to work with families and partner agencies."
     }
   ],
   "tags": []

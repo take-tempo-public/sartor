@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Doing the work to code on my own."
       },
-      "edit_replacement": "checking code compliance at each stage so the work is, doing the work to code on my own",
-      "edit_target_substring": "checking code compliance at each stage so the work is",
+      "edit_replacement": "checking code compliance on each run before inspection., doing the work to code on my own",
+      "edit_target_substring": "checking code compliance on each run before inspection.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Load calculations exposure not yet covered by prior clarifications"

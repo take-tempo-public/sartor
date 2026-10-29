@@ -65,6 +65,42 @@ def test_a_profession_builds_four_sound_cells_with_one_jd_each(profession: str) 
 
 
 @pytest.mark.parametrize("profession", PROFESSIONS)
+def test_a_cells_credentials_are_asked_dated_and_ordered_like_a_real_career(
+    profession: str,
+) -> None:
+    """The three faults hand-reading found in item 194, as invariants over every committed profession and tier.
+
+    The posting requires the highest credential held; years do not fall as the tier rises; and a mid-or-higher
+    credential is dated no later than the earliest role titled for its tier (a Journeyman licence after the
+    Journeyman role began is a fault no check of the prose can see). An entry-tier credential is not bound by a role.
+    """
+    facts = _facts(profession)
+    tier_of = {c["name"]: gs.LEVELS.index(c["level"]) for c in facts.get("certifications", [])}
+    for level in gs.LEVELS:
+        profile = _profile(profession, level)
+        certs = [
+            c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+        ]
+        where = f"{profession}-{level}"
+        years = [int(c["year"]) for c in certs]
+        assert years == sorted(years), (where, "a higher tier is dated before a lower one", certs)
+        roles = [r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]]
+        for cert in certs:
+            tier = tier_of[cert["name"]]
+            if tier == 0:
+                continue
+            starts = [
+                int(r["start"][:4]) for r in roles if r["title"] == facts["titles"][gs.LEVELS[tier]]
+            ]
+            if starts:
+                assert int(cert["year"]) <= min(starts), (where, cert["name"], cert["year"], starts)
+        if certs:
+            wanted = f"State {certs[-1]['name']} as a required licence or certification."
+            needs = [s["brief"] for sid, s in profile["slots"].items() if sid.endswith(".needs")]
+            assert needs and all(wanted in brief for brief in needs), (where, wanted)
+
+
+@pytest.mark.parametrize("profession", PROFESSIONS)
 def test_each_tier_is_posted_where_its_industry_says(profession: str) -> None:
     facts = _facts(profession)
     by_tier = {i["level"]: i for i in facts["industries"]}

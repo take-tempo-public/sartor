@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
       },
-      "edit_replacement": "Holds parent conferences that set shared behavior supports for home, guiding colleagues and handling the hardest cases",
-      "edit_target_substring": "Holds parent conferences that set shared behavior supports for home",
+      "edit_replacement": "giving families and staff a shared plan for home and, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "giving families and staff a shared plan for home and",
       "expected_iteration_themes": {
         "experience_probes": [
           "Lesson planning exposure not yet covered by prior clarifications"

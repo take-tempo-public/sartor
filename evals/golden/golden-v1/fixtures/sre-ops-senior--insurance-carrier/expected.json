@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting the technical direction for a product area."
       },
-      "edit_replacement": "setting escalation paths and handoff notes so responders resolve issues, setting the technical direction for a product area",
-      "edit_target_substring": "setting escalation paths and handoff notes so responders resolve issues",
+      "edit_replacement": "Runs the team's on-call rotation for Kubernetes workloads, setting the technical direction for a product area",
+      "edit_target_substring": "Runs the team's on-call rotation for Kubernetes workloads",
       "expected_iteration_themes": {
         "experience_probes": [
           "Python exposure not yet covered by prior clarifications"

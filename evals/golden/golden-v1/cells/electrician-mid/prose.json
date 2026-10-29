@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:32036af138a9d576eb86c88bd5d39d487bf47999a300d43eb722458cb67338ba",
+    "profile_sha256": "sha256:ae56d3fb044db645eec29ee86c7dfd047bdd632a12a7dbf15871186ce2c2e543",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVU2ZUzGcXUJdfxJVXMp"
+      "req_011CgVjgkoBvAogF71FwssNK"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 3856,
-      "output_tokens": 2765
+      "input_tokens": 3860,
+      "output_tokens": 2399
     }
   },
   "schema": 1,
   "slots": {
-    "jd.residential-electric.about": "Marlow Residential Electric is an owner-run electrical contractor doing residential work in and around Spokane. We are looking for a journeyman electrician to join our crew on site. You will wire homes, handle service work and do the job to code, keeping each site clean and safe. We keep crews small, treat people fairly and stand behind our work.",
-    "jd.residential-electric.duties": "What the job involves\n- Read plans to lay out each job before work starts\n- Pull and terminate wire in new construction and remodels\n- Install panels, breakers and subpanels\n- Mount and connect fixtures, switches and receptacles\n- Test circuits and fix problems before inspection\n- Keep the work area clean, organised and safe",
-    "jd.residential-electric.needs": "What you need\n- 5 or more years of hands-on electrical experience\n- Solid skills in grounding and bonding, circuit testing and troubleshooting\n- Code compliance knowledge and confident blueprint reading\n- Ability to do load calculations for residential services\n- Apprentice Registration Card required\n- Master Electrician Licence preferred",
-    "r1.b1": "Pull and terminate wire with careful power tool use, cutting the time spent on each run by 20 percent.",
-    "r1.b2": "Run conduit to code, checking code compliance at each stage so the work is ready for inspection.",
-    "r1.b3": "Install panels and fixtures and verify each connection through multimeter use, reducing callbacks by 45 percent.",
-    "r1.b4": "Trace faults through methodical circuit testing, isolating the problem before any parts are replaced.",
-    "r1.i1": "Installs panels and fixtures as a journeyman electrician at Redfern Electrical Services, working to code without direct supervision.",
-    "r1.i2": "Traces and repairs electrical faults for Redfern Electrical Services, testing circuits to find the cause before making a fix.",
-    "r2.b1": "Read plans to lay out grounding and bonding, reducing rework found at inspection by 30 percent.",
-    "r2.b2": "Tested circuits after panel installation, confirming each breaker and feeder before the system was energised.",
-    "r2.b3": "Pulled and terminated wire guided by blueprint reading, reducing wasted wire by 15 percent.",
-    "r2.b4": "Ran conduit on site, using conduit bending to fit each run neatly around obstacles.",
-    "r2.i1": "Traced faults alongside licensed electricians at Summit Power Contractors while learning the trade as an apprentice electrician.",
-    "r2.i2": "Ran conduit as an apprentice electrician at Summit Power Contractors, learning layout and bending on active job sites.",
-    "summary.1": "Journeyman electrician with about 5 years of experience completing electrical work to code without supervision. Brings steady code compliance, accurate multimeter use and careful blueprint reading to every job.",
-    "summary.2": "Licensed journeyman electrician with about 5 years in the trade, trained through an apprenticeship and now working independently. Relies on blueprint reading to plan each job, multimeter use to verify it, and code compliance to see it through inspection."
+    "jd.residential-electric.about": "About us and the job\nMarlow Residential Electric is an owner-run electrical contractor in Spokane, WA, wiring homes for local families and builders. We are looking for a journeyman electrician who takes pride in neat, safe work. The job is on site every day, in new builds, remodels and service calls. You will work closely with the owner and a small crew.",
+    "jd.residential-electric.duties": "What the job involves\n- Read plans and drawings to lay out each job before work starts\n- Pull wire through new and existing homes and terminate it cleanly at devices and panels\n- Install and upgrade service panels, breakers and subpanels\n- Hang and connect light fixtures, fans, switches and receptacles\n- Test finished circuits and get work ready for inspection\n- Keep the job site clean and talk clearly with homeowners",
+    "jd.residential-electric.needs": "What you need\n- 5 or more years of hands-on electrical experience\n- Grounding and bonding, circuit testing and code compliance on residential jobs\n- Blueprint reading and load calculations for new and remodel work\n- Troubleshooting skills to find and fix faults on your own\n- A current Journeyman Electrician Licence is required\n- A Master Electrician Licence is preferred",
+    "r1.b1": "Pulls and terminates wire with careful power tool use, cutting rework on terminations by 20 percent.",
+    "r1.b2": "Runs conduit for new circuits, checking code compliance on each run before inspection.",
+    "r1.b3": "Installs panels and fixtures and verifies every connection through multimeter use, reducing callbacks by 45 percent.",
+    "r1.b4": "Traces faults in existing wiring through methodical circuit testing, isolating the problem before any repair begins.",
+    "r1.i1": "Installs service panels and fixtures for Redfern Electrical Services as a licensed journeyman, working to code without direct supervision.",
+    "r1.i2": "Traces and repairs electrical faults for Redfern Electrical Services, working independently on site as a journeyman electrician.",
+    "r2.b1": "Read plans to lay out grounding and bonding paths, cutting layout corrections by 30 percent.",
+    "r2.b2": "Tested circuits after supervised panel installation, confirming breaker labelling and continuity before energising.",
+    "r2.b3": "Pulled and terminated wire guided by blueprint reading, reducing material waste by 15 percent.",
+    "r2.b4": "Ran conduit across job sites, using conduit bending to fit offsets and saddles under journeyman supervision.",
+    "r2.i1": "Helped trace electrical faults at Summit Power Contractors while learning the trade as a registered apprentice.",
+    "r2.i2": "Ran conduit and supported installations at Summit Power Contractors as an apprentice working under licensed journeymen.",
+    "summary.1": "Journeyman electrician with about 5 years in the trade, licensed to complete installations to code without supervision. Brings code compliance, multimeter use and blueprint reading to every job from rough-in to final inspection.",
+    "summary.2": "Licensed journeyman electrician with about 5 years of hands-on electrical work, from apprenticeship to independent installations. Relies on blueprint reading, multimeter use and code compliance to finish each job correctly and pass inspection."
   }
 }

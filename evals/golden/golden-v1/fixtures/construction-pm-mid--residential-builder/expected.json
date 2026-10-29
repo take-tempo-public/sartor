@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Owning a recurring process from request to completion."
       },
-      "edit_replacement": "Coordinates subcontractor crews and trade sequencing in Oracle Primavera so, owning a recurring process from request to completion",
-      "edit_target_substring": "Coordinates subcontractor crews and trade sequencing in Oracle Primavera so",
+      "edit_replacement": "keeping trades and site work aligned with the project schedule., owning a recurring process from request to completion",
+      "edit_target_substring": "keeping trades and site work aligned with the project schedule.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Contract administration exposure not yet covered by prior clarifications"

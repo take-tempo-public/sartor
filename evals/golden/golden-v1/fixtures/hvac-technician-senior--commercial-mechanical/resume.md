@@ -4,33 +4,33 @@ quinn.lindqvist@example.com | (555) 010-0763 | linkedin.com/in/example-quinn-hva
 
 ## Summary
 
-Senior HVAC technician with 8 years of experience planning jobs and checking the work of other technicians on heating and cooling projects. Skilled in heat pump service, preventive maintenance and leak testing, with current refrigerant compliance and controls certifications.
+Senior HVAC technician with about 8 years of experience in heat pump service, preventive maintenance and leak testing. Plans jobs, prepares estimates and checks the work of other technicians to keep installations and repairs to standard.
 
 ## Experience
 
 ### Senior HVAC Technician — Fairhaven Air and Heat
 *July 2024 – present*
 
-- Install heat pumps and furnaces, using brazing and soldering on refrigerant lines, and have cut callbacks on new installations by 40 percent.
-- Prepare job estimates for customers that cover building automation controls alongside equipment, labour and materials.
-- Diagnose heating and cooling faults and carry out furnace repair on site, reducing repeat visits by 15 percent.
-- Schedule service calls for the crew and assign technicians trained in refrigerant handling to jobs that involve recovery or recharging.
+- Installs heating and cooling equipment using brazing and soldering on refrigerant line sets, cutting installation callbacks by 40 percent.
+- Estimates jobs for customers, including building automation upgrades, and explains scope and options before work begins.
+- Diagnoses heating and cooling faults and performs furnace repair, reducing repeat visits by 15 percent.
+- Schedules service calls for the crew, assigning refrigerant handling work to certified technicians.
 
 ### HVAC Technician — Tillman Mechanical
 *July 2020 – July 2024*
 
-- Kept detailed work orders for heat pump service calls, cutting billing corrections by 45 percent through complete records of parts and labour.
-- Performed leak testing on refrigerant circuits with pressure and electronic methods, locating faults before charging systems.
-- Installed new heating and cooling equipment and set up preventive maintenance plans for each unit, lowering first-year service calls by 40 percent.
-- Estimated jobs for customers, using load calculations to size equipment correctly and price installations before work began.
+- Kept detailed work orders for heat pump service calls, cutting billing errors by 45 percent.
+- Performed leak testing on refrigerant circuits and documented findings before repairs or recharges.
+- Installed heating and cooling equipment and set up preventive maintenance plans, reducing early equipment failures by 40 percent.
+- Prepared job estimates for customers based on load calculations to size equipment correctly.
 
 ### HVAC Apprentice — Redfern Comfort Systems
 *May 2018 – July 2020*
 
-- Assisted in diagnosing heating and cooling faults and repaired failed joints through brazing and soldering, reducing rework on line repairs by 25 percent.
-- Joined preventive maintenance visits and checked building automation settings and sensor readings under the direction of senior technicians.
-- Kept work orders for furnace repair jobs up to date, cutting missing-part delays by 40 percent through accurate parts records.
-- Tested systems for leaks and practised refrigerant handling for recovery and evacuation under the supervision of licensed technicians.
+- Diagnosed heating and cooling faults and completed repairs through brazing and soldering, cutting repair time by 25 percent.
+- Assisted on preventive maintenance visits, checking building automation settings and reporting issues to lead technicians.
+- Kept work orders for furnace repair jobs up to date, reducing missing job records by 40 percent.
+- Supported leak testing on cooling systems, following refrigerant handling procedures for recovery and recharge.
 
 ## Education
 
@@ -39,8 +39,8 @@ Senior HVAC technician with 8 years of experience planning jobs and checking the
 ## Certifications
 
 - Refrigerant Compliance Certificate — Environmental Compliance Board, 2018
-- HVAC Technician Licence — State Licensing Board, 2026
-- Controls Technician Certificate — Controls Training Institute, 2026
+- HVAC Technician Licence — State Licensing Board, 2020
+- Controls Technician Certificate — Controls Training Institute, 2021
 
 ## Skills
 

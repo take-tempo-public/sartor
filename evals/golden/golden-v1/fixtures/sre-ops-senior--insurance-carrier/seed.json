@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2021",
       "issuer": "Cloud Skills Institute",
       "name": "Cloud Operations Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Lead capacity planning for production clusters using Prometheus metrics, forecasting demand trends and cutting unplanned resource shortfalls by 50 percent."
+          "text": "Plans infrastructure capacity using Prometheus usage trends and forecasts, reducing unplanned capacity shortfalls by 50 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Run the team on-call rotation for Kubernetes workloads, setting escalation paths and handoff notes so responders resolve issues consistently."
+          "text": "Runs the team's on-call rotation for Kubernetes workloads, maintaining runbooks and shift handoff notes."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Route on-call alerts through Splunk searches and dashboards, reducing time spent triaging pages by 50 percent."
+          "text": "Tunes Splunk alert searches that feed the on-call rotation, reducing after-hours pages by 50 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinate Linux patching cycles across production hosts, scheduling maintenance windows and verifying services after each update."
+          "text": "Coordinates Linux patching cycles across production servers, scheduling maintenance windows with application owners."
         }
       ],
       "company": "Cedar Hollow Hospice",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "As Senior Site Reliability Engineer at Cedar Hollow Hospice, owns the planning and execution of patching cycles across production systems."
+          "text": "Leads patching cycles for the server estate as Senior Site Reliability Engineer at Cedar Hollow Hospice."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads regular backup and recovery tests at Cedar Hollow Hospice to confirm that critical systems can be restored when needed."
+          "text": "Oversees backup and recovery tests for critical systems as Senior Site Reliability Engineer at Cedar Hollow Hospice."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Automated data collection for post-incident write-ups with Bash scripting, cutting the time to publish each review by 30 percent."
+          "text": "Automated log collection for post-incident write-ups with Bash scripting, cutting report preparation time by 30 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tuned monitoring alerts for Active Directory services, removing noisy thresholds so on-call staff received actionable notifications."
+          "text": "Tuned monitoring alerts for Active Directory authentication and replication, removing duplicate notifications sent to the operations team."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built PowerShell scripts to prepare change approval records, shortening approval turnaround by 20 percent."
+          "text": "Streamlined change approvals with PowerShell checks that validated configurations before review, shortening approval turnaround by 20 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared capacity plans for Microsoft Azure workloads, forecasting compute and storage needs ahead of demand."
+          "text": "Forecasted capacity needs for Microsoft Azure workloads, sizing compute and storage ahead of planned growth."
         }
       ],
       "company": "Dunmore Technologies",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Ran scheduled backup and recovery tests at Dunmore Technologies to verify that systems could be restored within agreed targets."
+          "text": "Ran backup and recovery tests for company systems as a Systems Engineer at Dunmore Technologies."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Managed change approvals at Dunmore Technologies, reviewing infrastructure changes for risk before they reached production."
+          "text": "Managed change approvals for infrastructure updates as a Systems Engineer at Dunmore Technologies."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supported the on-call rotation by writing Ansible playbooks for common fixes, reducing repeat incidents by 15 percent."
+          "text": "Joined the on-call rotation and used Ansible playbooks to resolve recurring alerts, reducing escalations by 15 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Applied patching cycles to test environments provisioned with Terraform, confirming updates were safe before production rollout."
+          "text": "Supported patching cycles by updating Terraform configurations for test environments before production rollout."
         },
         {
           "display_order": 2,
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Verified backup and recovery tests with Prometheus metrics, raising the restore success rate by 25 percent."
+          "text": "Ran backup and recovery tests tracked with Prometheus metrics, raising recovery test success rates by 25 percent."
         },
         {
           "display_order": 3,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Drafted post-incident write-ups for Kubernetes service outages, recording timelines, causes and follow-up actions."
+          "text": "Drafted post-incident write-ups for Kubernetes service disruptions, documenting timelines, causes and follow-up actions."
         }
       ],
       "company": "Oakmont Systems",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Prepared change approval requests at Oakmont Systems, documenting planned work and rollback steps for review."
+          "text": "Prepared and tracked change approvals for system updates as a Junior Systems Administrator at Oakmont Systems."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Took part in the on-call rotation at Oakmont Systems, responding to alerts and escalating issues to senior engineers."
+          "text": "Took part in the on-call rotation for production systems as a Junior Systems Administrator at Oakmont Systems."
         }
       ],
       "titles": [
@@ -395,7 +395,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Site reliability and IT operations engineer with about 6 years of experience, currently setting the technical direction for reliability across a product area. Works with Kubernetes, Prometheus and Microsoft Azure to plan capacity, run on-call operations and keep patching and recovery practices on schedule."
+      "text": "Senior site reliability and IT operations professional with 6 years of experience setting the technical direction for a product area. Works with Kubernetes, Prometheus and Microsoft Azure to plan capacity, run on-call and keep patching and recovery practices consistent."
     },
     {
       "display_order": 1,
@@ -406,7 +406,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior site reliability professional with 6 years in IT operations, from systems administration to setting technical direction for a product area. Builds and operates platforms on Kubernetes and Microsoft Azure, using Prometheus for monitoring and capacity planning."
+      "text": "Site reliability and IT operations engineer at the senior level with about 6 years of experience guiding technical direction for a product area. Builds and monitors services on Kubernetes, Prometheus and Microsoft Azure, with a focus on reliability targets, change control and tested recovery."
     }
   ],
   "tags": []

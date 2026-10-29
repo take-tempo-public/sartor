@@ -180,17 +180,17 @@
         {
           "issuer": "Environmental Compliance Board",
           "name": "Refrigerant Compliance Certificate",
-          "year": "2013"
+          "year": "2011"
         },
         {
           "issuer": "State Licensing Board",
           "name": "HVAC Technician Licence",
-          "year": "2016"
+          "year": "2011"
         },
         {
           "issuer": "Controls Training Institute",
           "name": "Controls Technician Certificate",
-          "year": "2022"
+          "year": "2011"
         }
       ],
       "kind": "certifications"
@@ -267,7 +267,7 @@
       "allowed_numbers": [
         "15"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Building automation, Electrical testing, Duct installation, Leak testing, Heat pump service, System diagnostics, and 15 or more years of experience. State Refrigerant Compliance Certificate as a required licence or certification.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Building automation, Electrical testing, Duct installation, Leak testing, Heat pump service, System diagnostics, and 15 or more years of experience. State Controls Technician Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -279,7 +279,7 @@
         "Leak testing",
         "Heat pump service",
         "System diagnostics",
-        "Refrigerant Compliance Certificate"
+        "Controls Technician Certificate"
       ]
     },
     "r1.b1": {

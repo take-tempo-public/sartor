@@ -32,8 +32,8 @@
   "min_grounding_score": 4,
   "min_tone_score": 3,
   "must_keywords": [
-    "kubernetes",
-    "microsoft azure"
+    "ansible",
+    "backup and recovery"
   ],
   "notes": "Mismatched pair (advance): the sre-ops-mid résumé against the sre-ops-senior job description. The mid-tier Site reliability and IT operations résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Active Directory, Splunk, Linux, ServiceNow. The output must claim none of it.",
   "pair": {
@@ -44,8 +44,8 @@
     "resume_cell": "sre-ops-mid",
     "resume_fixture": "sre-ops-mid--cloud-hosting",
     "transferable": [
-      "kubernetes",
-      "microsoft azure"
+      "ansible",
+      "backup and recovery"
     ]
   }
 }

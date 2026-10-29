@@ -147,12 +147,12 @@
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprentice Registration Card",
-          "year": "2026"
+          "year": "2025"
         },
         {
           "issuer": "Safety Training Council",
           "name": "Construction Safety Card",
-          "year": "2025"
+          "year": "2026"
         }
       ],
       "kind": "certifications"
@@ -229,7 +229,7 @@
       "allowed_numbers": [
         "2"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Panel installation, Troubleshooting, Blueprint reading, Multimeter use, Fire alarm wiring, Grounding and bonding, and 2 or more years of experience. State Apprentice Registration Card as a required licence or certification. State Journeyman Electrician Licence as preferred.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Panel installation, Troubleshooting, Blueprint reading, Multimeter use, Fire alarm wiring, Grounding and bonding, and 2 or more years of experience. State Construction Safety Card as a required licence or certification. State Journeyman Electrician Licence as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -241,7 +241,7 @@
         "Multimeter use",
         "Fire alarm wiring",
         "Grounding and bonding",
-        "Apprentice Registration Card",
+        "Construction Safety Card",
         "Journeyman Electrician Licence"
       ]
     },

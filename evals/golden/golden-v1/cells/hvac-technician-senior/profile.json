@@ -182,12 +182,12 @@
         {
           "issuer": "State Licensing Board",
           "name": "HVAC Technician Licence",
-          "year": "2026"
+          "year": "2020"
         },
         {
           "issuer": "Controls Training Institute",
           "name": "Controls Technician Certificate",
-          "year": "2026"
+          "year": "2021"
         }
       ],
       "kind": "certifications"
@@ -264,7 +264,7 @@
       "allowed_numbers": [
         "8"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Refrigerant handling, Building automation, Furnace repair, Leak testing, Thermostat installation, Electrical testing, and 8 or more years of experience. State Refrigerant Compliance Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Refrigerant handling, Building automation, Furnace repair, Leak testing, Thermostat installation, Electrical testing, and 8 or more years of experience. State Controls Technician Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -276,7 +276,7 @@
         "Leak testing",
         "Thermostat installation",
         "Electrical testing",
-        "Refrigerant Compliance Certificate"
+        "Controls Technician Certificate"
       ]
     },
     "r1.b1": {

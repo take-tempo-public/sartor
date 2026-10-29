@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2012",
       "issuer": "Project Practice Institute",
       "name": "Project Practitioner Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2019",
       "issuer": "Delivery Practice Society",
       "name": "Agile Delivery Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Manage a portfolio of related projects, using risk registers to surface dependencies early and cutting schedule slippage across the portfolio by 20 percent."
+          "text": "Manage a portfolio of related projects, using risk registers to surface cross-project dependencies early and cutting schedule slippage by 20 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Track schedules and milestones across workstreams and apply change control so that scope changes are assessed before baselines move."
+          "text": "Track schedules and milestones across the program and apply change control to every scope adjustment before it reaches the plan."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepare steering committee reports in Confluence, reducing the time spent assembling program updates by 15 percent."
+          "text": "Report to the steering committee through Confluence pages, reducing time spent preparing decision papers by 15 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Lead project close-out, using status reporting to confirm deliverables, document lessons learned and hand over open items to operations."
+          "text": "Lead project close-out, using status reporting to confirm deliverables, record lessons learned and hand over open items."
         },
         {
           "display_order": 4,
@@ -99,7 +99,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintain risk and issue logs and apply vendor negotiation to resolve supplier issues, reducing open vendor-related issues by 45 percent."
+          "text": "Maintain risk and issue logs and apply vendor negotiation to resolve supplier-related issues, lowering open vendor issues by 45 percent."
         }
       ],
       "company": "Ironbridge Co",
@@ -119,7 +119,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Leads a program at Ironbridge Co and reports progress, risks and decisions to the steering committee."
+          "text": "At Ironbridge Co, leads a portfolio of related projects and reports progress, risks and decisions to the steering committee."
         },
         {
           "display_order": 1,
@@ -129,7 +129,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Oversees program delivery at Ironbridge Co, maintaining risk and issue logs that inform priorities and escalations."
+          "text": "Oversees a program at Ironbridge Co where risk and issue logs guide decisions on priorities and escalations."
         }
       ],
       "titles": [
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Processed change requests in Microsoft Project, assessing schedule impact before approval and shortening review turnaround by 30 percent."
+          "text": "Managed change requests in Microsoft Project, modelling schedule impact before approval and shortening review turnaround by 30 percent."
         },
         {
           "display_order": 1,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran budget reviews, using budget tracking to compare actual spend against forecast and flag variances for sponsors."
+          "text": "Ran budget reviews with project sponsors, using budget tracking to flag variances and agree corrective actions."
         },
         {
           "display_order": 2,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated vendor deliverables through Jira, improving on-time vendor handoffs by 30 percent."
+          "text": "Coordinated vendors through shared Jira boards, cutting late vendor deliverables by 30 percent."
         },
         {
           "display_order": 3,
@@ -188,7 +188,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Oversaw a portfolio of related projects, keeping risk registers current and escalating cross-project risks to sponsors."
+          "text": "Oversaw a portfolio of related projects, maintaining risk registers that gave sponsors a single view of exposure across the portfolio."
         },
         {
           "display_order": 4,
@@ -199,7 +199,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked schedules and milestones under change control, reducing unplanned milestone slips by 10 percent."
+          "text": "Tracked schedules and milestones under formal change control, improving on-time milestone delivery by 10 percent."
         }
       ],
       "company": "Fairhaven Works",
@@ -219,7 +219,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Managed projects at Fairhaven Works with a focus on keeping risk and issue logs current and acted on."
+          "text": "As Senior Project Manager at Fairhaven Works, kept risk and issue logs current across concurrent projects and escalated items to sponsors."
         },
         {
           "display_order": 1,
@@ -229,7 +229,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Led project delivery at Fairhaven Works, tracking schedules and milestones across concurrent workstreams."
+          "text": "Led delivery at Fairhaven Works with a focus on tracking schedules and milestones across a set of related projects."
         }
       ],
       "titles": [
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducted budget reviews with supporting documentation kept in Confluence, cutting preparation time for review meetings by 55 percent."
+          "text": "Prepared budget reviews in Confluence, giving finance a single source of figures and cutting review preparation time by 55 percent."
         },
         {
           "display_order": 1,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated vendors across project workstreams, using status reporting to keep suppliers and internal teams aligned on deliverables."
+          "text": "Coordinated external vendors and used status reporting to keep internal stakeholders informed of delivery progress."
         },
         {
           "display_order": 2,
@@ -277,7 +277,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked schedules and milestones and used vendor negotiation to secure firmer delivery dates, improving milestone attainment by 10 percent."
+          "text": "Kept schedules and milestones on track by using vendor negotiation to secure firmer delivery dates, reducing milestone delays by 10 percent."
         },
         {
           "display_order": 3,
@@ -288,7 +288,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Managed project close-out in Microsoft Project, confirming completed tasks and archiving final schedules for future reference."
+          "text": "Closed out projects in Microsoft Project, confirming completed tasks, archiving baselines and releasing resources."
         },
         {
           "display_order": 4,
@@ -299,7 +299,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained risk and issue logs alongside budget tracking, reducing cost overruns tied to unresolved issues by 20 percent."
+          "text": "Logged risks and issues alongside budget tracking, catching cost overruns earlier and reducing unplanned spend by 20 percent."
         }
       ],
       "company": "Riverbend Health Network",
@@ -319,7 +319,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Managed projects at Riverbend Health Network, including regular budget reviews with project sponsors."
+          "text": "As Project Manager at Riverbend Health Network, prepared and led budget reviews for projects across the network."
         },
         {
           "display_order": 1,
@@ -329,7 +329,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Delivered projects at Riverbend Health Network and handled change requests from intake through approval."
+          "text": "Managed change requests at Riverbend Health Network, assessing scope, cost and schedule impact before decisions were made."
         }
       ],
       "titles": [
@@ -414,7 +414,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Program manager with 14 years of experience leading project teams and answering for the delivery results of the project management function. Plans and tracks work in Microsoft Project and Jira and applies vendor negotiation to keep suppliers on cost and schedule."
+      "text": "Program manager with 14 years of experience leading project teams and answering for the results of the project management function. Plans with Microsoft Project and Jira, and uses vendor negotiation and risk registers to keep delivery on budget and on schedule."
     },
     {
       "display_order": 1,
@@ -425,7 +425,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Project management lead with about 14 years of experience managing teams and owning the outcomes of portfolio delivery. Uses Microsoft Project for scheduling, Jira for work tracking and vendor negotiation to secure workable contract terms."
+      "text": "Project management leader with about 14 years of experience who manages a team and is accountable for the delivery results of the function. Brings working depth in Microsoft Project, Jira, vendor negotiation, change control and status reporting."
     }
   ],
   "tags": []

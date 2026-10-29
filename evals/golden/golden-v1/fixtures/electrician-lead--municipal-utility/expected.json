@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Running the crew and answering for the job."
       },
-      "edit_replacement": "isolating loose connections and failed fixtures before areas are handed, running the crew and answering for the job",
-      "edit_target_substring": "isolating loose connections and failed fixtures before areas are handed",
+      "edit_replacement": "Traces faults in new and existing fixtures during lighting installation, running the crew and answering for the job",
+      "edit_target_substring": "Traces faults in new and existing fixtures during lighting installation",
       "expected_iteration_themes": {
         "experience_probes": [
           "Blueprint reading exposure not yet covered by prior clarifications"

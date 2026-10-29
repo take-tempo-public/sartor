@@ -180,17 +180,17 @@
         {
           "issuer": "State Department of Education",
           "name": "State Teaching Licence",
-          "year": "2026"
+          "year": "2014"
         },
         {
           "issuer": "State Department of Education",
           "name": "Reading Specialist Endorsement",
-          "year": "2017"
+          "year": "2014"
         },
         {
           "issuer": "State Department of Education",
           "name": "Instructional Leadership Endorsement",
-          "year": "2019"
+          "year": "2015"
         }
       ],
       "kind": "certifications"
@@ -267,7 +267,7 @@
       "allowed_numbers": [
         "12"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Google Classroom, Small-group instruction, Nearpod, Phonics instruction, Formative assessment, Reading intervention, and 12 or more years of experience. State State Teaching Licence as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Google Classroom, Small-group instruction, Nearpod, Phonics instruction, Formative assessment, Reading intervention, and 12 or more years of experience. State Instructional Leadership Endorsement as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -279,7 +279,7 @@
         "Phonics instruction",
         "Formative assessment",
         "Reading intervention",
-        "State Teaching Licence"
+        "Instructional Leadership Endorsement"
       ]
     },
     "r1.b1": {

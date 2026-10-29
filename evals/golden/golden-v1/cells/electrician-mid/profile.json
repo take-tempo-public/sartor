@@ -162,7 +162,7 @@
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprentice Registration Card",
-          "year": "2022"
+          "year": "2021"
         },
         {
           "issuer": "Safety Training Council",
@@ -172,7 +172,7 @@
         {
           "issuer": "State Licensing Board",
           "name": "Journeyman Electrician Licence",
-          "year": "2025"
+          "year": "2024"
         }
       ],
       "kind": "certifications"
@@ -249,7 +249,7 @@
       "allowed_numbers": [
         "5"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Grounding and bonding, Circuit testing, Code compliance, Blueprint reading, Load calculations, Troubleshooting, and 5 or more years of experience. State Apprentice Registration Card as a required licence or certification. State Master Electrician Licence as preferred.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Grounding and bonding, Circuit testing, Code compliance, Blueprint reading, Load calculations, Troubleshooting, and 5 or more years of experience. State Journeyman Electrician Licence as a required licence or certification. State Master Electrician Licence as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -261,7 +261,7 @@
         "Blueprint reading",
         "Load calculations",
         "Troubleshooting",
-        "Apprentice Registration Card",
+        "Journeyman Electrician Licence",
         "Master Electrician Licence"
       ]
     },

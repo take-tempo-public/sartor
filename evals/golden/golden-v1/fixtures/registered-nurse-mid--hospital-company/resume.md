@@ -4,25 +4,25 @@ harper.mehta@example.com | (555) 010-6135 | linkedin.com/in/example-harper-regis
 
 ## Summary
 
-Registered Nurse with about 4 years of experience carrying a full patient caseload without close supervision in clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with a focus on accurate charting and safe care.
+Registered nurse with about 4 years of experience carrying a full patient caseload without close supervision across clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with steady attention to patient assessment and safe handoffs.
 
 ## Experience
 
 ### Registered Nurse — Harborview Community Clinic
 *May 2024 – present*
 
-- Charts medication administration in the clinic record at each visit, cutting documentation errors by 55 percent.
-- Teaches patients and families about symptoms and follow-up care during triage, helping them know when to return to the clinic.
-- Uses vital signs monitoring data to structure shift handoff reports, reducing missed follow-ups by 30 percent.
-- Assesses patients at each visit and provides wound care, tracking healing progress and flagging concerns to the care team.
+- Documents medication administration in the patient record at the point of care, reducing charting omissions by 55 percent.
+- Uses triage findings to teach patients and families which symptoms need same-day care and how to manage minor conditions at home.
+- Pairs vital signs monitoring trends with each shift handoff, cutting missed follow-up checks by 30 percent.
+- Assesses patients at each visit and provides wound care, tracking healing progress and escalating signs of infection to the provider.
 
 ### Graduate Registered Nurse — Cedar Hollow Hospice
 *January 2023 – May 2024*
 
-- Administered medications to hospice patients and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent.
-- Coordinated with physicians on comfort and symptom management, using patient assessment findings to inform changes to care plans.
-- Recorded bedside handoff details in the patient record, improving handoff completeness by 55 percent.
-- Taught patients and families about end-of-life care and medications, using Epic Systems to document each teaching session.
+- Administered scheduled and as-needed medications and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent.
+- Coordinated with physicians on symptom changes, using patient assessment findings to support updates to comfort-focused care plans.
+- Completed record entries during bedside handoff with incoming nurses, raising same-shift chart completion by 55 percent.
+- Taught patients and families about medications and comfort measures, using education materials from Epic Systems to reinforce each session.
 
 ## Education
 
@@ -30,8 +30,8 @@ Registered Nurse with about 4 years of experience carrying a full patient caselo
 
 ## Certifications
 
-- Registered Nurse Licence — State Board of Nursing, 2026
-- Basic Life Support Card — Resuscitation Training Council, 2023
+- Registered Nurse Licence — State Board of Nursing, 2023
+- Basic Life Support Card — Resuscitation Training Council, 2024
 - Advanced Cardiac Life Support Card — Resuscitation Training Council, 2024
 
 ## Skills

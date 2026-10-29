@@ -164,12 +164,12 @@
         {
           "issuer": "Safety Training Council",
           "name": "Construction Safety Card",
-          "year": "2025"
+          "year": "2024"
         },
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprenticeship Completion Certificate",
-          "year": "2024"
+          "year": "2025"
         }
       ],
       "kind": "certifications"
@@ -246,7 +246,7 @@
       "allowed_numbers": [
         "4"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Concrete forming, Door and window installation, Blueprint reading, Jobsite safety, Stair building, Framing, and 4 or more years of experience. State Construction Safety Card as a required licence or certification. State Lead Carpenter Certificate as preferred.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Concrete forming, Door and window installation, Blueprint reading, Jobsite safety, Stair building, Framing, and 4 or more years of experience. State Apprenticeship Completion Certificate as a required licence or certification. State Lead Carpenter Certificate as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -258,7 +258,7 @@
         "Jobsite safety",
         "Stair building",
         "Framing",
-        "Construction Safety Card",
+        "Apprenticeship Completion Certificate",
         "Lead Carpenter Certificate"
       ]
     },

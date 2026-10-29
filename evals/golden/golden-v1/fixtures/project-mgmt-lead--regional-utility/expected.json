@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Managing a team and answering for the results of the function."
       },
-      "edit_replacement": "Track schedules and milestones across workstreams and apply change control, managing a team and answering for the results of the function",
-      "edit_target_substring": "Track schedules and milestones across workstreams and apply change control",
+      "edit_replacement": "Track schedules and milestones across the program and apply change, managing a team and answering for the results of the function",
+      "edit_target_substring": "Track schedules and milestones across the program and apply change",
       "expected_iteration_themes": {
         "experience_probes": [
           "Asana exposure not yet covered by prior clarifications"

@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Managing a team and answering for the results of the function."
       },
-      "edit_replacement": "Leads hiring plans with department heads and aligns start dates, managing a team and answering for the results of the function",
-      "edit_target_substring": "Leads hiring plans with department heads and aligns start dates",
+      "edit_replacement": "Leads hiring plans with department heads and ties each plan, managing a team and answering for the results of the function",
+      "edit_target_substring": "Leads hiring plans with department heads and ties each plan",
       "expected_iteration_themes": {
         "experience_probes": [
           "ADP Workforce Now exposure not yet covered by prior clarifications"

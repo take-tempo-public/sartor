@@ -994,14 +994,6 @@ def _cert_names(profile: dict[str, Any]) -> list[str]:
 class TestCertifications:
     """Licences and certifications are facts the candidate holds by tier, and claims the candidate must not make."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        raises=AssertionError,
-        reason="known defect, item 194 scope 1: the posting requires the LOWEST-tier certification held "
-        "(a foreman posting requires an apprentice card), in 37 of the 56 committed cells that hold any. "
-        "Fixing `asked_certs` in build_profile flips this to a strict failure: remove the marker, then "
-        "the suite check's rebuild comparison forces those cells to be regenerated.",
-    )
     def test_the_posting_requires_the_highest_certification_the_candidate_holds(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
         held = _cert_names(profile)  # lowest tier first
@@ -1016,6 +1008,69 @@ class TestCertifications:
         # of the cell requires the highest certification the candidate holds.
         wanted = f"State {held[-1]} as a required licence or certification."
         assert all(wanted in brief for brief in needs_briefs)
+
+    def test_a_higher_tier_certification_is_never_dated_before_a_lower_one(self) -> None:
+        # The year is a stable hash draw, so one cell cannot show an ordering rule: try forty seeds.
+        # Each held list is sorted lowest tier first, so its years must not decrease down the list.
+        disordered: list[str] = []
+        for n in range(40):
+            facts = CERT_FACTS | {"profession": f"{CERT_FACTS['profession']}-{n}"}
+            profile = gs.build_profile(facts, _ladder("senior"), "senior")
+            certs = [
+                c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+            ]
+            control(len(certs) == 3, f"the senior cell must hold three certifications: {certs}")
+            years = [int(c["year"]) for c in certs]
+            if years != sorted(years):
+                disordered.append(f"{facts['profession']}: {years}")
+        assert not disordered, (
+            f"{len(disordered)} of 40 cells date a higher tier first: {disordered[:3]}"
+        )
+
+    def test_validate_profile_refuses_the_certification_faults_before_a_paid_request(self) -> None:
+        # author_cell calls validate_profile before it spends, so these two fail closed at the point of spend.
+        profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
+        control(gs.validate_profile(profile) == [], "a built cell must be sound")
+        control(len(_cert_names(profile)) == 3, "the cell must hold three certifications")
+        disordered = copy.deepcopy(profile)
+        items = next(s for s in disordered["sections"] if s["kind"] == "certifications")["items"]
+        items[0]["year"], items[-1]["year"] = "2026", "2013"
+        assert any("fall down" in p for p in gs.validate_profile(disordered))
+        lowest = copy.deepcopy(profile)
+        for slot_id, slot in lowest["slots"].items():
+            if slot_id.endswith(".needs"):
+                slot["brief"] = slot["brief"].replace("Master Licence", "OSHA 30-Hour Card")
+        assert any("highest certification" in p for p in gs.validate_profile(lowest))
+
+    def test_a_credential_is_dated_no_later_than_the_role_titled_for_its_tier(self) -> None:
+        # A Journeyman Operator licence dated after the candidate's Operator role began is a fault no check
+        # of the prose can see. The years are hash draws, so try forty seeds on a lead cell (lead, senior, mid).
+        tier_of = {c["name"]: c["level"] for c in CERT_FACTS["certifications"]}
+        late: list[str] = []
+        checked = 0
+        for n in range(40):
+            facts = CERT_FACTS | {"profession": f"{CERT_FACTS['profession']}-{n}"}
+            profile = gs.build_profile(facts, _ladder("lead"), "lead")
+            roles = [
+                r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]
+            ]
+            for cert in (
+                c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+            ):
+                tier = tier_of[cert["name"]]
+                if tier == "entry":
+                    continue
+                starts = [int(r["start"][:4]) for r in roles if r["title"] == facts["titles"][tier]]
+                control(len(starts) >= 1, f"the lead cell must have a {tier}-titled role: {roles}")
+                checked += 1
+                if int(cert["year"]) > min(starts):
+                    late.append(
+                        f"{facts['profession']}: {cert['name']} {cert['year']} > role {min(starts)}"
+                    )
+        control(checked == 80, f"expected 40 cells x 2 credentials above entry, checked {checked}")
+        assert not late, (
+            f"{len(late)} of {checked} credentials are dated after their role: {late[:3]}"
+        )
 
     @pytest.mark.parametrize(
         ("level", "held"),
@@ -1059,14 +1114,16 @@ class TestCertifications:
     def test_the_jd_requires_a_held_certification_and_names_the_next_as_preferred(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
         needs = profile["slots"]["jd.hospital.needs"]
-        # The lowest-tier held certification is required; the lowest-tier one not yet held is preferred.
-        assert "OSHA 30-Hour Card" in needs["must_include"]
+        # The highest-tier held certification is required; the lowest-tier one not yet held is preferred.
+        assert "Journeyman Licence" in needs["must_include"]
         assert "Master Licence" in needs["must_include"]
-        assert "State OSHA 30-Hour Card as a required" in needs["brief"]
+        assert "OSHA 30-Hour Card" not in needs["must_include"]
+        assert "State Journeyman Licence as a required" in needs["brief"]
         assert "State Master Licence as preferred" in needs["brief"]
-        assert (
-            "30" in needs["allowed_numbers"]
-        )  # a digit in a certification's name is not an invented number
+        # A digit in a certification's name is not an invented number: the entry-tier card is the one
+        # with the "30", so a cell that holds only it asks for it and allows the digit.
+        entry = gs.build_profile(CERT_FACTS, _ladder("entry"), "entry")
+        assert "30" in entry["slots"]["jd.hospital.needs"]["allowed_numbers"]
 
     def test_the_résumé_lists_them_with_issuer_and_a_year_inside_the_career(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")

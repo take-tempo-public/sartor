@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2019",
       "issuer": "Information Assurance Guild",
       "name": "Security Analyst Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2023",
+      "issued": "2024",
       "issuer": "Incident Response Society",
       "name": "Incident Handler Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducts access reviews across internal systems, using log analysis to confirm account activity and cutting stale accounts by 35 percent."
+          "text": "Leads access reviews using log analysis to confirm actual account use, cutting stale permissions by 35 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads incident response drills for the security team, using Wireshark to replay captured traffic and walk responders through detection and containment steps."
+          "text": "Directs incident response drills, using Wireshark captures to walk responders through containment of simulated network intrusions."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Refines alert triage with findings from penetration testing, reducing false positive alerts by 55 percent."
+          "text": "Feeds penetration testing findings into alert triage, tuning detection priorities and reducing false positives by 55 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Advises leadership on security risk with Splunk dashboards that summarize detection trends and open issues."
+          "text": "Advises leadership on security risk, building Splunk dashboards that summarize exposure trends for planning decisions."
         }
       ],
       "company": "Bluebird Family Services",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Leads alert triage for the security team at Bluebird Family Services and turns detections into clear response actions."
+          "text": "Leads alert triage at Bluebird Family Services as Senior Security Engineer, setting priorities for how security events are investigated and escalated."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Owns risk assessments for Bluebird Family Services, weighing threats against business priorities and recommending controls to leadership."
+          "text": "Runs risk assessments for Bluebird Family Services, translating technical findings into prioritized remediation plans for leadership."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Delivered security awareness training backed by phishing simulation campaigns, lowering employee click rates by 40 percent."
+          "text": "Ran phishing simulation campaigns as part of security awareness training, lowering employee click rates by 40 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Monitored system logs and paired the findings with access reviews to flag dormant and over-privileged accounts."
+          "text": "Combined access reviews with log monitoring to flag dormant and over-privileged accounts for removal."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performed risk assessments that drew on incident response records, shortening average containment time by 15 percent."
+          "text": "Applied incident response findings to risk assessments, shortening time to remediate high-risk issues by 15 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supported access reviews by correlating Nessus scan results with account permissions on exposed hosts."
+          "text": "Scanned systems with Nessus during access reviews to tie vulnerable hosts to account owners and confirm remediation."
         }
       ],
       "company": "Northfield Group",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Carried out risk assessments at Northfield Group to identify weaknesses and guide remediation priorities."
+          "text": "Performed risk assessments at Northfield Group as Security Analyst, evaluating threats to business systems and recommending controls."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Wrote and maintained security policy documentation at Northfield Group, keeping standards aligned with daily operational practice."
+          "text": "Maintained security policy documentation for Northfield Group, keeping standards and procedures aligned with current controls."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Triaged firewall alerts and tuned firewall rules to suppress noisy traffic, cutting alert volume by 40 percent."
+          "text": "Refined firewall rules based on alert triage patterns, reducing noisy alerts by 40 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked vulnerability fixes through remediation, using threat modeling to rank which issues to close first."
+          "text": "Used threat modeling to prioritize vulnerability fixes and tracked each remediation through to closure."
         },
         {
           "display_order": 2,
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Drafted security policy documentation informed by log analysis, reducing policy exceptions by 45 percent."
+          "text": "Drew on log analysis to update security policy documentation, cutting policy exceptions by 45 percent."
         },
         {
           "display_order": 3,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Contributed to security awareness training with Wireshark captures that showed staff how unencrypted traffic can be read."
+          "text": "Built security awareness training sessions around Wireshark captures that showed staff how unencrypted traffic exposes data."
         }
       ],
       "company": "Maple Court Care",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported policy documentation at Maple Court Care while building core skills in security operations."
+          "text": "Drafted and maintained security policy documentation at Maple Court Care as a Junior Security Analyst."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Assisted with access reviews at Maple Court Care, checking user permissions and flagging accounts for removal."
+          "text": "Supported access reviews at Maple Court Care as a Junior Security Analyst, checking user permissions against role requirements."
         }
       ],
       "titles": [
@@ -395,7 +395,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior information security professional with about 8 years of experience, setting the technical direction for security in a product area. Brings hands-on depth in incident response, penetration testing and Wireshark traffic analysis to guide detection and remediation decisions."
+      "text": "Senior information security professional with 8 years of experience setting technical direction for the security of a product area. Brings hands-on depth in incident response, penetration testing and network analysis with Wireshark."
     },
     {
       "display_order": 1,
@@ -406,7 +406,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Security engineer with about 8 years in information security analysis, currently setting technical direction for security within a product area. Combines penetration testing, incident response and network investigation with Wireshark to shape priorities and support the teams that act on them."
+      "text": "Security engineer with 8 years of experience in information security analysis, currently setting the technical direction for security within a product area. Applies penetration testing, incident response and Wireshark traffic analysis to find and close gaps before they reach production."
     }
   ],
   "tags": []

@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Planning jobs and checking the work of others."
       },
-      "edit_replacement": "Tests circuits after lighting installation work to confirm correct operation, planning jobs and checking the work of others",
-      "edit_target_substring": "Tests circuits after lighting installation work to confirm correct operation",
+      "edit_replacement": "including lighting installation in new and renovated spaces, planning jobs and checking the work of others",
+      "edit_target_substring": "including lighting installation in new and renovated spaces",
       "expected_iteration_themes": {
         "experience_probes": [
           "Fire alarm wiring exposure not yet covered by prior clarifications"

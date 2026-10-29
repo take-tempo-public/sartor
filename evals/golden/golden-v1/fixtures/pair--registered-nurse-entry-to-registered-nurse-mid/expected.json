@@ -5,6 +5,7 @@
       "any exposure to Epic Systems, in work or side projects",
       "any exposure to Clinical documentation, in work or side projects",
       "any exposure to Telemetry monitoring, in work or side projects",
+      "any exposure to Advanced Cardiac Life Support Card, in work or side projects",
       "any exposure to Nurse Manager Certificate, in work or side projects"
     ],
     "scope_probes": [
@@ -15,9 +16,9 @@
     "(?i)Epic\\ Systems",
     "(?i)Clinical\\ documentation",
     "(?i)Telemetry\\ monitoring",
+    "(?i)Advanced\\ Cardiac\\ Life\\ Support\\ Card",
     "(?i)Nurse\\ Manager\\ Certificate",
     "(?i)Infection\\ control",
-    "(?i)Advanced\\ Cardiac\\ Life\\ Support\\ Card",
     "PhD",
     "Master'?s? (degree|in)",
     "managed [0-9]+",
@@ -27,6 +28,7 @@
     "Epic Systems",
     "Clinical documentation",
     "Telemetry monitoring",
+    "Advanced Cardiac Life Support Card",
     "Nurse Manager Certificate"
   ],
   "min_ats_format_score": 4,
@@ -34,10 +36,10 @@
   "min_grounding_score": 4,
   "min_tone_score": 3,
   "must_keywords": [
-    "bedside handoff",
-    "care planning"
+    "care planning",
+    "patient assessment"
   ],
-  "notes": "Mismatched pair (advance): the registered-nurse-entry résumé against the registered-nurse-mid job description. The entry-tier nursing résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Epic Systems, Clinical documentation, Telemetry monitoring, Nurse Manager Certificate. The output must claim none of it.",
+  "notes": "Mismatched pair (advance): the registered-nurse-entry résumé against the registered-nurse-mid job description. The entry-tier nursing résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Epic Systems, Clinical documentation, Telemetry monitoring, Advanced Cardiac Life Support Card, Nurse Manager Certificate. The output must claim none of it.",
   "pair": {
     "id": "registered-nurse-entry-to-registered-nurse-mid",
     "jd_cell": "registered-nurse-mid",
@@ -46,8 +48,8 @@
     "resume_cell": "registered-nurse-entry",
     "resume_fixture": "registered-nurse-entry--community-hospital",
     "transferable": [
-      "bedside handoff",
-      "care planning"
+      "care planning",
+      "patient assessment"
     ]
   }
 }

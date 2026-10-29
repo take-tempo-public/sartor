@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Leading a team and owning the roadmap for the area."
       },
-      "edit_replacement": "Writes post-incident reviews drawing on Splunk searches to trace root, leading a team and owning the roadmap for the area",
-      "edit_target_substring": "Writes post-incident reviews drawing on Splunk searches to trace root",
+      "edit_replacement": "Writes post-incident reviews from Splunk log searches and shares them, leading a team and owning the roadmap for the area",
+      "edit_target_substring": "Writes post-incident reviews from Splunk log searches and shares them",
       "expected_iteration_themes": {
         "experience_probes": [
           "Grafana exposure not yet covered by prior clarifications"

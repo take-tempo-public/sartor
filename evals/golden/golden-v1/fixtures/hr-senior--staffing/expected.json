@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting how the team handles one area of the work."
       },
-      "edit_replacement": "Schedule interviews across departments and apply policy writing to set, setting how the team handles one area of the work",
-      "edit_target_substring": "Schedule interviews across departments and apply policy writing to set",
+      "edit_replacement": "Schedules interviews with hiring managers and applies policy writing to, setting how the team handles one area of the work",
+      "edit_target_substring": "Schedules interviews with hiring managers and applies policy writing to",
       "expected_iteration_themes": {
         "experience_probes": [
           "Applicant tracking exposure not yet covered by prior clarifications"

@@ -182,7 +182,7 @@
         {
           "issuer": "State Board of Accountancy",
           "name": "Certified Public Accountant Licence",
-          "year": "2026"
+          "year": "2024"
         }
       ],
       "kind": "certifications"
@@ -259,7 +259,7 @@
       "allowed_numbers": [
         "7"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Microsoft Excel, Accounts receivable, Month-end close, Audit support, Account reconciliation, Sales tax filing, and 7 or more years of experience. State Bookkeeping Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Microsoft Excel, Accounts receivable, Month-end close, Audit support, Account reconciliation, Sales tax filing, and 7 or more years of experience. State Certified Public Accountant Licence as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -271,7 +271,7 @@
         "Audit support",
         "Account reconciliation",
         "Sales tax filing",
-        "Bookkeeping Certificate"
+        "Certified Public Accountant Licence"
       ]
     },
     "r1.b1": {

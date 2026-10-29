@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
       },
-      "edit_replacement": "Gives bedside shift handoff reports that summarize vital signs monitoring, working with a supervisor close by on a small share of the work",
-      "edit_target_substring": "Gives bedside shift handoff reports that summarize vital signs monitoring",
+      "edit_replacement": "Reports vital signs monitoring trends during shift handoff so incoming, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "Reports vital signs monitoring trends during shift handoff so incoming",
       "expected_iteration_themes": {
         "experience_probes": [
           "Clinical documentation exposure not yet covered by prior clarifications"

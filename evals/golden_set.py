@@ -285,6 +285,37 @@ def all_slot_ids(profile: dict[str, Any]) -> list[str]:
     return resume_slots(profile) + seed_only_slots(profile) + jd_slots(profile)
 
 
+def _certification_problems(profile: dict[str, Any]) -> list[str]:
+    """The two certification faults a profile can show on its own, found before a paid request is made.
+
+    The items are listed lowest tier first, so their years must not fall down the list (a Master licence dated
+    before the Journeyman licence), and every posting must ask for the last one, the highest held. The third
+    fault, a credential dated after the role that needs it, takes the facts' tier map and is checked by
+    ``tests/test_golden_facts.py``, not here.
+    """
+    items = [
+        c
+        for s in profile["sections"]
+        if s.get("kind") == "certifications"
+        for c in s.get("items", [])
+    ]
+    if not items:
+        return []
+    problems: list[str] = []
+    years = [str(c.get("year", "")) for c in items]
+    if not all(y.isdigit() for y in years):
+        problems.append(f"certification years must be digits, got {years}")
+    elif [int(y) for y in years] != sorted(int(y) for y in years):
+        problems.append(f"certification years fall down the tier-sorted list: {years}")
+    wanted = f"State {items[-1].get('name')} as a required"
+    for slot_id, slot in profile["slots"].items():
+        if slot_id.endswith(".needs") and wanted not in str(slot.get("brief", "")):
+            problems.append(
+                f"slot {slot_id!r}: the posting must require the highest certification held ({wanted!r})"
+            )
+    return problems
+
+
 def validate_profile(profile: dict[str, Any]) -> list[str]:
     """Problems with a profile's shape, empty when it is sound. Never raises on bad content."""
     problems: list[str] = []
@@ -341,6 +372,7 @@ def validate_profile(profile: dict[str, Any]) -> list[str]:
     for jd in profile["jds"]:
         if not re.fullmatch(r"[a-z0-9-]+", jd["slug"]):
             problems.append(f"JD slug {jd['slug']!r} must be lowercase letters, digits and hyphens")
+    problems += _certification_problems(profile)
     expected = profile.get("expected", {})
     if not expected.get("must_keywords"):
         problems.append("expected.must_keywords is empty")
@@ -1813,16 +1845,35 @@ def build_profile(
     held_certs = [c for c in certs if LEVELS.index(c["level"]) <= tier]
     absent_certs = [c for c in certs if LEVELS.index(c["level"]) > tier]
     first_year, last_year = int(oldest_year), int(ASOF[:4])
+    # A credential of tier t is held before the candidate's earliest role titled for tier t or above (the
+    # Journeyman licence before the Journeyman role). `role_cap` is that role's start year, which does not
+    # fall as the tier rises. An entry-tier credential has no role of its own, so it takes the lowest cap
+    # among the higher credentials held; a cell holding only entry-tier credentials is capped by nothing.
+    role_start = [
+        (LEVELS.index(t), int(r["start"][:4])) for t, r in zip(role_tiers, roles, strict=True)
+    ]
+
+    def role_cap(c: dict[str, Any]) -> int:
+        return min(y for t, y in role_start if t >= LEVELS.index(c["level"]))
+
+    caps = [role_cap(c) if LEVELS.index(c["level"]) >= 1 else last_year for c in held_certs]
+    entry_cap = min(caps, default=last_year)  # the lowest-tier bounded credential's cap
+    caps = [
+        entry_cap if LEVELS.index(c["level"]) == 0 else cap
+        for c, cap in zip(held_certs, caps, strict=True)
+    ]
+    # Each year is a stable hash draw within its cap, and the sorted draws are handed out in tier order, so a
+    # higher tier is never dated before a lower one (a Master licence before the Journeyman licence). Because
+    # the caps do not fall with the tier, the k-th smallest draw is within the k-th credential's cap. A cell
+    # with one entry-tier credential is unchanged.
+    cert_years = sorted(
+        first_year
+        + _hash_int(seed, f"cert-year:{c['name']}") % (min(cap, last_year) - first_year + 1)
+        for c, cap in zip(held_certs, caps, strict=True)
+    )
     cert_items = [
-        {
-            "name": c["name"],
-            "issuer": c["issuer"],
-            "year": str(
-                first_year
-                + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
-            ),
-        }
-        for c in held_certs
+        {"name": c["name"], "issuer": c["issuer"], "year": str(year)}
+        for c, year in zip(held_certs, cert_years, strict=True)
     ]
     sections = [
         {"kind": "summary", "heading": "Summary", "slots": summary_slots},
@@ -1865,10 +1916,10 @@ def build_profile(
             lo=40,
             hi=160,
         )
-        asked_certs = held_certs[:1] + absent_certs[:1]
+        asked_certs = held_certs[-1:] + absent_certs[:1]
         cert_ask = ""
         if held_certs:
-            cert_ask += f" State {held_certs[0]['name']} as a required licence or certification."
+            cert_ask += f" State {held_certs[-1]['name']} as a required licence or certification."
         if absent_certs:
             cert_ask += f" State {absent_certs[0]['name']} as preferred."
         slots[jd_slots_for[2]] = _slot(

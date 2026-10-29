@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Leading a team or program and answering for its results."
       },
-      "edit_replacement": "Coordinates follow-up visit scheduling with specimen handling so lab results, leading a team or program and answering for its results",
-      "edit_target_substring": "Coordinates follow-up visit scheduling with specimen handling so lab results",
+      "edit_replacement": "Schedules follow-up visits around specimen handling and lab pickup times, leading a team or program and answering for its results",
+      "edit_target_substring": "Schedules follow-up visits around specimen handling and lab pickup times",
       "expected_iteration_themes": {
         "experience_probes": [
           "Patient intake exposure not yet covered by prior clarifications"

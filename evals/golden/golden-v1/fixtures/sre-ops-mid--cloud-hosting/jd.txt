@@ -1,20 +1,18 @@
 Systems Engineer
 Lattice Cloud — Remote (US)
 
-About the role
-Lattice Cloud is a cloud hosting startup, and we need a Systems Engineer who likes keeping things running. You'll look after the servers and services our customers rely on, fix what breaks, and help us get better at not breaking it again. We're a small team, so you'll own real work from day one and have a say in how we run operations.
+Lattice Cloud runs hosting for teams who would rather ship than babysit servers. We're a small crew, and as a Systems Engineer you'll keep our platform steady, help shape how we handle incidents and changes, and have a real say in the tooling we pick. Expect plenty of ownership and not much ceremony.
 
 What you'll do
-- Take your turn on the on-call rotation and respond to alerts and outages on our hosting platform
-- Write clear post-incident write-ups that cover what happened, why, and what we'll change
-- Review and sign off change approvals so updates to production are planned and safe
-- Tune monitoring and alerting so the team hears about real problems, not noise
-- Automate repetitive operations work and keep runbooks up to date
+- Take your turn on the on-call rotation and respond when alerts fire
+- Write clear post-incident write-ups that explain what happened and what we'll change
+- Review change requests and give change approvals before work reaches production
+- Tune monitoring so alerts point to real problems instead of noise
+- Work with the rest of the team to automate routine operations work
 
 What we're looking for
 - 4 or more years of experience in systems engineering or IT operations
-- Hands-on work with Terraform for infrastructure as code
-- Scripting in Python and PowerShell to automate everyday tasks
+- Hands-on work with Terraform and Python for infrastructure and automation
 - Experience with Prometheus for monitoring and Splunk for log search
-- Familiarity with ServiceNow for tickets, incidents and change records
-- Systems Administrator Certificate is a required certification
+- Comfort with PowerShell scripting and with ServiceNow for tickets and change records
+- Cloud Operations Certificate (required)

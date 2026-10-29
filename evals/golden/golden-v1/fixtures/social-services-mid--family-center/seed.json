@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2023",
       "issuer": "State Child Welfare Board",
       "name": "Mandated Reporter Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2024",
       "issuer": "Human Services Training Council",
       "name": "Case Management Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with schools and clinics after home visits, raising the rate of families attending follow-up appointments by 10 percent."
+          "text": "Coordinate with schools and clinics on findings from home visits, cutting missed follow-up appointments by 10 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Refers families to housing and food programs based on needs identified during intake interviews."
+          "text": "Conduct intake interviews with families and refer them to housing and food programs that match their needs."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepares reports for hearings that document each family's benefits enrollment status, cutting continuances caused by missing paperwork by 55 percent."
+          "text": "Prepare reports for court hearings that document benefits enrollment progress, raising on-time report submissions by 55 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducts intake and assessments for new clients and manages referral coordination with partner agencies."
+          "text": "Complete intake and needs assessments for new clients, then handle referral coordination with partner agencies."
         }
       ],
       "company": "Maple Court Care",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Carries a family caseload at Maple Court Care, conducting home visits to check on safety, needs and progress toward service goals."
+          "text": "Carries a caseload of families at Maple Court Care, conducting home visits to check on progress and plan next steps."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Serves as Case Manager at Maple Court Care, preparing reports for hearings that summarise family progress and service compliance."
+          "text": "Prepares reports for hearings at Maple Court Care, drawing on case records and home visit findings."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Logged home visit notes in Microsoft Access, reducing the time staff spent locating visit records by 40 percent."
+          "text": "Logged home visit notes in Microsoft Access, reducing time spent locating case files by 40 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained case records and drafted court reports from file notes for caseworker review."
+          "text": "Maintained case records used to draft court reports, keeping files complete and ready for review."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Wrote service plans grounded in needs assessments, increasing the share of plans completed on schedule by 50 percent."
+          "text": "Wrote service plans based on needs assessments, cutting plan turnaround time by 50 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Used crisis intervention skills while coordinating with schools and clinics to support tenants in urgent situations."
+          "text": "Applied crisis intervention skills while coordinating with schools and clinics to stabilize tenants and their children."
         }
       ],
       "company": "Stonegate Housing Authority",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported case managers at Stonegate Housing Authority by gathering records and drafting reports for hearings."
+          "text": "Supported caseworkers at Stonegate Housing Authority by gathering information for reports used in hearings."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Kept case records accurate and current for tenant households at Stonegate Housing Authority as a Case Aide."
+          "text": "Kept case records accurate and current for tenants served by Stonegate Housing Authority."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Social services case manager with about 4 years of experience carrying a full caseload without close supervision. Skilled in benefits enrollment, referral coordination and court reports, with a background in home visits and needs assessments."
+      "text": "Social services case manager with about 4 years of experience carrying a full caseload without close supervision. Skilled in benefits enrollment, referral coordination, court reports, home visits and crisis intervention."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Casework professional with about 4 years in housing and family services, managing a full caseload independently from intake through closure. Brings practical experience in benefits enrollment, referral coordination and preparing court reports for hearings."
+      "text": "Casework professional with about 4 years in housing and family services, managing a full caseload independently. Handles intake interviews, needs assessments, benefits enrollment, referral coordination and court reports from first contact to case closure."
     }
   ],
   "tags": []

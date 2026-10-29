@@ -185,7 +185,7 @@
         {
           "issuer": "State Board of Accountancy",
           "name": "Certified Public Accountant Licence",
-          "year": "2026"
+          "year": "2017"
         }
       ],
       "kind": "certifications"
@@ -262,7 +262,7 @@
       "allowed_numbers": [
         "14"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Audit support, Accounts payable, Sales tax filing, Journal entries, Account reconciliation, Microsoft Excel, and 14 or more years of experience. State Bookkeeping Certificate as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Audit support, Accounts payable, Sales tax filing, Journal entries, Account reconciliation, Microsoft Excel, and 14 or more years of experience. State Certified Public Accountant Licence as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -274,7 +274,7 @@
         "Journal entries",
         "Account reconciliation",
         "Microsoft Excel",
-        "Bookkeeping Certificate"
+        "Certified Public Accountant Licence"
       ]
     },
     "r1.b1": {

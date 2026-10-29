@@ -4,33 +4,33 @@ priya.haddad@example.com | (555) 010-9436 | linkedin.com/in/example-priya-regist
 
 ## Summary
 
-Senior nurse with 7 years of experience guiding colleagues and taking on complex patient cases. Skilled in patient education, telemetry monitoring and vital signs monitoring, with charge nurse experience leading shifts.
+Charge nurse with 7 years of experience guiding colleagues and taking on complex, high-acuity patient cases. Brings patient education, telemetry monitoring and vital signs monitoring to daily bedside care and to coaching newer nurses.
 
 ## Experience
 
 ### Charge Nurse — Meridian Cross
 *September 2024 – present*
 
-- Administers medications through IV therapy with independent double checks, cutting infusion-related errors by 45 percent.
-- Serves as charge nurse for the shift, directing discharge planning so patients leave with clear instructions and follow-up arranged.
-- Coordinates with physicians during bedside handoff, reducing missed orders at shift change by 30 percent.
-- Assesses patients at the start of each shift and keeps clinical documentation current so the care team works from accurate information.
+- Administer medications and IV therapy for assigned patients, cutting infusion-related delays by 45 percent through standard line checks at each dose.
+- Serve as charge nurse for the shift, assigning beds and leading discharge planning so patients leave with clear follow-up instructions.
+- Coordinate with physicians during bedside handoff, reducing missed orders at shift change by 30 percent.
+- Assess patients on admission and throughout the shift, keeping clinical documentation current and complete for the care team.
 
 ### Registered Nurse — Halcyon Services
 *February 2021 – September 2024*
 
-- Used telemetry monitoring data to structure shift handoff reports, cutting missed rhythm changes between shifts by 55 percent.
-- Charted patient education in the record after each session, giving the next nurse a clear view of what patients understood.
-- Gave medications on schedule and paired each dose with vital signs monitoring, lowering administration delays by 10 percent.
-- Coordinated with physicians on dose changes and new orders, keeping medication administration aligned with the current care plan.
+- Strengthened shift handoff by reviewing telemetry monitoring data with incoming nurses, reducing unreported rhythm changes by 55 percent.
+- Charted each patient education session in the record, noting patient understanding and open questions for the next nurse.
+- Gave scheduled medications with vital signs monitoring before each dose, lowering held or delayed doses by 10 percent.
+- Coordinated with physicians on medication administration changes, confirming new orders before giving the first dose.
 
 ### Graduate Registered Nurse — Northfield Group
 *August 2019 – February 2021*
 
-- Assessed patients before and during IV therapy, cutting line complications by 50 percent.
-- Taught patients and families about medications and home care as part of discharge planning.
-- Adopted bedside handoff at shift change, improving handoff completeness by 45 percent.
-- Charted assessments and care in the record, following clinical documentation standards for accuracy and timeliness.
+- Assessed patients before and after IV therapy, cutting line complications by 50 percent.
+- Taught patients and families about medications and warning signs as part of discharge planning.
+- Used bedside handoff at each shift change, reducing handoff omissions by 45 percent.
+- Recorded assessments and interventions in the record, keeping clinical documentation accurate and timely.
 
 ## Education
 
@@ -38,8 +38,8 @@ Senior nurse with 7 years of experience guiding colleagues and taking on complex
 
 ## Certifications
 
-- Registered Nurse Licence — State Board of Nursing, 2020
-- Basic Life Support Card — Resuscitation Training Council, 2023
+- Registered Nurse Licence — State Board of Nursing, 2019
+- Basic Life Support Card — Resuscitation Training Council, 2020
 - Advanced Cardiac Life Support Card — Resuscitation Training Council, 2021
 
 ## Skills

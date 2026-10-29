@@ -4,6 +4,7 @@
     "experience_probes": [
       "any exposure to Community outreach, in work or side projects",
       "any exposure to Case notes, in work or side projects",
+      "any exposure to Case Management Certificate, in work or side projects",
       "any exposure to Human Services Supervisor Certificate, in work or side projects"
     ],
     "scope_probes": [
@@ -13,10 +14,10 @@
   "forbidden_inventions": [
     "(?i)Community\\ outreach",
     "(?i)Case\\ notes",
+    "(?i)Case\\ Management\\ Certificate",
     "(?i)Human\\ Services\\ Supervisor\\ Certificate",
     "(?i)Home\\ visits",
     "(?i)Motivational\\ interviewing",
-    "(?i)Case\\ Management\\ Certificate",
     "PhD",
     "Master'?s? (degree|in)",
     "managed [0-9]+",
@@ -25,6 +26,7 @@
   "jd_requirements_not_shown": [
     "Community outreach",
     "Case notes",
+    "Case Management Certificate",
     "Human Services Supervisor Certificate"
   ],
   "min_ats_format_score": 4,
@@ -35,7 +37,7 @@
     "microsoft access",
     "needs assessments"
   ],
-  "notes": "Mismatched pair (advance): the social-services-entry résumé against the social-services-mid job description. The entry-tier social services casework résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Community outreach, Case notes, Human Services Supervisor Certificate. The output must claim none of it.",
+  "notes": "Mismatched pair (advance): the social-services-entry résumé against the social-services-mid job description. The entry-tier social services casework résumé against the mid-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Community outreach, Case notes, Case Management Certificate, Human Services Supervisor Certificate. The output must claim none of it.",
   "pair": {
     "id": "social-services-entry-to-social-services-mid",
     "jd_cell": "social-services-mid",

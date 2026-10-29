@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2023",
+      "issued": "2014",
       "issuer": "State Board of Nursing",
       "name": "Registered Nurse Licence"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2014",
       "issuer": "Resuscitation Training Council",
       "name": "Basic Life Support Card"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2014",
       "issuer": "Resuscitation Training Council",
       "name": "Advanced Cardiac Life Support Card"
     },
@@ -73,7 +73,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with physicians on medication administration orders and dose timing, reducing medication errors on the unit by 20 percent."
+          "text": "Coordinates medication administration with physicians across the unit, cutting medication timing errors by 20 percent through shared review of orders."
         },
         {
           "display_order": 1,
@@ -84,7 +84,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supervises nursing aides and reviews their clinical documentation each shift for accuracy and completeness."
+          "text": "Supervises nursing aides and reviews their clinical documentation each shift, giving direct feedback so records stay complete and accurate."
         },
         {
           "display_order": 2,
@@ -95,7 +95,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Oversees patient triage documented in Epic Systems, cutting the time to complete initial triage by 10 percent."
+          "text": "Oversees how nurses assess each patient and record findings in Epic Systems, raising the share of assessments completed on schedule by 10 percent."
         },
         {
           "display_order": 3,
@@ -106,7 +106,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Teaches patients and families what to expect at home, building discharge planning into care from admission."
+          "text": "Teaches patients and families what to expect at home, building discharge planning into care from the first day of each stay."
         },
         {
           "display_order": 4,
@@ -117,7 +117,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Audits charting for IV therapy in the record, raising documentation completion rates by 45 percent."
+          "text": "Charts IV therapy in the patient record with staff using a standard template, reducing missing line entries by 45 percent."
         }
       ],
       "company": "Bluebird Family Services",
@@ -137,7 +137,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Manages nursing staff at Bluebird Family Services, with a focus on clear and complete shift handoff between teams."
+          "text": "Manages the nursing team at Bluebird Family Services, with a focus on clear and consistent shift handoff between staff."
         },
         {
           "display_order": 1,
@@ -147,7 +147,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads nursing care at Bluebird Family Services, overseeing safe and timely medication delivery for every patient."
+          "text": "Oversees safe medication practice for the nursing staff at Bluebird Family Services, from order review to giving medications at the bedside."
         }
       ],
       "titles": [
@@ -173,7 +173,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Introduced patient education points into shift handoff, cutting repeat patient questions by 30 percent."
+          "text": "Added patient education points to shift handoff, which cut repeat questions from patients by 30 percent."
         },
         {
           "display_order": 1,
@@ -184,7 +184,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Served as charge nurse for assigned shifts, running bedside handoff with patients and families at each change of shift."
+          "text": "Served as charge nurse for assigned shifts and ran bedside handoff with each incoming nurse to confirm plans of care."
         },
         {
           "display_order": 2,
@@ -195,7 +195,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Used triage to prioritize medication rounds, reducing late doses by 40 percent."
+          "text": "Used triage to set the order of medication rounds, reducing late doses by 40 percent."
         },
         {
           "display_order": 3,
@@ -206,7 +206,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with physicians to clarify orders and keep medication administration safe and on schedule."
+          "text": "Worked with physicians to clarify orders and keep medication administration aligned with each patient's current plan."
         },
         {
           "display_order": 4,
@@ -217,7 +217,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supervised nursing aides and trained them on clinical documentation, lowering charting errors by 50 percent."
+          "text": "Supervised nursing aides and trained them in clinical documentation, lowering incomplete entries by 50 percent."
         }
       ],
       "company": "Halcyon Services",
@@ -237,7 +237,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Charge nurse at Halcyon Services, responsible for safe medication delivery across the unit during each shift."
+          "text": "Directed shift operations as charge nurse at Halcyon Services, including oversight of giving medications on time and as ordered."
         },
         {
           "display_order": 1,
@@ -247,7 +247,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Led shift nursing care at Halcyon Services as Charge Nurse, overseeing triage and bedside handoff so each patient was evaluated and prioritised promptly."
+          "text": "Led a shift team at Halcyon Services as charge nurse, with daily responsibility for assessing patients and escalating concerns."
         }
       ],
       "titles": [
@@ -273,7 +273,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Documented shift handoff notes in Epic Systems, reducing missed follow-up tasks by 15 percent."
+          "text": "Standardised shift handoff notes in Epic Systems, reducing handoff omissions by 15 percent."
         },
         {
           "display_order": 1,
@@ -284,7 +284,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Gave scheduled medications and tied each patient's medication instructions into discharge planning."
+          "text": "Gave scheduled medications and reviewed each regimen with patients as part of discharge planning before they left the unit."
         },
         {
           "display_order": 2,
@@ -295,7 +295,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with physicians on IV therapy orders, reducing line-related delays by 20 percent."
+          "text": "Coordinated with physicians on IV therapy orders, shortening the time to start infusions by 20 percent."
         },
         {
           "display_order": 3,
@@ -306,7 +306,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assessed patients at admission and each shift, using findings to guide patient education."
+          "text": "Assessed patients at the start of each shift and tailored patient education to their condition and questions."
         },
         {
           "display_order": 4,
@@ -317,7 +317,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Taught patients and families during bedside handoff, increasing reported understanding of care plans by 55 percent."
+          "text": "Taught patients and families during bedside handoff, raising family understanding of care plans by 55 percent."
         }
       ],
       "company": "Dunmore Technologies",
@@ -337,7 +337,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Provided direct patient care at Dunmore Technologies as a Registered Nurse, beginning each shift with triage and clinical documentation of every patient's condition."
+          "text": "Provided direct care as a registered nurse at Dunmore Technologies, assessing patients and reporting changes in condition."
         },
         {
           "display_order": 1,
@@ -347,7 +347,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Registered nurse at Dunmore Technologies who kept accurate, timely charting in the patient record."
+          "text": "Worked as a registered nurse at Dunmore Technologies, charting care, assessments and medications in the patient record."
         }
       ],
       "titles": [
@@ -432,7 +432,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Nurse manager with 12 years of experience leading nursing teams and answering for the quality and safety of their care. Brings hands-on strength in medication administration, patient education and clinical documentation in Epic Systems."
+      "text": "Nurse manager with 12 years of experience leading nursing teams and answering for unit results in safety and quality. Brings hands-on strength in medication administration, patient education and Epic Systems documentation."
     },
     {
       "display_order": 1,
@@ -443,7 +443,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Nursing leader with 12 years in bedside and management roles, accountable for team performance and patient outcomes. Directs staff in medication administration, patient education and charting in Epic Systems, and holds a current Registered Nurse Licence."
+      "text": "Lead-level nursing professional with 12 years in clinical care, including charge nurse and nurse manager roles accountable for team performance. Skilled in medication administration, patient education and Epic Systems, with a focus on safe handoffs and clear records."
     }
   ],
   "tags": []

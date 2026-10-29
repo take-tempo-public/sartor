@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:d92b08e5168a0d82d1d596890fcc93bd83dbe5290587dbf24d060c060788674d",
+    "profile_sha256": "sha256:b604bb709c3900695d89bb75b54275f895bb24e1ef44825a87921bc85a06e8f7",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVTtjndijjaRvK3Uiezt"
+      "req_011CgVjU2rUDmi9rzKbLWkMH"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 3842,
-      "output_tokens": 2114
+      "input_tokens": 3854,
+      "output_tokens": 2749
     }
   },
   "schema": 1,
   "slots": {
-    "jd.remodeling.about": "About us and the job\nRowan Remodeling is a remodeling contractor run by its owner. We take care with every job and treat each client's home with respect. We are looking for a journeyman carpenter to join our crew. The work is on site in Eugene, and you will work alongside the owner and the rest of the crew from start to finish.",
-    "jd.remodeling.duties": "What the job involves\n- Keep the site safe, clean and organised for the crew, clients and other trades.\n- Order lumber and materials from the plans and check deliveries against the order.\n- Frame walls and floors to plan, keeping them square, level and plumb.\n- Read plans and take accurate measurements before cutting and building.\n- Work with the owner to plan each day's tasks and keep jobs on schedule.",
-    "jd.remodeling.needs": "What you need\n- 4 or more years of experience as a carpenter.\n- Hands-on skill in framing, stair building and concrete forming.\n- Experience with door and window installation.\n- Blueprint reading and careful measuring.\n- Good jobsite safety habits, with a current Construction Safety Card (required).\n- A Lead Carpenter Certificate is preferred.",
-    "r1.b1": "Builds forms for concrete footings and walls using layout and measuring, cutting form rework by 20 percent.",
-    "r1.b2": "Reads plans and measures each room before cutting finish trim, keeping joints tight and lines straight.",
-    "r1.b3": "Orders lumber and materials for door and window installation from plan takeoffs, reducing leftover stock by 50 percent.",
-    "r1.b4": "Frames walls and floors to plan, using blueprint reading to set openings and heights correctly.",
-    "r1.i1": "Journeyman carpenter at Wren Valley Builders, keeping the site safe and orderly for the crew and other trades on every job.",
-    "r1.i2": "Journeyman carpenter at Wren Valley Builders, reading plans and taking measurements to build each job accurately and to code.",
-    "r2.b1": "Kept the site safe through jobsite safety checks and daily cleanup, cutting recorded near misses by 45 percent.",
-    "r2.b2": "Installed doors, windows and trim, and assisted with concrete forming for entry slabs and thresholds.",
-    "r2.b3": "Built forms for concrete and supported cabinet installation, reducing material waste by 15 percent.",
-    "r2.b4": "Read plans and took measurements to set heights and positions for scaffold erection and work platforms.",
-    "r2.i1": "Apprentice carpenter at Copperfield Construction, learning to read plans and take accurate measurements under journeyman supervision.",
-    "r2.i2": "Apprentice carpenter at Copperfield Construction, installing doors, windows and trim while building core carpentry skills.",
-    "summary.1": "Journeyman carpenter with about 4 years of experience doing the work to code without supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety, with a completed apprenticeship and a current Construction Safety Card.",
-    "summary.2": "Carpentry professional at journeyman level with about 4 years on job sites, completing work to code independently. Brings cabinet installation, layout and measuring, and jobsite safety to each project, backed by an apprenticeship certificate in carpentry."
+    "jd.remodeling.about": "About us and the job\nRowan Remodeling is an owner-run remodeling contractor in Eugene, OR. We remodel homes for local families and stand behind every job we finish. We are looking for a journeyman carpenter to join our crew. This job is on site every day, working alongside the owner and the rest of the team. We trust our carpenters to do careful work and to treat each client's home with respect.",
+    "jd.remodeling.duties": "What the job involves\n- Keep the site safe for the crew and the homeowner, and clean up at the end of each day\n- Order lumber and materials ahead of time so the work keeps moving\n- Frame walls and floors to plan, checking that everything is level, plumb and square\n- Read the plans and confirm measurements before cutting\n- Work with the owner to plan each stage of the remodel",
+    "jd.remodeling.needs": "What you need\n- 4 or more years of experience as a carpenter\n- Hands-on skill in framing, stair building and concrete forming\n- Experience with door and window installation\n- Strong blueprint reading and careful measuring\n- Good jobsite safety habits\n- A State Apprenticeship Completion Certificate is required; a State Lead Carpenter Certificate is preferred",
+    "r1.b1": "Builds forms for concrete, using layout and measuring to set lines and grades before each pour, which has cut form rework by 20 percent.",
+    "r1.b2": "Reads plans and takes measurements before cutting finish trim, so casing and base fit tight on the first install.",
+    "r1.b3": "Orders lumber and materials for door and window installation from plan takeoffs, reducing wasted stock by 50 percent.",
+    "r1.b4": "Frames walls and floors to plan, using blueprint reading to check dimensions and openings before nailing off.",
+    "r1.i1": "Journeyman carpenter at Wren Valley Builders who keeps the site safe for the crew and the client throughout each job.",
+    "r1.i2": "Journeyman carpenter at Wren Valley Builders who reads plans and measures carefully so each job matches the drawings.",
+    "r2.b1": "Kept the site safe by applying jobsite safety practices, including daily cleanup and tool checks, cutting reported near misses by 45 percent.",
+    "r2.b2": "Installed doors, windows and trim, and assisted with concrete forming so openings lined up for the finish work.",
+    "r2.b3": "Built forms for concrete and assisted with cabinet installation, reducing material waste on form work by 15 percent.",
+    "r2.b4": "Read plans and measured heights to plan scaffold erection, setting up work platforms at the correct level for each task.",
+    "r2.i1": "Apprentice carpenter at Copperfield Construction who learned to read plans and measure accurately on active job sites.",
+    "r2.i2": "Apprentice carpenter at Copperfield Construction who installed doors, windows and trim while learning the carpentry trade.",
+    "summary.1": "Journeyman carpenter with 4 years of experience who completes work to code without close supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety.",
+    "summary.2": "Carpenter at journeyman level with about 4 years in the trade, handling each task to code independently. Brings hands-on cabinet installation, careful layout and measuring, and steady jobsite safety habits."
   }
 }

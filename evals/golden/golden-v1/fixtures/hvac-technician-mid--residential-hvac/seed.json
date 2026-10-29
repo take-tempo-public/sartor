@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2023",
       "issuer": "Environmental Compliance Board",
       "name": "Refrigerant Compliance Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2023",
       "issuer": "State Licensing Board",
       "name": "HVAC Technician Licence"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Handles furnace repair calls and keeps work orders complete and current, cutting repeat visits for the same fault by 45 percent."
+          "text": "Keep work orders complete and up to date for furnace repair calls, cutting repeat visits by 45 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Carries out preventive maintenance visits, using brazing and soldering to repair worn joints and small line faults before they cause a breakdown."
+          "text": "Carry out preventive maintenance visits, using brazing and soldering to repair lines and fittings before they fail."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Installs heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent."
+          "text": "Install new heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Estimates jobs for customers, including thermostat installation, with clear written quotes that set out parts and labour before work begins."
+          "text": "Estimate jobs for customers on site, including thermostat installation, and explain the scope and cost before work begins."
         }
       ],
       "company": "Evergreen Climate Services",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Works as an HVAC Technician at Evergreen Climate Services, running preventive maintenance visits that keep heating and cooling systems working through the season."
+          "text": "Handles preventive maintenance visits on residential heating and cooling systems for Evergreen Climate Services customers."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Serves Evergreen Climate Services as an HVAC Technician, testing heating and cooling systems for leaks and making the repairs needed to keep them running safely."
+          "text": "Tests heating and cooling systems for refrigerant leaks and repairs them to code for Evergreen Climate Services customers."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Diagnosed heating and cooling faults, using leak testing to pinpoint refrigerant losses and cutting time to diagnosis by 40 percent."
+          "text": "Diagnosed heating and cooling faults with leak testing, cutting the time to find refrigerant leaks by 40 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tested systems for leaks and used electrical testing to rule out wiring and component faults before a repair began."
+          "text": "Supported leak checks on service calls and used electrical testing to rule out wiring and control faults."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Kept work orders for building automation jobs complete and accurate, reducing missing job details by 45 percent."
+          "text": "Kept work orders for building automation service calls accurate, reducing missing job details by 45 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assisted on preventive maintenance visits, cleaning, checking and adjusting equipment to the service checklist."
+          "text": "Assisted on preventive maintenance visits, cleaning, inspecting and adjusting furnaces and air conditioners under supervision."
         }
       ],
       "company": "Tillman Mechanical",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Started as an HVAC Apprentice at Tillman Mechanical, learning to test heating and cooling systems for leaks and find their source."
+          "text": "Tested heating and cooling systems for leaks while training under licensed technicians at Tillman Mechanical."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Trained as an HVAC Apprentice at Tillman Mechanical, where keeping accurate work orders for each job was part of the daily routine."
+          "text": "Kept work orders and service records up to date while learning the trade as an apprentice at Tillman Mechanical."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Licensed HVAC technician with 4 years of experience in heating and cooling service, working to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds a Refrigerant Compliance Certificate."
+      "text": "HVAC technician with about 4 years of experience who completes service work to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds an HVAC Technician Licence and a Refrigerant Compliance Certificate."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Heating and cooling service technician with about 4 years of hands-on work, from apprenticeship to independent jobs completed to code. Brings practical skill in furnace repair, electrical testing and building automation, along with a state HVAC licence."
+      "text": "Journeyman-level heating and cooling service technician with about 4 years of hands-on experience, working independently and to code. Brings furnace repair, electrical testing and building automation skills, backed by a certificate in heating and cooling technology."
     }
   ],
   "tags": []

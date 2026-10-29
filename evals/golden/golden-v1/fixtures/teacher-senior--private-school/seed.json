@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2020",
+      "issued": "2017",
       "issuer": "State Department of Education",
       "name": "State Teaching Licence"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2017",
       "issuer": "State Department of Education",
       "name": "Reading Specialist Endorsement"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2021",
       "issuer": "State Department of Education",
       "name": "Instructional Leadership Endorsement"
     }
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads grade-level planning and models classroom management routines for the team, reducing off-task behavior by 10 percent."
+          "text": "Leads grade-level planning for the teaching team and applies classroom management routines that cut lost instructional time by 10 percent."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Holds parent conferences that set shared behavior supports for home and school, giving families clear next steps for each student."
+          "text": "Holds parent conferences that pair family input with behavior supports, giving families and staff a shared plan for home and school."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Adapts classwork for different learners through small-group instruction, raising on-target assignment completion by 50 percent."
+          "text": "Adapts classwork for different learners through small-group instruction, raising on-time assignment completion by 50 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans units with grade-level colleagues and shares lesson materials through Google Classroom so the team teaches from a common plan."
+          "text": "Coordinates team planning with colleagues in Google Classroom, keeping shared lessons and materials in one place."
         }
       ],
       "company": "Maple Street School",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Lead Teacher at Maple Street School, planning daily lessons that set clear goals and pace for each part of the school day."
+          "text": "As lead teacher at Maple Street School, plans daily lessons that set clear goals and pacing for the classroom."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Lead Teacher at Maple Street School who assesses student progress regularly and uses the results to guide instruction and support colleagues."
+          "text": "Leads the classroom at Maple Street School and assesses student progress regularly to guide instruction and grouping."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Led small-group reading sessions and used math manipulatives in paired practice, raising the number of students meeting benchmarks by 35 percent."
+          "text": "Ran small-group reading sessions and used math manipulatives in paired lessons, lifting benchmark scores by 35 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Planned daily lessons and used parent communication to share weekly goals, so families could support classwork at home."
+          "text": "Planned daily lessons and used parent communication to share weekly goals so families could support learning at home."
         },
         {
           "display_order": 2,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built classroom routines around differentiated instruction, cutting time lost to transitions by 40 percent."
+          "text": "Built classroom routines around differentiated instruction, reducing transition time by 40 percent."
         },
         {
           "display_order": 3,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran parent conferences that used Nearpod lesson reports to show each student's progress and next steps."
+          "text": "Prepared for parent conferences with Nearpod lesson reports showing each student's participation and progress."
         }
       ],
       "company": "Riverside Learning Center",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Classroom Teacher at Riverside Learning Center who assessed student progress through regular checks and used the findings to plan instruction."
+          "text": "Taught at Riverside Learning Center, assessing student progress through regular checks to shape upcoming lessons."
         },
         {
           "display_order": 1,
@@ -216,7 +216,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Classroom Teacher at Riverside Learning Center who adapted lessons and materials so students at different levels could take part in the same work."
+          "text": "Served as classroom teacher at Riverside Learning Center, adapting work so learners at different levels could reach the same goals."
         }
       ],
       "titles": [
@@ -242,7 +242,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Adapted assignments for different learners and applied classroom management routines, raising on-task work time by 35 percent."
+          "text": "Adapted assignments for different learners while applying classroom management strategies, reducing off-task behavior by 35 percent."
         },
         {
           "display_order": 1,
@@ -253,7 +253,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Worked with grade-level colleagues to plan lessons and agree on consistent behavior supports across classrooms."
+          "text": "Joined team planning with grade-level colleagues to align behavior supports across classrooms."
         },
         {
           "display_order": 2,
@@ -264,7 +264,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assessed student progress during small-group instruction, lifting the share of students meeting unit goals by 40 percent."
+          "text": "Assessed student progress during small-group instruction and regrouped students as needed, raising quiz scores by 40 percent."
         },
         {
           "display_order": 3,
@@ -275,7 +275,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supported small-group reading by posting leveled practice texts in Google Classroom for students to revisit."
+          "text": "Led small-group reading lessons and posted practice texts in Google Classroom for students to revisit."
         }
       ],
       "company": "Hillcrest Elementary School",
@@ -295,7 +295,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Associate Teacher at Hillcrest Elementary School who adapted classwork and materials so learners at different levels could make steady progress."
+          "text": "Supported instruction at Hillcrest Elementary School as associate teacher, adapting work for different learners."
         },
         {
           "display_order": 1,
@@ -305,7 +305,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Associate Teacher at Hillcrest Elementary School who planned lessons with colleagues and helped keep instruction consistent across classrooms."
+          "text": "Worked as associate teacher at Hillcrest Elementary School, planning lessons with colleagues on a grade-level team."
         }
       ],
       "titles": [
@@ -390,7 +390,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior elementary teacher with about 9 years of experience guiding colleagues and handling complex student cases. Uses Nearpod, math manipulatives and parent communication to support learners and keep families involved."
+      "text": "Senior elementary teacher with 9 years of experience guiding colleagues and taking on the most demanding student cases. Uses Nearpod, math manipulatives and parent communication to keep instruction clear and families involved."
     },
     {
       "display_order": 1,
@@ -401,7 +401,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Elementary teaching professional with 9 years of classroom experience who mentors fellow teachers and takes on challenging student cases. Brings Nearpod, math manipulatives, differentiated instruction and steady parent communication to daily teaching."
+      "text": "Elementary teaching professional with about 9 years in the classroom, mentoring fellow teachers and supporting students with the greatest needs. Combines math manipulatives, Nearpod lessons and steady parent communication to plan instruction and track growth."
     }
   ],
   "tags": []

@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2023",
       "issuer": "Construction Safety Council",
       "name": "Construction Safety Manager Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Schedules permit applications and city inspections around safety planning for each build phase, cutting inspection reschedules by 30 percent."
+          "text": "Schedules permits and inspections around safety planning for each phase of work, cutting inspection delays by 30 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates subcontractor crews and trade sequencing in Oracle Primavera so each trade arrives when the site is ready for its work."
+          "text": "Coordinates subcontractor sequencing in Oracle Primavera, keeping trades and site work aligned with the project schedule."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reviews submittals against budget lines with cost tracking, reducing unplanned material costs by 30 percent."
+          "text": "Reviews submittals against the budget using cost tracking, reducing submittal review time by 30 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads site safety walks and turns hazards that need extra work into scoped change orders when corrective work falls outside the contract."
+          "text": "Leads site safety walks and records field conditions that lead to change orders, so scope changes are documented before work proceeds."
         }
       ],
       "company": "Meridian Cross",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Manages construction projects at Meridian Cross, with responsibility for reviewing submittals before materials are ordered and installed."
+          "text": "As Project Manager at Meridian Cross, reviews submittals from subcontractors and suppliers and keeps approvals moving with the project schedule."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Manages project budgets and schedules at Meridian Cross, tracking costs and dates from the start of each job through completion."
+          "text": "Tracks project budgets and schedules at Meridian Cross, reporting cost and timeline status to the project team and owners."
         }
       ],
       "titles": [
@@ -135,7 +135,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran owner meetings with permit management updates on every agenda, raising on-time permit approvals by 55 percent."
+          "text": "Ran owner meetings and handled permit management for active projects, cutting permit approval turnaround by 55 percent."
         },
         {
           "display_order": 1,
@@ -146,7 +146,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked project budgets and schedules alongside submittal tracking logs, flagging late approvals that put dates or costs at risk."
+          "text": "Tracked budgets and schedules alongside submittal tracking, flagging late items before they affected cost or timeline."
         },
         {
           "display_order": 2,
@@ -157,7 +157,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Priced change orders from marked-up drawings in Bluebeam Revu, shortening pricing turnaround by 25 percent."
+          "text": "Priced change orders from marked-up drawings in Bluebeam Revu, reducing pricing turnaround by 25 percent."
         },
         {
           "display_order": 3,
@@ -168,7 +168,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Scheduled permit applications and inspections in Procore, keeping crews, inspectors and the superintendent on the same calendar."
+          "text": "Scheduled permits and inspections in Procore, keeping field teams informed of upcoming inspection dates."
         }
       ],
       "company": "Tillman Brothers",
@@ -188,7 +188,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported project managers at Tillman Brothers by tracking budgets and schedules across active construction projects."
+          "text": "Supported project managers at Tillman Brothers by tracking budgets and schedules for active construction projects."
         },
         {
           "display_order": 1,
@@ -198,7 +198,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Priced change orders at Tillman Brothers, gathering subcontractor quotes and preparing cost backup for owner review."
+          "text": "Priced change orders at Tillman Brothers, preparing cost breakdowns for project managers and owners to review."
         }
       ],
       "titles": [
@@ -283,7 +283,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Construction project manager with about 4 years of experience owning permit and submittal processes from first request to final approval. Uses permit management, submittal tracking and Bluebeam Revu to keep reviews moving and projects on schedule."
+      "text": "Construction project manager with about 4 years of experience owning permit and submittal processes from request to completion. Uses permit management, submittal tracking and Bluebeam Revu to keep approvals moving and projects on schedule."
     },
     {
       "display_order": 1,
@@ -294,7 +294,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Construction project management specialist with 4 years of experience running recurring processes from request to completion on active job sites. Brings permit management, submittal tracking and Bluebeam Revu markup work, backed by a B.S. in Construction Management and a Construction Safety Manager Certificate."
+      "text": "Project management professional with about 4 years in construction, handling recurring approval work from first request through final completion. Brings hands-on skill in permit management, Bluebeam Revu markups and submittal tracking."
     }
   ],
   "tags": []

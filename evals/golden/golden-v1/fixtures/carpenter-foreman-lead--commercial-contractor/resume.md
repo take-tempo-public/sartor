@@ -4,36 +4,36 @@ alex.silva@example.com | (555) 010-1612 | linkedin.com/in/example-alex-carpenter
 
 ## Summary
 
-Carpentry foreman with 12 years of experience running crews and answering for the quality, safety and schedule of each job. Brings blueprint reading, door and window installation and power tool use to every stage, from layout through finish carpentry.
+Carpentry foreman with 12 years of experience running crews and answering for job quality, schedule and safety. Brings skills in blueprint reading, door and window installation and power tool use from remodeling and construction work.
 
 ## Experience
 
 ### Carpentry Foreman — Marlow Remodeling
 *July 2023 – present*
 
-- Enforce daily site safety checks on framing work, cutting recordable incidents by 45 percent across crew projects.
-- Use material takeoffs to plan door, window and trim installs so crews have the right stock on hand before each job starts.
-- Build concrete forms through careful blueprint reading of foundation plans, reducing form rework by 25 percent.
-- Order lumber and materials for door and window installation, matching quantities to the plans for each job.
-- Plan job sequences and lumber orders around concrete forming work, lowering material waste by 15 percent.
+- Enforces site safety rules on framing crews, including fall protection and daily housekeeping, reducing reported safety incidents by 45 percent.
+- Installs doors, windows and trim on remodeling projects, using material takeoffs to order correct quantities before work begins.
+- Builds concrete forms for footings and slabs, applying blueprint reading to set dimensions and cutting form rework by 25 percent.
+- Orders lumber and materials for each job, matching quantities to door and window installation schedules so crews have what they need on site.
+- Plans job sequences and lumber orders around concrete forming work, reducing material waste by 15 percent.
 
 ### Master Carpenter — Copperfield Construction
 *November 2021 – July 2023*
 
-- Framed walls and floors and handled cabinet installation in finished rooms, cutting framing callbacks by 10 percent.
-- Directed crews and apprentices through scaffold erection, assigning tasks and checking each setup before work began.
-- Read plans and laid out measurements for cuts, applying careful power tool use to reduce measuring errors by 35 percent.
-- Kept the site safe during framing by inspecting work areas, clearing debris and correcting unsafe practices on the spot.
-- Installed doors, windows and trim using material takeoffs to order exact quantities, lowering trim waste by 15 percent.
+- Framed walls and floors and handled cabinet installation on new construction, finishing framing phases 10 percent ahead of schedule.
+- Directed carpentry crews and apprentices, assigning tasks and supervising scaffold erection to keep work moving safely.
+- Read plans and measured layouts before cutting, pairing careful power tool use with checked dimensions to reduce miscut lumber by 35 percent.
+- Kept the jobsite safe by inspecting framing work, bracing and walkways daily and correcting hazards before crews started.
+- Installed doors, windows and trim, using material takeoffs to order accurate quantities and lowering material costs by 15 percent.
 
 ### Journeyman Carpenter — Oakmont Homes
 *January 2015 – November 2021*
 
-- Framed walls and floors from blueprint reading, cutting layout time by 50 percent on new homes.
-- Read plans and measured rough openings ahead of door and window installation to confirm fit.
-- Kept concrete forming areas safe by bracing forms and clearing trip hazards, reducing site incidents by 15 percent.
-- Installed doors, windows and trim alongside cabinet installation in finished rooms.
-- Built forms for concrete and handled scaffold erection for elevated pours, shortening form setup by 25 percent.
+- Framed walls and floors guided by blueprint reading, increasing daily framing output by 50 percent.
+- Read plans and measured rough openings to prepare for door and window installation, confirming dimensions before units were set.
+- Maintained a safe site during concrete forming by securing stakes, braces and walkways, reducing site injuries by 15 percent.
+- Installed doors, windows and trim alongside cabinet installation in new homes, fitting each piece plumb and level.
+- Built forms for concrete and supported the work with scaffold erection, shortening form setup time by 25 percent.
 
 ## Education
 
@@ -41,10 +41,10 @@ Carpentry foreman with 12 years of experience running crews and answering for th
 
 ## Certifications
 
-- Construction Safety Card — Safety Training Council, 2020
-- Apprenticeship Completion Certificate — State Apprenticeship Council, 2023
-- Lead Carpenter Certificate — Carpenters Training Council, 2016
-- Crew Supervisor Certificate — Carpenters Training Council, 2020
+- Construction Safety Card — Safety Training Council, 2015
+- Apprenticeship Completion Certificate — State Apprenticeship Council, 2015
+- Lead Carpenter Certificate — Carpenters Training Council, 2015
+- Crew Supervisor Certificate — Carpenters Training Council, 2023
 
 ## Skills
 

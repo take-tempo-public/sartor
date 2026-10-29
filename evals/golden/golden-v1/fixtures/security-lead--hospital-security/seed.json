@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2020",
+      "issued": "2014",
       "issuer": "Information Assurance Guild",
       "name": "Security Analyst Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2014",
+      "issued": "2018",
       "issuer": "Incident Response Society",
       "name": "Incident Handler Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Monitors clinic network logs with Wireshark to trace suspicious traffic, cutting the time needed to identify anomalous connections by 15 percent."
+          "text": "Monitors network and system logs with Wireshark, tracing unusual traffic to its source and cutting the time needed to confirm suspicious activity by 15 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintains security policy documentation and uses phishing simulation results to update staff guidance on reporting suspicious email."
+          "text": "Maintains security policy documentation and uses phishing simulation results to update reporting procedures and acceptable use guidance for clinic staff."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads risk assessments across clinic systems using Nessus findings, reducing open high-risk issues by 10 percent."
+          "text": "Leads risk assessments across clinic systems, using Nessus findings to rank exposures and reducing open high-risk findings by 10 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Delivers security awareness training informed by vulnerability scanning results, showing staff how unpatched devices and weak settings create risk."
+          "text": "Runs security awareness training for clinical and office staff, drawing on vulnerability scanning results to show real weaknesses in clinic systems."
         },
         {
           "display_order": 4,
@@ -99,7 +99,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Directs alert triage and tunes firewall rules to filter known benign traffic, lowering false-positive alerts by 35 percent."
+          "text": "Triages security alerts and tunes firewall rules to filter known harmless traffic, lowering false positive alerts by 35 percent."
         }
       ],
       "company": "Harborview Community Clinic",
@@ -119,7 +119,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Manages security operations at Harborview Community Clinic, leading risk assessments that set remediation priorities for clinical and administrative systems."
+          "text": "Manages security operations at Harborview Community Clinic, leading risk assessments that guide how the clinic protects patient data and clinical systems."
         },
         {
           "display_order": 1,
@@ -129,7 +129,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads the clinic's security operations team, overseeing log monitoring to detect and respond to threats against patient and staff systems."
+          "text": "Leads security operations at Harborview Community Clinic, with a focus on log monitoring that keeps suspicious activity visible and addressed quickly."
         }
       ],
       "titles": [
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Advised engineering and business leaders on security risk in Linux server environments, cutting unresolved high-severity findings by 50 percent."
+          "text": "Advised leaders on security risk in Linux server environments, presenting hardening priorities that cut unpatched critical systems by 50 percent."
         },
         {
           "display_order": 1,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Wrote Python scripts to automate access reviews, flagging stale and excess permissions for account owners to confirm or remove."
+          "text": "Automated access reviews with Python scripts that compared account lists against role assignments and flagged stale permissions for system owners."
         },
         {
           "display_order": 2,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Led incident response drills built on log analysis of realistic attack scenarios, shortening team response times by 55 percent."
+          "text": "Led incident response drills built on log analysis of past events, improving team detection of simulated attacks by 55 percent."
         },
         {
           "display_order": 3,
@@ -188,7 +188,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked vulnerability fixes through to closure and paired them with access reviews to confirm that remediated systems kept least-privilege permissions."
+          "text": "Tracked vulnerability fixes through to closure and paired them with access reviews to confirm remediated systems kept least-privilege permissions."
         },
         {
           "display_order": 4,
@@ -199,7 +199,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built log monitoring that fed incident response workflows, reducing the time from alert to containment by 55 percent."
+          "text": "Monitored centralized logs and fed findings into incident response, shortening the time from first alert to containment by 55 percent."
         }
       ],
       "company": "Meridian Cross",
@@ -219,7 +219,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Engineered log monitoring for Meridian Cross systems, giving the security team earlier visibility into suspicious activity."
+          "text": "Served as Senior Security Engineer at Meridian Cross, owning log monitoring that turned raw system events into actionable security findings."
         },
         {
           "display_order": 1,
@@ -229,7 +229,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Strengthened account security at Meridian Cross by running access reviews that removed unneeded permissions across production systems."
+          "text": "Worked as Senior Security Engineer at Meridian Cross, running access reviews that kept user permissions aligned with job roles."
         }
       ],
       "titles": [
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran security awareness training using Wireshark captures to show staff real examples of unsafe traffic, increasing reports of suspicious activity by 30 percent."
+          "text": "Delivered security awareness training using Wireshark captures to show staff how unencrypted traffic is exposed, raising correct reporting of suspicious activity by 30 percent."
         },
         {
           "display_order": 1,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Triaged alerts generated by phishing simulation campaigns, separating test emails from real reports and escalating genuine threats."
+          "text": "Triaged alerts from user-reported emails and used phishing simulation campaigns to identify which teams needed follow-up coaching."
         },
         {
           "display_order": 2,
@@ -277,7 +277,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performed access reviews alongside Nessus scans, reducing accounts with excess privileges on scanned hosts by 45 percent."
+          "text": "Performed access reviews alongside Nessus scans of privileged systems, removing 45 percent of excess administrator accounts."
         },
         {
           "display_order": 3,
@@ -288,7 +288,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked vulnerability fixes using vulnerability scanning results, rescanning patched hosts to confirm each issue was closed."
+          "text": "Tracked vulnerability fixes from discovery to closure, using vulnerability scanning to verify each remediation before closing tickets."
         },
         {
           "display_order": 4,
@@ -299,7 +299,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Monitored logs and adjusted firewall rules to block recurring malicious sources, reducing repeat blocked-connection alerts by 50 percent."
+          "text": "Monitored firewall logs and refined firewall rules based on observed traffic patterns, reducing noise in log reviews by 50 percent."
         }
       ],
       "company": "Kestrel Works",
@@ -319,7 +319,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported security at Kestrel Works by conducting access reviews that kept user permissions aligned with job roles."
+          "text": "Worked as Security Analyst at Kestrel Works, conducting access reviews to find and remove permissions that users no longer needed."
         },
         {
           "display_order": 1,
@@ -329,7 +329,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Handled alert triage for Kestrel Works, investigating security events and escalating confirmed incidents for response."
+          "text": "Served as Security Analyst at Kestrel Works, handling alert triage to separate real threats from routine noise and escalate them promptly."
         }
       ],
       "titles": [
@@ -428,7 +428,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Lead information security analyst with 12 years of experience leading a team and owning the security operations roadmap. Brings hands-on depth in access reviews, Python automation and log analysis to strengthen detection and access control."
+      "text": "Security operations lead with about 12 years of experience in information security analysis, leading a team and owning the roadmap for security operations. Brings hands-on depth in access reviews, Python automation, log analysis and incident response."
     },
     {
       "display_order": 1,
@@ -439,7 +439,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Security operations leader with 12 years in information security analysis, guiding analysts and setting the roadmap for detection and response. Applies log analysis, access reviews and Python scripting to reduce risk and improve team efficiency."
+      "text": "Information security professional with 12 years of experience who leads an analyst team and sets the roadmap for security operations. Combines access reviews, log analysis and Python scripting to find risk early and guide remediation."
     }
   ],
   "tags": []

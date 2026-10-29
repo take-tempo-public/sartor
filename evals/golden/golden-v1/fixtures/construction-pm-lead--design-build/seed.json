@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2023",
+      "issued": "2015",
       "issuer": "Construction Safety Council",
       "name": "Construction Safety Manager Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Lead project managers and superintendents across active jobs, using Oracle Primavera to set look-ahead schedules and cutting schedule slippage by 20 percent."
+          "text": "Lead project managers and superintendents across active jobs, building shared schedules in Oracle Primavera that cut schedule slippage by 20 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conduct site safety walks with superintendents and apply safety planning to correct hazards before crews start work."
+          "text": "Run regular site safety walks with superintendents and fold the findings into safety planning for each phase of work."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Present model views from Autodesk Revit in owner meetings, reducing design questions raised after meetings by 10 percent."
+          "text": "Present Autodesk Revit models at owner meetings to settle design questions early, reducing owner-requested rework by 10 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Price change orders against the baseline schedule in Microsoft Project so owners see cost and time impact before approval."
+          "text": "Price change orders against the current schedule in Microsoft Project so owners see cost and time impact before approval."
         },
         {
           "display_order": 4,
@@ -90,7 +90,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Review subcontractor submittals and maintain submittal tracking logs, shortening average approval turnaround by 15 percent."
+          "text": "Review subcontractor submittals and keep submittal tracking current, shortening average review turnaround by 15 percent."
         }
       ],
       "company": "Juniper Row",
@@ -110,7 +110,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "At Juniper Row, oversees permit applications and inspection scheduling so construction work proceeds without holds from local authorities."
+          "text": "Manages construction at Juniper Row, scheduling permits and inspections so crews keep working without waiting on approvals."
         },
         {
           "display_order": 1,
@@ -120,7 +120,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Tracks budgets and schedules across Juniper Row projects and reports cost and progress to company leadership."
+          "text": "Oversees construction at Juniper Row with responsibility for tracking budgets and schedules across project teams."
         }
       ],
       "titles": [
@@ -146,7 +146,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Negotiated contracts with owners and applied permit management to set realistic approval timelines, reducing permit-related delays by 40 percent."
+          "text": "Negotiated contracts with owners that built permit management into the scope, cutting permit approval delays by 40 percent."
         },
         {
           "display_order": 1,
@@ -157,7 +157,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated subcontractors through marked-up drawings in Bluebeam Revu, resolving field conflicts before installation."
+          "text": "Coordinated subcontractors through shared drawing markups in Bluebeam Revu, resolving trade conflicts before work reached the field."
         },
         {
           "display_order": 2,
@@ -168,7 +168,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Scheduled permits and inspections alongside punch list closeout, shortening the time from substantial completion to final inspection by 30 percent."
+          "text": "Scheduled permits and inspections around punch list closeout, reducing time from substantial completion to final inspection by 30 percent."
         },
         {
           "display_order": 3,
@@ -179,7 +179,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked project budgets and schedules in Oracle Primavera and flagged cost or time variances to owners early."
+          "text": "Tracked budgets and schedules in Oracle Primavera, flagging cost and time variances for owners and project teams."
         },
         {
           "display_order": 4,
@@ -190,7 +190,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supervised project managers and superintendents on safety planning, lowering recordable incidents by 10 percent."
+          "text": "Managed project managers and superintendents, setting site safety planning standards that lowered recordable incidents by 10 percent."
         }
       ],
       "company": "Marlow Contracting",
@@ -210,7 +210,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Tracked budgets and schedules for Marlow Contracting projects as Senior Project Manager, reporting variances to owners and company leadership."
+          "text": "Led projects at Marlow Contracting, tracking budgets and schedules and reporting progress to owners."
         },
         {
           "display_order": 1,
@@ -220,7 +220,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Managed project managers and superintendents at Marlow Contracting, setting priorities and reviewing progress across concurrent jobs."
+          "text": "Managed project managers and superintendents at Marlow Contracting, setting priorities and holding teams to schedule and budget."
         }
       ],
       "titles": [
@@ -246,7 +246,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reviewed submittals against Autodesk Revit models, cutting resubmittals by 35 percent."
+          "text": "Reviewed submittals against Autodesk Revit models, catching coordination errors early and cutting resubmittals by 35 percent."
         },
         {
           "display_order": 1,
@@ -257,7 +257,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated subcontractor sequencing with schedules built in Microsoft Project, keeping trades informed of upcoming work."
+          "text": "Coordinated subcontractor start dates and handoffs using Microsoft Project, keeping trades sequenced on each job."
         },
         {
           "display_order": 2,
@@ -268,7 +268,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Scheduled permits and inspections using submittal tracking to confirm approved documents were ready, reducing inspection reschedules by 30 percent."
+          "text": "Scheduled permits and inspections alongside submittal tracking, reducing inspection-related hold times by 30 percent."
         },
         {
           "display_order": 3,
@@ -279,7 +279,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked budgets and schedules and handled permit management so approval dates were reflected in cost and time forecasts."
+          "text": "Tracked project budgets and schedules, using permit management to keep approval timelines from driving cost overruns."
         },
         {
           "display_order": 4,
@@ -290,7 +290,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Led site safety walks and recorded findings in Bluebeam Revu, reducing open safety items by 20 percent."
+          "text": "Led site safety walks and logged hazards with Bluebeam Revu markups, lowering open safety items by 20 percent."
         }
       ],
       "company": "Pennywhistle Supply",
@@ -310,7 +310,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Coordinated subcontractors for Pennywhistle Supply projects as Project Manager, aligning trade schedules and resolving field issues."
+          "text": "Ran projects at Pennywhistle Supply, coordinating subcontractors from mobilization through closeout."
         },
         {
           "display_order": 1,
@@ -320,7 +320,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Represented Pennywhistle Supply in owner meetings, reporting progress and capturing decisions on scope and schedule."
+          "text": "Managed projects at Pennywhistle Supply, leading owner meetings to review progress, decisions and open issues."
         }
       ],
       "titles": [
@@ -405,7 +405,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Construction manager with 11 years of experience leading project managers and superintendents and answering for cost, schedule and safety results. Uses safety planning, submittal tracking and Oracle Primavera to keep projects on plan."
+      "text": "Construction manager with 11 years of experience leading project managers and superintendents and answering for cost, schedule and safety results. Builds schedules in Oracle Primavera, keeps submittal tracking current and makes safety planning part of every job."
     },
     {
       "display_order": 1,
@@ -416,7 +416,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Construction project management professional with about 11 years of experience managing teams across building projects. Accountable for the results of the function, relying on safety planning, submittal tracking and Oracle Primavera to control risk, documentation and schedules."
+      "text": "Construction project management professional with 11 years of experience running teams and owning the outcomes of the construction function. Brings hands-on skill in safety planning, submittal tracking and Oracle Primavera scheduling to projects from preconstruction through closeout."
     }
   ],
   "tags": []

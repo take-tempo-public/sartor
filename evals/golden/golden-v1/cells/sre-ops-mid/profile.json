@@ -160,12 +160,12 @@
         {
           "issuer": "Open Systems Training Board",
           "name": "Systems Administrator Certificate",
-          "year": "2023"
+          "year": "2022"
         },
         {
           "issuer": "Cloud Skills Institute",
           "name": "Cloud Operations Certificate",
-          "year": "2026"
+          "year": "2022"
         }
       ],
       "kind": "certifications"
@@ -252,7 +252,7 @@
       "allowed_numbers": [
         "4"
       ],
-      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Terraform, Python, Prometheus, PowerShell, Splunk, ServiceNow, and 4 or more years of experience. State Systems Administrator Certificate as a required licence or certification.",
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Terraform, Python, Prometheus, PowerShell, Splunk, ServiceNow, and 4 or more years of experience. State Cloud Operations Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -264,7 +264,7 @@
         "PowerShell",
         "Splunk",
         "ServiceNow",
-        "Systems Administrator Certificate"
+        "Cloud Operations Certificate"
       ]
     },
     "r1.b1": {

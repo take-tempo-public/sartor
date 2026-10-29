@@ -4,25 +4,25 @@ riley.novak@example.com | (555) 010-5702 | linkedin.com/in/example-riley-hvac-te
 
 ## Summary
 
-Licensed HVAC technician with 4 years of experience in heating and cooling service, working to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds a Refrigerant Compliance Certificate.
+HVAC technician with about 4 years of experience who completes service work to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds an HVAC Technician Licence and a Refrigerant Compliance Certificate.
 
 ## Experience
 
 ### HVAC Technician — Evergreen Climate Services
 *December 2023 – present*
 
-- Handles furnace repair calls and keeps work orders complete and current, cutting repeat visits for the same fault by 45 percent.
-- Carries out preventive maintenance visits, using brazing and soldering to repair worn joints and small line faults before they cause a breakdown.
-- Installs heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent.
-- Estimates jobs for customers, including thermostat installation, with clear written quotes that set out parts and labour before work begins.
+- Keep work orders complete and up to date for furnace repair calls, cutting repeat visits by 45 percent.
+- Carry out preventive maintenance visits, using brazing and soldering to repair lines and fittings before they fail.
+- Install new heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent.
+- Estimate jobs for customers on site, including thermostat installation, and explain the scope and cost before work begins.
 
 ### HVAC Apprentice — Tillman Mechanical
 *May 2022 – December 2023*
 
-- Diagnosed heating and cooling faults, using leak testing to pinpoint refrigerant losses and cutting time to diagnosis by 40 percent.
-- Tested systems for leaks and used electrical testing to rule out wiring and component faults before a repair began.
-- Kept work orders for building automation jobs complete and accurate, reducing missing job details by 45 percent.
-- Assisted on preventive maintenance visits, cleaning, checking and adjusting equipment to the service checklist.
+- Diagnosed heating and cooling faults with leak testing, cutting the time to find refrigerant leaks by 40 percent.
+- Supported leak checks on service calls and used electrical testing to rule out wiring and control faults.
+- Kept work orders for building automation service calls accurate, reducing missing job details by 45 percent.
+- Assisted on preventive maintenance visits, cleaning, inspecting and adjusting furnaces and air conditioners under supervision.
 
 ## Education
 
@@ -30,8 +30,8 @@ Licensed HVAC technician with 4 years of experience in heating and cooling servi
 
 ## Certifications
 
-- Refrigerant Compliance Certificate — Environmental Compliance Board, 2026
-- HVAC Technician Licence — State Licensing Board, 2024
+- Refrigerant Compliance Certificate — Environmental Compliance Board, 2023
+- HVAC Technician Licence — State Licensing Board, 2023
 
 ## Skills
 

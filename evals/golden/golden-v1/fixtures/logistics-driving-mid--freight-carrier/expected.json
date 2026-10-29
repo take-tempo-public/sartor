@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
       },
-      "edit_replacement": "Report vehicle defects to maintenance before departure and check load, carrying a full caseload or class without close supervision",
-      "edit_target_substring": "Report vehicle defects to maintenance before departure and check load",
+      "edit_replacement": "Report vehicle defects to maintenance after each shift and apply, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Report vehicle defects to maintenance after each shift and apply",
       "expected_iteration_themes": {
         "experience_probes": [
           "Customer signoff exposure not yet covered by prior clarifications"

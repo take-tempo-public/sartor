@@ -4,7 +4,7 @@ casey.kowalski@example.com | (555) 010-6811 | linkedin.com/in/example-casey-sre-
 
 ## Summary
 
-Lead site reliability and IT operations professional with 14 years of experience leading teams and owning the infrastructure roadmap. Runs operations across Microsoft Azure, ServiceNow and Active Directory, with a focus on change control, on-call and backup and recovery.
+Site reliability and IT operations lead with 14 years of experience leading a team and owning the infrastructure roadmap. Works daily with Microsoft Azure, ServiceNow and Active Directory to keep systems stable and changes controlled.
 
 ## Experience
 
@@ -12,28 +12,28 @@ Lead site reliability and IT operations professional with 14 years of experience
 *August 2024 – present*
 
 - Reviews change approvals for Active Directory group and policy updates, cutting failed changes by 15 percent.
-- Writes post-incident reviews drawing on Splunk searches to trace root causes and assign follow-up actions to owners.
-- Schedules patching cycles around backup and recovery checkpoints, reducing patch-related rollback time by 25 percent.
+- Writes post-incident reviews from Splunk log searches and shares them with the team to track follow-up actions.
+- Plans patching cycles around backup and recovery checkpoints, reducing rollback time by 25 percent.
 - Runs the team on-call rotation for Microsoft Azure workloads, with clear escalation paths and handoff notes.
-- Automates on-call paging triage with Python scripts, lowering after-hours pages by 50 percent.
+- Maintains Python tooling that routes on-call pages, lowering after-hours pages by 50 percent.
 
 ### Senior Site Reliability Engineer — Dunmore Technologies
 *April 2018 – August 2024*
 
-- Forecasted capacity needs from ServiceNow request and incident data, cutting emergency capacity requests by 50 percent.
-- Set reliability targets with product teams and codified the supporting infrastructure in Terraform.
-- Tuned Prometheus alert rules and thresholds, reducing noisy alerts by 10 percent.
-- Ran scheduled backup and recovery tests on Linux servers and documented restore steps for the team.
-- Built Ansible checks into the change approval workflow, reducing failed changes by 35 percent.
+- Led capacity planning using ServiceNow request and incident data, cutting emergency capacity requests by 50 percent.
+- Set reliability targets with product teams and built the matching infrastructure in Terraform modules.
+- Tuned Prometheus alert rules and thresholds, reducing false alerts by 10 percent.
+- Ran backup and recovery tests on Linux servers and documented restore steps for each service.
+- Automated change approval checks with Ansible playbooks, shortening approval time by 35 percent.
 
 ### Systems Engineer — Calloway Group
 *January 2013 – April 2018*
 
-- Restructured the on-call rotation and automated Active Directory account fixes, cutting after-hours escalations by 45 percent.
-- Used Splunk usage trends to plan server and storage capacity ahead of demand.
-- Tuned monitoring alerts for backup and recovery jobs, reducing false alerts by 45 percent.
-- Tested backup and recovery procedures for Microsoft Azure workloads and recorded the results for review.
-- Wrote Python scripts to pre-check change requests before approval, cutting rejected changes by 40 percent.
+- Streamlined on-call access with Active Directory groups, cutting the time to grant responder access by 45 percent.
+- Used Splunk usage reports to support capacity planning for server and storage growth.
+- Tuned monitoring alerts for backup and recovery jobs, reducing missed failure notices by 45 percent.
+- Ran scheduled backup and recovery tests for workloads hosted in Microsoft Azure and recorded the results.
+- Wrote Python checks for change requests before approval, reducing rejected changes by 40 percent.
 
 ## Education
 
@@ -41,8 +41,8 @@ Lead site reliability and IT operations professional with 14 years of experience
 
 ## Certifications
 
-- Systems Administrator Certificate — Open Systems Training Board, 2020
-- Cloud Operations Certificate — Cloud Skills Institute, 2016
+- Systems Administrator Certificate — Open Systems Training Board, 2013
+- Cloud Operations Certificate — Cloud Skills Institute, 2013
 
 ## Skills
 

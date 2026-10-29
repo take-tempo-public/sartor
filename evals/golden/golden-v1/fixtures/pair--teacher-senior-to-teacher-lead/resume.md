@@ -4,33 +4,33 @@ devon.ito@example.com | (555) 010-8408 | linkedin.com/in/example-devon-teacher-s
 
 ## Summary
 
-Senior elementary teacher with about 9 years of experience guiding colleagues and handling complex student cases. Uses Nearpod, math manipulatives and parent communication to support learners and keep families involved.
+Senior elementary teacher with 9 years of experience guiding colleagues and taking on the most demanding student cases. Uses Nearpod, math manipulatives and parent communication to keep instruction clear and families involved.
 
 ## Experience
 
 ### Lead Teacher — Maple Street School
 *October 2021 – present*
 
-- Leads grade-level planning and models classroom management routines for the team, reducing off-task behavior by 10 percent.
-- Holds parent conferences that set shared behavior supports for home and school, giving families clear next steps for each student.
-- Adapts classwork for different learners through small-group instruction, raising on-target assignment completion by 50 percent.
-- Plans units with grade-level colleagues and shares lesson materials through Google Classroom so the team teaches from a common plan.
+- Leads grade-level planning for the teaching team and applies classroom management routines that cut lost instructional time by 10 percent.
+- Holds parent conferences that pair family input with behavior supports, giving families and staff a shared plan for home and school.
+- Adapts classwork for different learners through small-group instruction, raising on-time assignment completion by 50 percent.
+- Coordinates team planning with colleagues in Google Classroom, keeping shared lessons and materials in one place.
 
 ### Classroom Teacher — Riverside Learning Center
 *April 2019 – October 2021*
 
-- Led small-group reading sessions and used math manipulatives in paired practice, raising the number of students meeting benchmarks by 35 percent.
-- Planned daily lessons and used parent communication to share weekly goals, so families could support classwork at home.
-- Built classroom routines around differentiated instruction, cutting time lost to transitions by 40 percent.
-- Ran parent conferences that used Nearpod lesson reports to show each student's progress and next steps.
+- Ran small-group reading sessions and used math manipulatives in paired lessons, lifting benchmark scores by 35 percent.
+- Planned daily lessons and used parent communication to share weekly goals so families could support learning at home.
+- Built classroom routines around differentiated instruction, reducing transition time by 40 percent.
+- Prepared for parent conferences with Nearpod lesson reports showing each student's participation and progress.
 
 ### Associate Teacher — Hillcrest Elementary School
 *October 2017 – April 2019*
 
-- Adapted assignments for different learners and applied classroom management routines, raising on-task work time by 35 percent.
-- Worked with grade-level colleagues to plan lessons and agree on consistent behavior supports across classrooms.
-- Assessed student progress during small-group instruction, lifting the share of students meeting unit goals by 40 percent.
-- Supported small-group reading by posting leveled practice texts in Google Classroom for students to revisit.
+- Adapted assignments for different learners while applying classroom management strategies, reducing off-task behavior by 35 percent.
+- Joined team planning with grade-level colleagues to align behavior supports across classrooms.
+- Assessed student progress during small-group instruction and regrouped students as needed, raising quiz scores by 40 percent.
+- Led small-group reading lessons and posted practice texts in Google Classroom for students to revisit.
 
 ## Education
 
@@ -38,9 +38,9 @@ Senior elementary teacher with about 9 years of experience guiding colleagues an
 
 ## Certifications
 
-- State Teaching Licence — State Department of Education, 2020
-- Reading Specialist Endorsement — State Department of Education, 2026
-- Instructional Leadership Endorsement — State Department of Education, 2026
+- State Teaching Licence — State Department of Education, 2017
+- Reading Specialist Endorsement — State Department of Education, 2017
+- Instructional Leadership Endorsement — State Department of Education, 2021
 
 ## Skills
 

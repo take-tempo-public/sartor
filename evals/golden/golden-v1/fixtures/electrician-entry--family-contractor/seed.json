@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "State Apprenticeship Council",
       "name": "Apprentice Registration Card"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2026",
       "issuer": "Safety Training Council",
       "name": "Construction Safety Card"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Installs panels and fixtures, using blueprint reading to confirm layouts before mounting and cutting layout rework by 40 percent."
+          "text": "Installs panels and fixtures from the drawings, using blueprint reading to plan each layout and cutting rework on finished installs by 40 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Runs conduit between panels and fixtures, relying on safe power tool use to cut, bend and fasten each run to plan."
+          "text": "Runs conduit through job sites, applying safe power tool use to cut, bend and fasten each run to plan."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Pulls and terminates wire for motor controls circuits, reducing termination errors found at inspection by 50 percent."
+          "text": "Pulls and terminates wire for motor controls circuits, labelling each conductor and reducing termination errors found at inspection by 50 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Traces faults in circuits and equipment through multimeter use, isolating each problem before the journeyman reviews the repair."
+          "text": "Traces faults in branch circuits through careful multimeter use, isolating open and shorted conductors before repairs begin."
         }
       ],
       "company": "Summit Power Contractors",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "At Summit Power Contractors, traces faults in circuits and equipment on site under a journeyman who checks each repair."
+          "text": "Works on site at Summit Power Contractors as an apprentice electrician, tracing faults in wiring and equipment under supervision."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Reads plans and drawings at Summit Power Contractors to place panels, fixtures and conduit runs where the layout calls for them."
+          "text": "Reads plans and drawings at Summit Power Contractors to lay out electrical work before installation begins."
         }
       ],
       "titles": [
@@ -203,7 +203,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Apprentice electrician with about 2 years of experience working under a journeyman who checks all work before sign-off. Brings troubleshooting, load calculations and code compliance to panel installation and wiring tasks on site."
+      "text": "Apprentice electrician with about 2 years of experience working under a journeyman who checks every job. Brings troubleshooting, load calculations and code compliance to daily site work."
     },
     {
       "display_order": 1,
@@ -214,7 +214,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level electrical apprentice with roughly 2 years on job sites, completing tasks under a journeyman who reviews and approves the work. Applies troubleshooting, load calculations and code compliance to daily installation and repair work."
+      "text": "Entry-level electrical worker with about 2 years on the tools, with every job reviewed by a supervising journeyman. Applies troubleshooting, load calculations and code compliance to each task from layout to final check."
     }
   ],
   "tags": []

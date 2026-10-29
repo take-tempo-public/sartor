@@ -4,17 +4,17 @@ casey.kowalski@example.com | (555) 010-2697 | linkedin.com/in/example-casey-regi
 
 ## Summary
 
-Entry-level graduate registered nurse with about 2 years of experience in community clinic care, working alongside a supervising nurse on an assigned share of patients. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University.
+Entry-level registered nurse with about 2 years of experience providing patient care under close supervision on a defined share of the unit's work. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University.
 
 ## Experience
 
 ### Graduate Registered Nurse — Harborview Community Clinic
 *March 2025 – present*
 
-- Documents care planning updates in the clinic record at each visit, reducing charting errors found in audits by 15 percent.
-- Gives bedside shift handoff reports that summarize vital signs monitoring trends, so the incoming nurse has current readings for each patient.
-- Completes a patient assessment before each medication administration, cutting medication timing delays by 20 percent.
-- Coordinates with physicians on discharge planning, confirming orders, follow-up appointments and home care instructions before patients leave the clinic.
+- Charts care planning notes in the clinic record after each patient visit, reducing documentation gaps by 15 percent.
+- Reports vital signs monitoring trends during shift handoff so incoming nurses can act quickly on changes in patient condition.
+- Completes patient assessment before giving medications, reducing medication timing errors by 20 percent.
+- Coordinates with physicians on discharge planning, confirming orders and follow-up instructions before patients leave the clinic.
 
 ## Education
 

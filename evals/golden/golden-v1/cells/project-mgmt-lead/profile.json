@@ -180,12 +180,12 @@
         {
           "issuer": "Project Practice Institute",
           "name": "Project Practitioner Certificate",
-          "year": "2025"
+          "year": "2012"
         },
         {
           "issuer": "Delivery Practice Society",
           "name": "Agile Delivery Certificate",
-          "year": "2025"
+          "year": "2019"
         }
       ],
       "kind": "certifications"
@@ -262,7 +262,7 @@
       "allowed_numbers": [
         "14"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Status reporting, Confluence, Microsoft Project, Vendor negotiation, Stakeholder communication, Asana, and 14 or more years of experience. State Project Practitioner Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Status reporting, Confluence, Microsoft Project, Vendor negotiation, Stakeholder communication, Asana, and 14 or more years of experience. State Agile Delivery Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -274,7 +274,7 @@
         "Vendor negotiation",
         "Stakeholder communication",
         "Asana",
-        "Project Practitioner Certificate"
+        "Agile Delivery Certificate"
       ]
     },
     "r1.b1": {

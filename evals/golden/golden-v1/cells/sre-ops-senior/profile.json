@@ -182,7 +182,7 @@
         {
           "issuer": "Cloud Skills Institute",
           "name": "Cloud Operations Certificate",
-          "year": "2025"
+          "year": "2021"
         }
       ],
       "kind": "certifications"
@@ -269,7 +269,7 @@
       "allowed_numbers": [
         "6"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Active Directory, Splunk, Linux, Ansible, ServiceNow, Python, and 6 or more years of experience. State Systems Administrator Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Active Directory, Splunk, Linux, Ansible, ServiceNow, Python, and 6 or more years of experience. State Cloud Operations Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -281,7 +281,7 @@
         "Ansible",
         "ServiceNow",
         "Python",
-        "Systems Administrator Certificate"
+        "Cloud Operations Certificate"
       ]
     },
     "r1.b1": {

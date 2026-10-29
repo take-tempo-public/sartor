@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Leading a team or program and answering for its results."
       },
-      "edit_replacement": "Trains new drivers on cargo documentation standards, leading a team or program and answering for its results",
-      "edit_target_substring": "Trains new drivers on cargo documentation standards",
+      "edit_replacement": "Trains new drivers in cargo documentation and reviews their paperwork, leading a team or program and answering for its results",
+      "edit_target_substring": "Trains new drivers in cargo documentation and reviews their paperwork",
       "expected_iteration_themes": {
         "experience_probes": [
           "Delivery scheduling exposure not yet covered by prior clarifications"

@@ -1,19 +1,18 @@
 Infrastructure Manager
 Pinegrove Health System — On site, Nashville, TN
 
-Summary
-Pinegrove Health System is a multi-hospital health system whose mission is to deliver safe, dependable care to every patient and family we serve. The Infrastructure Manager leads the team that keeps clinical and business systems available, secure and recoverable, working on site in Nashville, TN. A Systems Administrator Certificate is required for this position.
+Pinegrove Health System is a multi-hospital health system committed to safe, dependable care for every patient and family we serve. The Infrastructure Manager leads the team that keeps clinical and business systems available across our hospitals, working on site in Nashville, TN. The role owns change control, monitoring and reliability planning for our infrastructure. A Cloud Operations Certificate is required for this position.
 
 Duties
 - Review and approve infrastructure changes, making sure each request has a tested rollback plan and a clear owner.
-- Tune monitoring alerts so on-call staff are paged for real problems and noise is kept low.
-- Set reliability targets with product teams and track performance against them.
-- Lead the infrastructure team, including scheduling, coaching and the on-call rotation.
-- Own the infrastructure roadmap and report progress to hospital leadership.
+- Tune monitoring alerts so on-call staff receive actionable pages and fewer false alarms.
+- Set reliability targets with product and clinical application teams, and track performance against them.
+- Lead and develop the infrastructure team, including scheduling and supporting the on-call rotation.
+- Coordinate with hospital departments to plan maintenance windows that protect patient care.
 
 Licensure and qualifications
-- Systems Administrator Certificate required.
-- 14 or more years of experience in infrastructure, systems or site reliability work.
+- Cloud Operations Certificate required.
+- 14 or more years of experience in infrastructure, site reliability or IT operations.
 - Hands-on experience running workloads in Microsoft Azure and administering Linux servers.
 - Working knowledge of Splunk, Prometheus and Grafana for logging, monitoring and dashboards.
-- Ability to write and maintain PowerShell scripts for routine administration.
+- Ability to automate routine tasks with PowerShell.

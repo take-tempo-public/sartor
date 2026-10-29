@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Running the crew and answering for the job."
       },
-      "edit_replacement": "window and trim installs so crews have the right stock, running the crew and answering for the job",
-      "edit_target_substring": "window and trim installs so crews have the right stock",
+      "edit_replacement": "using material takeoffs to order correct quantities before work begins., running the crew and answering for the job",
+      "edit_target_substring": "using material takeoffs to order correct quantities before work begins.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Jobsite safety exposure not yet covered by prior clarifications"

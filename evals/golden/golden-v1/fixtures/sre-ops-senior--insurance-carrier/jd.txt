@@ -2,20 +2,20 @@ Senior Site Reliability Engineer
 Ravenswood Insurance Group — Hybrid, Hartford, CT
 
 Position summary
-Ravenswood Insurance Group seeks a Senior Site Reliability Engineer to maintain the availability and resilience of the systems that support our policyholders and agents. The engineer will work with product teams to define reliability targets and lead operational practices across our infrastructure.
-Minimum: experience operating Linux systems, configuration management and production monitoring.
-Preferred: experience with Kubernetes and Microsoft Azure.
+Ravenswood Insurance Group seeks a Senior Site Reliability Engineer to keep the systems behind policy, claims and billing services available and recoverable. The engineer will set reliability targets with product teams, run patching cycles and lead backup and recovery testing. Minimum requirements include several years of systems or reliability engineering, Linux administration and configuration management experience. Preferred candidates also bring cloud operations experience and familiarity with regulated environments.
 
 Responsibilities
-- Set reliability targets with product teams and review progress against them on a regular schedule
-- Plan and run patching cycles across server fleets with minimal disruption to business users
-- Schedule and conduct backup and recovery tests, documenting results and remediation steps
-- Lead post-incident reviews and track corrective actions to completion
-- Maintain monitoring and alerting that reflects agreed reliability targets
+- Set service reliability targets with product teams and review performance against them on a regular schedule.
+- Plan and run patching cycles for servers and platforms, coordinating maintenance windows with application owners.
+- Design, schedule and document backup and recovery tests, and track any gaps to closure.
+- Lead the on-call rotation and conduct post-incident reviews with clear follow-up actions.
+- Maintain monitoring and alerting so that issues are found before they affect policyholders.
+- Advise engineering leadership on capacity, risk and operational priorities.
 
 Minimum and preferred qualifications
-- 6 or more years of experience in systems administration or site reliability engineering
-- Hands-on experience administering Linux servers and Active Directory
-- Working knowledge of Splunk for log analysis and Ansible for configuration management
-- Experience with ServiceNow for incident and change management, and scripting in Python
-- Required certification: Systems Administrator Certificate
+- 6 or more years of experience in systems engineering, site reliability or IT operations.
+- Working knowledge of Linux administration and Active Directory.
+- Experience automating configuration and patching with Ansible.
+- Experience building searches, dashboards and alerts in Splunk.
+- Familiarity with ServiceNow for change and incident management, and scripting in Python.
+- Required certification: Cloud Operations Certificate.

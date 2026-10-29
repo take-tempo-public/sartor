@@ -180,22 +180,22 @@
         {
           "issuer": "Safety Training Council",
           "name": "Construction Safety Card",
-          "year": "2020"
+          "year": "2015"
         },
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprenticeship Completion Certificate",
-          "year": "2023"
+          "year": "2015"
         },
         {
           "issuer": "Carpenters Training Council",
           "name": "Lead Carpenter Certificate",
-          "year": "2016"
+          "year": "2015"
         },
         {
           "issuer": "Carpenters Training Council",
           "name": "Crew Supervisor Certificate",
-          "year": "2020"
+          "year": "2023"
         }
       ],
       "kind": "certifications"
@@ -272,7 +272,7 @@
       "allowed_numbers": [
         "12"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Scaffold erection, Power tool use, Cabinet installation, Framing, Jobsite safety, Stair building, and 12 or more years of experience. State Construction Safety Card as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Scaffold erection, Power tool use, Cabinet installation, Framing, Jobsite safety, Stair building, and 12 or more years of experience. State Crew Supervisor Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -284,7 +284,7 @@
         "Framing",
         "Jobsite safety",
         "Stair building",
-        "Construction Safety Card"
+        "Crew Supervisor Certificate"
       ]
     },
     "r1.b1": {

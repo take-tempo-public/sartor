@@ -180,17 +180,17 @@
         {
           "issuer": "Driver Safety Council",
           "name": "Driver Safety Certificate",
-          "year": "2014"
+          "year": "2011"
         },
         {
           "issuer": "State Motor Vehicle Agency",
           "name": "Commercial Driver Licence",
-          "year": "2025"
+          "year": "2011"
         },
         {
           "issuer": "State Motor Vehicle Agency",
           "name": "Hazardous Materials Endorsement",
-          "year": "2019"
+          "year": "2011"
         },
         {
           "issuer": "Freight Operations Council",
@@ -272,7 +272,7 @@
       "allowed_numbers": [
         "15"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Hours-of-service logging, Route planning, Hazmat handling, Pre-trip inspections, Delivery scheduling, Dispatch software, and 15 or more years of experience. State Driver Safety Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Hours-of-service logging, Route planning, Hazmat handling, Pre-trip inspections, Delivery scheduling, Dispatch software, and 15 or more years of experience. State Dispatch Coordinator Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -284,7 +284,7 @@
         "Pre-trip inspections",
         "Delivery scheduling",
         "Dispatch software",
-        "Driver Safety Certificate"
+        "Dispatch Coordinator Certificate"
       ]
     },
     "r1.b1": {

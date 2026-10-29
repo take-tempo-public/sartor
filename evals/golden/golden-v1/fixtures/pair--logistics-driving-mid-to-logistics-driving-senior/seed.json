@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2022",
       "issuer": "Driver Safety Council",
       "name": "Driver Safety Certificate"
     },
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinate with dispatch on route changes and apply defensive driving in heavy traffic, cutting reported near-miss incidents by 50 percent."
+          "text": "Coordinate with dispatch on route changes and apply defensive driving techniques on every run, cutting preventable delay incidents by 50 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Report vehicle defects to maintenance before departure and check load securement at each stop so trailers stay road-ready."
+          "text": "Report vehicle defects to maintenance after each shift and apply load securement checks to keep cargo stable and the truck roadworthy."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Keep accurate driver logs and complete bills of lading for every shipment, reducing paperwork errors by 25 percent."
+          "text": "Keep accurate driver logs and reconcile bills of lading at each stop, reducing paperwork discrepancies by 25 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Secure and check each load before departure and follow delivery scheduling to meet customer receiving windows."
+          "text": "Secure and check every load before departure and adjust delivery scheduling with receivers when inspections require extra time."
         }
       ],
       "company": "Stonebridge Logistics",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "At Stonebridge Logistics, drives Class A routes and delivers freight to customers on schedule."
+          "text": "Hauls freight as a Class A driver for Stonebridge Logistics, delivering loads to customers on time across regular routes."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "As a Class A Truck Driver at Stonebridge Logistics, inspects equipment and reports vehicle defects so trucks stay safe and in service."
+          "text": "Operates Class A equipment for Stonebridge Logistics and reports vehicle defects promptly so trucks stay safe and in service."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Delivered shipments to customers on time while applying hazmat handling procedures, raising on-time delivery rates by 20 percent."
+          "text": "Delivered freight to customers on schedule, applying hazmat handling procedures for regulated loads and raising on-time delivery rates by 20 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Used route planning to map daily delivery runs around traffic and road closures, keeping stops in an efficient order."
+          "text": "Used route planning to sequence daily stops around traffic patterns and receiver hours, keeping deliveries on schedule."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performed pre-trip vehicle inspections and checked trailer coupling before each run, reducing equipment-related delays by 10 percent."
+          "text": "Performed pre-trip vehicle inspections and checked trailer coupling before each run, reducing roadside inspection findings by 10 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with dispatch on schedule changes and kept hours-of-service logging current and compliant."
+          "text": "Coordinated with dispatch on load assignments and kept hours-of-service logging current to stay within driving limits."
         }
       ],
       "company": "Prairie Freight Lines",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Drove delivery routes for Prairie Freight Lines and reported vehicle defects promptly to keep the fleet in safe working order."
+          "text": "Drove delivery routes for Prairie Freight Lines and reported vehicle defects to keep the fleet safe and roadworthy."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Delivered freight for Prairie Freight Lines, planning routes to keep daily stops efficient and on time."
+          "text": "Handled local deliveries for Prairie Freight Lines, planning routes each day to reach customers efficiently."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Class A truck driver who handles a full route schedule without close supervision and coordinates closely with dispatch. Skilled in trailer coupling, route planning and defensive driving, backed by a Commercial Driver Licence and Driver Safety Certificate."
+      "text": "Truck driving and dispatch professional with about 5 years of experience handling a full route schedule without close supervision. Skilled in trailer coupling, route planning and defensive driving, with a record of safe, on-time freight delivery."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Truck driving professional experienced in freight delivery, managing a full schedule of routes independently and keeping dispatch informed. Applies defensive driving, route planning and trailer coupling on every run to deliver loads safely and on time."
+      "text": "Class A truck driver with about 5 years of experience in driving and dispatch coordination, managing a full load schedule independently. Applies route planning, defensive driving and trailer coupling to move freight safely and on schedule."
     }
   ],
   "tags": []

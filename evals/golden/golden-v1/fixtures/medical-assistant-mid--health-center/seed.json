@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Record vital signs for each roomed patient and enter readings before the provider visit, cutting charting corrections by 30 percent."
+          "text": "Records vital signs for each patient before provider exams, streamlining the rooming process and cutting patient wait times by 30 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Schedule follow-up visits for patients needing repeat lab work and coordinate specimen handling so samples are labeled and sent before checkout."
+          "text": "Schedules follow-up visits and coordinates specimen handling so lab results are ready for each return appointment."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Relay physician instructions to patients at discharge and manage instrument sterilization between visits, reducing exam room turnaround time by 15 percent."
+          "text": "Relays physician instructions to patients and manages instrument sterilization between visits, reducing exam room turnover time by 15 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Complete insurance forms at check-in and perform insurance verification ahead of each appointment to catch coverage gaps early."
+          "text": "Completes insurance forms and performs insurance verification before each visit to prevent billing delays at check-in."
         }
       ],
       "company": "Sutter Street Shop",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Medical Assistant at Sutter Street Shop who relays physician instructions to patients and makes sure each visit ends with clear next steps."
+          "text": "Supports physicians at Sutter Street Shop by relaying care instructions to patients and confirming they understand their next steps."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Medical Assistant at Sutter Street Shop responsible for rooming patients, preparing them for the provider and keeping the clinic schedule moving."
+          "text": "Rooms patients at Sutter Street Shop, preparing them for exams and recording the details physicians need before each visit."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Drew blood from patients and documented each collection in Epic Systems, reducing labeling errors by 25 percent."
+          "text": "Drew blood samples and logged each draw in Epic Systems, reducing specimen labeling errors by 25 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Roomed patients for scheduled visits and performed EKG testing as ordered by the provider."
+          "text": "Roomed patients and performed EKG testing ahead of physician exams to keep visits on schedule."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Stocked exam rooms before each session and handled appointment scheduling to match supply levels to patient volume, cutting supply shortages by 35 percent."
+          "text": "Stocked exam rooms and aligned restocking with appointment scheduling, cutting supply shortages during clinic hours by 35 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Took vital signs during patient intake and recorded results for provider review before each exam."
+          "text": "Took vital signs during patient intake and entered readings into the chart for physician review."
         }
       ],
       "company": "Dunmore Technologies",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Clinical Assistant at Dunmore Technologies who roomed patients and prepared them for provider exams throughout each clinic day."
+          "text": "Roomed patients at Dunmore Technologies as a Clinical Assistant, preparing each person for exams and supporting the clinical team."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Clinical Assistant at Dunmore Technologies who scheduled follow-up visits and kept patients informed of their next appointments."
+          "text": "Scheduled follow-up visits for patients at Dunmore Technologies and kept the clinic calendar coordinated with provider availability."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Medical assisting professional with about 4 years of experience who carries a full patient caseload without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, specimen handling and vital signs, and holds the Certified Medical Assistant Credential."
+      "text": "Medical assisting professional with about 4 years of experience carrying a full patient load without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, vital signs and specimen handling."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Medical assistant with about 4 years of clinical experience managing a full daily patient load independently. Works in Epic Systems for charting and handles appointment scheduling, patient intake, insurance verification and EKG testing."
+      "text": "Certified medical assistant with about 4 years of clinical experience managing a full daily schedule of patients independently. Uses Epic Systems for charting and handles appointment scheduling, patient intake and insurance verification."
     }
   ],
   "tags": []

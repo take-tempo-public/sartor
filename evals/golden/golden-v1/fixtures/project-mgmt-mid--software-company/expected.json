@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Owning a recurring process from request to completion."
       },
-      "edit_replacement": "Closes out projects with status reporting that confirms deliverables, owning a recurring process from request to completion",
-      "edit_target_substring": "Closes out projects with status reporting that confirms deliverables",
+      "edit_replacement": "sign-offs and open items before each project is handed over., owning a recurring process from request to completion",
+      "edit_target_substring": "sign-offs and open items before each project is handed over.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Change control exposure not yet covered by prior clarifications"

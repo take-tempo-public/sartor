@@ -177,12 +177,12 @@
         {
           "issuer": "Medical Assisting Certification Board",
           "name": "Certified Medical Assistant Credential",
-          "year": "2017"
+          "year": "2018"
         },
         {
           "issuer": "Clinical Skills Council",
           "name": "Phlebotomy Certificate",
-          "year": "2022"
+          "year": "2019"
         }
       ],
       "kind": "certifications"
@@ -259,7 +259,7 @@
       "allowed_numbers": [
         "9"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Specimen handling, Appointment scheduling, Blood draws, Injections, Prior authorizations, Epic Systems, and 9 or more years of experience. State Certified Medical Assistant Credential as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Specimen handling, Appointment scheduling, Blood draws, Injections, Prior authorizations, Epic Systems, and 9 or more years of experience. State Phlebotomy Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -271,7 +271,7 @@
         "Injections",
         "Prior authorizations",
         "Epic Systems",
-        "Certified Medical Assistant Credential"
+        "Phlebotomy Certificate"
       ]
     },
     "r1.b1": {

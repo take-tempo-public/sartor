@@ -177,12 +177,12 @@
         {
           "issuer": "Project Practice Institute",
           "name": "Project Practitioner Certificate",
-          "year": "2026"
+          "year": "2018"
         },
         {
           "issuer": "Delivery Practice Society",
           "name": "Agile Delivery Certificate",
-          "year": "2020"
+          "year": "2018"
         }
       ],
       "kind": "certifications"
@@ -259,7 +259,7 @@
       "allowed_numbers": [
         "9"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Budget tracking, Confluence, Agile ceremonies, Risk registers, Stakeholder communication, Asana, and 9 or more years of experience. State Project Practitioner Certificate as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Budget tracking, Confluence, Agile ceremonies, Risk registers, Stakeholder communication, Asana, and 9 or more years of experience. State Agile Delivery Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -271,7 +271,7 @@
         "Risk registers",
         "Stakeholder communication",
         "Asana",
-        "Project Practitioner Certificate"
+        "Agile Delivery Certificate"
       ]
     },
     "r1.b1": {

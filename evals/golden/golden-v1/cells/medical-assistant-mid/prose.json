@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:b769cfe1342741d971308639e55ec685528183d5afd4d663b928cbeffe5c9948",
+    "profile_sha256": "sha256:ddac6be0052352256efe3902536b6bd41f27a99abb20fe91ff102fec0a2cd67b",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVPTDY4B5xcUYGRtdLXM"
+      "req_011CgVk2969vAcqKu1rhtUKo"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 3792,
-      "output_tokens": 2869
+      "input_tokens": 3788,
+      "output_tokens": 2219
     }
   },
   "schema": 1,
   "slots": {
-    "jd.health-center.about": "Cedar Ridge Community Health provides accessible primary care to every member of our community, regardless of ability to pay. We are seeking a Medical Assistant to join our on-site care team in Tacoma, WA. The Medical Assistant supports providers by preparing patients for visits, assisting with clinical procedures and keeping clinic flow organized. Applicants must hold the Certified Medical Assistant Credential.",
-    "jd.health-center.duties": "Duties\n- Take and record vital signs for each patient before the provider visit\n- Room patients and document the reason for the visit in the health record\n- Stock exam rooms with supplies and keep them clean and ready between appointments\n- Relay physician instructions to patients clearly and confirm understanding before they leave\n- Assist providers with exams and routine clinical procedures as directed\n- Coordinate follow-up visits and referrals with the front desk team",
-    "jd.health-center.needs": "Licensure and qualifications\n- Certified Medical Assistant Credential required\n- 4 or more years of experience as a medical assistant in an outpatient or community health setting\n- Experience with patient intake, specimen handling and appointment scheduling\n- Working knowledge of insurance verification and prior authorizations\n- Familiarity with medical coding for outpatient visits",
-    "r1.b1": "Record vital signs for each roomed patient and enter readings before the provider visit, cutting charting corrections by 30 percent.",
-    "r1.b2": "Schedule follow-up visits for patients needing repeat lab work and coordinate specimen handling so samples are labeled and sent before checkout.",
-    "r1.b3": "Relay physician instructions to patients at discharge and manage instrument sterilization between visits, reducing exam room turnaround time by 15 percent.",
-    "r1.b4": "Complete insurance forms at check-in and perform insurance verification ahead of each appointment to catch coverage gaps early.",
-    "r1.i1": "Medical Assistant at Sutter Street Shop who relays physician instructions to patients and makes sure each visit ends with clear next steps.",
-    "r1.i2": "Medical Assistant at Sutter Street Shop responsible for rooming patients, preparing them for the provider and keeping the clinic schedule moving.",
-    "r2.b1": "Drew blood from patients and documented each collection in Epic Systems, reducing labeling errors by 25 percent.",
-    "r2.b2": "Roomed patients for scheduled visits and performed EKG testing as ordered by the provider.",
-    "r2.b3": "Stocked exam rooms before each session and handled appointment scheduling to match supply levels to patient volume, cutting supply shortages by 35 percent.",
-    "r2.b4": "Took vital signs during patient intake and recorded results for provider review before each exam.",
-    "r2.i1": "Clinical Assistant at Dunmore Technologies who roomed patients and prepared them for provider exams throughout each clinic day.",
-    "r2.i2": "Clinical Assistant at Dunmore Technologies who scheduled follow-up visits and kept patients informed of their next appointments.",
-    "summary.1": "Medical assisting professional with about 4 years of experience who carries a full patient caseload without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, specimen handling and vital signs, and holds the Certified Medical Assistant Credential.",
-    "summary.2": "Medical assistant with about 4 years of clinical experience managing a full daily patient load independently. Works in Epic Systems for charting and handles appointment scheduling, patient intake, insurance verification and EKG testing."
+    "jd.health-center.about": "Summary\nCedar Ridge Community Health provides accessible, compassionate primary care to every member of our community, regardless of ability to pay. We are seeking an on-site Medical Assistant in Tacoma, WA to support our providers and patients through daily clinical and front-office work. A current Phlebotomy Certificate is required for this position.",
+    "jd.health-center.duties": "Duties\n- Take and record vital signs for patients before each provider visit.\n- Stock and restock exam rooms with supplies so rooms are ready throughout the day.\n- Relay physician instructions to patients clearly and confirm they understand next steps.\n- Room patients and prepare them for examinations and procedures.\n- Update patient records accurately and keep the care team informed of changes.",
+    "jd.health-center.needs": "Licensure and qualifications\n- Phlebotomy Certificate required.\n- 4 or more years of experience as a medical assistant in a clinical setting.\n- Experience with specimen handling and patient intake.\n- Working knowledge of appointment scheduling and insurance verification.\n- Familiarity with medical coding and prior authorizations.",
+    "r1.b1": "Records vital signs for each patient before provider exams, streamlining the rooming process and cutting patient wait times by 30 percent.",
+    "r1.b2": "Schedules follow-up visits and coordinates specimen handling so lab results are ready for each return appointment.",
+    "r1.b3": "Relays physician instructions to patients and manages instrument sterilization between visits, reducing exam room turnover time by 15 percent.",
+    "r1.b4": "Completes insurance forms and performs insurance verification before each visit to prevent billing delays at check-in.",
+    "r1.i1": "Supports physicians at Sutter Street Shop by relaying care instructions to patients and confirming they understand their next steps.",
+    "r1.i2": "Rooms patients at Sutter Street Shop, preparing them for exams and recording the details physicians need before each visit.",
+    "r2.b1": "Drew blood samples and logged each draw in Epic Systems, reducing specimen labeling errors by 25 percent.",
+    "r2.b2": "Roomed patients and performed EKG testing ahead of physician exams to keep visits on schedule.",
+    "r2.b3": "Stocked exam rooms and aligned restocking with appointment scheduling, cutting supply shortages during clinic hours by 35 percent.",
+    "r2.b4": "Took vital signs during patient intake and entered readings into the chart for physician review.",
+    "r2.i1": "Roomed patients at Dunmore Technologies as a Clinical Assistant, preparing each person for exams and supporting the clinical team.",
+    "r2.i2": "Scheduled follow-up visits for patients at Dunmore Technologies and kept the clinic calendar coordinated with provider availability.",
+    "summary.1": "Medical assisting professional with about 4 years of experience carrying a full patient load without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, vital signs and specimen handling.",
+    "summary.2": "Certified medical assistant with about 4 years of clinical experience managing a full daily schedule of patients independently. Uses Epic Systems for charting and handles appointment scheduling, patient intake and insurance verification."
   }
 }

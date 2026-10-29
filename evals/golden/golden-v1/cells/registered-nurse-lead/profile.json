@@ -180,17 +180,17 @@
         {
           "issuer": "State Board of Nursing",
           "name": "Registered Nurse Licence",
-          "year": "2023"
+          "year": "2014"
         },
         {
           "issuer": "Resuscitation Training Council",
           "name": "Basic Life Support Card",
-          "year": "2026"
+          "year": "2014"
         },
         {
           "issuer": "Resuscitation Training Council",
           "name": "Advanced Cardiac Life Support Card",
-          "year": "2024"
+          "year": "2014"
         },
         {
           "issuer": "Nursing Leadership Council",
@@ -272,7 +272,7 @@
       "allowed_numbers": [
         "12"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Bedside handoff, Medication administration, IV therapy, Discharge planning, Infection control, Patient assessment, and 12 or more years of experience. State Registered Nurse Licence as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Bedside handoff, Medication administration, IV therapy, Discharge planning, Infection control, Patient assessment, and 12 or more years of experience. State Nurse Manager Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -284,7 +284,7 @@
         "Discharge planning",
         "Infection control",
         "Patient assessment",
-        "Registered Nurse Licence"
+        "Nurse Manager Certificate"
       ]
     },
     "r1.b1": {

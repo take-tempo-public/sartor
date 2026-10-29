@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Managing a team and answering for the results of the function."
       },
-      "edit_replacement": "Conduct site safety walks with superintendents and apply safety planning, managing a team and answering for the results of the function",
-      "edit_target_substring": "Conduct site safety walks with superintendents and apply safety planning",
+      "edit_replacement": "Run regular site safety walks with superintendents and fold the, managing a team and answering for the results of the function",
+      "edit_target_substring": "Run regular site safety walks with superintendents and fold the",
       "expected_iteration_themes": {
         "experience_probes": [
           "Contract administration exposure not yet covered by prior clarifications"

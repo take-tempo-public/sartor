@@ -177,22 +177,22 @@
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprentice Registration Card",
-          "year": "2022"
+          "year": "2017"
         },
         {
           "issuer": "Safety Training Council",
           "name": "Construction Safety Card",
-          "year": "2018"
+          "year": "2017"
         },
         {
           "issuer": "State Licensing Board",
           "name": "Journeyman Electrician Licence",
-          "year": "2021"
+          "year": "2019"
         },
         {
           "issuer": "State Licensing Board",
           "name": "Master Electrician Licence",
-          "year": "2022"
+          "year": "2019"
         }
       ],
       "kind": "certifications"
@@ -269,7 +269,7 @@
       "allowed_numbers": [
         "9"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Code compliance, Lighting installation, Circuit testing, Load calculations, Motor controls, Fire alarm wiring, and 9 or more years of experience. State Apprentice Registration Card as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Code compliance, Lighting installation, Circuit testing, Load calculations, Motor controls, Fire alarm wiring, and 9 or more years of experience. State Master Electrician Licence as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -281,7 +281,7 @@
         "Load calculations",
         "Motor controls",
         "Fire alarm wiring",
-        "Apprentice Registration Card"
+        "Master Electrician Licence"
       ]
     },
     "r1.b1": {

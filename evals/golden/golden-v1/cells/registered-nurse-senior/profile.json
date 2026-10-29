@@ -179,12 +179,12 @@
         {
           "issuer": "State Board of Nursing",
           "name": "Registered Nurse Licence",
-          "year": "2020"
+          "year": "2019"
         },
         {
           "issuer": "Resuscitation Training Council",
           "name": "Basic Life Support Card",
-          "year": "2023"
+          "year": "2020"
         },
         {
           "issuer": "Resuscitation Training Council",
@@ -266,7 +266,7 @@
       "allowed_numbers": [
         "7"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Clinical documentation, Patient education, Discharge planning, Vital signs monitoring, Infection control, Triage, and 7 or more years of experience. State Registered Nurse Licence as a required licence or certification. State Nurse Manager Certificate as preferred.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Clinical documentation, Patient education, Discharge planning, Vital signs monitoring, Infection control, Triage, and 7 or more years of experience. State Advanced Cardiac Life Support Card as a required licence or certification. State Nurse Manager Certificate as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -278,7 +278,7 @@
         "Vital signs monitoring",
         "Infection control",
         "Triage",
-        "Registered Nurse Licence",
+        "Advanced Cardiac Life Support Card",
         "Nurse Manager Certificate"
       ]
     },

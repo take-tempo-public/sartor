@@ -8,7 +8,7 @@
       "any exposure to Leak testing, in work or side projects",
       "any exposure to Heat pump service, in work or side projects",
       "any exposure to System diagnostics, in work or side projects",
-      "any exposure to Refrigerant Compliance Certificate, in work or side projects",
+      "any exposure to HVAC Technician Licence, in work or side projects",
       "any exposure to Controls Technician Certificate, in work or side projects"
     ],
     "scope_probes": [
@@ -22,7 +22,7 @@
     "(?i)Leak\\ testing",
     "(?i)Heat\\ pump\\ service",
     "(?i)System\\ diagnostics",
-    "(?i)Refrigerant\\ Compliance\\ Certificate",
+    "(?i)HVAC\\ Technician\\ Licence",
     "(?i)Controls\\ Technician\\ Certificate",
     "(?i)Fire\\ alarm\\ wiring",
     "(?i)Motor\\ controls",
@@ -38,7 +38,7 @@
     "Leak testing",
     "Heat pump service",
     "System diagnostics",
-    "Refrigerant Compliance Certificate",
+    "HVAC Technician Licence",
     "Controls Technician Certificate"
   ],
   "min_ats_format_score": 4,
@@ -48,7 +48,7 @@
   "must_keywords": [
     "customer"
   ],
-  "notes": "Mismatched pair (change): the electrician-senior résumé against the hvac-technician-mid job description. An electrician moving to heating and cooling service: the electrical work carries over, refrigerant work does not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Building automation, Thermostat installation, Brazing and soldering, Leak testing, Heat pump service, System diagnostics, Refrigerant Compliance Certificate, Controls Technician Certificate. The output must claim none of it.",
+  "notes": "Mismatched pair (change): the electrician-senior résumé against the hvac-technician-mid job description. An electrician moving to heating and cooling service: the electrical work carries over, refrigerant work does not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Building automation, Thermostat installation, Brazing and soldering, Leak testing, Heat pump service, System diagnostics, HVAC Technician Licence, Controls Technician Certificate. The output must claim none of it.",
   "pair": {
     "id": "electrician-senior-to-hvac-technician-mid",
     "jd_cell": "hvac-technician-mid",

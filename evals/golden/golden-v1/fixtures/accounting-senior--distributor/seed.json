@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2024",
       "issuer": "State Board of Accountancy",
       "name": "Certified Public Accountant Licence"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepares budget variance reports in QuickBooks, cutting report turnaround time by 25 percent."
+          "text": "Prepare budget variance reports in QuickBooks, cutting the time department leads wait for results by 25 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reviews journal entries and reconciliations prepared by staff accountants in Microsoft Excel, returning notes before each close."
+          "text": "Review the work of staff accountants each close, using Microsoft Excel checklists to flag entries that need correction before posting."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Owns the team's close calendar and the timing of financial statements, reducing days to close by 25 percent."
+          "text": "Own the close calendar for the team, sequencing tasks so financial statements are ready 25 percent sooner than before."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates audit preparation by organizing month-end close schedules and supporting documents for external auditors."
+          "text": "Lead audit preparation by organizing month-end close workpapers and support files so auditors receive complete documentation on request."
         }
       ],
       "company": "Riverbend Health Network",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Leads review of staff accountant work at Riverbend Health Network, checking entries and reconciliations before the books close."
+          "text": "At Riverbend Health Network, the Senior Accountant role centers on reviewing the work of staff accountants and keeping entries accurate before each close."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Prepares Riverbend Health Network for audits by keeping close records, schedules and supporting documents organized throughout the year."
+          "text": "Audit preparation is a core part of the Senior Accountant role at Riverbend Health Network, from assembling support files to answering auditor questions."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared tax schedules from accounts payable records, cutting preparation time by 25 percent."
+          "text": "Prepared tax schedules from accounts payable records, reducing the time needed to compile them by 25 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built customer statements from accounts receivable ledgers and resolved billing discrepancies before distribution."
+          "text": "Built customer statements from accounts receivable balances and sent them on schedule, giving clients a clear view of open items."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performed bank reconciliations and provided audit support, reducing reconciling items by 45 percent."
+          "text": "Reconciled bank accounts each month and supplied audit support documentation, cutting reconciling differences by 45 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Compiled budget variance reports and used fixed asset tracking to explain depreciation differences against plan."
+          "text": "Produced budget variance reports that drew on fixed asset tracking data to explain depreciation and capital spending against plan."
         }
       ],
       "company": "Ironbridge Co",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Handled month-end close tasks for Ironbridge Co, including journal entries, accruals and account reviews."
+          "text": "At Ironbridge Co, the Accountant role focused on month-end close, keeping close tasks complete and on schedule."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Prepared financial statements and supporting schedules for Ironbridge Co as part of the accounting team."
+          "text": "The Accountant position at Ironbridge Co centered on preparing statements for management and customers from reconciled account balances."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supported audit preparation by organizing QuickBooks records and schedules, reducing auditor follow-up requests by 15 percent."
+          "text": "Organized audit preparation in QuickBooks, pulling supporting reports in advance and reducing auditor follow-up requests by 15 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reviewed vendor invoices against purchase records in Microsoft Excel and flagged errors before payment."
+          "text": "Reviewed vendor invoices against purchase records in Microsoft Excel, flagging pricing and quantity discrepancies before payment."
         },
         {
           "display_order": 2,
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assisted with the close by preparing draft financial statements, shortening the close by 15 percent."
+          "text": "Supported month-end close by drafting financial statements, shortening the close by 15 percent through standardized entries."
         },
         {
           "display_order": 3,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared tax schedules during month-end close using reconciled ledger balances."
+          "text": "Compiled tax schedules from month-end close balances, tying each figure back to the ledger for review."
         }
       ],
       "company": "Neighborhood Table Services",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Prepared financial statements for Neighborhood Table Services as a staff accountant on the accounting team."
+          "text": "The Staff Accountant role at Neighborhood Table Services centered on preparing statements, from drafting entries to final review."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Performed bank reconciliations for Neighborhood Table Services and resolved differences with the accounting team."
+          "text": "Bank reconciliations were a regular responsibility at Neighborhood Table Services, matching ledger activity to bank records each month."
         }
       ],
       "titles": [
@@ -381,7 +381,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior accountant with 7 years of experience in month-end close, financial statements and audit support. Sets how the team handles accounts payable, using QuickBooks and Microsoft Excel to keep entries accurate and on schedule."
+      "text": "Senior accountant with about 7 years of experience in month-end close, accounts payable and financial statements, using QuickBooks and Microsoft Excel. Currently sets how the team handles its close calendar, from task sequencing to review of staff work."
     },
     {
       "display_order": 1,
@@ -392,7 +392,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Accounting professional with about 7 years of experience in QuickBooks, Microsoft Excel and accounts receivable. Defines the team's accounts payable process, from invoice review through reconciliation and month-end close."
+      "text": "Accounting professional with 7 years of experience across accounts payable, accounts receivable and audit support. Defines the team's approach to month-end close, building QuickBooks records and Microsoft Excel workpapers that hold up to review."
     }
   ],
   "tags": []

@@ -3,7 +3,8 @@
   "expected_clarification_themes": {
     "experience_probes": [
       "any exposure to Power tool use, in work or side projects",
-      "any exposure to Cabinet installation, in work or side projects"
+      "any exposure to Cabinet installation, in work or side projects",
+      "any exposure to Crew Supervisor Certificate, in work or side projects"
     ],
     "scope_probes": [
       "Master Carpenter at Marlow Remodeling: sole owner or team member?"
@@ -12,8 +13,8 @@
   "forbidden_inventions": [
     "(?i)Power\\ tool\\ use",
     "(?i)Cabinet\\ installation",
-    "(?i)Subfloor\\ installation",
     "(?i)Crew\\ Supervisor\\ Certificate",
+    "(?i)Subfloor\\ installation",
     "PhD",
     "Master'?s? (degree|in)",
     "managed [0-9]+",
@@ -21,7 +22,8 @@
   ],
   "jd_requirements_not_shown": [
     "Power tool use",
-    "Cabinet installation"
+    "Cabinet installation",
+    "Crew Supervisor Certificate"
   ],
   "min_ats_format_score": 4,
   "min_clarification_quality_score": 4,
@@ -31,7 +33,7 @@
     "framing",
     "jobsite safety"
   ],
-  "notes": "Mismatched pair (advance): the carpenter-foreman-senior résumé against the carpenter-foreman-lead job description. The senior-tier carpentry résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Power tool use, Cabinet installation. The output must claim none of it.",
+  "notes": "Mismatched pair (advance): the carpenter-foreman-senior résumé against the carpenter-foreman-lead job description. The senior-tier carpentry résumé against the lead-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Power tool use, Cabinet installation, Crew Supervisor Certificate. The output must claim none of it.",
   "pair": {
     "id": "carpenter-foreman-senior-to-carpenter-foreman-lead",
     "jd_cell": "carpenter-foreman-lead",

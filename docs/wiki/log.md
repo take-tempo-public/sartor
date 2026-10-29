@@ -3584,3 +3584,13 @@ command.** No backlink was added or removed.
 **Not verified:** the pages were audited over the changed passages, not read whole; `evals/README.md`, `CHANGELOG.md`, the design doc and the dossier are
 not wiki pages and nothing audited them; the wiki says nothing about how the judge weights a mismatched pair (steps 8 and 9), and nothing about the
 unfixed certification-requirement defect (item 194).
+
+## 2026-10-28 — scoped close-out check, `feat/eval-dataset-v1-finish` (verified no-edit)
+
+**Trigger:** branch close-out wiki obligation, scoped to this branch's own diff (item 194, scopes 1 and 2); mode **diff, scoped**. **`.last_ingest_sha` not advanced.** No scribe or auditor ran.
+
+**Wiki-relevant paths (per `scripts/wiki_relevance.py`, `is_wiki_relevant()`):** `evals/golden_set.py` and `docs/dev/eval-redesign-design.md`. The tests, the golden-set data (`cells/`, `fixtures/`, `manifest.json`), `CHANGELOG.md`, the dossier, the work item and the ledger file are classified irrelevant.
+
+**Pages: `eval-harness` ("The golden set") and `code-module-map` (the `evals/golden_set.py` row) read, verified no-edit.** A grep of `docs/wiki/pages`, `index.md` and `overview.md` for the golden set, `build_profile`, `held_certs`, certification years and "required"/"preferred" found only the module-level description in those two pages. They name `render_resume`, `validate_facts`, `check_suite`, `_check_cell_matches_facts`, `render_pair` and `_check_pair_terms` by symbol, and say nothing about which credential a posting requires or how a credential's year is chosen, which is all this branch changes in `golden_set.py`. No page cites the design doc.
+
+**Not verified:** this is a read for contradiction, not a grounding audit. `scripts.wiki_cites` and the wiki tests run in the quality gate, and bare line cites into `golden_set.py` (item 178's class) are not re-anchored by this check.

@@ -179,12 +179,12 @@
         {
           "issuer": "Driver Safety Council",
           "name": "Driver Safety Certificate",
-          "year": "2022"
+          "year": "2019"
         },
         {
           "issuer": "State Motor Vehicle Agency",
           "name": "Commercial Driver Licence",
-          "year": "2025"
+          "year": "2020"
         },
         {
           "issuer": "State Motor Vehicle Agency",
@@ -266,7 +266,7 @@
       "allowed_numbers": [
         "9"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Pre-trip inspections, Cargo documentation, Defensive driving, Fuel and mileage logs, Route planning, Vehicle maintenance checks, and 9 or more years of experience. State Driver Safety Certificate as a required licence or certification. State Dispatch Coordinator Certificate as preferred.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Pre-trip inspections, Cargo documentation, Defensive driving, Fuel and mileage logs, Route planning, Vehicle maintenance checks, and 9 or more years of experience. State Hazardous Materials Endorsement as a required licence or certification. State Dispatch Coordinator Certificate as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -278,7 +278,7 @@
         "Fuel and mileage logs",
         "Route planning",
         "Vehicle maintenance checks",
-        "Driver Safety Certificate",
+        "Hazardous Materials Endorsement",
         "Dispatch Coordinator Certificate"
       ]
     },

@@ -180,12 +180,12 @@
         {
           "issuer": "Medical Assisting Certification Board",
           "name": "Certified Medical Assistant Credential",
-          "year": "2026"
+          "year": "2013"
         },
         {
           "issuer": "Clinical Skills Council",
           "name": "Phlebotomy Certificate",
-          "year": "2017"
+          "year": "2013"
         }
       ],
       "kind": "certifications"
@@ -262,7 +262,7 @@
       "allowed_numbers": [
         "13"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Injections, Epic Systems, Blood draws, Prior authorizations, Patient messaging, Patient intake, and 13 or more years of experience. State Certified Medical Assistant Credential as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Injections, Epic Systems, Blood draws, Prior authorizations, Patient messaging, Patient intake, and 13 or more years of experience. State Phlebotomy Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -274,7 +274,7 @@
         "Prior authorizations",
         "Patient messaging",
         "Patient intake",
-        "Certified Medical Assistant Credential"
+        "Phlebotomy Certificate"
       ]
     },
     "r1.b1": {

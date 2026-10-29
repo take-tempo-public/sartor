@@ -177,12 +177,12 @@
         {
           "issuer": "Information Assurance Guild",
           "name": "Security Analyst Certificate",
-          "year": "2026"
+          "year": "2019"
         },
         {
           "issuer": "Incident Response Society",
           "name": "Incident Handler Certificate",
-          "year": "2023"
+          "year": "2024"
         }
       ],
       "kind": "certifications"
@@ -269,7 +269,7 @@
       "allowed_numbers": [
         "8"
       ],
-      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Phishing simulation, Access reviews, Penetration testing, Incident response, Python, Vulnerability scanning, and 8 or more years of experience. State Security Analyst Certificate as a required licence or certification.",
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Phishing simulation, Access reviews, Penetration testing, Incident response, Python, Vulnerability scanning, and 8 or more years of experience. State Incident Handler Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -281,7 +281,7 @@
         "Incident response",
         "Python",
         "Vulnerability scanning",
-        "Security Analyst Certificate"
+        "Incident Handler Certificate"
       ]
     },
     "r1.b1": {

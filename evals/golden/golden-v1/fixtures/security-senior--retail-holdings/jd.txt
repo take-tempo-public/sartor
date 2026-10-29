@@ -2,21 +2,19 @@ Senior Security Engineer
 Oakhurst Retail Holdings — Remote (US)
 
 Position summary
-Oakhurst Retail Holdings, a national retailer, seeks a Senior Security Engineer to strengthen the protection of its stores, systems and customer data. The engineer will assess security risk, guide remediation and support incident response across the organization.
-Minimum: experience in security engineering, incident response and vulnerability management.
-Preferred: experience in a retail environment.
+Oakhurst Retail Holdings, a national retailer, seeks a Senior Security Engineer to protect its stores, systems and customer data. The engineer will track vulnerability remediation, maintain security policy and deliver security awareness training across the company. Minimum qualifications include incident response, penetration testing and access review experience. An incident handling certification is required. Retail industry experience is preferred.
 
 Responsibilities
-- Track vulnerability fixes from discovery through remediation and report status to system owners.
-- Write and maintain security policy documentation and supporting standards.
-- Plan and deliver security awareness training for store and corporate staff.
-- Review proposed access and network changes for security risk.
-- Coordinate with IT and business teams to set and communicate security priorities.
+- Track vulnerability fixes from discovery through verified closure and report remediation status to technology leaders.
+- Write, review and maintain security policy documentation, standards and procedures.
+- Design and deliver security awareness training for store, distribution and corporate staff.
+- Coordinate with engineering teams to prioritize remediation of high-risk findings.
+- Keep security procedures current as systems and threats change.
 
 Minimum and preferred qualifications
 - 8 or more years of experience in information security.
 - Hands-on experience with incident response, penetration testing and vulnerability scanning.
 - Experience running phishing simulation programs and access reviews.
 - Working knowledge of Python for security automation.
-- Security Analyst Certificate required.
-- Preferred: experience securing retail environments.
+- Incident Handler Certificate required.
+- Experience in a retail environment preferred.

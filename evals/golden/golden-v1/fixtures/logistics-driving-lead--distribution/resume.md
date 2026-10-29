@@ -4,36 +4,36 @@ taylor.park@example.com | (555) 010-4012 | linkedin.com/in/example-taylor-logist
 
 ## Summary
 
-Transportation supervisor with 15 years of experience in truck driving and dispatch, currently leading a driver team and answering for its safety and delivery results. Skilled in cargo documentation, trailer coupling and defensive driving, backed by a hazardous materials endorsement and a commercial driver licence.
+Transportation supervisor with 15 years in truck driving and dispatch, leading a driver team and answering for its safety and delivery results. Brings hands-on skill in cargo documentation, trailer coupling and defensive driving, backed by a commercial driver licence and hazardous materials endorsement.
 
 ## Experience
 
 ### Transportation Supervisor — Tidewater Haulers
 *May 2018 – present*
 
-- Coordinates trailer coupling schedules with dispatch, cutting yard departure delays by 20 percent.
-- Trains new drivers on cargo documentation standards, covering load paperwork checks before each departure.
-- Secures and checks loads before release and audits hours-of-service logging, reducing load and log discrepancies by 30 percent.
-- Maintains driver logs for the team and reinforces defensive driving practices during regular log reviews.
+- Coordinates with dispatch on load assignments and trailer coupling checks, cutting yard turnaround time by 20 percent.
+- Trains new drivers in cargo documentation and reviews their paperwork until they complete it accurately on their own.
+- Supervises load securement checks and hours-of-service logging, reducing load-related compliance findings by 30 percent.
+- Reviews driver logs each week and pairs the findings with defensive driving coaching for drivers who need it.
 - Enforces pre-trip inspections across the fleet, raising on-time customer deliveries by 45 percent.
 
 ### Senior Truck Driver — Granite Ridge Transport
 *December 2014 – May 2018*
 
-- Applied route planning to regional runs, shortening average delivery times by 25 percent.
-- Reported vehicle defects promptly while applying hazmat handling procedures to keep regulated loads safe and compliant.
-- Built driver schedules and routes from fuel and mileage logs, reducing empty miles by 45 percent.
-- Completed pre-trip vehicle inspections and checked trailer coupling before every departure.
-- Coordinated with dispatch on cargo documentation, cutting paperwork errors at delivery by 30 percent.
+- Used route planning to choose regional delivery routes, cutting empty miles by 25 percent.
+- Reported vehicle and trailer defects before hazardous loads, applying hazmat handling rules to keep unsafe equipment off the road.
+- Built driver schedules and routes from fuel and mileage logs, lowering fuel cost per mile by 45 percent.
+- Performed pre-trip vehicle inspections, including trailer coupling checks before every departure.
+- Coordinated with dispatch on pickups and drop-offs, keeping cargo documentation complete and cutting paperwork holds by 30 percent.
 
 ### Class A Truck Driver — Stonebridge Logistics
 *July 2011 – December 2014*
 
-- Kept accurate hours-of-service logging on every run, improving on-time customer deliveries by 10 percent.
-- Planned routes around traffic and weather conditions, using defensive driving to keep each trip safe.
-- Performed pre-trip inspections and reported vehicle defects early, cutting roadside breakdowns by 50 percent.
-- Combined pre-trip vehicle inspections with route planning so each truck left ready for its assigned run.
-- Worked with dispatch on hazmat handling requirements, reducing load hold-ups by 30 percent.
+- Kept accurate hours-of-service logging on every route, improving on-time customer deliveries by 10 percent.
+- Planned routes around traffic and weather risks, applying defensive driving on every trip.
+- Completed pre-trip inspections before each shift and reported defects early, reducing roadside breakdowns by 50 percent.
+- Checked tires, brakes and lights during pre-trip vehicle inspections and used route planning to set departure times.
+- Coordinated with dispatch on hazardous loads, following hazmat handling procedures and reducing loading delays by 30 percent.
 
 ## Education
 
@@ -41,9 +41,9 @@ Transportation supervisor with 15 years of experience in truck driving and dispa
 
 ## Certifications
 
-- Driver Safety Certificate — Driver Safety Council, 2014
-- Commercial Driver Licence — State Motor Vehicle Agency, 2025
-- Hazardous Materials Endorsement — State Motor Vehicle Agency, 2019
+- Driver Safety Certificate — Driver Safety Council, 2011
+- Commercial Driver Licence — State Motor Vehicle Agency, 2011
+- Hazardous Materials Endorsement — State Motor Vehicle Agency, 2011
 - Dispatch Coordinator Certificate — Freight Operations Council, 2011
 
 ## Skills

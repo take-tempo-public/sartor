@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2018",
       "issuer": "Project Practice Institute",
       "name": "Project Practitioner Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2020",
+      "issued": "2018",
       "issuer": "Delivery Practice Society",
       "name": "Agile Delivery Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Manages change requests through resource planning, cutting turnaround on approved changes by 20 percent across active projects."
+          "text": "Manages change requests through resource planning across delivery teams, cutting approval turnaround by 20 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Runs budget reviews with project leads, using Jira to link spend against open work items."
+          "text": "Runs monthly budget reviews in Jira, tying spend to open work items so variances surface early."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintains risk and issue logs tied to weekly status reporting, reducing overdue issues by 20 percent."
+          "text": "Maintains risk and issue logs alongside weekly status reporting, reducing overdue issues by 20 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reports to the steering committee with Gantt scheduling views that show milestone progress and slippage."
+          "text": "Presents progress to the steering committee using Gantt scheduling to show critical-path changes and decisions needed."
         }
       ],
       "company": "Kestrel Works",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Manages a portfolio of related projects at Kestrel Works, coordinating shared resources and timelines."
+          "text": "Manages a portfolio of related projects at Kestrel Works, coordinating shared resources, dependencies and timelines across teams."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads budget reviews for Kestrel Works projects, comparing planned and actual spend with project leads."
+          "text": "Leads regular budget reviews at Kestrel Works, comparing planned and actual spend and agreeing corrective actions with project owners."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated vendors through shared Confluence pages, reducing delivery delays by 10 percent."
+          "text": "Coordinated vendors through shared Confluence pages for scope, contacts and deliverables, reducing missed vendor deadlines by 10 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked schedules and milestones alongside budget tracking, flagging variances to project sponsors early."
+          "text": "Tracked schedules and milestones together with budget tracking, flagging slippage and cost overruns in the same weekly review."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Handled change requests within Agile ceremonies, shortening review time by 20 percent."
+          "text": "Handled change requests within Agile ceremonies, which shortened change review time by 20 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran budget reviews supported by risk registers, linking cost exposure to open risks."
+          "text": "Led budget reviews backed by risk registers, linking each funding decision to the risks it addressed."
         }
       ],
       "company": "Alder Systems",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Coordinated vendors for Alder Systems projects, aligning contracts, deliverables and timelines with internal teams."
+          "text": "Managed vendor coordination at Alder Systems, keeping external suppliers aligned with project scope, schedules and deliverables."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Managed project close-out at Alder Systems, confirming deliverables, handover and final documentation."
+          "text": "Oversaw project close-out at Alder Systems, confirming deliverables, closing open items and handing completed work to operations."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained risk and issue logs with resource planning input, cutting unassigned issues by 50 percent."
+          "text": "Kept risk and issue logs current and used resource planning to assign owners, cutting unresolved issues by 50 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Supported project close-out by reconciling open Jira tickets and archiving final records."
+          "text": "Closed out projects by reconciling open Jira tickets and archiving final documentation for handover."
         },
         {
           "display_order": 2,
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated vendors through status reporting, improving on-time vendor updates by 25 percent."
+          "text": "Coordinated vendor updates through regular status reporting, improving on-time vendor deliveries by 25 percent."
         },
         {
           "display_order": 3,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracked schedules and milestones using Gantt scheduling, keeping project plans current for managers."
+          "text": "Tracked schedules and milestones with Gantt scheduling, alerting project managers to slipping dates."
         }
       ],
       "company": "Pinecrest Labs",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported project close-out at Pinecrest Labs, gathering sign-offs and closing outstanding tasks."
+          "text": "Supported project close-out at Pinecrest Labs, gathering final documents, closing open tasks and preparing handover materials."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Logged and routed change requests at Pinecrest Labs, keeping change records complete for project managers."
+          "text": "Coordinated change requests at Pinecrest Labs, logging each request and tracking it through review and approval."
         }
       ],
       "titles": [
@@ -381,7 +381,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior project manager with 9 years of experience leading delivery across project portfolios. Sets how the team handles risk, using risk registers, Agile ceremonies and status reporting to keep issues visible and owned."
+      "text": "Senior project manager with about 9 years of experience setting how delivery teams handle risk and progress tracking. Runs Agile ceremonies, maintains risk registers and leads status reporting to keep projects on schedule and stakeholders informed."
     },
     {
       "display_order": 1,
@@ -392,7 +392,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Project management professional with about 9 years of experience, from coordination to senior project leadership. Defines the team's approach to delivery tracking through Agile ceremonies, risk registers and status reporting."
+      "text": "Project management professional with about 9 years of experience who defines how teams track and report project health. Combines Agile ceremonies, risk registers and status reporting into a consistent working approach across projects."
     }
   ],
   "tags": []

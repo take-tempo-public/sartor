@@ -184,12 +184,12 @@
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprenticeship Completion Certificate",
-          "year": "2021"
+          "year": "2019"
         },
         {
           "issuer": "Carpenters Training Council",
           "name": "Lead Carpenter Certificate",
-          "year": "2017"
+          "year": "2021"
         }
       ],
       "kind": "certifications"
@@ -266,7 +266,7 @@
       "allowed_numbers": [
         "9"
       ],
-      "brief": "A 'What you need' heading and four to six bullet lines. Require Rafter cutting, Door and window installation, Stair building, Concrete forming, Subfloor installation, Cabinet installation, and 9 or more years of experience. State Construction Safety Card as a required licence or certification. State Crew Supervisor Certificate as preferred.",
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Rafter cutting, Door and window installation, Stair building, Concrete forming, Subfloor installation, Cabinet installation, and 9 or more years of experience. State Lead Carpenter Certificate as a required licence or certification. State Crew Supervisor Certificate as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -278,7 +278,7 @@
         "Concrete forming",
         "Subfloor installation",
         "Cabinet installation",
-        "Construction Safety Card",
+        "Lead Carpenter Certificate",
         "Crew Supervisor Certificate"
       ]
     },

@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2019",
       "issuer": "Driver Safety Council",
       "name": "Driver Safety Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2020",
       "issuer": "State Motor Vehicle Agency",
       "name": "Commercial Driver Licence"
     },
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Trains new drivers on pre-trip inspections, cutting missed defects among new hires by 50 percent."
+          "text": "Trains new drivers on pre-trip inspections and safe vehicle handling, cutting inspection-related delays by 50 percent."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performs pre-trip vehicle inspections and checks bills of lading against each load before departure."
+          "text": "Carries out pre-trip vehicle inspections and checks bills of lading against each load before leaving the yard."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Secures and checks loads after trailer coupling, reducing load shift incidents by 40 percent."
+          "text": "Secures and checks every load, applying careful trailer coupling to reduce load shift incidents by 40 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with dispatch on delivery changes and keeps cargo documentation current for each stop."
+          "text": "Coordinates with dispatch on pickups and drop-offs, keeping cargo documentation complete and current for each run."
         }
       ],
       "company": "Granite Ridge Transport",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Builds driver schedules and routes for the Granite Ridge Transport team while also driving as a senior truck driver."
+          "text": "Builds driver schedules and routes for the Granite Ridge Transport team while driving as a Senior Truck Driver."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Drives for Granite Ridge Transport and reports vehicle defects so repairs are made before trucks return to the road."
+          "text": "Drives as a Senior Truck Driver at Granite Ridge Transport and reports vehicle defects promptly so trucks are repaired before they return to the road."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Kept accurate driver logs and applied defensive driving on every route, reducing preventable incidents by 20 percent."
+          "text": "Kept accurate driver logs and practised defensive driving on every route, lowering incident reports by 20 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reported vehicle defects promptly and maintained hours-of-service logging to keep each truck and driver compliant."
+          "text": "Reported vehicle defects to maintenance as soon as they were found, using hours-of-service logging to record downtime accurately."
         },
         {
           "display_order": 2,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Planned routes around delivery windows and collected customer signoff at each stop, cutting late deliveries by 35 percent."
+          "text": "Planned routes ahead of each run and confirmed customer signoff at delivery, reducing disputed deliveries by 35 percent."
         },
         {
           "display_order": 3,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Completed pre-trip vehicle inspections and recorded results alongside fuel and mileage logs for every trip."
+          "text": "Performed pre-trip vehicle inspections and kept fuel and mileage logs up to date for each truck."
         }
       ],
       "company": "Tidewater Haulers",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Planned Class A truck routes at Tidewater Haulers to meet delivery windows and keep trips efficient."
+          "text": "Planned routes for Class A loads at Tidewater Haulers, balancing delivery windows with safe driving time."
         },
         {
           "display_order": 1,
@@ -242,7 +242,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Secured and checked loads during pre-trip inspections, reducing damaged deliveries by 50 percent."
+          "text": "Secured and checked loads before departure, using pre-trip inspections to cut damaged deliveries by 50 percent."
         },
         {
           "display_order": 1,
@@ -253,7 +253,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with dispatch on pickups and changes, checking bills of lading before each departure."
+          "text": "Coordinated with dispatch on delivery changes and kept bills of lading matched to each shipment."
         },
         {
           "display_order": 2,
@@ -264,7 +264,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Handled trailer coupling quickly to stay on schedule, raising on-time customer deliveries by 20 percent."
+          "text": "Delivered to customers on time, using quick and correct trailer coupling to shorten yard departures by 20 percent."
         },
         {
           "display_order": 3,
@@ -275,7 +275,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained driver logs and cargo documentation for each delivery route."
+          "text": "Maintained driver logs alongside cargo documentation for every stop on the delivery route."
         }
       ],
       "company": "Stonebridge Logistics",
@@ -295,7 +295,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Kept daily driver logs as a delivery driver for Stonebridge Logistics."
+          "text": "Kept daily driver logs as a Delivery Driver for Stonebridge Logistics, recording each stop and shift accurately."
         },
         {
           "display_order": 1,
@@ -305,7 +305,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Delivered goods to Stonebridge Logistics customers on time while working as a delivery driver."
+          "text": "Delivered goods to Stonebridge Logistics customers on time, working to agreed delivery windows on each assigned route."
         }
       ],
       "titles": [
@@ -390,7 +390,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior truck driving and dispatch professional with 9 years of experience who guides newer drivers and takes on difficult loads and routes. Skilled in trailer coupling, fuel and mileage logs and hours-of-service logging, and holds a Commercial Driver Licence with a Hazardous Materials Endorsement."
+      "text": "Senior truck driver with about 9 years of experience in commercial driving and dispatch support, guiding newer drivers and taking on the hardest loads and routes. Skilled in trailer coupling, fuel and mileage logs and hours-of-service logging, and holds a Commercial Driver Licence and Hazardous Materials Endorsement."
     },
     {
       "display_order": 1,
@@ -401,7 +401,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Truck driving and dispatch professional with about 9 years on the road, trusted to coach colleagues and handle hard deliveries and problem loads. Keeps precise fuel and mileage logs and hours-of-service logging and applies careful trailer coupling on every haul."
+      "text": "Truck driving and dispatch professional with about 9 years on the road, the person colleagues turn to for advice and for the most difficult deliveries. Keeps trailer coupling safe, fuel and mileage logs accurate and hours-of-service logging complete on every run."
     }
   ],
   "tags": []

@@ -4,17 +4,17 @@ jordan.brandt@example.com | (555) 010-0132 | linkedin.com/in/example-jordan-elec
 
 ## Summary
 
-Apprentice electrician with about 2 years of experience working under a journeyman who checks all work before sign-off. Brings troubleshooting, load calculations and code compliance to panel installation and wiring tasks on site.
+Apprentice electrician with about 2 years of experience working under a journeyman who checks every job. Brings troubleshooting, load calculations and code compliance to daily site work.
 
 ## Experience
 
 ### Apprentice Electrician — Summit Power Contractors
 *November 2024 – present*
 
-- Installs panels and fixtures, using blueprint reading to confirm layouts before mounting and cutting layout rework by 40 percent.
-- Runs conduit between panels and fixtures, relying on safe power tool use to cut, bend and fasten each run to plan.
-- Pulls and terminates wire for motor controls circuits, reducing termination errors found at inspection by 50 percent.
-- Traces faults in circuits and equipment through multimeter use, isolating each problem before the journeyman reviews the repair.
+- Installs panels and fixtures from the drawings, using blueprint reading to plan each layout and cutting rework on finished installs by 40 percent.
+- Runs conduit through job sites, applying safe power tool use to cut, bend and fasten each run to plan.
+- Pulls and terminates wire for motor controls circuits, labelling each conductor and reducing termination errors found at inspection by 50 percent.
+- Traces faults in branch circuits through careful multimeter use, isolating open and shorted conductors before repairs begin.
 
 ## Education
 
@@ -22,8 +22,8 @@ Apprentice electrician with about 2 years of experience working under a journeym
 
 ## Certifications
 
-- Apprentice Registration Card — State Apprenticeship Council, 2026
-- Construction Safety Card — Safety Training Council, 2025
+- Apprentice Registration Card — State Apprenticeship Council, 2025
+- Construction Safety Card — Safety Training Council, 2026
 
 ## Skills
 

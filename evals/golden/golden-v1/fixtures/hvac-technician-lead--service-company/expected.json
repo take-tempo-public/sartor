@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Running the crew and answering for the job."
       },
-      "edit_replacement": "recording parts and repairs completed through brazing and soldering on, running the crew and answering for the job",
-      "edit_target_substring": "recording parts and repairs completed through brazing and soldering on",
+      "edit_replacement": "parts used and test results before closing the ticket., running the crew and answering for the job",
+      "edit_target_substring": "parts used and test results before closing the ticket.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Heat pump service exposure not yet covered by prior clarifications"

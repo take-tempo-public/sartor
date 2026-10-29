@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Doing the work to code on my own."
       },
-      "edit_replacement": "Reads plans and measures each room before cutting finish trim, doing the work to code on my own",
-      "edit_target_substring": "Reads plans and measures each room before cutting finish trim",
+      "edit_replacement": "so casing and base fit tight on the first install., doing the work to code on my own",
+      "edit_target_substring": "so casing and base fit tight on the first install.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Framing exposure not yet covered by prior clarifications"

@@ -4,33 +4,33 @@ riley.chen@example.com | (555) 010-5445 | linkedin.com/in/example-riley-project-
 
 ## Summary
 
-Senior project manager with 9 years of experience leading delivery across project portfolios. Sets how the team handles risk, using risk registers, Agile ceremonies and status reporting to keep issues visible and owned.
+Senior project manager with about 9 years of experience setting how delivery teams handle risk and progress tracking. Runs Agile ceremonies, maintains risk registers and leads status reporting to keep projects on schedule and stakeholders informed.
 
 ## Experience
 
 ### Senior Project Manager — Kestrel Works
 *December 2022 – present*
 
-- Manages change requests through resource planning, cutting turnaround on approved changes by 20 percent across active projects.
-- Runs budget reviews with project leads, using Jira to link spend against open work items.
-- Maintains risk and issue logs tied to weekly status reporting, reducing overdue issues by 20 percent.
-- Reports to the steering committee with Gantt scheduling views that show milestone progress and slippage.
+- Manages change requests through resource planning across delivery teams, cutting approval turnaround by 20 percent.
+- Runs monthly budget reviews in Jira, tying spend to open work items so variances surface early.
+- Maintains risk and issue logs alongside weekly status reporting, reducing overdue issues by 20 percent.
+- Presents progress to the steering committee using Gantt scheduling to show critical-path changes and decisions needed.
 
 ### Project Manager — Alder Systems
 *May 2020 – December 2022*
 
-- Coordinated vendors through shared Confluence pages, reducing delivery delays by 10 percent.
-- Tracked schedules and milestones alongside budget tracking, flagging variances to project sponsors early.
-- Handled change requests within Agile ceremonies, shortening review time by 20 percent.
-- Ran budget reviews supported by risk registers, linking cost exposure to open risks.
+- Coordinated vendors through shared Confluence pages for scope, contacts and deliverables, reducing missed vendor deadlines by 10 percent.
+- Tracked schedules and milestones together with budget tracking, flagging slippage and cost overruns in the same weekly review.
+- Handled change requests within Agile ceremonies, which shortened change review time by 20 percent.
+- Led budget reviews backed by risk registers, linking each funding decision to the risks it addressed.
 
 ### Project Coordinator — Pinecrest Labs
 *June 2017 – May 2020*
 
-- Maintained risk and issue logs with resource planning input, cutting unassigned issues by 50 percent.
-- Supported project close-out by reconciling open Jira tickets and archiving final records.
-- Coordinated vendors through status reporting, improving on-time vendor updates by 25 percent.
-- Tracked schedules and milestones using Gantt scheduling, keeping project plans current for managers.
+- Kept risk and issue logs current and used resource planning to assign owners, cutting unresolved issues by 50 percent.
+- Closed out projects by reconciling open Jira tickets and archiving final documentation for handover.
+- Coordinated vendor updates through regular status reporting, improving on-time vendor deliveries by 25 percent.
+- Tracked schedules and milestones with Gantt scheduling, alerting project managers to slipping dates.
 
 ## Education
 
@@ -38,8 +38,8 @@ Senior project manager with 9 years of experience leading delivery across projec
 
 ## Certifications
 
-- Project Practitioner Certificate — Project Practice Institute, 2026
-- Agile Delivery Certificate — Delivery Practice Society, 2020
+- Project Practitioner Certificate — Project Practice Institute, 2018
+- Agile Delivery Certificate — Delivery Practice Society, 2018
 
 ## Skills
 

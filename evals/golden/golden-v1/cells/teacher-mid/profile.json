@@ -162,12 +162,12 @@
         {
           "issuer": "State Department of Education",
           "name": "State Teaching Licence",
-          "year": "2024"
+          "year": "2023"
         },
         {
           "issuer": "State Department of Education",
           "name": "Reading Specialist Endorsement",
-          "year": "2022"
+          "year": "2025"
         }
       ],
       "kind": "certifications"
@@ -244,7 +244,7 @@
       "allowed_numbers": [
         "4"
       ],
-      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Classroom management, Parent communication, Math manipulatives, Differentiated instruction, Phonics instruction, Reading intervention, and 4 or more years of experience. State State Teaching Licence as a required licence or certification. State Instructional Leadership Endorsement as preferred.",
+      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Classroom management, Parent communication, Math manipulatives, Differentiated instruction, Phonics instruction, Reading intervention, and 4 or more years of experience. State Reading Specialist Endorsement as a required licence or certification. State Instructional Leadership Endorsement as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -256,7 +256,7 @@
         "Differentiated instruction",
         "Phonics instruction",
         "Reading intervention",
-        "State Teaching Licence",
+        "Reading Specialist Endorsement",
         "Instructional Leadership Endorsement"
       ]
     },

@@ -242,7 +242,7 @@
       "allowed_numbers": [
         "4"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Specimen handling, Appointment scheduling, Insurance verification, Patient intake, Medical coding, Prior authorizations, and 4 or more years of experience. State Certified Medical Assistant Credential as a required licence or certification.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Specimen handling, Appointment scheduling, Insurance verification, Patient intake, Medical coding, Prior authorizations, and 4 or more years of experience. State Phlebotomy Certificate as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -254,7 +254,7 @@
         "Patient intake",
         "Medical coding",
         "Prior authorizations",
-        "Certified Medical Assistant Credential"
+        "Phlebotomy Certificate"
       ]
     },
     "r1.b1": {

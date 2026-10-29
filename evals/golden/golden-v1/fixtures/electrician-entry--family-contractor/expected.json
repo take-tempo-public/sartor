@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Working under a journeyman who checks the work."
       },
-      "edit_replacement": "relying on safe power tool use to cut, working under a journeyman who checks the work",
-      "edit_target_substring": "relying on safe power tool use to cut",
+      "edit_replacement": "applying safe power tool use to cut, working under a journeyman who checks the work",
+      "edit_target_substring": "applying safe power tool use to cut",
       "expected_iteration_themes": {
         "experience_probes": [
           "Fire alarm wiring exposure not yet covered by prior clarifications"

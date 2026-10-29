@@ -13,6 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: three realism faults in the golden set's credentials, 40 cells regenerated, and a first stratified hand-read (`feat/eval-dataset-v1-finish`, item 194, scopes 1 and 2)
+
+**The only paid calls were 42 author requests to `claude-opus-5-5` at effort `medium` ($3.33 logged; the call log reads $11.21 of the $13.00 the owner
+approved), and no dependency was added.** `evals/golden/golden-v1/` is still `draft`: the calibration run, final tier sizes, retiring
+`evals/fixtures/synthetic/` and the freeze (scopes 3 to 6) stay open.
+
+- **Three faults in `build_profile` (`evals/golden_set.py`), each found by hand-reading one regenerated cell, each fixed with a test written first that
+  failed on the old code.** (1) A posting required the *lowest*-tier credential the candidate holds; it now requires the highest. (2) A credential's year was
+  an independent draw over the whole career, so a Master licence could be dated before the Journeyman licence (21 of the 37 multi-credential cells);
+  the sorted draws are now handed out in tier order. (3) A mid-or-higher credential could be dated after the role titled for its tier (28 of 37 by a
+  heuristic I wrote); each is now capped at the start of the earliest role titled for its tier or above. Entry-tier credentials are deliberately not bound.
+- **40 cells regenerated** (the 37 that hold two or more credentials, plus three single-credential cells the third fix reached), none rejected;
+  20 pair fixtures re-derived, and the authored `transferable` terms of three pairs re-picked because the new prose no longer contained them. The
+  `prompt_version` of every cell is still `golden-author-2`. `check` reports `OK (96 cells)`.
+- **A guard over the real matrix** (`tests/test_golden_facts.py`, 24 cases): the posting requires the highest credential held, years do not fall with the
+  tier, and no mid-or-higher credential is dated after its role. It fails if a profession's facts recreate any of the three. Two of the three
+  (years in tier order, the posting requiring the highest credential) are also checked by `validate_profile`, which `author_cell` calls before it
+  spends, so they now fail closed at the point of spend. The third needs the facts' tier map, which a profile does not carry, so it is checked in the
+  gate's tests and not before a paid request.
+- **Hand-read, 16 more cells, 21 final cells in all after regeneration** (23 of 96 with two from item 191): every group, tier and setting, purposive and
+  not random. No grounding fault. Three realism findings are open for the owner in item 194, each measured over all 96 cells: an entry-tier credential
+  dated after the career began (23 credentials in 22 cells), a posting that calls a credential both preferred and required (2 confirmed by reading, up
+  to 8 by a crude heuristic), and a small employer pool (59 names for 216 roles).
+- **Limits, stated:** the dating rule is my heuristic, not a sourced check; the reach of the contradictory-posting finding is not known; the
+  `sales-senior` request of item 191 may have billed, so true spend may be a little above the log; and two of the 40 requests for one cell were
+  discarded after the hand-read found the second and third fault ($0.18), which running the free whole-set audit first would have avoided.
+- Also: `docs/dev/blast-radius/eval-dataset-v1-finish.md` (the consumer enumeration, written before the first edit, with every measurement),
+  `evals/README.md`, and item 194.
+
 ### Added: the golden set's facts for 24 professions, its 96 generated cells and 36 pairs, and a generator that does not pay twice (`feat/eval-dataset-v1`, item 191, eval redesign step 3b-ii)
 
 The first real run of the dataset generator. **The only paid calls were 110 author requests to `claude-opus-5-5` at effort `medium`
@@ -41,9 +70,9 @@ follow-on item.
 - **Found by the bulk run:** a model reply wrapped in a code fence was refused after being paid for (1 in 110), and one request spanned a ten-minute
   Modern Standby of the laptop (`APIConnectionError` after 622.9 s against a 180 s timeout, which counts awake time). Whether the server billed that
   request is unknown: the call log records it with no tokens.
-- **A known defect, not fixed:** in 37 of the 56 cells that hold certifications, the job description requires the *lowest-tier* certification the
-  candidate holds (a foreman posting requires an apprentice card). A realism fault, not a grounding one. Fixing it means regenerating those 37 cells
-  (about $2.8; $2.12 of the $10.00 is left), so it is filed for the owner in item 194.
+- **A known defect, not fixed here (fixed on the next branch, see the entry above):** in 37 of the 56 cells that hold certifications, the job
+  description required the *lowest-tier* certification the candidate holds (a foreman posting required an apprentice card). A realism fault, not a
+  grounding one.
 - **Limits, stated:** the prose of only four of the 96 final cells was hand-read (`teacher-mid`, `electrician-lead`, `security-mid`,
   `social-services-entry`); the rest is checked by the deterministic rules only; no calibration run has
   scored the set, so the real rate of `scenario_misaligned` iteration runs is unmeasured; the lower effort levels were not tried; and the keep-awake

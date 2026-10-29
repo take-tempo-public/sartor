@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
       },
-      "edit_replacement": "Schedule follow-up visits for patients needing repeat lab work and, carrying a full caseload or class without close supervision",
-      "edit_target_substring": "Schedule follow-up visits for patients needing repeat lab work and",
+      "edit_replacement": "Schedules follow-up visits and coordinates specimen handling so lab results, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Schedules follow-up visits and coordinates specimen handling so lab results",
       "expected_iteration_themes": {
         "experience_probes": [
           "Medical coding exposure not yet covered by prior clarifications"

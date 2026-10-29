@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Leading a team or program and answering for its results."
       },
-      "edit_replacement": "keeping client files current and ready for audits and staff, leading a team or program and answering for its results",
-      "edit_target_substring": "keeping client files current and ready for audits and staff",
+      "edit_replacement": "contacts and service histories current for the hospice team., leading a team or program and answering for its results",
+      "edit_target_substring": "contacts and service histories current for the hospice team.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Client advocacy exposure not yet covered by prior clarifications"

@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Planning jobs and checking the work of others."
       },
-      "edit_replacement": "Prepare job estimates for customers that cover building automation controls, planning jobs and checking the work of others",
-      "edit_target_substring": "Prepare job estimates for customers that cover building automation controls",
+      "edit_replacement": "and explains scope and options before work begins., planning jobs and checking the work of others",
+      "edit_target_substring": "and explains scope and options before work begins.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Electrical testing exposure not yet covered by prior clarifications"

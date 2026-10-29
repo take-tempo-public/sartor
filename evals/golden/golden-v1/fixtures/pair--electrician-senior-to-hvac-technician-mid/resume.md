@@ -4,33 +4,33 @@ riley.silva@example.com | (555) 010-5628 | linkedin.com/in/example-riley-electri
 
 ## Summary
 
-Master electrician with about 9 years of experience planning jobs and checking the work of others on electrical installations. Applies blueprint reading, code compliance and troubleshooting to keep projects accurate and ready for inspection.
+Master Electrician with about 9 years of experience planning jobs and checking the work of helpers, apprentices and journeymen. Applies blueprint reading, code compliance and troubleshooting to keep installations accurate and ready for inspection.
 
 ## Experience
 
 ### Master Electrician — Copperfield Electric
 *November 2021 – present*
 
-- Plans jobs and orders materials from approved drawings with code compliance checked at each stage, cutting material waste by 15 percent across projects.
-- Tests circuits after lighting installation work to confirm correct operation before handing systems over to the customer.
-- Directs helpers and apprentices, using blueprint reading to assign tasks and sequence work, reducing rework on job sites by 40 percent.
-- Pulls and terminates wire for new and existing circuits, using circuit testing to verify each connection before energising.
+- Plans jobs and orders materials against code compliance requirements before each start, cutting material returns by 15 percent.
+- Tests circuits on completed work, including lighting installation in new and renovated spaces, before handing systems over to the customer.
+- Directs helpers and apprentices through blueprint reading on each job, reducing layout errors by 40 percent.
+- Pulls and terminates wire on branch and feeder runs, confirming each connection through circuit testing before energizing.
 
 ### Journeyman Electrician — Ashford Industrial Electric
 *January 2019 – November 2021*
 
-- Ran conduit on routes sized through load calculations, reducing material overruns by 20 percent on assigned jobs.
-- Installed panels and fixtures, using conduit bending to fit runs cleanly around existing structures.
-- Tested circuits and applied troubleshooting methods to locate faults, cutting repair time by 40 percent.
-- Pulled and terminated wire with grounding and bonding completed to code on each installation.
+- Ran conduit for new circuits, using load calculations to size runs and fill, and cut rework on conduit routes by 20 percent.
+- Installed panels and fixtures, applying conduit bending to route feeds cleanly around structural obstacles.
+- Tested circuits with methodical troubleshooting, reducing time spent locating faults by 40 percent.
+- Pulled and terminated wire on industrial circuits, applying grounding and bonding practices to each installation.
 
 ### Apprentice Electrician — Brightline Wiring Company
 *June 2017 – January 2019*
 
-- Traced faults under supervision with close attention to code compliance, reducing failed inspections by 15 percent.
-- Read plans to lay out lighting installation work and placed fixtures as drawn.
-- Ran conduit guided by blueprint reading of layout drawings, shortening installation time by 25 percent.
-- Assisted with installing panels and fixtures, using circuit testing to confirm each circuit before energising.
+- Traced faults in existing wiring with attention to code compliance, cutting repeat service calls by 15 percent.
+- Read plans to locate fixtures and switching, supporting lighting installation under journeyman supervision.
+- Ran conduit from plan layouts using blueprint reading, reducing wasted material by 25 percent.
+- Installed panels and fixtures and verified each connection through circuit testing before final inspection.
 
 ## Education
 
@@ -38,10 +38,10 @@ Master electrician with about 9 years of experience planning jobs and checking t
 
 ## Certifications
 
-- Apprentice Registration Card — State Apprenticeship Council, 2022
-- Construction Safety Card — Safety Training Council, 2018
-- Journeyman Electrician Licence — State Licensing Board, 2021
-- Master Electrician Licence — State Licensing Board, 2022
+- Apprentice Registration Card — State Apprenticeship Council, 2017
+- Construction Safety Card — Safety Training Council, 2017
+- Journeyman Electrician Licence — State Licensing Board, 2019
+- Master Electrician Licence — State Licensing Board, 2019
 
 ## Skills
 

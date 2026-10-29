@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting the technical direction for a product area."
       },
-      "edit_replacement": "using Wireshark to replay captured traffic and walk responders through, setting the technical direction for a product area",
-      "edit_target_substring": "using Wireshark to replay captured traffic and walk responders through",
+      "edit_replacement": "using Wireshark captures to walk responders through containment of simulated, setting the technical direction for a product area",
+      "edit_target_substring": "using Wireshark captures to walk responders through containment of simulated",
       "expected_iteration_themes": {
         "experience_probes": [
           "Python exposure not yet covered by prior clarifications"

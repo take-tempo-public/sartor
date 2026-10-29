@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2014",
       "issuer": "Workforce Practice Society",
       "name": "HR Practitioner Certificate"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2018",
+      "issued": "2016",
       "issuer": "Workforce Practice Society",
       "name": "Senior HR Practitioner Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Advises managers on employee relations cases and uses compliance reporting to spot recurring issues, cutting average case resolution time by 40 percent."
+          "text": "Advises managers on employee relations cases and uses compliance reporting to flag recurring issues early, cutting open cases by 40 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads hiring plans with department heads and aligns start dates through payroll coordination so new staff are paid correctly from their first cycle."
+          "text": "Leads hiring plans with department heads and ties each plan to payroll coordination so new roles are budgeted before posting."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Screens candidates against role criteria and connects selection to new hire onboarding, raising first-week readiness of new staff by 55 percent."
+          "text": "Screens candidates against role requirements and moves hires into new hire onboarding, reducing first-week paperwork gaps by 55 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Schedules interviews across hiring teams and runs exit interviews to feed departure themes back into recruiting decisions."
+          "text": "Schedules interviews across hiring teams and runs exit interviews, feeding departure themes back into interview questions."
         },
         {
           "display_order": 4,
@@ -99,7 +99,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Updates company policies and rewrites job postings to match them, reducing applicant questions about role requirements by 45 percent."
+          "text": "Updates HR policies and aligns job postings with each change, reducing candidate questions about role terms by 45 percent."
         }
       ],
       "company": "Oakmont Systems",
@@ -119,7 +119,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Leads the HR function at Oakmont Systems, advising managers on employee relations and guiding them through sensitive staff matters."
+          "text": "Advises managers at Oakmont Systems on employee relations, from early concerns through formal cases."
         },
         {
           "display_order": 1,
@@ -129,7 +129,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Manages HR at Oakmont Systems with oversight of new hire paperwork, making sure every new employee's records are complete before day one."
+          "text": "Oversees new hire paperwork at Oakmont Systems so every hire starts with complete, accurate records."
         }
       ],
       "titles": [
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained HR records for performance review cycles across business units, cutting missing or incomplete review files by 35 percent."
+          "text": "Kept HR records current through each round of performance review cycles, reducing missing review files by 35 percent."
         },
         {
           "display_order": 1,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Answered employee benefits questions and drafted offer letters that set out benefits terms clearly for incoming hires."
+          "text": "Answered employee benefits questions and drafted offer letters that set out benefits terms clearly for new hires."
         },
         {
           "display_order": 2,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Resolved employee concerns through policy writing that clarified grievance steps, lowering repeat complaints by 15 percent."
+          "text": "Handled employee concerns and used policy writing to clarify grievance steps, lowering repeat complaints by 15 percent."
         },
         {
           "display_order": 3,
@@ -188,7 +188,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Processed new hire paperwork and kept employee files complete to support accurate compliance reporting to leadership."
+          "text": "Processed new hire paperwork and tracked completion through compliance reporting for each hiring group."
         },
         {
           "display_order": 4,
@@ -199,7 +199,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Guided managers on employee relations and handled payroll coordination for leave and disciplinary changes, reducing pay corrections by 10 percent."
+          "text": "Advised managers on employee relations and used payroll coordination to resolve pay disputes, reducing payroll escalations by 10 percent."
         }
       ],
       "company": "Lantern Hill",
@@ -219,7 +219,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Served as Senior HR Business Partner at Lantern Hill, overseeing new hire paperwork and keeping onboarding records accurate."
+          "text": "Managed new hire paperwork at Lantern Hill as Senior HR Business Partner, keeping files complete for each new start."
         },
         {
           "display_order": 1,
@@ -229,7 +229,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Supported Lantern Hill employees and managers as Senior HR Business Partner, answering benefits questions and explaining coverage options."
+          "text": "Served as the main contact for benefits questions at Lantern Hill, giving employees and managers clear answers."
         }
       ],
       "titles": [
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Kept HR records current for new hire onboarding, reducing incomplete employee files by 55 percent."
+          "text": "Maintained HR records for new hire onboarding and cut incomplete employee files by 55 percent."
         },
         {
           "display_order": 1,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Answered staff benefits questions and conducted exit interviews to explain benefits continuation for departing employees."
+          "text": "Responded to staff benefits questions and conducted exit interviews to explain benefits continuation for departing employees."
         },
         {
           "display_order": 2,
@@ -277,7 +277,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Addressed employee concerns about internal transfers by revising job postings, increasing internal applications by 20 percent."
+          "text": "Addressed employee concerns about internal openings by rewriting job postings, raising internal applications by 20 percent."
         },
         {
           "display_order": 3,
@@ -288,7 +288,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Completed new hire paperwork and set up records for performance review cycles from each employee's start date."
+          "text": "Completed new hire paperwork and enrolled each new employee in performance review cycles from their start date."
         },
         {
           "display_order": 4,
@@ -299,7 +299,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Screened candidates for hospital roles and prepared offer letters, cutting time from final interview to offer by 45 percent."
+          "text": "Screened candidates and prepared offer letters promptly, shortening time from final interview to offer by 45 percent."
         }
       ],
       "company": "Eastgate Regional Hospital",
@@ -319,7 +319,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Worked as HR Generalist at Eastgate Regional Hospital, screening candidates for open positions across hospital departments."
+          "text": "Screened candidates for open positions at Eastgate Regional Hospital and passed qualified applicants to hiring managers."
         },
         {
           "display_order": 1,
@@ -329,7 +329,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Supported Eastgate Regional Hospital as HR Generalist, keeping HR records accurate and up to date for hospital staff."
+          "text": "Kept HR records accurate and up to date for staff at Eastgate Regional Hospital."
         }
       ],
       "titles": [
@@ -414,7 +414,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "HR manager with 13 years of experience leading a team and answering for the results of the HR function. Runs performance review cycles, compliance reporting and job postings, and advises managers on employee relations."
+      "text": "HR manager with 13 years of experience leading a team and answering for the results of the human resources function. Runs performance review cycles, compliance reporting and job postings, and holds the Senior HR Practitioner Certificate."
     },
     {
       "display_order": 1,
@@ -425,7 +425,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Human resources leader with 13 years of experience who manages a team and owns the outcomes of the function. Brings hands-on depth in performance review cycles, compliance reporting, job postings, new hire onboarding and policy writing."
+      "text": "Human resources leader with 13 years of experience across hospital, business partner and management roles, accountable for team output and function results. Brings hands-on depth in performance review cycles, compliance reporting, job postings and policy writing."
     }
   ],
   "tags": []

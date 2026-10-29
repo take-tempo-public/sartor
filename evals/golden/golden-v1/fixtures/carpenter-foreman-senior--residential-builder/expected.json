@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Planning jobs and checking the work of others."
       },
-      "edit_replacement": "Run daily site walk-throughs and keep jobsite safety standards in, planning jobs and checking the work of others",
-      "edit_target_substring": "Run daily site walk-throughs and keep jobsite safety standards in",
+      "edit_replacement": "tools and walkways with the crew before work begins., planning jobs and checking the work of others",
+      "edit_target_substring": "tools and walkways with the crew before work begins.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Cabinet installation exposure not yet covered by prior clarifications"

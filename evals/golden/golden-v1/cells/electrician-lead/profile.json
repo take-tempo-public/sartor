@@ -180,22 +180,22 @@
         {
           "issuer": "State Apprenticeship Council",
           "name": "Apprentice Registration Card",
-          "year": "2023"
+          "year": "2013"
         },
         {
           "issuer": "Safety Training Council",
           "name": "Construction Safety Card",
-          "year": "2020"
+          "year": "2013"
         },
         {
           "issuer": "State Licensing Board",
           "name": "Journeyman Electrician Licence",
-          "year": "2026"
+          "year": "2013"
         },
         {
           "issuer": "State Licensing Board",
           "name": "Master Electrician Licence",
-          "year": "2019"
+          "year": "2017"
         }
       ],
       "kind": "certifications"
@@ -272,7 +272,7 @@
       "allowed_numbers": [
         "14"
       ],
-      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Wire pulling, Troubleshooting, Lighting installation, Code compliance, Load calculations, Blueprint reading, and 14 or more years of experience. State Apprentice Registration Card as a required licence or certification.",
+      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Wire pulling, Troubleshooting, Lighting installation, Code compliance, Load calculations, Blueprint reading, and 14 or more years of experience. State Master Electrician Licence as a required licence or certification.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -284,7 +284,7 @@
         "Code compliance",
         "Load calculations",
         "Blueprint reading",
-        "Apprentice Registration Card"
+        "Master Electrician Licence"
       ]
     },
     "r1.b1": {

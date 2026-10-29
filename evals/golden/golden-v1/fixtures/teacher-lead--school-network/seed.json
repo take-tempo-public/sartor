@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2014",
       "issuer": "State Department of Education",
       "name": "State Teaching Licence"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2017",
+      "issued": "2014",
       "issuer": "State Department of Education",
       "name": "Reading Specialist Endorsement"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2019",
+      "issued": "2015",
       "issuer": "State Department of Education",
       "name": "Instructional Leadership Endorsement"
     }
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Leads small-group reading sessions and uses math manipulatives in paired numeracy lessons, lifting benchmark scores for targeted students by 25 percent."
+          "text": "Leads small-group reading and numeracy blocks built around math manipulatives, lifting student benchmark scores by 25 percent."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans daily lessons with teachers, building classroom management routines into each lesson so transitions stay calm and instruction time is protected."
+          "text": "Plans daily lessons with teachers that build in classroom management routines, keeping instruction time focused."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Sets up consistent classroom routines through Google Classroom, cutting time lost to missing or late assignments by 10 percent."
+          "text": "Sets up classroom routines in Google Classroom for posting assignments and feedback, cutting late submissions by 10 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Directs grade-level planning meetings, using Seesaw to share student work samples and agree on next steps for each unit."
+          "text": "Guides grade-level planning meetings and uses Seesaw to share student work samples that shape upcoming units."
         },
         {
           "display_order": 4,
@@ -108,7 +108,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coaches colleagues on phonics instruction through modeled lessons and feedback cycles, contributing to a 20 percent gain in early reading scores."
+          "text": "Coaches colleagues on phonics instruction through modeling and feedback cycles, raising early reading screening pass rates by 20 percent."
         }
       ],
       "company": "Cedar Grove Academy",
@@ -128,7 +128,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Coaches teachers at Cedar Grove Academy and joins parent conferences to explain student progress and agree on support at home and school."
+          "text": "Supports teachers at Cedar Grove Academy in preparing for and leading parent conferences with clear evidence of each student's progress."
         },
         {
           "display_order": 1,
@@ -138,7 +138,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Supports teachers at Cedar Grove Academy in assessing student progress and using the results to adjust daily instruction."
+          "text": "Coaches teachers at Cedar Grove Academy on assessing student progress and using the results to adjust instruction."
         }
       ],
       "titles": [
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Used Nearpod lesson reports in parent conferences to show each child's progress, raising conference attendance by 25 percent."
+          "text": "Ran parent conferences using Nearpod lesson reports to show student work, increasing conference attendance by 25 percent."
         },
         {
           "display_order": 1,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated team planning with grade-level colleagues, aligning small-group instruction across classrooms so students received consistent support."
+          "text": "Led team planning with grade-level colleagues to align small-group instruction across classrooms."
         },
         {
           "display_order": 2,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tightened lesson planning around regular checks of student progress, increasing the number of students reaching grade-level targets by 50 percent."
+          "text": "Tracked student progress through regular checks tied to lesson planning, cutting the number of students below benchmark by 50 percent."
         },
         {
           "display_order": 3,
@@ -197,7 +197,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Adapted math work for different learners with math manipulatives, giving students who struggled with abstract problems a concrete way in."
+          "text": "Adapted math work for different learners with math manipulatives, giving each student a concrete entry point to new concepts."
         },
         {
           "display_order": 4,
@@ -208,7 +208,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran small-group reading blocks backed by clear classroom management routines, reducing off-task behavior during reading time by 50 percent."
+          "text": "Built small-group reading blocks on steady classroom management, reducing off-task interruptions by 50 percent."
         }
       ],
       "company": "Willowbrook Elementary School",
@@ -228,7 +228,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Led teaching at Willowbrook Elementary School with a focus on assessing student progress and sharing findings with the grade-level team."
+          "text": "Led a classroom and teaching team at Willowbrook Elementary School, with a focus on assessing student progress and acting on the findings."
         },
         {
           "display_order": 1,
@@ -238,7 +238,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Taught and led colleagues at Willowbrook Elementary School, adapting work so students with different needs could reach the same goals."
+          "text": "Served as lead teacher at Willowbrook Elementary School, adapting work so different learners could reach grade-level goals."
         }
       ],
       "titles": [
@@ -264,7 +264,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Shared assignments and feedback through Google Classroom ahead of parent conferences, increasing parent follow-up on home learning by 40 percent."
+          "text": "Shared student work through Google Classroom ahead of parent conferences, raising family participation by 40 percent."
         },
         {
           "display_order": 1,
@@ -275,7 +275,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Planned units with grade-level colleagues and used Seesaw to collect student work for shared review."
+          "text": "Planned units with grade-level colleagues and used Seesaw to collect and compare student work."
         },
         {
           "display_order": 2,
@@ -286,7 +286,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assessed student progress in phonics instruction with regular decoding checks, lifting the share of students reading at grade level by 45 percent."
+          "text": "Assessed student progress in phonics instruction with weekly checks, increasing the share of students reading at grade level by 45 percent."
         },
         {
           "display_order": 3,
@@ -297,7 +297,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Built Nearpod lessons with tiered activities, adapting work for different learners within the same class period."
+          "text": "Adapted lessons for different learners with Nearpod, offering varied practice and pacing within a single lesson."
         },
         {
           "display_order": 4,
@@ -308,7 +308,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Delivered small-group instruction in daily reading groups, raising reading fluency scores for targeted students by 20 percent."
+          "text": "Delivered small-group instruction in reading for students below benchmark, raising their fluency scores by 20 percent."
         }
       ],
       "company": "Maple Street School",
@@ -328,7 +328,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Taught a general classroom at Maple Street School, adapting work so learners at different levels could take part in each lesson."
+          "text": "Taught at Maple Street School, adapting work for different learners across reading and math."
         },
         {
           "display_order": 1,
@@ -338,7 +338,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Taught at Maple Street School with daily small-group reading sessions matched to each student's needs."
+          "text": "Classroom teacher at Maple Street School who ran daily small-group reading for students at a range of levels."
         }
       ],
       "titles": [
@@ -423,7 +423,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Lead-level elementary educator with 12 years of experience leading grade-level teams and coaching teachers, answerable for the reading and math results of the classrooms supported. Uses Nearpod, Google Classroom and small-group instruction to plan lessons, track student progress and help colleagues adjust their teaching."
+      "text": "Lead-level elementary educator with 12 years of experience teaching, leading teams and coaching teachers. Answers for program results through small-group instruction, phonics work and digital tools such as Nearpod and Google Classroom."
     },
     {
       "display_order": 1,
@@ -434,7 +434,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Elementary teaching professional with 12 years in schools, now coaching teachers and leading planning work with responsibility for the results it produces. Brings hands-on use of small-group instruction, Nearpod and Google Classroom to reading and math teaching, and holds endorsements in reading and instructional leadership."
+      "text": "Elementary teaching professional with 12 years in classrooms and coaching, currently leading instructional work and owning its outcomes. Uses small-group instruction, Nearpod and Google Classroom to plan lessons, track progress and support colleagues."
     }
   ],
   "tags": []

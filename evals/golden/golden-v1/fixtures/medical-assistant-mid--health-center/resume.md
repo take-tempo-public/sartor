@@ -4,25 +4,25 @@ morgan.chen@example.com | (555) 010-5310 | linkedin.com/in/example-morgan-medica
 
 ## Summary
 
-Medical assisting professional with about 4 years of experience who carries a full patient caseload without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, specimen handling and vital signs, and holds the Certified Medical Assistant Credential.
+Medical assisting professional with about 4 years of experience carrying a full patient load without close supervision. Skilled in Epic Systems, appointment scheduling, patient intake, vital signs and specimen handling.
 
 ## Experience
 
 ### Medical Assistant — Sutter Street Shop
 *December 2024 – present*
 
-- Record vital signs for each roomed patient and enter readings before the provider visit, cutting charting corrections by 30 percent.
-- Schedule follow-up visits for patients needing repeat lab work and coordinate specimen handling so samples are labeled and sent before checkout.
-- Relay physician instructions to patients at discharge and manage instrument sterilization between visits, reducing exam room turnaround time by 15 percent.
-- Complete insurance forms at check-in and perform insurance verification ahead of each appointment to catch coverage gaps early.
+- Records vital signs for each patient before provider exams, streamlining the rooming process and cutting patient wait times by 30 percent.
+- Schedules follow-up visits and coordinates specimen handling so lab results are ready for each return appointment.
+- Relays physician instructions to patients and manages instrument sterilization between visits, reducing exam room turnover time by 15 percent.
+- Completes insurance forms and performs insurance verification before each visit to prevent billing delays at check-in.
 
 ### Clinical Assistant — Dunmore Technologies
 *February 2023 – December 2024*
 
-- Drew blood from patients and documented each collection in Epic Systems, reducing labeling errors by 25 percent.
-- Roomed patients for scheduled visits and performed EKG testing as ordered by the provider.
-- Stocked exam rooms before each session and handled appointment scheduling to match supply levels to patient volume, cutting supply shortages by 35 percent.
-- Took vital signs during patient intake and recorded results for provider review before each exam.
+- Drew blood samples and logged each draw in Epic Systems, reducing specimen labeling errors by 25 percent.
+- Roomed patients and performed EKG testing ahead of physician exams to keep visits on schedule.
+- Stocked exam rooms and aligned restocking with appointment scheduling, cutting supply shortages during clinic hours by 35 percent.
+- Took vital signs during patient intake and entered readings into the chart for physician review.
 
 ## Education
 

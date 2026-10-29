@@ -229,7 +229,7 @@
       "allowed_numbers": [
         "2"
       ],
-      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Patient assessment, Vital signs monitoring, Care planning, Triage, Clinical documentation, Infection control, and 2 or more years of experience. State Registered Nurse Licence as a required licence or certification. State Advanced Cardiac Life Support Card as preferred.",
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Patient assessment, Vital signs monitoring, Care planning, Triage, Clinical documentation, Infection control, and 2 or more years of experience. State Basic Life Support Card as a required licence or certification. State Advanced Cardiac Life Support Card as preferred.",
       "has_outcome": false,
       "kind": "jd",
       "max_words": 160,
@@ -241,7 +241,7 @@
         "Triage",
         "Clinical documentation",
         "Infection control",
-        "Registered Nurse Licence",
+        "Basic Life Support Card",
         "Advanced Cardiac Life Support Card"
       ]
     },

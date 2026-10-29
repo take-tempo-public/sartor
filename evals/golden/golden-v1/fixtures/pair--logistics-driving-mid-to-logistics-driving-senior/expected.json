@@ -6,6 +6,7 @@
       "any exposure to Cargo documentation, in work or side projects",
       "any exposure to Fuel and mileage logs, in work or side projects",
       "any exposure to Vehicle maintenance checks, in work or side projects",
+      "any exposure to Hazardous Materials Endorsement, in work or side projects",
       "any exposure to Dispatch Coordinator Certificate, in work or side projects"
     ],
     "scope_probes": [
@@ -17,9 +18,9 @@
     "(?i)Cargo\\ documentation",
     "(?i)Fuel\\ and\\ mileage\\ logs",
     "(?i)Vehicle\\ maintenance\\ checks",
+    "(?i)Hazardous\\ Materials\\ Endorsement",
     "(?i)Dispatch\\ Coordinator\\ Certificate",
     "(?i)Customer\\ signoff",
-    "(?i)Hazardous\\ Materials\\ Endorsement",
     "PhD",
     "Master'?s? (degree|in)",
     "managed [0-9]+",
@@ -30,6 +31,7 @@
     "Cargo documentation",
     "Fuel and mileage logs",
     "Vehicle maintenance checks",
+    "Hazardous Materials Endorsement",
     "Dispatch Coordinator Certificate"
   ],
   "min_ats_format_score": 4,
@@ -40,7 +42,7 @@
     "defensive driving",
     "route planning"
   ],
-  "notes": "Mismatched pair (advance): the logistics-driving-mid résumé against the logistics-driving-senior job description. The mid-tier truck driving and dispatch résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Pre-trip inspections, Cargo documentation, Fuel and mileage logs, Vehicle maintenance checks, Dispatch Coordinator Certificate. The output must claim none of it.",
+  "notes": "Mismatched pair (advance): the logistics-driving-mid résumé against the logistics-driving-senior job description. The mid-tier truck driving and dispatch résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Pre-trip inspections, Cargo documentation, Fuel and mileage logs, Vehicle maintenance checks, Hazardous Materials Endorsement, Dispatch Coordinator Certificate. The output must claim none of it.",
   "pair": {
     "id": "logistics-driving-mid-to-logistics-driving-senior",
     "jd_cell": "logistics-driving-senior",

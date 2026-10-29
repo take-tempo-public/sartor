@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Owning one service or workstream end to end."
       },
-      "edit_replacement": "Writes post-incident reviews using Grafana dashboards to show timelines and, owning one service or workstream end to end",
-      "edit_target_substring": "Writes post-incident reviews using Grafana dashboards to show timelines and",
+      "edit_replacement": "Writes post-incident write-ups backed by Grafana dashboards that show the, owning one service or workstream end to end",
+      "edit_target_substring": "Writes post-incident write-ups backed by Grafana dashboards that show the",
       "expected_iteration_themes": {
         "experience_probes": [
           "ServiceNow exposure not yet covered by prior clarifications"

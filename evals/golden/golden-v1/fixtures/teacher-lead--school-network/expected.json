@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Leading a team or program and answering for its results."
       },
-      "edit_replacement": "building classroom management routines into each lesson so transitions stay, leading a team or program and answering for its results",
-      "edit_target_substring": "building classroom management routines into each lesson so transitions stay",
+      "edit_replacement": "Plans daily lessons with teachers that build in classroom management, leading a team or program and answering for its results",
+      "edit_target_substring": "Plans daily lessons with teachers that build in classroom management",
       "expected_iteration_themes": {
         "experience_probes": [
           "Formative assessment exposure not yet covered by prior clarifications"
