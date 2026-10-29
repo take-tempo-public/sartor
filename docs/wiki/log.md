@@ -3594,3 +3594,13 @@ unfixed certification-requirement defect (item 194).
 **Pages: `eval-harness` ("The golden set") and `code-module-map` (the `evals/golden_set.py` row) read, verified no-edit.** A grep of `docs/wiki/pages`, `index.md` and `overview.md` for the golden set, `build_profile`, `held_certs`, certification years and "required"/"preferred" found only the module-level description in those two pages. They name `render_resume`, `validate_facts`, `check_suite`, `_check_cell_matches_facts`, `render_pair` and `_check_pair_terms` by symbol, and say nothing about which credential a posting requires or how a credential's year is chosen, which is all this branch changes in `golden_set.py`. No page cites the design doc.
 
 **Not verified:** this is a read for contradiction, not a grounding audit. `scripts.wiki_cites` and the wiki tests run in the quality gate, and bare line cites into `golden_set.py` (item 178's class) are not re-anchored by this check.
+
+## 2026-10-29 — scoped close-out check, `feat/eval-dataset-v1-credentials` (verified no-edit)
+
+**Trigger:** branch close-out wiki obligation, scoped to this branch's own diff (item 194, findings 1 and 2); mode **diff, scoped**. **`.last_ingest_sha` not advanced.** No scribe or auditor ran.
+
+**Wiki-relevant paths (per `scripts/wiki_relevance.py`, `is_wiki_relevant()`):** `evals/golden_set.py` and `evals/golden_author.py`. The tests, the golden-set data (`cells/`, `fixtures/`, `manifest.json`), `CHANGELOG.md`, `evals/README.md`, the design doc, the dossier, the work item and the ledger file are classified irrelevant (or are not wiki sources).
+
+**Pages: `eval-harness` ("The golden set"), `code-module-map` (the `evals/golden_set.py` and `evals/golden_author.py` rows) read, verified no-edit.** A grep of `docs/wiki` for the credential, certification, `check_prose`, `check_slot_text` and "prefer" terms found only the module-level descriptions. Those pages name `validate_facts`, `check_suite`, `render_resume`, `render_pair`, `_check_pair_terms` and `author_cell` by symbol, say that traps apply to résumé-side slots and not to JD slots (still true: the new `check_jd_credential_status` is a separate rule), and say nothing about how a credential's year is chosen or about entry-tier credentials. The new check is therefore an **omission** on the page, not a contradiction; no sentence on either page became false.
+
+**Not verified:** this is a read for contradiction, not a grounding audit. `scripts.wiki_cites` and the wiki tests run in the quality gate, and bare line cites into `golden_set.py` (item 178's class) are not re-anchored by this check.

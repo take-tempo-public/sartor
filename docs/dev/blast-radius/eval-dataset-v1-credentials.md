@@ -92,6 +92,16 @@ The 26: accounting-{entry,lead,mid,senior}, admin-assistant-{entry,lead,mid,seni
 
 ---
 
+## Outcome (2026-10-29)
+
+- **Regeneration:** one pilot cell (`accounting-senior`, $0.0973) and a 25-cell sweep ($1.7790) = **$1.8763** over 29 requests (three cells needed one rewrite: `accounting-senior`, `carpenter-foreman-lead`, `logistics-driving-lead`, all finding-2 cells), none rejected. The call log reads $13.0866 of the $14.00 total. The recorded-cost projection was $1.8469.
+- **Pairs and manifest:** 36 pair fixtures re-derived. One authored `transferable` term had to be re-picked: `electrician-senior-to-hvac-technician-mid`, `customer` to `installation`, because the regenerated résumé no longer contained `customer` (no skill name was in both documents; `installation` is in the résumé's "Lighting installation" skill and the posting's "thermostat installation"). A judgment, not a derivation.
+- **`golden_set check`:** `OK (96 cells)`. **Audits over 96 cells:** credentials dated after their role, 22 cells before and 0 after; unbacked "preferred" credential sentences, 4 before and 0 after.
+- **Hand-read:** the whole of `accounting-senior` (pilot), `teacher-entry` and `logistics-driving-lead`; every credential year against its role start and every posting sentence naming a credential in all 26 cells. No contradiction left. Observed, not changed: `logistics-driving-lead` dates all four credentials 2011 (the profile is unchanged by this branch; the cap rules allow it).
+- **Wiki:** `evals/golden_set.py` and `evals/golden_author.py` are wiki-relevant; the pages were read and verified no-edit (`docs/wiki/log.md`, 2026-10-29). The new check is an omission on the pages, not a contradiction.
+
+---
+
 ## Deferred
 
 - **Finding 3, the employer pool (accepted for v1, owner 2026-10-29).** 216 roles draw on 59 invented employer names; 32 names appear in two or more professions ("Riverbend Health Network" and "Ironbridge Co" in 8 each). Only 5 of 24 professions name their own employers (`carpenter-foreman`, `electrician`, `hvac-technician`, `logistics-driving`, `teacher`). The owner's reason: the names are invented, used only by a backend eval dataset, and have no effect on any eval score. The fix (an `employers` list of at least three names in the other 19 facts files, which `_employers_for` already honours) would redraw the employers of 76 of the 96 cells, about $6 of author spend; it belongs in a `golden-v2`. **Constraint:** the calibration run (item 194 scope 3) scores this set, so a later cell change invalidates it; any such change lands before that run.

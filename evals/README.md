@@ -547,8 +547,10 @@ tier sizes, retiring `evals/fixtures/synthetic/` and the freeze belong to the fo
   holds them. A candidate holds the ones at or below the cell's tier; the next one is a forbidden invention and a
   clarification probe, and the JD names the highest held one as required and the next as preferred. A held
   credential is dated in tier order, and a mid-or-higher one no later than the start of the earliest role titled for
-  its tier or above (the Journeyman licence before the Journeyman role); an entry-tier credential is not bound by a
-  role of its own. `education.institutions` lets a trade school or apprenticeship programme stand in for a university.
+  its tier or above (the Journeyman licence before the Journeyman role); an entry-tier credential has no role of its
+  own and is dated no later than the career's first role. A posting may not call a credential preferred when the
+  facts name none above the cell's tier (`check_jd_credential_status`, a word list: it misses a paraphrase).
+  `education.institutions` lets a trade school or apprenticeship programme stand in for a university.
 - **A profession's facts file** (`facts/<profession>.json`) is checked by `validate_facts` before any cell is
   built, and `check` validates every one: `profession`, `display`, `titles` (one per tier), `skills` (`name`,
   `category`; a name has no digit, at least three characters, and sits inside no other skill or certification
