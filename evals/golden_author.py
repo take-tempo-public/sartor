@@ -418,12 +418,15 @@ def _set_execution_state(flags: int) -> None:
     billed was logged with no tokens. Best-effort: a failure here must never stop the run, and closing
     the lid can still sleep a machine that is set to.
     """
-    if sys.platform != "win32":
-        return
     try:
         import ctypes
 
-        ctypes.windll.kernel32.SetThreadExecutionState(ctypes.c_uint(flags))
+        # Found by capability, not by `sys.platform`: only Windows has `ctypes.windll`, and a platform test
+        # makes mypy on Linux (where CI runs) call the Windows branch unreachable.
+        windll = getattr(ctypes, "windll", None)
+        if windll is None:
+            return
+        windll.kernel32.SetThreadExecutionState(ctypes.c_uint(flags))
     except Exception:
         return
 

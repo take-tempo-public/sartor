@@ -933,6 +933,16 @@ class TestStagedRun:
         assert ga.main(base) == 3
         assert calls == [{"line_buffering": True}]
 
+    def test_where_the_platform_has_no_power_api_the_request_is_a_quiet_no_op(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # CI runs Linux, where ctypes has no `windll`. The function finds the API by capability, not by a
+        # platform test (mypy treated the code after `if sys.platform != "win32"` as unreachable on Linux).
+        import ctypes
+
+        monkeypatch.delattr(ctypes, "windll", raising=False)
+        ga._set_execution_state(ga.ES_CONTINUOUS | ga.ES_SYSTEM_REQUIRED)  # must not raise
+
     def test_a_dry_run_does_not_touch_the_power_state(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
