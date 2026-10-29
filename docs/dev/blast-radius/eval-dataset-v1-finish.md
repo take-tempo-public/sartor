@@ -251,3 +251,54 @@ is not dated after the earliest role titled for its tier. 24 cases, pass. The ol
 failed it (21 of 37 disordered, 28 of 37 late); that is a count from my audits, not a run of this test against them.
 **Unenforced and said plainly:** entry-tier credentials are unbound (13 of 37 under the strict rule), and whether prose reads as
 real is still a judgment that only a hand-read supplies.
+
+## Scope 2: the stratified hand-read (no spend)
+
+**Sample (chosen by `scratchpad/pick_sample.py`, deterministic):** one cell per group x tier = 16, none already read; 9
+regenerated on this branch, 7 untouched; settings small-business, health-nonprofit, startup, enterprise and public-sector all
+covered. Counted with the 5 read after regeneration (electrician-lead, registered-nurse-entry, teacher-mid, sre-ops-senior,
+social-services-lead) and the 2 read in item 191 that were not regenerated (security-mid, social-services-entry), that is up to
+**23** final cells, not the 4 item 191 reported (two of those four, teacher-mid and electrician-lead, were regenerated since).
+The sample is purposive (stratified by group, tier and setting), not random: it says what the prose looks like across strata,
+not a rate.
+
+**Batch 1, entry tier (sales-entry, teacher-entry, web-backend-entry, logistics-driving-entry), read whole:** prose grounded
+and plausible; the intended absent-skill traps are present and absent from the résumé (Python and PostgreSQL; hazmat). **One
+systematic fault found, measured over all 96 cells (free, `scratchpad/entry_residue.py`):** an **entry-tier credential dated
+after the oldest role began**, while the posting requires it. `teacher-entry`: State Teaching Licence **2026**, Associate
+Teacher from January **2025**, and the posting says the licence is "a condition of employment";
+`logistics-driving-entry`: Driver Safety Certificate 2026, role from May 2025. **23 entry-tier credentials in 22 of the 56
+cells that hold any are dated after the oldest role's start year; in 11 of them the posting requires that credential.** This
+is the residue the owner's decision left open on purpose (mid-or-higher were bound by role; the entry tier was not). Not fixed
+here: it would change the profiles of those 22 cells (about 22 x $0.07 = $1.5, within the remaining $1.79 of the cap, but
+not the scope the owner chose) and is put to the owner. Minor, not systematic: employer name stems repeat across professions
+("Stonebridge Community Trust" and "Stonebridge Logistics"); an entry posting asks for "2 or more years" of a candidate with
+under two (the entry ladder's 0 to 2 years, as before).
+
+**Batches 2 to 4 (project-mgmt-mid, social-services-mid, sre-ops-mid, logistics-driving-mid; admin-assistant-senior,
+teacher-senior, security-senior, construction-pm-senior; project-mgmt-lead, teacher-lead, web-backend-lead,
+logistics-driving-lead), each read whole, résumé and posting:** grounded throughout; every posting requires the credential
+held at the top of its tier; intended absent-skill traps are absent from the résumé (Python in security-senior, Asana in
+project-mgmt-lead, PostgreSQL in web-backend-lead, ServiceNow in sre-ops-mid). The public-sector register
+(`admin-assistant-senior`, "Qualifications and conditions of employment", "required at the time of appointment") reads
+convincingly. Dates agree with titles for every mid-or-higher credential read (Instructional Leadership Endorsement 2015
+before the Lead Teacher role of 2017; Agile Delivery Certificate 2019 in the Senior Project Manager role of February 2019).
+**Faults, with their measured reach over all 96 cells (free, `scratchpad/patterns.py`, `entry_residue.py`):**
+
+1. **An entry-tier credential dated after the career began, while the posting requires it** (seen in 6 of the 16 read:
+   teacher-entry, logistics-driving-entry, project-mgmt-mid, social-services-mid, admin-assistant-senior and the nurse).
+   Measured: **23 credentials in 22 of 56 cells; 11 of them required by the posting.** The owner's rule left it unbound.
+2. **A posting that contradicts itself about a credential** (summary "preferred", qualifications "required"): read in
+   `construction-pm-senior` and `logistics-driving-lead`. A crude line heuristic flags **8 of 96** postings (accounting-mid,
+   accounting-senior, carpenter-foreman-lead, construction-pm-senior, hvac-technician-senior, logistics-driving-lead,
+   security-senior, sre-ops-entry); it includes at least one false positive (security-senior says "required" and
+   "preferred" about different things in one paragraph), so **2 are confirmed by reading and up to 8 is the ceiling; the true
+   count is not known.** The model, not the builder, writes this: the summary slot is free prose.
+3. **A small employer pool:** **216 roles use 59 distinct employer names; 32 names appear in two or more professions**
+   ("Riverbend Health Network" and "Ironbridge Co" in 8 professions each, "Dunmore Technologies" in 7). Cosmetic for grading
+   one résumé at a time; it is a diversity limit of the set (the same company employs a nurse, an engineer and a driver).
+
+**Count, as read:** this branch hand-read **21 final cells after regeneration** (5 in the regeneration ladder + 16 in the
+sample), plus 2 from item 191 not regenerated since (security-mid, social-services-entry): **23 of 96**, purposive across 4
+groups, 4 tiers and 5 settings, none random. No fault in grounding (no invented employer, number or credential) was found in
+any of the 21; all faults found are realism faults, and the deterministic checks cannot see them.

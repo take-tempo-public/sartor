@@ -773,8 +773,11 @@ that number. What changed from the plan above: the converted pilots were replace
 names the industry of each tier so a cell has one JD; employers and leadership themes became per-profession facts; and the suite
 check now rebuilds every generated cell from its facts. Hand-reading found three defects (leadership work in an apprentice's role, one
 skill filling half a résumé, and a posting requiring the lowest-tier certification); the first two were fixed before the bulk run, the
-third affects 37 cells and is open (item 194). Still to do, all in item 194: the calibration run, final tier sizes, retiring
-`evals/fixtures/synthetic/`, and the freeze.
+third affected 37 cells and was fixed afterwards on `feat/eval-dataset-v1-finish` (item 194, scope 1), where the hand-read found
+two more faults in the same function (credential years out of tier order, and a credential dated after the role that needs it)
+and 40 cells were regenerated for $3.33 more; a first stratified hand-read (scope 2) left three realism findings with the owner
+(entry-tier credentials dated after the career began, a posting contradicting itself about a credential, and a 59-name employer
+pool). Still to do, all in item 194: the calibration run, final tier sizes, retiring `evals/fixtures/synthetic/`, and the freeze.
 
 ### 6.5 Proposal for the owner: the USAJOBS exploration fetch needs a charter decision (2026-10-22)
 
