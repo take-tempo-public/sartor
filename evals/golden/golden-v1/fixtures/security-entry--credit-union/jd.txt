@@ -1,0 +1,20 @@
+Junior Security Analyst
+Weston Credit Union Services — Hybrid, Richmond, VA
+
+Position summary
+Weston Credit Union Services, a regional credit union, seeks a Junior Security Analyst to help protect member data and internal systems. The analyst will work in a hybrid arrangement from Richmond, VA, under the direction of senior security staff. Minimum requirements include working knowledge of incident response, log analysis and Nessus. A Security Analyst Certificate is preferred.
+
+Responsibilities
+- Triage security alerts, determine their severity and escalate confirmed incidents to senior analysts.
+- Track remediation of identified vulnerabilities and follow up with system owners until fixes are verified.
+- Perform periodic access reviews and report inappropriate or outdated permissions for correction.
+- Review firewall rules and system logs for activity that does not match established policy.
+- Document findings, actions taken and open items in the team's tracking system.
+
+Minimum and preferred qualifications
+- 1 or more years of experience in a security analyst or related role.
+- Working knowledge of incident response procedures and log analysis.
+- Experience reviewing and maintaining firewall rules.
+- Hands-on use of Nessus for vulnerability assessment.
+- Familiarity with Python and Linux in an operational setting.
+- Preferred: Security Analyst Certificate.

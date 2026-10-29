@@ -1,0 +1,157 @@
+{
+  "certifications": [
+    {
+      "issuer": "Driver Safety Council",
+      "level": "entry",
+      "name": "Driver Safety Certificate"
+    },
+    {
+      "issuer": "State Motor Vehicle Agency",
+      "level": "mid",
+      "name": "Commercial Driver Licence"
+    },
+    {
+      "issuer": "State Motor Vehicle Agency",
+      "level": "senior",
+      "name": "Hazardous Materials Endorsement"
+    },
+    {
+      "issuer": "Freight Operations Council",
+      "level": "lead",
+      "name": "Dispatch Coordinator Certificate"
+    }
+  ],
+  "display": "truck driving and dispatch",
+  "education": {
+    "degree": "Certificate",
+    "field": "Commercial Driving",
+    "institutions": [
+      "Northern Plains Driving Academy",
+      "Lakeshore Trucking School"
+    ]
+  },
+  "employers": [
+    "Prairie Freight Lines",
+    "Tidewater Haulers",
+    "Granite Ridge Transport",
+    "Northline Delivery",
+    "Cardinal Carriers",
+    "Stonebridge Logistics"
+  ],
+  "industries": [
+    {
+      "company": "Fairlane Parcel Delivery",
+      "level": "entry",
+      "location": "On site, Columbus, OH",
+      "phrase": "a parcel delivery company",
+      "setting": "enterprise",
+      "slug": "parcel-delivery"
+    },
+    {
+      "company": "Ironwood Freight Systems",
+      "level": "mid",
+      "location": "On site, Memphis, TN",
+      "phrase": "a regional freight carrier",
+      "setting": "enterprise",
+      "slug": "freight-carrier"
+    },
+    {
+      "company": "Stillwater Produce Haulers",
+      "level": "senior",
+      "location": "On site, Fresno, CA",
+      "phrase": "a family-owned produce hauler",
+      "setting": "small-business",
+      "slug": "produce-hauler"
+    },
+    {
+      "company": "Beacon Distribution Group",
+      "level": "lead",
+      "location": "On site, Kansas City, MO",
+      "phrase": "a distribution company",
+      "setting": "enterprise",
+      "slug": "distribution"
+    }
+  ],
+  "leadership_themes": [
+    "training new drivers",
+    "building driver schedules and routes"
+  ],
+  "profession": "logistics-driving",
+  "settings": [
+    "enterprise",
+    "small-business"
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Route planning"
+    },
+    {
+      "category": "method",
+      "name": "Load securement"
+    },
+    {
+      "category": "method",
+      "name": "Pre-trip inspections"
+    },
+    {
+      "category": "method",
+      "name": "Hours-of-service logging"
+    },
+    {
+      "category": "method",
+      "name": "Bills of lading"
+    },
+    {
+      "category": "method",
+      "name": "Trailer coupling"
+    },
+    {
+      "category": "method",
+      "name": "Cargo documentation"
+    },
+    {
+      "category": "method",
+      "name": "Defensive driving"
+    },
+    {
+      "category": "method",
+      "name": "Delivery scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Fuel and mileage logs"
+    },
+    {
+      "category": "tool",
+      "name": "Dispatch software"
+    },
+    {
+      "category": "method",
+      "name": "Customer signoff"
+    },
+    {
+      "category": "method",
+      "name": "Hazmat handling"
+    },
+    {
+      "category": "method",
+      "name": "Vehicle maintenance checks"
+    }
+  ],
+  "titles": {
+    "entry": "Delivery Driver",
+    "lead": "Transportation Supervisor",
+    "mid": "Class A Truck Driver",
+    "senior": "Senior Truck Driver"
+  },
+  "work_themes": [
+    "planning routes",
+    "securing and checking loads",
+    "pre-trip vehicle inspections",
+    "keeping driver logs",
+    "delivering to customers on time",
+    "reporting vehicle defects",
+    "coordinating with dispatch"
+  ]
+}

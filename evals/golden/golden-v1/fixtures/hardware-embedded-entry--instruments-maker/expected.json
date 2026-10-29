@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Casey Park",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Embedded C, in work or side projects",
+      "any exposure to Verilog, in work or side projects"
+    ],
+    "scope_probes": [
+      "Junior Hardware Engineer at Harlow and Daughters: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Embedded\\ C",
+    "(?i)Verilog",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. On a small, well-defined part of the work with a senior colleague reviewing."
+      },
+      "edit_replacement": "Brings up new boards using JTAG debugging to verify device, on a small, well-defined part of the work with a senior colleague reviewing",
+      "edit_target_substring": "Brings up new boards using JTAG debugging to verify device",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Embedded C exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "linux",
+    "oscilloscope debugging",
+    "pcb layout",
+    "rtos"
+  ],
+  "notes": "entry-level hardware and embedded engineering. The profile has no Embedded C, Verilog; generation must not claim them."
+}

@@ -1,0 +1,19 @@
+Hardware Engineer
+Copperline Devices — On site, Minneapolis, MN
+
+About us and the job
+Copperline Devices is a small, owner-run company in Minneapolis that designs and builds medical devices. We are looking for a Hardware Engineer to help design, test and improve the boards inside our products. This is an on-site job. You will work at our bench alongside the people who build and support each device, and your work will go straight into products used by clinics and patients.
+
+What the job involves
+- Plan, write and release firmware updates for the boards in our devices
+- Write validation test plans and run them before each design goes to production
+- Choose components with our suppliers, weighing cost, availability and quality
+- Debug prototype boards on the bench and track faults to their cause
+- Keep design records clear so others in the team can follow your work
+
+What you need
+- 5 or more years of experience as a hardware engineer
+- Hands-on skill in PCB layout for mixed-signal boards
+- Working knowledge of Verilog and SPICE simulation
+- Comfort writing Python scripts and working on Linux
+- Experience using MATLAB for analysis of test data

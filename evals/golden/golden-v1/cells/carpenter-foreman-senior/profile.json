@@ -1,0 +1,520 @@
+{
+  "candidate": {
+    "email": "priya.haddad@example.com",
+    "linkedin": "linkedin.com/in/example-priya-carpenter-foreman-senior",
+    "name": "Priya Haddad",
+    "phone": "(555) 010-4484",
+    "username": "gold_carpenter_foreman_senior"
+  },
+  "cell": "carpenter-foreman-senior",
+  "cell_seed": 1781817612,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Cabinet installation on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Cabinet installation, in work or side projects",
+        "any exposure to Subfloor installation, in work or side projects",
+        "any progress toward Crew Supervisor Certificate"
+      ],
+      "scope_probes": [
+        "Master Carpenter at Marlow Remodeling: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Cabinet\\ installation",
+      "(?i)Subfloor\\ installation",
+      "(?i)Crew\\ Supervisor\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "concrete forming",
+      "door and window installation",
+      "rafter cutting",
+      "stair building"
+    ],
+    "notes": "senior-level carpentry. The profile has no Cabinet installation, Subfloor installation, Crew Supervisor Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Planning jobs and checking the work of others.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, planning jobs and checking the work of others",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Cabinet installation exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Master Carpenter",
+        "Fieldstone Builders — On site, Lancaster, PA"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.residential-builder.about",
+        "jd.residential-builder.duties",
+        "jd.residential-builder.needs"
+      ],
+      "slug": "residential-builder"
+    }
+  ],
+  "level": "senior",
+  "profession": "carpenter-foreman",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Layout and measuring in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Marlow Remodeling",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-02",
+          "title": "Master Carpenter"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Harlow Framing Company",
+          "end": "2024-02",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-12",
+          "title": "Journeyman Carpenter"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Tillman Brothers Carpentry",
+          "end": "2021-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2017-11",
+          "title": "Apprentice Carpenter"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Carpentry",
+          "institution": "Northern Plains Technical College",
+          "slots": [],
+          "year": "2017"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2017"
+        },
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprenticeship Completion Certificate",
+          "year": "2021"
+        },
+        {
+          "issuer": "Carpenters Training Council",
+          "name": "Lead Carpenter Certificate",
+          "year": "2017"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Layout and measuring",
+        "Framing",
+        "Jobsite safety",
+        "Concrete forming",
+        "Stair building",
+        "Door and window installation",
+        "Rafter cutting",
+        "Scaffold erection"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Layout and measuring"
+    },
+    {
+      "category": "method",
+      "name": "Framing"
+    },
+    {
+      "category": "method",
+      "name": "Jobsite safety"
+    },
+    {
+      "category": "method",
+      "name": "Concrete forming"
+    },
+    {
+      "category": "method",
+      "name": "Stair building"
+    },
+    {
+      "category": "method",
+      "name": "Door and window installation"
+    },
+    {
+      "category": "method",
+      "name": "Rafter cutting"
+    },
+    {
+      "category": "method",
+      "name": "Scaffold erection"
+    }
+  ],
+  "slots": {
+    "jd.residential-builder.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Master Carpenter at Fieldstone Builders, a residential builder. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.residential-builder.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Master Carpenter, about directing crews and apprentices, keeping the site safe, ordering lumber and materials. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.residential-builder.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Rafter cutting, Door and window installation, Stair building, Concrete forming, Subfloor installation, Cabinet installation, and 9 or more years of experience. State Construction Safety Card as a required licence or certification. State Crew Supervisor Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Rafter cutting",
+        "Door and window installation",
+        "Stair building",
+        "Concrete forming",
+        "Subfloor installation",
+        "Cabinet installation",
+        "Construction Safety Card",
+        "Crew Supervisor Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Master Carpenter at Marlow Remodeling: framing walls and floors, using Framing. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Framing",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Carpenter at Marlow Remodeling: keeping the site safe, using Jobsite safety. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Jobsite safety"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Master Carpenter at Marlow Remodeling: installing doors, windows and trim, using Concrete forming. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Concrete forming",
+        "50"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Carpenter at Marlow Remodeling: planning jobs and ordering lumber, using Scaffold erection. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Scaffold erection"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Master Carpenter at Marlow Remodeling, about framing walls and floors. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Master Carpenter at Marlow Remodeling, about building forms for concrete. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Harlow Framing Company: building forms for concrete, using Stair building. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Stair building",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Harlow Framing Company: ordering lumber and materials, using Layout and measuring. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Layout and measuring"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Harlow Framing Company: framing walls and floors, using Rafter cutting. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Rafter cutting",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Harlow Framing Company: keeping the site safe, using Door and window installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Door and window installation"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Journeyman Carpenter at Harlow Framing Company, about building forms for concrete. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Journeyman Carpenter at Harlow Framing Company, about keeping the site safe. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Apprentice Carpenter at Tillman Brothers Carpentry: installing doors, windows and trim, using Framing. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Framing",
+        "45"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Carpenter at Tillman Brothers Carpentry: reading plans and measuring, using Jobsite safety. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Jobsite safety"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Apprentice Carpenter at Tillman Brothers Carpentry: building forms for concrete, using Concrete forming. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Concrete forming",
+        "10"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Apprentice Carpenter at Tillman Brothers Carpentry: ordering lumber and materials, using Scaffold erection. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Scaffold erection"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Apprentice Carpenter at Tillman Brothers Carpentry, about keeping the site safe. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Apprentice Carpenter at Tillman Brothers Carpentry, about ordering lumber and materials. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a master-level carpentry professional with about 9 years of experience, scope: planning jobs and checking the work of others. Mention Layout and measuring, Framing, Jobsite safety.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Layout and measuring",
+        "Framing",
+        "Jobsite safety"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a master-level carpentry professional with about 9 years of experience, scope: planning jobs and checking the work of others. Mention Layout and measuring, Framing, Jobsite safety.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Layout and measuring",
+        "Framing",
+        "Jobsite safety"
+      ]
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "Accounting Training Council",
+      "level": "entry",
+      "name": "Bookkeeping Certificate"
+    },
+    {
+      "issuer": "State Board of Accountancy",
+      "level": "senior",
+      "name": "Certified Public Accountant Licence"
+    }
+  ],
+  "display": "accounting",
+  "education": {
+    "degree": "B.S.",
+    "field": "Accounting"
+  },
+  "industries": [
+    {
+      "company": "Redwood Tax and Bookkeeping",
+      "level": "entry",
+      "location": "On site, Sacramento, CA",
+      "phrase": "a small accounting firm",
+      "setting": "small-business",
+      "slug": "tax-firm"
+    },
+    {
+      "company": "Kensington Manufacturing Group",
+      "level": "mid",
+      "location": "On site, Milwaukee, WI",
+      "phrase": "a manufacturer",
+      "setting": "enterprise",
+      "slug": "manufacturer"
+    },
+    {
+      "company": "Davenport Distribution",
+      "level": "senior",
+      "location": "Hybrid, Indianapolis, IN",
+      "phrase": "a wholesale distributor",
+      "setting": "enterprise",
+      "slug": "distributor"
+    },
+    {
+      "company": "Evergreen Community Foundation",
+      "level": "lead",
+      "location": "Hybrid, Seattle, WA",
+      "phrase": "a community foundation",
+      "setting": "health-nonprofit",
+      "slug": "foundation"
+    }
+  ],
+  "leadership_themes": [
+    "reviewing the work of staff accountants",
+    "owning the close calendar for the team"
+  ],
+  "profession": "accounting",
+  "settings": [
+    "small-business",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "QuickBooks"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "tool",
+      "name": "SAP"
+    },
+    {
+      "category": "method",
+      "name": "Account reconciliation"
+    },
+    {
+      "category": "method",
+      "name": "Journal entries"
+    },
+    {
+      "category": "method",
+      "name": "Month-end close"
+    },
+    {
+      "category": "method",
+      "name": "Accounts payable"
+    },
+    {
+      "category": "method",
+      "name": "Accounts receivable"
+    },
+    {
+      "category": "method",
+      "name": "Financial statements"
+    },
+    {
+      "category": "method",
+      "name": "Budget variance analysis"
+    },
+    {
+      "category": "method",
+      "name": "Audit support"
+    },
+    {
+      "category": "method",
+      "name": "Sales tax filing"
+    },
+    {
+      "category": "method",
+      "name": "Fixed asset tracking"
+    },
+    {
+      "category": "method",
+      "name": "Payroll accounting"
+    }
+  ],
+  "titles": {
+    "entry": "Staff Accountant",
+    "lead": "Accounting Manager",
+    "mid": "Accountant",
+    "senior": "Senior Accountant"
+  },
+  "work_themes": [
+    "month-end close",
+    "bank reconciliations",
+    "invoice review",
+    "preparing statements",
+    "audit preparation",
+    "budget variance reports",
+    "tax schedules"
+  ]
+}

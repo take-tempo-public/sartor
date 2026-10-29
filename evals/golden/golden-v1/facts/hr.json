@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "Workforce Practice Society",
+      "level": "mid",
+      "name": "HR Practitioner Certificate"
+    },
+    {
+      "issuer": "Workforce Practice Society",
+      "level": "senior",
+      "name": "Senior HR Practitioner Certificate"
+    }
+  ],
+  "display": "human resources",
+  "education": {
+    "degree": "B.S.",
+    "field": "Human Resource Management"
+  },
+  "industries": [
+    {
+      "company": "Orchard Foods Corporation",
+      "level": "entry",
+      "location": "On site, Fresno, CA",
+      "phrase": "a food-processing company",
+      "setting": "enterprise",
+      "slug": "food-processing"
+    },
+    {
+      "company": "Clearwater Community Hospital",
+      "level": "mid",
+      "location": "On site, Boise, ID",
+      "phrase": "a community hospital",
+      "setting": "health-nonprofit",
+      "slug": "community-hospital"
+    },
+    {
+      "company": "Baxton Staffing Group",
+      "level": "senior",
+      "location": "Hybrid, Phoenix, AZ",
+      "phrase": "a staffing company",
+      "setting": "enterprise",
+      "slug": "staffing"
+    },
+    {
+      "company": "Nimbus Cloud Software",
+      "level": "lead",
+      "location": "Remote (US)",
+      "phrase": "a software startup",
+      "setting": "startup",
+      "slug": "cloud-software"
+    }
+  ],
+  "leadership_themes": [
+    "advising managers on employee relations",
+    "leading hiring plans with department heads"
+  ],
+  "profession": "hr",
+  "settings": [
+    "enterprise",
+    "health-nonprofit",
+    "startup"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Workday"
+    },
+    {
+      "category": "tool",
+      "name": "ADP Workforce Now"
+    },
+    {
+      "category": "method",
+      "name": "Applicant tracking"
+    },
+    {
+      "category": "method",
+      "name": "Interview scheduling"
+    },
+    {
+      "category": "method",
+      "name": "New hire onboarding"
+    },
+    {
+      "category": "method",
+      "name": "Benefits administration"
+    },
+    {
+      "category": "method",
+      "name": "Employee relations"
+    },
+    {
+      "category": "method",
+      "name": "Policy writing"
+    },
+    {
+      "category": "method",
+      "name": "Compliance reporting"
+    },
+    {
+      "category": "method",
+      "name": "Job postings"
+    },
+    {
+      "category": "method",
+      "name": "Offer letters"
+    },
+    {
+      "category": "method",
+      "name": "Performance review cycles"
+    },
+    {
+      "category": "method",
+      "name": "Payroll coordination"
+    },
+    {
+      "category": "method",
+      "name": "Exit interviews"
+    }
+  ],
+  "titles": {
+    "entry": "HR Coordinator",
+    "lead": "HR Manager",
+    "mid": "HR Generalist",
+    "senior": "Senior HR Business Partner"
+  },
+  "work_themes": [
+    "screening candidates",
+    "scheduling interviews",
+    "new hire paperwork",
+    "answering benefits questions",
+    "policy updates",
+    "employee concerns",
+    "keeping HR records"
+  ]
+}

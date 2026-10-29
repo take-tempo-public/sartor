@@ -1,0 +1,202 @@
+{
+  "candidate": {
+    "email": "taylor.haddad@example.com",
+    "linkedin_url": "linkedin.com/in/example-taylor-construction-pm-entry",
+    "name": "Taylor Haddad",
+    "notes": null,
+    "phone": "(555) 010-4076",
+    "profile_text": null,
+    "username": "gold_construction_pm_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_construction_pm_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2024",
+      "field": "Construction Management",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedules permits and inspections and leads punch list closeout, cutting average closeout time by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reviews subcontractor submittals for safety requirements and applies safety planning to flag gaps before materials reach the site."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Conducts site safety walks and logs findings in Procore, reducing open safety items by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates subcontractors through contract administration, tracking scope, insurance and change orders against each agreement."
+        }
+      ],
+      "company": "Elmstead Partners",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Reviews submittals at Elmstead Partners as Assistant Project Manager, checking them against project specifications before routing them for approval."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supports project managers at Elmstead Partners by preparing for owner meetings, recording decisions and following up on open items."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Assistant Project Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Change orders",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Contract administration",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Oracle Primavera",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Permit management",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Procore",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Punch list closeout",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Safety planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Schedule recovery",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Construction project management professional with about 2 years of experience handling routine project requests, with work reviewed by a senior colleague. Brings schedule recovery, contract administration and safety planning skills, along with Procore and Oracle Primavera."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Associate-level construction project manager with about 2 years of experience supporting field teams on routine requests under a colleague's review. Applies safety planning, contract administration and schedule recovery to keep permits, change orders and punch lists on track."
+    }
+  ],
+  "tags": []
+}

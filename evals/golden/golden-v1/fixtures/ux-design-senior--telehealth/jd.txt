@@ -1,0 +1,19 @@
+Senior Product Designer
+Riverside Care Alliance — Remote (US)
+
+Summary
+Riverside Care Alliance is a telehealth nonprofit working to bring reliable care to patients wherever they live. We are hiring a Senior Product Designer to shape the patient and clinician experience across our virtual care services. This is a remote role open to candidates in the US. No clinical licence or professional certification is required for this position.
+
+Duties
+- Mentor designers through regular feedback, pairing and design critique
+- Plan and run usability sessions with patients, caregivers and clinicians
+- Identify accessibility issues and work with engineering to ship fixes
+- Turn research findings into flows, wireframes and prototypes
+- Present design decisions to clinical and product stakeholders
+
+Licensure and qualifications
+- 8 or more years of experience in product or UX design
+- Interaction design and wireframing skills shown in a portfolio of shipped work
+- Information architecture experience with complex, multi-step services
+- Accessibility review experience, including auditing screens and tracking fixes
+- Prototyping skills and working knowledge of HTML and CSS

@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Alex Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Benefits enrollment, in work or side projects",
+      "any exposure to Community outreach, in work or side projects",
+      "any progress toward Human Services Supervisor Certificate"
+    ],
+    "scope_probes": [
+      "Senior Case Manager at Northplain Water District: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Benefits\\ enrollment",
+    "(?i)Community\\ outreach",
+    "(?i)Human\\ Services\\ Supervisor\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
+      },
+      "edit_replacement": "using intake interviews to gather the details each partner needs, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "using intake interviews to gather the details each partner needs",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Benefits enrollment exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "caseload tracking",
+    "crisis intervention",
+    "microsoft access",
+    "motivational interviewing"
+  ],
+  "notes": "senior-level social services casework. The profile has no Benefits enrollment, Community outreach, Human Services Supervisor Certificate; generation must not claim them."
+}

@@ -1,0 +1,19 @@
+Security Operations Manager
+Bayside Medical Network — Hybrid, Tampa, FL
+
+Bayside Medical Network exists to provide safe, compassionate care to every community it serves. We are seeking a Security Operations Manager to lead our security operations team, protect patient and staff information, and keep clinical systems available when caregivers need them. This hybrid role is based in Tampa, FL. Candidates must hold the Security Analyst Certificate from the Information Assurance Guild.
+
+Duties
+- Lead regular access reviews across clinical and business systems so that staff permissions match their current roles.
+- Oversee alert triage, making sure security events are investigated, prioritised and escalated without delay.
+- Advise hospital leaders on security risk in clear, practical terms that support informed decisions.
+- Manage and develop a team of security analysts, setting priorities and reviewing their work.
+- Coordinate incident response with clinical, IT and compliance teams to limit disruption to patient care.
+- Maintain security policies and procedures and keep them aligned with network operations.
+
+Licensure and qualifications
+- Security Analyst Certificate from the Information Assurance Guild (required).
+- 12 or more years of experience in information security operations.
+- Hands-on experience with access reviews, phishing simulation and vulnerability scanning.
+- Strong log analysis skills, including working knowledge of Splunk.
+- Ability to write PowerShell scripts to automate routine security tasks.

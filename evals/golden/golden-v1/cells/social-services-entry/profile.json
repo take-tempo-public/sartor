@@ -1,0 +1,342 @@
+{
+  "candidate": {
+    "email": "jordan.reyes@example.com",
+    "linkedin": "linkedin.com/in/example-jordan-social-services-entry",
+    "name": "Jordan Reyes",
+    "phone": "(555) 010-8697",
+    "username": "gold_social_services_entry"
+  },
+  "cell": "social-services-entry",
+  "cell_seed": 1122523143,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Home visits on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Home visits, in work or side projects",
+        "any exposure to Motivational interviewing, in work or side projects",
+        "any progress toward Case Management Certificate",
+        "any progress toward Human Services Supervisor Certificate"
+      ],
+      "scope_probes": [
+        "Case Aide at Stonegate Housing Authority: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Home\\ visits",
+      "(?i)Motivational\\ interviewing",
+      "(?i)Case\\ Management\\ Certificate",
+      "(?i)Human\\ Services\\ Supervisor\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "benefits enrollment",
+      "court reports",
+      "needs assessments",
+      "referral coordination"
+    ],
+    "notes": "entry-level social services casework. The profile has no Home visits, Motivational interviewing, Case Management Certificate, Human Services Supervisor Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working with a supervisor close by on a small share of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working with a supervisor close by on a small share of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Home visits exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Case Aide",
+        "Fairmont County Human Services — On site, Fairmont, OH"
+      ],
+      "setting": "public-sector",
+      "slots": [
+        "jd.county-human-services.about",
+        "jd.county-human-services.duties",
+        "jd.county-human-services.needs"
+      ],
+      "slug": "county-human-services"
+    }
+  ],
+  "level": "entry",
+  "profession": "social-services",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Client advocacy in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Stonegate Housing Authority",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-07",
+          "title": "Case Aide"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.W.",
+          "field": "Social Work",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Child Welfare Board",
+          "name": "Mandated Reporter Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Client advocacy",
+        "Needs assessments",
+        "Microsoft Access",
+        "Referral coordination",
+        "Court reports",
+        "Crisis intervention",
+        "Intake interviews",
+        "Benefits enrollment"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Client advocacy"
+    },
+    {
+      "category": "method",
+      "name": "Needs assessments"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Access"
+    },
+    {
+      "category": "method",
+      "name": "Referral coordination"
+    },
+    {
+      "category": "method",
+      "name": "Court reports"
+    },
+    {
+      "category": "method",
+      "name": "Crisis intervention"
+    },
+    {
+      "category": "method",
+      "name": "Intake interviews"
+    },
+    {
+      "category": "method",
+      "name": "Benefits enrollment"
+    }
+  ],
+  "slots": {
+    "jd.county-human-services.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Duties' paragraph of a job description for a Case Aide at Fairmont County Human Services, a county human services department. Write in the voice of a fictional county or city agency posting; name no real agency, statute or pay table. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.county-human-services.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities of the position' heading and four to six bullet lines for a Case Aide, about reports for hearings, referring families to housing and food programs, intake and assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.county-human-services.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'Qualifications and conditions of employment' heading and four to six bullet lines. Require Needs assessments, Benefits enrollment, Referral coordination, Court reports, Home visits, Motivational interviewing, and 1 or more years of experience. State Mandated Reporter Certificate as a required licence or certification. State Case Management Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Needs assessments",
+        "Benefits enrollment",
+        "Referral coordination",
+        "Court reports",
+        "Home visits",
+        "Motivational interviewing",
+        "Mandated Reporter Certificate",
+        "Case Management Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: coordinating with schools and clinics, using Referral coordination. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Referral coordination",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: intake and assessments, using Court reports. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Court reports"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: keeping case records, using Microsoft Access. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Access",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Aide at Stonegate Housing Authority: referring families to housing and food programs, using Crisis intervention. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Crisis intervention"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Aide at Stonegate Housing Authority, about intake and assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Aide at Stonegate Housing Authority, about writing service plans. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level social services casework professional with about 1 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Client advocacy, Needs assessments, Microsoft Access.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Client advocacy",
+        "Needs assessments",
+        "Microsoft Access"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level social services casework professional with about 1 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Client advocacy, Needs assessments, Microsoft Access.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Client advocacy",
+        "Needs assessments",
+        "Microsoft Access"
+      ]
+    }
+  }
+}

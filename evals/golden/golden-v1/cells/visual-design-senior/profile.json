@@ -1,0 +1,505 @@
+{
+  "candidate": {
+    "email": "devon.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-devon-visual-design-senior",
+    "name": "Devon Okafor",
+    "phone": "(555) 010-3787",
+    "username": "gold_visual_design_senior"
+  },
+  "cell": "visual-design-senior",
+  "cell_seed": 1920148239,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Packaging design on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Packaging design, in work or side projects",
+        "any exposure to Print production, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Brand Designer at Meridian Cross: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Packaging\\ design",
+      "(?i)Print\\ production",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "adobe after effects",
+      "canva",
+      "color theory",
+      "layout design"
+    ],
+    "notes": "senior-level visual and brand design. The profile has no Packaging design, Print production; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Packaging design exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Brand Designer",
+        "Stratford Home Goods — Hybrid, Columbus, OH"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.home-goods.about",
+        "jd.home-goods.duties",
+        "jd.home-goods.needs"
+      ],
+      "slug": "home-goods"
+    }
+  ],
+  "level": "senior",
+  "profession": "visual-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Figma in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Meridian Cross",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-07",
+          "title": "Senior Brand Designer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Copperfield Services",
+          "end": "2024-07",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-08",
+          "title": "Graphic Designer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Kestrel Works",
+          "end": "2021-08",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2019-02",
+          "title": "Junior Graphic Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.F.A.",
+          "field": "Graphic Design",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2019"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Figma",
+        "Adobe Illustrator",
+        "Layout design",
+        "Canva",
+        "Adobe After Effects",
+        "Photo retouching",
+        "Color theory",
+        "Motion graphics",
+        "Adobe Photoshop",
+        "Brand identity"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "method",
+      "name": "Layout design"
+    },
+    {
+      "category": "tool",
+      "name": "Canva"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe After Effects"
+    },
+    {
+      "category": "method",
+      "name": "Photo retouching"
+    },
+    {
+      "category": "method",
+      "name": "Color theory"
+    },
+    {
+      "category": "method",
+      "name": "Motion graphics"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Photoshop"
+    },
+    {
+      "category": "method",
+      "name": "Brand identity"
+    }
+  ],
+  "slots": {
+    "jd.home-goods.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Senior Brand Designer at Stratford Home Goods, a home-goods retailer. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.home-goods.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Senior Brand Designer, about guiding junior designers, client revisions, packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.home-goods.needs": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Layout design, Color theory, Adobe After Effects, Canva, Print production, Packaging design, and 8 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Layout design",
+        "Color theory",
+        "Adobe After Effects",
+        "Canva",
+        "Print production",
+        "Packaging design"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Brand Designer at Meridian Cross: social media graphics, using Figma. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Brand Designer at Meridian Cross: guiding junior designers, using Adobe Illustrator. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Illustrator"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Senior Brand Designer at Meridian Cross: directing brand work across campaigns, using Layout design. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Layout design",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Brand Designer at Meridian Cross: print layouts, using Color theory. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Color theory"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Brand Designer at Meridian Cross, about social media graphics. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Brand Designer at Meridian Cross, about packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Copperfield Services: campaign launches, using Photo retouching. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Photo retouching",
+        "35"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Copperfield Services: packaging mockups, using Motion graphics. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Motion graphics"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Graphic Designer at Copperfield Services: client revisions, using Brand identity. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Brand identity",
+        "50"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graphic Designer at Copperfield Services: social media graphics, using Adobe Photoshop. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Photoshop"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graphic Designer at Copperfield Services, about packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graphic Designer at Copperfield Services, about print layouts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Kestrel Works: print layouts, using Adobe After Effects. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Adobe After Effects",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Kestrel Works: preparing files for printers, using Canva. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Canva"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Kestrel Works: brand guideline updates, using Figma. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Figma",
+        "50"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Kestrel Works: campaign launches, using Adobe Illustrator. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe Illustrator"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Graphic Designer at Kestrel Works, about print layouts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Graphic Designer at Kestrel Works, about campaign launches. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level visual and brand design professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Figma, Adobe Illustrator, Layout design.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Adobe Illustrator",
+        "Layout design"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level visual and brand design professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Figma, Adobe Illustrator, Layout design.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Figma",
+        "Adobe Illustrator",
+        "Layout design"
+      ]
+    }
+  }
+}

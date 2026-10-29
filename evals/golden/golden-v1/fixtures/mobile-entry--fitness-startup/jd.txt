@@ -1,0 +1,18 @@
+Junior Mobile Developer
+Pacebridge Fitness — Remote (US)
+
+Pacebridge Fitness makes a workout app for people who want to train consistently without the fuss. We're a small remote team, and we need a Junior Mobile Developer who enjoys shipping. You'll work alongside senior engineers, pick up real tickets early, and see your code in the hands of users fast. If you like tidy builds and smooth apps, we'd like to hear from you.
+
+What you'll do
+- Help cut app start-up time by profiling launch and trimming slow work
+- Keep our release pipeline running smoothly from build to store
+- Test new features across a range of real devices and OS versions
+- Fix bugs and write clear notes for the team
+- Pair with senior engineers and take feedback in code review
+
+What we're looking for
+- 2 or more years of experience building mobile apps
+- Hands-on work with Swift and Core Data on iOS
+- Comfort building Android screens with Jetpack Compose and managing builds with Gradle
+- Experience automating releases with Fastlane and shipping beta builds through TestFlight
+- Willingness to ask questions and learn from code review

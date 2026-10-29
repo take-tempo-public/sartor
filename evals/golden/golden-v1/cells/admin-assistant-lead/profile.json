@@ -1,0 +1,552 @@
+{
+  "candidate": {
+    "email": "sam.reyes@example.com",
+    "linkedin": "linkedin.com/in/example-sam-admin-assistant-lead",
+    "name": "Sam Reyes",
+    "phone": "(555) 010-9328",
+    "username": "gold_admin_assistant_lead"
+  },
+  "cell": "admin-assistant-lead",
+  "cell_seed": 29031565,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Invoice processing on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Invoice processing, in work or side projects",
+        "any exposure to Travel booking, in work or side projects"
+      ],
+      "scope_probes": [
+        "Office Manager at Stonebridge Community Trust: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Invoice\\ processing",
+      "(?i)Travel\\ booking",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "document formatting",
+      "microsoft outlook",
+      "microsoft word",
+      "purchase ordering"
+    ],
+    "notes": "lead-level administrative support. The profile has no Invoice processing, Travel booking; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Managing a team and answering for the results of the function.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, managing a team and answering for the results of the function",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Invoice processing exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Office Manager",
+        "Sunrise Valley Community Health — On site, Fresno, CA"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.community-clinic.about",
+        "jd.community-clinic.duties",
+        "jd.community-clinic.needs"
+      ],
+      "slug": "community-clinic"
+    }
+  ],
+  "level": "lead",
+  "profession": "admin-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Document formatting in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Stonebridge Community Trust",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2021-04",
+          "title": "Office Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Tillman Brothers",
+          "end": "2021-04",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2019-09",
+          "title": "Senior Administrative Specialist"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Riverbend Health Network",
+          "end": "2019-09",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2014-05",
+          "title": "Administrative Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.S.",
+          "field": "Business Administration",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2014"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Business Skills Academy",
+          "name": "Office Administration Certificate",
+          "year": "2017"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Document formatting",
+        "Microsoft Outlook",
+        "Records filing",
+        "Microsoft Word",
+        "Meeting minutes",
+        "Expense reporting",
+        "Purchase ordering",
+        "Visitor reception"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Document formatting"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Outlook"
+    },
+    {
+      "category": "method",
+      "name": "Records filing"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Word"
+    },
+    {
+      "category": "method",
+      "name": "Meeting minutes"
+    },
+    {
+      "category": "method",
+      "name": "Expense reporting"
+    },
+    {
+      "category": "method",
+      "name": "Purchase ordering"
+    },
+    {
+      "category": "method",
+      "name": "Visitor reception"
+    }
+  ],
+  "slots": {
+    "jd.community-clinic.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Office Manager at Sunrise Valley Community Health, a community health center. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.community-clinic.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Office Manager, about filing and records upkeep, processing expense reports, managing office budgets and vendors. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.community-clinic.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Document formatting, Microsoft Word, Microsoft Outlook, Purchase ordering, Invoice processing, Travel booking, and 12 or more years of experience. State Office Administration Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Document formatting",
+        "Microsoft Word",
+        "Microsoft Outlook",
+        "Purchase ordering",
+        "Invoice processing",
+        "Travel booking",
+        "Office Administration Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Office Manager at Stonebridge Community Trust: meeting notes, using Purchase ordering. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Purchase ordering",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Manager at Stonebridge Community Trust: travel and event arrangements, using Expense reporting. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Expense reporting"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Office Manager at Stonebridge Community Trust: filing and records upkeep, using Visitor reception. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Visitor reception",
+        "45"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Manager at Stonebridge Community Trust: managing office budgets and vendors, using Records filing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Records filing"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Office Manager at Stonebridge Community Trust: processing expense reports, using Meeting minutes. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Meeting minutes",
+        "45"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Office Manager at Stonebridge Community Trust, about travel and event arrangements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Office Manager at Stonebridge Community Trust, about training new administrative staff. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: scheduling for managers, using Microsoft Word. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Word",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: training new administrative staff, using Microsoft Outlook. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Outlook"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: phone and visitor coverage, using Document formatting. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Document formatting",
+        "25"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: ordering supplies, using Purchase ordering. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Purchase ordering"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Administrative Specialist at Tillman Brothers: meeting notes, using Expense reporting. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Expense reporting",
+        "50"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Administrative Specialist at Tillman Brothers, about training new administrative staff. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Administrative Specialist at Tillman Brothers, about meeting notes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Riverbend Health Network: processing expense reports, using Visitor reception. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Visitor reception",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Riverbend Health Network: scheduling for managers, using Records filing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Records filing"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Riverbend Health Network: phone and visitor coverage, using Meeting minutes. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Meeting minutes",
+        "15"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Administrative Assistant at Riverbend Health Network: ordering supplies, using Microsoft Word. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Word"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Administrative Assistant at Riverbend Health Network: meeting notes, using Microsoft Outlook. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Outlook",
+        "30"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Administrative Assistant at Riverbend Health Network, about filing and records upkeep. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Administrative Assistant at Riverbend Health Network, about scheduling for managers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a manager-level administrative support professional with about 12 years of experience, scope: managing a team and answering for the results of the function. Mention Document formatting, Microsoft Outlook, Records filing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Document formatting",
+        "Microsoft Outlook",
+        "Records filing"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a manager-level administrative support professional with about 12 years of experience, scope: managing a team and answering for the results of the function. Mention Document formatting, Microsoft Outlook, Records filing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Document formatting",
+        "Microsoft Outlook",
+        "Records filing"
+      ]
+    }
+  }
+}

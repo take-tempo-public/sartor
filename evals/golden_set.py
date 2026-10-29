@@ -90,6 +90,15 @@ _LAST_NAMES = (
 #: Where a job sits. A cell's résumé employers and its JDs come from these, so one set can hold a startup
 #: engineer, a hospital nurse, a county clerk and a family electrical contractor.
 SETTINGS = ("startup", "enterprise", "small-business", "health-nonprofit", "public-sector")
+#: The owner's four groups of professions (design doc 6.4, 2026-10-27): what a per-group result is pooled over.
+#: A group is not a ladder family (a construction project manager is in the trades group and uses an office
+#: ladder), so a profession's row may name one.
+GROUPS = (
+    "tech-and-product",
+    "business-and-office",
+    "health-education-and-community",
+    "trades-and-construction",
+)
 
 # Invented organisations, one pool per setting; nothing here names a real employer or agency.
 _EMPLOYERS_BY_SETTING: dict[str, tuple[str, ...]] = {
@@ -807,6 +816,87 @@ def _check_ladders(manifest: dict[str, Any]) -> list[str]:
             problems.append(
                 f"profession {profession}: family {row.get('family')!r} is not in the manifest"
             )
+        if "group" in row and row["group"] not in GROUPS:
+            problems.append(
+                f"profession {profession}: group {row['group']!r} is not one of {', '.join(GROUPS)}"
+            )
+    return problems
+
+
+def _check_cell_matches_facts(
+    root: Path, manifest: dict[str, Any], cell: str, profile: dict[str, Any]
+) -> list[str]:
+    """A generated cell must be the rebuild of its facts: the profile is a pure function of them.
+
+    Facts edited after a cell was written would leave a cell that no longer describes the profession the
+    facts say, and a paid reply that cannot be reproduced. A converted pilot has no such source, so the
+    caller does not ask.
+    """
+    profession, level = profile.get("profession"), profile.get("level")
+    path = root / "facts" / f"{profession}.json"
+    if not path.is_file():
+        return [f"{cell}: facts/{profession}.json is missing, so the cell cannot be rebuilt"]
+    try:
+        fresh = build_profile(
+            _read_json(path), ladder_for(manifest, str(profession), str(level)), str(level)
+        )
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ) as exc:  # a malformed ladder is reported elsewhere
+        return [f"{cell}: cannot be rebuilt from facts/{profession}.json ({exc})"]
+    if canonical_json(fresh) != canonical_json(profile):
+        return [
+            f"{cell}: the stored profile differs from a fresh build of facts/{profession}.json; "
+            "the facts or the ladder changed after the cell was written"
+        ]
+    return []
+
+
+def _check_facts_files(root: Path, manifest: dict[str, Any]) -> list[str]:
+    """Every way a ``facts/*.json`` file can be wrong, found before a cell is built from it.
+
+    The file is named for its profession, the manifest knows the profession, the facts pass
+    `validate_facts`, and there are enough skills for the profession's ladder to list its tier's skills
+    and still leave the two that a job description asks for and the cell does not list.
+    """
+    problems: list[str] = []
+    folder = root / "facts"
+    if not folder.is_dir():
+        return problems
+    professions = manifest.get("professions", {})
+    for path in sorted(folder.glob("*.json")):
+        where = f"facts/{path.name}"
+        try:
+            facts = _read_json(path)
+        except (OSError, ValueError) as exc:
+            problems.append(f"{where} cannot be read ({exc})")
+            continue
+        if not isinstance(facts, dict) or facts.get("profession") != path.stem:
+            named = facts.get("profession") if isinstance(facts, dict) else None
+            problems.append(f"{where}: profession is {named!r}, the file is named {path.stem!r}")
+            continue
+        if path.stem not in professions:
+            problems.append(f"{where}: profession is not in the manifest")
+            continue
+        found = validate_facts(facts)
+        problems += [f"{where}: {p}" for p in found]
+        if found:
+            continue
+        family = professions[path.stem].get("family")
+        levels = manifest.get("families", {}).get(family, {}).get("levels", {})
+        if levels:
+            tier, rule = max(
+                sorted(levels.items()), key=lambda kv: int(kv[1].get("skill_count", 0))
+            )
+            listed = int(rule.get("skill_count", 0))
+            if len(facts["skills"]) < listed + 2:
+                problems.append(
+                    f"{where}: {len(facts['skills'])} skills, but the {tier} ladder lists {listed} and a "
+                    f"job description needs 2 the cell does not list ({listed} plus 2 are required)"
+                )
     return problems
 
 
@@ -1023,6 +1113,7 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
     if manifest.get("status") not in STATUSES:
         problems.append(f"manifest status {manifest.get('status')!r} is not one of {STATUSES}")
     problems += _check_ladders(manifest)
+    problems += _check_facts_files(root, manifest)
     cells = cell_names(root)
     failing: set[str] = set()
     for cell in cells:
@@ -1037,6 +1128,8 @@ def check_suite(root: Path, author_prompt_sha: dict[str, str] | None = None) -> 
             )
         provenance = prose.get("provenance", {})
         if provenance.get("kind") == "generated":
+            if not validate_profile(profile):
+                problems += _check_cell_matches_facts(root, manifest, cell, profile)
             version = provenance.get("prompt_version")
             want = (author_prompt_sha or {}).get(version)
             recorded = manifest.get("author", {}).get("prompt_versions", {}).get(version)
@@ -1379,6 +1472,16 @@ def _sample(seq: list[str], count: int, seed: int, label: str) -> list[str]:
     return ranked[:count]
 
 
+def _cycle(seq: list[str], seed: int, label: str, start: int, count: int) -> list[str]:
+    """``count`` items from a hashed order, beginning ``start`` places in and wrapping.
+
+    Every item is used once before any is used twice. Drawing each bullet's skill and theme independently
+    (as `_pick` does) repeated one skill in half the bullets of a résumé; walking one hashed order does not.
+    """
+    ranked = sorted(seq, key=lambda item: _hash_int(seed, f"{label}:{item}"))
+    return [ranked[(start + i) % len(ranked)] for i in range(count)]
+
+
 def validate_facts(facts: dict[str, Any]) -> list[str]:
     """Problems with a profession's facts file, empty when it is sound. Never raises on bad content."""
     required = (
@@ -1402,6 +1505,21 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
         problems.append("skills need a distinct, non-empty name each")
     if not all(s.get("category") for s in facts["skills"]):
         problems.append("every skill needs a category")
+    # A skill name is matched as a substring (a trap against a claim, a required fact in a slot) and any
+    # digit in prose must be one the slot allows, so a name that is short, numeric or inside another
+    # name makes a check fire on text that is right, or pass on text that is wrong.
+    usable = [n for n in names if isinstance(n, str) and n]
+    for name in usable:
+        if any(ch.isdigit() for ch in name):
+            problems.append(f"skill {name!r}: a digit in a name is a number the slots do not allow")
+        if len(name) < 3:
+            problems.append(f"skill {name!r}: a name under three characters matches inside words")
+    for inner in usable:
+        for outer in usable:
+            if inner != outer and inner.lower() in outer.lower():
+                problems.append(
+                    f"skill {inner!r} is inside skill {outer!r}: a check for one matches the other"
+                )
     if not facts["work_themes"]:
         problems.append("work_themes is empty")
     settings = facts["settings"]
@@ -1419,6 +1537,21 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
             problems.append(
                 f"{where}: setting {industry.get('setting')!r} is not one of {SETTINGS}"
             )
+    tiers = [i.get("level") for i in facts["industries"]]
+    if any(tier is not None for tier in tiers):
+        # One JD per cell: the profession names the industry each tier is posted in, so all four are named.
+        for industry in facts["industries"]:
+            if industry.get("level") not in LEVELS:
+                problems.append(
+                    f"industry {industry.get('slug')!r}: level {industry.get('level')!r} must be one of "
+                    f"{LEVELS} when any industry names a tier"
+                )
+        missing = [lv for lv in LEVELS if tiers.count(lv) == 0]
+        repeated = [lv for lv in LEVELS if tiers.count(lv) > 1]
+        if missing or repeated:
+            problems.append(
+                f"industries must cover each tier exactly once (missing {missing}, repeated {repeated})"
+            )
     for key in ("degree", "field"):
         if not facts["education"].get(key):
             problems.append(f"education has no {key!r}")
@@ -1429,10 +1562,37 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
         or not all(isinstance(i, str) and i for i in institutions)
     ):
         problems.append("education.institutions, when given, is a non-empty list of names")
+    leadership = facts.get("leadership_themes")
+    if leadership is not None and (
+        not isinstance(leadership, list)
+        or not leadership
+        or not all(isinstance(t, str) and t for t in leadership)
+        or len(set(leadership)) != len(leadership)
+        or set(leadership) & set(facts["work_themes"])
+    ):
+        problems.append(
+            "leadership_themes, when given, is a non-empty list of distinct themes that work_themes does not hold"
+        )
+    employers = facts.get("employers")
+    if employers is not None and (
+        not isinstance(employers, list)
+        or len(employers) < 3
+        or not all(isinstance(e, str) and e for e in employers)
+        or len(set(employers)) != len(employers)
+    ):
+        problems.append(
+            "employers, when given, is a list of at least three distinct names (a career has up to three roles)"
+        )
     certs = facts.get("certifications", [])
     cert_names = [c.get("name") for c in certs]
     if not all(cert_names) or len(set(cert_names)) != len(cert_names):
         problems.append("certifications need a distinct, non-empty name each")
+    for cert_name in (c for c in cert_names if isinstance(c, str) and c):
+        for skill_name in usable:
+            if skill_name.lower() in cert_name.lower() or cert_name.lower() in skill_name.lower():
+                problems.append(
+                    f"skill {skill_name!r} and certification {cert_name!r} contain one another"
+                )
     for cert in certs:
         if not cert.get("issuer"):
             problems.append(f"certification {cert.get('name')!r}: issuer is empty")
@@ -1442,7 +1602,14 @@ def validate_facts(facts: dict[str, Any]) -> list[str]:
 
 
 def _employers_for(facts: dict[str, Any], seed: int, count: int) -> list[str]:
-    """``count`` distinct employers, newest first, each drawn from a setting this profession works in."""
+    """``count`` distinct employers, newest first.
+
+    Drawn from the profession's own ``employers`` when the facts name them (who hires a teacher is not
+    who hires an engineer), otherwise from a setting pool this profession works in.
+    """
+    named = facts.get("employers")
+    if named:
+        return sorted(named, key=lambda n: _hash_int(seed, f"employer:{n}"))[:count]
     used: set[str] = set()
     out: list[str] = []
     for index in range(count):
@@ -1478,6 +1645,18 @@ def _tenures(seed: int, ladder: dict[str, Any]) -> list[int]:
 def cell_seed_for(profession: str, level: str) -> int:
     """The integer every pseudo-random choice in a cell derives from. A function of the cell's name only."""
     return _hash_int(0, f"{SUITE}:{profession}:{level}") % (2**31)
+
+
+def industries_for(facts: dict[str, Any], level: str) -> list[str] | None:
+    """The one industry ``level`` is posted in, as ``[slug]``; ``None`` when the facts name no tiers.
+
+    A profession whose facts tag each industry with a ``level`` gets one JD per cell; facts that do not
+    keep the earlier default (the first two industries).
+    """
+    tiered = [i for i in facts["industries"] if i.get("level")]
+    if not tiered:
+        return None
+    return [i["slug"] for i in tiered if i["level"] == level][:1]
 
 
 def _slot(
@@ -1532,23 +1711,36 @@ def build_profile(
         [s["name"] for s in facts["skills"]], ladder["skill_count"], seed, "skills"
     )
     category = {s["name"]: s["category"] for s in facts["skills"]}
-    themes = list(facts["work_themes"])
     employers = _employers_for(facts, seed, ladder["roles"])
+
+    def themes_for(tier: str) -> list[str]:
+        """The work a role at ``tier`` can truthfully describe: leading and directing only from senior up."""
+        pool = list(facts["work_themes"])
+        if LEVELS.index(tier) >= LEVELS.index("senior"):
+            pool += list(facts.get("leadership_themes", []))
+        return pool
+
     # Dates run back from ASOF: the newest role is current, each older one ends where the next began.
-    titles = [
-        facts["titles"][LEVELS[max(LEVELS.index(level) - i, 0)]] for i in range(ladder["roles"])
-    ]
+    role_tiers = [LEVELS[max(LEVELS.index(level) - i, 0)] for i in range(ladder["roles"])]
+    titles = [facts["titles"][tier] for tier in role_tiers]
+    themes = themes_for(level)  # the cell's own tier: what its job description can ask for
     roles: list[dict[str, Any]] = []
     end: str | None = None
     cursor = _months(ASOF)
     total_months = 0
+    used = 0  # bullets written so far across roles, newest first, so a skill or theme is not repeated early
     for index, duration in enumerate(_tenures(seed, ladder)):
         start_months = cursor - duration
         total_months += duration
         bullet_slots: list[str] = []
-        for b in range(1, ladder["bullets_per_role"] + 1):
-            theme = _pick(themes, seed, f"theme:{index}:{b}")
-            skill = _pick(skill_names, seed, f"skill:{index}:{b}")
+        role_pool = themes_for(role_tiers[index])
+        bullet_count = int(ladder["bullets_per_role"])
+        role_themes = _cycle(role_pool, seed, "theme-order", used, bullet_count)
+        role_skills = _cycle(skill_names, seed, "skill-order", used, bullet_count)
+        used += bullet_count
+        for b in range(1, bullet_count + 1):
+            theme = role_themes[b - 1]
+            skill = role_skills[b - 1]
             outcome = b % 2 == 1
             figure = str(10 + 5 * (_hash_int(seed, f"figure:{index}:{b}") % 10))
             slot_id = f"r{index + 1}.b{b}"
@@ -1568,9 +1760,10 @@ def build_profile(
                 slots[slot_id] = _slot("bullet", brief, must=[skill], lo=8, hi=40)
             bullet_slots.append(slot_id)
         intro_slots: list[str] = []
+        intro_themes = _cycle(role_pool, seed, "intro-order", index, int(ladder["intro_variants"]))
         for v in range(1, ladder["intro_variants"] + 1):
             slot_id = f"r{index + 1}.i{v}"
-            theme = _pick(themes, seed, f"intro:{index}:{v}")
+            theme = intro_themes[v - 1]
             slots[slot_id] = _slot(
                 "intro",
                 f"Variant {v} of a one-sentence role introduction for a {titles[index]} at {employers[index]}, about {theme}. Include no number.",
@@ -1644,7 +1837,9 @@ def build_profile(
     ]
     # JDs: each asks for four of the candidate's skills and two it does not have.
     absent_pool = [s["name"] for s in facts["skills"] if s["name"] not in skill_names]
-    chosen = industries or [i["slug"] for i in facts["industries"]][:2]
+    chosen = (
+        industries or industries_for(facts, level) or [i["slug"] for i in facts["industries"]][:2]
+    )
     industry_by_slug = {i["slug"]: i for i in facts["industries"]}
     jds: list[dict[str, Any]] = []
     present_by_jd: list[list[str]] = []
@@ -1696,8 +1891,8 @@ def build_profile(
     present_all = [s for group in present_by_jd for s in group]
     must_keywords = sorted({s.lower() for s in present_all})[:6]
     traps = (
-        [re.escape(s) for s in absent_all]
-        + [re.escape(c["name"]) for c in absent_certs]
+        ["(?i)" + re.escape(s) for s in absent_all]
+        + ["(?i)" + re.escape(c["name"]) for c in absent_certs]
         + list(GENERIC_TRAPS)
     )
     target_slot = "r1.b2" if "r1.b2" in slots else roles[0]["bullet_slots"][0]

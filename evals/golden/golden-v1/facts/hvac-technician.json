@@ -1,0 +1,151 @@
+{
+  "certifications": [
+    {
+      "issuer": "Environmental Compliance Board",
+      "level": "entry",
+      "name": "Refrigerant Compliance Certificate"
+    },
+    {
+      "issuer": "State Licensing Board",
+      "level": "mid",
+      "name": "HVAC Technician Licence"
+    },
+    {
+      "issuer": "Controls Training Institute",
+      "level": "senior",
+      "name": "Controls Technician Certificate"
+    }
+  ],
+  "display": "heating and cooling service",
+  "education": {
+    "degree": "Certificate",
+    "field": "Heating and Cooling Technology",
+    "institutions": [
+      "Northern Plains Technical College",
+      "Cedar Valley Trades Academy"
+    ]
+  },
+  "employers": [
+    "Pennywhistle Heating and Cooling",
+    "Redfern Comfort Systems",
+    "Evergreen Climate Services",
+    "Tillman Mechanical",
+    "Fairhaven Air and Heat",
+    "Summit Mechanical Services"
+  ],
+  "industries": [
+    {
+      "company": "Sutter Heating and Air",
+      "level": "entry",
+      "location": "On site, Boise, ID",
+      "phrase": "a family HVAC contractor",
+      "setting": "small-business",
+      "slug": "family-hvac"
+    },
+    {
+      "company": "Aspen Ridge Mechanical",
+      "level": "mid",
+      "location": "On site, Salt Lake City, UT",
+      "phrase": "a residential HVAC company",
+      "setting": "small-business",
+      "slug": "residential-hvac"
+    },
+    {
+      "company": "Corliss Commercial Mechanical",
+      "level": "senior",
+      "location": "On site, Columbus, OH",
+      "phrase": "a commercial mechanical contractor",
+      "setting": "enterprise",
+      "slug": "commercial-mechanical"
+    },
+    {
+      "company": "Bellwether Comfort Services",
+      "level": "lead",
+      "location": "On site, Omaha, NE",
+      "phrase": "a regional service company",
+      "setting": "small-business",
+      "slug": "service-company"
+    }
+  ],
+  "leadership_themes": [
+    "training apprentices",
+    "scheduling service calls for the crew"
+  ],
+  "profession": "hvac-technician",
+  "settings": [
+    "small-business",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Refrigerant handling"
+    },
+    {
+      "category": "method",
+      "name": "Brazing and soldering"
+    },
+    {
+      "category": "method",
+      "name": "Duct installation"
+    },
+    {
+      "category": "method",
+      "name": "Thermostat installation"
+    },
+    {
+      "category": "method",
+      "name": "Load calculations"
+    },
+    {
+      "category": "method",
+      "name": "System diagnostics"
+    },
+    {
+      "category": "method",
+      "name": "Preventive maintenance"
+    },
+    {
+      "category": "tool",
+      "name": "Building automation"
+    },
+    {
+      "category": "method",
+      "name": "Leak testing"
+    },
+    {
+      "category": "method",
+      "name": "Electrical testing"
+    },
+    {
+      "category": "method",
+      "name": "Heat pump service"
+    },
+    {
+      "category": "method",
+      "name": "Furnace repair"
+    },
+    {
+      "category": "method",
+      "name": "Customer estimates"
+    },
+    {
+      "category": "method",
+      "name": "Work orders"
+    }
+  ],
+  "titles": {
+    "entry": "HVAC Apprentice",
+    "lead": "HVAC Service Lead",
+    "mid": "HVAC Technician",
+    "senior": "Senior HVAC Technician"
+  },
+  "work_themes": [
+    "diagnosing heating and cooling faults",
+    "installing equipment",
+    "preventive maintenance visits",
+    "testing for leaks",
+    "estimating jobs for customers",
+    "keeping work orders"
+  ]
+}

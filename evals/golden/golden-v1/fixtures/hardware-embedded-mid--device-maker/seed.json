@@ -1,0 +1,305 @@
+{
+  "candidate": {
+    "email": "morgan.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-morgan-hardware-embedded-mid",
+    "name": "Morgan Novak",
+    "notes": null,
+    "phone": "(555) 010-8897",
+    "profile_text": null,
+    "username": "gold_hardware_embedded_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_hardware_embedded_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2021",
+      "field": "Electrical Engineering",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads design reviews for new boards and uses oscilloscope debugging to catch timing faults early, cutting rework after review by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Writes Python scripts that package, flash and verify firmware updates across test boards, replacing manual update steps."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Works with suppliers on component selection and checks candidate logic parts in Verilog simulation, reducing part qualification time by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Builds validation test plans and writes Embedded C test routines that exercise each board function before release."
+        }
+      ],
+      "company": "Dunmore Technologies",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Writes hardware specifications for new boards at Dunmore Technologies and turns them into designs that firmware and test teams can build on."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Owns board bring-up at Dunmore Technologies, taking new hardware from first power-on to working firmware."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Brought up new boards on Linux and wrote bring-up checklists that shortened first-boot time by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested prototypes with JTAG debugging to trace faults to specific parts and firmware paths before design changes."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote board specifications with signal integrity requirements for high-speed traces, cutting late layout changes by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepared PCB layout packages for design reviews and updated boards based on comments from senior engineers."
+        }
+      ],
+      "company": "Meridian Cross",
+      "display_order": 1,
+      "end_date": "2024-10",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported board bring-up at Meridian Cross, helping get new hardware powered, tested and running firmware."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Worked with suppliers at Meridian Cross on component selection, comparing parts for cost, availability and fit with each board design."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Hardware Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "language",
+      "id": 604,
+      "name": "Embedded C",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Firmware bring-up",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "JTAG debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 607,
+      "name": "Linux",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Oscilloscope debugging",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "PCB layout",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 610,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 605,
+      "name": "RTOS",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Signal integrity",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 608,
+      "name": "Verilog",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Hardware and embedded engineer with about 5 years of experience owning a board workstream end to end, from PCB layout to firmware bring-up. Uses JTAG debugging and oscilloscope work to find faults and get boards ready for production."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mid-level hardware engineer with about 5 years of experience taking one product line from schematic to tested board. Handles PCB layout, firmware bring-up and JTAG debugging, and writes Embedded C and Python to test and update the hardware."
+    }
+  ],
+  "tags": []
+}

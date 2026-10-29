@@ -764,6 +764,18 @@ startup JD shape, no certifications). Decided:
   paid generation, the calibration run, retiring `synthetic/`, freezing). The manifest is `draft`, so cells may change
   until the freeze.
 
+**Update 2026-10-28 (built, item 191).** The widened matrix exists: 24 professions in the four groups (9, 6, 4, 5), 96 generated
+cells with one JD each (24 per tier), 36 pairs (24 advance, 12 change), 132 fixtures, all under author prompt `golden-author-2` at effort
+`medium`, with the five public-sector postings (5.2 percent of 96) written in the model's words from our brief. The 96 cells cost $7.08 and
+the call log holds $7.88 for 110 requests (the owner approved $10.00): about $0.05, $0.07, $0.085 and $0.09 a cell at entry, mid,
+senior and lead, three quarters of the output being adaptive thinking. The earlier guess of "$0.05 to $0.14 a cell" was a guess about
+that number. What changed from the plan above: the converted pilots were replaced by generated cells (no waivers remain); a profession
+names the industry of each tier so a cell has one JD; employers and leadership themes became per-profession facts; and the suite
+check now rebuilds every generated cell from its facts. Hand-reading found three defects (leadership work in an apprentice's role, one
+skill filling half a résumé, and a posting requiring the lowest-tier certification); the first two were fixed before the bulk run, the
+third affects 37 cells and is open (item 194). Still to do, all in item 194: the calibration run, final tier sizes, retiring
+`evals/fixtures/synthetic/`, and the freeze.
+
 ### 6.5 Proposal for the owner: the USAJOBS exploration fetch needs a charter decision (2026-10-22)
 
 **Decision (owner, 2026-10-27, plan mode): no fetch.** There is no USAJOBS fetch, no API key and no charter change:

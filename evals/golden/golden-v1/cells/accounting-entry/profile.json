@@ -1,0 +1,340 @@
+{
+  "candidate": {
+    "email": "devon.haddad@example.com",
+    "linkedin": "linkedin.com/in/example-devon-accounting-entry",
+    "name": "Devon Haddad",
+    "phone": "(555) 010-1682",
+    "username": "gold_accounting_entry"
+  },
+  "cell": "accounting-entry",
+  "cell_seed": 997068377,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use SAP on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to SAP, in work or side projects",
+        "any exposure to Sales tax filing, in work or side projects",
+        "any progress toward Certified Public Accountant Licence"
+      ],
+      "scope_probes": [
+        "Staff Accountant at Northfield Group: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)SAP",
+      "(?i)Sales\\ tax\\ filing",
+      "(?i)Certified\\ Public\\ Accountant\\ Licence",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "budget variance analysis",
+      "fixed asset tracking",
+      "journal entries",
+      "month-end close"
+    ],
+    "notes": "entry-level accounting. The profile has no SAP, Sales tax filing, Certified Public Accountant Licence; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "SAP exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Staff Accountant",
+        "Redwood Tax and Bookkeeping — On site, Sacramento, CA"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.tax-firm.about",
+        "jd.tax-firm.duties",
+        "jd.tax-firm.needs"
+      ],
+      "slug": "tax-firm"
+    }
+  ],
+  "level": "entry",
+  "profession": "accounting",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Microsoft Excel in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Northfield Group",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-09",
+          "title": "Staff Accountant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Accounting",
+          "institution": "State University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Accounting Training Council",
+          "name": "Bookkeeping Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Microsoft Excel",
+        "Journal entries",
+        "Payroll accounting",
+        "Fixed asset tracking",
+        "Budget variance analysis",
+        "Month-end close",
+        "Account reconciliation",
+        "QuickBooks"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "method",
+      "name": "Journal entries"
+    },
+    {
+      "category": "method",
+      "name": "Payroll accounting"
+    },
+    {
+      "category": "method",
+      "name": "Fixed asset tracking"
+    },
+    {
+      "category": "method",
+      "name": "Budget variance analysis"
+    },
+    {
+      "category": "method",
+      "name": "Month-end close"
+    },
+    {
+      "category": "method",
+      "name": "Account reconciliation"
+    },
+    {
+      "category": "tool",
+      "name": "QuickBooks"
+    }
+  ],
+  "slots": {
+    "jd.tax-firm.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Staff Accountant at Redwood Tax and Bookkeeping, a small accounting firm. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.tax-firm.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Staff Accountant, about preparing statements, invoice review, bank reconciliations. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.tax-firm.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Budget variance analysis, Fixed asset tracking, Journal entries, Month-end close, Sales tax filing, SAP, and 1 or more years of experience. State Bookkeeping Certificate as a required licence or certification. State Certified Public Accountant Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Budget variance analysis",
+        "Fixed asset tracking",
+        "Journal entries",
+        "Month-end close",
+        "Sales tax filing",
+        "SAP",
+        "Bookkeeping Certificate",
+        "Certified Public Accountant Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: audit preparation, using Payroll accounting. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Payroll accounting",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: bank reconciliations, using Fixed asset tracking. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Fixed asset tracking"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: month-end close, using Microsoft Excel. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Excel",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Staff Accountant at Northfield Group: preparing statements, using Journal entries. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Journal entries"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Staff Accountant at Northfield Group, about preparing statements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Staff Accountant at Northfield Group, about invoice review. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level accounting professional with about 1 years of experience, scope: handling routine requests with a colleague checking the work. Mention Microsoft Excel, Journal entries, Payroll accounting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Microsoft Excel",
+        "Journal entries",
+        "Payroll accounting"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level accounting professional with about 1 years of experience, scope: handling routine requests with a colleague checking the work. Mention Microsoft Excel, Journal entries, Payroll accounting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Microsoft Excel",
+        "Journal entries",
+        "Payroll accounting"
+      ]
+    }
+  }
+}

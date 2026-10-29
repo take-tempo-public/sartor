@@ -1,0 +1,19 @@
+Mobile Developer
+Lumen Reader — Hybrid, Austin, TX
+
+About the role
+Lumen Reader is a digital publishing startup building a reading app people actually want to open. We're looking for a mobile developer who likes shipping, cares about readers, and is happy owning features from idea to release. You'll work closely with a small team, have a real say in how the app grows, and see your work in readers' hands quickly.
+
+What you'll do
+- Find and fix accessibility issues so every reader can use the app comfortably
+- Handle API integration between the app and our content and account services
+- Build and improve offline sync so readers can keep reading without a connection
+- Work with design and backend teammates to plan, build and ship new features
+- Keep the codebase tidy, tested and easy for the next person to pick up
+
+What we're looking for
+- 4 or more years of experience building mobile apps
+- Strong Swift skills and hands-on experience with App Store release
+- Solid Kotlin experience and comfort working with Gradle builds
+- Experience automating builds and releases with Fastlane
+- Push notifications experience across both mobile platforms

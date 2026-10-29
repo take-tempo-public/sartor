@@ -1,0 +1,328 @@
+{
+  "candidate": {
+    "email": "taylor.haddad@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-construction-pm-entry",
+    "name": "Taylor Haddad",
+    "phone": "(555) 010-4076",
+    "username": "gold_construction_pm_entry"
+  },
+  "cell": "construction-pm-entry",
+  "cell_seed": 200854661,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Cost tracking on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Cost tracking, in work or side projects",
+        "any exposure to Submittal tracking, in work or side projects",
+        "any progress toward Construction Safety Manager Certificate"
+      ],
+      "scope_probes": [
+        "Assistant Project Manager at Elmstead Partners: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Cost\\ tracking",
+      "(?i)Submittal\\ tracking",
+      "(?i)Construction\\ Safety\\ Manager\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "oracle primavera",
+      "permit management",
+      "procore",
+      "schedule recovery"
+    ],
+    "notes": "entry-level construction project management. The profile has no Cost tracking, Submittal tracking, Construction Safety Manager Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Cost tracking exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Assistant Project Manager",
+        "Garrity Construction Group — On site, Charlotte, NC"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.general-contractor.about",
+        "jd.general-contractor.duties",
+        "jd.general-contractor.needs"
+      ],
+      "slug": "general-contractor"
+    }
+  ],
+  "level": "entry",
+  "profession": "construction-pm",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Schedule recovery in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Elmstead Partners",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "Assistant Project Manager"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Construction Management",
+          "institution": "State University",
+          "slots": [],
+          "year": "2024"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Schedule recovery",
+        "Contract administration",
+        "Safety planning",
+        "Procore",
+        "Oracle Primavera",
+        "Permit management",
+        "Change orders",
+        "Punch list closeout"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Schedule recovery"
+    },
+    {
+      "category": "method",
+      "name": "Contract administration"
+    },
+    {
+      "category": "method",
+      "name": "Safety planning"
+    },
+    {
+      "category": "tool",
+      "name": "Procore"
+    },
+    {
+      "category": "tool",
+      "name": "Oracle Primavera"
+    },
+    {
+      "category": "method",
+      "name": "Permit management"
+    },
+    {
+      "category": "method",
+      "name": "Change orders"
+    },
+    {
+      "category": "method",
+      "name": "Punch list closeout"
+    }
+  ],
+  "slots": {
+    "jd.general-contractor.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Assistant Project Manager at Garrity Construction Group, a general contractor. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.general-contractor.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Assistant Project Manager, about owner meetings, reviewing submittals, site safety walks. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.general-contractor.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Procore, Schedule recovery, Oracle Primavera, Permit management, Cost tracking, Submittal tracking, and 2 or more years of experience. State Construction Safety Manager Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Procore",
+        "Schedule recovery",
+        "Oracle Primavera",
+        "Permit management",
+        "Cost tracking",
+        "Submittal tracking",
+        "Construction Safety Manager Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Assistant Project Manager at Elmstead Partners: permit and inspection scheduling, using Punch list closeout. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Punch list closeout",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Assistant Project Manager at Elmstead Partners: reviewing submittals, using Safety planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Safety planning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Assistant Project Manager at Elmstead Partners: site safety walks, using Procore. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Procore",
+        "40"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Assistant Project Manager at Elmstead Partners: coordinating subcontractors, using Contract administration. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Contract administration"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Assistant Project Manager at Elmstead Partners, about reviewing submittals. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Assistant Project Manager at Elmstead Partners, about owner meetings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level construction project management professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Schedule recovery, Contract administration, Safety planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Schedule recovery",
+        "Contract administration",
+        "Safety planning"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level construction project management professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Schedule recovery, Contract administration, Safety planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Schedule recovery",
+        "Contract administration",
+        "Safety planning"
+      ]
+    }
+  }
+}

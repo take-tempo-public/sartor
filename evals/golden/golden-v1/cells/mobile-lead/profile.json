@@ -1,0 +1,550 @@
+{
+  "candidate": {
+    "email": "priya.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-priya-mobile-lead",
+    "name": "Priya Kowalski",
+    "phone": "(555) 010-9513",
+    "username": "gold_mobile_lead"
+  },
+  "cell": "mobile-lead",
+  "cell_seed": 134926992,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Kotlin on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Kotlin, in work or side projects",
+        "any exposure to TestFlight, in work or side projects"
+      ],
+      "scope_probes": [
+        "Mobile Engineering Manager at Oakmont Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Kotlin",
+      "(?i)TestFlight",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "app store release",
+      "gradle",
+      "graphql",
+      "xcode"
+    ],
+    "notes": "lead-level mobile app engineering. The profile has no Kotlin, TestFlight; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Kotlin exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Mobile Engineering Manager",
+        "Skyward Travel Group — Hybrid, Dallas, TX"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.airline-mobile.about",
+        "jd.airline-mobile.duties",
+        "jd.airline-mobile.needs"
+      ],
+      "slug": "airline-mobile"
+    }
+  ],
+  "level": "lead",
+  "profession": "mobile",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Jetpack Compose in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Oakmont Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-05",
+          "title": "Mobile Engineering Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Ironbridge Co",
+          "end": "2024-05",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2020-05",
+          "title": "Senior Mobile Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Brightwater Labs",
+          "end": "2020-05",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2016-05",
+          "title": "Mobile Developer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "State University",
+          "slots": [],
+          "year": "2016"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Jetpack Compose",
+        "Gradle",
+        "App Store release",
+        "Android Studio",
+        "Firebase",
+        "Crash reporting",
+        "Core Data",
+        "GraphQL",
+        "Fastlane",
+        "Xcode"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "framework",
+      "name": "Jetpack Compose"
+    },
+    {
+      "category": "tool",
+      "name": "Gradle"
+    },
+    {
+      "category": "method",
+      "name": "App Store release"
+    },
+    {
+      "category": "tool",
+      "name": "Android Studio"
+    },
+    {
+      "category": "platform",
+      "name": "Firebase"
+    },
+    {
+      "category": "method",
+      "name": "Crash reporting"
+    },
+    {
+      "category": "framework",
+      "name": "Core Data"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "tool",
+      "name": "Fastlane"
+    },
+    {
+      "category": "tool",
+      "name": "Xcode"
+    }
+  ],
+  "slots": {
+    "jd.airline-mobile.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Mobile Engineering Manager at Skyward Travel Group, an airline group. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.airline-mobile.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Mobile Engineering Manager, about device testing, crash triage, API integration. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.airline-mobile.needs": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Gradle, GraphQL, App Store release, Xcode, TestFlight, Kotlin, and 10 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Gradle",
+        "GraphQL",
+        "App Store release",
+        "Xcode",
+        "TestFlight",
+        "Kotlin"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Mobile Engineering Manager at Oakmont Systems: mentoring developers on the team, using App Store release. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "App Store release",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Engineering Manager at Oakmont Systems: offline sync, using Xcode. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Xcode"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Mobile Engineering Manager at Oakmont Systems: release pipeline, using Gradle. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Gradle",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Engineering Manager at Oakmont Systems: accessibility fixes, using Android Studio. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Android Studio"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Mobile Engineering Manager at Oakmont Systems: API integration, using Firebase. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firebase",
+        "15"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Mobile Engineering Manager at Oakmont Systems, about offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Mobile Engineering Manager at Oakmont Systems, about accessibility fixes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Ironbridge Co: planning releases with product and design, using Core Data. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Core Data",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Ironbridge Co: crash triage, using Jetpack Compose. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Jetpack Compose"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Ironbridge Co: device testing, using Crash reporting. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Crash reporting",
+        "45"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Ironbridge Co: app start-up time, using Fastlane. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Fastlane"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Ironbridge Co: mentoring developers on the team, using GraphQL. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "GraphQL",
+        "55"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Mobile Engineer at Ironbridge Co, about accessibility fixes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Mobile Engineer at Ironbridge Co, about app start-up time. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Brightwater Labs: API integration, using App Store release. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "App Store release",
+        "55"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Brightwater Labs: crash triage, using Xcode. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Xcode"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Brightwater Labs: device testing, using Gradle. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Gradle",
+        "50"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Brightwater Labs: app start-up time, using Android Studio. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Android Studio"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Brightwater Labs: offline sync, using Firebase. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firebase",
+        "25"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Mobile Developer at Brightwater Labs, about app start-up time. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Mobile Developer at Brightwater Labs, about API integration. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level mobile app engineering professional with about 10 years of experience, scope: leading a team and owning the roadmap for the area. Mention Jetpack Compose, Gradle, App Store release.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Jetpack Compose",
+        "Gradle",
+        "App Store release"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level mobile app engineering professional with about 10 years of experience, scope: leading a team and owning the roadmap for the area. Mention Jetpack Compose, Gradle, App Store release.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Jetpack Compose",
+        "Gradle",
+        "App Store release"
+      ]
+    }
+  }
+}

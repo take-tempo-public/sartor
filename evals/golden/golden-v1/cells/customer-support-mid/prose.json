@@ -1,0 +1,42 @@
+{
+  "cell": "customer-support-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:9bc84afd493ad99dc90d74c51da5cc6107fc0f03660d1926a65ac137042bd3a1",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNJV17NCCJkfjXVhszx"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3640,
+      "output_tokens": 2815
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.utility-services.about": "Position summary\nCorvallis Energy Services seeks a Customer Support Specialist to assist utility customers with account, billing and service questions in a hybrid role based in Phoenix, AZ. The specialist will resolve inquiries accurately, keep records complete and help maintain customer-facing support content. Minimum qualifications include phone support experience, account verification practice and clear written communication. Preferred qualifications include Salesforce experience.",
+    "jd.utility-services.duties": "Responsibilities\n- Update help articles and support content so customers receive current, accurate guidance on utility accounts and billing.\n- Track customer satisfaction scores and report trends to support leadership.\n- Document each ticket with clear notes on the request, actions taken and resolution.\n- Respond to customer inquiries by phone and written channels in a courteous, professional manner.\n- Escalate unresolved or technical issues to the appropriate internal teams with complete supporting detail.",
+    "jd.utility-services.needs": "Minimum and preferred qualifications\n- 5 or more years of customer support experience.\n- Demonstrated experience with phone support in a customer-facing environment.\n- Working knowledge of account verification procedures and customer data protection.\n- Experience administering satisfaction surveys and acting on the results.\n- Knowledge base writing experience, including drafting and maintaining help articles.\n- Preferred: experience conducting onboarding calls and working in Salesforce.",
+    "r1.b1": "Documents tickets in Zendesk with consistent tags and resolution notes, cutting repeat follow-ups on the same issue by 55 percent.",
+    "r1.b2": "Escalates reproducible bugs to engineering with clear steps and customer impact, using satisfaction surveys to flag recurring product issues.",
+    "r1.b3": "Answers billing questions through phone support, explaining charges clearly and reducing callbacks on billing issues by 20 percent.",
+    "r1.b4": "Resolves customer complaints from first contact to close, handling refund processing when a charge is in error and confirming the outcome with the customer.",
+    "r1.i1": "At Kestrel Works, handles customer issues and escalates confirmed bugs to the engineering team with clear reproduction notes.",
+    "r1.i2": "Supports Kestrel Works customers with billing questions, explaining charges and resolving account discrepancies.",
+    "r2.b1": "Tracked satisfaction scores after each resolved case and refined macros and templates, raising survey response rates by 50 percent.",
+    "r2.b2": "Updated help articles on account verification steps so members could follow the process without contacting support.",
+    "r2.b3": "Documented each ticket with clear notes and applied de-escalation techniques on tense calls, reducing escalations to supervisors by 25 percent.",
+    "r2.b4": "Escalated reported bugs to engineering and used knowledge base writing to publish interim workarounds for affected users.",
+    "r2.i1": "At Stonebridge Community Trust, answered member billing questions and explained statements and payment options.",
+    "r2.i2": "Handled frontline support at Stonebridge Community Trust and tracked satisfaction scores to find where service could improve.",
+    "summary.1": "Customer support specialist with about 5 years of experience owning recurring support processes from first request to completion. Brings hands-on skill in account verification, satisfaction surveys, knowledge base writing, phone support and Zendesk.",
+    "summary.2": "Specialist-level customer support professional with about 5 years of experience who takes requests from intake through resolution and follow-up. Uses account verification to protect customer accounts, satisfaction surveys to measure service, and knowledge base writing to keep help content current."
+  }
+}

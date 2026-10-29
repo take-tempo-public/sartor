@@ -1,0 +1,305 @@
+{
+  "candidate": {
+    "email": "avery.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-product-mgmt-mid",
+    "name": "Avery Novak",
+    "notes": null,
+    "phone": "(555) 010-1070",
+    "profile_text": null,
+    "username": "gold_product_mgmt_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_product_mgmt_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2021",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs monthly metrics reviews using prioritization frameworks to rank backlog items, cutting time to decision by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Uses Amplitude usage data to inform vendor selection and pricing decisions for network services."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates customer discovery across design, engineering and operations teams, raising feature adoption by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Turns findings from customer interviews into Figma prototypes that teams test with users before build."
+        }
+      ],
+      "company": "Riverbend Health Network",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "As Product Manager at Riverbend Health Network, leads customer interviews that shape product direction and priorities."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Writes requirements at Riverbend Health Network that turn research and business goals into clear, buildable specifications."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Product Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracked feature launches in Tableau dashboards, lifting post-launch adoption by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote product requirements through stakeholder alignment sessions with engineering, design and sales."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applied product analytics to roadmap planning, raising the share of shipped items tied to measured goals by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Led recurring metrics reviews and fed the findings back into roadmapping for the next planning cycle."
+        }
+      ],
+      "company": "Meridian Cross",
+      "display_order": 1,
+      "end_date": "2024-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Meridian Cross, wrote requirements as an Associate Product Manager, translating stakeholder requests into documented specifications for engineering."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Coordinated work across engineering, design and business teams at Meridian Cross to keep product releases on schedule."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Associate Product Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Amplitude",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Customer discovery",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Figma",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Pricing analysis",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Prioritization frameworks",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Product analytics",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Requirements writing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Roadmapping",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Stakeholder alignment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Tableau",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Product manager with about 5 years of experience owning a single service or workstream end to end, from customer discovery through delivery. Uses Figma for prototyping and Tableau for reporting to connect user needs with measurable product decisions."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mid-level product management professional with about 5 years of experience taking one workstream from research to launch and iteration. Combines customer discovery, Figma prototypes and Tableau analysis with roadmapping and stakeholder alignment to keep delivery focused."
+    }
+  ],
+  "tags": []
+}

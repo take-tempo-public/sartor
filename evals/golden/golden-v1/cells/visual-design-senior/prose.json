@@ -1,0 +1,48 @@
+{
+  "cell": "visual-design-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:48ffc35dd4840427f78421d8317f0a2bdf97aa57faeffc78fc48cba6f4789fb8",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMyFkc9t3TMfXRGzt8j"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4440,
+      "output_tokens": 3098
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.home-goods.about": "Position summary\nStratford Home Goods, a home-goods retailer, is seeking a Senior Brand Designer to shape the visual presentation of its brand across packaging, print and digital channels. This hybrid position is based in Columbus, OH, and reports to the brand team.\nMinimum: proven experience in brand identity, layout design and packaging work for retail products.\nPreferred: experience with motion graphics.",
+    "jd.home-goods.duties": "Responsibilities\n- Guide and mentor junior designers, reviewing their work and providing clear, actionable feedback.\n- Manage client and stakeholder revisions, keeping each request aligned with brand standards.\n- Produce packaging mockups that present product concepts accurately before production approval.\n- Maintain consistency of brand identity across packaging, print and digital materials.\n- Coordinate with marketing and merchandising teams on campaign timelines and deliverables.",
+    "jd.home-goods.needs": "Minimum and preferred qualifications\n- 8 or more years of professional experience in brand or graphic design.\n- Demonstrated skill in layout design and color theory for retail brand materials.\n- Working knowledge of print production and packaging design, including preparing files for vendors.\n- Proficiency with Adobe After Effects for short motion pieces.\n- Preferred: experience with Canva for building templates used by non-design teams.",
+    "r1.b1": "Designs social media graphics in Figma for brand campaigns, raising average post engagement by 10 percent.",
+    "r1.b2": "Guides junior designers through vector and illustration work in Adobe Illustrator, reviewing drafts and giving feedback before client handoff.",
+    "r1.b3": "Directs brand work across campaigns, applying layout design standards that cut production time by 35 percent.",
+    "r1.b4": "Builds print layouts grounded in color theory so that brochures and signage stay consistent with brand palettes.",
+    "r1.i1": "At Meridian Cross, leads the creation of social media graphics that keep the brand consistent across channels.",
+    "r1.i2": "Senior Brand Designer at Meridian Cross responsible for packaging mockups that show how brand concepts will look on finished products.",
+    "r2.b1": "Prepared imagery for campaign launches using photo retouching, shortening asset turnaround by 35 percent.",
+    "r2.b2": "Created packaging mockups paired with motion graphics to present product concepts to clients before print approval.",
+    "r2.b3": "Handled client revisions against established brand identity guidelines, reducing revision rounds by 50 percent.",
+    "r2.b4": "Produced social media graphics in Adobe Photoshop, retouching product photos and sizing assets for each platform.",
+    "r2.i1": "Graphic Designer at Copperfield Services who produced packaging mockups for client product presentations.",
+    "r2.i2": "At Copperfield Services, designed print layouts for client marketing materials as a Graphic Designer.",
+    "r3.b1": "Adapted print layouts into animated versions with Adobe After Effects, increasing reuse of campaign assets by 30 percent.",
+    "r3.b2": "Prepared files for printers from Canva templates, checking bleed, resolution and color settings before submission.",
+    "r3.b3": "Updated brand guidelines in Figma, cutting the time teams spent locating approved assets by 50 percent.",
+    "r3.b4": "Supported campaign launches by drawing icons and illustrations in Adobe Illustrator for print and web use.",
+    "r3.i1": "Junior Graphic Designer at Kestrel Works who built print layouts for marketing and brand materials.",
+    "r3.i2": "At Kestrel Works, supported campaign launches by producing graphics as a Junior Graphic Designer.",
+    "summary.1": "Senior brand designer with about 8 years of experience setting the visual and technical direction for a product area. Works in Figma and Adobe Illustrator and applies layout design to keep brand assets consistent from concept to release.",
+    "summary.2": "Visual and brand design professional with about 8 years of experience, now setting technical direction for the brand work of a product area. Combines layout design with daily use of Figma and Adobe Illustrator to guide designers and keep output consistent."
+  }
+}

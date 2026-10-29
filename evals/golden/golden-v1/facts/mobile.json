@@ -1,0 +1,124 @@
+{
+  "display": "mobile app engineering",
+  "education": {
+    "degree": "B.S.",
+    "field": "Computer Science"
+  },
+  "industries": [
+    {
+      "company": "Pacebridge Fitness",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "a fitness app startup",
+      "setting": "startup",
+      "slug": "fitness-startup"
+    },
+    {
+      "company": "Lumen Reader",
+      "level": "mid",
+      "location": "Hybrid, Austin, TX",
+      "phrase": "a digital publishing startup",
+      "setting": "startup",
+      "slug": "publishing-startup"
+    },
+    {
+      "company": "Dunmark Financial",
+      "level": "senior",
+      "location": "Hybrid, Charlotte, NC",
+      "phrase": "a national bank",
+      "setting": "enterprise",
+      "slug": "bank-mobile"
+    },
+    {
+      "company": "Skyward Travel Group",
+      "level": "lead",
+      "location": "Hybrid, Dallas, TX",
+      "phrase": "an airline group",
+      "setting": "enterprise",
+      "slug": "airline-mobile"
+    }
+  ],
+  "leadership_themes": [
+    "mentoring developers on the team",
+    "planning releases with product and design"
+  ],
+  "profession": "mobile",
+  "settings": [
+    "startup",
+    "enterprise",
+    "small-business"
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Swift"
+    },
+    {
+      "category": "language",
+      "name": "Kotlin"
+    },
+    {
+      "category": "framework",
+      "name": "Jetpack Compose"
+    },
+    {
+      "category": "tool",
+      "name": "Xcode"
+    },
+    {
+      "category": "tool",
+      "name": "Android Studio"
+    },
+    {
+      "category": "platform",
+      "name": "Firebase"
+    },
+    {
+      "category": "tool",
+      "name": "Fastlane"
+    },
+    {
+      "category": "tool",
+      "name": "TestFlight"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "framework",
+      "name": "Core Data"
+    },
+    {
+      "category": "method",
+      "name": "Push notifications"
+    },
+    {
+      "category": "method",
+      "name": "App Store release"
+    },
+    {
+      "category": "tool",
+      "name": "Gradle"
+    },
+    {
+      "category": "method",
+      "name": "Crash reporting"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Mobile Developer",
+    "lead": "Mobile Engineering Manager",
+    "mid": "Mobile Developer",
+    "senior": "Senior Mobile Engineer"
+  },
+  "work_themes": [
+    "app start-up time",
+    "offline sync",
+    "release pipeline",
+    "crash triage",
+    "accessibility fixes",
+    "API integration",
+    "device testing"
+  ]
+}

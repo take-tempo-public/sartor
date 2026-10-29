@@ -1,0 +1,435 @@
+{
+  "candidate": {
+    "email": "harper.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-harper-registered-nurse-mid",
+    "name": "Harper Mehta",
+    "phone": "(555) 010-6135",
+    "username": "gold_registered_nurse_mid"
+  },
+  "cell": "registered-nurse-mid",
+  "cell_seed": 1015189320,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Care planning on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Care planning, in work or side projects",
+        "any exposure to Telemetry monitoring, in work or side projects",
+        "any progress toward Nurse Manager Certificate"
+      ],
+      "scope_probes": [
+        "Registered Nurse at Harborview Community Clinic: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Care\\ planning",
+      "(?i)Telemetry\\ monitoring",
+      "(?i)Nurse\\ Manager\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "clinical documentation",
+      "epic systems",
+      "patient assessment",
+      "triage"
+    ],
+    "notes": "mid-level nursing. The profile has no Care planning, Telemetry monitoring, Nurse Manager Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Carrying a full caseload or class without close supervision.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, carrying a full caseload or class without close supervision",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Care planning exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Registered Nurse",
+        "Summit Health Partners — On site, Charlotte, NC"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.hospital-company.about",
+        "jd.hospital-company.duties",
+        "jd.hospital-company.needs"
+      ],
+      "slug": "hospital-company"
+    }
+  ],
+  "level": "mid",
+  "profession": "registered-nurse",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Clinical documentation in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-05",
+          "title": "Registered Nurse"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Cedar Hollow Hospice",
+          "end": "2024-05",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2023-01",
+          "title": "Graduate Registered Nurse"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.N.",
+          "field": "Nursing",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2023"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Board of Nursing",
+          "name": "Registered Nurse Licence",
+          "year": "2026"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Basic Life Support Card",
+          "year": "2023"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Advanced Cardiac Life Support Card",
+          "year": "2024"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Clinical documentation",
+        "Triage",
+        "Medication administration",
+        "Wound care",
+        "Epic Systems",
+        "Bedside handoff",
+        "Vital signs monitoring",
+        "Patient assessment"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Clinical documentation"
+    },
+    {
+      "category": "method",
+      "name": "Triage"
+    },
+    {
+      "category": "method",
+      "name": "Medication administration"
+    },
+    {
+      "category": "method",
+      "name": "Wound care"
+    },
+    {
+      "category": "tool",
+      "name": "Epic Systems"
+    },
+    {
+      "category": "method",
+      "name": "Bedside handoff"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Patient assessment"
+    }
+  ],
+  "slots": {
+    "jd.hospital-company.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Registered Nurse at Summit Health Partners, a multi-state hospital company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.hospital-company.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Registered Nurse, about teaching patients and families, charting in the record, giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.hospital-company.needs": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Epic Systems, Triage, Clinical documentation, Patient assessment, Care planning, Telemetry monitoring, and 4 or more years of experience. State Registered Nurse Licence as a required licence or certification. State Nurse Manager Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Epic Systems",
+        "Triage",
+        "Clinical documentation",
+        "Patient assessment",
+        "Care planning",
+        "Telemetry monitoring",
+        "Registered Nurse Licence",
+        "Nurse Manager Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Harborview Community Clinic: charting in the record, using Medication administration. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Medication administration",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Harborview Community Clinic: teaching patients and families, using Triage. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Triage"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Harborview Community Clinic: shift handoff, using Vital signs monitoring. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Vital signs monitoring",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Harborview Community Clinic: assessing patients, using Wound care. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Wound care"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Registered Nurse at Harborview Community Clinic, about assessing patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Registered Nurse at Harborview Community Clinic, about charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Cedar Hollow Hospice: giving medications, using Clinical documentation. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Clinical documentation",
+        "10"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Cedar Hollow Hospice: coordinating with physicians, using Patient assessment. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Patient assessment"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Cedar Hollow Hospice: charting in the record, using Bedside handoff. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bedside handoff",
+        "55"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Cedar Hollow Hospice: teaching patients and families, using Epic Systems. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Epic Systems"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graduate Registered Nurse at Cedar Hollow Hospice, about charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graduate Registered Nurse at Cedar Hollow Hospice, about giving medications. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a experienced-level nursing professional with about 4 years of experience, scope: carrying a full caseload or class without close supervision. Mention Clinical documentation, Triage, Medication administration.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Clinical documentation",
+        "Triage",
+        "Medication administration"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "4"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a experienced-level nursing professional with about 4 years of experience, scope: carrying a full caseload or class without close supervision. Mention Clinical documentation, Triage, Medication administration.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Clinical documentation",
+        "Triage",
+        "Medication administration"
+      ]
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "cell": "hardware-embedded-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:086d66dbce5fc75eebacaed2bdfcf952c9b886ce19b6d7572d4fac5b062a01fe",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMTT4AKvBvUVvRFjN3z"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4957,
+      "output_tokens": 3747
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.robotics-startup.about": "Fernhill Robotics builds robots, and we need someone to run the hardware side. As our Hardware Engineering Manager, you'll lead a team of engineers, own the path from schematic to working board, and keep design quality high as we grow. You'll split your time between hands-on debugging and helping people grow as engineers. This is a hybrid role based in Pittsburgh.",
+    "jd.robotics-startup.duties": "What you'll do\n- Lead design reviews for schematics, layouts and firmware, and make sure decisions are written down\n- Mentor junior engineers through debugging, bring-up and review feedback\n- Set review standards so design reviews catch problems early\n- Plan hardware work with the robotics and software teams\n- Own prototype testing and sign off boards before they go to build",
+    "jd.robotics-startup.needs": "What we're looking for\n- 11 or more years of hardware or embedded engineering experience, including time leading engineers\n- Hands-on experience with RTOS-based firmware and Linux systems\n- Firmware bring-up on new boards, from first power-on to stable builds\n- Oscilloscope debugging and lab work on mixed-signal hardware\n- SPICE simulation for circuit design and checks\n- Signal integrity analysis for high-speed boards",
+    "r1.b1": "Leads validation test plans for new hardware, using MATLAB to analyse test data and cutting validation cycle time by 15%.",
+    "r1.b2": "Directs prototype testing for the hardware team, relying on oscilloscope debugging to trace faults before designs move to production.",
+    "r1.b3": "Works with suppliers on component selection, checking parts against VHDL logic requirements and reducing component lead times by 40%.",
+    "r1.b4": "Runs design reviews for hardware and firmware changes, using Linux-based build and test tools to check each change before sign-off.",
+    "r1.b5": "Oversees board bring-up for new designs, using Verilog test benches to verify programmable logic and shortening bring-up time by 20%.",
+    "r1.i1": "Manages the hardware engineering team at Redfern Family Trades, with responsibility for planning and releasing firmware updates for company hardware.",
+    "r1.i2": "Leads hardware engineering at Redfern Family Trades, including prototype testing of new boards before release.",
+    "r2.b1": "Delivered firmware updates for field hardware, using schematic capture to document board revisions and reducing update-related defects by 25%.",
+    "r2.b2": "Led design reviews for RTOS-based firmware, checking task scheduling and timing before each release.",
+    "r2.b3": "Mentored junior engineers in JTAG debugging, cutting the time they needed to resolve board faults by 45%.",
+    "r2.b4": "Wrote specifications for firmware modules in Embedded C, defining interfaces, timing and test criteria for the team.",
+    "r2.b5": "Built validation test plans covering firmware bring-up on new boards, increasing defects caught before release by 45%.",
+    "r2.i1": "Worked as a senior embedded engineer at Granite Ridge, with a focus on prototype testing of embedded hardware and firmware.",
+    "r2.i2": "Handled board bring-up for new embedded designs at Granite Ridge as a senior embedded engineer.",
+    "r3.b1": "Took part in design reviews, using MATLAB models to check circuit behaviour and reducing design rework by 30%.",
+    "r3.b2": "Carried out board bring-up on new designs, using oscilloscope debugging to locate power and signal faults.",
+    "r3.b3": "Developed firmware updates for programmable logic in VHDL, cutting deployment time for each update by 45%.",
+    "r3.b4": "Wrote hardware specifications for Linux-based systems, describing interfaces and test requirements for each board.",
+    "r3.b5": "Drafted validation test plans for Verilog designs, raising test coverage by 15%.",
+    "r3.i1": "Joined Marlow Contracting as a hardware engineer and worked on board bring-up for new circuit designs.",
+    "r3.i2": "Designed hardware at Marlow Contracting and took part in regular design reviews with the engineering team.",
+    "summary.1": "Hardware and embedded engineering lead with 11 years of experience in Embedded C, VHDL and Verilog. Leads a hardware team and owns the roadmap for hardware and firmware work, from board bring-up to validation.",
+    "summary.2": "Lead-level engineer with 11 years in hardware and embedded systems, working in Embedded C, VHDL and Verilog. Manages a team of engineers and sets the technical roadmap for the hardware area."
+  }
+}

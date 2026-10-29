@@ -1,0 +1,19 @@
+Junior Backend Engineer
+Brightpath Payments — Remote (US)
+
+Brightpath Payments is building the payment infrastructure that small businesses rely on. As a Junior Backend Engineer, you'll work on the services that move money: keeping them fast, reliable and easy to build on. You'll ship real code early, pair with senior engineers who review your work, and pick up a lot about how payments systems hold up under pressure. If you like clear problems, honest feedback and a team that moves quickly, we'd love to hear from you.
+
+What you'll do
+- Help keep our payment services healthy and reliable, and join the on-call rotation with senior backup
+- Track down slow queries and tune them so requests stay quick as traffic grows
+- Design clean, well-documented APIs alongside more experienced engineers
+- Plan and roll out API versioning so partners can upgrade without breaking changes
+- Write follow-ups after incidents and turn what we learn into better runbooks
+
+What we're looking for
+- 1+ years of experience building or running backend services
+- Comfort working in Linux environments and deploying to Kubernetes
+- Some exposure to managing infrastructure as code with Terraform
+- Working knowledge of Python and PostgreSQL, including reading query plans
+- Familiarity with Elasticsearch for search or logging workloads
+- Curiosity, clear communication and a willingness to ask for review

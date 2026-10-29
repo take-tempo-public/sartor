@@ -1,0 +1,64 @@
+{
+  "candidate_name": "Casey Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Referral coordination, in work or side projects",
+      "any exposure to Benefits enrollment, in work or side projects",
+      "any exposure to Needs assessments, in work or side projects",
+      "any exposure to Microsoft Access, in work or side projects",
+      "any exposure to Community outreach, in work or side projects",
+      "any exposure to Case notes, in work or side projects",
+      "any exposure to Mandated Reporter Certificate, in work or side projects",
+      "any exposure to Human Services Supervisor Certificate, in work or side projects"
+    ],
+    "scope_probes": [
+      "Classroom Teacher at Hillcrest Elementary School: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Referral\\ coordination",
+    "(?i)Benefits\\ enrollment",
+    "(?i)Needs\\ assessments",
+    "(?i)Microsoft\\ Access",
+    "(?i)Community\\ outreach",
+    "(?i)Case\\ notes",
+    "(?i)Mandated\\ Reporter\\ Certificate",
+    "(?i)Human\\ Services\\ Supervisor\\ Certificate",
+    "(?i)Phonics\\ instruction",
+    "(?i)Reading\\ intervention",
+    "(?i)Instructional\\ Leadership\\ Endorsement",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Referral coordination",
+    "Benefits enrollment",
+    "Needs assessments",
+    "Microsoft Access",
+    "Community outreach",
+    "Case notes",
+    "Mandated Reporter Certificate",
+    "Human Services Supervisor Certificate"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "families"
+  ],
+  "notes": "Mismatched pair (change): the teacher-mid résumé against the social-services-mid job description. A teacher moving into social services: work with families carries over, casework and service planning do not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Referral coordination, Benefits enrollment, Needs assessments, Microsoft Access, Community outreach, Case notes, Mandated Reporter Certificate, Human Services Supervisor Certificate. The output must claim none of it.",
+  "pair": {
+    "id": "teacher-mid-to-social-services-mid",
+    "jd_cell": "social-services-mid",
+    "jd_fixture": "social-services-mid--family-center",
+    "kind": "change",
+    "resume_cell": "teacher-mid",
+    "resume_fixture": "teacher-mid--school-district",
+    "transferable": [
+      "families"
+    ]
+  }
+}

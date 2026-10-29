@@ -1,0 +1,36 @@
+{
+  "cell": "hardware-embedded-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:a90615372fdd25a8b51f9a0ebb40124e42c575222e0c30e29dd9a66577ff221f",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNRfjyBRrs3aBgkbN6G"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2786,
+      "output_tokens": 2142
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.instruments-maker.about": "Position summary\nGranite Instruments, a manufacturer of test equipment, seeks a Junior Hardware Engineer to join its engineering team on site in Rochester, NY. The engineer will support the design, testing and maintenance of instrument hardware under the guidance of senior engineering staff.\nMinimum: a bachelor's degree in electrical engineering or a related field, and working knowledge of board-level hardware.\nPreferred: experience with embedded firmware.",
+    "jd.instruments-maker.duties": "Responsibilities\n- Work with suppliers to evaluate and select electronic components that meet product, cost and availability requirements.\n- Write and maintain hardware specifications for instrument boards and subassemblies.\n- Prepare, test and release firmware updates for existing instrument products.\n- Participate in design reviews and document findings and corrective actions.\n- Support prototype testing and help resolve issues found during validation.",
+    "jd.instruments-maker.needs": "Minimum and preferred qualifications\n- 2 or more years of experience in hardware or embedded engineering.\n- Experience with PCB layout for mixed-signal boards.\n- Oscilloscope debugging skills for board-level fault finding.\n- Working knowledge of Linux and an RTOS in embedded environments.\n- Proficiency in Embedded C; experience with Verilog is preferred.",
+    "r1.b1": "Applies signal integrity analysis in board design reviews, flagging routing issues early and reducing review rework by 55 percent.",
+    "r1.b2": "Brings up new boards using JTAG debugging to verify device connectivity and isolate assembly faults before handoff to firmware testing.",
+    "r1.b3": "Runs prototype tests using oscilloscope debugging to trace timing faults, reducing test cycle time by 25 percent.",
+    "r1.b4": "Evaluates candidate components with suppliers and confirms their suitability through firmware bring-up on sample boards before final selection.",
+    "r1.i1": "Supports firmware updates for hardware products at Harlow and Daughters, working on scoped tasks reviewed by senior engineers.",
+    "r1.i2": "Takes part in design reviews at Harlow and Daughters, checking board designs for issues before they move to prototype.",
+    "summary.1": "Entry-level hardware engineer working on small, well-defined parts of board and logic design with a senior colleague reviewing the work. Applies VHDL, signal integrity analysis and PCB layout skills to design, prototype and bring-up tasks.",
+    "summary.2": "Hardware and embedded engineer early in a career, holding a B.S. in Electrical Engineering from Lakeshore University. Handles scoped tasks in PCB layout, VHDL logic and signal integrity checks, with each piece reviewed by a senior engineer."
+  }
+}

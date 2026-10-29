@@ -1,28 +1,42 @@
 {
   "cell": "sre-ops-mid",
   "provenance": {
-    "kind": "converted",
-    "persona": "sre-mid-level",
-    "source_sha256": {
-      "expected.json": "sha256:98e53d6cafd7f7c23eb4e0e06fb3af3c292af4bac489b281193425021e7175cd",
-      "jd.txt": "sha256:9fdc56325ff4a1244920bdaebc80955f49b4bf53bc9b73d834a1469598e72266",
-      "resume.md": "sha256:4fd01a6e1fb967c4dc7290b27eaf7fc062adc645455d4116621b5c80d67ae909"
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:897814f3f25b8cbc1ed7ab9c93203b359d5c77d0fba8b4b63f5d35c5c271dc0b",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTecp3tPFuZvPiD6VsS"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3740,
+      "output_tokens": 2736
     }
   },
   "schema": 1,
   "slots": {
-    "jd.lattice-cloud.full": "Senior Site Reliability Engineer\nLattice Cloud — Remote (US)\n\nAbout the role\nLattice Cloud runs a multi-region container platform serving 1,200+ enterprise customers. The infrastructure team is hiring an SRE to own the reliability of our control plane: ingress, scheduling, and the metadata layer. You'll set SLOs, drive postmortem culture, and reduce on-call burden through deliberate engineering investment.\n\nWhat you'll do\n- Own incident response for the control plane: lead postmortems, identify systemic patterns, drive corrective actions to completion.\n- Define and instrument SLOs and SLIs for our scheduling pipeline; partner with product engineering to fold reliability budgets into roadmap planning.\n- Improve observability: extend our Prometheus/Grafana stack, add structured tracing where it's missing, write runbooks that cut MTTR.\n- Author Terraform modules that codify infrastructure standards across teams; review IaC changes from product engineers.\n- Participate in a 24/7 on-call rotation (one week in five). Mentor junior engineers on incident command.\n- Run blameless postmortems and own the action-item tracker.\n\nWhat we're looking for\n- 4+ years operating production distributed systems at scale (preferably Kubernetes-based).\n- Strong programming in at least one of: Python, Go.\n- Hands-on experience with: Prometheus/Grafana, Terraform, AWS or GCP, structured logging, distributed tracing.\n- Track record of leading incident response and writing postmortems other engineers actually read.\n- Comfort with on-call as a craft, not a chore.\n\nNice to have\n- Service mesh experience (Istio, Linkerd).\n- Previous SRE-track promotion or staff-level scope.\n- Open-source contributions to observability tools.\n\nCompensation\n$185–$225K base + equity. Full benefits, $2K/yr learning budget, fully remote with quarterly team gatherings.",
-    "r1.b1": "Owned reliability of the API edge for a B2B SaaS serving roughly 800 customer tenants on AWS EKS.",
-    "r1.b2": "Reduced control-plane error budget burn by tightening retry semantics in the ingress layer; rewrote the Envoy filter config and added a dashboard that on-call uses every shift.",
-    "r1.b3": "Authored Terraform modules for VPC peering and IAM role provisioning that the platform team adopted as the standard.",
-    "r1.b4": "Took on-call rotation roughly one week in four; led postmortems for two Sev-1 incidents and tracked action items to completion.",
-    "r1.b5": "Wrote a runbook library covering the top ten alert types; runbook usage cut MTTR for those alerts noticeably.",
-    "r2.b1": "Maintained the data ingestion pipeline (Kafka + Flink) for an analytics product used by internal sales teams.",
-    "r2.b2": "Migrated the monitoring stack from a SaaS APM to self-hosted Prometheus + Grafana, saving on the licensing line item and giving the team direct query access.",
-    "r2.b3": "Built a Slack bot in Python that posted incident timelines as they unfolded; on-call adopted it across the org.",
-    "r2.b4": "Mentored two interns through their first on-call shadow rotations.",
-    "summary.1": "Site Reliability Engineer with four years operating Kubernetes-based platforms in production. Strong incident-response habits and a preference for fixing systemic causes over patching symptoms. Comfortable in Python and Go.",
-    "x4.b1": "**kube-budget-cli** — open-source Go tool that reports namespace-level cost attribution from Kubernetes resource quotas. ~120 GitHub stars.",
-    "x4.b2": "Active reviewer on the Prometheus operator GitHub repo (12 merged PRs over 2024)."
+    "jd.cloud-hosting.about": "About the role\nLattice Cloud is a cloud hosting startup, and we need a Systems Engineer who likes keeping things running. You'll look after the servers and services our customers rely on, fix what breaks, and help us get better at not breaking it again. We're a small team, so you'll own real work from day one and have a say in how we run operations.",
+    "jd.cloud-hosting.duties": "What you'll do\n- Take your turn on the on-call rotation and respond to alerts and outages on our hosting platform\n- Write clear post-incident write-ups that cover what happened, why, and what we'll change\n- Review and sign off change approvals so updates to production are planned and safe\n- Tune monitoring and alerting so the team hears about real problems, not noise\n- Automate repetitive operations work and keep runbooks up to date",
+    "jd.cloud-hosting.needs": "What we're looking for\n- 4 or more years of experience in systems engineering or IT operations\n- Hands-on work with Terraform for infrastructure as code\n- Scripting in Python and PowerShell to automate everyday tasks\n- Experience with Prometheus for monitoring and Splunk for log search\n- Familiarity with ServiceNow for tickets, incidents and change records\n- Systems Administrator Certificate is a required certification",
+    "r1.b1": "Tunes monitoring alerts with PowerShell scripts that filter duplicate and low-value notifications, cutting alert noise by 55 percent.",
+    "r1.b2": "Writes post-incident reviews using Grafana dashboards to show timelines and impact, giving the team a shared record of causes and follow-up actions.",
+    "r1.b3": "Plans patching cycles around backup and recovery checkpoints so every server has a restore point before updates, shortening each cycle by 20 percent.",
+    "r1.b4": "Automates backup and recovery tests with Python scripts that restore sample data and confirm integrity, flagging failed restores before they affect production.",
+    "r1.i1": "As a Systems Engineer at Lantern Hill, tunes monitoring alerts so the team responds to real problems instead of noise.",
+    "r1.i2": "Systems Engineer at Lantern Hill who writes post-incident reviews that record causes, impact and follow-up work for the wider team.",
+    "r2.b1": "Built Bash scripting routines to collect disk, memory and CPU usage for capacity planning, improving forecast accuracy by 15 percent.",
+    "r2.b2": "Joined the on-call rotation for Kubernetes workloads, triaging pod failures and restarting services while following documented escalation steps.",
+    "r2.b3": "Moved change approvals to Terraform plan reviews, letting approvers see exact infrastructure changes and reducing approval time by 50 percent.",
+    "r2.b4": "Tuned monitoring alerts for Microsoft Azure resources, adjusting thresholds and removing duplicate rules so on-call staff received fewer false alarms.",
+    "r2.i1": "Junior Systems Administrator at Stonebridge Community Trust who drafted post-incident write-ups documenting what failed, how it was fixed and what changed afterward.",
+    "r2.i2": "Supported Stonebridge Community Trust as a Junior Systems Administrator, running regular backup and recovery tests to confirm data could be restored when needed.",
+    "summary.1": "Site reliability and IT operations professional with about 4 years of experience owning a service end to end, from monitoring and patching to incident follow-up. Works daily with Kubernetes, PowerShell and Microsoft Azure to keep systems stable and changes predictable.",
+    "summary.2": "IT operations and site reliability engineer with about 4 years of experience taking one workstream from design through daily operation. Uses Kubernetes, Microsoft Azure and PowerShell for automation, alert tuning and backup and recovery testing."
   }
 }

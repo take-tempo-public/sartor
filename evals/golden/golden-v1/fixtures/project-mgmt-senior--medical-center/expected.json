@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Riley Chen",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Asana, in work or side projects",
+      "any exposure to Stakeholder communication, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior Project Manager at Kestrel Works: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Asana",
+    "(?i)Stakeholder\\ communication",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Setting how the team handles one area of the work."
+      },
+      "edit_replacement": "using Jira to link spend against open work items., setting how the team handles one area of the work",
+      "edit_target_substring": "using Jira to link spend against open work items.",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Asana exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "agile ceremonies",
+    "budget tracking",
+    "confluence",
+    "risk registers"
+  ],
+  "notes": "senior-level project management. The profile has no Asana, Stakeholder communication; generation must not claim them."
+}

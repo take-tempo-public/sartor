@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "casey.chen@example.com",
+    "linkedin": "linkedin.com/in/example-casey-visual-design-entry",
+    "name": "Casey Chen",
+    "phone": "(555) 010-5636",
+    "username": "gold_visual_design_entry"
+  },
+  "cell": "visual-design-entry",
+  "cell_seed": 2121286317,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Adobe Photoshop on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Adobe Photoshop, in work or side projects",
+        "any exposure to Layout design, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior Graphic Designer at Copperfield Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Adobe\\ Photoshop",
+      "(?i)Layout\\ design",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "canva",
+      "color theory",
+      "photo retouching",
+      "typography"
+    ],
+    "notes": "entry-level visual and brand design. The profile has no Adobe Photoshop, Layout design; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Adobe Photoshop exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Graphic Designer",
+        "Willow and Ash Studio — On site, Portland, OR"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.design-studio.about",
+        "jd.design-studio.duties",
+        "jd.design-studio.needs"
+      ],
+      "slug": "design-studio"
+    }
+  ],
+  "level": "entry",
+  "profession": "visual-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Motion graphics in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Copperfield Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Junior Graphic Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.F.A.",
+          "field": "Graphic Design",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Motion graphics",
+        "Figma",
+        "Canva",
+        "Typography",
+        "Color theory",
+        "Adobe InDesign",
+        "Packaging design",
+        "Brand identity",
+        "Photo retouching",
+        "Adobe After Effects"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Motion graphics"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Canva"
+    },
+    {
+      "category": "method",
+      "name": "Typography"
+    },
+    {
+      "category": "method",
+      "name": "Color theory"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe InDesign"
+    },
+    {
+      "category": "method",
+      "name": "Packaging design"
+    },
+    {
+      "category": "method",
+      "name": "Brand identity"
+    },
+    {
+      "category": "method",
+      "name": "Photo retouching"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe After Effects"
+    }
+  ],
+  "slots": {
+    "jd.design-studio.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Junior Graphic Designer at Willow and Ash Studio, a small design studio. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.design-studio.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Junior Graphic Designer, about preparing files for printers, brand guideline updates, client revisions. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.design-studio.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Color theory, Photo retouching, Typography, Canva, Adobe Photoshop, Layout design, and 2 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Color theory",
+        "Photo retouching",
+        "Typography",
+        "Canva",
+        "Adobe Photoshop",
+        "Layout design"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Copperfield Services: print layouts, using Brand identity. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Brand identity",
+        "55"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Copperfield Services: brand guideline updates, using Motion graphics. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Motion graphics"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Copperfield Services: social media graphics, using Adobe InDesign. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Adobe InDesign",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Graphic Designer at Copperfield Services: packaging mockups, using Adobe After Effects. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Adobe After Effects"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Graphic Designer at Copperfield Services, about client revisions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Graphic Designer at Copperfield Services, about packaging mockups. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level visual and brand design professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Motion graphics, Figma, Canva.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Motion graphics",
+        "Figma",
+        "Canva"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level visual and brand design professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Motion graphics, Figma, Canva.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Motion graphics",
+        "Figma",
+        "Canva"
+      ]
+    }
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "candidate": {
+    "email": "riley.park@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-sre-ops-entry",
+    "name": "Riley Park",
+    "notes": null,
+    "phone": "(555) 010-5560",
+    "profile_text": null,
+    "username": "gold_sre_ops_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_sre_ops_entry",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2025",
+      "issuer": "Open Systems Training Board",
+      "name": "Systems Administrator Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Information Technology",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs backup and recovery tests on Microsoft Azure, cutting the time needed to verify restores by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepares change approval requests for Ansible playbook updates, with a senior administrator reviewing each change before rollout."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates patching cycles for servers managed through Active Directory, reducing missed patches by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Takes part in the on-call rotation, handling backup and recovery requests and escalating complex issues to senior staff."
+        }
+      ],
+      "company": "Oakmont Systems",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supports change approvals at Oakmont Systems as a Junior Systems Administrator, preparing change requests for review by senior staff."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Works as a Junior Systems Administrator at Oakmont Systems, tuning monitoring alerts so the operations team sees fewer false alarms."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Systems Administrator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "platform",
+      "id": 604,
+      "name": "Active Directory",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Ansible",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Backup and recovery",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 610,
+      "name": "Bash scripting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Grafana",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 607,
+      "name": "Microsoft Azure",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 605,
+      "name": "PowerShell",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Prometheus",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 603,
+      "name": "Python",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "ServiceNow",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Entry-level site reliability and IT operations professional with about 2 years of experience automating routine tasks with Ansible and Python. Builds Grafana dashboards and handles small, well-defined parts of the work with a senior colleague reviewing."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "IT operations and site reliability professional at the entry level, with about 2 years of experience in monitoring and automation. Takes on clearly scoped tasks using Python scripts, Ansible playbooks and Grafana dashboards, with each change reviewed by a senior colleague."
+    }
+  ],
+  "tags": []
+}

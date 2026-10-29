@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "harper.brandt@example.com",
+    "linkedin": "linkedin.com/in/example-harper-security-lead",
+    "name": "Harper Brandt",
+    "phone": "(555) 010-3710",
+    "username": "gold_security_lead"
+  },
+  "cell": "security-lead",
+  "cell_seed": 1020055534,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use PowerShell on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to PowerShell, in work or side projects",
+        "any exposure to Splunk, in work or side projects"
+      ],
+      "scope_probes": [
+        "Security Operations Manager at Harborview Community Clinic: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)PowerShell",
+      "(?i)Splunk",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "access reviews",
+      "log analysis",
+      "phishing simulation",
+      "vulnerability scanning"
+    ],
+    "notes": "lead-level information security analysis. The profile has no PowerShell, Splunk; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "PowerShell exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Security Operations Manager",
+        "Bayside Medical Network — Hybrid, Tampa, FL"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.hospital-security.about",
+        "jd.hospital-security.duties",
+        "jd.hospital-security.needs"
+      ],
+      "slug": "hospital-security"
+    }
+  ],
+  "level": "lead",
+  "profession": "security",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Access reviews in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-12",
+          "title": "Security Operations Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Meridian Cross",
+          "end": "2023-12",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-04",
+          "title": "Senior Security Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Kestrel Works",
+          "end": "2021-04",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2014-04",
+          "title": "Security Analyst"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Cybersecurity",
+          "institution": "State University",
+          "slots": [],
+          "year": "2014"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Information Assurance Guild",
+          "name": "Security Analyst Certificate",
+          "year": "2020"
+        },
+        {
+          "issuer": "Incident Response Society",
+          "name": "Incident Handler Certificate",
+          "year": "2014"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Access reviews",
+        "Python",
+        "Log analysis",
+        "Nessus",
+        "Vulnerability scanning",
+        "Linux",
+        "Incident response",
+        "Firewall rules",
+        "Phishing simulation",
+        "Wireshark"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Access reviews"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "method",
+      "name": "Log analysis"
+    },
+    {
+      "category": "tool",
+      "name": "Nessus"
+    },
+    {
+      "category": "method",
+      "name": "Vulnerability scanning"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "method",
+      "name": "Incident response"
+    },
+    {
+      "category": "method",
+      "name": "Firewall rules"
+    },
+    {
+      "category": "method",
+      "name": "Phishing simulation"
+    },
+    {
+      "category": "tool",
+      "name": "Wireshark"
+    }
+  ],
+  "slots": {
+    "jd.hospital-security.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Security Operations Manager at Bayside Medical Network, a hospital network. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.hospital-security.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Security Operations Manager, about access reviews, alert triage, advising leaders on security risk. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.hospital-security.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Access reviews, Phishing simulation, Vulnerability scanning, Log analysis, Splunk, PowerShell, and 12 or more years of experience. State Security Analyst Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Access reviews",
+        "Phishing simulation",
+        "Vulnerability scanning",
+        "Log analysis",
+        "Splunk",
+        "PowerShell",
+        "Security Analyst Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Security Operations Manager at Harborview Community Clinic: log monitoring, using Wireshark. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Wireshark",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Operations Manager at Harborview Community Clinic: policy documentation, using Phishing simulation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Phishing simulation"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Security Operations Manager at Harborview Community Clinic: risk assessments, using Nessus. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Nessus",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Operations Manager at Harborview Community Clinic: security awareness training, using Vulnerability scanning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vulnerability scanning"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Security Operations Manager at Harborview Community Clinic: alert triage, using Firewall rules. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firewall rules",
+        "35"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Security Operations Manager at Harborview Community Clinic, about risk assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Security Operations Manager at Harborview Community Clinic, about log monitoring. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Security Engineer at Meridian Cross: advising leaders on security risk, using Linux. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Linux",
+        "50"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Security Engineer at Meridian Cross: access reviews, using Python. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Python"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Security Engineer at Meridian Cross: leading incident response drills, using Log analysis. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Log analysis",
+        "55"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Security Engineer at Meridian Cross: tracking vulnerability fixes, using Access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Access reviews"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Security Engineer at Meridian Cross: log monitoring, using Incident response. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Incident response",
+        "55"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Security Engineer at Meridian Cross, about log monitoring. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Security Engineer at Meridian Cross, about access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Security Analyst at Kestrel Works: security awareness training, using Wireshark. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Wireshark",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Analyst at Kestrel Works: alert triage, using Phishing simulation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Phishing simulation"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Security Analyst at Kestrel Works: access reviews, using Nessus. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Nessus",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Security Analyst at Kestrel Works: tracking vulnerability fixes, using Vulnerability scanning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vulnerability scanning"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Security Analyst at Kestrel Works: log monitoring, using Firewall rules. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Firewall rules",
+        "50"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Security Analyst at Kestrel Works, about access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Security Analyst at Kestrel Works, about alert triage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level information security analysis professional with about 12 years of experience, scope: leading a team and owning the roadmap for the area. Mention Access reviews, Python, Log analysis.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Access reviews",
+        "Python",
+        "Log analysis"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level information security analysis professional with about 12 years of experience, scope: leading a team and owning the roadmap for the area. Mention Access reviews, Python, Log analysis.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Access reviews",
+        "Python",
+        "Log analysis"
+      ]
+    }
+  }
+}

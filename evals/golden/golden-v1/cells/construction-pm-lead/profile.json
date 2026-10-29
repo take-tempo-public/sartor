@@ -1,0 +1,552 @@
+{
+  "candidate": {
+    "email": "morgan.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-construction-pm-lead",
+    "name": "Morgan Okafor",
+    "phone": "(555) 010-6916",
+    "username": "gold_construction_pm_lead"
+  },
+  "cell": "construction-pm-lead",
+  "cell_seed": 1180297520,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Contract administration on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Contract administration, in work or side projects",
+        "any exposure to Subcontractor coordination, in work or side projects"
+      ],
+      "scope_probes": [
+        "Construction Manager at Juniper Row: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Contract\\ administration",
+      "(?i)Subcontractor\\ coordination",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "autodesk revit",
+      "microsoft project",
+      "oracle primavera",
+      "permit management"
+    ],
+    "notes": "lead-level construction project management. The profile has no Contract administration, Subcontractor coordination; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Managing a team and answering for the results of the function.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, managing a team and answering for the results of the function",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Contract administration exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Construction Manager",
+        "Quarry Hill Design-Build — Hybrid, Nashville, TN"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.design-build.about",
+        "jd.design-build.duties",
+        "jd.design-build.needs"
+      ],
+      "slug": "design-build"
+    }
+  ],
+  "level": "lead",
+  "profession": "construction-pm",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Safety planning in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Juniper Row",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2022-09",
+          "title": "Construction Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Marlow Contracting",
+          "end": "2022-09",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2018-04",
+          "title": "Senior Project Manager"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Pennywhistle Supply",
+          "end": "2018-04",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2015-08",
+          "title": "Project Manager"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Construction Management",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2015"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Construction Safety Council",
+          "name": "Construction Safety Manager Certificate",
+          "year": "2023"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Safety planning",
+        "Submittal tracking",
+        "Oracle Primavera",
+        "Permit management",
+        "Microsoft Project",
+        "Punch list closeout",
+        "Bluebeam Revu",
+        "Autodesk Revit"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Safety planning"
+    },
+    {
+      "category": "method",
+      "name": "Submittal tracking"
+    },
+    {
+      "category": "tool",
+      "name": "Oracle Primavera"
+    },
+    {
+      "category": "method",
+      "name": "Permit management"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Project"
+    },
+    {
+      "category": "method",
+      "name": "Punch list closeout"
+    },
+    {
+      "category": "tool",
+      "name": "Bluebeam Revu"
+    },
+    {
+      "category": "tool",
+      "name": "Autodesk Revit"
+    }
+  ],
+  "slots": {
+    "jd.design-build.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Construction Manager at Quarry Hill Design-Build, a design-build firm. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.design-build.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Construction Manager, about owner meetings, managing project managers and superintendents, change order pricing. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.design-build.needs": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Oracle Primavera, Permit management, Microsoft Project, Autodesk Revit, Subcontractor coordination, Contract administration, and 11 or more years of experience. State Construction Safety Manager Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Oracle Primavera",
+        "Permit management",
+        "Microsoft Project",
+        "Autodesk Revit",
+        "Subcontractor coordination",
+        "Contract administration",
+        "Construction Safety Manager Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Construction Manager at Juniper Row: managing project managers and superintendents, using Oracle Primavera. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Oracle Primavera",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Construction Manager at Juniper Row: site safety walks, using Safety planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Safety planning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Construction Manager at Juniper Row: owner meetings, using Autodesk Revit. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Autodesk Revit",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Construction Manager at Juniper Row: change order pricing, using Microsoft Project. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Project"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Construction Manager at Juniper Row: reviewing submittals, using Submittal tracking. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Submittal tracking",
+        "15"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Construction Manager at Juniper Row, about permit and inspection scheduling. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Construction Manager at Juniper Row, about tracking budgets and schedules. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Senior Project Manager at Marlow Contracting: negotiating contracts with owners, using Permit management. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Permit management",
+        "40"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Project Manager at Marlow Contracting: coordinating subcontractors, using Bluebeam Revu. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Bluebeam Revu"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Senior Project Manager at Marlow Contracting: permit and inspection scheduling, using Punch list closeout. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Punch list closeout",
+        "30"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Project Manager at Marlow Contracting: tracking budgets and schedules, using Oracle Primavera. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Oracle Primavera"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Senior Project Manager at Marlow Contracting: managing project managers and superintendents, using Safety planning. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Safety planning",
+        "10"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Project Manager at Marlow Contracting, about tracking budgets and schedules. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Project Manager at Marlow Contracting, about managing project managers and superintendents. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Project Manager at Pennywhistle Supply: reviewing submittals, using Autodesk Revit. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Autodesk Revit",
+        "35"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Manager at Pennywhistle Supply: coordinating subcontractors, using Microsoft Project. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Project"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Project Manager at Pennywhistle Supply: permit and inspection scheduling, using Submittal tracking. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Submittal tracking",
+        "30"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Project Manager at Pennywhistle Supply: tracking budgets and schedules, using Permit management. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Permit management"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Project Manager at Pennywhistle Supply: site safety walks, using Bluebeam Revu. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bluebeam Revu",
+        "20"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Project Manager at Pennywhistle Supply, about coordinating subcontractors. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Project Manager at Pennywhistle Supply, about owner meetings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a manager-level construction project management professional with about 11 years of experience, scope: managing a team and answering for the results of the function. Mention Safety planning, Submittal tracking, Oracle Primavera.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Safety planning",
+        "Submittal tracking",
+        "Oracle Primavera"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "11"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a manager-level construction project management professional with about 11 years of experience, scope: managing a team and answering for the results of the function. Mention Safety planning, Submittal tracking, Oracle Primavera.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Safety planning",
+        "Submittal tracking",
+        "Oracle Primavera"
+      ]
+    }
+  }
+}

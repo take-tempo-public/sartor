@@ -1,0 +1,36 @@
+{
+  "cell": "visual-design-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:28fef0db4edee16f28359d014cbcb7501a427096b999654e246cdbb843cce075",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTmDCRUAaPCdFDPzgCc"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2706,
+      "output_tokens": 2075
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.design-studio.about": "About us and the job\nWillow and Ash Studio is a small, owner-run design studio in Portland. We make brand identities, packaging and print work for our clients, and we do that work together in our studio. We are looking for a junior graphic designer to join us on site, help with day-to-day design tasks and learn how a small studio takes a project from first brief to final file.",
+    "jd.design-studio.duties": "What the job involves\n- Prepare print-ready files for printers, checking bleed, color and fonts before they go out\n- Update brand guidelines when a client's identity changes or grows\n- Make client revisions carefully and keep track of each version\n- Build layouts for print and digital pieces from approved concepts\n- Keep project files organized so everyone in the studio can find what they need",
+    "jd.design-studio.needs": "What you need\n- 2 or more years of experience in graphic design\n- A good grasp of typography and color theory\n- Experience with photo retouching in Adobe Photoshop\n- Solid layout design skills for print and digital work\n- Comfort making quick graphics in Canva\n- Willingness to work on site in our Portland studio",
+    "r1.b1": "Designs print layouts that apply brand identity standards consistently, cutting reprint requests by 55 percent.",
+    "r1.b2": "Updates brand guideline documents and adds motion graphics examples that show how logos and colors should move across channels.",
+    "r1.b3": "Produces social media graphics from templates built in Adobe InDesign, reducing production time by 35 percent.",
+    "r1.b4": "Builds packaging mockups and animates product reveals in Adobe After Effects for client presentations.",
+    "r1.i1": "Works through client revisions on print and digital pieces at Copperfield Services, turning feedback into updated files on schedule.",
+    "r1.i2": "Creates packaging mockups at Copperfield Services that help clients see how a design will look before it goes to print.",
+    "summary.1": "Entry-level graphic designer with about 2 years of experience in visual and brand design, using Figma, Canva and motion graphics to produce clear, on-brand work. Takes on small, well-defined parts of a project and delivers them for review by a senior colleague.",
+    "summary.2": "Visual and brand designer at entry level with about 2 years of experience creating layouts, social graphics and motion graphics. Works in Figma and Canva on focused tasks within larger projects, with a senior colleague reviewing each piece before delivery."
+  }
+}

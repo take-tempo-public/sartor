@@ -1,0 +1,340 @@
+{
+  "candidate": {
+    "email": "morgan.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-security-entry",
+    "name": "Morgan Okafor",
+    "phone": "(555) 010-9342",
+    "username": "gold_security_entry"
+  },
+  "cell": "security-entry",
+  "cell_seed": 2123883771,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Linux on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Linux, in work or side projects",
+        "any exposure to Python, in work or side projects",
+        "any progress toward Security Analyst Certificate",
+        "any progress toward Incident Handler Certificate"
+      ],
+      "scope_probes": [
+        "Junior Security Analyst at Halcyon Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Linux",
+      "(?i)Python",
+      "(?i)Security\\ Analyst\\ Certificate",
+      "(?i)Incident\\ Handler\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "firewall rules",
+      "incident response",
+      "log analysis",
+      "nessus"
+    ],
+    "notes": "entry-level information security analysis. The profile has no Linux, Python, Security Analyst Certificate, Incident Handler Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Linux exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Security Analyst",
+        "Weston Credit Union Services — Hybrid, Richmond, VA"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.credit-union.about",
+        "jd.credit-union.duties",
+        "jd.credit-union.needs"
+      ],
+      "slug": "credit-union"
+    }
+  ],
+  "level": "entry",
+  "profession": "security",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention PowerShell in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Halcyon Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-08",
+          "title": "Junior Security Analyst"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Cybersecurity",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "PowerShell",
+        "Threat modeling",
+        "Nessus",
+        "Vulnerability scanning",
+        "Access reviews",
+        "Penetration testing",
+        "Log analysis",
+        "Incident response",
+        "Phishing simulation",
+        "Firewall rules"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "PowerShell"
+    },
+    {
+      "category": "method",
+      "name": "Threat modeling"
+    },
+    {
+      "category": "tool",
+      "name": "Nessus"
+    },
+    {
+      "category": "method",
+      "name": "Vulnerability scanning"
+    },
+    {
+      "category": "method",
+      "name": "Access reviews"
+    },
+    {
+      "category": "method",
+      "name": "Penetration testing"
+    },
+    {
+      "category": "method",
+      "name": "Log analysis"
+    },
+    {
+      "category": "method",
+      "name": "Incident response"
+    },
+    {
+      "category": "method",
+      "name": "Phishing simulation"
+    },
+    {
+      "category": "method",
+      "name": "Firewall rules"
+    }
+  ],
+  "slots": {
+    "jd.credit-union.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Junior Security Analyst at Weston Credit Union Services, a regional credit union. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.credit-union.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Junior Security Analyst, about alert triage, tracking vulnerability fixes, access reviews. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.credit-union.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Incident response, Firewall rules, Log analysis, Nessus, Python, Linux, and 1 or more years of experience. State Security Analyst Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Incident response",
+        "Firewall rules",
+        "Log analysis",
+        "Nessus",
+        "Python",
+        "Linux",
+        "Security Analyst Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Junior Security Analyst at Halcyon Services: policy documentation, using Phishing simulation. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Phishing simulation",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Security Analyst at Halcyon Services: tracking vulnerability fixes, using Nessus. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Nessus"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Junior Security Analyst at Halcyon Services: security awareness training, using Threat modeling. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Threat modeling",
+        "15"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Security Analyst at Halcyon Services: log monitoring, using Vulnerability scanning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Vulnerability scanning"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Security Analyst at Halcyon Services, about alert triage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Security Analyst at Halcyon Services, about log monitoring. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level information security analysis professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention PowerShell, Threat modeling, Nessus.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "PowerShell",
+        "Threat modeling",
+        "Nessus"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level information security analysis professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention PowerShell, Threat modeling, Nessus.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "PowerShell",
+        "Threat modeling",
+        "Nessus"
+      ]
+    }
+  }
+}

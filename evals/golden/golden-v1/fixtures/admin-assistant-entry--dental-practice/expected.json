@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Morgan Kowalski",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Calendar management, in work or side projects",
+      "any exposure to Travel booking, in work or side projects"
+    ],
+    "scope_probes": [
+      "Office Assistant at Stonebridge Community Trust: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Calendar\\ management",
+    "(?i)Travel\\ booking",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Handling routine requests with a colleague checking the work."
+      },
+      "edit_replacement": "Arranges travel and event details for staff through Microsoft Outlook, handling routine requests with a colleague checking the work",
+      "edit_target_substring": "Arranges travel and event details for staff through Microsoft Outlook",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Calendar management exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "invoice processing",
+    "microsoft outlook",
+    "vendor coordination",
+    "visitor reception"
+  ],
+  "notes": "entry-level administrative support. The profile has no Calendar management, Travel booking; generation must not claim them."
+}

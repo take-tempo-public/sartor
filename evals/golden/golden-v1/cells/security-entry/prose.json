@@ -1,0 +1,36 @@
+{
+  "cell": "security-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:673b061117b5f764b0eba9efa932064fb762aed6733c938d6ee7b54af133869f",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUR4CFqkecKyEE6GV2p"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2752,
+      "output_tokens": 1950
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.credit-union.about": "Position summary\nWeston Credit Union Services, a regional credit union, seeks a Junior Security Analyst to help protect member data and internal systems. The analyst will work in a hybrid arrangement from Richmond, VA, under the direction of senior security staff. Minimum requirements include working knowledge of incident response, log analysis and Nessus. A Security Analyst Certificate is preferred.",
+    "jd.credit-union.duties": "Responsibilities\n- Triage security alerts, determine their severity and escalate confirmed incidents to senior analysts.\n- Track remediation of identified vulnerabilities and follow up with system owners until fixes are verified.\n- Perform periodic access reviews and report inappropriate or outdated permissions for correction.\n- Review firewall rules and system logs for activity that does not match established policy.\n- Document findings, actions taken and open items in the team's tracking system.",
+    "jd.credit-union.needs": "Minimum and preferred qualifications\n- 1 or more years of experience in a security analyst or related role.\n- Working knowledge of incident response procedures and log analysis.\n- Experience reviewing and maintaining firewall rules.\n- Hands-on use of Nessus for vulnerability assessment.\n- Familiarity with Python and Linux in an operational setting.\n- Preferred: Security Analyst Certificate.",
+    "r1.b1": "Documents phishing simulation policies and procedures for staff campaigns, contributing to a 10 percent reduction in employee click rates on test emails.",
+    "r1.b2": "Tracks remediation of vulnerabilities identified in Nessus scans and follows up with system owners until fixes are confirmed.",
+    "r1.b3": "Builds security awareness training content from threat modeling findings, raising staff quiz scores by 15 percent.",
+    "r1.b4": "Monitors security logs for unusual activity and compares alerts against vulnerability scanning results to flag exposed systems for senior review.",
+    "r1.i1": "Triages security alerts at Halcyon Services and escalates confirmed issues to senior analysts for review.",
+    "r1.i2": "Monitors system and network logs at Halcyon Services under the guidance of senior analysts.",
+    "summary.1": "Entry-level security analyst with about 1 year of experience handling well-defined tasks such as vulnerability scanning with Nessus under senior review. Uses PowerShell for routine tasks and applies threat modeling to support security assessments.",
+    "summary.2": "Information security analyst with about 1 year of experience and a B.S. in Cybersecurity from Ridgeway College. Works on scoped tasks with a senior colleague reviewing, using Nessus, PowerShell and threat modeling."
+  }
+}

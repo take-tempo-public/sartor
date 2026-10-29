@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "Information Assurance Guild",
+      "level": "mid",
+      "name": "Security Analyst Certificate"
+    },
+    {
+      "issuer": "Incident Response Society",
+      "level": "senior",
+      "name": "Incident Handler Certificate"
+    }
+  ],
+  "display": "information security analysis",
+  "education": {
+    "degree": "B.S.",
+    "field": "Cybersecurity"
+  },
+  "industries": [
+    {
+      "company": "Weston Credit Union Services",
+      "level": "entry",
+      "location": "Hybrid, Richmond, VA",
+      "phrase": "a regional credit union",
+      "setting": "enterprise",
+      "slug": "credit-union"
+    },
+    {
+      "company": "Greenfield State Information Office",
+      "level": "mid",
+      "location": "On site, Greenfield, OH",
+      "phrase": "a state information technology agency",
+      "setting": "public-sector",
+      "slug": "state-agency"
+    },
+    {
+      "company": "Oakhurst Retail Holdings",
+      "level": "senior",
+      "location": "Remote (US)",
+      "phrase": "a national retailer",
+      "setting": "enterprise",
+      "slug": "retail-holdings"
+    },
+    {
+      "company": "Bayside Medical Network",
+      "level": "lead",
+      "location": "Hybrid, Tampa, FL",
+      "phrase": "a hospital network",
+      "setting": "health-nonprofit",
+      "slug": "hospital-security"
+    }
+  ],
+  "leadership_themes": [
+    "leading incident response drills",
+    "advising leaders on security risk"
+  ],
+  "profession": "security",
+  "settings": [
+    "enterprise",
+    "startup",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Splunk"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "language",
+      "name": "PowerShell"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "tool",
+      "name": "Wireshark"
+    },
+    {
+      "category": "tool",
+      "name": "Nessus"
+    },
+    {
+      "category": "method",
+      "name": "Vulnerability scanning"
+    },
+    {
+      "category": "method",
+      "name": "Threat modeling"
+    },
+    {
+      "category": "method",
+      "name": "Incident response"
+    },
+    {
+      "category": "method",
+      "name": "Log analysis"
+    },
+    {
+      "category": "method",
+      "name": "Firewall rules"
+    },
+    {
+      "category": "method",
+      "name": "Penetration testing"
+    },
+    {
+      "category": "method",
+      "name": "Access reviews"
+    },
+    {
+      "category": "method",
+      "name": "Phishing simulation"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Security Analyst",
+    "lead": "Security Operations Manager",
+    "mid": "Security Analyst",
+    "senior": "Senior Security Engineer"
+  },
+  "work_themes": [
+    "alert triage",
+    "tracking vulnerability fixes",
+    "access reviews",
+    "security awareness training",
+    "policy documentation",
+    "log monitoring",
+    "risk assessments"
+  ]
+}

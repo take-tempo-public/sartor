@@ -1,0 +1,427 @@
+{
+  "candidate": {
+    "email": "priya.kowalski@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-mobile-lead",
+    "name": "Priya Kowalski",
+    "notes": null,
+    "phone": "(555) 010-9513",
+    "profile_text": null,
+    "username": "gold_mobile_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_mobile_lead",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2016",
+      "field": "Computer Science",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentors developers on the team through App Store release reviews and shared checklists, cutting rejected submissions by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Designs offline sync for the mobile app in Xcode so users keep working without a connection and changes merge cleanly when they reconnect."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs the release pipeline on Gradle, automating build and signing steps and reducing release preparation time by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads accessibility fixes in Android Studio, adding content descriptions and focus order checks to screens before each release."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Integrates backend APIs with Firebase, reducing failed network requests by 15 percent."
+        }
+      ],
+      "company": "Oakmont Systems",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Manages the mobile engineering team at Oakmont Systems, with a focus on offline sync so the apps stay usable without a network connection."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads mobile engineering at Oakmont Systems, directing a programme of accessibility fixes across the company's apps."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Mobile Engineering Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Planned releases with product and design partners, treating Core Data model changes as a fixed checkpoint and cutting release-date slips by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Triaged crashes in Jetpack Compose screens, tracing faulty state handling and shipping fixes ahead of each release."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Expanded device testing across phones and tablets, using crash reporting to target failing models and lowering crash rates by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automated build and profiling runs with Fastlane to track app start-up time and catch regressions before release."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentored developers on the team in GraphQL schema design and query patterns, shortening code review cycles by 55 percent."
+        }
+      ],
+      "company": "Ironbridge Co",
+      "display_order": 1,
+      "end_date": "2024-05",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked as a Senior Mobile Engineer at Ironbridge Co, building features and leading accessibility fixes across the company's mobile apps."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Served as a Senior Mobile Engineer at Ironbridge Co, focused on reducing app start-up time and keeping launches responsive."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Mobile Engineer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Integrated backend APIs into the app and managed each App Store release, cutting integration defects found after launch by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Triaged crash reports in Xcode, reproducing faults on device and fixing root causes before the next release."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Set up device testing through Gradle tasks, running suites on Android devices and reducing test time by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Profiled app start-up time in Android Studio and moved heavy work off the main thread to speed up launch."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built offline sync on Firebase so data saved without a connection uploaded later, reducing sync conflicts by 25 percent."
+        }
+      ],
+      "company": "Brightwater Labs",
+      "display_order": 2,
+      "end_date": "2020-05",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2016-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Developed mobile apps at Brightwater Labs, with steady work on app start-up time and launch performance."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Built mobile features at Brightwater Labs, focused on API integration between the apps and backend services."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Mobile Developer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Android Studio",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "App Store release",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 607,
+      "name": "Core Data",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Crash reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 609,
+      "name": "Fastlane",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 605,
+      "name": "Firebase",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Gradle",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "GraphQL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 601,
+      "name": "Jetpack Compose",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Xcode",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mobile engineering lead with about 10 years of experience, currently leading a team and owning the mobile roadmap. Works across Jetpack Compose, Gradle and App Store release, from planning through shipping."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mobile engineering manager with about 10 years of experience in app development, now leading a team and owning the roadmap for mobile. Brings hands-on work in Jetpack Compose, Gradle builds and App Store release management."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Sam Mehta",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to API versioning, in work or side projects",
+      "any exposure to PostgreSQL, in work or side projects"
+    ],
+    "scope_probes": [
+      "Backend Engineer at Alder Systems: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)API\\ versioning",
+    "(?i)PostgreSQL",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning one service or workstream end to end."
+      },
+      "edit_replacement": "Tune slow database queries and manage the supporting database infrastructure, owning one service or workstream end to end",
+      "edit_target_substring": "Tune slow database queries and manage the supporting database infrastructure",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "API versioning exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "jenkins",
+    "linux",
+    "python",
+    "terraform"
+  ],
+  "notes": "mid-level backend software engineering. The profile has no API versioning, PostgreSQL; generation must not claim them."
+}

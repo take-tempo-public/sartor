@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Taylor Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Applicant tracking, in work or side projects",
+      "any exposure to Employee relations, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior HR Business Partner at Kestrel Works: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Applicant\\ tracking",
+    "(?i)Employee\\ relations",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Setting how the team handles one area of the work."
+      },
+      "edit_replacement": "Schedule interviews across departments and apply policy writing to set, setting how the team handles one area of the work",
+      "edit_target_substring": "Schedule interviews across departments and apply policy writing to set",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Applicant tracking exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "exit interviews",
+    "new hire onboarding",
+    "performance review cycles",
+    "workday"
+  ],
+  "notes": "senior-level human resources. The profile has no Applicant tracking, Employee relations; generation must not claim them."
+}

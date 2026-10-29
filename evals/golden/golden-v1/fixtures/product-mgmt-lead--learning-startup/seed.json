@@ -1,0 +1,427 @@
+{
+  "candidate": {
+    "email": "avery.chen@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-product-mgmt-lead",
+    "name": "Avery Chen",
+    "notes": null,
+    "phone": "(555) 010-9403",
+    "profile_text": null,
+    "username": "gold_product_mgmt_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_product_mgmt_lead",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2011",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "Ridgeway College",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Sets product strategy with the leadership team, using pricing analysis to guide packaging decisions that raised revenue by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads feature launches end to end, applying go-to-market planning to coordinate timing, messaging and support readiness across teams."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates work across product, engineering and operations teams, using shared Amplitude dashboards to cut time spent on status reporting by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Guides vendor and pricing decisions with prioritization frameworks that weigh cost, user value and delivery risk."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Writes requirements paired with Figma prototypes, reducing rework during development by 15 percent."
+        }
+      ],
+      "company": "Stonebridge Community Trust",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads product at Stonebridge Community Trust, coordinating priorities and delivery across product, engineering and operations teams."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Directs product work at Stonebridge Community Trust and runs regular metrics reviews that tie roadmap decisions to measured outcomes."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Director of Product",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran customer interviews alongside product analytics to locate drop-off points, raising onboarding completion by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coached other product managers on discovery and specification practices, building shared templates and guides in Confluence."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Introduced monthly metrics reviews informed by user interviews, increasing feature adoption by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built roadmap plans from Tableau reports on usage and support volume to sequence work for each quarter."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Partnered with leadership to set product strategy, using requirements writing to turn goals into clear specifications and cutting delivery delays by 55 percent."
+        }
+      ],
+      "company": "Halcyon Services",
+      "display_order": 1,
+      "end_date": "2023-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Owned metrics reviews for product teams at Halcyon Services, turning usage data into roadmap decisions."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Worked with Halcyon Services leadership to set product strategy and translate company goals into a sequenced roadmap."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Product Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Wrote product requirements grounded in pricing analysis, improving conversion on paid offerings by 35 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Conducted customer interviews to inform go-to-market planning for new releases, shaping messaging and rollout order."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Established regular metrics reviews using Amplitude data, increasing weekly active usage by 55 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applied prioritization frameworks to roadmap planning, ranking incoming requests by user impact and effort."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Shipped feature launches from Figma designs validated with users, raising feature engagement by 25 percent."
+        }
+      ],
+      "company": "Maple Court Care",
+      "display_order": 2,
+      "end_date": "2017-05",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2011-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Managed vendor and pricing decisions for the product at Maple Court Care, balancing cost against user needs."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Wrote and maintained product requirements at Maple Court Care, giving engineering and design teams a clear basis for delivery."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Product Manager",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Amplitude",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "Confluence",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Figma",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Go-to-market planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Pricing analysis",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Prioritization frameworks",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Product analytics",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 610,
+      "name": "Requirements writing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Tableau",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "User interviews",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Product leader with about 15 years of experience leading teams and owning the roadmap for a product area. Grounds decisions in user interviews, applies prioritization frameworks to sequence work, and uses Figma to align teams on design."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead-level product manager with roughly 15 years of experience guiding a team and owning the area roadmap. Combines user interviews, prioritization frameworks and Figma prototyping to move from customer needs to shipped work."
+    }
+  ],
+  "tags": []
+}

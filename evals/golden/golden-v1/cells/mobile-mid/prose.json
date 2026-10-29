@@ -1,0 +1,42 @@
+{
+  "cell": "mobile-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:d68db42d09fca88c8c56b0c62906f955c5e0d21bfb2f99f5bdefca047ad41c0c",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNbjrYtXvzwAFibxnC3"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3501,
+      "output_tokens": 2629
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.publishing-startup.about": "About the role\nLumen Reader is a digital publishing startup building a reading app people actually want to open. We're looking for a mobile developer who likes shipping, cares about readers, and is happy owning features from idea to release. You'll work closely with a small team, have a real say in how the app grows, and see your work in readers' hands quickly.",
+    "jd.publishing-startup.duties": "What you'll do\n- Find and fix accessibility issues so every reader can use the app comfortably\n- Handle API integration between the app and our content and account services\n- Build and improve offline sync so readers can keep reading without a connection\n- Work with design and backend teammates to plan, build and ship new features\n- Keep the codebase tidy, tested and easy for the next person to pick up",
+    "jd.publishing-startup.needs": "What we're looking for\n- 4 or more years of experience building mobile apps\n- Strong Swift skills and hands-on experience with App Store release\n- Solid Kotlin experience and comfort working with Gradle builds\n- Experience automating builds and releases with Fastlane\n- Push notifications experience across both mobile platforms",
+    "r1.b1": "Resolves accessibility issues flagged through crash reporting and screen reader checks, reducing accessibility-related crashes by 30 percent.",
+    "r1.b2": "Shortens app start-up time in Swift by moving non-critical work off the launch path and loading resources on demand.",
+    "r1.b3": "Builds offline sync for the mobile app and automates its test builds with Fastlane, cutting sync failures by 30 percent.",
+    "r1.b4": "Maintains the release pipeline in Xcode, standardising build settings and signing so each release ships from a consistent configuration.",
+    "r1.i1": "Builds and tests mobile apps at Fairhaven Works, with a focus on device testing across a range of phones and operating system versions.",
+    "r1.i2": "Develops mobile features at Fairhaven Works, connecting app screens to backend services through API integration.",
+    "r2.b1": "Triaged crash reports for screens built with Jetpack Compose, fixing recurring state bugs and reducing crash volume by 25 percent.",
+    "r2.b2": "Ran device testing across phones and tablets, using Firebase to collect results and catch layout and performance issues before release.",
+    "r2.b3": "Integrated new backend APIs and shipped them through each App Store release, cutting data-loading errors by 35 percent.",
+    "r2.b4": "Fixed accessibility issues in screens backed by Core Data, adding screen reader labels for locally stored content.",
+    "r2.i1": "Supported mobile development at Brightwater Labs, working mainly on API integration between the apps and backend services.",
+    "r2.i2": "Contributed to mobile apps at Brightwater Labs, helping build offline sync so users could keep working without a connection.",
+    "summary.1": "Mobile app engineer with about 4 years of experience owning a workstream end to end, from design through release. Builds Android features in Kotlin, backed by Firebase services and GraphQL APIs.",
+    "summary.2": "Mid-level mobile developer with about 4 years of experience taking a single service or workstream from planning to production. Works across Kotlin, Firebase and GraphQL, with a focus on reliable releases and maintainable code."
+  }
+}

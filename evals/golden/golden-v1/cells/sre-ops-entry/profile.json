@@ -1,0 +1,350 @@
+{
+  "candidate": {
+    "email": "riley.park@example.com",
+    "linkedin": "linkedin.com/in/example-riley-sre-ops-entry",
+    "name": "Riley Park",
+    "phone": "(555) 010-5560",
+    "username": "gold_sre_ops_entry"
+  },
+  "cell": "sre-ops-entry",
+  "cell_seed": 277044101,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Kubernetes on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Kubernetes, in work or side projects",
+        "any exposure to Terraform, in work or side projects",
+        "any progress toward Cloud Operations Certificate"
+      ],
+      "scope_probes": [
+        "Junior Systems Administrator at Oakmont Systems: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Kubernetes",
+      "(?i)Terraform",
+      "(?i)Cloud\\ Operations\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "bash scripting",
+      "microsoft azure",
+      "prometheus",
+      "python"
+    ],
+    "notes": "entry-level site reliability and IT operations. The profile has no Kubernetes, Terraform, Cloud Operations Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Kubernetes exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Systems Administrator",
+        "Brennan IT Services — Hybrid, Atlanta, GA"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.managed-services.about",
+        "jd.managed-services.duties",
+        "jd.managed-services.needs"
+      ],
+      "slug": "managed-services"
+    }
+  ],
+  "level": "entry",
+  "profession": "sre-ops",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Ansible in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Oakmont Systems",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-04",
+          "title": "Junior Systems Administrator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Information Technology",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Open Systems Training Board",
+          "name": "Systems Administrator Certificate",
+          "year": "2025"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Ansible",
+        "Grafana",
+        "Python",
+        "Active Directory",
+        "PowerShell",
+        "Prometheus",
+        "Microsoft Azure",
+        "Backup and recovery",
+        "ServiceNow",
+        "Bash scripting"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Ansible"
+    },
+    {
+      "category": "tool",
+      "name": "Grafana"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "platform",
+      "name": "Active Directory"
+    },
+    {
+      "category": "language",
+      "name": "PowerShell"
+    },
+    {
+      "category": "tool",
+      "name": "Prometheus"
+    },
+    {
+      "category": "platform",
+      "name": "Microsoft Azure"
+    },
+    {
+      "category": "method",
+      "name": "Backup and recovery"
+    },
+    {
+      "category": "tool",
+      "name": "ServiceNow"
+    },
+    {
+      "category": "language",
+      "name": "Bash scripting"
+    }
+  ],
+  "slots": {
+    "jd.managed-services.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Junior Systems Administrator at Brennan IT Services, a managed services provider. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.managed-services.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Junior Systems Administrator, about capacity planning, tuning monitoring alerts, patching cycles. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.managed-services.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Python, Prometheus, Microsoft Azure, Bash scripting, Terraform, Kubernetes, and 2 or more years of experience. State Systems Administrator Certificate as a required licence or certification. State Cloud Operations Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Python",
+        "Prometheus",
+        "Microsoft Azure",
+        "Bash scripting",
+        "Terraform",
+        "Kubernetes",
+        "Systems Administrator Certificate",
+        "Cloud Operations Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Oakmont Systems: backup and recovery tests, using Microsoft Azure. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Azure",
+        "40"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Oakmont Systems: change approvals, using Ansible. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Ansible"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Oakmont Systems: patching cycles, using Active Directory. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Active Directory",
+        "40"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Systems Administrator at Oakmont Systems: on-call rotation, using Backup and recovery. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Backup and recovery"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Systems Administrator at Oakmont Systems, about change approvals. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Systems Administrator at Oakmont Systems, about tuning monitoring alerts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level site reliability and IT operations professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Ansible, Grafana, Python.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Ansible",
+        "Grafana",
+        "Python"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level site reliability and IT operations professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Ansible, Grafana, Python.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Ansible",
+        "Grafana",
+        "Python"
+      ]
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "display": "backend software engineering",
+  "education": {
+    "degree": "B.S.",
+    "field": "Computer Science"
+  },
+  "industries": [
+    {
+      "company": "Brightpath Payments",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "a payments startup",
+      "setting": "startup",
+      "slug": "payments-startup"
+    },
+    {
+      "company": "Marlowe Retail Systems",
+      "level": "mid",
+      "location": "Hybrid, Charlotte, NC",
+      "phrase": "a national retail company",
+      "setting": "enterprise",
+      "slug": "retail-enterprise"
+    },
+    {
+      "company": "Eastlake Health Network",
+      "level": "senior",
+      "location": "Hybrid, Columbus, OH",
+      "phrase": "a regional health system",
+      "setting": "health-nonprofit",
+      "slug": "health-system"
+    },
+    {
+      "company": "Tidewater Freight Labs",
+      "level": "lead",
+      "location": "Remote (US)",
+      "phrase": "a freight-tracking startup",
+      "setting": "startup",
+      "slug": "freight-startup"
+    }
+  ],
+  "leadership_themes": [
+    "mentoring engineers through code review",
+    "setting the team's technical roadmap"
+  ],
+  "profession": "web-backend",
+  "settings": [
+    "startup",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "tool",
+      "name": "PostgreSQL"
+    },
+    {
+      "category": "tool",
+      "name": "Docker"
+    },
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "tool",
+      "name": "Jenkins"
+    },
+    {
+      "category": "tool",
+      "name": "Redis"
+    },
+    {
+      "category": "platform",
+      "name": "Kafka"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "framework",
+      "name": "Spring Boot"
+    },
+    {
+      "category": "tool",
+      "name": "Elasticsearch"
+    },
+    {
+      "category": "tool",
+      "name": "GitHub"
+    },
+    {
+      "category": "method",
+      "name": "API versioning"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Backend Engineer",
+    "lead": "Engineering Manager",
+    "mid": "Backend Engineer",
+    "senior": "Senior Backend Engineer"
+  },
+  "work_themes": [
+    "API design and versioning",
+    "database schema changes",
+    "service reliability and on-call",
+    "tuning slow queries",
+    "deployment pipeline automation",
+    "incident follow-up and runbooks"
+  ]
+}

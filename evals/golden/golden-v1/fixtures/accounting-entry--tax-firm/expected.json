@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Devon Haddad",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to SAP, in work or side projects",
+      "any exposure to Sales tax filing, in work or side projects",
+      "any progress toward Certified Public Accountant Licence"
+    ],
+    "scope_probes": [
+      "Staff Accountant at Northfield Group: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)SAP",
+    "(?i)Sales\\ tax\\ filing",
+    "(?i)Certified\\ Public\\ Accountant\\ Licence",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Handling routine requests with a colleague checking the work."
+      },
+      "edit_replacement": "Reconciles bank accounts and ties fixed asset tracking records to, handling routine requests with a colleague checking the work",
+      "edit_target_substring": "Reconciles bank accounts and ties fixed asset tracking records to",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "SAP exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "budget variance analysis",
+    "fixed asset tracking",
+    "journal entries",
+    "month-end close"
+  ],
+  "notes": "entry-level accounting. The profile has no SAP, Sales tax filing, Certified Public Accountant Licence; generation must not claim them."
+}

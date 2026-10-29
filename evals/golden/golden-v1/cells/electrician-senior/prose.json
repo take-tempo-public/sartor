@@ -1,0 +1,48 @@
+{
+  "cell": "electrician-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:58b1faa9d3ecf8523704afb8f3e8699b40a35682430bf806e40086e1812bc862",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMR8dLVhAHLP3knsDdF"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4805,
+      "output_tokens": 3620
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.industrial-contractor.about": "Position summary\nIronvale Industrial Contractors seeks a Master Electrician for on-site work in Houston, TX. The successful candidate will plan and carry out industrial electrical installations, direct field crews, and ensure all work meets applicable codes. Minimum requirements include a master electrician licence, extensive field experience and sound knowledge of code compliance. Preference is given to candidates with experience in industrial motor controls.",
+    "jd.industrial-contractor.duties": "Responsibilities\n- Pull, terminate and label wire for power, lighting and control circuits.\n- Plan jobs from drawings, estimate quantities and order materials ahead of each phase of work.\n- Install, connect and test electrical panels and lighting fixtures.\n- Direct helpers and apprentices and inspect their work for quality and code compliance.\n- Coordinate with site supervisors on schedules, inspections and changes in scope.",
+    "jd.industrial-contractor.needs": "Minimum and preferred qualifications\n- 9 or more years of electrical construction experience, including work at the master level.\n- Required certification: Apprentice Registration Card issued by the state.\n- Demonstrated skill in code compliance, load calculations and circuit testing.\n- Experience with lighting installation, motor controls and fire alarm wiring in industrial settings.\n- Preferred: experience on large industrial sites in the Houston area.",
+    "r1.b1": "Plans jobs and orders materials from approved drawings with code compliance checked at each stage, cutting material waste by 15 percent across projects.",
+    "r1.b2": "Tests circuits after lighting installation work to confirm correct operation before handing systems over to the customer.",
+    "r1.b3": "Directs helpers and apprentices, using blueprint reading to assign tasks and sequence work, reducing rework on job sites by 40 percent.",
+    "r1.b4": "Pulls and terminates wire for new and existing circuits, using circuit testing to verify each connection before energising.",
+    "r1.i1": "Master Electrician at Copperfield Electric, running conduit and overseeing electrical installations from planning through final inspection.",
+    "r1.i2": "Master Electrician at Copperfield Electric who directs helpers and apprentices on daily tasks and checks their work against plans and code.",
+    "r2.b1": "Ran conduit on routes sized through load calculations, reducing material overruns by 20 percent on assigned jobs.",
+    "r2.b2": "Installed panels and fixtures, using conduit bending to fit runs cleanly around existing structures.",
+    "r2.b3": "Tested circuits and applied troubleshooting methods to locate faults, cutting repair time by 40 percent.",
+    "r2.b4": "Pulled and terminated wire with grounding and bonding completed to code on each installation.",
+    "r2.i1": "Journeyman Electrician at Ashford Industrial Electric responsible for pulling and terminating wire on electrical installations.",
+    "r2.i2": "Installed panels and fixtures as a journeyman electrician at Ashford Industrial Electric, working from drawings to finish each job to code.",
+    "r3.b1": "Traced faults under supervision with close attention to code compliance, reducing failed inspections by 15 percent.",
+    "r3.b2": "Read plans to lay out lighting installation work and placed fixtures as drawn.",
+    "r3.b3": "Ran conduit guided by blueprint reading of layout drawings, shortening installation time by 25 percent.",
+    "r3.b4": "Assisted with installing panels and fixtures, using circuit testing to confirm each circuit before energising.",
+    "r3.i1": "Apprentice Electrician at Brightline Wiring Company, installing panels and fixtures under the guidance of licensed electricians.",
+    "r3.i2": "Tested circuits as an apprentice at Brightline Wiring Company, learning to verify wiring before systems were energised.",
+    "summary.1": "Master electrician with about 9 years of experience planning jobs and checking the work of others on electrical installations. Applies blueprint reading, code compliance and troubleshooting to keep projects accurate and ready for inspection.",
+    "summary.2": "Licensed master electrician with about 9 years in the trade, from apprenticeship to leading crews. Plans jobs, reviews the work of helpers and apprentices, and relies on blueprint reading, code compliance and troubleshooting to deliver installations that pass inspection."
+  }
+}

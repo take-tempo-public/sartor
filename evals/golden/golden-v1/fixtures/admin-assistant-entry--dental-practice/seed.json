@@ -1,0 +1,212 @@
+{
+  "candidate": {
+    "email": "morgan.kowalski@example.com",
+    "linkedin_url": "linkedin.com/in/example-morgan-admin-assistant-entry",
+    "name": "Morgan Kowalski",
+    "notes": null,
+    "phone": "(555) 010-7203",
+    "profile_text": null,
+    "username": "gold_admin_assistant_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_admin_assistant_entry",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "Business Skills Academy",
+      "name": "Office Administration Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "A.S.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedules meetings and appointments for managers using Microsoft Excel trackers, reducing double bookings by 15 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Arranges travel and event details for staff through Microsoft Outlook, keeping invitations, bookings and confirmations in one place."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Processes expense reports and handles vendor coordination on missing receipts, cutting late submissions by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepares meeting notes and applies document formatting so records stay consistent and easy to file."
+        }
+      ],
+      "company": "Stonebridge Community Trust",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-08",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supports managers at Stonebridge Community Trust by keeping their calendars and meeting schedules organised and up to date."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handles travel and event arrangements for staff at Stonebridge Community Trust, from first bookings to final confirmations."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Office Assistant",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Document formatting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Expense reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Invoice processing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Microsoft Excel",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Microsoft Outlook",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Microsoft Word",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Vendor coordination",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Visitor reception",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Administrative support professional with about 1 year of experience handling routine office requests, with a colleague checking the work. Skills include visitor reception, Microsoft Excel and expense reporting."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Associate-level office assistant with about 1 year of experience covering visitor reception, expense reporting and day-to-day requests. Uses Microsoft Excel for tracking and works with a colleague who reviews completed tasks."
+    }
+  ],
+  "tags": []
+}

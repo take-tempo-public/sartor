@@ -1,0 +1,36 @@
+{
+  "cell": "hvac-technician-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:60faf6df9673da781e1d9318633020e78d6a71a12d1ad8ac96386796fc2c0255",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVU946c7F93mqkLrXAoW"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2902,
+      "output_tokens": 1753
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.family-hvac.about": "About us and the job\nSutter Heating and Air is a family HVAC contractor in Boise, run by its owners. We fix and look after heating and cooling systems for our neighbours, and we treat every home like our own. As an HVAC apprentice you will work on site with our technicians, learning the trade on real jobs and helping customers get their systems running again.",
+    "jd.family-hvac.duties": "What the job involves\n- Diagnose heating and cooling faults alongside an experienced technician\n- Test systems for refrigerant leaks and help carry out repairs\n- Prepare clear job estimates for customers before work begins\n- Explain findings and costs to customers in plain words\n- Keep work orders complete and up to date for each visit",
+    "jd.family-hvac.needs": "What you need\n- 2 or more years of experience in heating and cooling service\n- Hands-on skill in preventive maintenance, leak testing and system diagnostics\n- Experience with duct installation and thermostat installation\n- Working knowledge of load calculations\n- Refrigerant Compliance Certificate (required)\n- HVAC Technician Licence (preferred)",
+    "r1.b1": "Prepares job estimates for customers on furnace repair work, improving estimate accuracy by 15 percent.",
+    "r1.b2": "Keeps work orders up to date and attaches customer estimates to each job so the supervising journeyman can track approved work.",
+    "r1.b3": "Supports duct installation during preventive maintenance visits, reducing repeat service calls by 20 percent.",
+    "r1.b4": "Diagnoses heating and cooling faults and records findings in work orders for journeyman review.",
+    "r1.i1": "Works under a journeyman at Summit Mechanical Services, keeping work orders accurate and complete for each service call.",
+    "r1.i2": "Helps estimate heating and cooling jobs for customers at Summit Mechanical Services while training as an HVAC apprentice.",
+    "summary.1": "HVAC apprentice with about 2 years of heating and cooling service experience, working under a journeyman who checks each job. Skills include refrigerant handling, system diagnostics and keeping accurate work orders.",
+    "summary.2": "Apprentice-level heating and cooling service technician with about 2 years of hands-on experience. Brings refrigerant handling, system diagnostics and careful work orders to each job, with all work checked by a supervising journeyman."
+  }
+}

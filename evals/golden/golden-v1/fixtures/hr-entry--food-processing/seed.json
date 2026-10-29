@@ -1,0 +1,202 @@
+{
+  "candidate": {
+    "email": "priya.kowalski@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-hr-entry",
+    "name": "Priya Kowalski",
+    "notes": null,
+    "phone": "(555) 010-0513",
+    "profile_text": null,
+    "username": "gold_hr_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_hr_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2024",
+      "field": "Human Resource Management",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updates review policy guidance and communicates changes ahead of performance review cycles, reducing late review submissions by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains accurate employee HR records and prepares compliance reporting from those records for review by the HR team."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedules candidate interviews through Workday and coordinates calendars with hiring managers, cutting the time needed to book interviews by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Screens incoming candidates against role requirements and supports payroll coordination for new hires once offers are accepted."
+        }
+      ],
+      "company": "Elmstead Partners",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Coordinates interview scheduling at Elmstead Partners, arranging candidate meetings and keeping hiring managers informed of each step."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supports policy updates at Elmstead Partners as HR Coordinator, sharing changes with employees and keeping related HR documents current."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HR Coordinator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Applicant tracking",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Compliance reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Interview scheduling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "New hire onboarding",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Offer letters",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Payroll coordination",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Performance review cycles",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Workday",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Associate-level human resources professional with about 2 years of experience handling routine HR requests, with a colleague checking the completed work. Skills include payroll coordination, applicant tracking and day-to-day use of Workday."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "HR coordinator with about 2 years of experience supporting routine employee and hiring requests under review by a senior colleague. Works in Workday for applicant tracking and payroll coordination tasks."
+    }
+  ],
+  "tags": []
+}

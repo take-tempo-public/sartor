@@ -1,0 +1,36 @@
+{
+  "cell": "teacher-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:493af932014c0655579173b40442106874b8d5a8ca65ed0d3c1b43f7e096d199",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMuiBixpcb36iayjx4k"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2829,
+      "output_tokens": 2209
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.charter-network.about": "Summary\nBrookside Community Schools is a nonprofit charter school network committed to giving every child a strong start in reading and learning. We are seeking an Associate Teacher to work on site in Detroit alongside a lead teacher, supporting instruction and daily classroom life. Candidates must hold a current State Teaching Licence as a condition of employment.",
+    "jd.charter-network.duties": "Duties\n- Establish and maintain consistent classroom routines that help students start, transition and end the day calmly\n- Plan daily lessons with the lead teacher, aligned to network curriculum and student needs\n- Prepare for and take part in parent conferences, sharing student progress and next steps with families\n- Lead small-group instruction and adapt materials for different learners\n- Track student progress through classroom checks and share findings with the instructional team\n- Support a safe, positive classroom culture in line with network behavior expectations",
+    "jd.charter-network.needs": "Licensure and qualifications\n- State Teaching Licence required\n- 2 or more years of experience in an elementary classroom\n- Demonstrated skill in phonics instruction and lesson planning\n- Working knowledge of behavior supports and classroom management\n- Clear parent communication, including regular family updates through Seesaw\n- Reading Specialist Endorsement preferred",
+    "r1.b1": "Plans daily classroom routines through structured lesson planning, reducing instructional time lost during transitions by 50 percent.",
+    "r1.b2": "Records student progress and behavior in ClassDojo, sharing regular updates with the lead teacher to guide next instructional steps.",
+    "r1.b3": "Collaborates with grade-level colleagues to plan consistent behavior supports, contributing to a 30 percent drop in classroom disruptions.",
+    "r1.b4": "Adapts lessons in Nearpod for different learners, adding visuals and leveled questions so every student can take part.",
+    "r1.i1": "Supports the lead teacher at Oakridge Charter School in running consistent daily classroom routines for elementary students.",
+    "r1.i2": "Assists the lead teacher at Oakridge Charter School in tracking student progress and using classroom evidence to shape instruction.",
+    "summary.1": "Entry-level elementary teacher with about 2 years of classroom experience, supporting a lead teacher on a defined share of instruction under close supervision. Uses Google Classroom, formative assessment and Nearpod to deliver lessons and check student understanding.",
+    "summary.2": "Associate teacher with about 2 years in elementary classrooms and a B.A. in Elementary Education, working alongside a supervising teacher on selected lessons and small groups. Applies formative assessment to track learning and uses Google Classroom and Nearpod for assignments and interactive lessons."
+  }
+}

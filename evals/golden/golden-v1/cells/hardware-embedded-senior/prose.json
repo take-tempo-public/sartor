@@ -1,0 +1,48 @@
+{
+  "cell": "hardware-embedded-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:9e13901f445dc6c4b726c6431db0a01087e73834788fa7cd0832289795c987a9",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVU4VG3jt4ymq6afZD7s"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4530,
+      "output_tokens": 3486
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.aerospace-supplier.about": "Halvorsen Aerospace Systems seeks a Senior Embedded Engineer to join its on-site team in Wichita, KS. The engineer will design, bring up and verify embedded hardware for aerospace programs, working closely with suppliers and systems teams. Candidates must have experience with schematic capture, PCB layout and embedded C. Experience with Verilog and signal integrity analysis is preferred.",
+    "jd.aerospace-supplier.duties": "Responsibilities\n- Write and maintain hardware and firmware specifications for embedded aerospace systems.\n- Lead board bring-up of new designs, from initial power-on through functional verification.\n- Select components in partnership with approved suppliers, weighing availability, qualification and lifecycle risk.\n- Review schematics and layouts produced by peers and contractors.\n- Coordinate with test and quality teams to resolve design issues found during validation.",
+    "jd.aerospace-supplier.needs": "Minimum and preferred qualifications\n- 9 or more years of experience in hardware or embedded engineering.\n- Proven skill in schematic capture and PCB layout for mixed-signal boards.\n- Working knowledge of embedded C and Python for firmware and test automation.\n- Experience writing and verifying logic in Verilog.\n- Preferred: hands-on signal integrity analysis on high-speed interfaces.",
+    "r1.b1": "Runs prototype testing with SPICE simulation ahead of each board spin, cutting failed bench tests by 25 percent.",
+    "r1.b2": "Leads design reviews informed by firmware bring-up results, flagging integration issues before boards move to production.",
+    "r1.b3": "Evaluates components with suppliers, using Linux-based test scripts to confirm compatibility and lower part costs by 10 percent.",
+    "r1.b4": "Mentors junior engineers on writing Python test tools and reviews their code for hardware validation tasks.",
+    "r1.i1": "Owns firmware updates for embedded products at Sutter Street Shop, from planning through release on deployed hardware.",
+    "r1.i2": "Leads board bring-up for new embedded hardware at Sutter Street Shop, taking designs from initial power-on to working systems.",
+    "r2.b1": "Brought up new boards and fed findings back into PCB layout revisions, reducing rework on later builds by 25 percent.",
+    "r2.b2": "Wrote design specifications for programmable logic blocks and kept them aligned with the VHDL implementation.",
+    "r2.b3": "Developed validation test plans backed by JTAG debugging, shortening fault isolation time by 10 percent.",
+    "r2.b4": "Tested prototypes against Verilog simulation models to confirm logic behavior before release.",
+    "r2.i1": "Handled board bring-up for hardware products at Pennywhistle Supply, verifying new designs on the bench before release.",
+    "r2.i2": "Wrote and maintained hardware specifications at Pennywhistle Supply, defining requirements for boards and programmable logic.",
+    "r3.b1": "Supported design reviews with oscilloscope debugging data, helping cut open signal issues by 50 percent before sign-off.",
+    "r3.b2": "Prepared schematic capture for new boards and worked with suppliers to confirm part selections and alternates.",
+    "r3.b3": "Validated firmware updates against SPICE simulation results for the supporting circuits, reducing post-update hardware faults by 25 percent.",
+    "r3.b4": "Assisted with board bring-up through firmware bring-up tasks, confirming that new boards booted and responded correctly.",
+    "r3.i1": "Drafted and updated hardware specifications at Calloway Group under the guidance of senior engineers.",
+    "r3.i2": "Carried out prototype testing at Calloway Group, checking early boards against design requirements on the bench.",
+    "summary.1": "Senior hardware and embedded engineer with 9 years of experience setting technical direction for a product area, from board design through firmware bring-up. Brings depth in oscilloscope debugging, Python test tooling and Linux-based development to guide design decisions and team practices.",
+    "summary.2": "Hardware and embedded engineering professional with about 9 years of experience, now setting the technical direction for an embedded product area. Combines oscilloscope debugging, Python and Linux skills with a background in electrical engineering to take boards from schematic to working product."
+  }
+}

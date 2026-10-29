@@ -1,0 +1,22 @@
+Backend Engineer
+Marlowe Retail Systems — Hybrid, Charlotte, NC
+
+Position summary
+Marlowe Retail Systems, a national retail company, seeks a Backend Engineer to design, build and maintain the services that support its retail operations. The engineer will work within a cross-functional team to keep these services reliable, efficient and well documented.
+Minimum: experience building backend services in Python on Linux and supporting automated deployment pipelines.
+Preferred: familiarity with Kafka and Kubernetes.
+
+Responsibilities
+- Maintain the reliability of production backend services and take part in a shared on-call rotation.
+- Investigate and tune slow database queries to keep service response times within agreed targets.
+- Automate and improve deployment pipelines so that releases are repeatable and low risk.
+- Lead follow-up reviews after incidents and keep operational runbooks current.
+- Collaborate with product and infrastructure teams to plan changes to services and data stores.
+
+Minimum and preferred qualifications
+- 4 or more years of professional experience in backend software engineering.
+- Strong working knowledge of Python and of operating services on Linux.
+- Experience building and maintaining CI pipelines in Jenkins.
+- Experience managing infrastructure as code with Terraform.
+- Practical experience with PostgreSQL, including query tuning and schema changes.
+- Familiarity with API versioning practices and backward-compatible interface design.

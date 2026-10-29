@@ -1,0 +1,540 @@
+{
+  "candidate": {
+    "email": "riley.park@example.com",
+    "linkedin": "linkedin.com/in/example-riley-sales-lead",
+    "name": "Riley Park",
+    "phone": "(555) 010-2166",
+    "username": "gold_sales_lead"
+  },
+  "cell": "sales-lead",
+  "cell_seed": 519015280,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Discovery calls on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Discovery calls, in work or side projects",
+        "any exposure to HubSpot, in work or side projects"
+      ],
+      "scope_probes": [
+        "Sales Manager at Tillman Brothers: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Discovery\\ calls",
+      "(?i)HubSpot",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "cold outreach",
+      "proposal writing",
+      "quota attainment",
+      "territory planning"
+    ],
+    "notes": "lead-level business-to-business sales. The profile has no Discovery calls, HubSpot; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Managing a team and answering for the results of the function.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, managing a team and answering for the results of the function",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Discovery calls exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Sales Manager",
+        "Trailhead Packaging — On site, Green Bay, WI"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.packaging.about",
+        "jd.packaging.duties",
+        "jd.packaging.needs"
+      ],
+      "slug": "packaging"
+    }
+  ],
+  "level": "lead",
+  "profession": "sales",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Territory planning in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Tillman Brothers",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-05",
+          "title": "Sales Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Wren Valley Builders",
+          "end": "2024-05",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-12",
+          "title": "Senior Account Executive"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Redfern Family Trades",
+          "end": "2021-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2015-04",
+          "title": "Account Executive"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Business Administration",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2015"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Territory planning",
+        "Product demonstrations",
+        "Account planning",
+        "Salesforce",
+        "Quota attainment",
+        "Contract negotiation",
+        "Cold outreach",
+        "Proposal writing"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Territory planning"
+    },
+    {
+      "category": "method",
+      "name": "Product demonstrations"
+    },
+    {
+      "category": "method",
+      "name": "Account planning"
+    },
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    },
+    {
+      "category": "method",
+      "name": "Quota attainment"
+    },
+    {
+      "category": "method",
+      "name": "Contract negotiation"
+    },
+    {
+      "category": "method",
+      "name": "Cold outreach"
+    },
+    {
+      "category": "method",
+      "name": "Proposal writing"
+    }
+  ],
+  "slots": {
+    "jd.packaging.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Sales Manager at Trailhead Packaging, a packaging manufacturer. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.packaging.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Sales Manager, about pipeline reviews, renewals and upsells, coaching account executives. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.packaging.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Proposal writing, Cold outreach, Quota attainment, Territory planning, Discovery calls, HubSpot, and 12 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Proposal writing",
+        "Cold outreach",
+        "Quota attainment",
+        "Territory planning",
+        "Discovery calls",
+        "HubSpot"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Sales Manager at Tillman Brothers: setting territory and quota plans, using Quota attainment. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Quota attainment",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Manager at Tillman Brothers: demos and trials, using Account planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Account planning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Sales Manager at Tillman Brothers: prospecting new accounts, using Contract negotiation. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Contract negotiation",
+        "45"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Sales Manager at Tillman Brothers: qualifying leads, using Territory planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Territory planning"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Sales Manager at Tillman Brothers: handoff to customer success, using Proposal writing. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Proposal writing",
+        "15"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Sales Manager at Tillman Brothers, about renewals and upsells. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Sales Manager at Tillman Brothers, about qualifying leads. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Senior Account Executive at Wren Valley Builders: renewals and upsells, using Cold outreach. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Cold outreach",
+        "50"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Account Executive at Wren Valley Builders: quotes and contracts, using Product demonstrations. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Product demonstrations"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Account Executive at Wren Valley Builders: pipeline reviews, using Salesforce. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Salesforce",
+        "25"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Account Executive at Wren Valley Builders: coaching account executives, using Quota attainment. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Quota attainment"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Senior Account Executive at Wren Valley Builders: setting territory and quota plans, using Account planning. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Account planning",
+        "20"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Account Executive at Wren Valley Builders, about qualifying leads. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Account Executive at Wren Valley Builders, about handoff to customer success. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Account Executive at Redfern Family Trades: handoff to customer success, using Contract negotiation. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Contract negotiation",
+        "20"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Account Executive at Redfern Family Trades: renewals and upsells, using Territory planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Territory planning"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Account Executive at Redfern Family Trades: quotes and contracts, using Proposal writing. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Proposal writing",
+        "15"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Account Executive at Redfern Family Trades: pipeline reviews, using Cold outreach. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Cold outreach"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Account Executive at Redfern Family Trades: demos and trials, using Product demonstrations. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Product demonstrations",
+        "55"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Account Executive at Redfern Family Trades, about handoff to customer success. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Account Executive at Redfern Family Trades, about quotes and contracts. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a manager-level business-to-business sales professional with about 12 years of experience, scope: managing a team and answering for the results of the function. Mention Territory planning, Product demonstrations, Account planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Territory planning",
+        "Product demonstrations",
+        "Account planning"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a manager-level business-to-business sales professional with about 12 years of experience, scope: managing a team and answering for the results of the function. Mention Territory planning, Product demonstrations, Account planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Territory planning",
+        "Product demonstrations",
+        "Account planning"
+      ]
+    }
+  }
+}

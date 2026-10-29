@@ -1,0 +1,342 @@
+{
+  "candidate": {
+    "email": "morgan.chen@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-teacher-entry",
+    "name": "Morgan Chen",
+    "phone": "(555) 010-5193",
+    "username": "gold_teacher_entry"
+  },
+  "cell": "teacher-entry",
+  "cell_seed": 1448566913,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Classroom management on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Classroom management, in work or side projects",
+        "any exposure to Seesaw, in work or side projects",
+        "any progress toward Reading Specialist Endorsement",
+        "any progress toward Instructional Leadership Endorsement"
+      ],
+      "scope_probes": [
+        "Associate Teacher at Oakridge Charter School: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Classroom\\ management",
+      "(?i)Seesaw",
+      "(?i)Reading\\ Specialist\\ Endorsement",
+      "(?i)Instructional\\ Leadership\\ Endorsement",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "behavior supports",
+      "lesson planning",
+      "parent communication",
+      "phonics instruction"
+    ],
+    "notes": "entry-level elementary teaching. The profile has no Classroom management, Seesaw, Reading Specialist Endorsement, Instructional Leadership Endorsement; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working with a supervisor close by on a small share of the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working with a supervisor close by on a small share of the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Classroom management exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Associate Teacher",
+        "Brookside Community Schools — On site, Detroit, MI"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.charter-network.about",
+        "jd.charter-network.duties",
+        "jd.charter-network.needs"
+      ],
+      "slug": "charter-network"
+    }
+  ],
+  "level": "entry",
+  "profession": "teacher",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Google Classroom in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Oakridge Charter School",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-01",
+          "title": "Associate Teacher"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Elementary Education",
+          "institution": "State University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Department of Education",
+          "name": "State Teaching Licence",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Google Classroom",
+        "Formative assessment",
+        "Nearpod",
+        "Behavior supports",
+        "Lesson planning",
+        "Phonics instruction",
+        "ClassDojo",
+        "Parent communication"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Google Classroom"
+    },
+    {
+      "category": "method",
+      "name": "Formative assessment"
+    },
+    {
+      "category": "tool",
+      "name": "Nearpod"
+    },
+    {
+      "category": "method",
+      "name": "Behavior supports"
+    },
+    {
+      "category": "method",
+      "name": "Lesson planning"
+    },
+    {
+      "category": "method",
+      "name": "Phonics instruction"
+    },
+    {
+      "category": "tool",
+      "name": "ClassDojo"
+    },
+    {
+      "category": "method",
+      "name": "Parent communication"
+    }
+  ],
+  "slots": {
+    "jd.charter-network.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Associate Teacher at Brookside Community Schools, a nonprofit charter school network. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.charter-network.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Associate Teacher, about classroom routines, parent conferences, planning daily lessons. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.charter-network.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Behavior supports, Phonics instruction, Lesson planning, Parent communication, Seesaw, Classroom management, and 2 or more years of experience. State State Teaching Licence as a required licence or certification. State Reading Specialist Endorsement as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Behavior supports",
+        "Phonics instruction",
+        "Lesson planning",
+        "Parent communication",
+        "Seesaw",
+        "Classroom management",
+        "State Teaching Licence",
+        "Reading Specialist Endorsement"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Associate Teacher at Oakridge Charter School: classroom routines, using Lesson planning. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Lesson planning",
+        "50"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Teacher at Oakridge Charter School: assessing student progress, using ClassDojo. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "ClassDojo"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Associate Teacher at Oakridge Charter School: team planning with colleagues, using Behavior supports. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Behavior supports",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Teacher at Oakridge Charter School: adapting work for different learners, using Nearpod. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Nearpod"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Associate Teacher at Oakridge Charter School, about classroom routines. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Associate Teacher at Oakridge Charter School, about assessing student progress. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level elementary teaching professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Google Classroom, Formative assessment, Nearpod.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Google Classroom",
+        "Formative assessment",
+        "Nearpod"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level elementary teaching professional with about 2 years of experience, scope: working with a supervisor close by on a small share of the work. Mention Google Classroom, Formative assessment, Nearpod.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Google Classroom",
+        "Formative assessment",
+        "Nearpod"
+      ]
+    }
+  }
+}

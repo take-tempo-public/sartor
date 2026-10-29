@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Quinn Lindqvist",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Incident response, in work or side projects",
+      "any exposure to Python, in work or side projects",
+      "any progress toward Incident Handler Certificate"
+    ],
+    "scope_probes": [
+      "Security Analyst at Granite Ridge: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Incident\\ response",
+    "(?i)Python",
+    "(?i)Incident\\ Handler\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning one service or workstream end to end."
+      },
+      "edit_replacement": "correlating events across sources to separate real incidents from noise, owning one service or workstream end to end",
+      "edit_target_substring": "correlating events across sources to separate real incidents from noise",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Incident response exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "penetration testing",
+    "powershell",
+    "splunk",
+    "vulnerability scanning"
+  ],
+  "notes": "mid-level information security analysis. The profile has no Incident response, Python, Incident Handler Certificate; generation must not claim them."
+}

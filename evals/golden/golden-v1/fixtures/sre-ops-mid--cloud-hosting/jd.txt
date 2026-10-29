@@ -1,0 +1,20 @@
+Systems Engineer
+Lattice Cloud — Remote (US)
+
+About the role
+Lattice Cloud is a cloud hosting startup, and we need a Systems Engineer who likes keeping things running. You'll look after the servers and services our customers rely on, fix what breaks, and help us get better at not breaking it again. We're a small team, so you'll own real work from day one and have a say in how we run operations.
+
+What you'll do
+- Take your turn on the on-call rotation and respond to alerts and outages on our hosting platform
+- Write clear post-incident write-ups that cover what happened, why, and what we'll change
+- Review and sign off change approvals so updates to production are planned and safe
+- Tune monitoring and alerting so the team hears about real problems, not noise
+- Automate repetitive operations work and keep runbooks up to date
+
+What we're looking for
+- 4 or more years of experience in systems engineering or IT operations
+- Hands-on work with Terraform for infrastructure as code
+- Scripting in Python and PowerShell to automate everyday tasks
+- Experience with Prometheus for monitoring and Splunk for log search
+- Familiarity with ServiceNow for tickets, incidents and change records
+- Systems Administrator Certificate is a required certification

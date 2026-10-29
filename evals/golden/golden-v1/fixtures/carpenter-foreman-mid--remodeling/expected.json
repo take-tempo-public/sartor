@@ -1,0 +1,58 @@
+{
+  "candidate_name": "Alex Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Framing, in work or side projects",
+      "any exposure to Stair building, in work or side projects",
+      "any progress toward Lead Carpenter Certificate",
+      "any progress toward Crew Supervisor Certificate"
+    ],
+    "scope_probes": [
+      "Journeyman Carpenter at Wren Valley Builders: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Framing",
+    "(?i)Stair\\ building",
+    "(?i)Lead\\ Carpenter\\ Certificate",
+    "(?i)Crew\\ Supervisor\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Doing the work to code on my own."
+      },
+      "edit_replacement": "Reads plans and measures each room before cutting finish trim, doing the work to code on my own",
+      "edit_target_substring": "Reads plans and measures each room before cutting finish trim",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Framing exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "blueprint reading",
+    "concrete forming",
+    "door and window installation",
+    "jobsite safety"
+  ],
+  "notes": "mid-level carpentry. The profile has no Framing, Stair building, Lead Carpenter Certificate, Crew Supervisor Certificate; generation must not claim them."
+}

@@ -1,0 +1,156 @@
+{
+  "certifications": [
+    {
+      "issuer": "State Apprenticeship Council",
+      "level": "entry",
+      "name": "Apprentice Registration Card"
+    },
+    {
+      "issuer": "Safety Training Council",
+      "level": "entry",
+      "name": "Construction Safety Card"
+    },
+    {
+      "issuer": "State Licensing Board",
+      "level": "mid",
+      "name": "Journeyman Electrician Licence"
+    },
+    {
+      "issuer": "State Licensing Board",
+      "level": "senior",
+      "name": "Master Electrician Licence"
+    }
+  ],
+  "display": "electrical work",
+  "education": {
+    "degree": "Apprenticeship Certificate",
+    "field": "Electrical Construction",
+    "institutions": [
+      "Cedar Valley Trades Academy",
+      "Northern Plains Electrical Training Center"
+    ]
+  },
+  "employers": [
+    "Copperfield Electric",
+    "Redfern Electrical Services",
+    "Brightline Wiring Company",
+    "Tillman Electric",
+    "Ashford Industrial Electric",
+    "Summit Power Contractors"
+  ],
+  "industries": [
+    {
+      "company": "Hollis and Sons Electric",
+      "level": "entry",
+      "location": "On site, Dayton, OH",
+      "phrase": "a family electrical contractor",
+      "setting": "small-business",
+      "slug": "family-contractor"
+    },
+    {
+      "company": "Marlow Residential Electric",
+      "level": "mid",
+      "location": "On site, Spokane, WA",
+      "phrase": "a residential electrical contractor",
+      "setting": "small-business",
+      "slug": "residential-electric"
+    },
+    {
+      "company": "Ironvale Industrial Contractors",
+      "level": "senior",
+      "location": "On site, Houston, TX",
+      "phrase": "an industrial contractor",
+      "setting": "enterprise",
+      "slug": "industrial-contractor"
+    },
+    {
+      "company": "Northplain Municipal Utilities",
+      "level": "lead",
+      "location": "On site, Northplain, IA",
+      "phrase": "a municipal utility",
+      "setting": "public-sector",
+      "slug": "municipal-utility"
+    }
+  ],
+  "leadership_themes": [
+    "directing helpers and apprentices",
+    "planning jobs and ordering materials"
+  ],
+  "profession": "electrician",
+  "settings": [
+    "small-business",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Conduit bending"
+    },
+    {
+      "category": "method",
+      "name": "Wire pulling"
+    },
+    {
+      "category": "method",
+      "name": "Panel installation"
+    },
+    {
+      "category": "method",
+      "name": "Circuit testing"
+    },
+    {
+      "category": "method",
+      "name": "Load calculations"
+    },
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "method",
+      "name": "Code compliance"
+    },
+    {
+      "category": "method",
+      "name": "Troubleshooting"
+    },
+    {
+      "category": "method",
+      "name": "Motor controls"
+    },
+    {
+      "category": "method",
+      "name": "Lighting installation"
+    },
+    {
+      "category": "method",
+      "name": "Grounding and bonding"
+    },
+    {
+      "category": "method",
+      "name": "Fire alarm wiring"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    },
+    {
+      "category": "tool",
+      "name": "Multimeter use"
+    }
+  ],
+  "titles": {
+    "entry": "Apprentice Electrician",
+    "lead": "Electrical Foreman",
+    "mid": "Journeyman Electrician",
+    "senior": "Master Electrician"
+  },
+  "work_themes": [
+    "running conduit",
+    "pulling and terminating wire",
+    "installing panels and fixtures",
+    "testing circuits",
+    "reading plans",
+    "tracing faults"
+  ]
+}

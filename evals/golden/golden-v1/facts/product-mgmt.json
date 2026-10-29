@@ -1,0 +1,124 @@
+{
+  "display": "product management",
+  "education": {
+    "degree": "B.A.",
+    "field": "Business Administration"
+  },
+  "industries": [
+    {
+      "company": "Skylark Software",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "a workflow software startup",
+      "setting": "startup",
+      "slug": "workflow-startup"
+    },
+    {
+      "company": "Harbor and Vine Commerce",
+      "level": "mid",
+      "location": "Hybrid, Seattle, WA",
+      "phrase": "an e-commerce company",
+      "setting": "enterprise",
+      "slug": "commerce-enterprise"
+    },
+    {
+      "company": "Alderbrook Health Services",
+      "level": "senior",
+      "location": "Hybrid, Minneapolis, MN",
+      "phrase": "a regional health system",
+      "setting": "health-nonprofit",
+      "slug": "health-services"
+    },
+    {
+      "company": "Kestrel Learning",
+      "level": "lead",
+      "location": "Remote (US)",
+      "phrase": "an education software startup",
+      "setting": "startup",
+      "slug": "learning-startup"
+    }
+  ],
+  "leadership_themes": [
+    "setting product strategy with leadership",
+    "coaching other product managers"
+  ],
+  "profession": "product-mgmt",
+  "settings": [
+    "startup",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Jira"
+    },
+    {
+      "category": "tool",
+      "name": "Confluence"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Amplitude"
+    },
+    {
+      "category": "tool",
+      "name": "Tableau"
+    },
+    {
+      "category": "method",
+      "name": "Roadmapping"
+    },
+    {
+      "category": "method",
+      "name": "User interviews"
+    },
+    {
+      "category": "method",
+      "name": "Product analytics"
+    },
+    {
+      "category": "method",
+      "name": "Prioritization frameworks"
+    },
+    {
+      "category": "method",
+      "name": "Stakeholder alignment"
+    },
+    {
+      "category": "method",
+      "name": "Pricing analysis"
+    },
+    {
+      "category": "method",
+      "name": "Go-to-market planning"
+    },
+    {
+      "category": "method",
+      "name": "Requirements writing"
+    },
+    {
+      "category": "method",
+      "name": "Customer discovery"
+    }
+  ],
+  "titles": {
+    "entry": "Associate Product Manager",
+    "lead": "Director of Product",
+    "mid": "Product Manager",
+    "senior": "Senior Product Manager"
+  },
+  "work_themes": [
+    "roadmap planning",
+    "customer interviews",
+    "feature launches",
+    "writing requirements",
+    "metrics reviews",
+    "vendor and pricing decisions",
+    "cross-team coordination"
+  ]
+}

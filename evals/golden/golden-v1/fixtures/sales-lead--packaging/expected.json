@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Riley Park",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Discovery calls, in work or side projects",
+      "any exposure to HubSpot, in work or side projects"
+    ],
+    "scope_probes": [
+      "Sales Manager at Tillman Brothers: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Discovery\\ calls",
+    "(?i)HubSpot",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Managing a team and answering for the results of the function."
+      },
+      "edit_replacement": "using account planning to match each trial to the buyer's, managing a team and answering for the results of the function",
+      "edit_target_substring": "using account planning to match each trial to the buyer's",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Discovery calls exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "cold outreach",
+    "proposal writing",
+    "quota attainment",
+    "territory planning"
+  ],
+  "notes": "lead-level business-to-business sales. The profile has no Discovery calls, HubSpot; generation must not claim them."
+}

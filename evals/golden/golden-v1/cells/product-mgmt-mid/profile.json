@@ -1,0 +1,420 @@
+{
+  "candidate": {
+    "email": "avery.novak@example.com",
+    "linkedin": "linkedin.com/in/example-avery-product-mgmt-mid",
+    "name": "Avery Novak",
+    "phone": "(555) 010-1070",
+    "username": "gold_product_mgmt_mid"
+  },
+  "cell": "product-mgmt-mid",
+  "cell_seed": 125646950,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Go-to-market planning on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Go-to-market planning, in work or side projects",
+        "any exposure to User interviews, in work or side projects"
+      ],
+      "scope_probes": [
+        "Product Manager at Riverbend Health Network: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Go\\-to\\-market\\ planning",
+      "(?i)User\\ interviews",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "figma",
+      "pricing analysis",
+      "prioritization frameworks",
+      "stakeholder alignment"
+    ],
+    "notes": "mid-level product management. The profile has no Go-to-market planning, User interviews; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Owning one service or workstream end to end.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, owning one service or workstream end to end",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Go-to-market planning exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Product Manager",
+        "Harbor and Vine Commerce — Hybrid, Seattle, WA"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.commerce-enterprise.about",
+        "jd.commerce-enterprise.duties",
+        "jd.commerce-enterprise.needs"
+      ],
+      "slug": "commerce-enterprise"
+    }
+  ],
+  "level": "mid",
+  "profession": "product-mgmt",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Tableau in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Riverbend Health Network",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-01",
+          "title": "Product Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Meridian Cross",
+          "end": "2024-01",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-10",
+          "title": "Associate Product Manager"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Business Administration",
+          "institution": "State University",
+          "slots": [],
+          "year": "2021"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Tableau",
+        "Customer discovery",
+        "Figma",
+        "Stakeholder alignment",
+        "Pricing analysis",
+        "Requirements writing",
+        "Roadmapping",
+        "Prioritization frameworks",
+        "Product analytics",
+        "Amplitude"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Tableau"
+    },
+    {
+      "category": "method",
+      "name": "Customer discovery"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "method",
+      "name": "Stakeholder alignment"
+    },
+    {
+      "category": "method",
+      "name": "Pricing analysis"
+    },
+    {
+      "category": "method",
+      "name": "Requirements writing"
+    },
+    {
+      "category": "method",
+      "name": "Roadmapping"
+    },
+    {
+      "category": "method",
+      "name": "Prioritization frameworks"
+    },
+    {
+      "category": "method",
+      "name": "Product analytics"
+    },
+    {
+      "category": "tool",
+      "name": "Amplitude"
+    }
+  ],
+  "slots": {
+    "jd.commerce-enterprise.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Product Manager at Harbor and Vine Commerce, an e-commerce company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.commerce-enterprise.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Product Manager, about vendor and pricing decisions, customer interviews, cross-team coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.commerce-enterprise.needs": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Prioritization frameworks, Figma, Stakeholder alignment, Pricing analysis, User interviews, Go-to-market planning, and 5 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Prioritization frameworks",
+        "Figma",
+        "Stakeholder alignment",
+        "Pricing analysis",
+        "User interviews",
+        "Go-to-market planning"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Product Manager at Riverbend Health Network: metrics reviews, using Prioritization frameworks. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Prioritization frameworks",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Product Manager at Riverbend Health Network: vendor and pricing decisions, using Amplitude. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Amplitude"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Product Manager at Riverbend Health Network: cross-team coordination, using Customer discovery. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Customer discovery",
+        "10"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Product Manager at Riverbend Health Network: customer interviews, using Figma. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Figma"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Product Manager at Riverbend Health Network, about customer interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Product Manager at Riverbend Health Network, about writing requirements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Associate Product Manager at Meridian Cross: feature launches, using Tableau. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Tableau",
+        "25"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Product Manager at Meridian Cross: writing requirements, using Stakeholder alignment. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Stakeholder alignment"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Associate Product Manager at Meridian Cross: roadmap planning, using Product analytics. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Product analytics",
+        "25"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Product Manager at Meridian Cross: metrics reviews, using Roadmapping. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Roadmapping"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Associate Product Manager at Meridian Cross, about writing requirements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Associate Product Manager at Meridian Cross, about cross-team coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a mid-level product management professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention Tableau, Customer discovery, Figma.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Tableau",
+        "Customer discovery",
+        "Figma"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "5"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a mid-level product management professional with about 5 years of experience, scope: owning one service or workstream end to end. Mention Tableau, Customer discovery, Figma.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Tableau",
+        "Customer discovery",
+        "Figma"
+      ]
+    }
+  }
+}

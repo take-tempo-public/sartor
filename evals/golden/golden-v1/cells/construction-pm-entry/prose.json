@@ -1,0 +1,36 @@
+{
+  "cell": "construction-pm-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:26f3cf03dbfd195ae19f378c1d3e3d2adfb236c49ab153129bd8a7713961dae4",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNGyiCrGX5g8XVmE6rf"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2741,
+      "output_tokens": 2216
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.general-contractor.about": "Position summary\nGarrity Construction Group, a general contractor, seeks an Assistant Project Manager to support project managers on site in Charlotte, NC. The role coordinates owner meetings, submittal reviews and site safety walks from preconstruction through closeout. At minimum, candidates bring field coordination experience and working knowledge of scheduling software. A degree in construction management is preferred.",
+    "jd.general-contractor.duties": "Responsibilities\n- Prepare agendas, minutes and action items for owner meetings.\n- Review submittals against contract documents and track responses with the design team.\n- Conduct site safety walks with superintendents and document corrective actions.\n- Maintain project logs, requests for information and change order records.\n- Coordinate subcontractor schedules and support permit and inspection requests.",
+    "jd.general-contractor.needs": "Minimum and preferred qualifications\n- 2 or more years of experience in construction project management with a general contractor.\n- Working knowledge of Procore and Oracle Primavera.\n- Schedule recovery, cost tracking and submittal tracking on active projects.\n- Permit management and coordination of inspections with local authorities.\n- Preferred: Construction Safety Manager Certificate.",
+    "r1.b1": "Schedules permits and inspections and leads punch list closeout, cutting average closeout time by 30 percent.",
+    "r1.b2": "Reviews subcontractor submittals for safety requirements and applies safety planning to flag gaps before materials reach the site.",
+    "r1.b3": "Conducts site safety walks and logs findings in Procore, reducing open safety items by 40 percent.",
+    "r1.b4": "Coordinates subcontractors through contract administration, tracking scope, insurance and change orders against each agreement.",
+    "r1.i1": "Reviews submittals at Elmstead Partners as Assistant Project Manager, checking them against project specifications before routing them for approval.",
+    "r1.i2": "Supports project managers at Elmstead Partners by preparing for owner meetings, recording decisions and following up on open items.",
+    "summary.1": "Construction project management professional with about 2 years of experience handling routine project requests, with work reviewed by a senior colleague. Brings schedule recovery, contract administration and safety planning skills, along with Procore and Oracle Primavera.",
+    "summary.2": "Associate-level construction project manager with about 2 years of experience supporting field teams on routine requests under a colleague's review. Applies safety planning, contract administration and schedule recovery to keep permits, change orders and punch lists on track."
+  }
+}

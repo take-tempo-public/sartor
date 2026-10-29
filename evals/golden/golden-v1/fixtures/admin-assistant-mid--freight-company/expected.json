@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Jordan Mehta",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Meeting minutes, in work or side projects",
+      "any exposure to Microsoft Outlook, in work or side projects"
+    ],
+    "scope_probes": [
+      "Administrative Assistant at Elmstead Partners: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Meeting\\ minutes",
+    "(?i)Microsoft\\ Outlook",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning a recurring process from request to completion."
+      },
+      "edit_replacement": "and handle purchase ordering for reception supplies between calls., owning a recurring process from request to completion",
+      "edit_target_substring": "and handle purchase ordering for reception supplies between calls.",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Meeting minutes exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "invoice processing",
+    "purchase ordering",
+    "vendor coordination",
+    "visitor reception"
+  ],
+  "notes": "mid-level administrative support. The profile has no Meeting minutes, Microsoft Outlook; generation must not claim them."
+}

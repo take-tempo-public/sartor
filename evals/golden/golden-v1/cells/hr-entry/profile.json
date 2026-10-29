@@ -1,0 +1,330 @@
+{
+  "candidate": {
+    "email": "priya.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-priya-hr-entry",
+    "name": "Priya Kowalski",
+    "phone": "(555) 010-0513",
+    "username": "gold_hr_entry"
+  },
+  "cell": "hr-entry",
+  "cell_seed": 1183860,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Employee relations on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Employee relations, in work or side projects",
+        "any exposure to Exit interviews, in work or side projects",
+        "any progress toward HR Practitioner Certificate",
+        "any progress toward Senior HR Practitioner Certificate"
+      ],
+      "scope_probes": [
+        "HR Coordinator at Elmstead Partners: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Employee\\ relations",
+      "(?i)Exit\\ interviews",
+      "(?i)HR\\ Practitioner\\ Certificate",
+      "(?i)Senior\\ HR\\ Practitioner\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "applicant tracking",
+      "new hire onboarding",
+      "payroll coordination",
+      "performance review cycles"
+    ],
+    "notes": "entry-level human resources. The profile has no Employee relations, Exit interviews, HR Practitioner Certificate, Senior HR Practitioner Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Employee relations exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "HR Coordinator",
+        "Orchard Foods Corporation — On site, Fresno, CA"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.food-processing.about",
+        "jd.food-processing.duties",
+        "jd.food-processing.needs"
+      ],
+      "slug": "food-processing"
+    }
+  ],
+  "level": "entry",
+  "profession": "hr",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Payroll coordination in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Elmstead Partners",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-10",
+          "title": "HR Coordinator"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Human Resource Management",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2024"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Payroll coordination",
+        "Applicant tracking",
+        "Workday",
+        "Compliance reporting",
+        "Interview scheduling",
+        "Performance review cycles",
+        "Offer letters",
+        "New hire onboarding"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Payroll coordination"
+    },
+    {
+      "category": "method",
+      "name": "Applicant tracking"
+    },
+    {
+      "category": "tool",
+      "name": "Workday"
+    },
+    {
+      "category": "method",
+      "name": "Compliance reporting"
+    },
+    {
+      "category": "method",
+      "name": "Interview scheduling"
+    },
+    {
+      "category": "method",
+      "name": "Performance review cycles"
+    },
+    {
+      "category": "method",
+      "name": "Offer letters"
+    },
+    {
+      "category": "method",
+      "name": "New hire onboarding"
+    }
+  ],
+  "slots": {
+    "jd.food-processing.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a HR Coordinator at Orchard Foods Corporation, a food-processing company. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.food-processing.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a HR Coordinator, about answering benefits questions, keeping HR records, policy updates. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.food-processing.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Payroll coordination, Applicant tracking, New hire onboarding, Performance review cycles, Employee relations, Exit interviews, and 2 or more years of experience. State HR Practitioner Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Payroll coordination",
+        "Applicant tracking",
+        "New hire onboarding",
+        "Performance review cycles",
+        "Employee relations",
+        "Exit interviews",
+        "HR Practitioner Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a HR Coordinator at Elmstead Partners: policy updates, using Performance review cycles. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Performance review cycles",
+        "20"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Coordinator at Elmstead Partners: keeping HR records, using Compliance reporting. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Compliance reporting"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a HR Coordinator at Elmstead Partners: scheduling interviews, using Workday. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Workday",
+        "40"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HR Coordinator at Elmstead Partners: screening candidates, using Payroll coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Payroll coordination"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a HR Coordinator at Elmstead Partners, about scheduling interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a HR Coordinator at Elmstead Partners, about policy updates. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level human resources professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Payroll coordination, Applicant tracking, Workday.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Payroll coordination",
+        "Applicant tracking",
+        "Workday"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level human resources professional with about 2 years of experience, scope: handling routine requests with a colleague checking the work. Mention Payroll coordination, Applicant tracking, Workday.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Payroll coordination",
+        "Applicant tracking",
+        "Workday"
+      ]
+    }
+  }
+}

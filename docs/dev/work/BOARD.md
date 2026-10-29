@@ -2,7 +2,7 @@
 
 Generated from `docs/dev/work/items/` by `scripts/work_items.py` -- never hand-edited. Regenerate with `python -m scripts.work_items board --write`.
 
-**Open 26 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 46 | Epics 7 | Closed 96
+**Open 27 / 10 ceiling -- OVER** | Blocked 4 | Deferred 9 | Watching 46 | Epics 7 | Closed 96
 
 ## Open
 
@@ -139,7 +139,7 @@ IA research + design; full user/dev docs split; user + dev content; screenshots,
 
 Version bump, CHANGELOG cut, pre-tag gates, tag; PyPI publish + GitHub Release; owner toggles during the epic.
 
-- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19, 181, 182, 183, 191, 184, 185, 186] [blocked on: everything else landing first, plus the owner's explicit go]
+- **10** -- chore/release-v1.1.0 - version bump, CHANGELOG cut, tag (`user`) -- Bump pyproject.toml to 1.1.0, cut CHANGELOG [Unreleased] to [1.1.0], tag - last step, on the owner's go. [depends on: 3, 6, 7, 9, 19, 181, 182, 183, 191, 194, 184, 185, 186] [blocked on: everything else landing first, plus the owner's explicit go]
 
 ### 180 -- Eval redesign build order (open)
 
@@ -149,7 +149,7 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - **181** -- Eval redesign step 1: record identity and the prompt-version gate (`agent`) -- Prompt content hashes + version gate, producer id, trace/span/case ids, parse outcome, judge cost in run totals.
 - **182** -- Eval redesign step 2: catalog skeleton and the all-kinds gate (`agent`) -- Catalog format, lazy loader, all-kinds gate, --list/--estimate/--max-spend; entries for the kinds already covered. [depends on: 181]
 - **183** -- Eval redesign step 3a: dataset format, generator, per-cell seeds, reachability check (`agent`) -- Step 3a, no paid call: golden-set format, stub-tested generator, per-cell seeds, reachability check, 3 pilots (3b: 191). [depends on: 182]
-- **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183, 191] [blocked on: step 3 (items 183 and 191) has not landed]
+- **184** -- Eval redesign step 4: call evals for ingest and analyze kinds (`agent`) -- Call evals: extract_experiences, analyze_*, clarify, iterate_clarify. Deterministic part blocks v1.1.0. [depends on: 183, 191, 194] [blocked on: step 3 (items 183 and 191) has not landed]
 - **185** -- Eval redesign step 5: call evals for the 11 compose kinds (`agent`) -- Call evals for the 11 compose-group kinds. Deterministic part blocks v1.1.0. [depends on: 184] [blocked on: step 4 (item 184) has not landed]
 - **186** -- Eval redesign step 6: call evals for avatar, proposals and clarification promotion (`agent`) -- Call evals: avatar_answer, critique_proposal, promote_clarification_to_bullet; deterministic part blocks 1.1.0. [depends on: 185] [blocked on: step 5 (item 185) has not landed]
 - **187** -- Eval redesign step 7: pre-registered comparison protocol (`agent`) -- Pre-registered spec, noise floor, arithmetic decision rule; replaces evals/tune.py. [depends on: 186] [blocked on: step 6 (item 186) has not landed]
@@ -158,6 +158,7 @@ Build the eval redesign (design doc section 9): steps 1-10 are items 181-190, st
 - **190** -- Eval redesign step 10: OpenTelemetry projection (`agent`) -- Pure row-to-span projection and its mapping module, pinned to one semantic-conventions-genai commit; no dependency. [depends on: 189] [blocked on: step 9 (item 189) has not landed]
 - **191** -- Eval redesign step 3b-ii: facts, paid generation of the golden cells, calibration run, retire synthetic (`agent`) -- Step 3b-ii: facts for about 24 professions, paid generation, capped calibration run, pairs, retire synthetic/. [depends on: 193]
 - **193** -- Eval redesign step 3b-i: golden-set breadth (per-family ladders, setting, certifications, mismatched pairs) (`agent`) -- Step 3b-i, no paid call: format changes so the golden set spans many fields, settings and mismatched pairs (3b-ii: 191). [depends on: 183]
+- **194** -- Eval redesign step 3b-iii: fix the certification requirement, calibrate, size the tiers, retire synthetic, freeze golden-v1 (`agent`) -- Step 3b-iii: the cert-requirement fix (37 cells), calibration run, tier sizes, retire synthetic/, freeze golden-v1. [depends on: 191]
 
 ## Closed (96)
 

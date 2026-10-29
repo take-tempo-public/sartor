@@ -1,0 +1,202 @@
+{
+  "candidate": {
+    "email": "devon.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-devon-sales-entry",
+    "name": "Devon Novak",
+    "notes": null,
+    "phone": "(555) 010-0509",
+    "profile_text": null,
+    "username": "gold_sales_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_sales_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Qualifies incoming leads in Salesforce against agreed criteria, lifting lead qualification rates by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs product demonstrations that help prospects define their needs before quotes and contracts are prepared for review."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Reports cold outreach activity and results in pipeline reviews, contributing to a 50 percent increase in booked meetings."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Uses territory planning to organize assigned accounts and prepares clear notes for each handoff to customer success."
+        }
+      ],
+      "company": "Brightwater Labs",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Qualifies incoming leads for Brightwater Labs, confirming each prospect's fit before passing it on for follow-up."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Prospects new accounts for Brightwater Labs through research and outreach, building a steady list of qualified contacts."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Sales Development Representative",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Account planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Cold outreach",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Discovery calls",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Pipeline management",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Product demonstrations",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Quota attainment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Salesforce",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Territory planning",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Early-career business-to-business sales professional who handles routine prospect requests, with a colleague reviewing the work. Skilled in product demonstrations, cold outreach and territory planning, with a B.A. in Business Administration from State University."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Business-to-business sales associate with hands-on experience in cold outreach, territory planning and product demonstrations at Brightwater Labs. Handles routine requests from prospects, with the work checked by a colleague before it goes out."
+    }
+  ],
+  "tags": []
+}

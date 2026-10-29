@@ -1,0 +1,48 @@
+{
+  "cell": "mobile-senior",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:3ee37d2b5aeadbb43578cdfb98d3dc74f28042486ed1606770a2412dbf379909",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPVN8XstiWVXmbNrvyu"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4435,
+      "output_tokens": 3585
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.bank-mobile.about": "Position summary\nDunmark Financial is seeking a Senior Mobile Engineer to design, build and maintain the mobile banking applications used by our customers nationwide. The successful candidate will work closely with product, design and engineering partners to deliver secure, reliable and accessible features. Minimum qualifications include substantial professional experience with Kotlin, Firebase and push notifications. Preferred qualifications include experience with TestFlight and the App Store release process.",
+    "jd.bank-mobile.duties": "Responsibilities\n- Plan releases with product and design partners, defining scope, priorities and delivery timelines\n- Measure and improve app start-up time across supported devices\n- Own and maintain the release pipeline, from build automation through store submission\n- Review code and provide technical guidance to other mobile engineers\n- Monitor app stability and coordinate fixes for production issues\n- Ensure features meet the bank's security, privacy and accessibility standards",
+    "jd.bank-mobile.needs": "Minimum and preferred qualifications\n- 8 or more years of professional mobile engineering experience\n- Strong working knowledge of Kotlin and Firebase\n- Experience implementing push notifications in production applications\n- Experience with crash reporting tools and stability monitoring\n- Familiarity with TestFlight and the App Store release process\n- Preferred: experience building applications in the financial services industry",
+    "r1.b1": "Rebuilds offline sync for the Android app in Android Studio, reducing sync failures by 15 percent.",
+    "r1.b2": "Ships accessibility fixes across core screens and uses Firebase event data to confirm that the changes reach affected users.",
+    "r1.b3": "Reduces app start-up time by 55 percent by deferring push notifications registration and other non-critical setup until after the first screen renders.",
+    "r1.b4": "Plans releases with product and design partners, scoping Core Data schema changes and migrations for each release.",
+    "r1.i1": "Leads mobile performance work at Copperfield Services, with a focus on reducing app start-up time.",
+    "r1.i2": "Owns crash triage for the Copperfield Services mobile apps, turning crash data into prioritised fixes.",
+    "r2.b1": "Automated the release pipeline to deliver TestFlight builds for each merge, shortening release cycles by 20 percent.",
+    "r2.b2": "Triaged crash reports and fixed recurring state-handling defects in Jetpack Compose screens.",
+    "r2.b3": "Built a device testing matrix for GraphQL-driven screens, cutting device-specific bug reports by 20 percent.",
+    "r2.b4": "Implemented offline sync for the Android app and organised its modules and dependencies in Gradle.",
+    "r2.i1": "Handled crash triage at Juniper Row, tracing recurring app crashes to their causes and shipping fixes.",
+    "r2.i2": "Built and maintained offline sync for the Juniper Row mobile app so users could keep working without a connection.",
+    "r3.b1": "Fixed accessibility issues in Kotlin screens by adding content descriptions and larger touch targets, raising accessibility check pass rates by 35 percent.",
+    "r3.b2": "Profiled app start-up time and used Fastlane to produce consistent builds for before-and-after comparisons.",
+    "r3.b3": "Integrated backend APIs into the Android app using Android Studio, reducing integration defects by 45 percent.",
+    "r3.b4": "Used Firebase to distribute test builds as part of the release pipeline.",
+    "r3.i1": "Started at Redfern Family Trades building offline sync features for the company's mobile app.",
+    "r3.i2": "Supported device testing at Redfern Family Trades, checking app behaviour across a range of phones and OS versions.",
+    "summary.1": "Senior mobile engineer with about 8 years of experience building Android apps in Kotlin and Jetpack Compose. Sets the technical direction for a product area, covering architecture, push notifications and release practice.",
+    "summary.2": "Mobile app engineer with about 8 years of experience, currently setting the technical direction for a product area. Works in Kotlin and Jetpack Compose and has delivered push notifications, offline sync and release pipeline improvements."
+  }
+}

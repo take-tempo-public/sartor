@@ -1,0 +1,520 @@
+{
+  "candidate": {
+    "email": "priya.haddad@example.com",
+    "linkedin": "linkedin.com/in/example-priya-registered-nurse-senior",
+    "name": "Priya Haddad",
+    "phone": "(555) 010-9436",
+    "username": "gold_registered_nurse_senior"
+  },
+  "cell": "registered-nurse-senior",
+  "cell_seed": 859419907,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Infection control on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Infection control, in work or side projects",
+        "any exposure to Triage, in work or side projects",
+        "any progress toward Nurse Manager Certificate"
+      ],
+      "scope_probes": [
+        "Charge Nurse at Meridian Cross: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Infection\\ control",
+      "(?i)Triage",
+      "(?i)Nurse\\ Manager\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "clinical documentation",
+      "discharge planning",
+      "patient education",
+      "vital signs monitoring"
+    ],
+    "notes": "senior-level nursing. The profile has no Infection control, Triage, Nurse Manager Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Guiding colleagues and handling the hardest cases.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, guiding colleagues and handling the hardest cases",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Infection control exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Charge Nurse",
+        "Lakeview Regional Hospital — On site, Madison, WI"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.regional-hospital.about",
+        "jd.regional-hospital.duties",
+        "jd.regional-hospital.needs"
+      ],
+      "slug": "regional-hospital"
+    }
+  ],
+  "level": "senior",
+  "profession": "registered-nurse",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Patient education in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Meridian Cross",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2024-09",
+          "title": "Charge Nurse"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Halcyon Services",
+          "end": "2024-09",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-02",
+          "title": "Registered Nurse"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Northfield Group",
+          "end": "2021-02",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2019-08",
+          "title": "Graduate Registered Nurse"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.N.",
+          "field": "Nursing",
+          "institution": "State University",
+          "slots": [],
+          "year": "2019"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Board of Nursing",
+          "name": "Registered Nurse Licence",
+          "year": "2020"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Basic Life Support Card",
+          "year": "2023"
+        },
+        {
+          "issuer": "Resuscitation Training Council",
+          "name": "Advanced Cardiac Life Support Card",
+          "year": "2021"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Patient education",
+        "Telemetry monitoring",
+        "Vital signs monitoring",
+        "Medication administration",
+        "Discharge planning",
+        "IV therapy",
+        "Bedside handoff",
+        "Clinical documentation"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Patient education"
+    },
+    {
+      "category": "method",
+      "name": "Telemetry monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Vital signs monitoring"
+    },
+    {
+      "category": "method",
+      "name": "Medication administration"
+    },
+    {
+      "category": "method",
+      "name": "Discharge planning"
+    },
+    {
+      "category": "method",
+      "name": "IV therapy"
+    },
+    {
+      "category": "method",
+      "name": "Bedside handoff"
+    },
+    {
+      "category": "method",
+      "name": "Clinical documentation"
+    }
+  ],
+  "slots": {
+    "jd.regional-hospital.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Charge Nurse at Lakeview Regional Hospital, a regional hospital. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.regional-hospital.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Charge Nurse, about teaching patients and families, charting in the record, supervising nursing aides. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.regional-hospital.needs": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Clinical documentation, Patient education, Discharge planning, Vital signs monitoring, Infection control, Triage, and 7 or more years of experience. State Registered Nurse Licence as a required licence or certification. State Nurse Manager Certificate as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Clinical documentation",
+        "Patient education",
+        "Discharge planning",
+        "Vital signs monitoring",
+        "Infection control",
+        "Triage",
+        "Registered Nurse Licence",
+        "Nurse Manager Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Charge Nurse at Meridian Cross: giving medications, using IV therapy. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "IV therapy",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Charge Nurse at Meridian Cross: serving as charge nurse for a shift, using Discharge planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Discharge planning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Charge Nurse at Meridian Cross: coordinating with physicians, using Bedside handoff. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bedside handoff",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Charge Nurse at Meridian Cross: assessing patients, using Clinical documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Clinical documentation"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Charge Nurse at Meridian Cross, about supervising nursing aides. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Charge Nurse at Meridian Cross, about serving as charge nurse for a shift. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Halcyon Services: shift handoff, using Telemetry monitoring. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Telemetry monitoring",
+        "55"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Halcyon Services: charting in the record, using Patient education. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Patient education"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Registered Nurse at Halcyon Services: giving medications, using Vital signs monitoring. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Vital signs monitoring",
+        "10"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Registered Nurse at Halcyon Services: coordinating with physicians, using Medication administration. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Medication administration"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Registered Nurse at Halcyon Services, about shift handoff. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Registered Nurse at Halcyon Services, about assessing patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Northfield Group: assessing patients, using IV therapy. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "IV therapy",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Northfield Group: teaching patients and families, using Discharge planning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Discharge planning"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Northfield Group: shift handoff, using Bedside handoff. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Bedside handoff",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Graduate Registered Nurse at Northfield Group: charting in the record, using Clinical documentation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Clinical documentation"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Graduate Registered Nurse at Northfield Group, about assessing patients. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Graduate Registered Nurse at Northfield Group, about charting in the record. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level nursing professional with about 7 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Patient education, Telemetry monitoring, Vital signs monitoring.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Patient education",
+        "Telemetry monitoring",
+        "Vital signs monitoring"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "7"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level nursing professional with about 7 years of experience, scope: guiding colleagues and handling the hardest cases. Mention Patient education, Telemetry monitoring, Vital signs monitoring.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Patient education",
+        "Telemetry monitoring",
+        "Vital signs monitoring"
+      ]
+    }
+  }
+}

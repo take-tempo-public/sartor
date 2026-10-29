@@ -1,0 +1,301 @@
+{
+  "candidate": {
+    "email": "sam.park@example.com",
+    "linkedin_url": "linkedin.com/in/example-sam-hr-mid",
+    "name": "Sam Park",
+    "notes": null,
+    "phone": "(555) 010-2269",
+    "profile_text": null,
+    "username": "gold_hr_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_hr_mid",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2024",
+      "issuer": "Workforce Practice Society",
+      "name": "HR Practitioner Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Human Resource Management",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updates HR policies and publishes revisions through applicant tracking workflows, reducing outdated policy references in candidate communications by 10 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates interview scheduling between candidates and hiring managers, confirming times and sending calendar details for each open role."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Processes new hire paperwork alongside payroll coordination, cutting paperwork turnaround time by 50 percent before first pay runs."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains accurate HR records for new hire onboarding, filing signed forms and tracking completed steps for each employee."
+        }
+      ],
+      "company": "Halcyon Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "As HR Generalist at Halcyon Services, coordinates interviews between candidates and hiring managers and keeps hiring timelines on track."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Serves as a point of contact for employee concerns at Halcyon Services, listening to issues and guiding them toward resolution."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HR Generalist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Screened candidates from job postings against role requirements, increasing the share of qualified applicants by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Logged and tracked employee concerns in ADP Workforce Now, routing each case to the right contact for follow-up."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Answered employee benefits questions and supported compliance reporting, reducing unanswered inquiries by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Published policy updates in Workday and confirmed employee acknowledgment of revised guidelines."
+        }
+      ],
+      "company": "Juniper Row",
+      "display_order": 1,
+      "end_date": "2024-04",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-08",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "As HR Coordinator at Juniper Row, handled employee concerns and connected staff with the right resources."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Answered benefits questions for employees at Juniper Row, explaining coverage options and pointing staff to enrollment resources."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HR Coordinator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 607,
+      "name": "ADP Workforce Now",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Applicant tracking",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Compliance reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Interview scheduling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Job postings",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "New hire onboarding",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Payroll coordination",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Workday",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Human resources specialist with 4 years of experience owning recurring HR processes from request to completion. Skilled in compliance reporting, interview scheduling and Workday, keeping records accurate and deadlines met."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "HR professional with about 4 years of experience managing recurring processes such as interview scheduling from first request through completion. Uses Workday to keep records current and handles compliance reporting with attention to accuracy and deadlines."
+    }
+  ],
+  "tags": []
+}

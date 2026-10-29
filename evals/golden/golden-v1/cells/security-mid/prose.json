@@ -1,0 +1,42 @@
+{
+  "cell": "security-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:a6c920e9b611efa8683e2b271eb36c4dfd20a86c1de5591fe6001a2ca4527baa",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMoha6VUaTS9XmQ1LWT"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3687,
+      "output_tokens": 2499
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.state-agency.about": "The Greenfield State Information Office is seeking a Security Analyst to help protect the systems and data that support public services. Working on site in Greenfield, the analyst monitors agency networks, reviews security alerts, assesses risks and works with technical staff and program offices to keep information systems secure and in line with agency policy.",
+    "jd.state-agency.duties": "Responsibilities of the position\n- Monitor security logs from agency systems and networks to detect suspicious activity.\n- Triage security alerts, separate real threats from false positives and escalate confirmed incidents.\n- Write and maintain security policy documentation, standards and procedures.\n- Record findings and actions taken so that incidents and reviews can be audited.\n- Work with system owners to confirm that identified issues are resolved.",
+    "jd.state-agency.needs": "Qualifications and conditions of employment\n- 4 or more years of experience in information security analysis.\n- Working knowledge of vulnerability scanning and penetration testing.\n- Experience with Splunk for log analysis and alert review.\n- Ability to script in PowerShell and Python.\n- Hands-on experience in incident response.\n- Security Analyst Certificate is required; Incident Handler Certificate is preferred.",
+    "r1.b1": "Pairs access reviews with vulnerability scanning to find stale accounts on exposed hosts, cutting unreviewed privileged access by 45 percent.",
+    "r1.b2": "Triages security alerts in Splunk, correlating events across sources to separate real incidents from noise and escalate confirmed issues.",
+    "r1.b3": "Leads risk assessments of network segments and tightens firewall rules based on the findings, reducing exposed services by 40 percent.",
+    "r1.b4": "Monitors security logs alongside Nessus scan results to spot activity on hosts with open findings and flag them for remediation.",
+    "r1.i1": "Monitors security logs across Granite Ridge systems to detect suspicious activity and keep the environment under steady watch.",
+    "r1.i2": "Handles alert triage at Granite Ridge, reviewing security alerts and escalating confirmed threats for response.",
+    "r2.b1": "Updated access policy documentation using findings from access reviews, reducing open audit gaps by 40 percent.",
+    "r2.b2": "Tracked vulnerability fixes across network systems, using Wireshark captures to confirm that patched services no longer showed vulnerable traffic.",
+    "r2.b3": "Ran phishing simulation campaigns as part of security awareness training, lowering the staff click rate by 15 percent.",
+    "r2.b4": "Applied threat modeling to access reviews, mapping which roles could reach sensitive data and flagging excess permissions for removal.",
+    "r2.i1": "Supported alert triage at Riverbend Health Network, reviewing security alerts and passing confirmed issues to senior analysts.",
+    "r2.i2": "Helped run security awareness training at Riverbend Health Network, teaching staff to recognise and report phishing attempts.",
+    "summary.1": "Security analyst with about 4 years of experience owning a security workstream end to end, from scoping through remediation. Uses penetration testing, threat modeling and PowerShell automation to find weaknesses and track fixes to closure.",
+    "summary.2": "Information security analyst with about 4 years of experience taking one service from assessment through remediation and ongoing monitoring. Combines threat modeling, penetration testing and PowerShell scripting to find risks early and confirm that fixes hold."
+  }
+}

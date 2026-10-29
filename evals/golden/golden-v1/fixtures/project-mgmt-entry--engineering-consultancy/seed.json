@@ -1,0 +1,202 @@
+{
+  "candidate": {
+    "email": "sam.novak@example.com",
+    "linkedin_url": "linkedin.com/in/example-sam-project-mgmt-entry",
+    "name": "Sam Novak",
+    "notes": null,
+    "phone": "(555) 010-5570",
+    "profile_text": null,
+    "username": "gold_project_mgmt_entry",
+    "website_url": null
+  },
+  "candidate_username": "gold_project_mgmt_entry",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2025",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracks schedules and milestones for client projects in Asana, reducing missed deadlines by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinates vendor deliverables and follow-ups through Agile ceremonies, keeping suppliers aligned with current sprint priorities."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Manages project close-out checklists in Smartsheet, shortening close-out time by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains risk and issue logs tied to Gantt scheduling, flagging slipping tasks to the project lead."
+        }
+      ],
+      "company": "Elmstead Partners",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-02",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Coordinates schedules and milestones for client projects at Elmstead Partners as a Project Coordinator."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supports project close-out at Elmstead Partners, gathering final documentation and confirming deliverables before handover."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Project Coordinator",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Agile ceremonies",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 603,
+      "name": "Asana",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Confluence",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Gantt scheduling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Risk registers",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Smartsheet",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Status reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "Vendor negotiation",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Project coordinator who handles routine project requests, with a senior colleague reviewing the work before it is shared. Uses Smartsheet and Asana to track tasks and prepares status reporting for project teams."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Project management professional who handles routine scheduling and tracking requests under review by an experienced colleague. Brings working knowledge of Asana and Smartsheet, along with status reporting that keeps stakeholders informed of progress."
+    }
+  ],
+  "tags": []
+}

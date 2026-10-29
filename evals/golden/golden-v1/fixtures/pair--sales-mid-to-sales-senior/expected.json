@@ -1,0 +1,49 @@
+{
+  "candidate_name": "Taylor Lindqvist",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Proposal writing, in work or side projects",
+      "any exposure to Discovery calls, in work or side projects",
+      "any exposure to Sales Navigator, in work or side projects"
+    ],
+    "scope_probes": [
+      "Account Executive at Pinecrest Labs: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Proposal\\ writing",
+    "(?i)Discovery\\ calls",
+    "(?i)Sales\\ Navigator",
+    "(?i)Pipeline\\ management",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Proposal writing",
+    "Discovery calls",
+    "Sales Navigator"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "contract negotiation",
+    "salesforce"
+  ],
+  "notes": "Mismatched pair (advance): the sales-mid résumé against the sales-senior job description. The mid-tier business-to-business sales résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Proposal writing, Discovery calls, Sales Navigator. The output must claim none of it.",
+  "pair": {
+    "id": "sales-mid-to-sales-senior",
+    "jd_cell": "sales-senior",
+    "jd_fixture": "sales-senior--industrial-equipment",
+    "kind": "advance",
+    "resume_cell": "sales-mid",
+    "resume_fixture": "sales-mid--workflow-software",
+    "transferable": [
+      "contract negotiation",
+      "salesforce"
+    ]
+  }
+}

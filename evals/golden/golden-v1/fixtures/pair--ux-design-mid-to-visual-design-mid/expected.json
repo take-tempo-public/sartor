@@ -1,0 +1,57 @@
+{
+  "candidate_name": "Harper Brandt",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Canva, in work or side projects",
+      "any exposure to Adobe Photoshop, in work or side projects",
+      "any exposure to Print production, in work or side projects",
+      "any exposure to Motion graphics, in work or side projects",
+      "any exposure to Color theory, in work or side projects",
+      "any exposure to Photo retouching, in work or side projects"
+    ],
+    "scope_probes": [
+      "UX Designer at Oakmont Systems: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Canva",
+    "(?i)Adobe\\ Photoshop",
+    "(?i)Print\\ production",
+    "(?i)Motion\\ graphics",
+    "(?i)Color\\ theory",
+    "(?i)Photo\\ retouching",
+    "(?i)Interaction\\ design",
+    "(?i)Prototyping",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Canva",
+    "Adobe Photoshop",
+    "Print production",
+    "Motion graphics",
+    "Color theory",
+    "Photo retouching"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "team"
+  ],
+  "notes": "Mismatched pair (change): the ux-design-mid résumé against the visual-design-mid job description. A product designer moving to brand and visual work: shared tools, a different discipline. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Canva, Adobe Photoshop, Print production, Motion graphics, Color theory, Photo retouching. The output must claim none of it.",
+  "pair": {
+    "id": "ux-design-mid-to-visual-design-mid",
+    "jd_cell": "visual-design-mid",
+    "jd_fixture": "visual-design-mid--food-startup",
+    "kind": "change",
+    "resume_cell": "ux-design-mid",
+    "resume_fixture": "ux-design-mid--insurance-digital",
+    "transferable": [
+      "team"
+    ]
+  }
+}

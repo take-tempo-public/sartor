@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "taylor.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-taylor-web-backend-entry",
+    "name": "Taylor Okafor",
+    "phone": "(555) 010-5157",
+    "username": "gold_web_backend_entry"
+  },
+  "cell": "web-backend-entry",
+  "cell_seed": 287426691,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use PostgreSQL on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to PostgreSQL, in work or side projects",
+        "any exposure to Python, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior Backend Engineer at Stonebridge Community Trust: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)PostgreSQL",
+      "(?i)Python",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "elasticsearch",
+      "kubernetes",
+      "linux",
+      "terraform"
+    ],
+    "notes": "entry-level backend software engineering. The profile has no PostgreSQL, Python; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "PostgreSQL exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Backend Engineer",
+        "Brightpath Payments — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.payments-startup.about",
+        "jd.payments-startup.duties",
+        "jd.payments-startup.needs"
+      ],
+      "slug": "payments-startup"
+    }
+  ],
+  "level": "entry",
+  "profession": "web-backend",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Redis in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Stonebridge Community Trust",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-08",
+          "title": "Junior Backend Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Ridgeway College",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Redis",
+        "GraphQL",
+        "Terraform",
+        "Docker",
+        "API versioning",
+        "Linux",
+        "Elasticsearch",
+        "Spring Boot",
+        "Kafka",
+        "Kubernetes"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Redis"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "tool",
+      "name": "Docker"
+    },
+    {
+      "category": "method",
+      "name": "API versioning"
+    },
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "tool",
+      "name": "Elasticsearch"
+    },
+    {
+      "category": "framework",
+      "name": "Spring Boot"
+    },
+    {
+      "category": "platform",
+      "name": "Kafka"
+    },
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    }
+  ],
+  "slots": {
+    "jd.payments-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Junior Backend Engineer at Brightpath Payments, a payments startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.payments-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Junior Backend Engineer, about service reliability and on-call, tuning slow queries, API design and versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.payments-startup.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Kubernetes, Terraform, Linux, Elasticsearch, Python, PostgreSQL, and 1 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Kubernetes",
+        "Terraform",
+        "Linux",
+        "Elasticsearch",
+        "Python",
+        "PostgreSQL"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Stonebridge Community Trust: deployment pipeline automation, using Kubernetes. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Kubernetes",
+        "35"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Stonebridge Community Trust: incident follow-up and runbooks, using API versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "API versioning"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Stonebridge Community Trust: tuning slow queries, using Docker. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Docker",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Backend Engineer at Stonebridge Community Trust: API design and versioning, using Spring Boot. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Spring Boot"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Backend Engineer at Stonebridge Community Trust, about service reliability and on-call. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Backend Engineer at Stonebridge Community Trust, about API design and versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level backend software engineering professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Redis, GraphQL, Terraform.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Redis",
+        "GraphQL",
+        "Terraform"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level backend software engineering professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Redis, GraphQL, Terraform.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Redis",
+        "GraphQL",
+        "Terraform"
+      ]
+    }
+  }
+}

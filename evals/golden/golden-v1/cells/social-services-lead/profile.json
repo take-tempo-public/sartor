@@ -1,0 +1,562 @@
+{
+  "candidate": {
+    "email": "avery.novak@example.com",
+    "linkedin": "linkedin.com/in/example-avery-social-services-lead",
+    "name": "Avery Novak",
+    "phone": "(555) 010-9345",
+    "username": "gold_social_services_lead"
+  },
+  "cell": "social-services-lead",
+  "cell_seed": 1270071240,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Client advocacy on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Client advocacy, in work or side projects",
+        "any exposure to Service planning, in work or side projects"
+      ],
+      "scope_probes": [
+        "Program Manager at Cedar Hollow Hospice: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Client\\ advocacy",
+      "(?i)Service\\ planning",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "case notes",
+      "caseload tracking",
+      "microsoft access",
+      "needs assessments"
+    ],
+    "notes": "lead-level social services casework. The profile has no Client advocacy, Service planning; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team or program and answering for its results.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team or program and answering for its results",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Client advocacy exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Program Manager",
+        "Riverbend Community Partnership — Hybrid, Louisville, KY"
+      ],
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.community-partnership.about",
+        "jd.community-partnership.duties",
+        "jd.community-partnership.needs"
+      ],
+      "slug": "community-partnership"
+    }
+  ],
+  "level": "lead",
+  "profession": "social-services",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Referral coordination in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Cedar Hollow Hospice",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2020-11",
+          "title": "Program Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Riverbend Health Network",
+          "end": "2020-11",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2016-12",
+          "title": "Senior Case Manager"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": "2016-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-01",
+          "title": "Case Manager"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.W.",
+          "field": "Social Work",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "State Child Welfare Board",
+          "name": "Mandated Reporter Certificate",
+          "year": "2025"
+        },
+        {
+          "issuer": "Human Services Training Council",
+          "name": "Case Management Certificate",
+          "year": "2026"
+        },
+        {
+          "issuer": "Human Services Training Council",
+          "name": "Human Services Supervisor Certificate",
+          "year": "2023"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Referral coordination",
+        "Case notes",
+        "Motivational interviewing",
+        "Benefits enrollment",
+        "Microsoft Access",
+        "Needs assessments",
+        "Caseload tracking",
+        "Home visits"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Referral coordination"
+    },
+    {
+      "category": "method",
+      "name": "Case notes"
+    },
+    {
+      "category": "method",
+      "name": "Motivational interviewing"
+    },
+    {
+      "category": "method",
+      "name": "Benefits enrollment"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Access"
+    },
+    {
+      "category": "method",
+      "name": "Needs assessments"
+    },
+    {
+      "category": "method",
+      "name": "Caseload tracking"
+    },
+    {
+      "category": "method",
+      "name": "Home visits"
+    }
+  ],
+  "slots": {
+    "jd.community-partnership.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Program Manager at Riverbend Community Partnership, a community services nonprofit. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.community-partnership.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Duties' heading and four to six bullet lines for a Program Manager, about keeping case records, reports for hearings, coordinating with schools and clinics. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.community-partnership.needs": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require Caseload tracking, Case notes, Microsoft Access, Needs assessments, Client advocacy, Service planning, and 14 or more years of experience. State Mandated Reporter Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Caseload tracking",
+        "Case notes",
+        "Microsoft Access",
+        "Needs assessments",
+        "Client advocacy",
+        "Service planning",
+        "Mandated Reporter Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Program Manager at Cedar Hollow Hospice: intake and assessments, using Benefits enrollment. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Benefits enrollment",
+        "30"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Program Manager at Cedar Hollow Hospice: keeping case records, using Microsoft Access. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Access"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Program Manager at Cedar Hollow Hospice: home visits, using Motivational interviewing. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motivational interviewing",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Program Manager at Cedar Hollow Hospice: coordinating with schools and clinics, using Referral coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Referral coordination"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Program Manager at Cedar Hollow Hospice: managing program budgets and reports, using Caseload tracking. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Caseload tracking",
+        "35"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Program Manager at Cedar Hollow Hospice, about home visits. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Program Manager at Cedar Hollow Hospice, about reports for hearings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Case Manager at Riverbend Health Network: supervising case workers, using Needs assessments. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Needs assessments",
+        "55"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Case Manager at Riverbend Health Network: reports for hearings, using Home visits. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Home visits"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Senior Case Manager at Riverbend Health Network: referring families to housing and food programs, using Case notes. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Case notes",
+        "25"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Case Manager at Riverbend Health Network: writing service plans, using Benefits enrollment. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Benefits enrollment"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Senior Case Manager at Riverbend Health Network: intake and assessments, using Microsoft Access. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Access",
+        "20"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Case Manager at Riverbend Health Network, about reports for hearings. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Case Manager at Riverbend Health Network, about referring families to housing and food programs. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Harborview Community Clinic: coordinating with schools and clinics, using Motivational interviewing. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Motivational interviewing",
+        "30"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Harborview Community Clinic: reports for hearings, using Referral coordination. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Referral coordination"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Harborview Community Clinic: referring families to housing and food programs, using Caseload tracking. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Caseload tracking",
+        "55"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Case Manager at Harborview Community Clinic: writing service plans, using Needs assessments. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Needs assessments"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Case Manager at Harborview Community Clinic: intake and assessments, using Home visits. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Home visits",
+        "15"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Case Manager at Harborview Community Clinic, about referring families to housing and food programs. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Case Manager at Harborview Community Clinic, about keeping case records. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level social services casework professional with about 14 years of experience, scope: leading a team or program and answering for its results. Mention Referral coordination, Case notes, Motivational interviewing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Referral coordination",
+        "Case notes",
+        "Motivational interviewing"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "14"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level social services casework professional with about 14 years of experience, scope: leading a team or program and answering for its results. Mention Referral coordination, Case notes, Motivational interviewing.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Referral coordination",
+        "Case notes",
+        "Motivational interviewing"
+      ]
+    }
+  }
+}

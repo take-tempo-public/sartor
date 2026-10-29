@@ -1,0 +1,380 @@
+{
+  "candidate": {
+    "email": "jordan.brandt@example.com",
+    "linkedin_url": "linkedin.com/in/example-jordan-sales-senior",
+    "name": "Jordan Brandt",
+    "notes": null,
+    "phone": "(555) 010-0901",
+    "profile_text": null,
+    "username": "gold_sales_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_sales_senior",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2020",
+      "field": "Business Administration",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs product demonstrations and structured trials for prospective buyers, raising trial-to-close conversion by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coaches account executives on contract negotiation, reviewing deal terms with them before customer conversations."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads pipeline reviews with the sales team and applies proposal writing standards to stalled deals, lifting proposal acceptance by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Manages quotes and contracts for existing accounts, using renewal management to keep terms current ahead of each renewal date."
+        }
+      ],
+      "company": "Brightwater Labs",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2025-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Brightwater Labs, leads product demos and trial programmes that help prospective customers evaluate the offering before purchase."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Runs pipeline reviews at Brightwater Labs to keep deal stages accurate and forecasts grounded in current opportunities."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Account Executive",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used HubSpot to standardise the handoff of closed accounts to customer success, cutting onboarding delays by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prospected new accounts across target segments, building a steady flow of qualified opportunities that supported consistent quota attainment."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran discovery calls with existing customers to uncover renewal and upsell needs, increasing upsell revenue by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Delivered demos and managed trials for prospects, applying pipeline management to track each evaluation through to a decision."
+        }
+      ],
+      "company": "Marlow Contracting",
+      "display_order": 1,
+      "end_date": "2025-04",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-08",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Took part in pipeline reviews at Marlow Contracting, reporting deal progress and forecast changes for assigned accounts."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Prepared quotes and contracts at Marlow Contracting, working with buyers to agree terms and move deals to signature."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Account Executive",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supported pipeline reviews by booking product demonstrations for qualified prospects, increasing demo-to-opportunity conversion by 45 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assembled quotes and draft contracts for account executives, gaining early exposure to contract negotiation on pricing and terms."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Qualified inbound and outbound leads and contributed to proposal writing for early-stage deals, raising lead-to-opportunity conversion by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated the handoff of new customers to customer success, sharing account notes that supported later renewal management."
+        }
+      ],
+      "company": "Alder Systems",
+      "display_order": 2,
+      "end_date": "2022-08",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Prepared quote requests and contract paperwork at Alder Systems to support account executives closing new business."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Prospected new accounts at Alder Systems through outreach that generated meetings for the account executive team."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Sales Development Representative",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Contract negotiation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Discovery calls",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "HubSpot",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Pipeline management",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Product demonstrations",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Proposal writing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Quota attainment",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Renewal management",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior business-to-business sales professional with about 7 years of experience across sales development and account executive roles. Sets how the team handles proposal writing and brings steady practice in renewal management and discovery calls."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior account executive with about 7 years in business-to-business sales, from sales development to closing new and renewing accounts. Defines the team's approach to discovery calls and applies the same discipline to proposal writing and renewal management."
+    }
+  ],
+  "tags": []
+}

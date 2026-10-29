@@ -1,29 +1,48 @@
 {
   "cell": "product-mgmt-senior",
   "provenance": {
-    "kind": "converted",
-    "persona": "pm-senior",
-    "source_sha256": {
-      "expected.json": "sha256:7e4cefdf4c95fe8f480d3c560140cb3977b251c42863da924cd1127eaf5e3ce7",
-      "jd.txt": "sha256:1ad54e1c960830972a1b8ff3965f73c54e744948e93c6fcf42d395b5fd567490",
-      "resume.md": "sha256:d66d93197e8811a128f7f0164703af25928c11aeafefc896cc4293f39e71b2b1"
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:473e67b5beefe558b68cdb1839b9e8710bf097baf7e761691a12b4077c607b56",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNdraRMheUT1jrhnJJU"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4482,
+      "output_tokens": 3412
     }
   },
   "schema": 1,
   "slots": {
-    "jd.atrium-health.full": "Senior Product Manager, Provider Workflows\nAtrium Health Platform — Hybrid, Boston\n\nAbout Atrium\nAtrium Health Platform sells revenue-cycle automation to mid-size hospital systems. Our product reduces denied-claim rates and shortens billing cycles for our customers. We are post-Series-C, profitable, growing the platform team to take on a new EHR-integration surface in 2026.\n\nThe role\nYou'll own the Provider Workflows product area — the part of our platform that clinical teams interact with daily. The current PM is rotating to a new initiative; this hire takes the existing roadmap, ships the next two quarters, and begins discovery on the EHR integration line.\n\nResponsibilities\n- Drive product strategy and roadmap for Provider Workflows, balancing hospital-system stakeholder needs against engineering capacity.\n- Run discovery: customer interviews, usage analytics, qualitative research with clinical staff. Synthesize findings into prioritized opportunity briefs.\n- Partner with design and engineering through the full delivery lifecycle: scoping, build, launch, instrumentation, post-launch iteration.\n- Own KPIs for the area: feature adoption, denial-rate reduction, time-to-resolution. Defend tradeoffs in quarterly business reviews.\n- Mentor an associate PM on prioritization and customer-discovery craft.\n\nWhat we're looking for\n- 7+ years product management in B2B SaaS, ideally with workflow products used by domain experts (clinicians, lawyers, finance ops).\n- Demonstrated discovery skill — you have customer-interview habits, not just opinions.\n- Strong written communication; you write opportunity briefs that stakeholders read end-to-end.\n- Comfort presenting to executive customers and to your own exec team.\n- Cross-functional leadership without authority — design, eng, sales, support all reporting elsewhere.\n\nNice to have\n- Healthcare or healthtech product background.\n- Familiarity with EHR systems (Epic, Cerner) or HL7/FHIR data models.\n- Experience with revenue-cycle workflows or claims processing.\n\nCompensation\n$210–$260K base + equity. Hybrid Boston (3 days/week in office).",
-    "r1.b1": "Own the Audit Workflows product area at Northgate, a compliance-automation platform sold to mid-market financial services firms.",
-    "r1.b2": "Drove product strategy for the area through two annual planning cycles; aligned engineering, design, sales, and support around a single quarterly roadmap.",
-    "r1.b3": "Ran customer-discovery interviews with auditors at twelve customer firms; synthesized findings into opportunity briefs that informed the 2024 roadmap.",
-    "r1.b4": "Shipped the Evidence Collector module — feature adoption hit a strong majority of our active accounts within two quarters of launch.",
-    "r1.b5": "Partnered with engineering to instrument adoption funnels for every major workflow; data became the basis for quarterly business reviews.",
-    "r1.b6": "Mentor an associate PM on prioritization, customer-interview craft, and writing.",
-    "r2.b1": "PM for the analyst workbench at Brightwood, a B2B analytics platform serving asset managers.",
-    "r2.b2": "Led discovery and delivery of the saved-views feature; usage telemetry showed the feature became one of the top-three most-used surfaces in the workbench.",
-    "r2.b3": "Ran weekly customer interviews; documented findings in a shared Notion knowledge base the design team continues to reference.",
-    "r2.b4": "Co-authored the team's first written prioritization framework, replacing ad-hoc roadmapping.",
-    "r3.b1": "APM rotation across two product areas at a mid-market HR-tech company.",
-    "r3.b2": "Owned a small admin-console refresh end-to-end: scoping, copy, design partnership, launch.",
-    "summary.1": "Senior product manager with eight years in B2B SaaS, focused on workflow products used daily by domain experts in finance and analytics. Track record of running rigorous discovery, shipping on cadence, and growing other PMs."
+    "jd.health-services.about": "Summary\nAlderbrook Health Services is a regional health system with a mission to deliver accessible, coordinated care to every community we serve. We are seeking a Senior Product Manager to guide the digital products that support patients, families and care teams. This hybrid role is based in Minneapolis, MN. Applicants must meet the licensure and qualification requirements listed in this posting.",
+    "jd.health-services.duties": "Duties\n- Lead vendor evaluations and pricing decisions for patient-facing and internal products.\n- Build and maintain the product roadmap in partnership with clinical and operational teams.\n- Set product strategy with executive leadership and align it with organizational goals.\n- Translate patient and staff needs into clear requirements for engineering and design.\n- Report on product performance and adjust plans based on results.",
+    "jd.health-services.needs": "Licensure and qualifications\n- 9 or more years of experience in product management.\n- Experience running user interviews with patients, families or staff.\n- Working knowledge of Tableau for reporting and dashboards.\n- Pricing analysis skills applied to vendor and product decisions.\n- Go-to-market planning experience for new products or features.\n- Familiarity with Figma and Jira.",
+    "r1.b1": "Runs metrics reviews with engineering and design and applies requirements writing to turn findings into clear tickets, cutting rework on shipped features by 20 percent.",
+    "r1.b2": "Sets product strategy with company leadership, using customer discovery findings to rank which problems the product area addresses next.",
+    "r1.b3": "Writes requirements backed by Tableau dashboards of usage data, reducing clarification requests from engineering by 15 percent.",
+    "r1.b4": "Coordinates work across engineering, design and support teams, applying prioritization frameworks to settle competing requests and keep the roadmap agreed.",
+    "r1.i1": "Leads feature launches for Bluebird Family Services products as Senior Product Manager, from planning through release.",
+    "r1.i2": "Owns vendor and pricing decisions for the product area at Bluebird Family Services, working closely with leadership.",
+    "r2.b1": "Launched new features backed by pricing analysis that set tiers for each release, raising paid adoption of those features by 55 percent.",
+    "r2.b2": "Conducted user interviews with customers to test early concepts and fed the findings into feature specifications.",
+    "r2.b3": "Used product analytics to compare vendor options and pricing scenarios, informing a vendor switch that cut related costs by 55 percent.",
+    "r2.b4": "Organized metrics reviews and documented outcomes and follow-up actions in Confluence for product and engineering teams.",
+    "r2.i1": "Made vendor and pricing decisions for Meridian Cross products, weighing cost, customer value and delivery risk.",
+    "r2.i2": "Wrote product requirements at Meridian Cross that translated customer needs into clear specifications for engineering.",
+    "r3.b1": "Wrote requirements tied to roadmapping sessions, which cut the time from approved idea to engineering start by 35 percent.",
+    "r3.b2": "Coordinated marketing, support and engineering teams through go-to-market planning for new releases, aligning launch dates and messaging.",
+    "r3.b3": "Applied requirements writing to roadmap planning, reducing scope changes after work began by 45 percent.",
+    "r3.b4": "Supported feature launches by running customer discovery to confirm the problem before build and refine release scope.",
+    "r3.i1": "Drafted product requirements for Stonebridge Community Trust, working closely with engineering to clarify scope.",
+    "r3.i2": "Ran customer interviews at Stonebridge Community Trust to understand user needs and inform early product decisions.",
+    "summary.1": "Senior product manager with 9 years of experience setting the technical direction for a product area. Combines customer discovery, product analytics and go-to-market planning to decide what to build and how to launch it.",
+    "summary.2": "Product management professional with 9 years of experience, currently setting the technical direction for a product area at Bluebird Family Services. Brings customer discovery, product analytics and go-to-market planning to roadmap and launch decisions."
   }
 }

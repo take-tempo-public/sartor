@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Harper Ito",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Quota attainment, in work or side projects",
+      "any exposure to Renewal management, in work or side projects",
+      "any exposure to Salesforce, in work or side projects",
+      "any exposure to Product demonstrations, in work or side projects",
+      "any exposure to Discovery calls, in work or side projects",
+      "any exposure to Pipeline management, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior Support Specialist at Granite Ridge: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Quota\\ attainment",
+    "(?i)Renewal\\ management",
+    "(?i)Salesforce",
+    "(?i)Product\\ demonstrations",
+    "(?i)Discovery\\ calls",
+    "(?i)Pipeline\\ management",
+    "(?i)Zendesk",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Quota attainment",
+    "Renewal management",
+    "Salesforce",
+    "Product demonstrations",
+    "Discovery calls",
+    "Pipeline management"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "team"
+  ],
+  "notes": "Mismatched pair (change): the customer-support-senior résumé against the sales-mid job description. A support specialist moving into sales: strong customer contact, no quota or pipeline history. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Quota attainment, Renewal management, Salesforce, Product demonstrations, Discovery calls, Pipeline management. The output must claim none of it.",
+  "pair": {
+    "id": "customer-support-senior-to-sales-mid",
+    "jd_cell": "sales-mid",
+    "jd_fixture": "sales-mid--workflow-software",
+    "kind": "change",
+    "resume_cell": "customer-support-senior",
+    "resume_fixture": "customer-support-senior--health-plan",
+    "transferable": [
+      "team"
+    ]
+  }
+}

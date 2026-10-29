@@ -1,0 +1,305 @@
+{
+  "candidate": {
+    "email": "harper.brandt@example.com",
+    "linkedin_url": "linkedin.com/in/example-harper-ux-design-mid",
+    "name": "Harper Brandt",
+    "notes": null,
+    "phone": "(555) 010-1047",
+    "profile_text": null,
+    "username": "gold_ux_design_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_ux_design_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2022",
+      "field": "Interaction Design",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Fixes accessibility issues directly in HTML and CSS across product screens, cutting open accessibility defects by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Hands off designs to engineering with findings from usability testing attached, so open interaction questions are settled before build."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Runs stakeholder reviews structured around design critique, reducing revision rounds by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Produces wireframes in Adobe Illustrator to align product and engineering on layout before detailed design begins."
+        }
+      ],
+      "company": "Oakmont Systems",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Oakmont Systems, runs usability sessions to test designs with users and turn the findings into product changes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "UX Designer at Oakmont Systems responsible for handing finished designs off to engineering with clear specifications."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "UX Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built design system components in Figma, cutting the time needed to assemble new screens by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Synthesized user research findings into recommendations and fed them back into the team's design systems work."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran usability sessions paired with accessibility review, raising task completion rates by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracked accessibility fixes on shared Miro boards, keeping design and engineering aligned on each open issue."
+        }
+      ],
+      "company": "Halcyon Services",
+      "display_order": 1,
+      "end_date": "2024-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported handoff to engineering at Halcyon Services by preparing design files and notes for developers."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Created wireframes at Halcyon Services that shaped early page layouts for product teams."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior UX Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Accessibility review",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Adobe Illustrator",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Design critique",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Design systems",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Figma",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 607,
+      "name": "HTML and CSS",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 605,
+      "name": "Miro",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 609,
+      "name": "Usability testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "User research",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Wireframing",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "UX designer who owns a service end to end, from user research through wireframing to final layouts in Figma. Uses design critique and usability testing to keep work consistent and validated before handoff to engineering."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mid-level product and UX designer experienced in owning a workstream from early wireframing to engineering handoff. Works in Figma and leads design critique sessions grounded in usability testing and accessibility review."
+    }
+  ],
+  "tags": []
+}

@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Riley Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Pre-trip inspections, in work or side projects",
+      "any exposure to Cargo documentation, in work or side projects",
+      "any exposure to Fuel and mileage logs, in work or side projects",
+      "any exposure to Vehicle maintenance checks, in work or side projects",
+      "any exposure to Dispatch Coordinator Certificate, in work or side projects"
+    ],
+    "scope_probes": [
+      "Class A Truck Driver at Stonebridge Logistics: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Pre\\-trip\\ inspections",
+    "(?i)Cargo\\ documentation",
+    "(?i)Fuel\\ and\\ mileage\\ logs",
+    "(?i)Vehicle\\ maintenance\\ checks",
+    "(?i)Dispatch\\ Coordinator\\ Certificate",
+    "(?i)Customer\\ signoff",
+    "(?i)Hazardous\\ Materials\\ Endorsement",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Pre-trip inspections",
+    "Cargo documentation",
+    "Fuel and mileage logs",
+    "Vehicle maintenance checks",
+    "Dispatch Coordinator Certificate"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "defensive driving",
+    "route planning"
+  ],
+  "notes": "Mismatched pair (advance): the logistics-driving-mid résumé against the logistics-driving-senior job description. The mid-tier truck driving and dispatch résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Pre-trip inspections, Cargo documentation, Fuel and mileage logs, Vehicle maintenance checks, Dispatch Coordinator Certificate. The output must claim none of it.",
+  "pair": {
+    "id": "logistics-driving-mid-to-logistics-driving-senior",
+    "jd_cell": "logistics-driving-senior",
+    "jd_fixture": "logistics-driving-senior--produce-hauler",
+    "kind": "advance",
+    "resume_cell": "logistics-driving-mid",
+    "resume_fixture": "logistics-driving-mid--freight-carrier",
+    "transferable": [
+      "defensive driving",
+      "route planning"
+    ]
+  }
+}

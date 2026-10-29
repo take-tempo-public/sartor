@@ -1,0 +1,136 @@
+{
+  "certifications": [
+    {
+      "issuer": "Open Systems Training Board",
+      "level": "entry",
+      "name": "Systems Administrator Certificate"
+    },
+    {
+      "issuer": "Cloud Skills Institute",
+      "level": "mid",
+      "name": "Cloud Operations Certificate"
+    }
+  ],
+  "display": "site reliability and IT operations",
+  "education": {
+    "degree": "B.S.",
+    "field": "Information Technology"
+  },
+  "industries": [
+    {
+      "company": "Brennan IT Services",
+      "level": "entry",
+      "location": "Hybrid, Atlanta, GA",
+      "phrase": "a managed services provider",
+      "setting": "enterprise",
+      "slug": "managed-services"
+    },
+    {
+      "company": "Lattice Cloud",
+      "level": "mid",
+      "location": "Remote (US)",
+      "phrase": "a cloud hosting startup",
+      "setting": "startup",
+      "slug": "cloud-hosting"
+    },
+    {
+      "company": "Ravenswood Insurance Group",
+      "level": "senior",
+      "location": "Hybrid, Hartford, CT",
+      "phrase": "an insurance carrier",
+      "setting": "enterprise",
+      "slug": "insurance-carrier"
+    },
+    {
+      "company": "Pinegrove Health System",
+      "level": "lead",
+      "location": "On site, Nashville, TN",
+      "phrase": "a multi-hospital health system",
+      "setting": "health-nonprofit",
+      "slug": "hospital-network"
+    }
+  ],
+  "leadership_themes": [
+    "running the on-call rotation for the team",
+    "setting reliability targets with product teams"
+  ],
+  "profession": "sre-ops",
+  "settings": [
+    "enterprise",
+    "startup",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "platform",
+      "name": "Linux"
+    },
+    {
+      "category": "tool",
+      "name": "Ansible"
+    },
+    {
+      "category": "tool",
+      "name": "Terraform"
+    },
+    {
+      "category": "tool",
+      "name": "Prometheus"
+    },
+    {
+      "category": "tool",
+      "name": "Grafana"
+    },
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "language",
+      "name": "PowerShell"
+    },
+    {
+      "category": "language",
+      "name": "Bash scripting"
+    },
+    {
+      "category": "tool",
+      "name": "Splunk"
+    },
+    {
+      "category": "tool",
+      "name": "ServiceNow"
+    },
+    {
+      "category": "platform",
+      "name": "Active Directory"
+    },
+    {
+      "category": "platform",
+      "name": "Microsoft Azure"
+    },
+    {
+      "category": "language",
+      "name": "Python"
+    },
+    {
+      "category": "method",
+      "name": "Backup and recovery"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Systems Administrator",
+    "lead": "Infrastructure Manager",
+    "mid": "Systems Engineer",
+    "senior": "Senior Site Reliability Engineer"
+  },
+  "work_themes": [
+    "on-call rotation",
+    "capacity planning",
+    "backup and recovery tests",
+    "tuning monitoring alerts",
+    "patching cycles",
+    "change approvals",
+    "post-incident write-ups"
+  ]
+}

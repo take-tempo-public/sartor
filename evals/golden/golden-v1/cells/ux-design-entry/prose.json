@@ -1,0 +1,36 @@
+{
+  "cell": "ux-design-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:9e608306ff2f4611b13d0a73cbef617db151a372c87621a861e9a995ca64e584",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVUZ2ZFL1QR4VZeUCdRi"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2690,
+      "output_tokens": 2213
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.consumer-app.about": "Fernwood Apps builds consumer apps that people actually enjoy opening. We're a small, remote team, and we're looking for a junior UX designer who wants to learn fast, ship often and care about the details. You'll work closely with a senior designer, take on well-scoped pieces of the product and see your work in users' hands quickly.",
+    "jd.consumer-app.duties": "What you'll do\n- Sketch and refine wireframes for new screens and flows in our app\n- Find and fix accessibility issues, from colour contrast to screen reader labels\n- Help plan and run usability sessions with real users\n- Turn session notes into clear, prioritized design changes\n- Share your work in regular design critiques and iterate on the feedback",
+    "jd.consumer-app.needs": "What we're looking for\n- 1 or more years of experience in product or UX design\n- A solid grounding in interaction design and information architecture\n- Comfort working in Figma, including prototyping clickable flows\n- Hands-on user research experience, from interviews to usability sessions\n- Working knowledge of HTML and CSS so you can collaborate easily with engineers",
+    "r1.b1": "Builds design system components and organizes them using information architecture principles, reducing the time teammates spend locating the right component by 40 percent.",
+    "r1.b2": "Runs usability sessions using wireframing to test early layouts with participants before visual design work begins.",
+    "r1.b3": "Presents usability testing findings in stakeholder reviews to prioritize fixes, reducing task errors by 20 percent.",
+    "r1.b4": "Applies accessibility fixes to shared components, following design systems practice so each correction carries through to every screen that uses them.",
+    "r1.i1": "Supports the design team at Neighborhood Table Services by planning and running usability sessions and turning participant feedback into clear design changes.",
+    "r1.i2": "Produces wireframes for Neighborhood Table Services, working on small, well-defined parts of the product with a senior designer reviewing each draft.",
+    "summary.1": "Entry-level product and UX designer with about 1 year of experience delivering small, well-defined pieces of work under senior review. Brings skills in journey mapping, design critique, and HTML and CSS to keep designs grounded in user needs and practical to build.",
+    "summary.2": "Junior UX designer with about 1 year of experience taking on clearly scoped design tasks while a senior colleague reviews the output. Uses journey mapping to frame problems, contributes to design critique, and applies HTML and CSS knowledge when handing work to developers."
+  }
+}

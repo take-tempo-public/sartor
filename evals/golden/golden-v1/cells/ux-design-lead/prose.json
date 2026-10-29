@@ -1,0 +1,51 @@
+{
+  "cell": "ux-design-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:b6b5adf40ec342c381d84761c3bffa64ba8fa627d1b8b1f4a23343b776cb7495",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVTix7XBH5zSguQr2Cyq"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4812,
+      "output_tokens": 3108
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.learning-design.about": "About the role\nParable Learning builds online courses people actually finish, and we need a Design Manager to help us get there. You'll lead a small, scrappy design team, keep our product experience clear and accessible, and work side by side with engineering and content folks. This role is hybrid, based in Denver, CO. If you like shipping, coaching and solving messy problems for learners, let's talk.",
+    "jd.learning-design.duties": "What you'll do\n- Lead and mentor our designers through regular feedback, pairing and career conversations\n- Own wireframes for new learning flows, from rough sketches to clear, reviewable layouts\n- Run smooth handoff to engineering with specs, annotations and quick follow-up when questions come up\n- Set up and run design critiques so work gets sharper before it ships\n- Partner with product and content leads to decide what the team builds next\n- Keep our patterns consistent and usable across the whole product",
+    "jd.learning-design.needs": "What we're looking for\n- 14 or more years of experience in product or UX design, including time leading designers\n- Comfort running design critique sessions and giving direct, useful feedback\n- Hands-on experience with accessibility review and fixing what it turns up\n- Strong skills in Figma and Adobe Illustrator\n- Experience running remote workshops in Miro\n- Working knowledge of HTML and CSS so you can talk shop with engineers",
+    "r1.b1": "Mentor designers on shared Figma workflows and file structure, cutting design review rework by 10 percent.",
+    "r1.b2": "Run usability testing on early wireframes before visual design begins, so the team settles layout and flow questions with real user feedback.",
+    "r1.b3": "Lead team design critiques grounded in journey mapping, raising first-round approval of new flows by 25 percent.",
+    "r1.b4": "Turn findings from usability sessions into design critique agendas, helping designers address the problems users actually hit.",
+    "r1.b5": "Build design system components from shared wireframing standards, reducing time spent on new screen layouts by 15 percent.",
+    "r1.i1": "Manages the product design team at Calloway Group and runs the usability sessions that shape what the team ships.",
+    "r1.i2": "Leads design at Calloway Group as Design Manager, with a focus on mentoring designers and growing their craft and judgment.",
+    "r2.b1": "Restructured information architecture ahead of stakeholder reviews, cutting revision rounds by 50 percent.",
+    "r2.b2": "Produced annotated specs in Adobe Illustrator to document accessibility fixes for contrast, focus states and labels.",
+    "r2.b3": "Combined research synthesis with accessibility review findings, raising the share of issues resolved before release by 20 percent.",
+    "r2.b4": "Prepared engineering handoffs using design systems guidelines so developers built screens from documented, reusable components.",
+    "r2.b5": "Mentored junior designers in prototyping, reducing the time from concept to testable prototype by 45 percent.",
+    "r2.i1": "Served as a senior product designer at Lantern Hill, mentoring designers while delivering product design work.",
+    "r2.i2": "Worked as a senior product designer at Lantern Hill, turning product requirements into wireframes for stakeholder and engineering review.",
+    "r3.b1": "Presented Figma prototypes in stakeholder reviews, shortening approval cycles by 20 percent.",
+    "r3.b2": "Used usability testing to find accessibility problems in key screens and confirmed fixes through follow-up sessions.",
+    "r3.b3": "Synthesized research through journey mapping, cutting the time to share findings with the team by 35 percent.",
+    "r3.b4": "Ran design critique sessions before engineering handoff to catch gaps in specs and edge cases early.",
+    "r3.b5": "Standardized wireframing templates for new screens, cutting wireframe production time by 10 percent.",
+    "r3.i1": "Worked as a UX designer at Riverbend Health Network, preparing and presenting design work in stakeholder reviews.",
+    "r3.i2": "Designed user experiences at Riverbend Health Network as a UX designer, identifying and resolving accessibility fixes across the product.",
+    "summary.1": "Lead product and UX designer with about 14 years of experience leading a design team and owning the roadmap for the area. Brings strengths in journey mapping, prototyping and Adobe Illustrator, along with design systems and usability testing.",
+    "summary.2": "Product and UX design lead with about 14 years in the field, currently managing designers and setting the roadmap for the area. Uses journey mapping to frame problems, prototyping to test ideas, and Adobe Illustrator for detailed visual work."
+  }
+}

@@ -1,0 +1,441 @@
+{
+  "candidate": {
+    "email": "casey.mehta@example.com",
+    "linkedin_url": "linkedin.com/in/example-casey-teacher-lead",
+    "name": "Casey Mehta",
+    "notes": null,
+    "phone": "(555) 010-2538",
+    "profile_text": null,
+    "username": "gold_teacher_lead",
+    "website_url": null
+  },
+  "candidate_username": "gold_teacher_lead",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "State Department of Education",
+      "name": "State Teaching Licence"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2017",
+      "issuer": "State Department of Education",
+      "name": "Reading Specialist Endorsement"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2019",
+      "issuer": "State Department of Education",
+      "name": "Instructional Leadership Endorsement"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2014",
+      "field": "Elementary Education",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads small-group reading sessions and uses math manipulatives in paired numeracy lessons, lifting benchmark scores for targeted students by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Plans daily lessons with teachers, building classroom management routines into each lesson so transitions stay calm and instruction time is protected."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Sets up consistent classroom routines through Google Classroom, cutting time lost to missing or late assignments by 10 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Directs grade-level planning meetings, using Seesaw to share student work samples and agree on next steps for each unit."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coaches colleagues on phonics instruction through modeled lessons and feedback cycles, contributing to a 20 percent gain in early reading scores."
+        }
+      ],
+      "company": "Cedar Grove Academy",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Coaches teachers at Cedar Grove Academy and joins parent conferences to explain student progress and agree on support at home and school."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supports teachers at Cedar Grove Academy in assessing student progress and using the results to adjust daily instruction."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Instructional Coach",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used Nearpod lesson reports in parent conferences to show each child's progress, raising conference attendance by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Coordinated team planning with grade-level colleagues, aligning small-group instruction across classrooms so students received consistent support."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tightened lesson planning around regular checks of student progress, increasing the number of students reaching grade-level targets by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Adapted math work for different learners with math manipulatives, giving students who struggled with abstract problems a concrete way in."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran small-group reading blocks backed by clear classroom management routines, reducing off-task behavior during reading time by 50 percent."
+        }
+      ],
+      "company": "Willowbrook Elementary School",
+      "display_order": 1,
+      "end_date": "2024-12",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Led teaching at Willowbrook Elementary School with a focus on assessing student progress and sharing findings with the grade-level team."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Taught and led colleagues at Willowbrook Elementary School, adapting work so students with different needs could reach the same goals."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Lead Teacher",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Shared assignments and feedback through Google Classroom ahead of parent conferences, increasing parent follow-up on home learning by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Planned units with grade-level colleagues and used Seesaw to collect student work for shared review."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 313,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assessed student progress in phonics instruction with regular decoding checks, lifting the share of students reading at grade level by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 314,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built Nearpod lessons with tiered activities, adapting work for different learners within the same class period."
+        },
+        {
+          "display_order": 4,
+          "has_outcome": true,
+          "id": 315,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Delivered small-group instruction in daily reading groups, raising reading fluency scores for targeted students by 20 percent."
+        }
+      ],
+      "company": "Maple Street School",
+      "display_order": 2,
+      "end_date": "2017-10",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2014-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Taught a general classroom at Maple Street School, adapting work so learners at different levels could take part in each lesson."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Taught at Maple Street School with daily small-group reading sessions matched to each student's needs."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Classroom Teacher",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Classroom management",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 602,
+      "name": "Google Classroom",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Lesson planning",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Math manipulatives",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Nearpod",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Phonics instruction",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Seesaw",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Small-group instruction",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Lead-level elementary educator with 12 years of experience leading grade-level teams and coaching teachers, answerable for the reading and math results of the classrooms supported. Uses Nearpod, Google Classroom and small-group instruction to plan lessons, track student progress and help colleagues adjust their teaching."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Elementary teaching professional with 12 years in schools, now coaching teachers and leading planning work with responsibility for the results it produces. Brings hands-on use of small-group instruction, Nearpod and Google Classroom to reading and math teaching, and holds endorsements in reading and instructional leadership."
+    }
+  ],
+  "tags": []
+}

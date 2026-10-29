@@ -1,0 +1,42 @@
+{
+  "cell": "sales-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:a5c2e46c7d70e5179e19e1e36995f5d1ab6a9bdd0ab2b93cde7b4dcd54be91ea",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNk1bJvevatUP6ahL8P"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3556,
+      "output_tokens": 2360
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.workflow-software.about": "Pivotal Workflow builds workflow software that helps teams stop chasing tasks and start finishing them. We're looking for an Account Executive who likes owning deals from first call to signature. You'll work remotely across the US, talk to a lot of operations leaders, and help shape how a growing sales team works. If you enjoy building pipeline and closing without a heavy playbook, we'd like to meet you.",
+    "jd.workflow-software.duties": "What you'll do\n- Prospect new accounts through outbound outreach, referrals and inbound interest\n- Qualify leads quickly so time goes to buyers with real need, budget and timing\n- Build quotes and send contracts, then work through terms with buyers until signature\n- Run demos that show prospects how Pivotal Workflow fits their day-to-day process\n- Keep deal notes and next steps current so the team always knows where things stand",
+    "jd.workflow-software.needs": "What we're looking for\n- 4 or more years of experience in business-to-business sales\n- A track record of quota attainment you can walk us through\n- Hands-on renewal management and comfort expanding existing accounts\n- Daily use of Salesforce and disciplined pipeline management\n- Confident product demonstrations and well-structured discovery calls",
+    "r1.b1": "Leads pipeline reviews that apply renewal management to at-risk accounts, raising renewal rates by 25 percent.",
+    "r1.b2": "Qualifies inbound leads through account planning, focusing effort on accounts with clear budget, need and timing.",
+    "r1.b3": "Tracks product demos and trials in Salesforce, lifting trial-to-paid conversion by 25 percent.",
+    "r1.b4": "Hands closed deals to customer success with contract negotiation outcomes and agreed terms documented for a smooth start.",
+    "r1.i1": "Account Executive at Pinecrest Labs running regular pipeline reviews to keep forecasts accurate and deals moving.",
+    "r1.i2": "Manages product demos and trials at Pinecrest Labs, guiding prospects from first look to signed agreement.",
+    "r2.b1": "Applied sales forecasting to renewal and upsell opportunities, increasing upsell revenue by 15 percent.",
+    "r2.b2": "Prospected new accounts using HubSpot sequences and logged every touchpoint to keep outreach organised.",
+    "r2.b3": "Delivered product demonstrations ahead of quotes and contracts, raising quote acceptance by 40 percent.",
+    "r2.b4": "Reviewed the pipeline weekly with the sales manager to track quota attainment and flag stalled opportunities.",
+    "r2.i1": "Sales Development Representative at Redfern Family Trades who booked product demos and set up trials for qualified prospects.",
+    "r2.i2": "Supported renewals and upsells at Redfern Family Trades by identifying existing customers ready to expand.",
+    "summary.1": "Business-to-business sales professional with about 4 years of experience owning the sales cycle from first request to signed contract and handoff. Works daily in Salesforce and applies contract negotiation and sales forecasting to every deal.",
+    "summary.2": "Specialist in business-to-business sales with about 4 years spent managing deals end to end, from initial request through renewal. Uses Salesforce to keep pipelines current and relies on contract negotiation and sales forecasting to close deals and plan revenue."
+  }
+}

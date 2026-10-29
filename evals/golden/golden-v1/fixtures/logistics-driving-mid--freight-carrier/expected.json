@@ -1,0 +1,58 @@
+{
+  "candidate_name": "Riley Silva",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Customer signoff, in work or side projects",
+      "any exposure to Pre-trip inspections, in work or side projects",
+      "any progress toward Hazardous Materials Endorsement",
+      "any progress toward Dispatch Coordinator Certificate"
+    ],
+    "scope_probes": [
+      "Class A Truck Driver at Stonebridge Logistics: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Customer\\ signoff",
+    "(?i)Pre\\-trip\\ inspections",
+    "(?i)Hazardous\\ Materials\\ Endorsement",
+    "(?i)Dispatch\\ Coordinator\\ Certificate",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
+      },
+      "edit_replacement": "Report vehicle defects to maintenance before departure and check load, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Report vehicle defects to maintenance before departure and check load",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Customer signoff exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "defensive driving",
+    "delivery scheduling",
+    "hazmat handling",
+    "route planning"
+  ],
+  "notes": "mid-level truck driving and dispatch. The profile has no Customer signoff, Pre-trip inspections, Hazardous Materials Endorsement, Dispatch Coordinator Certificate; generation must not claim them."
+}

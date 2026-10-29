@@ -1,0 +1,394 @@
+{
+  "candidate": {
+    "email": "riley.reyes@example.com",
+    "linkedin_url": "linkedin.com/in/example-riley-ux-design-senior",
+    "name": "Riley Reyes",
+    "notes": null,
+    "phone": "(555) 010-4008",
+    "profile_text": null,
+    "username": "gold_ux_design_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_ux_design_senior",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.A.",
+      "display_order": 0,
+      "end_date": "2018",
+      "field": "Interaction Design",
+      "id": 701,
+      "institution": "State University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Mentor product designers in journey mapping for new features, a practice that cut rework found in design reviews by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Run stakeholder reviews using wireframing to settle scope and layout before visual design begins."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Synthesize research findings in Figma, reducing the time from study to design decision by 45 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Lead design critiques for the team that apply interaction design principles to flows before handoff."
+        }
+      ],
+      "company": "Neighborhood Table Services",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Leads product design at Neighborhood Table Services, with a focus on building and maintaining design system components."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Guides product design at Neighborhood Table Services and runs stakeholder reviews that keep design and business goals aligned."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Product Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Facilitated usability sessions and organized findings in Miro, which raised task completion rates by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built design system components in HTML and CSS so engineers could reuse tested patterns across screens."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Restructured information architecture as part of accessibility fixes, cutting navigation errors reported by users by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Presented user research findings at stakeholder reviews to align product and engineering on priorities."
+        }
+      ],
+      "company": "Ironbridge Co",
+      "display_order": 1,
+      "end_date": "2023-01",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-04",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Worked as a UX designer at Ironbridge Co, preparing and leading stakeholder reviews for product changes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Designed and tracked accessibility fixes across Ironbridge Co products as a UX designer."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "UX Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used design critique sessions to sharpen research synthesis, raising the share of findings adopted into designs by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Drew wireframes in Adobe Illustrator for new screens and reviewed them with senior designers."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Applied journey mapping to engineering handoff, reducing clarification requests from developers by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Supported usability sessions by wireframing test screens and revising them from participant feedback."
+        }
+      ],
+      "company": "Maple Court Care",
+      "display_order": 2,
+      "end_date": "2020-04",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2018-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Started as a junior UX designer at Maple Court Care, helping find and ship accessibility fixes in existing screens."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Joined Maple Court Care as a junior UX designer, producing wireframes for new and updated screens."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior UX Designer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 604,
+      "name": "Adobe Illustrator",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Design critique",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Figma",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 609,
+      "name": "HTML and CSS",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Information architecture",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Interaction design",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Journey mapping",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 601,
+      "name": "Miro",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "User research",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Wireframing",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior product designer with about 8 years of experience setting the technical direction for a product area. Uses Miro, journey mapping and wireframing to move teams from research to agreed designs."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Product and UX designer at senior level with 8 years of experience in user research and interaction design. Sets technical direction for a product area, using journey mapping, wireframing and Miro to align teams on what to build."
+    }
+  ],
+  "tags": []
+}

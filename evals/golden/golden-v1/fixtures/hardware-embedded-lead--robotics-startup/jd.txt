@@ -1,0 +1,19 @@
+Hardware Engineering Manager
+Fernhill Robotics — Hybrid, Pittsburgh, PA
+
+Fernhill Robotics builds robots, and we need someone to run the hardware side. As our Hardware Engineering Manager, you'll lead a team of engineers, own the path from schematic to working board, and keep design quality high as we grow. You'll split your time between hands-on debugging and helping people grow as engineers. This is a hybrid role based in Pittsburgh.
+
+What you'll do
+- Lead design reviews for schematics, layouts and firmware, and make sure decisions are written down
+- Mentor junior engineers through debugging, bring-up and review feedback
+- Set review standards so design reviews catch problems early
+- Plan hardware work with the robotics and software teams
+- Own prototype testing and sign off boards before they go to build
+
+What we're looking for
+- 11 or more years of hardware or embedded engineering experience, including time leading engineers
+- Hands-on experience with RTOS-based firmware and Linux systems
+- Firmware bring-up on new boards, from first power-on to stable builds
+- Oscilloscope debugging and lab work on mixed-signal hardware
+- SPICE simulation for circuit design and checks
+- Signal integrity analysis for high-speed boards

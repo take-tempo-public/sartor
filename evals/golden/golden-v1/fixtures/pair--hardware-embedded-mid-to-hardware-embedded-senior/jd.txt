@@ -1,0 +1,18 @@
+Senior Embedded Engineer
+Halvorsen Aerospace Systems — On site, Wichita, KS
+
+Halvorsen Aerospace Systems seeks a Senior Embedded Engineer to join its on-site team in Wichita, KS. The engineer will design, bring up and verify embedded hardware for aerospace programs, working closely with suppliers and systems teams. Candidates must have experience with schematic capture, PCB layout and embedded C. Experience with Verilog and signal integrity analysis is preferred.
+
+Responsibilities
+- Write and maintain hardware and firmware specifications for embedded aerospace systems.
+- Lead board bring-up of new designs, from initial power-on through functional verification.
+- Select components in partnership with approved suppliers, weighing availability, qualification and lifecycle risk.
+- Review schematics and layouts produced by peers and contractors.
+- Coordinate with test and quality teams to resolve design issues found during validation.
+
+Minimum and preferred qualifications
+- 9 or more years of experience in hardware or embedded engineering.
+- Proven skill in schematic capture and PCB layout for mixed-signal boards.
+- Working knowledge of embedded C and Python for firmware and test automation.
+- Experience writing and verifying logic in Verilog.
+- Preferred: hands-on signal integrity analysis on high-speed interfaces.

@@ -1,0 +1,305 @@
+{
+  "candidate": {
+    "email": "taylor.chen@example.com",
+    "linkedin_url": "linkedin.com/in/example-taylor-mobile-mid",
+    "name": "Taylor Chen",
+    "notes": null,
+    "phone": "(555) 010-0470",
+    "profile_text": null,
+    "username": "gold_mobile_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_mobile_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2023",
+      "field": "Computer Science",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Resolves accessibility issues flagged through crash reporting and screen reader checks, reducing accessibility-related crashes by 30 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Shortens app start-up time in Swift by moving non-critical work off the launch path and loading resources on demand."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Builds offline sync for the mobile app and automates its test builds with Fastlane, cutting sync failures by 30 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Maintains the release pipeline in Xcode, standardising build settings and signing so each release ships from a consistent configuration."
+        }
+      ],
+      "company": "Fairhaven Works",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-10",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Builds and tests mobile apps at Fairhaven Works, with a focus on device testing across a range of phones and operating system versions."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Develops mobile features at Fairhaven Works, connecting app screens to backend services through API integration."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Mobile Developer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Triaged crash reports for screens built with Jetpack Compose, fixing recurring state bugs and reducing crash volume by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Ran device testing across phones and tablets, using Firebase to collect results and catch layout and performance issues before release."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Integrated new backend APIs and shipped them through each App Store release, cutting data-loading errors by 35 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Fixed accessibility issues in screens backed by Core Data, adding screen reader labels for locally stored content."
+        }
+      ],
+      "company": "Brightwater Labs",
+      "display_order": 1,
+      "end_date": "2024-10",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-01",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported mobile development at Brightwater Labs, working mainly on API integration between the apps and backend services."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Contributed to mobile apps at Brightwater Labs, helping build offline sync so users could keep working without a connection."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Mobile Developer",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 610,
+      "name": "App Store release",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 605,
+      "name": "Core Data",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Crash reporting",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Fastlane",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 602,
+      "name": "Firebase",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "GraphQL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 607,
+      "name": "Jetpack Compose",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 601,
+      "name": "Kotlin",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 609,
+      "name": "Swift",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Xcode",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mobile app engineer with about 4 years of experience owning a workstream end to end, from design through release. Builds Android features in Kotlin, backed by Firebase services and GraphQL APIs."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Mid-level mobile developer with about 4 years of experience taking a single service or workstream from planning to production. Works across Kotlin, Firebase and GraphQL, with a focus on reliable releases and maintainable code."
+    }
+  ],
+  "tags": []
+}

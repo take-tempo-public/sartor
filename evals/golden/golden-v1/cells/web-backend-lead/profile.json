@@ -1,0 +1,550 @@
+{
+  "candidate": {
+    "email": "quinn.mehta@example.com",
+    "linkedin": "linkedin.com/in/example-quinn-web-backend-lead",
+    "name": "Quinn Mehta",
+    "phone": "(555) 010-3374",
+    "username": "gold_web_backend_lead"
+  },
+  "cell": "web-backend-lead",
+  "cell_seed": 1661479742,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Linux on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Linux, in work or side projects",
+        "any exposure to PostgreSQL, in work or side projects"
+      ],
+      "scope_probes": [
+        "Engineering Manager at Maple Court Care: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Linux",
+      "(?i)PostgreSQL",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "docker",
+      "elasticsearch",
+      "jenkins",
+      "spring boot"
+    ],
+    "notes": "lead-level backend software engineering. The profile has no Linux, PostgreSQL; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Leading a team and owning the roadmap for the area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, leading a team and owning the roadmap for the area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Linux exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Engineering Manager",
+        "Tidewater Freight Labs — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.freight-startup.about",
+        "jd.freight-startup.duties",
+        "jd.freight-startup.needs"
+      ],
+      "slug": "freight-startup"
+    }
+  ],
+  "level": "lead",
+  "profession": "web-backend",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention GraphQL in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Maple Court Care",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2019-12",
+          "title": "Engineering Manager"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Harborview Community Clinic",
+          "end": "2019-12",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2016-07",
+          "title": "Senior Backend Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Granite Ridge",
+          "end": "2016-07",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2013-12",
+          "title": "Backend Engineer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2013"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "GraphQL",
+        "Redis",
+        "Docker",
+        "Elasticsearch",
+        "Spring Boot",
+        "Kafka",
+        "GitHub",
+        "Kubernetes",
+        "API versioning",
+        "Jenkins"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "tool",
+      "name": "Redis"
+    },
+    {
+      "category": "tool",
+      "name": "Docker"
+    },
+    {
+      "category": "tool",
+      "name": "Elasticsearch"
+    },
+    {
+      "category": "framework",
+      "name": "Spring Boot"
+    },
+    {
+      "category": "platform",
+      "name": "Kafka"
+    },
+    {
+      "category": "tool",
+      "name": "GitHub"
+    },
+    {
+      "category": "platform",
+      "name": "Kubernetes"
+    },
+    {
+      "category": "method",
+      "name": "API versioning"
+    },
+    {
+      "category": "tool",
+      "name": "Jenkins"
+    }
+  ],
+  "slots": {
+    "jd.freight-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Engineering Manager at Tidewater Freight Labs, a freight-tracking startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.freight-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Engineering Manager, about API design and versioning, deployment pipeline automation, setting the team's technical roadmap. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.freight-startup.needs": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Docker, Spring Boot, Jenkins, Elasticsearch, PostgreSQL, Linux, and 13 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Docker",
+        "Spring Boot",
+        "Jenkins",
+        "Elasticsearch",
+        "PostgreSQL",
+        "Linux"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Engineering Manager at Maple Court Care: mentoring engineers through code review, using Docker. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Docker",
+        "10"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Engineering Manager at Maple Court Care: database schema changes, using Kafka. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Kafka"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Engineering Manager at Maple Court Care: setting the team's technical roadmap, using Elasticsearch. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Elasticsearch",
+        "15"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Engineering Manager at Maple Court Care: deployment pipeline automation, using GraphQL. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "GraphQL"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Engineering Manager at Maple Court Care: service reliability and on-call, using Kubernetes. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Kubernetes",
+        "50"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Engineering Manager at Maple Court Care, about mentoring engineers through code review. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Engineering Manager at Maple Court Care, about database schema changes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Harborview Community Clinic: incident follow-up and runbooks, using Jenkins. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Jenkins",
+        "55"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Harborview Community Clinic: API design and versioning, using API versioning. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "API versioning"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Harborview Community Clinic: tuning slow queries, using Redis. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Redis",
+        "15"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Harborview Community Clinic: mentoring engineers through code review, using GitHub. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "GitHub"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Senior Backend Engineer at Harborview Community Clinic: database schema changes, using Spring Boot. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Spring Boot",
+        "45"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Backend Engineer at Harborview Community Clinic, about database schema changes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Backend Engineer at Harborview Community Clinic, about tuning slow queries. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Granite Ridge: API design and versioning, using Docker. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Docker",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Granite Ridge: tuning slow queries, using Kafka. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Kafka"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Granite Ridge: database schema changes, using Elasticsearch. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Elasticsearch",
+        "35"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Backend Engineer at Granite Ridge: deployment pipeline automation, using GraphQL. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "GraphQL"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Backend Engineer at Granite Ridge: service reliability and on-call, using Kubernetes. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Kubernetes",
+        "55"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Backend Engineer at Granite Ridge, about service reliability and on-call. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Backend Engineer at Granite Ridge, about incident follow-up and runbooks. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a lead-level backend software engineering professional with about 13 years of experience, scope: leading a team and owning the roadmap for the area. Mention GraphQL, Redis, Docker.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "GraphQL",
+        "Redis",
+        "Docker"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "13"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a lead-level backend software engineering professional with about 13 years of experience, scope: leading a team and owning the roadmap for the area. Mention GraphQL, Redis, Docker.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "GraphQL",
+        "Redis",
+        "Docker"
+      ]
+    }
+  }
+}

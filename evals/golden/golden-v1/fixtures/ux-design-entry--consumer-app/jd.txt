@@ -1,0 +1,18 @@
+Junior UX Designer
+Fernwood Apps — Remote (US)
+
+Fernwood Apps builds consumer apps that people actually enjoy opening. We're a small, remote team, and we're looking for a junior UX designer who wants to learn fast, ship often and care about the details. You'll work closely with a senior designer, take on well-scoped pieces of the product and see your work in users' hands quickly.
+
+What you'll do
+- Sketch and refine wireframes for new screens and flows in our app
+- Find and fix accessibility issues, from colour contrast to screen reader labels
+- Help plan and run usability sessions with real users
+- Turn session notes into clear, prioritized design changes
+- Share your work in regular design critiques and iterate on the feedback
+
+What we're looking for
+- 1 or more years of experience in product or UX design
+- A solid grounding in interaction design and information architecture
+- Comfort working in Figma, including prototyping clickable flows
+- Hands-on user research experience, from interviews to usability sessions
+- Working knowledge of HTML and CSS so you can collaborate easily with engineers

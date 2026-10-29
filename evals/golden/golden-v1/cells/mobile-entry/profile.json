@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "harper.okafor@example.com",
+    "linkedin": "linkedin.com/in/example-harper-mobile-entry",
+    "name": "Harper Okafor",
+    "phone": "(555) 010-5670",
+    "username": "gold_mobile_entry"
+  },
+  "cell": "mobile-entry",
+  "cell_seed": 1062332137,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Gradle on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Gradle, in work or side projects",
+        "any exposure to Swift, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior Mobile Developer at Tillman Brothers: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Gradle",
+      "(?i)Swift",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "core data",
+      "fastlane",
+      "jetpack compose",
+      "testflight"
+    ],
+    "notes": "entry-level mobile app engineering. The profile has no Gradle, Swift; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Gradle exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior Mobile Developer",
+        "Pacebridge Fitness — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.fitness-startup.about",
+        "jd.fitness-startup.duties",
+        "jd.fitness-startup.needs"
+      ],
+      "slug": "fitness-startup"
+    }
+  ],
+  "level": "entry",
+  "profession": "mobile",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Xcode in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Tillman Brothers",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-04",
+          "title": "Junior Mobile Developer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Xcode",
+        "Push notifications",
+        "Jetpack Compose",
+        "TestFlight",
+        "Core Data",
+        "Fastlane",
+        "GraphQL",
+        "App Store release",
+        "Android Studio",
+        "Firebase"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Xcode"
+    },
+    {
+      "category": "method",
+      "name": "Push notifications"
+    },
+    {
+      "category": "framework",
+      "name": "Jetpack Compose"
+    },
+    {
+      "category": "tool",
+      "name": "TestFlight"
+    },
+    {
+      "category": "framework",
+      "name": "Core Data"
+    },
+    {
+      "category": "tool",
+      "name": "Fastlane"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "method",
+      "name": "App Store release"
+    },
+    {
+      "category": "tool",
+      "name": "Android Studio"
+    },
+    {
+      "category": "platform",
+      "name": "Firebase"
+    }
+  ],
+  "slots": {
+    "jd.fitness-startup.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Junior Mobile Developer at Pacebridge Fitness, a fitness app startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.fitness-startup.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Junior Mobile Developer, about app start-up time, release pipeline, device testing. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.fitness-startup.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Jetpack Compose, Core Data, Fastlane, TestFlight, Gradle, Swift, and 2 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Jetpack Compose",
+        "Core Data",
+        "Fastlane",
+        "TestFlight",
+        "Gradle",
+        "Swift"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Tillman Brothers: accessibility fixes, using Android Studio. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Android Studio",
+        "25"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Tillman Brothers: crash triage, using Core Data. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Core Data"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "30"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Tillman Brothers: offline sync, using Fastlane. State a measured result of 30 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Fastlane",
+        "30"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Tillman Brothers: release pipeline, using Xcode. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Xcode"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Mobile Developer at Tillman Brothers, about offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Mobile Developer at Tillman Brothers, about API integration. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level mobile app engineering professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Xcode, Push notifications, Jetpack Compose.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Xcode",
+        "Push notifications",
+        "Jetpack Compose"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level mobile app engineering professional with about 2 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Xcode, Push notifications, Jetpack Compose.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Xcode",
+        "Push notifications",
+        "Jetpack Compose"
+      ]
+    }
+  }
+}

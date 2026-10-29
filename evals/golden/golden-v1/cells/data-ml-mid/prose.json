@@ -1,0 +1,42 @@
+{
+  "cell": "data-ml-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:73e1ad08d4f9ade417a0cba8410119aa46b9a9e691487e555476433880c3fcab",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVMPBmnhFascdURargP6"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3546,
+      "output_tokens": 2876
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.health-research.about": "Cedarpoint Health Research is a nonprofit dedicated to improving patient health through rigorous, independent research. We are seeking a Data Scientist to join our team in a hybrid role based in Boston, MA. The Data Scientist builds and validates statistical models, analyzes research experiments, and shares findings with investigators and program staff to support studies across the organization.",
+    "jd.health-research.duties": "Duties\n- Select and evaluate features for predictive models using research and clinical datasets.\n- Validate models through holdout testing, cross-validation and calibration checks.\n- Analyze the results of research experiments and report effect sizes with clear uncertainty estimates.\n- Document modeling decisions and validation results for review by investigators.\n- Present findings to research teams in written reports and visualizations.",
+    "jd.health-research.needs": "Licensure and qualifications\n- 3 or more years of experience in data science or a related analytical role.\n- Proficiency in Python and SQL for analysis and data preparation.\n- Experience working in Jupyter notebooks for reproducible analysis.\n- Hands-on experience with TensorFlow for building and training models.\n- Demonstrated skill in feature engineering and experiment design.",
+    "r1.b1": "Builds stakeholder dashboards backed by PyTorch model outputs, cutting time spent on manual reporting requests by 10 percent.",
+    "r1.b2": "Selects model features in Python by testing candidate variables against validation performance and removing redundant inputs.",
+    "r1.b3": "Presents findings from large-scale Apache Spark analyses to stakeholders, shortening review cycles by 10 percent.",
+    "r1.b4": "Analyzes experiment results and publishes Tableau views that show effect sizes and confidence intervals for each test.",
+    "r1.i1": "Data Scientist at Oakmont Systems who analyzes controlled experiments and turns their results into clear recommendations.",
+    "r1.i2": "Data Scientist at Oakmont Systems responsible for presenting analytical findings to stakeholders in a form that supports clear decisions.",
+    "r2.b1": "Cleaned raw source data in Jupyter notebooks, building reusable checks that reduced data preparation time by 25 percent.",
+    "r2.b2": "Applied experiment design principles to test forecasting approaches, comparing candidate models under controlled conditions before release.",
+    "r2.b3": "Validated models built with statistical modeling methods, introducing a review process that cut post-release model errors by 40 percent.",
+    "r2.b4": "Built stakeholder dashboards on Snowflake data, giving teams a single source for recurring metrics.",
+    "r2.i1": "Junior Data Scientist at Dunmore Technologies who presented analysis findings to stakeholders and teammates in clear written and visual summaries.",
+    "r2.i2": "Junior Data Scientist at Dunmore Technologies focused on selecting and testing model features to improve predictive performance.",
+    "summary.1": "Data science and machine learning professional with about 3 years of experience owning a modeling workstream end to end, from data preparation in Snowflake through validation and review. Applies experiment design and feature engineering to build, test and explain models that stakeholders can act on.",
+    "summary.2": "Mid-level data science and machine learning professional with about 3 years of experience across statistical modeling, Python and PyTorch. Owns analytical workstreams end to end, combining Snowflake data, experiment design and feature engineering to deliver tested, documented results."
+  }
+}

@@ -1,0 +1,505 @@
+{
+  "candidate": {
+    "email": "priya.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-priya-mobile-senior",
+    "name": "Priya Lindqvist",
+    "phone": "(555) 010-9872",
+    "username": "gold_mobile_senior"
+  },
+  "cell": "mobile-senior",
+  "cell_seed": 2088303070,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use App Store release on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to App Store release, in work or side projects",
+        "any exposure to Crash reporting, in work or side projects"
+      ],
+      "scope_probes": [
+        "Senior Mobile Engineer at Copperfield Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)App\\ Store\\ release",
+      "(?i)Crash\\ reporting",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "firebase",
+      "kotlin",
+      "push notifications",
+      "testflight"
+    ],
+    "notes": "senior-level mobile app engineering. The profile has no App Store release, Crash reporting; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "App Store release exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Senior Mobile Engineer",
+        "Dunmark Financial — Hybrid, Charlotte, NC"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.bank-mobile.about",
+        "jd.bank-mobile.duties",
+        "jd.bank-mobile.needs"
+      ],
+      "slug": "bank-mobile"
+    }
+  ],
+  "level": "senior",
+  "profession": "mobile",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Push notifications in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Copperfield Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "Senior Mobile Engineer"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4"
+          ],
+          "company": "Juniper Row",
+          "end": "2025-03",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2019-12",
+          "title": "Mobile Developer"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
+          ],
+          "company": "Redfern Family Trades",
+          "end": "2019-12",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2018-06",
+          "title": "Junior Mobile Developer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.S.",
+          "field": "Computer Science",
+          "institution": "State University",
+          "slots": [],
+          "year": "2018"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Push notifications",
+        "Kotlin",
+        "Jetpack Compose",
+        "TestFlight",
+        "Gradle",
+        "Firebase",
+        "Fastlane",
+        "Core Data",
+        "GraphQL",
+        "Android Studio"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Push notifications"
+    },
+    {
+      "category": "language",
+      "name": "Kotlin"
+    },
+    {
+      "category": "framework",
+      "name": "Jetpack Compose"
+    },
+    {
+      "category": "tool",
+      "name": "TestFlight"
+    },
+    {
+      "category": "tool",
+      "name": "Gradle"
+    },
+    {
+      "category": "platform",
+      "name": "Firebase"
+    },
+    {
+      "category": "tool",
+      "name": "Fastlane"
+    },
+    {
+      "category": "framework",
+      "name": "Core Data"
+    },
+    {
+      "category": "method",
+      "name": "GraphQL"
+    },
+    {
+      "category": "tool",
+      "name": "Android Studio"
+    }
+  ],
+  "slots": {
+    "jd.bank-mobile.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Senior Mobile Engineer at Dunmark Financial, a national bank. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.bank-mobile.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Senior Mobile Engineer, about planning releases with product and design, app start-up time, release pipeline. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.bank-mobile.needs": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Firebase, Push notifications, Kotlin, TestFlight, Crash reporting, App Store release, and 8 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Firebase",
+        "Push notifications",
+        "Kotlin",
+        "TestFlight",
+        "Crash reporting",
+        "App Store release"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Copperfield Services: offline sync, using Android Studio. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Android Studio",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Copperfield Services: accessibility fixes, using Firebase. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firebase"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Copperfield Services: app start-up time, using Push notifications. State a measured result of 55 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Push notifications",
+        "55"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Senior Mobile Engineer at Copperfield Services: planning releases with product and design, using Core Data. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Core Data"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Mobile Engineer at Copperfield Services, about app start-up time. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Mobile Engineer at Copperfield Services, about crash triage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Juniper Row: release pipeline, using TestFlight. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "TestFlight",
+        "20"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Juniper Row: crash triage, using Jetpack Compose. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Jetpack Compose"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Mobile Developer at Juniper Row: device testing, using GraphQL. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "GraphQL",
+        "20"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Mobile Developer at Juniper Row: offline sync, using Gradle. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Gradle"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Mobile Developer at Juniper Row, about crash triage. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Mobile Developer at Juniper Row, about offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Redfern Family Trades: accessibility fixes, using Kotlin. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Kotlin",
+        "35"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Redfern Family Trades: app start-up time, using Fastlane. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Fastlane"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Redfern Family Trades: API integration, using Android Studio. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Android Studio",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior Mobile Developer at Redfern Family Trades: release pipeline, using Firebase. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Firebase"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior Mobile Developer at Redfern Family Trades, about offline sync. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior Mobile Developer at Redfern Family Trades, about device testing. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level mobile app engineering professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Push notifications, Kotlin, Jetpack Compose.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Push notifications",
+        "Kotlin",
+        "Jetpack Compose"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "8"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level mobile app engineering professional with about 8 years of experience, scope: setting the technical direction for a product area. Mention Push notifications, Kotlin, Jetpack Compose.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Push notifications",
+        "Kotlin",
+        "Jetpack Compose"
+      ]
+    }
+  }
+}

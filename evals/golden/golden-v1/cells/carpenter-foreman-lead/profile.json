@@ -1,0 +1,567 @@
+{
+  "candidate": {
+    "email": "alex.silva@example.com",
+    "linkedin": "linkedin.com/in/example-alex-carpenter-foreman-lead",
+    "name": "Alex Silva",
+    "phone": "(555) 010-1612",
+    "username": "gold_carpenter_foreman_lead"
+  },
+  "cell": "carpenter-foreman-lead",
+  "cell_seed": 964829147,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Jobsite safety on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Jobsite safety, in work or side projects",
+        "any exposure to Stair building, in work or side projects"
+      ],
+      "scope_probes": [
+        "Carpentry Foreman at Marlow Remodeling: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Jobsite\\ safety",
+      "(?i)Stair\\ building",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "cabinet installation",
+      "framing",
+      "power tool use",
+      "scaffold erection"
+    ],
+    "notes": "lead-level carpentry. The profile has no Jobsite safety, Stair building; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Running the crew and answering for the job.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, running the crew and answering for the job",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Jobsite safety exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Carpentry Foreman",
+        "Brandt Commercial Construction — On site, Denver, CO"
+      ],
+      "setting": "enterprise",
+      "slots": [
+        "jd.commercial-contractor.about",
+        "jd.commercial-contractor.duties",
+        "jd.commercial-contractor.needs"
+      ],
+      "slug": "commercial-contractor"
+    }
+  ],
+  "level": "lead",
+  "profession": "carpenter-foreman",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Blueprint reading in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4",
+            "r1.b5"
+          ],
+          "company": "Marlow Remodeling",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2023-07",
+          "title": "Carpentry Foreman"
+        },
+        {
+          "bullet_slots": [
+            "r2.b1",
+            "r2.b2",
+            "r2.b3",
+            "r2.b4",
+            "r2.b5"
+          ],
+          "company": "Copperfield Construction",
+          "end": "2023-07",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
+          "location": null,
+          "start": "2021-11",
+          "title": "Master Carpenter"
+        },
+        {
+          "bullet_slots": [
+            "r3.b1",
+            "r3.b2",
+            "r3.b3",
+            "r3.b4",
+            "r3.b5"
+          ],
+          "company": "Oakmont Homes",
+          "end": "2021-11",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
+          "location": null,
+          "start": "2015-01",
+          "title": "Journeyman Carpenter"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Apprenticeship Certificate",
+          "field": "Carpentry",
+          "institution": "Cedar Valley Trades Academy",
+          "slots": [],
+          "year": "2015"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Safety Training Council",
+          "name": "Construction Safety Card",
+          "year": "2020"
+        },
+        {
+          "issuer": "State Apprenticeship Council",
+          "name": "Apprenticeship Completion Certificate",
+          "year": "2023"
+        },
+        {
+          "issuer": "Carpenters Training Council",
+          "name": "Lead Carpenter Certificate",
+          "year": "2016"
+        },
+        {
+          "issuer": "Carpenters Training Council",
+          "name": "Crew Supervisor Certificate",
+          "year": "2020"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Blueprint reading",
+        "Door and window installation",
+        "Power tool use",
+        "Scaffold erection",
+        "Cabinet installation",
+        "Framing",
+        "Concrete forming",
+        "Material takeoffs"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Blueprint reading"
+    },
+    {
+      "category": "method",
+      "name": "Door and window installation"
+    },
+    {
+      "category": "tool",
+      "name": "Power tool use"
+    },
+    {
+      "category": "method",
+      "name": "Scaffold erection"
+    },
+    {
+      "category": "method",
+      "name": "Cabinet installation"
+    },
+    {
+      "category": "method",
+      "name": "Framing"
+    },
+    {
+      "category": "method",
+      "name": "Concrete forming"
+    },
+    {
+      "category": "method",
+      "name": "Material takeoffs"
+    }
+  ],
+  "slots": {
+    "jd.commercial-contractor.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Position summary' paragraph of a job description for a Carpentry Foreman at Brandt Commercial Construction, a commercial general contractor. Write in a formal corporate voice, with a short minimum list and a shorter preferred list. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.commercial-contractor.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'Responsibilities' heading and four to six bullet lines for a Carpentry Foreman, about building forms for concrete, reading plans and measuring, planning jobs and ordering lumber. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.commercial-contractor.needs": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "A 'Minimum and preferred qualifications' heading and four to six bullet lines. Require Scaffold erection, Power tool use, Cabinet installation, Framing, Jobsite safety, Stair building, and 12 or more years of experience. State Construction Safety Card as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Scaffold erection",
+        "Power tool use",
+        "Cabinet installation",
+        "Framing",
+        "Jobsite safety",
+        "Stair building",
+        "Construction Safety Card"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Carpentry Foreman at Marlow Remodeling: keeping the site safe, using Framing. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Framing",
+        "45"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Carpentry Foreman at Marlow Remodeling: installing doors, windows and trim, using Material takeoffs. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Material takeoffs"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Carpentry Foreman at Marlow Remodeling: building forms for concrete, using Blueprint reading. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "25"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Carpentry Foreman at Marlow Remodeling: ordering lumber and materials, using Door and window installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Door and window installation"
+      ]
+    },
+    "r1.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Carpentry Foreman at Marlow Remodeling: planning jobs and ordering lumber, using Concrete forming. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Concrete forming",
+        "15"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Carpentry Foreman at Marlow Remodeling, about keeping the site safe. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Carpentry Foreman at Marlow Remodeling, about installing doors, windows and trim. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.b1": {
+      "allowed_numbers": [
+        "10"
+      ],
+      "brief": "One résumé bullet for a Master Carpenter at Copperfield Construction: framing walls and floors, using Cabinet installation. State a measured result of 10 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Cabinet installation",
+        "10"
+      ]
+    },
+    "r2.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Carpenter at Copperfield Construction: directing crews and apprentices, using Scaffold erection. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Scaffold erection"
+      ]
+    },
+    "r2.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Master Carpenter at Copperfield Construction: reading plans and measuring, using Power tool use. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Power tool use",
+        "35"
+      ]
+    },
+    "r2.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Master Carpenter at Copperfield Construction: keeping the site safe, using Framing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Framing"
+      ]
+    },
+    "r2.b5": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Master Carpenter at Copperfield Construction: installing doors, windows and trim, using Material takeoffs. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Material takeoffs",
+        "15"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Master Carpenter at Copperfield Construction, about installing doors, windows and trim. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Master Carpenter at Copperfield Construction, about directing crews and apprentices. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.b1": {
+      "allowed_numbers": [
+        "50"
+      ],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Oakmont Homes: framing walls and floors, using Blueprint reading. State a measured result of 50 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Blueprint reading",
+        "50"
+      ]
+    },
+    "r3.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Oakmont Homes: reading plans and measuring, using Door and window installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Door and window installation"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Oakmont Homes: keeping the site safe, using Concrete forming. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Concrete forming",
+        "15"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Oakmont Homes: installing doors, windows and trim, using Cabinet installation. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Cabinet installation"
+      ]
+    },
+    "r3.b5": {
+      "allowed_numbers": [
+        "25"
+      ],
+      "brief": "One résumé bullet for a Journeyman Carpenter at Oakmont Homes: building forms for concrete, using Scaffold erection. State a measured result of 25 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Scaffold erection",
+        "25"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Journeyman Carpenter at Oakmont Homes, about ordering lumber and materials. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Journeyman Carpenter at Oakmont Homes, about building forms for concrete. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a foreman-level carpentry professional with about 12 years of experience, scope: running the crew and answering for the job. Mention Blueprint reading, Door and window installation, Power tool use.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blueprint reading",
+        "Door and window installation",
+        "Power tool use"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "12"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a foreman-level carpentry professional with about 12 years of experience, scope: running the crew and answering for the job. Mention Blueprint reading, Door and window installation, Power tool use.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Blueprint reading",
+        "Door and window installation",
+        "Power tool use"
+      ]
+    }
+  }
+}

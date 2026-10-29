@@ -27,7 +27,19 @@ from evals import golden_set as gs
 from evals import runner
 from evals.seed_import import seeded_session
 
-PILOT_CELLS = ("data-ml-entry", "product-mgmt-senior", "sre-ops-mid")
+
+def _cells() -> list[str]:
+    """The committed cells, whatever they are: this file tests the runner, not the dataset's contents."""
+    return gs.cell_names(gs.SUITE_DIR)
+
+
+def _cell_fixtures() -> list[str]:
+    """The fixture name of every JD of every committed cell, from the cells' own source files."""
+    return sorted(
+        gs.fixture_name(cell, jd["slug"])
+        for cell in _cells()
+        for jd in gs.load_cell(gs.SUITE_DIR, cell)[0]["jds"]
+    )
 
 
 def _golden() -> list[Path]:
@@ -50,8 +62,7 @@ def _cell_of(fixture_dir: Path) -> str:
 class TestSelection:
     def test_the_suite_resolves_to_the_committed_fixtures(self) -> None:
         names = sorted(p.name for p in _golden())
-        cells = [n.split("--")[0] for n in names if not n.startswith(gs.PAIR_PREFIX)]
-        assert cells == sorted(PILOT_CELLS)
+        assert [n for n in names if not n.startswith(gs.PAIR_PREFIX)] == _cell_fixtures()
         assert [n for n in names if n.startswith(gs.PAIR_PREFIX)] == sorted(
             gs.pair_fixture_name(p["id"]) for p in _pairs()
         )
@@ -139,7 +150,7 @@ class TestEstimate:
         estimate = runner.estimate_spend(
             _golden(), runner._select_rubrics("smoke"), mode="assemble", seed_mode=False
         )
-        n = len(PILOT_CELLS) + len(_pairs())  # every fixture, pairs included
+        n = len(_cell_fixtures()) + len(_pairs())  # every fixture, pairs included
         assert len(_golden()) == n
         assert estimate.calls["analyze_extraction"] == n
         assert estimate.calls["recommend"] == n
@@ -202,7 +213,7 @@ class TestRunSuite:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         fake = self._run(tmp_path, monkeypatch)
-        profiles = {c: gs.load_cell(gs.SUITE_DIR, c)[0] for c in PILOT_CELLS}
+        profiles = {c: gs.load_cell(gs.SUITE_DIR, c)[0] for c in _cells()}
         assert len(fake.seen) == len(_golden())
         for fdir, seen in zip(_golden(), fake.seen, strict=True):
             profile = profiles[_cell_of(fdir)]
@@ -213,13 +224,13 @@ class TestRunSuite:
             assert seen["companies"] == sorted(r["company"] for r in roles)
             # The posting is the fixture's own: for a pair that is the OTHER cell's, on this cell's corpus.
             assert seen["jd_first_line"] == (fdir / "jd.txt").read_text("utf-8").split("\n", 1)[0]
-        assert len({s["name"] for s in fake.seen}) == len(PILOT_CELLS)
+        assert len(fake.seen) == len(_cell_fixtures()) + len(_pairs())
         pair_runs = {
             fdir.name: seen
             for fdir, seen in zip(_golden(), fake.seen, strict=True)
             if fdir.name.startswith(gs.PAIR_PREFIX)
         }
-        assert len(pair_runs) == len(_pairs()) > 0
+        assert len(pair_runs) == len(_pairs())
         by_name = {fdir.name: seen for fdir, seen in zip(_golden(), fake.seen, strict=True)}
         for pair in _pairs():
             resume_run = by_name[pair["resume_fixture"]]

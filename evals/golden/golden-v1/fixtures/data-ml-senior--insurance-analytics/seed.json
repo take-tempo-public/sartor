@@ -1,0 +1,394 @@
+{
+  "candidate": {
+    "email": "priya.kowalski@example.com",
+    "linkedin_url": "linkedin.com/in/example-priya-data-ml-senior",
+    "name": "Priya Kowalski",
+    "notes": null,
+    "phone": "(555) 010-1157",
+    "profile_text": null,
+    "username": "gold_data_ml_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_data_ml_senior",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "B.S.",
+      "display_order": 0,
+      "end_date": "2017",
+      "field": "Statistics",
+      "id": 701,
+      "institution": "Northern Plains University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Sets the analytics roadmap with company leaders, prioritizing Scikit-learn modeling work that reduces time to insight by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Analyzes product experiments using statistical modeling to estimate effects and guide launch decisions."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Leads feature selection in Jupyter notebooks, trimming model inputs by 35 percent while keeping predictive performance stable."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Cleans and validates raw data feeding TensorFlow models, catching malformed records before training begins."
+        }
+      ],
+      "company": "Pinecrest Labs",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2022-11",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Senior Data Scientist at Pinecrest Labs who guides feature selection for the team's predictive models."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Senior Data Scientist at Pinecrest Labs who presents modeling findings to company leaders in clear, decision-ready terms."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior Data Scientist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Built forecasting models with feature engineering on seasonal and lagged signals, improving forecast accuracy by 20 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Presented findings from Snowflake analyses to business stakeholders, translating query results into clear recommendations."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Automated model validation pipelines in Airflow, cutting validation time by 50 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Analyzed experiment results for PyTorch models, comparing variants to inform which versions shipped."
+        }
+      ],
+      "company": "Calloway Group",
+      "display_order": 1,
+      "end_date": "2022-11",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Data Scientist at Calloway Group who presented analytical findings to stakeholders across the business."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Data Scientist at Calloway Group who cleaned and prepared raw data for forecasting and modeling work."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Data Scientist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Used data visualization to guide feature selection, reducing the candidate feature set by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Cleaned raw data with SQL, removing duplicates and resolving missing values before analysis."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Created stakeholder dashboards backed by Scikit-learn models, reducing ad hoc report requests by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Developed forecasts with statistical modeling to support planning by business teams."
+        }
+      ],
+      "company": "Lantern Hill",
+      "display_order": 2,
+      "end_date": "2021-03",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2017-09",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Junior Data Scientist at Lantern Hill who cleaned and structured raw data for analysis and modeling."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Junior Data Scientist at Lantern Hill who built forecasts to support planning decisions."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Junior Data Scientist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Airflow",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Data visualization",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Feature engineering",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 610,
+      "name": "Jupyter",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 601,
+      "name": "PyTorch",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "language",
+      "id": 603,
+      "name": "SQL",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 609,
+      "name": "Scikit-learn",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "platform",
+      "id": 604,
+      "name": "Snowflake",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Statistical modeling",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "framework",
+      "id": 607,
+      "name": "TensorFlow",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior data scientist with about 9 years of experience setting the technical direction for a product area's machine learning work. Builds models in PyTorch, applies statistical modeling to product questions, and works directly in SQL and Snowflake."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Data science and machine learning professional with about 9 years of experience, currently setting technical direction for a product area. Combines statistical modeling, PyTorch and SQL-based data work to turn product questions into deployed models."
+    }
+  ],
+  "tags": []
+}

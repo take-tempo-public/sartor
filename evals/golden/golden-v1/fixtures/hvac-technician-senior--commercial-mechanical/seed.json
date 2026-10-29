@@ -1,0 +1,408 @@
+{
+  "candidate": {
+    "email": "quinn.lindqvist@example.com",
+    "linkedin_url": "linkedin.com/in/example-quinn-hvac-technician-senior",
+    "name": "Quinn Lindqvist",
+    "notes": null,
+    "phone": "(555) 010-0763",
+    "profile_text": null,
+    "username": "gold_hvac_technician_senior",
+    "website_url": null
+  },
+  "candidate_username": "gold_hvac_technician_senior",
+  "certifications": [
+    {
+      "display_order": 0,
+      "expires": null,
+      "id": 801,
+      "is_active": true,
+      "issued": "2018",
+      "issuer": "Environmental Compliance Board",
+      "name": "Refrigerant Compliance Certificate"
+    },
+    {
+      "display_order": 1,
+      "expires": null,
+      "id": 802,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "State Licensing Board",
+      "name": "HVAC Technician Licence"
+    },
+    {
+      "display_order": 2,
+      "expires": null,
+      "id": 803,
+      "is_active": true,
+      "issued": "2026",
+      "issuer": "Controls Training Institute",
+      "name": "Controls Technician Certificate"
+    }
+  ],
+  "educations": [
+    {
+      "degree": "Certificate",
+      "display_order": 0,
+      "end_date": "2018",
+      "field": "Heating and Cooling Technology",
+      "id": 701,
+      "institution": "Cedar Valley Trades Academy",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Install heat pumps and furnaces, using brazing and soldering on refrigerant lines, and have cut callbacks on new installations by 40 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Prepare job estimates for customers that cover building automation controls alongside equipment, labour and materials."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Diagnose heating and cooling faults and carry out furnace repair on site, reducing repeat visits by 15 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Schedule service calls for the crew and assign technicians trained in refrigerant handling to jobs that involve recovery or recharging."
+        }
+      ],
+      "company": "Fairhaven Air and Heat",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2024-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Keeps accurate work orders for every service and installation job, recording parts, labour and findings for the office and customers."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Leads preventive maintenance visits on customer heating and cooling systems, inspecting equipment and correcting problems before they cause breakdowns."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Senior HVAC Technician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept detailed work orders for heat pump service calls, cutting billing corrections by 45 percent through complete records of parts and labour."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Performed leak testing on refrigerant circuits with pressure and electronic methods, locating faults before charging systems."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Installed new heating and cooling equipment and set up preventive maintenance plans for each unit, lowering first-year service calls by 40 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Estimated jobs for customers, using load calculations to size equipment correctly and price installations before work began."
+        }
+      ],
+      "company": "Tillman Mechanical",
+      "display_order": 1,
+      "end_date": "2024-07",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2020-07",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Carried out preventive maintenance visits on heating and cooling systems, cleaning, testing and adjusting equipment for reliable operation."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Tested systems for refrigerant leaks during service and installation work, then repaired and verified each joint before recharging."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Technician",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 309,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Assisted in diagnosing heating and cooling faults and repaired failed joints through brazing and soldering, reducing rework on line repairs by 25 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 310,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Joined preventive maintenance visits and checked building automation settings and sensor readings under the direction of senior technicians."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 311,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Kept work orders for furnace repair jobs up to date, cutting missing-part delays by 40 percent through accurate parts records."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 312,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tested systems for leaks and practised refrigerant handling for recovery and evacuation under the supervision of licensed technicians."
+        }
+      ],
+      "company": "Redfern Comfort Systems",
+      "display_order": 2,
+      "end_date": "2020-07",
+      "id": 103,
+      "is_active": true,
+      "location": null,
+      "start_date": "2018-05",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 405,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "Supported senior technicians in testing heating and cooling systems for leaks while learning safe refrigerant practices."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 406,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Helped install heating and cooling equipment, from setting units to running lines and connecting controls, while completing apprenticeship training."
+        }
+      ],
+      "titles": [
+        {
+          "id": 203,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "HVAC Apprentice",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Brazing and soldering",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 608,
+      "name": "Building automation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Furnace repair",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Heat pump service",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Leak testing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Load calculations",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Preventive maintenance",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 606,
+      "name": "Refrigerant handling",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Senior HVAC technician with 8 years of experience planning jobs and checking the work of other technicians on heating and cooling projects. Skilled in heat pump service, preventive maintenance and leak testing, with current refrigerant compliance and controls certifications."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Heating and cooling service professional with 8 years in the trade, from apprenticeship to senior technician. Plans jobs, reviews the work of others and brings hands-on strength in heat pump service, preventive maintenance and leak testing."
+    }
+  ],
+  "tags": []
+}

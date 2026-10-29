@@ -1,0 +1,36 @@
+{
+  "cell": "web-backend-entry",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:8ef1040a945b0f000d3b0fe40a22b37d59effcc70db1be0124aa0467543716e1",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNxREhqt4j4ScgJ8orr"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 2715,
+      "output_tokens": 2033
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.payments-startup.about": "Brightpath Payments is building the payment infrastructure that small businesses rely on. As a Junior Backend Engineer, you'll work on the services that move money: keeping them fast, reliable and easy to build on. You'll ship real code early, pair with senior engineers who review your work, and pick up a lot about how payments systems hold up under pressure. If you like clear problems, honest feedback and a team that moves quickly, we'd love to hear from you.",
+    "jd.payments-startup.duties": "What you'll do\n- Help keep our payment services healthy and reliable, and join the on-call rotation with senior backup\n- Track down slow queries and tune them so requests stay quick as traffic grows\n- Design clean, well-documented APIs alongside more experienced engineers\n- Plan and roll out API versioning so partners can upgrade without breaking changes\n- Write follow-ups after incidents and turn what we learn into better runbooks",
+    "jd.payments-startup.needs": "What we're looking for\n- 1+ years of experience building or running backend services\n- Comfort working in Linux environments and deploying to Kubernetes\n- Some exposure to managing infrastructure as code with Terraform\n- Working knowledge of Python and PostgreSQL, including reading query plans\n- Familiarity with Elasticsearch for search or logging workloads\n- Curiosity, clear communication and a willingness to ask for review",
+    "r1.b1": "Automates deployment pipeline steps for Kubernetes services, reducing average deployment time by 35 percent and cutting manual release work for the team.",
+    "r1.b2": "Writes incident follow-up notes and runbooks covering API versioning issues, helping on-call engineers trace breaking changes between endpoint versions.",
+    "r1.b3": "Tunes slow database queries using Docker-based local environments to reproduce production behaviour, reducing query response times by 35 percent.",
+    "r1.b4": "Designs and versions API endpoints in Spring Boot services, with a senior engineer reviewing each change before release.",
+    "r1.i1": "Supports service reliability for backend systems at Stonebridge Community Trust, sharing on-call duties and handling small, well-defined fixes under senior review.",
+    "r1.i2": "Works on API design and versioning for backend services at Stonebridge Community Trust, delivering small, well-scoped endpoint changes reviewed by senior engineers.",
+    "summary.1": "Entry-level backend engineer with about 1 year of experience building and maintaining services with Redis, GraphQL and Terraform. Works on small, well-defined parts of larger projects with a senior colleague reviewing, and holds a B.S. in Computer Science from Ridgeway College.",
+    "summary.2": "Backend software engineer at the entry level, with about 1 year of hands-on work using Redis for caching, GraphQL for APIs and Terraform for infrastructure. Takes on clearly scoped tasks, delivers them with review from senior engineers, and builds on a Computer Science degree from Ridgeway College."
+  }
+}

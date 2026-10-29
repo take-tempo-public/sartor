@@ -1,0 +1,342 @@
+{
+  "candidate": {
+    "email": "casey.lindqvist@example.com",
+    "linkedin": "linkedin.com/in/example-casey-hvac-technician-entry",
+    "name": "Casey Lindqvist",
+    "phone": "(555) 010-1567",
+    "username": "gold_hvac_technician_entry"
+  },
+  "cell": "hvac-technician-entry",
+  "cell_seed": 360133635,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Load calculations on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Load calculations, in work or side projects",
+        "any exposure to Thermostat installation, in work or side projects",
+        "any progress toward HVAC Technician Licence",
+        "any progress toward Controls Technician Certificate"
+      ],
+      "scope_probes": [
+        "HVAC Apprentice at Summit Mechanical Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Load\\ calculations",
+      "(?i)Thermostat\\ installation",
+      "(?i)HVAC\\ Technician\\ Licence",
+      "(?i)Controls\\ Technician\\ Certificate",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "duct installation",
+      "leak testing",
+      "preventive maintenance",
+      "system diagnostics"
+    ],
+    "notes": "entry-level heating and cooling service. The profile has no Load calculations, Thermostat installation, HVAC Technician Licence, Controls Technician Certificate; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Working under a journeyman who checks the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, working under a journeyman who checks the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Load calculations exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "HVAC Apprentice",
+        "Sutter Heating and Air — On site, Boise, ID"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.family-hvac.about",
+        "jd.family-hvac.duties",
+        "jd.family-hvac.needs"
+      ],
+      "slug": "family-hvac"
+    }
+  ],
+  "level": "entry",
+  "profession": "hvac-technician",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Refrigerant handling in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Summit Mechanical Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-03",
+          "title": "HVAC Apprentice"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "Certificate",
+          "field": "Heating and Cooling Technology",
+          "institution": "Cedar Valley Trades Academy",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Environmental Compliance Board",
+          "name": "Refrigerant Compliance Certificate",
+          "year": "2025"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Refrigerant handling",
+        "Work orders",
+        "System diagnostics",
+        "Furnace repair",
+        "Customer estimates",
+        "Preventive maintenance",
+        "Leak testing",
+        "Duct installation"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Refrigerant handling"
+    },
+    {
+      "category": "method",
+      "name": "Work orders"
+    },
+    {
+      "category": "method",
+      "name": "System diagnostics"
+    },
+    {
+      "category": "method",
+      "name": "Furnace repair"
+    },
+    {
+      "category": "method",
+      "name": "Customer estimates"
+    },
+    {
+      "category": "method",
+      "name": "Preventive maintenance"
+    },
+    {
+      "category": "method",
+      "name": "Leak testing"
+    },
+    {
+      "category": "method",
+      "name": "Duct installation"
+    }
+  ],
+  "slots": {
+    "jd.family-hvac.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a HVAC Apprentice at Sutter Heating and Air, a family HVAC contractor. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.family-hvac.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a HVAC Apprentice, about diagnosing heating and cooling faults, testing for leaks, estimating jobs for customers. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.family-hvac.needs": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Preventive maintenance, Leak testing, Duct installation, System diagnostics, Load calculations, Thermostat installation, and 2 or more years of experience. State Refrigerant Compliance Certificate as a required licence or certification. State HVAC Technician Licence as preferred.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Preventive maintenance",
+        "Leak testing",
+        "Duct installation",
+        "System diagnostics",
+        "Load calculations",
+        "Thermostat installation",
+        "Refrigerant Compliance Certificate",
+        "HVAC Technician Licence"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a HVAC Apprentice at Summit Mechanical Services: estimating jobs for customers, using Furnace repair. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Furnace repair",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HVAC Apprentice at Summit Mechanical Services: keeping work orders, using Customer estimates. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Customer estimates"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a HVAC Apprentice at Summit Mechanical Services: preventive maintenance visits, using Duct installation. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Duct installation",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a HVAC Apprentice at Summit Mechanical Services: diagnosing heating and cooling faults, using Work orders. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Work orders"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a HVAC Apprentice at Summit Mechanical Services, about keeping work orders. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a HVAC Apprentice at Summit Mechanical Services, about estimating jobs for customers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a apprentice-level heating and cooling service professional with about 2 years of experience, scope: working under a journeyman who checks the work. Mention Refrigerant handling, Work orders, System diagnostics.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Refrigerant handling",
+        "Work orders",
+        "System diagnostics"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "2"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a apprentice-level heating and cooling service professional with about 2 years of experience, scope: working under a journeyman who checks the work. Mention Refrigerant handling, Work orders, System diagnostics.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Refrigerant handling",
+        "Work orders",
+        "System diagnostics"
+      ]
+    }
+  }
+}

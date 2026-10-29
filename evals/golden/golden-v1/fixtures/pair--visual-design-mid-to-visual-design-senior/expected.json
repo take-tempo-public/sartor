@@ -1,0 +1,43 @@
+{
+  "candidate_name": "Riley Brandt",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Color theory, in work or side projects"
+    ],
+    "scope_probes": [
+      "Graphic Designer at Tillman Brothers: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Color\\ theory",
+    "(?i)Photo\\ retouching",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "jd_requirements_not_shown": [
+    "Color theory"
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "adobe after effects",
+    "packaging design"
+  ],
+  "notes": "Mismatched pair (advance): the visual-design-mid résumé against the visual-design-senior job description. The mid-tier visual and brand design résumé against the senior-tier job description in the same profession: one tier up, so some requirements are met and some are not. The gate is grounding and no invention, not callback: keyword coverage and callback are expected to be low, so no minimum is set for them. The job description asks for what the résumé does not show: Color theory. The output must claim none of it.",
+  "pair": {
+    "id": "visual-design-mid-to-visual-design-senior",
+    "jd_cell": "visual-design-senior",
+    "jd_fixture": "visual-design-senior--home-goods",
+    "kind": "advance",
+    "resume_cell": "visual-design-mid",
+    "resume_fixture": "visual-design-mid--food-startup",
+    "transferable": [
+      "adobe after effects",
+      "packaging design"
+    ]
+  }
+}

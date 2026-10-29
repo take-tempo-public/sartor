@@ -1,0 +1,54 @@
+{
+  "candidate_name": "Priya Okafor",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Epic Systems, in work or side projects",
+      "any exposure to Prior authorizations, in work or side projects"
+    ],
+    "scope_probes": [
+      "Senior Medical Assistant at Dunmore Technologies: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Epic\\ Systems",
+    "(?i)Prior\\ authorizations",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
+      },
+      "edit_replacement": "Rooms patients and records vital signs before each provider visit, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "Rooms patients and records vital signs before each provider visit",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Epic Systems exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "appointment scheduling",
+    "blood draws",
+    "injections",
+    "specimen handling"
+  ],
+  "notes": "senior-level medical assisting. The profile has no Epic Systems, Prior authorizations; generation must not claim them."
+}

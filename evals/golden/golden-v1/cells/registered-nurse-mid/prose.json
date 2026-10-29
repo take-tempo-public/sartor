@@ -1,0 +1,42 @@
+{
+  "cell": "registered-nurse-mid",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:1fc0fce747c46783df478646f2a91074d09de7981ceb1030d9c99eeb409d08af",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVPbiqe6MKRLKicXpyR4"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3854,
+      "output_tokens": 2699
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.hospital-company.about": "Position summary\nSummit Health Partners, a multi-state hospital company, seeks a Registered Nurse to provide direct patient care on site in Charlotte, NC. The Registered Nurse assesses patients, carries out plans of care, and works with physicians and interdisciplinary teams to deliver safe and consistent care.\nMinimum:\n- Active Registered Nurse Licence\n- Experience in direct patient care\nPreferred:\n- Experience with Epic Systems",
+    "jd.hospital-company.duties": "Responsibilities\n- Teach patients and families about diagnoses, medications and discharge instructions\n- Chart assessments, interventions and outcomes accurately in the electronic health record\n- Administer medications safely and monitor patients for effects and reactions\n- Assess patients and report changes in condition to physicians and the care team\n- Take part in bedside handoff to support continuity of care",
+    "jd.hospital-company.needs": "Minimum and preferred qualifications\n- 4 or more years of experience as a Registered Nurse\n- Required: active Registered Nurse Licence\n- Working knowledge of Epic Systems and clinical documentation standards\n- Skill in triage, patient assessment and care planning\n- Experience with telemetry monitoring\n- Preferred: Nurse Manager Certificate",
+    "r1.b1": "Charts medication administration in the clinic record at each visit, cutting documentation errors by 55 percent.",
+    "r1.b2": "Teaches patients and families about symptoms and follow-up care during triage, helping them know when to return to the clinic.",
+    "r1.b3": "Uses vital signs monitoring data to structure shift handoff reports, reducing missed follow-ups by 30 percent.",
+    "r1.b4": "Assesses patients at each visit and provides wound care, tracking healing progress and flagging concerns to the care team.",
+    "r1.i1": "Assesses patients across a community clinic caseload, identifying needs and setting priorities for care.",
+    "r1.i2": "Maintains accurate and timely charting in the clinic record for every patient encounter.",
+    "r2.b1": "Administered medications to hospice patients and recorded each dose through clinical documentation, reducing charting discrepancies by 10 percent.",
+    "r2.b2": "Coordinated with physicians on comfort and symptom management, using patient assessment findings to inform changes to care plans.",
+    "r2.b3": "Recorded bedside handoff details in the patient record, improving handoff completeness by 55 percent.",
+    "r2.b4": "Taught patients and families about end-of-life care and medications, using Epic Systems to document each teaching session.",
+    "r2.i1": "Charted care for hospice patients in the medical record, keeping notes accurate for the interdisciplinary team.",
+    "r2.i2": "Gave scheduled and as-needed medications to hospice patients, focusing on comfort and symptom control.",
+    "summary.1": "Registered Nurse with about 4 years of experience carrying a full patient caseload without close supervision in clinic and hospice settings. Skilled in triage, medication administration and clinical documentation, with a focus on accurate charting and safe care.",
+    "summary.2": "Nursing professional with about 4 years of experience managing a full caseload independently across community clinic and hospice care. Brings steady practice in clinical documentation, triage and medication administration, along with patient assessment and wound care."
+  }
+}

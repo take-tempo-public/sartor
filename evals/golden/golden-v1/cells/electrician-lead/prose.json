@@ -1,0 +1,51 @@
+{
+  "cell": "electrician-lead",
+  "provenance": {
+    "attempts": 1,
+    "effort": "medium",
+    "kind": "generated",
+    "model": "claude-opus-5-5",
+    "profile_sha256": "sha256:90acc7f7434fa401d9ac340ccfc4b4eade2179114f87f86e345725a69376f660",
+    "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
+    "prompt_version": "golden-author-2",
+    "request_ids": [
+      "req_011CgVNPC4WoXzqpykx57oP1"
+    ],
+    "requested_model": "claude-opus-5-5",
+    "usage": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5217,
+      "output_tokens": 3469
+    }
+  },
+  "schema": 1,
+  "slots": {
+    "jd.municipal-utility.about": "Duties\nUnder general direction of the electrical superintendent, the Electrical Foreman supervises a crew that installs, maintains and repairs electrical systems in utility-owned buildings, pump stations and public facilities. The position assigns daily work, inspects completed installations, keeps job records and serves as the department contact for electrical work on assigned projects. This is a working supervisory position based on site in Northplain.",
+    "jd.municipal-utility.duties": "Responsibilities of the position\n- Direct helpers and apprentices on daily assignments and check the quality of their work.\n- Read plans, drawings and specifications to lay out electrical work before it begins.\n- Plan jobs, set work sequences and coordinate with other utility crews.\n- Prepare material lists and order materials, tools and equipment for each job.\n- Inspect completed installations and keep records of work performed.",
+    "jd.municipal-utility.needs": "Qualifications and conditions of employment\n- 14 or more years of experience in electrical construction or maintenance.\n- Wire pulling, troubleshooting and lighting installation on field projects.\n- Code compliance knowledge sufficient to prepare work for inspection.\n- Load calculations and blueprint reading for planning and layout.\n- A current State Apprentice Registration Card is required at the time of appointment.",
+    "r1.b1": "Tests circuits on new feeders and branch runs, pairing power tool use with a set testing routine that cuts rework on finished circuits by 45 percent.",
+    "r1.b2": "Traces faults in fixture circuits during lighting installation, isolating loose connections and failed fixtures before areas are handed over.",
+    "r1.b3": "Directs helpers and apprentices on daily tasks and coaches them in troubleshooting, raising fault resolution on the first visit by 55 percent.",
+    "r1.b4": "Oversees pulling and terminating wire for motor controls, checking each termination against the drawings before equipment is energized.",
+    "r1.b5": "Plans jobs and orders materials with code compliance built into each takeoff, reducing material returns by 10 percent.",
+    "r1.i1": "Leads the crew installing panels and fixtures on Ashford Industrial Electric job sites.",
+    "r1.i2": "Runs circuit testing on Ashford Industrial Electric projects and signs off on work before it is energized.",
+    "r2.b1": "Installed panels and fixtures and handled wire pulling for feeder runs, cutting installation time per panel by 55 percent.",
+    "r2.b2": "Ran conduit for new circuits and used circuit testing to confirm each run before walls were closed.",
+    "r2.b3": "Read plans to lay out device locations and relied on multimeter use during rough-in checks, reducing layout errors by 30 percent.",
+    "r2.b4": "Tested circuits at trim-out with careful power tool use on mounting and termination work, leaving installations ready for inspection.",
+    "r2.b5": "Traced faults in lighting installation work and corrected wiring problems, lowering repeat service calls by 25 percent.",
+    "r2.i1": "Tested circuits and verified finished installations as Master Electrician at Copperfield Electric.",
+    "r2.i2": "Planned jobs and ordered materials for installation work at Copperfield Electric.",
+    "r3.b1": "Ran conduit on job sites and applied troubleshooting to clear routing conflicts early, cutting conduit rework by 50 percent.",
+    "r3.b2": "Read plans for motor controls wiring and installed control circuits according to the drawings.",
+    "r3.b3": "Tested circuits against code compliance requirements before inspection, raising inspection pass rates by 40 percent.",
+    "r3.b4": "Traced faults in feeder and branch circuits and redid wire pulling where damaged conductors were found.",
+    "r3.b5": "Pulled and terminated wire, using circuit testing on each termination to reduce callbacks by 10 percent.",
+    "r3.i1": "Ran conduit and installed wiring as a Journeyman Electrician at Summit Power Contractors.",
+    "r3.i2": "Traced faults and repaired circuits as a Journeyman Electrician at Summit Power Contractors.",
+    "summary.1": "Electrical foreman with 14 years of experience running crews and answering for job quality, schedule and safety. Brings hands-on skill in motor controls, wire pulling and multimeter use to field supervision.",
+    "summary.2": "Foreman-level electrician with 14 years in the trade who runs the crew and answers for the finished job. Works hands-on in motor controls, wire pulling, multimeter use and code compliance."
+  }
+}

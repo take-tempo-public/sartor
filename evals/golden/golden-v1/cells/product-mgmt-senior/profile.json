@@ -1,42 +1,36 @@
 {
   "candidate": {
-    "email": "priya.mehta@example.com",
-    "linkedin": "linkedin.com/in/example-priya",
-    "name": "Priya Mehta",
-    "phone": "(555) 010-3300",
+    "email": "riley.park@example.com",
+    "linkedin": "linkedin.com/in/example-riley-product-mgmt-senior",
+    "name": "Riley Park",
+    "phone": "(555) 010-6405",
     "username": "gold_product_mgmt_senior"
   },
   "cell": "product-mgmt-senior",
-  "cell_seed": 0,
-  "clarifications": [],
+  "cell_seed": 993482560,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Figma on this role?"
+    }
+  ],
   "expected": {
     "expected_clarification_themes": {
       "experience_probes": [
-        "healthcare or healthtech product exposure (any past engagement, advisory, side project)",
-        "EHR familiarity (Epic, Cerner) or HL7/FHIR data models",
-        "revenue-cycle workflows or claims processing exposure",
-        "workflow products used by clinicians or other domain experts (auditors, lawyers count as adjacent)"
+        "any exposure to Figma, in work or side projects",
+        "any exposure to Jira, in work or side projects"
       ],
       "scope_probes": [
-        "cross-functional leadership without authority: design/eng matrixed elsewhere or formally reporting?",
-        "associate-PM mentorship: formal manager role or peer mentoring?",
-        "Evidence Collector adoption: actual percentage of accounts rather than 'strong majority'?",
-        "quarterly business reviews: presenting to executives or informing?"
+        "Senior Product Manager at Bluebird Family Services: sole owner or team member?"
       ]
     },
     "forbidden_inventions": [
-      "healthcare experience",
-      "EHR",
-      "Epic\\b",
-      "Cerner",
-      "HIPAA",
-      "HL7",
-      "FHIR",
-      "revenue-?cycle",
-      "claims processing",
-      "clinical",
+      "(?i)Figma",
+      "(?i)Jira",
       "PhD",
-      "Master'?s? in"
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
     ],
     "min_ats_format_score": 4,
     "min_clarification_quality_score": 4,
@@ -44,35 +38,67 @@
     "min_keyword_coverage_score": 3,
     "min_tone_score": 3,
     "must_keywords": [
-      "product strategy",
-      "discovery",
-      "b2b",
-      "saas",
-      "workflow",
-      "cross-functional"
+      "go-to-market planning",
+      "pricing analysis",
+      "tableau",
+      "user interviews"
     ],
-    "notes": "Candidate is strong B2B PM but has zero healthcare experience. Generation MUST NOT invent any healthcare/EHR/HIPAA experience. Keyword coverage allowed lower because some JD-essential terms (healthcare, EHR) genuinely don't apply. Clarification questions should explicitly probe whether ANY adjacent healthcare exposure exists (so the generator can either surface or confidently confirm absence) AND disambiguate scope on cross-functional leadership and mentorship claims."
+    "notes": "senior-level product management. The profile has no Figma, Jira; generation must not claim them."
   },
-  "iteration": null,
+  "iteration": {
+    "clarification_answer": "Yes. Setting the technical direction for a product area.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, setting the technical direction for a product area",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Figma exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
   "jds": [
     {
-      "header_lines": [],
-      "slots": [
-        "jd.atrium-health.full"
+      "header_lines": [
+        "Senior Product Manager",
+        "Alderbrook Health Services — Hybrid, Minneapolis, MN"
       ],
-      "slug": "atrium-health"
+      "setting": "health-nonprofit",
+      "slots": [
+        "jd.health-services.about",
+        "jd.health-services.duties",
+        "jd.health-services.needs"
+      ],
+      "slug": "health-services"
     }
   ],
   "level": "senior",
   "profession": "product-mgmt",
-  "refinement_notes": [],
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Customer discovery in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
   "schema": 1,
   "sections": [
     {
       "heading": "Summary",
       "kind": "summary",
       "slots": [
-        "summary.1"
+        "summary.1",
+        "summary.2"
       ]
     },
     {
@@ -84,15 +110,16 @@
             "r1.b1",
             "r1.b2",
             "r1.b3",
-            "r1.b4",
-            "r1.b5",
-            "r1.b6"
+            "r1.b4"
           ],
-          "company": "Northgate Compliance",
+          "company": "Bluebird Family Services",
           "end": null,
-          "intro_slots": [],
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
           "location": null,
-          "start": "2022-04",
+          "start": "2023-07",
           "title": "Senior Product Manager"
         },
         {
@@ -102,23 +129,31 @@
             "r2.b3",
             "r2.b4"
           ],
-          "company": "Brightwood Analytics",
-          "end": "2022-04",
-          "intro_slots": [],
+          "company": "Meridian Cross",
+          "end": "2023-07",
+          "intro_slots": [
+            "r2.i1",
+            "r2.i2"
+          ],
           "location": null,
-          "start": "2019-06",
+          "start": "2020-01",
           "title": "Product Manager"
         },
         {
           "bullet_slots": [
             "r3.b1",
-            "r3.b2"
+            "r3.b2",
+            "r3.b3",
+            "r3.b4"
           ],
-          "company": "Gladwell Software",
-          "end": "2019-06",
-          "intro_slots": [],
+          "company": "Stonebridge Community Trust",
+          "end": "2020-01",
+          "intro_slots": [
+            "r3.i1",
+            "r3.i2"
+          ],
           "location": null,
-          "start": "2017-08",
+          "start": "2017-07",
           "title": "Associate Product Manager"
         }
       ]
@@ -128,8 +163,8 @@
       "items": [
         {
           "degree": "B.A.",
-          "field": "Economics",
-          "institution": "State University",
+          "field": "Business Administration",
+          "institution": "Lakeshore University",
           "slots": [],
           "year": "2017"
         }
@@ -140,215 +175,331 @@
       "heading": "Skills",
       "kind": "skills",
       "skills": [
-        "Product strategy",
-        "customer discovery",
-        "opportunity briefs",
-        "prioritization frameworks",
-        "B2B SaaS",
-        "workflow product design",
-        "cross-functional leadership",
-        "executive communication",
-        "written briefs",
-        "KPI instrumentation",
-        "Mixpanel",
-        "SQL (working competence)",
-        "Figma (working competence)"
+        "Customer discovery",
+        "Product analytics",
+        "Go-to-market planning",
+        "Tableau",
+        "Prioritization frameworks",
+        "Requirements writing",
+        "Pricing analysis",
+        "Confluence",
+        "User interviews",
+        "Roadmapping"
       ]
     }
   ],
   "skills": [
     {
-      "category": "converted",
-      "name": "Product strategy"
+      "category": "method",
+      "name": "Customer discovery"
     },
     {
-      "category": "converted",
-      "name": "customer discovery"
+      "category": "method",
+      "name": "Product analytics"
     },
     {
-      "category": "converted",
-      "name": "opportunity briefs"
+      "category": "method",
+      "name": "Go-to-market planning"
     },
     {
-      "category": "converted",
-      "name": "prioritization frameworks"
+      "category": "tool",
+      "name": "Tableau"
     },
     {
-      "category": "converted",
-      "name": "B2B SaaS"
+      "category": "method",
+      "name": "Prioritization frameworks"
     },
     {
-      "category": "converted",
-      "name": "workflow product design"
+      "category": "method",
+      "name": "Requirements writing"
     },
     {
-      "category": "converted",
-      "name": "cross-functional leadership"
+      "category": "method",
+      "name": "Pricing analysis"
     },
     {
-      "category": "converted",
-      "name": "executive communication"
+      "category": "tool",
+      "name": "Confluence"
     },
     {
-      "category": "converted",
-      "name": "written briefs"
+      "category": "method",
+      "name": "User interviews"
     },
     {
-      "category": "converted",
-      "name": "KPI instrumentation"
-    },
-    {
-      "category": "converted",
-      "name": "Mixpanel"
-    },
-    {
-      "category": "converted",
-      "name": "SQL (working competence)"
-    },
-    {
-      "category": "converted",
-      "name": "Figma (working competence)"
+      "category": "method",
+      "name": "Roadmapping"
     }
   ],
   "slots": {
-    "jd.atrium-health.full": {
-      "allowed_numbers": [
-        "2",
-        "2026",
-        "210",
-        "260",
-        "3",
-        "7"
-      ],
-      "brief": "converted from an existing persona; not generated",
-      "has_outcome": true,
+    "jd.health-services.about": {
+      "allowed_numbers": [],
+      "brief": "The 'Summary' paragraph of a job description for a Senior Product Manager at Alderbrook Health Services, a regional health system. Write in the voice of a hospital or nonprofit posting, with a one-line mission and any licence or certification stated as a requirement. Include no number.",
+      "has_outcome": false,
       "kind": "jd",
-      "max_words": 292,
-      "min_words": 1,
+      "max_words": 90,
+      "min_words": 25,
       "must_include": []
     },
-    "r1.b1": {
+    "jd.health-services.duties": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "A 'Duties' heading and four to six bullet lines for a Senior Product Manager, about vendor and pricing decisions, roadmap planning, setting product strategy with leadership. Include no number.",
       "has_outcome": false,
-      "kind": "bullet",
-      "max_words": 17,
-      "min_words": 1,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
       "must_include": []
+    },
+    "jd.health-services.needs": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "A 'Licensure and qualifications' heading and four to six bullet lines. Require User interviews, Tableau, Pricing analysis, Go-to-market planning, Figma, Jira, and 9 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "User interviews",
+        "Tableau",
+        "Pricing analysis",
+        "Go-to-market planning",
+        "Figma",
+        "Jira"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Senior Product Manager at Bluebird Family Services: metrics reviews, using Requirements writing. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Requirements writing",
+        "20"
+      ]
     },
     "r1.b2": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Senior Product Manager at Bluebird Family Services: setting product strategy with leadership, using Customer discovery. Include no number.",
       "has_outcome": false,
       "kind": "bullet",
-      "max_words": 22,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Customer discovery"
+      ]
     },
     "r1.b3": {
       "allowed_numbers": [
-        "2024"
+        "15"
       ],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Senior Product Manager at Bluebird Family Services: writing requirements, using Tableau. State a measured result of 15 percent.",
       "has_outcome": true,
       "kind": "bullet",
-      "max_words": 19,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Tableau",
+        "15"
+      ]
     },
     "r1.b4": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Senior Product Manager at Bluebird Family Services: cross-team coordination, using Prioritization frameworks. Include no number.",
       "has_outcome": false,
       "kind": "bullet",
-      "max_words": 21,
-      "min_words": 1,
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Prioritization frameworks"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Senior Product Manager at Bluebird Family Services, about feature launches. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
       "must_include": []
     },
-    "r1.b5": {
+    "r1.i2": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "Variant 2 of a one-sentence role introduction for a Senior Product Manager at Bluebird Family Services, about vendor and pricing decisions. Include no number.",
       "has_outcome": false,
-      "kind": "bullet",
-      "max_words": 19,
-      "min_words": 1,
-      "must_include": []
-    },
-    "r1.b6": {
-      "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
-      "has_outcome": false,
-      "kind": "bullet",
-      "max_words": 10,
-      "min_words": 1,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
       "must_include": []
     },
     "r2.b1": {
       "allowed_numbers": [
-        "2"
+        "55"
       ],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Product Manager at Meridian Cross: feature launches, using Pricing analysis. State a measured result of 55 percent.",
       "has_outcome": true,
       "kind": "bullet",
-      "max_words": 14,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Pricing analysis",
+        "55"
+      ]
     },
     "r2.b2": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Product Manager at Meridian Cross: customer interviews, using User interviews. Include no number.",
       "has_outcome": false,
       "kind": "bullet",
-      "max_words": 23,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "User interviews"
+      ]
     },
     "r2.b3": {
-      "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
-      "has_outcome": false,
+      "allowed_numbers": [
+        "55"
+      ],
+      "brief": "One résumé bullet for a Product Manager at Meridian Cross: vendor and pricing decisions, using Product analytics. State a measured result of 55 percent.",
+      "has_outcome": true,
       "kind": "bullet",
-      "max_words": 18,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Product analytics",
+        "55"
+      ]
     },
     "r2.b4": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Product Manager at Meridian Cross: metrics reviews, using Confluence. Include no number.",
       "has_outcome": false,
       "kind": "bullet",
-      "max_words": 10,
-      "min_words": 1,
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Confluence"
+      ]
+    },
+    "r2.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Product Manager at Meridian Cross, about vendor and pricing decisions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r2.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Product Manager at Meridian Cross, about writing requirements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
       "must_include": []
     },
     "r3.b1": {
-      "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
-      "has_outcome": false,
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Associate Product Manager at Stonebridge Community Trust: writing requirements, using Roadmapping. State a measured result of 35 percent.",
+      "has_outcome": true,
       "kind": "bullet",
-      "max_words": 11,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Roadmapping",
+        "35"
+      ]
     },
     "r3.b2": {
       "allowed_numbers": [],
-      "brief": "converted from an existing persona; not generated",
+      "brief": "One résumé bullet for a Associate Product Manager at Stonebridge Community Trust: cross-team coordination, using Go-to-market planning. Include no number.",
       "has_outcome": false,
       "kind": "bullet",
-      "max_words": 11,
-      "min_words": 1,
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Go-to-market planning"
+      ]
+    },
+    "r3.b3": {
+      "allowed_numbers": [
+        "45"
+      ],
+      "brief": "One résumé bullet for a Associate Product Manager at Stonebridge Community Trust: roadmap planning, using Requirements writing. State a measured result of 45 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Requirements writing",
+        "45"
+      ]
+    },
+    "r3.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Associate Product Manager at Stonebridge Community Trust: feature launches, using Customer discovery. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Customer discovery"
+      ]
+    },
+    "r3.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Associate Product Manager at Stonebridge Community Trust, about writing requirements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r3.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Associate Product Manager at Stonebridge Community Trust, about customer interviews. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
       "must_include": []
     },
     "summary.1": {
       "allowed_numbers": [
-        "2"
+        "9"
       ],
-      "brief": "converted from an existing persona; not generated",
-      "has_outcome": true,
+      "brief": "Variant 1 of a two-sentence résumé summary for a senior-level product management professional with about 9 years of experience, scope: setting the technical direction for a product area. Mention Customer discovery, Product analytics, Go-to-market planning.",
+      "has_outcome": false,
       "kind": "summary",
-      "max_words": 35,
-      "min_words": 1,
-      "must_include": []
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Customer discovery",
+        "Product analytics",
+        "Go-to-market planning"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "9"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a senior-level product management professional with about 9 years of experience, scope: setting the technical direction for a product area. Mention Customer discovery, Product analytics, Go-to-market planning.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Customer discovery",
+        "Product analytics",
+        "Go-to-market planning"
+      ]
     }
   }
 }

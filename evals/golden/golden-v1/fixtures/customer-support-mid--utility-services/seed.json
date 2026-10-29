@@ -1,0 +1,291 @@
+{
+  "candidate": {
+    "email": "avery.brandt@example.com",
+    "linkedin_url": "linkedin.com/in/example-avery-customer-support-mid",
+    "name": "Avery Brandt",
+    "notes": null,
+    "phone": "(555) 010-2802",
+    "profile_text": null,
+    "username": "gold_customer_support_mid",
+    "website_url": null
+  },
+  "candidate_username": "gold_customer_support_mid",
+  "certifications": [],
+  "educations": [
+    {
+      "degree": "A.A.",
+      "display_order": 0,
+      "end_date": "2021",
+      "field": "General Studies",
+      "id": 701,
+      "institution": "Lakeshore University",
+      "is_active": true,
+      "notes": null,
+      "start_date": null
+    }
+  ],
+  "experiences": [
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 301,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Documents tickets in Zendesk with consistent tags and resolution notes, cutting repeat follow-ups on the same issue by 55 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 302,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Escalates reproducible bugs to engineering with clear steps and customer impact, using satisfaction surveys to flag recurring product issues."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 303,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Answers billing questions through phone support, explaining charges clearly and reducing callbacks on billing issues by 20 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 304,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Resolves customer complaints from first contact to close, handling refund processing when a charge is in error and confirming the outcome with the customer."
+        }
+      ],
+      "company": "Kestrel Works",
+      "display_order": 0,
+      "end_date": null,
+      "id": 101,
+      "is_active": true,
+      "location": null,
+      "start_date": "2023-03",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 401,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Kestrel Works, handles customer issues and escalates confirmed bugs to the engineering team with clear reproduction notes."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 402,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Supports Kestrel Works customers with billing questions, explaining charges and resolving account discrepancies."
+        }
+      ],
+      "titles": [
+        {
+          "id": 201,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Customer Support Specialist",
+          "truthful_enough_to_use": true
+        }
+      ]
+    },
+    {
+      "bullets": [
+        {
+          "display_order": 0,
+          "has_outcome": true,
+          "id": 305,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Tracked satisfaction scores after each resolved case and refined macros and templates, raising survey response rates by 50 percent."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 306,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Updated help articles on account verification steps so members could follow the process without contacting support."
+        },
+        {
+          "display_order": 2,
+          "has_outcome": true,
+          "id": 307,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Documented each ticket with clear notes and applied de-escalation techniques on tense calls, reducing escalations to supervisors by 25 percent."
+        },
+        {
+          "display_order": 3,
+          "has_outcome": false,
+          "id": 308,
+          "is_active": true,
+          "is_pending_review": false,
+          "pattern_kind": null,
+          "source": "primary:resume.md",
+          "tag_links": [],
+          "text": "Escalated reported bugs to engineering and used knowledge base writing to publish interim workarounds for affected users."
+        }
+      ],
+      "company": "Stonebridge Community Trust",
+      "display_order": 1,
+      "end_date": "2023-03",
+      "id": 102,
+      "is_active": true,
+      "location": null,
+      "start_date": "2021-12",
+      "summary": null,
+      "summary_items": [
+        {
+          "display_order": 0,
+          "has_outcome": false,
+          "id": 403,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 1",
+          "source": "manual",
+          "text": "At Stonebridge Community Trust, answered member billing questions and explained statements and payment options."
+        },
+        {
+          "display_order": 1,
+          "has_outcome": false,
+          "id": 404,
+          "is_active": true,
+          "is_pending_review": false,
+          "label": "variant 2",
+          "source": "manual",
+          "text": "Handled frontline support at Stonebridge Community Trust and tracked satisfaction scores to find where service could improve."
+        }
+      ],
+      "titles": [
+        {
+          "id": 202,
+          "is_official": true,
+          "is_pending_review": false,
+          "source": "official",
+          "tag_links": [],
+          "title": "Customer Support Representative",
+          "truthful_enough_to_use": true
+        }
+      ]
+    }
+  ],
+  "seed_schema_version": 1,
+  "skills": [
+    {
+      "category": "method",
+      "id": 601,
+      "name": "Account verification",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 608,
+      "name": "De-escalation",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 603,
+      "name": "Knowledge base writing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 607,
+      "name": "Macros and templates",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 605,
+      "name": "Phone support",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 604,
+      "name": "Refund processing",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "method",
+      "id": 602,
+      "name": "Satisfaction surveys",
+      "proficiency": null,
+      "years": null
+    },
+    {
+      "category": "tool",
+      "id": 606,
+      "name": "Zendesk",
+      "proficiency": null,
+      "years": null
+    }
+  ],
+  "summary_items": [
+    {
+      "display_order": 0,
+      "has_outcome": false,
+      "id": 501,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "default",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Customer support specialist with about 5 years of experience owning recurring support processes from first request to completion. Brings hands-on skill in account verification, satisfaction surveys, knowledge base writing, phone support and Zendesk."
+    },
+    {
+      "display_order": 1,
+      "has_outcome": false,
+      "id": 502,
+      "is_active": true,
+      "is_pending_review": false,
+      "label": "variant 2",
+      "source": "manual",
+      "tag_links": [],
+      "text": "Specialist-level customer support professional with about 5 years of experience who takes requests from intake through resolution and follow-up. Uses account verification to protect customer accounts, satisfaction surveys to measure service, and knowledge base writing to keep help content current."
+    }
+  ],
+  "tags": []
+}

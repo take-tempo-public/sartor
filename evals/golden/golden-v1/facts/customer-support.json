@@ -1,0 +1,123 @@
+{
+  "display": "customer support",
+  "education": {
+    "degree": "A.A.",
+    "field": "General Studies"
+  },
+  "industries": [
+    {
+      "company": "Fairlane Subscription Box",
+      "level": "entry",
+      "location": "Remote (US)",
+      "phrase": "a subscription service startup",
+      "setting": "startup",
+      "slug": "subscription-box"
+    },
+    {
+      "company": "Corvallis Energy Services",
+      "level": "mid",
+      "location": "Hybrid, Phoenix, AZ",
+      "phrase": "a utility services company",
+      "setting": "enterprise",
+      "slug": "utility-services"
+    },
+    {
+      "company": "Bluebonnet Health Plan",
+      "level": "senior",
+      "location": "Remote (US)",
+      "phrase": "a health insurance plan",
+      "setting": "health-nonprofit",
+      "slug": "health-plan"
+    },
+    {
+      "company": "Summit Telecom Group",
+      "level": "lead",
+      "location": "On site, Omaha, NE",
+      "phrase": "a telecommunications company",
+      "setting": "enterprise",
+      "slug": "telecom"
+    }
+  ],
+  "leadership_themes": [
+    "coaching new agents",
+    "setting support schedules and goals"
+  ],
+  "profession": "customer-support",
+  "settings": [
+    "startup",
+    "enterprise",
+    "health-nonprofit"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Zendesk"
+    },
+    {
+      "category": "tool",
+      "name": "Salesforce"
+    },
+    {
+      "category": "tool",
+      "name": "Slack"
+    },
+    {
+      "category": "method",
+      "name": "Ticket triage"
+    },
+    {
+      "category": "method",
+      "name": "De-escalation"
+    },
+    {
+      "category": "method",
+      "name": "Knowledge base writing"
+    },
+    {
+      "category": "method",
+      "name": "Refund processing"
+    },
+    {
+      "category": "method",
+      "name": "Live chat"
+    },
+    {
+      "category": "method",
+      "name": "Phone support"
+    },
+    {
+      "category": "method",
+      "name": "Escalation handling"
+    },
+    {
+      "category": "method",
+      "name": "Satisfaction surveys"
+    },
+    {
+      "category": "method",
+      "name": "Macros and templates"
+    },
+    {
+      "category": "method",
+      "name": "Account verification"
+    },
+    {
+      "category": "method",
+      "name": "Onboarding calls"
+    }
+  ],
+  "titles": {
+    "entry": "Customer Support Representative",
+    "lead": "Support Team Lead",
+    "mid": "Customer Support Specialist",
+    "senior": "Senior Support Specialist"
+  },
+  "work_themes": [
+    "answering billing questions",
+    "resolving complaints",
+    "documenting tickets",
+    "escalating bugs to engineering",
+    "updating help articles",
+    "tracking satisfaction scores"
+  ]
+}

@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added: the golden set's facts for 24 professions, its 96 generated cells and 36 pairs, and a generator that does not pay twice (`feat/eval-dataset-v1`, item 191, eval redesign step 3b-ii)
+
+The first real run of the dataset generator. **The only paid calls were 110 author requests to `claude-opus-5-5` at effort `medium`
+($7.88 logged, of the $10.00 the owner approved; $7.08 of it is the 96 cells that were kept), and no dependency was added.**
+`evals/golden/golden-v1/` is still `draft`: the calibration run, final tier sizes, retiring `evals/fixtures/synthetic/` and the freeze are a
+follow-on item.
+
+- **The data.** `facts/<profession>.json` for 24 professions in the owner's four groups (tech and product 9, business and office 6, health,
+  education and community 4, trades and construction 5), three new authored ladders beside `tech-product`, and for each profession its O\*NET
+  code, mapping (18 `exact`, 6 `nearest`) and the evidence read in the O\*NET 31.0 database files (the licence page was re-read raw). 96 cells (24
+  professions by 4 tiers, one job description each), 36 pairs (24 advance, 12 change), 132 fixtures, 6 MB. The three converted pilots, their two
+  pairs and the 12 waivers are gone. Postings are spread over five settings (startup 17, enterprise 34, health and nonprofit 22, small business 18,
+  public sector 5, which is 5.2 percent). The DDaT ladders were not read and are not relied on; every ladder is `authored`.
+- **The generator** (`evals/golden_author.py`). `--max-total-spend` caps all author spend in the call log across runs, counting the requests of cells
+  that were rejected, and the run stops before a cell that, priced like the dearest so far, would reach a cap. `--cell P:L` and `--skip-existing`
+  make a stopped run resumable; one attempt per request with a 180 s wait (the SDK default re-sends silently); a stop after two rejected cells in
+  a row; a rejected reply is kept; a reply is checked for the one render failure that would lose a paid cell at the write; a reply wrapped in a
+  markdown fence is accepted; and a paid run asks Windows not to sleep. Prompt `golden-author-2` lets a skill be written in lower case mid-sentence.
+- **The format** (`evals/golden_set.py`). A profession may name the industry of each tier (one JD per cell), its own `employers`, and
+  `leadership_themes` that only senior-tier roles draw; skill and theme use is spread evenly; skill and certification invention traps ignore case; a
+  skill name with a digit, under three characters or inside another name is refused; `check` validates every facts file and rebuilds every generated
+  cell from its facts; and a manifest profession may name its `group`.
+- **Found by hand-reading the first five cells, and fixed before the other 91:** an apprentice directing a crew (leadership work sat in a pool every
+  tier draws from) and one skill filling half a résumé (drawn with replacement). The first two rounds of those cells were discarded ($0.72 of the
+  spend).
+- **Found by the bulk run:** a model reply wrapped in a code fence was refused after being paid for (1 in 110), and one request spanned a ten-minute
+  Modern Standby of the laptop (`APIConnectionError` after 622.9 s against a 180 s timeout, which counts awake time). Whether the server billed that
+  request is unknown: the call log records it with no tokens.
+- **A known defect, not fixed:** in 37 of the 56 cells that hold certifications, the job description requires the *lowest-tier* certification the
+  candidate holds (a foreman posting requires an apprentice card). A realism fault, not a grounding one. Fixing it means regenerating those 37 cells
+  (about $2.8; $2.12 of the $10.00 is left), so it is filed for the owner in item 194.
+- **Limits, stated:** the prose of only four of the 96 final cells was hand-read (`teacher-mid`, `electrician-lead`, `security-mid`,
+  `social-services-entry`); the rest is checked by the deterministic rules only; no calibration run has
+  scored the set, so the real rate of `scenario_misaligned` iteration runs is unmeasured; the lower effort levels were not tried; and the keep-awake
+  call is confirmed to take effect but not that it prevents Modern Standby on this machine.
+- Also: `docs/dev/blast-radius/eval-dataset-v1.md` (the consumer enumeration, written before the first edit, with the measurements), `evals/README.md`,
+  `tests/test_golden_facts.py`, the wiki's `eval-harness` and `code-module-map` pages, and item 191 with a new follow-on item.
+
 ### Added: golden-set breadth, a ladder per family, a setting for every job, certifications and mismatched pairs (`feat/eval-golden-breadth`, item 193, eval redesign step 3b-i)
 
 The owner widened the golden set's job on 2026-10-27: it has to measure performance across many fields (administration, design, mobile and hardware

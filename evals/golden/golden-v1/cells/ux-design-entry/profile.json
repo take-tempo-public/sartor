@@ -1,0 +1,335 @@
+{
+  "candidate": {
+    "email": "priya.reyes@example.com",
+    "linkedin": "linkedin.com/in/example-priya-ux-design-entry",
+    "name": "Priya Reyes",
+    "phone": "(555) 010-8460",
+    "username": "gold_ux_design_entry"
+  },
+  "cell": "ux-design-entry",
+  "cell_seed": 1669270896,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Interaction design on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Interaction design, in work or side projects",
+        "any exposure to User research, in work or side projects"
+      ],
+      "scope_probes": [
+        "Junior UX Designer at Neighborhood Table Services: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Interaction\\ design",
+      "(?i)User\\ research",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "figma",
+      "html and css",
+      "information architecture",
+      "prototyping"
+    ],
+    "notes": "entry-level product and UX design. The profile has no Interaction design, User research; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. On a small, well-defined part of the work with a senior colleague reviewing.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, on a small, well-defined part of the work with a senior colleague reviewing",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Interaction design exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Junior UX Designer",
+        "Fernwood Apps — Remote (US)"
+      ],
+      "setting": "startup",
+      "slots": [
+        "jd.consumer-app.about",
+        "jd.consumer-app.duties",
+        "jd.consumer-app.needs"
+      ],
+      "slug": "consumer-app"
+    }
+  ],
+  "level": "entry",
+  "profession": "ux-design",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Journey mapping in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Neighborhood Table Services",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-10",
+          "title": "Junior UX Designer"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "B.A.",
+          "field": "Interaction Design",
+          "institution": "Lakeshore University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Journey mapping",
+        "Design critique",
+        "HTML and CSS",
+        "Figma",
+        "Wireframing",
+        "Accessibility review",
+        "Design systems",
+        "Usability testing",
+        "Information architecture",
+        "Prototyping"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Journey mapping"
+    },
+    {
+      "category": "method",
+      "name": "Design critique"
+    },
+    {
+      "category": "language",
+      "name": "HTML and CSS"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "method",
+      "name": "Wireframing"
+    },
+    {
+      "category": "method",
+      "name": "Accessibility review"
+    },
+    {
+      "category": "method",
+      "name": "Design systems"
+    },
+    {
+      "category": "method",
+      "name": "Usability testing"
+    },
+    {
+      "category": "method",
+      "name": "Information architecture"
+    },
+    {
+      "category": "method",
+      "name": "Prototyping"
+    }
+  ],
+  "slots": {
+    "jd.consumer-app.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About the role' paragraph of a job description for a Junior UX Designer at Fernwood Apps, a consumer app startup. Write in a direct, informal startup voice. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.consumer-app.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What you'll do' heading and four to six bullet lines for a Junior UX Designer, about wireframes, accessibility fixes, usability sessions. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.consumer-app.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'What we're looking for' heading and four to six bullet lines. Require Information architecture, Figma, HTML and CSS, Prototyping, User research, Interaction design, and 1 or more years of experience.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Information architecture",
+        "Figma",
+        "HTML and CSS",
+        "Prototyping",
+        "User research",
+        "Interaction design"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "40"
+      ],
+      "brief": "One résumé bullet for a Junior UX Designer at Neighborhood Table Services: design system components, using Information architecture. State a measured result of 40 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Information architecture",
+        "40"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior UX Designer at Neighborhood Table Services: usability sessions, using Wireframing. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Wireframing"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "20"
+      ],
+      "brief": "One résumé bullet for a Junior UX Designer at Neighborhood Table Services: stakeholder reviews, using Usability testing. State a measured result of 20 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Usability testing",
+        "20"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Junior UX Designer at Neighborhood Table Services: accessibility fixes, using Design systems. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Design systems"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Junior UX Designer at Neighborhood Table Services, about usability sessions. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Junior UX Designer at Neighborhood Table Services, about wireframes. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a entry-level product and UX design professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Journey mapping, Design critique, HTML and CSS.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Journey mapping",
+        "Design critique",
+        "HTML and CSS"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a entry-level product and UX design professional with about 1 years of experience, scope: on a small, well-defined part of the work with a senior colleague reviewing. Mention Journey mapping, Design critique, HTML and CSS.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Journey mapping",
+        "Design critique",
+        "HTML and CSS"
+      ]
+    }
+  }
+}

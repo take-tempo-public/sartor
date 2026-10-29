@@ -263,9 +263,9 @@ def _source_fixture(name: str) -> str:
     return str(pair["resume_fixture"])
 
 
-class TestCommittedPilots:
+class TestCommittedCells:
     @pytest.mark.parametrize("mode", ["generate", "assemble"])
-    def test_each_pilot_fires_exactly_what_is_planned(
+    def test_each_cell_fires_exactly_what_is_planned(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
     ) -> None:
         rows, per_case = _run(tmp_path, monkeypatch, runner.GOLDEN_DIR, mode)
@@ -278,27 +278,34 @@ class TestCommittedPilots:
             profile, _ = gs.load_cell(gs.SUITE_DIR, _source_fixture(fdir.name).split("--")[0])
             assert per_case[f"{gs.SUITE}/{fdir.name}"] == _planned(fdir, profile, mode), fdir.name
 
-    def test_the_pilots_do_not_reach_recommend_summary_and_the_waiver_says_so(
+    def test_a_cell_reaches_recommend_summary_exactly_when_it_has_summary_variants(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # The gap this check exists to catch: a cell with one summary variant makes no such call. A
+        # converted pilot carries a waiver for it; a generated cell must not need one.
         _, per_case = _run(tmp_path, monkeypatch, runner.GOLDEN_DIR, "assemble")
-        assert all("recommend_summary" not in counts for counts in per_case.values())
-        waivers = gs.load_manifest(gs.SUITE_DIR)["pilot_waivers"]
-        assert all(
-            any(
-                w.endswith(":summary_variants")
-                for w in waivers
-                if w.startswith(_source_fixture(c.split("/")[1]))
-            )
-            for c in per_case
-        )
+        for case_id, counts in per_case.items():
+            name = case_id.split("/", 1)[1]
+            profile, _prose = gs.load_cell(gs.SUITE_DIR, _source_fixture(name).split("--")[0])
+            has_variants = "summary_variants" not in gs.failing_predicates(profile)
+            assert (counts["recommend_summary"] == 1) == has_variants, name
 
-    def test_the_iterating_pilot_reaches_iterate_clarify(
+    def test_a_fixture_iterates_exactly_when_its_expected_file_scripts_an_edit(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _, per_case = _run(tmp_path, monkeypatch, runner.GOLDEN_DIR, "generate")
-        assert per_case[f"{gs.SUITE}/sre-ops-mid--lattice-cloud"]["iterate_clarify"] == 1
-        assert sum(c["iterate_clarify"] for c in per_case.values()) == 1
+        scripted = {
+            f"{gs.SUITE}/{fdir.name}": bool(
+                json.loads((fdir / "expected.json").read_text(encoding="utf-8")).get(
+                    "iteration_scenarios"
+                )
+            )
+            for fdir in runner.GOLDEN_DIR.iterdir()
+        }
+        assert {
+            case: counts["iterate_clarify"] == 1 for case, counts in per_case.items()
+        } == scripted
+        assert any(scripted.values()), "no fixture iterates, so iterate_clarify is never reached"
 
 
 def _built_suite(tmp_path: Path, **ladder_override: Any) -> tuple[Path, dict[str, Any]]:
@@ -311,6 +318,8 @@ def _built_suite(tmp_path: Path, **ladder_override: Any) -> tuple[Path, dict[str
     with (root / "facts" / "demo-ops.json").open("w", encoding="utf-8", newline="\n") as fh:
         fh.write(gs.canonical_json(FACTS))
     manifest = _manifest()
+    # The suite check rebuilds a generated cell from its facts and ladder, so the ladder must say what built it.
+    manifest["families"]["demo"]["levels"]["mid"].update(ladder_override)
     manifest["author"]["prompt_versions"] = {ga.AUTHOR_PROMPT_VERSION: ga.author_prompt_sha()}
     if "summary_variants" in ladder_override:
         manifest["pilot_waivers"] = [

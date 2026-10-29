@@ -1,0 +1,337 @@
+{
+  "candidate": {
+    "email": "morgan.kowalski@example.com",
+    "linkedin": "linkedin.com/in/example-morgan-admin-assistant-entry",
+    "name": "Morgan Kowalski",
+    "phone": "(555) 010-7203",
+    "username": "gold_admin_assistant_entry"
+  },
+  "cell": "admin-assistant-entry",
+  "cell_seed": 180380698,
+  "clarifications": [
+    {
+      "answer": "Yes, in a limited way, on one project.",
+      "question": "Did you use Calendar management on this role?"
+    }
+  ],
+  "expected": {
+    "expected_clarification_themes": {
+      "experience_probes": [
+        "any exposure to Calendar management, in work or side projects",
+        "any exposure to Travel booking, in work or side projects"
+      ],
+      "scope_probes": [
+        "Office Assistant at Stonebridge Community Trust: sole owner or team member?"
+      ]
+    },
+    "forbidden_inventions": [
+      "(?i)Calendar\\ management",
+      "(?i)Travel\\ booking",
+      "PhD",
+      "Master'?s? (degree|in)",
+      "managed [0-9]+",
+      "10\\+ years"
+    ],
+    "min_ats_format_score": 4,
+    "min_clarification_quality_score": 4,
+    "min_grounding_score": 4,
+    "min_keyword_coverage_score": 3,
+    "min_tone_score": 3,
+    "must_keywords": [
+      "invoice processing",
+      "microsoft outlook",
+      "vendor coordination",
+      "visitor reception"
+    ],
+    "notes": "entry-level administrative support. The profile has no Calendar management, Travel booking; generation must not claim them."
+  },
+  "iteration": {
+    "clarification_answer": "Yes. Handling routine requests with a colleague checking the work.",
+    "min_score": 4,
+    "mode": "derived",
+    "name": "user_typed_scope",
+    "replacement": "{target}, handling routine requests with a colleague checking the work",
+    "target_slot": "r1.b2",
+    "themes": {
+      "experience_probes": [
+        "Calendar management exposure not yet covered by prior clarifications"
+      ],
+      "iteration_probes": [
+        "follow up on the just-typed scope: how large, and who else was involved"
+      ],
+      "scope_probes": [
+        "ownership versus team contribution if not yet covered"
+      ]
+    }
+  },
+  "jds": [
+    {
+      "header_lines": [
+        "Office Assistant",
+        "Linden Park Dental — On site, Dayton, OH"
+      ],
+      "setting": "small-business",
+      "slots": [
+        "jd.dental-practice.about",
+        "jd.dental-practice.duties",
+        "jd.dental-practice.needs"
+      ],
+      "slug": "dental-practice"
+    }
+  ],
+  "level": "entry",
+  "profession": "admin-assistant",
+  "refinement_notes": [
+    {
+      "in_scope": true,
+      "note": "Mention Visitor reception in the first bullet."
+    },
+    {
+      "in_scope": false,
+      "note": "Say that I led a team of fifty engineers."
+    }
+  ],
+  "schema": 1,
+  "sections": [
+    {
+      "heading": "Summary",
+      "kind": "summary",
+      "slots": [
+        "summary.1",
+        "summary.2"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "kind": "experience",
+      "roles": [
+        {
+          "bullet_slots": [
+            "r1.b1",
+            "r1.b2",
+            "r1.b3",
+            "r1.b4"
+          ],
+          "company": "Stonebridge Community Trust",
+          "end": null,
+          "intro_slots": [
+            "r1.i1",
+            "r1.i2"
+          ],
+          "location": null,
+          "start": "2025-08",
+          "title": "Office Assistant"
+        }
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        {
+          "degree": "A.S.",
+          "field": "Business Administration",
+          "institution": "Northern Plains University",
+          "slots": [],
+          "year": "2025"
+        }
+      ],
+      "kind": "education"
+    },
+    {
+      "heading": "Certifications",
+      "items": [
+        {
+          "issuer": "Business Skills Academy",
+          "name": "Office Administration Certificate",
+          "year": "2026"
+        }
+      ],
+      "kind": "certifications"
+    },
+    {
+      "heading": "Skills",
+      "kind": "skills",
+      "skills": [
+        "Visitor reception",
+        "Microsoft Excel",
+        "Expense reporting",
+        "Microsoft Word",
+        "Vendor coordination",
+        "Microsoft Outlook",
+        "Document formatting",
+        "Invoice processing"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "method",
+      "name": "Visitor reception"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Excel"
+    },
+    {
+      "category": "method",
+      "name": "Expense reporting"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Word"
+    },
+    {
+      "category": "method",
+      "name": "Vendor coordination"
+    },
+    {
+      "category": "tool",
+      "name": "Microsoft Outlook"
+    },
+    {
+      "category": "method",
+      "name": "Document formatting"
+    },
+    {
+      "category": "method",
+      "name": "Invoice processing"
+    }
+  ],
+  "slots": {
+    "jd.dental-practice.about": {
+      "allowed_numbers": [],
+      "brief": "The 'About us and the job' paragraph of a job description for a Office Assistant at Linden Park Dental, a dental practice. Write in plain words, as an owner-run business would write it, with the work on site. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 90,
+      "min_words": 25,
+      "must_include": []
+    },
+    "jd.dental-practice.duties": {
+      "allowed_numbers": [],
+      "brief": "A 'What the job involves' heading and four to six bullet lines for a Office Assistant, about scheduling for managers, processing expense reports, filing and records upkeep. Include no number.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 40,
+      "must_include": []
+    },
+    "jd.dental-practice.needs": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "A 'What you need' heading and four to six bullet lines. Require Microsoft Outlook, Vendor coordination, Visitor reception, Invoice processing, Calendar management, Travel booking, and 1 or more years of experience. State Office Administration Certificate as a required licence or certification.",
+      "has_outcome": false,
+      "kind": "jd",
+      "max_words": 160,
+      "min_words": 30,
+      "must_include": [
+        "Microsoft Outlook",
+        "Vendor coordination",
+        "Visitor reception",
+        "Invoice processing",
+        "Calendar management",
+        "Travel booking",
+        "Office Administration Certificate"
+      ]
+    },
+    "r1.b1": {
+      "allowed_numbers": [
+        "15"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Stonebridge Community Trust: scheduling for managers, using Microsoft Excel. State a measured result of 15 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Microsoft Excel",
+        "15"
+      ]
+    },
+    "r1.b2": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Stonebridge Community Trust: travel and event arrangements, using Microsoft Outlook. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Microsoft Outlook"
+      ]
+    },
+    "r1.b3": {
+      "allowed_numbers": [
+        "35"
+      ],
+      "brief": "One résumé bullet for a Office Assistant at Stonebridge Community Trust: processing expense reports, using Vendor coordination. State a measured result of 35 percent.",
+      "has_outcome": true,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 10,
+      "must_include": [
+        "Vendor coordination",
+        "35"
+      ]
+    },
+    "r1.b4": {
+      "allowed_numbers": [],
+      "brief": "One résumé bullet for a Office Assistant at Stonebridge Community Trust: meeting notes, using Document formatting. Include no number.",
+      "has_outcome": false,
+      "kind": "bullet",
+      "max_words": 40,
+      "min_words": 8,
+      "must_include": [
+        "Document formatting"
+      ]
+    },
+    "r1.i1": {
+      "allowed_numbers": [],
+      "brief": "Variant 1 of a one-sentence role introduction for a Office Assistant at Stonebridge Community Trust, about scheduling for managers. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "r1.i2": {
+      "allowed_numbers": [],
+      "brief": "Variant 2 of a one-sentence role introduction for a Office Assistant at Stonebridge Community Trust, about travel and event arrangements. Include no number.",
+      "has_outcome": false,
+      "kind": "intro",
+      "max_words": 35,
+      "min_words": 8,
+      "must_include": []
+    },
+    "summary.1": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 1 of a two-sentence résumé summary for a associate-level administrative support professional with about 1 years of experience, scope: handling routine requests with a colleague checking the work. Mention Visitor reception, Microsoft Excel, Expense reporting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Visitor reception",
+        "Microsoft Excel",
+        "Expense reporting"
+      ]
+    },
+    "summary.2": {
+      "allowed_numbers": [
+        "1"
+      ],
+      "brief": "Variant 2 of a two-sentence résumé summary for a associate-level administrative support professional with about 1 years of experience, scope: handling routine requests with a colleague checking the work. Mention Visitor reception, Microsoft Excel, Expense reporting.",
+      "has_outcome": false,
+      "kind": "summary",
+      "max_words": 60,
+      "min_words": 15,
+      "must_include": [
+        "Visitor reception",
+        "Microsoft Excel",
+        "Expense reporting"
+      ]
+    }
+  }
+}

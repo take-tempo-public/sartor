@@ -1,0 +1,56 @@
+{
+  "candidate_name": "Quinn Mehta",
+  "expected_clarification_themes": {
+    "experience_probes": [
+      "any exposure to Journal entries, in work or side projects",
+      "any exposure to SAP, in work or side projects",
+      "any progress toward Certified Public Accountant Licence"
+    ],
+    "scope_probes": [
+      "Accountant at Harborview Community Clinic: sole owner or team member?"
+    ]
+  },
+  "forbidden_inventions": [
+    "(?i)Journal\\ entries",
+    "(?i)SAP",
+    "(?i)Certified\\ Public\\ Accountant\\ Licence",
+    "PhD",
+    "Master'?s? (degree|in)",
+    "managed [0-9]+",
+    "10\\+ years"
+  ],
+  "iteration_scenarios": [
+    {
+      "clarification_answers": {
+        "iter1_q1": "Yes. Owning a recurring process from request to completion."
+      },
+      "edit_replacement": "posting entries and reviewing ledger balances before statements are prepared., owning a recurring process from request to completion",
+      "edit_target_substring": "posting entries and reviewing ledger balances before statements are prepared.",
+      "expected_iteration_themes": {
+        "experience_probes": [
+          "Journal entries exposure not yet covered by prior clarifications"
+        ],
+        "iteration_probes": [
+          "follow up on the just-typed scope: how large, and who else was involved"
+        ],
+        "scope_probes": [
+          "ownership versus team contribution if not yet covered"
+        ]
+      },
+      "name": "user_typed_scope"
+    }
+  ],
+  "min_ats_format_score": 4,
+  "min_clarification_quality_score": 4,
+  "min_grounding_score": 4,
+  "min_iteration_quality_score": 4,
+  "min_keyword_coverage_score": 3,
+  "min_tone_score": 3,
+  "must_keywords": [
+    "accounts receivable",
+    "budget variance analysis",
+    "fixed asset tracking",
+    "microsoft excel"
+  ],
+  "notes": "mid-level accounting. The profile has no Journal entries, SAP, Certified Public Accountant Licence; generation must not claim them."
+}

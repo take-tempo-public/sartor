@@ -1,0 +1,124 @@
+{
+  "display": "visual and brand design",
+  "education": {
+    "degree": "B.F.A.",
+    "field": "Graphic Design"
+  },
+  "industries": [
+    {
+      "company": "Willow and Ash Studio",
+      "level": "entry",
+      "location": "On site, Portland, OR",
+      "phrase": "a small design studio",
+      "setting": "small-business",
+      "slug": "design-studio"
+    },
+    {
+      "company": "Kindle Street Foods",
+      "level": "mid",
+      "location": "Hybrid, Brooklyn, NY",
+      "phrase": "a food-products startup",
+      "setting": "startup",
+      "slug": "food-startup"
+    },
+    {
+      "company": "Stratford Home Goods",
+      "level": "senior",
+      "location": "Hybrid, Columbus, OH",
+      "phrase": "a home-goods retailer",
+      "setting": "enterprise",
+      "slug": "home-goods"
+    },
+    {
+      "company": "Marigold Creative House",
+      "level": "lead",
+      "location": "Hybrid, Austin, TX",
+      "phrase": "an independent branding agency",
+      "setting": "small-business",
+      "slug": "branding-agency"
+    }
+  ],
+  "leadership_themes": [
+    "directing brand work across campaigns",
+    "guiding junior designers"
+  ],
+  "profession": "visual-design",
+  "settings": [
+    "small-business",
+    "startup",
+    "enterprise"
+  ],
+  "skills": [
+    {
+      "category": "tool",
+      "name": "Adobe Photoshop"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe Illustrator"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe InDesign"
+    },
+    {
+      "category": "tool",
+      "name": "Adobe After Effects"
+    },
+    {
+      "category": "tool",
+      "name": "Figma"
+    },
+    {
+      "category": "tool",
+      "name": "Canva"
+    },
+    {
+      "category": "method",
+      "name": "Typography"
+    },
+    {
+      "category": "method",
+      "name": "Layout design"
+    },
+    {
+      "category": "method",
+      "name": "Brand identity"
+    },
+    {
+      "category": "method",
+      "name": "Color theory"
+    },
+    {
+      "category": "method",
+      "name": "Print production"
+    },
+    {
+      "category": "method",
+      "name": "Packaging design"
+    },
+    {
+      "category": "method",
+      "name": "Photo retouching"
+    },
+    {
+      "category": "method",
+      "name": "Motion graphics"
+    }
+  ],
+  "titles": {
+    "entry": "Junior Graphic Designer",
+    "lead": "Creative Director",
+    "mid": "Graphic Designer",
+    "senior": "Senior Brand Designer"
+  },
+  "work_themes": [
+    "social media graphics",
+    "brand guideline updates",
+    "print layouts",
+    "packaging mockups",
+    "client revisions",
+    "campaign launches",
+    "preparing files for printers"
+  ]
+}

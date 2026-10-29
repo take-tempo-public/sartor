@@ -1,0 +1,111 @@
+"""The committed facts (``evals/golden/golden-v1/facts/``) build the whole matrix, with no model and no money.
+
+What step 3b-ii promises before any paid call: every profession in the manifest has facts that pass the
+format's checks, each profession and tier builds a sound profile with one job description, and together they
+make the 96 fixtures the owner asked for, in the four groups, across all five settings, with about 5 percent
+in the public-sector register. A change to a facts file that breaks any of that fails here, not in a paid run.
+"""
+
+from __future__ import annotations
+
+import json
+from collections import Counter
+from typing import Any
+
+import pytest
+
+from evals import golden_set as gs
+
+MANIFEST = gs.load_manifest(gs.SUITE_DIR)
+PROFESSIONS = sorted(MANIFEST["professions"])
+
+
+def _facts(profession: str) -> dict[str, Any]:
+    facts: dict[str, Any] = json.loads(
+        (gs.SUITE_DIR / "facts" / f"{profession}.json").read_text(encoding="utf-8")
+    )
+    return facts
+
+
+def _profile(profession: str, level: str) -> dict[str, Any]:
+    return gs.build_profile(_facts(profession), gs.ladder_for(MANIFEST, profession, level), level)
+
+
+def test_every_profession_has_a_facts_file_and_no_file_is_a_stray() -> None:
+    on_disk = {p.stem for p in (gs.SUITE_DIR / "facts").glob("*.json")}
+    assert on_disk == set(PROFESSIONS)
+
+
+def test_there_are_24_professions_in_the_four_groups() -> None:
+    groups = Counter(row["group"] for row in MANIFEST["professions"].values())
+    assert len(PROFESSIONS) == 24
+    assert groups == {
+        "tech-and-product": 9,
+        "business-and-office": 6,
+        "health-education-and-community": 4,
+        "trades-and-construction": 5,
+    }
+
+
+def test_every_family_the_manifest_defines_is_used() -> None:
+    used = {row["family"] for row in MANIFEST["professions"].values()}
+    assert used == set(MANIFEST["families"])
+
+
+@pytest.mark.parametrize("profession", PROFESSIONS)
+def test_a_profession_builds_four_sound_cells_with_one_jd_each(profession: str) -> None:
+    facts = _facts(profession)
+    assert gs.validate_facts(facts) == []
+    for level in gs.LEVELS:
+        profile = _profile(profession, level)
+        assert gs.validate_profile(profile) == [], (profession, level)
+        (jd,) = profile["jds"]
+        assert [jd["slug"]] == gs.industries_for(facts, level)
+        assert profile["cell"] == f"{profession}-{level}"
+
+
+@pytest.mark.parametrize("profession", PROFESSIONS)
+def test_each_tier_is_posted_where_its_industry_says(profession: str) -> None:
+    facts = _facts(profession)
+    by_tier = {i["level"]: i for i in facts["industries"]}
+    for level in gs.LEVELS:
+        (jd,) = _profile(profession, level)["jds"]
+        assert jd["setting"] == by_tier[level]["setting"]
+        assert by_tier[level]["location"] in jd["header_lines"][1]
+
+
+def test_the_matrix_is_96_fixtures_with_distinct_names() -> None:
+    names = [
+        gs.fixture_name(profile["cell"], jd["slug"])
+        for profession in PROFESSIONS
+        for level in gs.LEVELS
+        for profile in [_profile(profession, level)]
+        for jd in profile["jds"]
+    ]
+    assert len(names) == 96
+    assert len(set(names)) == 96
+
+
+def test_about_five_percent_of_fixtures_use_the_public_sector_register() -> None:
+    settings = Counter(
+        jd["setting"]
+        for profession in PROFESSIONS
+        for level in gs.LEVELS
+        for jd in _profile(profession, level)["jds"]
+    )
+    assert sum(settings.values()) == 96
+    assert set(settings) == set(gs.SETTINGS), "every setting appears"
+    assert settings["public-sector"] == 5  # 5.2 percent: the owner's "about 5%" of 96
+
+
+def test_no_trap_matches_the_skills_a_cell_lists() -> None:
+    """A trap is a regex against text the model writes; it must not match a skill the cell does list."""
+    import re
+
+    for profession in PROFESSIONS:
+        for level in gs.LEVELS:
+            profile = _profile(profession, level)
+            held = [s["name"] for s in profile["skills"]]
+            for trap in profile["expected"]["forbidden_inventions"]:
+                hits = [name for name in held if re.search(trap, name)]
+                assert not hits, (profession, level, trap, hits)
