@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "Accounting Training Council",
       "name": "Bookkeeping Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepares payroll accounting records and supporting schedules for audit preparation, reducing auditor follow-up requests by 10 percent."
+          "text": "Supports audit preparation by organising payroll accounting records and tying them to the general ledger, cutting auditor follow-up requests by 10 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reconciles bank accounts and ties fixed asset tracking records to the general ledger so differences are cleared before close."
+          "text": "Reconciles bank accounts each month and matches asset purchases against fixed asset tracking schedules so balances agree before review."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Builds Microsoft Excel checklists and reconciliation templates for month-end close, cutting the time needed to close the books by 20 percent."
+          "text": "Builds Microsoft Excel checklists and tie-out workbooks for month-end close, reducing the time needed to finish closing entries by 20 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Records journal entries for accruals and adjustments and drafts financial statements for senior review."
+          "text": "Prepares draft financial statements from posted journal entries and supporting schedules for review by a colleague."
         }
       ],
       "company": "Northfield Group",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Prepares monthly financial statements at Northfield Group as a staff accountant, working from the general ledger with senior review."
+          "text": "Prepares monthly financial statements and supporting schedules as a Staff Accountant at Northfield Group."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Reviews vendor invoices at Northfield Group for accuracy and proper approval before they are entered and paid."
+          "text": "Reviews vendor invoices for accuracy and approval before payment as a Staff Accountant at Northfield Group."
         }
       ],
       "titles": [
@@ -194,7 +194,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Associate-level accounting professional with about 1 year of experience as a staff accountant, handling routine requests with a colleague checking the work. Skilled in Microsoft Excel, journal entries and payroll accounting, with a B.S. in Accounting and a Bookkeeping Certificate."
+      "text": "Associate-level accountant with about 1 year of experience handling routine accounting requests, with a colleague checking the work. Uses Microsoft Excel for schedules and reconciliations and records journal entries and payroll accounting entries with care."
     },
     {
       "display_order": 1,
@@ -205,7 +205,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Staff accountant with about 1 year of experience handling routine accounting requests, with each task checked by a colleague before it is finalized. Uses Microsoft Excel daily to support journal entries, payroll accounting and account reconciliation."
+      "text": "Associate-level accountant with a B.S. in Accounting and about 1 year in a staff accountant role, handling routine requests while a colleague reviews the work. Works daily in Microsoft Excel, prepares journal entries, and supports payroll accounting and month-end close."
     }
   ],
   "tags": []

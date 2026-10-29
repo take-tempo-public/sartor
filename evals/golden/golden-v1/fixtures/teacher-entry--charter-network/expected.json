@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
       },
-      "edit_replacement": "sharing regular updates with the lead teacher to guide next, working with a supervisor close by on a small share of the work",
-      "edit_target_substring": "sharing regular updates with the lead teacher to guide next",
+      "edit_replacement": "recording daily behavior and participation notes to share with the, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "recording daily behavior and participation notes to share with the",
       "expected_iteration_themes": {
         "experience_probes": [
           "Classroom management exposure not yet covered by prior clarifications"

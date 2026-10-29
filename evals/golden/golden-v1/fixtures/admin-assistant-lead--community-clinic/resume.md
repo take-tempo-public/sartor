@@ -4,36 +4,36 @@ sam.reyes@example.com | (555) 010-9328 | linkedin.com/in/example-sam-admin-assis
 
 ## Summary
 
-Office manager with 12 years of experience who leads administrative teams and answers for the results of the office support function. Brings skills in document formatting, Microsoft Outlook and records filing.
+Office manager with 12 years of administrative support experience who leads a team and answers for the results of the office function. Skilled in document formatting, Microsoft Outlook and records filing, with a track record of keeping operations organized and accountable.
 
 ## Experience
 
 ### Office Manager — Stonebridge Community Trust
 *April 2021 – present*
 
-- Takes meeting notes for staff meetings and links agreed actions to purchase ordering, cutting order turnaround time by 20 percent.
-- Coordinates travel and event arrangements for staff and handles expense reporting for each trip and event so costs are recorded and reconciled.
-- Maintains filing and records upkeep alongside visitor reception duties, reducing time spent locating documents by 45 percent.
-- Manages office budgets and vendor relationships, using records filing to keep contracts, invoices and spending records organized and easy to review.
-- Processes expense reports and uses meeting minutes to confirm approved spending, shortening reimbursement time by 45 percent.
+- Records meeting notes for leadership sessions and applies purchase ordering steps to agreed follow-up actions, cutting order turnaround time by 20 percent.
+- Arranges staff travel and event logistics and handles expense reporting for each trip, keeping receipts and approvals in one place.
+- Maintains filing and records upkeep at the front desk alongside visitor reception, reducing time spent locating files by 45 percent.
+- Manages office budgets and vendor accounts, using records filing to keep contracts, quotes and invoices current for review.
+- Processes expense reports against approvals captured in meeting minutes, shortening reimbursement time by 45 percent.
 
 ### Senior Administrative Specialist — Tillman Brothers
 *September 2019 – April 2021*
 
-- Scheduled meetings and appointments for managers and prepared agendas in Microsoft Word, reducing scheduling conflicts by 25 percent.
-- Trained new administrative staff on Microsoft Outlook calendars, email and shared mailboxes, helping them handle routine office tasks on their own.
-- Covered phones and visitors at the front desk and applied document formatting standards to outgoing letters, cutting rework by 25 percent.
-- Ordered office supplies through purchase ordering, tracking each request from approval to delivery to keep stock levels steady.
-- Took meeting notes and tied action items to expense reporting, reducing late expense submissions by 50 percent.
+- Coordinated calendars for managers and built scheduling templates in Microsoft Word, reducing booking conflicts by 25 percent.
+- Trained new administrative staff on inbox, calendar and contact management in Microsoft Outlook.
+- Covered phones and visitor arrivals while applying document formatting standards to outgoing letters, cutting rework by 25 percent.
+- Ordered office supplies through purchase ordering, matching quantities to usage and tracking deliveries against each order.
+- Took meeting notes and linked action items to expense reporting, speeding up approval of submitted claims by 50 percent.
 
 ### Administrative Assistant — Riverbend Health Network
 *May 2014 – September 2019*
 
 - Processed expense reports between visitor reception duties, reducing the backlog of unprocessed reports by 50 percent.
-- Managed calendars and appointments for managers and kept scheduling records current through records filing.
-- Provided phone and visitor coverage and prepared meeting minutes for department meetings, reducing turnaround on minutes by 15 percent.
-- Ordered office supplies and drafted order requests and supplier letters in Microsoft Word.
-- Recorded meeting notes and circulated them through Microsoft Outlook, cutting the time to distribute notes by 30 percent.
+- Scheduled appointments and meetings for managers, using records filing to keep agendas and supporting papers ready.
+- Handled phone and visitor coverage and produced meeting minutes for department meetings, cutting minutes turnaround time by 15 percent.
+- Ordered supplies for the office and prepared order requests and stock lists in Microsoft Word.
+- Captured meeting notes and circulated them through Microsoft Outlook, reducing follow-up questions from attendees by 30 percent.
 
 ## Education
 
@@ -41,7 +41,7 @@ Office manager with 12 years of experience who leads administrative teams and an
 
 ## Certifications
 
-- Office Administration Certificate — Business Skills Academy, 2017
+- Office Administration Certificate — Business Skills Academy, 2014
 
 ## Skills
 

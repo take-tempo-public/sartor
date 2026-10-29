@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Doing the work to code on my own."
       },
-      "edit_replacement": "using brazing and soldering to repair lines and fittings before, doing the work to code on my own",
-      "edit_target_substring": "using brazing and soldering to repair lines and fittings before",
+      "edit_replacement": "using brazing and soldering to repair line sets and fittings, doing the work to code on my own",
+      "edit_target_substring": "using brazing and soldering to repair line sets and fittings",
       "expected_iteration_themes": {
         "experience_probes": [
           "Heat pump service exposure not yet covered by prior clarifications"

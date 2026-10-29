@@ -1,7 +1,7 @@
 {
   "cell": "carpenter-foreman-lead",
   "provenance": {
-    "attempts": 1,
+    "attempts": 2,
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
@@ -9,43 +9,44 @@
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVjeGqcviAqaYTigeQoW"
+      "req_011CgXPCoqPf9sHdPoB3ePYh",
+      "req_011CgXPF9KDhBDgVvsxGyQhU"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 5287,
-      "output_tokens": 3780
+      "input_tokens": 7040,
+      "output_tokens": 4275
     }
   },
   "schema": 1,
   "slots": {
-    "jd.commercial-contractor.about": "Brandt Commercial Construction seeks a Carpentry Foreman to lead carpentry crews on commercial projects in Denver. The Carpentry Foreman directs daily field work, maintains quality and safety standards, and coordinates closely with site management. Minimum requirements include extensive carpentry experience, crew leadership and blueprint reading. A crew supervisor certification is preferred.",
-    "jd.commercial-contractor.duties": "Responsibilities\n- Build and set forms for concrete footings, walls and slabs\n- Read plans and specifications and take accurate field measurements\n- Plan daily and weekly carpentry work and assign tasks to crew members\n- Prepare material takeoffs and order lumber and supplies for each phase of work\n- Inspect completed work for accuracy and quality before handoff to other trades",
-    "jd.commercial-contractor.needs": "Minimum and preferred qualifications\n- 12 or more years of carpentry experience, including framing and stair building\n- Proficiency in scaffold erection and power tool use\n- Experience with cabinet installation and finish carpentry\n- Working knowledge of jobsite safety practices and procedures\n- Crew Supervisor Certificate required\n- Preferred: experience leading crews on commercial projects",
-    "r1.b1": "Enforces site safety rules on framing crews, including fall protection and daily housekeeping, reducing reported safety incidents by 45 percent.",
-    "r1.b2": "Installs doors, windows and trim on remodeling projects, using material takeoffs to order correct quantities before work begins.",
-    "r1.b3": "Builds concrete forms for footings and slabs, applying blueprint reading to set dimensions and cutting form rework by 25 percent.",
-    "r1.b4": "Orders lumber and materials for each job, matching quantities to door and window installation schedules so crews have what they need on site.",
-    "r1.b5": "Plans job sequences and lumber orders around concrete forming work, reducing material waste by 15 percent.",
-    "r1.i1": "Leads carpentry crews at Marlow Remodeling with responsibility for keeping every site safe and orderly.",
-    "r1.i2": "Runs carpentry crews at Marlow Remodeling, overseeing the installation of doors, windows and trim on remodeling projects.",
-    "r2.b1": "Framed walls and floors and handled cabinet installation on new construction, finishing framing phases 10 percent ahead of schedule.",
-    "r2.b2": "Directed carpentry crews and apprentices, assigning tasks and supervising scaffold erection to keep work moving safely.",
-    "r2.b3": "Read plans and measured layouts before cutting, pairing careful power tool use with checked dimensions to reduce miscut lumber by 35 percent.",
-    "r2.b4": "Kept the jobsite safe by inspecting framing work, bracing and walkways daily and correcting hazards before crews started.",
-    "r2.b5": "Installed doors, windows and trim, using material takeoffs to order accurate quantities and lowering material costs by 15 percent.",
-    "r2.i1": "Served as master carpenter at Copperfield Construction, installing doors, windows and trim to finished standards.",
-    "r2.i2": "Directed carpentry crews and apprentices at Copperfield Construction as master carpenter, assigning work and checking quality.",
-    "r3.b1": "Framed walls and floors guided by blueprint reading, increasing daily framing output by 50 percent.",
-    "r3.b2": "Read plans and measured rough openings to prepare for door and window installation, confirming dimensions before units were set.",
-    "r3.b3": "Maintained a safe site during concrete forming by securing stakes, braces and walkways, reducing site injuries by 15 percent.",
-    "r3.b4": "Installed doors, windows and trim alongside cabinet installation in new homes, fitting each piece plumb and level.",
-    "r3.b5": "Built forms for concrete and supported the work with scaffold erection, shortening form setup time by 25 percent.",
-    "r3.i1": "Worked as a journeyman carpenter at Oakmont Homes, ordering lumber and materials for home construction crews.",
-    "r3.i2": "Built forms for concrete foundations and slabs as a journeyman carpenter at Oakmont Homes.",
-    "summary.1": "Carpentry foreman with 12 years of experience running crews and answering for job quality, schedule and safety. Brings skills in blueprint reading, door and window installation and power tool use from remodeling and construction work.",
-    "summary.2": "Foreman-level carpenter with 12 years in the trade who runs the crew and takes responsibility for each job from layout to finish. Strengths include blueprint reading, door and window installation, power tool use and directing apprentices."
+    "jd.commercial-contractor.about": "Position summary\nBrandt Commercial Construction seeks a Carpentry Foreman to lead carpentry crews on commercial projects in Denver. The Carpentry Foreman directs daily field work, coordinates with project leadership, and maintains schedule, quality and safety standards on site. Minimum requirements include framing, concrete forming and blueprint reading experience. Preferred candidates also bring experience with material takeoffs.",
+    "jd.commercial-contractor.duties": "Responsibilities\n- Build, set and strip forms for concrete footings, walls and slabs.\n- Read plans and drawings, take field measurements, and lay out work accurately.\n- Plan daily and weekly carpentry tasks and assign work to crew members.\n- Prepare material takeoffs and order lumber and hardware to meet the schedule.\n- Inspect completed work for accuracy and conformance to drawings.\n- Enforce jobsite safety practices across the carpentry crew.",
+    "jd.commercial-contractor.needs": "Minimum and preferred qualifications\n- 12 or more years of carpentry experience.\n- Demonstrated skill in framing, stair building and cabinet installation.\n- Proficiency in scaffold erection and power tool use.\n- Working knowledge of jobsite safety practices and regulations.\n- Required certification: Crew Supervisor Certificate.\n- Preferred: experience leading carpentry crews on commercial projects.",
+    "r1.b1": "Enforces fall protection and housekeeping standards during framing work, cutting reported safety incidents on remodeling sites by 45 percent.",
+    "r1.b2": "Installs doors, windows and trim on remodeling projects, using material takeoffs to order the right quantities before each job starts.",
+    "r1.b3": "Builds forms for footings and slabs through careful blueprint reading, reducing concrete rework by 25 percent.",
+    "r1.b4": "Orders lumber and materials for door and window installation, matching deliveries to the crew schedule to avoid site delays.",
+    "r1.b5": "Plans jobs and orders lumber for concrete forming work, lowering material waste by 15 percent.",
+    "r1.i1": "Leads carpentry crews at Marlow Remodeling as Carpentry Foreman, keeping every jobsite safe and organized.",
+    "r1.i2": "Directs the installation of doors, windows and trim on remodeling projects for Marlow Remodeling.",
+    "r2.b1": "Framed walls and floors and completed cabinet installation on new builds, shortening interior finish schedules by 10 percent.",
+    "r2.b2": "Directed carpentry crews and apprentices, training them in safe scaffold erection and correct layout methods.",
+    "r2.b3": "Read plans and measured layouts before cutting, pairing accurate measurements with disciplined power tool use to reduce cutting errors by 35 percent.",
+    "r2.b4": "Kept sites safe during framing by inspecting bracing, guarding openings and clearing debris each shift.",
+    "r2.b5": "Installed doors, windows and trim using material takeoffs to order exact quantities, reducing material overages by 15 percent.",
+    "r2.i1": "Installed doors, windows and trim as Master Carpenter at Copperfield Construction, finishing interiors to plan.",
+    "r2.i2": "Directed crews and apprentices as Master Carpenter at Copperfield Construction, assigning tasks and checking finished work.",
+    "r3.b1": "Framed walls and floors on new homes, using blueprint reading to cut layout corrections by 50 percent.",
+    "r3.b2": "Read plans and measured rough openings accurately to support door and window installation on new homes.",
+    "r3.b3": "Maintained safe work areas during concrete forming, reducing form-related safety incidents by 15 percent.",
+    "r3.b4": "Installed doors, windows and trim alongside cabinet installation in finished kitchens and baths.",
+    "r3.b5": "Built forms for concrete walls and footings, using scaffold erection skills to reach elevated pours and finishing forming work 25 percent faster.",
+    "r3.i1": "Ordered lumber and materials for framing and finish crews as Journeyman Carpenter at Oakmont Homes.",
+    "r3.i2": "Built forms for concrete footings and walls as Journeyman Carpenter at Oakmont Homes.",
+    "summary.1": "Carpentry foreman with 12 years of experience running crews and answering for the quality, schedule and safety of each job. Skilled in blueprint reading, door and window installation and power tool use across remodeling and new construction.",
+    "summary.2": "Foreman-level carpenter with 12 years in the trade, leading crews from layout through final trim and taking responsibility for finished work. Brings blueprint reading, power tool use and door and window installation to every project."
   }
 }

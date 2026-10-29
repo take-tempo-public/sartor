@@ -4,36 +4,36 @@ alex.silva@example.com | (555) 010-1612 | linkedin.com/in/example-alex-carpenter
 
 ## Summary
 
-Carpentry foreman with 12 years of experience running crews and answering for job quality, schedule and safety. Brings skills in blueprint reading, door and window installation and power tool use from remodeling and construction work.
+Carpentry foreman with 12 years of experience running crews and answering for the quality, schedule and safety of each job. Skilled in blueprint reading, door and window installation and power tool use across remodeling and new construction.
 
 ## Experience
 
 ### Carpentry Foreman — Marlow Remodeling
 *July 2023 – present*
 
-- Enforces site safety rules on framing crews, including fall protection and daily housekeeping, reducing reported safety incidents by 45 percent.
-- Installs doors, windows and trim on remodeling projects, using material takeoffs to order correct quantities before work begins.
-- Builds concrete forms for footings and slabs, applying blueprint reading to set dimensions and cutting form rework by 25 percent.
-- Orders lumber and materials for each job, matching quantities to door and window installation schedules so crews have what they need on site.
-- Plans job sequences and lumber orders around concrete forming work, reducing material waste by 15 percent.
+- Enforces fall protection and housekeeping standards during framing work, cutting reported safety incidents on remodeling sites by 45 percent.
+- Installs doors, windows and trim on remodeling projects, using material takeoffs to order the right quantities before each job starts.
+- Builds forms for footings and slabs through careful blueprint reading, reducing concrete rework by 25 percent.
+- Orders lumber and materials for door and window installation, matching deliveries to the crew schedule to avoid site delays.
+- Plans jobs and orders lumber for concrete forming work, lowering material waste by 15 percent.
 
 ### Master Carpenter — Copperfield Construction
 *November 2021 – July 2023*
 
-- Framed walls and floors and handled cabinet installation on new construction, finishing framing phases 10 percent ahead of schedule.
-- Directed carpentry crews and apprentices, assigning tasks and supervising scaffold erection to keep work moving safely.
-- Read plans and measured layouts before cutting, pairing careful power tool use with checked dimensions to reduce miscut lumber by 35 percent.
-- Kept the jobsite safe by inspecting framing work, bracing and walkways daily and correcting hazards before crews started.
-- Installed doors, windows and trim, using material takeoffs to order accurate quantities and lowering material costs by 15 percent.
+- Framed walls and floors and completed cabinet installation on new builds, shortening interior finish schedules by 10 percent.
+- Directed carpentry crews and apprentices, training them in safe scaffold erection and correct layout methods.
+- Read plans and measured layouts before cutting, pairing accurate measurements with disciplined power tool use to reduce cutting errors by 35 percent.
+- Kept sites safe during framing by inspecting bracing, guarding openings and clearing debris each shift.
+- Installed doors, windows and trim using material takeoffs to order exact quantities, reducing material overages by 15 percent.
 
 ### Journeyman Carpenter — Oakmont Homes
 *January 2015 – November 2021*
 
-- Framed walls and floors guided by blueprint reading, increasing daily framing output by 50 percent.
-- Read plans and measured rough openings to prepare for door and window installation, confirming dimensions before units were set.
-- Maintained a safe site during concrete forming by securing stakes, braces and walkways, reducing site injuries by 15 percent.
-- Installed doors, windows and trim alongside cabinet installation in new homes, fitting each piece plumb and level.
-- Built forms for concrete and supported the work with scaffold erection, shortening form setup time by 25 percent.
+- Framed walls and floors on new homes, using blueprint reading to cut layout corrections by 50 percent.
+- Read plans and measured rough openings accurately to support door and window installation on new homes.
+- Maintained safe work areas during concrete forming, reducing form-related safety incidents by 15 percent.
+- Installed doors, windows and trim alongside cabinet installation in finished kitchens and baths.
+- Built forms for concrete walls and footings, using scaffold erection skills to reach elevated pours and finishing forming work 25 percent faster.
 
 ## Education
 

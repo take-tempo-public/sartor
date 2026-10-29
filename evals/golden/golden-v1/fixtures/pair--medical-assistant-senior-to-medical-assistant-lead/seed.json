@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2018",
+      "issued": "2017",
       "issuer": "Medical Assisting Certification Board",
       "name": "Certified Medical Assistant Credential"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2019",
+      "issued": "2018",
       "issuer": "Clinical Skills Council",
       "name": "Phlebotomy Certificate"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Complete insurance forms for patients receiving injections, cutting claim resubmissions by 55 percent through accurate procedure documentation."
+          "text": "Completes insurance forms and administers injections during patient visits, reducing form errors by 55 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Room patients and record vital signs before each provider visit, flagging abnormal readings for the attending clinician."
+          "text": "Rooms patients and records vital signs before each provider visit, flagging abnormal readings for the care team."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Stock exam rooms and oversee instrument sterilization, reducing room turnover time by 20 percent."
+          "text": "Stocks exam rooms and oversees instrument sterilization, cutting room turnaround time by 20 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Handle appointment scheduling for follow-up visits at checkout so patients leave with a confirmed return date."
+          "text": "Handles appointment scheduling for follow-up visits, coordinating times with patients and providers."
         }
       ],
       "company": "Dunmore Technologies",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Oversees clinic supplies and staff schedules at Dunmore Technologies while supporting providers with daily patient care."
+          "text": "Manages clinic supplies and schedules as Senior Medical Assistant at Dunmore Technologies, keeping exam rooms and calendars ready for daily patient care."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Keeps exam rooms stocked and ready at Dunmore Technologies, supporting providers through each clinic day."
+          "text": "Keeps exam rooms stocked and prepared for providers and patients in a senior medical assisting role at Dunmore Technologies."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Took vital signs and managed specimen handling for incoming patients, lowering mislabeled samples by 35 percent."
+          "text": "Took vital signs and managed specimen handling for lab orders, reducing labeling errors by 35 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Relayed physician instructions to patients and performed blood draws ordered during their visits."
+          "text": "Relayed physician instructions to patients and performed blood draws as ordered."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Drew blood and completed insurance verification before procedures, reducing billing denials by 45 percent."
+          "text": "Drew blood and completed insurance verification before visits, lowering claim rejections by 45 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Completed insurance forms for EKG testing and other in-office procedures, ensuring claims matched documented services."
+          "text": "Completed insurance forms and performed EKG testing for cardiac screening orders."
         }
       ],
       "company": "Harlow and Daughters",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Scheduled follow-up visits and supported providers with clinical tasks as a Medical Assistant at Harlow and Daughters."
+          "text": "Scheduled follow-up visits and supported clinic workflow as a Medical Assistant at Harlow and Daughters."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Completed insurance forms and assisted with patient care as a Medical Assistant at Harlow and Daughters."
+          "text": "Completed insurance forms and supported office and clinical tasks as a Medical Assistant at Harlow and Daughters."
         }
       ],
       "titles": [
@@ -233,7 +233,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Roomed patients and administered injections as ordered, shortening wait times for treatment by 55 percent."
+          "text": "Roomed patients and administered injections, shortening patient wait times by 55 percent."
         },
         {
           "display_order": 1,
@@ -244,7 +244,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Stocked exam rooms and recorded vital signs for patients, keeping each room ready for the next assessment."
+          "text": "Stocked exam rooms and checked vital signs for incoming patients."
         },
         {
           "display_order": 2,
@@ -255,7 +255,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Scheduled follow-up visits and performed instrument sterilization between appointments, cutting equipment delays by 45 percent."
+          "text": "Scheduled follow-up visits and maintained instrument sterilization routines, improving instrument availability by 45 percent."
         },
         {
           "display_order": 3,
@@ -266,7 +266,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Took vital signs at intake and handled appointment scheduling for return visits ordered by physicians."
+          "text": "Took vital signs and supported appointment scheduling for returning patients."
         }
       ],
       "company": "Eastgate Regional Hospital",
@@ -286,7 +286,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Completed insurance forms and supported hospital staff with patient intake as a Clinical Assistant at Eastgate Regional Hospital."
+          "text": "Completed insurance forms and assisted clinical staff as a Clinical Assistant at Eastgate Regional Hospital."
         },
         {
           "display_order": 1,
@@ -296,7 +296,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Took vital signs and assisted nurses and physicians with patient care as a Clinical Assistant at Eastgate Regional Hospital."
+          "text": "Took vital signs and supported patient care teams as a Clinical Assistant at Eastgate Regional Hospital."
         }
       ],
       "titles": [
@@ -381,7 +381,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior medical assistant with 9 years of experience in hospital and clinic settings, skilled in blood draws, injections and instrument sterilization. Guides colleagues on clinical procedures and takes on complex patient cases."
+      "text": "Senior medical assisting professional with about 9 years of experience in clinical and hospital settings. Guides colleagues and handles complex cases, with hands-on skill in blood draws, instrument sterilization and injections."
     },
     {
       "display_order": 1,
@@ -392,7 +392,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Medical assisting professional with about 9 years of experience who guides fellow assistants and handles difficult cases. Brings hands-on skill in blood draws, injections and instrument sterilization, backed by phlebotomy and medical assistant credentials."
+      "text": "Medical assisting professional at the senior level, bringing about 9 years of hands-on patient care experience. Mentors fellow assistants, takes on difficult cases, and performs blood draws, injections and instrument sterilization with care."
     }
   ],
   "tags": []

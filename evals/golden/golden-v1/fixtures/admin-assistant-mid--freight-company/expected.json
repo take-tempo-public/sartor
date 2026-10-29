@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Owning a recurring process from request to completion."
       },
-      "edit_replacement": "and handle purchase ordering for reception supplies between calls., owning a recurring process from request to completion",
-      "edit_target_substring": "and handle purchase ordering for reception supplies between calls.",
+      "edit_replacement": "handling purchase ordering for front desk supplies between calls., owning a recurring process from request to completion",
+      "edit_target_substring": "handling purchase ordering for front desk supplies between calls.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Meeting minutes exposure not yet covered by prior clarifications"

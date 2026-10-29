@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
       },
-      "edit_replacement": "Room patients and record vital signs before each provider visit, guiding colleagues and handling the hardest cases",
-      "edit_target_substring": "Room patients and record vital signs before each provider visit",
+      "edit_replacement": "Rooms patients and records vital signs before each provider visit, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "Rooms patients and records vital signs before each provider visit",
       "expected_iteration_themes": {
         "experience_probes": [
           "Epic Systems exposure not yet covered by prior clarifications"

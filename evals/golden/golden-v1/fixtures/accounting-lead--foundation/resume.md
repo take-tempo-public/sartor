@@ -4,36 +4,36 @@ taylor.brandt@example.com | (555) 010-9040 | linkedin.com/in/example-taylor-acco
 
 ## Summary
 
-Accounting manager with 14 years of experience who leads a team and answers for the results of the accounting function. Background covers financial statements, accounts receivable and QuickBooks, along with audit support and the month-end close.
+Accounting manager with 14 years of experience leading a team and answering for the accuracy of the accounting function. Oversees financial statements and accounts receivable in QuickBooks and holds a Certified Public Accountant Licence.
 
 ## Experience
 
 ### Accounting Manager — Cedar Hollow Hospice
 *January 2021 – present*
 
-- Runs the month-end close with fixed asset tracking built into the schedule, cutting close time by 40 percent.
-- Reconciles bank accounts each month and ties the balances to the financial statements before they go to leadership.
-- Prepares audit schedules and accounts payable support ahead of fieldwork, reducing auditor follow-up requests by 25 percent.
+- Runs the month-end close with streamlined fixed asset tracking, reducing close time by 40 percent.
+- Reconciles bank accounts each month and ties balances to financial statements before they go to leadership.
+- Prepares audit schedules and accounts payable support for external auditors, reducing auditor follow-up requests by 25 percent.
 - Reviews vendor invoices in QuickBooks against approvals and contracts before payment is released.
-- Produces monthly statements from accounts receivable records, lowering past-due balances by 10 percent.
+- Produces monthly statements and accounts receivable aging reports, lowering outstanding receivables by 10 percent.
 
 ### Senior Accountant — Redfern Family Trades
 *September 2017 – January 2021*
 
-- Reviewed journal entries prepared by staff accountants before posting, reducing correcting entries by 45 percent.
-- Prepared budget variance reports alongside sales tax filing, flagging tax accruals that differed from budget.
-- Built tax schedules used in audit support, cutting preparation time by 15 percent.
-- Owned the team close calendar and set deadlines for fixed asset tracking and account reviews.
-- Shortened the month-end close by 30 percent by standardising review of the financial statements.
+- Reviewed journal entries prepared by staff accountants, reducing correction rework by 45 percent.
+- Built budget variance reports that reconciled sales tax filing data with recorded revenue for management review.
+- Prepared tax schedules and provided audit support, reducing preparation time by 15 percent.
+- Owned the team close calendar, scheduling fixed asset tracking tasks alongside reconciliations.
+- Managed the month-end close and delivered financial statements 30 percent faster than the prior process.
 
 ### Accountant — Neighborhood Table Services
 *November 2012 – September 2017*
 
-- Reviewed vendor invoices before entry into accounts payable, reducing payment errors by 20 percent.
-- Prepared monthly financial statements in QuickBooks for management review.
-- Compiled budget variance reports from accounts receivable data, reducing unexplained variances by 50 percent.
-- Maintained tax schedules and posted the supporting journal entries each period.
-- Completed sales tax filing within the month-end close, shortening the close by 10 percent.
+- Reviewed vendor invoices for accounts payable, reducing payment errors by 20 percent.
+- Prepared monthly statements in QuickBooks for management review.
+- Produced budget variance reports using accounts receivable data, cutting report turnaround by 50 percent.
+- Recorded journal entries supporting quarterly tax schedules and filings.
+- Completed the month-end close with sales tax filing reconciliations, shortening the close by 10 percent.
 
 ## Education
 
@@ -41,8 +41,8 @@ Accounting manager with 14 years of experience who leads a team and answers for 
 
 ## Certifications
 
-- Bookkeeping Certificate — Accounting Training Council, 2014
-- Certified Public Accountant Licence — State Board of Accountancy, 2017
+- Bookkeeping Certificate — Accounting Training Council, 2012
+- Certified Public Accountant Licence — State Board of Accountancy, 2014
 
 ## Skills
 

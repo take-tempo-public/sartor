@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "Driver Safety Council",
       "name": "Driver Safety Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performs pre-trip vehicle inspections and keeps cargo documentation complete for every load, cutting loading delays by 20 percent."
+          "text": "Performs pre-trip vehicle inspections and maintains accurate cargo documentation for each load, reducing departure delays by 20 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans daily delivery routes and checks bills of lading against each load before departure."
+          "text": "Plans daily delivery routes and checks bills of lading against each load before leaving the yard."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with dispatch on route changes and applies defensive driving on every shift, reducing late arrivals by 20 percent."
+          "text": "Coordinates with dispatch on route changes and applies defensive driving on every run, reducing late deliveries by 20 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Keeps accurate driver logs and updates trip status in dispatch software throughout each shift."
+          "text": "Keeps complete driver logs and updates delivery status in dispatch software throughout each shift."
         }
       ],
       "company": "Stonebridge Logistics",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Delivers loads to customers on schedule across assigned routes for Stonebridge Logistics."
+          "text": "Delivery Driver at Stonebridge Logistics who delivers loads to customers on time and confirms each completed stop with dispatch."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Inspects the delivery vehicle each shift at Stonebridge Logistics and reports any defects promptly so repairs happen before routes begin."
+          "text": "Delivery Driver at Stonebridge Logistics who inspects the vehicle before each run and reports any defects to the supervisor promptly."
         }
       ],
       "titles": [
@@ -194,7 +194,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level delivery driver with about 1 year of experience in truck driving and dispatch support, handling a small share of route work under close supervision. Applies defensive driving, hours-of-service logging and delivery scheduling to keep deliveries safe and on time."
+      "text": "Entry-level truck driving and dispatch professional with about 1 year of experience handling a share of daily deliveries under close supervision. Skilled in defensive driving, hours-of-service logging and delivery scheduling, and holds a Driver Safety Certificate."
     },
     {
       "display_order": 1,
@@ -205,7 +205,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Truck driving and dispatch professional at entry level with about 1 year of experience, handling assigned deliveries with a supervisor close by. Brings skills in defensive driving, hours-of-service logging and delivery scheduling, along with a Commercial Driving certificate from Lakeshore Trucking School."
+      "text": "Truck driving and dispatch professional at entry level with about 1 year of experience supporting delivery operations alongside a supervisor. Applies defensive driving, hours-of-service logging and delivery scheduling, backed by a commercial driving certificate from Lakeshore Trucking School."
     }
   ],
   "tags": []

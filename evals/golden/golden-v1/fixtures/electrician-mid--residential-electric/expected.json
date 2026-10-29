@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Doing the work to code on my own."
       },
-      "edit_replacement": "checking code compliance on each run before inspection., doing the work to code on my own",
-      "edit_target_substring": "checking code compliance on each run before inspection.",
+      "edit_replacement": "Routes and secures conduit with close attention to code compliance, doing the work to code on my own",
+      "edit_target_substring": "Routes and secures conduit with close attention to code compliance",
       "expected_iteration_themes": {
         "experience_probes": [
           "Load calculations exposure not yet covered by prior clarifications"

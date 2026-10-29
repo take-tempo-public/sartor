@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "State Child Welfare Board",
       "name": "Mandated Reporter Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with schools and clinics through referral coordination for resident families, raising the share of completed referrals by 55 percent."
+          "text": "Coordinates with local schools and clinics through referral coordination, raising the share of completed tenant referrals by 55 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Conducts intake interviews and needs assessments with residents and drafts court reports that summarize household circumstances for supervisor review."
+          "text": "Conducts intake interviews and needs assessments with tenants and drafts court reports from the findings for supervisor review."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintains case records in Microsoft Access, reducing the time needed to locate and update client files by 30 percent."
+          "text": "Maintains tenant case records in Microsoft Access, cutting the time spent locating client files by 30 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Refers families to housing and food programs and applies crisis intervention when households face an urgent risk of losing shelter."
+          "text": "Refers families to housing and food programs and applies crisis intervention when tenants face an urgent loss of shelter or food."
         }
       ],
       "company": "Stonegate Housing Authority",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Conducts intake interviews and needs assessments for residents seeking housing support at Stonegate Housing Authority, working under close supervision."
+          "text": "Handles intake interviews and needs assessments for tenants seeking support at Stonegate Housing Authority under close supervision."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Writes service plans for resident families at Stonegate Housing Authority, turning assessment findings into clear steps reviewed with a supervisor."
+          "text": "Writes service plans for tenants at Stonegate Housing Authority, drawing on needs assessments and working closely with a supervisor."
         }
       ],
       "titles": [
@@ -194,7 +194,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level social services caseworker with about 1 year of experience supporting housing authority clients under close supervision. Brings client advocacy, needs assessments and record keeping in Microsoft Access to a small, supervised share of the caseload."
+      "text": "Entry-level social services case aide with about 1 year of experience supporting tenants at a housing authority under close supervision. Brings client advocacy, needs assessments and case record keeping in Microsoft Access, along with a B.S.W. in Social Work."
     },
     {
       "display_order": 1,
@@ -205,7 +205,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Case aide with about 1 year of experience handling a small share of casework alongside a supervisor in public housing services. Applies needs assessments, client advocacy and Microsoft Access to intake, referrals and case records."
+      "text": "Case aide with about 1 year of experience handling a small share of casework alongside a supervisor at Stonegate Housing Authority. Skilled in client advocacy, needs assessments, intake interviews and tracking cases in Microsoft Access."
     }
   ],
   "tags": []

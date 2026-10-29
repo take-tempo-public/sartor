@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "State Department of Education",
       "name": "State Teaching Licence"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans daily classroom routines through structured lesson planning, reducing instructional time lost during transitions by 50 percent."
+          "text": "Plan daily classroom routines through lesson planning with the lead teacher, cutting transition time between activities by 50 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Records student progress and behavior in ClassDojo, sharing regular updates with the lead teacher to guide next instructional steps."
+          "text": "Track student progress with ClassDojo, recording daily behavior and participation notes to share with the lead teacher and families."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Collaborates with grade-level colleagues to plan consistent behavior supports, contributing to a 30 percent drop in classroom disruptions."
+          "text": "Coordinate behavior supports with grade-level colleagues during team planning, reducing classroom referrals by 30 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Adapts lessons in Nearpod for different learners, adding visuals and leveled questions so every student can take part."
+          "text": "Adapt lessons for different learners in Nearpod, adding visual prompts and paced activities for students who need extra support."
         }
       ],
       "company": "Oakridge Charter School",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supports the lead teacher at Oakridge Charter School in running consistent daily classroom routines for elementary students."
+          "text": "Supports the lead teacher in an elementary classroom at Oakridge Charter School, building and maintaining the daily routines that keep students on task."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Assists the lead teacher at Oakridge Charter School in tracking student progress and using classroom evidence to shape instruction."
+          "text": "Assists with assessing student progress at Oakridge Charter School, gathering classroom evidence to guide instruction under the direction of a lead teacher."
         }
       ],
       "titles": [
@@ -194,7 +194,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level elementary teacher with about 2 years of classroom experience, supporting a lead teacher on a defined share of instruction under close supervision. Uses Google Classroom, formative assessment and Nearpod to deliver lessons and check student understanding."
+      "text": "Entry-level elementary teacher with about 2 years of experience supporting a lead teacher on a small share of classroom instruction. Uses Google Classroom, formative assessment and Nearpod to deliver lessons and check student understanding."
     },
     {
       "display_order": 1,
@@ -205,7 +205,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Associate teacher with about 2 years in elementary classrooms and a B.A. in Elementary Education, working alongside a supervising teacher on selected lessons and small groups. Applies formative assessment to track learning and uses Google Classroom and Nearpod for assignments and interactive lessons."
+      "text": "Elementary teaching professional at the entry level, with about 2 years of experience working under close supervision on assigned lessons and small groups. Brings working knowledge of formative assessment, Google Classroom and Nearpod, along with a B.A. in Elementary Education and a State Teaching Licence."
     }
   ],
   "tags": []

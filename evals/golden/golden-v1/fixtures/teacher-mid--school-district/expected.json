@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
       },
-      "edit_replacement": "Tracks student progress through regular checks of classwork and reading, carrying a full caseload or class without close supervision",
-      "edit_target_substring": "Tracks student progress through regular checks of classwork and reading",
+      "edit_replacement": "Tracks student progress through regular checks and uses parent communication, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Tracks student progress through regular checks and uses parent communication",
       "expected_iteration_themes": {
         "experience_probes": [
           "Phonics instruction exposure not yet covered by prior clarifications"

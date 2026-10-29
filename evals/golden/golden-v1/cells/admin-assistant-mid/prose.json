@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:3b7f9c9fc23c688b45492a80b5c2ef52f2306e5449dffea28597a99285f081ec",
+    "profile_sha256": "sha256:42b1a81652ca7baafd9f8b3ee37920b629f8dd6238dc7015eeaa2cea55cb6ab6",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVMF8U8yurQ3FbpCVv6z"
+      "req_011CgXP8SPhDyrr5vyh3VhGx"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 3711,
-      "output_tokens": 2581
+      "output_tokens": 2732
     }
   },
   "schema": 1,
   "slots": {
-    "jd.freight-company.about": "Position summary\nWhitcombe Logistics Group seeks an Administrative Assistant to support daily office operations at its Memphis, TN location. This on-site role supports staff across the freight business with purchasing, records, reception and scheduling, and ensures that routine office requests are completed accurately and on time.\nMinimum: prior office administration experience and working knowledge of Microsoft Office.\nPreferred: experience in a freight or logistics setting.",
-    "jd.freight-company.duties": "Responsibilities\n- Process employee expense reports, verify receipts and route claims for approval.\n- Order office supplies, track deliveries and maintain adequate stock levels.\n- Take, prepare and distribute meeting notes and follow up on action items.\n- Coordinate with vendors on orders, pricing and billing questions.\n- Maintain organized physical and electronic records for the office.\n- Greet visitors and direct calls to the appropriate staff.",
-    "jd.freight-company.needs": "Minimum and preferred qualifications\n- 5 or more years of administrative or office support experience.\n- Demonstrated experience in vendor coordination, purchase ordering and invoice processing.\n- Experience with visitor reception and front desk coverage.\n- Ability to record and distribute accurate meeting minutes.\n- Proficiency in Microsoft Outlook for email and calendar management.\n- Office Administration Certificate required.",
-    "r1.b1": "Maintain client and office files through consistent records filing, cutting document retrieval time by 25 percent.",
-    "r1.b2": "Cover front desk phones and greet visitors, and handle purchase ordering for reception supplies between calls.",
-    "r1.b3": "Order office supplies for the team and handle invoice processing for each delivery, reducing supply costs by 30 percent.",
-    "r1.b4": "Process staff expense reports and use vendor coordination to resolve billing questions before reimbursement.",
-    "r1.i1": "Handles phone and visitor coverage at Elmstead Partners, answering calls and welcoming guests at the front desk.",
-    "r1.i2": "Keeps office files and records in order at Elmstead Partners, from intake and filing through regular upkeep.",
-    "r2.b1": "Scheduled meetings and appointments for managers and prepared calendars and agendas in Microsoft Word, reducing scheduling conflicts by 10 percent.",
-    "r2.b2": "Took and distributed notes for staff meetings while also covering visitor reception at the front office.",
-    "r2.b3": "Arranged travel and event logistics, tracking bookings and budgets in Microsoft Excel and cutting arrangement costs by 35 percent.",
-    "r2.b4": "Filed and updated office records, including itineraries and receipts from travel booking, so documents stayed easy to find.",
-    "r2.i1": "Kept filing and records upkeep current for the office at Neighborhood Table Services as an Office Assistant.",
-    "r2.i2": "Processed expense reports for staff at Neighborhood Table Services, checking receipts and forwarding claims for approval.",
-    "summary.1": "Administrative support specialist with about 5 years of experience owning recurring office processes from request to completion. Handles purchase ordering, travel booking and document preparation in Microsoft Word with accurate, timely follow-through.",
-    "summary.2": "Specialist-level administrative support professional with about 5 years of experience taking routine requests through to completion. Skilled in purchase ordering, travel booking and Microsoft Word, closing each task without loose ends."
+    "jd.freight-company.about": "Position summary\nWhitcombe Logistics Group is seeking an Administrative Assistant to support its on-site office in Memphis, TN. The role provides administrative support to the operations team of a freight company and keeps records, purchasing and correspondence accurate and on schedule.\nMinimum: experience in office administration and working knowledge of standard office software.\nPreferred: experience in a freight or logistics setting.",
+    "jd.freight-company.duties": "Responsibilities\n- Process employee expense reports, checking receipts against company policy before submission for approval.\n- Order office and operations supplies, track deliveries and keep stock at agreed levels.\n- Take accurate notes at team and management meetings and circulate them to attendees promptly.\n- Maintain organized physical and digital files for purchasing and administrative records.\n- Serve as a point of contact for staff questions on administrative procedures.",
+    "jd.freight-company.needs": "Minimum and preferred qualifications\n- 5 or more years of experience in an administrative support role.\n- Demonstrated skill in vendor coordination, purchase ordering and invoice processing.\n- Experience with visitor reception and handling incoming calls in a professional manner.\n- Ability to prepare clear meeting minutes and distribute them on time.\n- Proficiency with Microsoft Outlook for email and calendar management.\n- Office Administration Certificate required.",
+    "r1.b1": "Maintain records filing for client and office documents, reorganizing the shared archive and cutting document retrieval time by 25 percent.",
+    "r1.b2": "Cover office phones and greet visitors at reception, handling purchase ordering for front desk supplies between calls.",
+    "r1.b3": "Order office supplies and manage invoice processing for each delivery, reducing late supplier payments by 30 percent.",
+    "r1.b4": "Process staff expense reports and handle vendor coordination to confirm charges before reimbursement.",
+    "r1.i1": "Serve as the first point of contact at Elmstead Partners, covering office phones and receiving visitors as Administrative Assistant.",
+    "r1.i2": "Keep office files and records at Elmstead Partners organized, current and easy for staff to retrieve.",
+    "r2.b1": "Scheduled meetings and appointments for managers, preparing calendars and agendas in Microsoft Word and reducing scheduling conflicts by 10 percent.",
+    "r2.b2": "Recorded notes at staff meetings and handled visitor reception for attendees, distributing written summaries afterward.",
+    "r2.b3": "Arranged staff travel and events, tracking bookings and costs in Microsoft Excel and lowering travel spending by 35 percent.",
+    "r2.b4": "Maintained paper and digital records, filing itineraries and receipts from travel booking for later reference.",
+    "r2.i1": "Kept office files and records organized at Neighborhood Table Services as Office Assistant, supporting daily operations.",
+    "r2.i2": "Processed expense reports for staff at Neighborhood Table Services, checking receipts and preparing reimbursements on schedule.",
+    "summary.1": "Administrative support specialist with about 5 years of experience owning recurring office processes from request to completion. Handles purchase ordering, travel booking and document preparation in Microsoft Word.",
+    "summary.2": "Specialist-level administrative support professional with 5 years of experience taking routine requests through to completion. Skilled in purchase ordering, travel booking, Microsoft Word, invoice processing and vendor coordination."
   }
 }

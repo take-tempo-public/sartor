@@ -26,8 +26,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Working with a supervisor close by on a small share of the work."
       },
-      "edit_replacement": "Conducts intake interviews and needs assessments with residents and drafts, working with a supervisor close by on a small share of the work",
-      "edit_target_substring": "Conducts intake interviews and needs assessments with residents and drafts",
+      "edit_replacement": "Conducts intake interviews and needs assessments with tenants and drafts, working with a supervisor close by on a small share of the work",
+      "edit_target_substring": "Conducts intake interviews and needs assessments with tenants and drafts",
       "expected_iteration_themes": {
         "experience_probes": [
           "Home visits exposure not yet covered by prior clarifications"

@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting how the team handles one area of the work."
       },
-      "edit_replacement": "using Microsoft Excel checklists to flag entries that need correction, setting how the team handles one area of the work",
-      "edit_target_substring": "using Microsoft Excel checklists to flag entries that need correction",
+      "edit_replacement": "Reviews journal entries and reconciliations prepared by staff accountants, setting how the team handles one area of the work",
+      "edit_target_substring": "Reviews journal entries and reconciliations prepared by staff accountants",
       "expected_iteration_themes": {
         "experience_probes": [
           "Account reconciliation exposure not yet covered by prior clarifications"

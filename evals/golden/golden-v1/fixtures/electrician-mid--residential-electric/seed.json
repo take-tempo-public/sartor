@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2021",
       "issuer": "Safety Training Council",
       "name": "Construction Safety Card"
     },
@@ -34,7 +34,7 @@
       "expires": null,
       "id": 803,
       "is_active": true,
-      "issued": "2024",
+      "issued": "2021",
       "issuer": "State Licensing Board",
       "name": "Journeyman Electrician Licence"
     }
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Pulls and terminates wire with careful power tool use, cutting rework on terminations by 20 percent."
+          "text": "Pulls and terminates wire through framed walls and finished spaces, applying careful power tool use to cut rough-in time by 20 percent."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Runs conduit for new circuits, checking code compliance on each run before inspection."
+          "text": "Routes and secures conduit with close attention to code compliance, checking each run against local rules before inspection."
         },
         {
           "display_order": 2,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Traces faults in existing wiring through methodical circuit testing, isolating the problem before any repair begins."
+          "text": "Traces faults in existing wiring with methodical circuit testing, isolating the cause before replacing any parts."
         }
       ],
       "company": "Redfern Electrical Services",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Installs service panels and fixtures for Redfern Electrical Services as a licensed journeyman, working to code without direct supervision."
+          "text": "Installs panels and fixtures for Redfern Electrical Services, completing each job independently and to code."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Traces and repairs electrical faults for Redfern Electrical Services, working independently on site as a journeyman electrician."
+          "text": "Traces and repairs electrical faults for Redfern Electrical Services, from dead circuits to loose connections."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Read plans to lay out grounding and bonding paths, cutting layout corrections by 30 percent."
+          "text": "Read plans to lay out grounding and bonding paths before rough-in, cutting inspection rework by 30 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tested circuits after supervised panel installation, confirming breaker labelling and continuity before energising."
+          "text": "Tested circuits after panel installation to confirm correct breaker sizing and labelling before handover."
         },
         {
           "display_order": 2,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Pulled and terminated wire guided by blueprint reading, reducing material waste by 15 percent."
+          "text": "Pulled and terminated wire guided by blueprint reading of each floor plan, reducing material waste by 15 percent."
         },
         {
           "display_order": 3,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ran conduit across job sites, using conduit bending to fit offsets and saddles under journeyman supervision."
+          "text": "Ran conduit across job sites, using conduit bending to form offsets and saddles around obstacles."
         }
       ],
       "company": "Summit Power Contractors",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Helped trace electrical faults at Summit Power Contractors while learning the trade as a registered apprentice."
+          "text": "Helped trace electrical faults under the supervision of licensed electricians at Summit Power Contractors."
         },
         {
           "display_order": 1,
@@ -216,7 +216,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Ran conduit and supported installations at Summit Power Contractors as an apprentice working under licensed journeymen."
+          "text": "Ran conduit on job sites for Summit Power Contractors while learning the trade under journeyman supervision."
         }
       ],
       "titles": [
@@ -301,7 +301,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Journeyman electrician with about 5 years in the trade, licensed to complete installations to code without supervision. Brings code compliance, multimeter use and blueprint reading to every job from rough-in to final inspection."
+      "text": "Journeyman electrician with about 5 years of experience completing electrical work to code without supervision. Brings code compliance, multimeter use and blueprint reading to wiring, panel and fixture jobs."
     },
     {
       "display_order": 1,
@@ -312,7 +312,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Licensed journeyman electrician with about 5 years of hands-on electrical work, from apprenticeship to independent installations. Relies on blueprint reading, multimeter use and code compliance to finish each job correctly and pass inspection."
+      "text": "Licensed journeyman electrician with about 5 years in the trade, taking jobs from plans to final inspection independently. Strengths include blueprint reading, multimeter use and code compliance on every installation."
     }
   ],
   "tags": []

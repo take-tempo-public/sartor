@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2023",
+      "issued": "2022",
       "issuer": "State Department of Education",
       "name": "State Teaching Licence"
     },
@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2025",
+      "issued": "2023",
       "issuer": "State Department of Education",
       "name": "Reading Specialist Endorsement"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Adapts lessons for different learners with Nearpod activities set at several levels of difficulty, raising average quiz scores by 15 percent."
+          "text": "Adapts reading and math tasks for different learners through Nearpod lessons with tiered questions, raising the share of students completing assigned work by 15 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Tracks student progress through regular checks of classwork and reading and shares the results through parent communication so families know where to help at home."
+          "text": "Tracks student progress through regular checks and uses parent communication to share findings so families know where each child stands."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Builds classroom routines around quick formative assessment checks, cutting time lost during transitions by 40 percent."
+          "text": "Builds consistent classroom routines around formative assessment, using quick checks to adjust pacing and cutting time lost to transitions by 40 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Plans daily math lessons with math manipulatives so students model each problem with objects before moving to written work."
+          "text": "Plans daily lessons that use math manipulatives to move students from concrete models to written problems."
         }
       ],
       "company": "Hillcrest Elementary School",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Teaches a full elementary class at Hillcrest Elementary School, with a daily focus on small-group reading that matches texts to each student's current level."
+          "text": "Teaches a full class at Hillcrest Elementary School, leading small-group reading sessions matched to each group's current skills."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads a full elementary class at Hillcrest Elementary School and checks student progress often to decide what each child needs next."
+          "text": "Leads a classroom at Hillcrest Elementary School with a focus on assessing student progress and using the results to guide instruction."
         }
       ],
       "titles": [
@@ -144,7 +144,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Led small-group reading using differentiated instruction, raising the share of students reading at grade level by 40 percent."
+          "text": "Led small-group reading using differentiated instruction, grouping students by need and raising the share reading at grade level by 40 percent."
         },
         {
           "display_order": 1,
@@ -155,7 +155,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Planned with grade-level colleagues to apply the same behavior supports across classrooms so students met consistent expectations."
+          "text": "Collaborated with grade-level colleagues in team planning to design behavior supports applied consistently across classrooms."
         },
         {
           "display_order": 2,
@@ -166,7 +166,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared families for parent conferences through ClassDojo updates, increasing conference attendance by 15 percent."
+          "text": "Prepared for parent conferences with ClassDojo updates on progress and behavior, increasing conference attendance by 15 percent."
         },
         {
           "display_order": 3,
@@ -177,7 +177,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Applied classroom management routines that freed time to adapt assignments for different learners during independent work."
+          "text": "Adapted work for different learners while applying classroom management strategies that kept the whole class on task during small-group instruction."
         }
       ],
       "company": "Willowbrook Elementary School",
@@ -197,7 +197,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported elementary instruction at Willowbrook Elementary School as an associate teacher, gathering and reviewing evidence of student progress to guide lesson changes."
+          "text": "Supported instruction at Willowbrook Elementary School as an Associate Teacher, assessing student progress and sharing results with the lead teaching team."
         },
         {
           "display_order": 1,
@@ -207,7 +207,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Worked as an associate teacher at Willowbrook Elementary School, planning lessons and shared routines alongside grade-level colleagues."
+          "text": "Worked as an Associate Teacher at Willowbrook Elementary School, planning lessons and units in a team with grade-level colleagues."
         }
       ],
       "titles": [
@@ -292,7 +292,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Elementary classroom teacher with about 4 years of experience who runs a full class independently, from lesson design to family contact. Uses Nearpod, behavior supports and math manipulatives to keep instruction active and students on task."
+      "text": "Elementary classroom teacher with about 4 years of experience running a full class without close supervision. Uses Nearpod, behavior supports and math manipulatives to keep lessons active and students on track."
     },
     {
       "display_order": 1,
@@ -303,7 +303,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Licensed elementary teacher holding a Reading Specialist Endorsement, with about 4 years of classroom experience and full responsibility for a class without close supervision. Combines behavior supports, math manipulatives and Nearpod lessons to meet varied student needs."
+      "text": "Elementary teaching professional with 4 years of experience who carries a full class independently, from planning to assessment. Combines Nearpod lessons, math manipulatives and consistent behavior supports to meet varied student needs."
     }
   ],
   "tags": []

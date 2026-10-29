@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2017",
+      "issued": "2014",
       "issuer": "Business Skills Academy",
       "name": "Office Administration Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Takes meeting notes for staff meetings and links agreed actions to purchase ordering, cutting order turnaround time by 20 percent."
+          "text": "Records meeting notes for leadership sessions and applies purchase ordering steps to agreed follow-up actions, cutting order turnaround time by 20 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates travel and event arrangements for staff and handles expense reporting for each trip and event so costs are recorded and reconciled."
+          "text": "Arranges staff travel and event logistics and handles expense reporting for each trip, keeping receipts and approvals in one place."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintains filing and records upkeep alongside visitor reception duties, reducing time spent locating documents by 45 percent."
+          "text": "Maintains filing and records upkeep at the front desk alongside visitor reception, reducing time spent locating files by 45 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Manages office budgets and vendor relationships, using records filing to keep contracts, invoices and spending records organized and easy to review."
+          "text": "Manages office budgets and vendor accounts, using records filing to keep contracts, quotes and invoices current for review."
         },
         {
           "display_order": 4,
@@ -90,7 +90,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Processes expense reports and uses meeting minutes to confirm approved spending, shortening reimbursement time by 45 percent."
+          "text": "Processes expense reports against approvals captured in meeting minutes, shortening reimbursement time by 45 percent."
         }
       ],
       "company": "Stonebridge Community Trust",
@@ -110,7 +110,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Manages office operations at Stonebridge Community Trust, including travel and event arrangements for staff."
+          "text": "Oversees office operations at Stonebridge Community Trust, including travel and event arrangements for staff and leadership."
         },
         {
           "display_order": 1,
@@ -120,7 +120,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads the office at Stonebridge Community Trust and trains new administrative staff on office procedures and tools."
+          "text": "Leads the administrative office at Stonebridge Community Trust and trains new administrative staff on office procedures."
         }
       ],
       "titles": [
@@ -146,7 +146,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Scheduled meetings and appointments for managers and prepared agendas in Microsoft Word, reducing scheduling conflicts by 25 percent."
+          "text": "Coordinated calendars for managers and built scheduling templates in Microsoft Word, reducing booking conflicts by 25 percent."
         },
         {
           "display_order": 1,
@@ -157,7 +157,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Trained new administrative staff on Microsoft Outlook calendars, email and shared mailboxes, helping them handle routine office tasks on their own."
+          "text": "Trained new administrative staff on inbox, calendar and contact management in Microsoft Outlook."
         },
         {
           "display_order": 2,
@@ -168,7 +168,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Covered phones and visitors at the front desk and applied document formatting standards to outgoing letters, cutting rework by 25 percent."
+          "text": "Covered phones and visitor arrivals while applying document formatting standards to outgoing letters, cutting rework by 25 percent."
         },
         {
           "display_order": 3,
@@ -179,7 +179,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ordered office supplies through purchase ordering, tracking each request from approval to delivery to keep stock levels steady."
+          "text": "Ordered office supplies through purchase ordering, matching quantities to usage and tracking deliveries against each order."
         },
         {
           "display_order": 4,
@@ -190,7 +190,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Took meeting notes and tied action items to expense reporting, reducing late expense submissions by 50 percent."
+          "text": "Took meeting notes and linked action items to expense reporting, speeding up approval of submitted claims by 50 percent."
         }
       ],
       "company": "Tillman Brothers",
@@ -210,7 +210,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Provided senior administrative support at Tillman Brothers and trained new administrative staff on office procedures."
+          "text": "Provided senior administrative support at Tillman Brothers and trained new administrative staff on daily office tasks."
         },
         {
           "display_order": 1,
@@ -220,7 +220,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Supported managers at Tillman Brothers with administrative work, including taking and distributing meeting notes."
+          "text": "Supported managers at Tillman Brothers with senior administrative work, including taking and distributing meeting notes."
         }
       ],
       "titles": [
@@ -257,7 +257,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Managed calendars and appointments for managers and kept scheduling records current through records filing."
+          "text": "Scheduled appointments and meetings for managers, using records filing to keep agendas and supporting papers ready."
         },
         {
           "display_order": 2,
@@ -268,7 +268,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Provided phone and visitor coverage and prepared meeting minutes for department meetings, reducing turnaround on minutes by 15 percent."
+          "text": "Handled phone and visitor coverage and produced meeting minutes for department meetings, cutting minutes turnaround time by 15 percent."
         },
         {
           "display_order": 3,
@@ -279,7 +279,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Ordered office supplies and drafted order requests and supplier letters in Microsoft Word."
+          "text": "Ordered supplies for the office and prepared order requests and stock lists in Microsoft Word."
         },
         {
           "display_order": 4,
@@ -290,7 +290,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Recorded meeting notes and circulated them through Microsoft Outlook, cutting the time to distribute notes by 30 percent."
+          "text": "Captured meeting notes and circulated them through Microsoft Outlook, reducing follow-up questions from attendees by 30 percent."
         }
       ],
       "company": "Riverbend Health Network",
@@ -310,7 +310,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Handled filing and records upkeep for Riverbend Health Network, keeping office documents organized and easy to find."
+          "text": "Provided administrative support at Riverbend Health Network with a focus on filing and records upkeep."
         },
         {
           "display_order": 1,
@@ -320,7 +320,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Kept schedules for managers at Riverbend Health Network and coordinated their appointments and meetings."
+          "text": "Supported managers at Riverbend Health Network as an administrative assistant, handling scheduling for meetings and appointments."
         }
       ],
       "titles": [
@@ -405,7 +405,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Office manager with 12 years of experience who leads administrative teams and answers for the results of the office support function. Brings skills in document formatting, Microsoft Outlook and records filing."
+      "text": "Office manager with 12 years of administrative support experience who leads a team and answers for the results of the office function. Skilled in document formatting, Microsoft Outlook and records filing, with a track record of keeping operations organized and accountable."
     },
     {
       "display_order": 1,
@@ -416,7 +416,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Administrative support professional with about 12 years of experience, currently managing an office team and accountable for its results. Uses document formatting, Microsoft Outlook and records filing to keep office work accurate and on schedule."
+      "text": "Administrative support leader with 12 years of experience managing office teams and owning the outcomes of the administrative function. Brings practical skill in records filing, document formatting and Microsoft Outlook to keep schedules, files and correspondence in order."
     }
   ],
   "tags": []
