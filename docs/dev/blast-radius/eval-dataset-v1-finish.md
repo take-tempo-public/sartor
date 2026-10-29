@@ -155,3 +155,41 @@ difference is that one cell, which is among the 37 regenerated anyway. One-certi
 untouched: `golden_set check` after the fix flags exactly one existing cell as stale, `electrician-lead` (the one already
 regenerated, with the old years), and none of the 58 others. The `TestCommittedSuite` tests fail until the 36 remaining
 cells are regenerated and the pairs re-derived (expected mid-regeneration state).
+
+**Paid run A2, `electrician-lead` again with the sorted years (2026-10-28):** exit 0, **$0.0956**, log line `$8.0629 of
+$13.0000 in all`. The old-years output ($0.0877, run A) is kept outside the repo, in the session scratchpad. The
+certifications now ascend with tier (Apprentice Card 2019, Safety Card 2020, Journeyman 2023, Master 2026).
+
+**A third defect, found by hand-reading A2 (credential dates against role titles).** The same résumé has the person working
+as a Journeyman Electrician from January 2013 and a Master Electrician from November 2020, but holding the Journeyman
+Licence from 2023 and the Master Licence from 2026. Cause: the year draw (`golden_set.py:1815-1826`) knows nothing about the
+role titles; a credential tier-N is dated anywhere in the career. It predates the sort fix (run A had Journeyman 2026 against
+the same 2013 role). **Measured, free (`scratchpad/audit_titles.py` and `audit_titles_narrow.py`), rebuilding all 37
+multi-certification cells with the sorted-year builder:** the strict rule (a tier-t credential dated after the earliest role
+titled for any tier >= t) flags **32 of 37**; the narrower rule I would defend (a mid-or-higher credential dated after the
+earliest role titled for its own tier) flags **28 of 37**. Examples: accounting-lead, Certified Public Accountant Licence 2026
+against a role from 2017; electrician-senior, Journeyman 2022 against a role from 2019. Both rules are heuristics I wrote, not
+a check from a source; the strict one over-counts (an entry-level card obtained on the job is plausible), the narrow one is
+the figure to use. **I should have run this free audit before the first paid cell**; the hand-read caught it instead, at a
+cost of one extra request ($0.0956). Spend stopped here at $8.0629 pending the owner's decision.
+
+**Owner's decision (2026-10-28, chat): bound the dates by role, then sweep.** Fix (`golden_set.py`, the `role_start` /
+`role_cap` / `caps` / `cert_years` block): a credential of tier t >= mid is capped at the start year of the earliest role
+titled for tier t or above (that cap does not fall as the tier rises); an entry-tier credential takes the lowest cap among
+the higher credentials held; a cell holding only entry-tier credentials is capped by nothing; the capped hash draws are
+sorted and handed out in tier order. Test first: `TestCertifications::test_a_credential_is_dated_no_later_than_the_role_titled_for_its_tier`
+(forty seeds, a lead cell): **failed 78 of 80 credentials on the builder before the cap, passes after**. Entry-tier
+credentials are deliberately not bound by a role (the owner's decision said mid-or-higher).
+
+**Measured after the cap (free):** the narrow audit flags **0 of 37**. The strict rule flags **13 of 37**, all of them
+entry-tier credentials dated after a later role (accounting-senior: Bookkeeping Certificate 2023, role from 2019); that is
+the strict-rule residue and not a regression. `golden_set check` now flags four existing cells as stale, not one:
+`electrician-lead` (the A2 cell, old uncapped years) **and three cells outside the 37**: `construction-pm-lead`,
+`construction-pm-mid`, `project-mgmt-mid`. Each holds one mid-or-higher credential whose year is now capped (Construction
+Safety Manager Certificate 2023 to 2015, 2024 to 2023; Project Practitioner Certificate 2026 to 2024). `scratchpad/diff3.py`
+shows the **only** difference in all three is that one year: `slots` are equal and no other section differs. So the role
+cap reaches **3 cells the enumeration above did not name** (consumers row 8, 9 and 10 grow by 3 cells each). Decision: they
+are regenerated with the rest, because the suite check refuses a profile that differs from a fresh build, and the handoff
+forbids hand-editing a cell. Cost about $0.23, within the $13.00 cap; the plan's projection was 37 cells, it is now 40
+(36 not yet redone + `electrician-lead` a third time + the 3). The earlier statement above that the fix leaves "no cell
+outside the 37" was true of the sort fix and is **false of the role cap**.

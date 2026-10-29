@@ -1813,12 +1813,31 @@ def build_profile(
     held_certs = [c for c in certs if LEVELS.index(c["level"]) <= tier]
     absent_certs = [c for c in certs if LEVELS.index(c["level"]) > tier]
     first_year, last_year = int(oldest_year), int(ASOF[:4])
-    # Each year is the same stable draw as before, but the sorted draws are handed out in tier order, so a
-    # higher tier is never dated before a lower one (a Master licence before the Journeyman licence). A
-    # cell with one certification is unchanged, and so is a cell whose draws already ran in tier order.
+    # A credential of tier t is held before the candidate's earliest role titled for tier t or above (the
+    # Journeyman licence before the Journeyman role). `role_cap` is that role's start year, which does not
+    # fall as the tier rises. An entry-tier credential has no role of its own, so it takes the lowest cap
+    # among the higher credentials held; a cell holding only entry-tier credentials is capped by nothing.
+    role_start = [
+        (LEVELS.index(t), int(r["start"][:4])) for t, r in zip(role_tiers, roles, strict=True)
+    ]
+
+    def role_cap(c: dict[str, Any]) -> int:
+        return min(y for t, y in role_start if t >= LEVELS.index(c["level"]))
+
+    caps = [role_cap(c) if LEVELS.index(c["level"]) >= 1 else last_year for c in held_certs]
+    entry_cap = min(caps, default=last_year)  # the lowest-tier bounded credential's cap
+    caps = [
+        entry_cap if LEVELS.index(c["level"]) == 0 else cap
+        for c, cap in zip(held_certs, caps, strict=True)
+    ]
+    # Each year is a stable hash draw within its cap, and the sorted draws are handed out in tier order, so a
+    # higher tier is never dated before a lower one (a Master licence before the Journeyman licence). Because
+    # the caps do not fall with the tier, the k-th smallest draw is within the k-th credential's cap. A cell
+    # with one entry-tier credential is unchanged.
     cert_years = sorted(
-        first_year + _hash_int(seed, f"cert-year:{c['name']}") % (last_year - first_year + 1)
-        for c in held_certs
+        first_year
+        + _hash_int(seed, f"cert-year:{c['name']}") % (min(cap, last_year) - first_year + 1)
+        for c, cap in zip(held_certs, caps, strict=True)
     )
     cert_items = [
         {"name": c["name"], "issuer": c["issuer"], "year": str(year)}

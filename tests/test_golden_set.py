@@ -1027,6 +1027,36 @@ class TestCertifications:
             f"{len(disordered)} of 40 cells date a higher tier first: {disordered[:3]}"
         )
 
+    def test_a_credential_is_dated_no_later_than_the_role_titled_for_its_tier(self) -> None:
+        # A Journeyman Operator licence dated after the candidate's Operator role began is a fault no check
+        # of the prose can see. The years are hash draws, so try forty seeds on a lead cell (lead, senior, mid).
+        tier_of = {c["name"]: c["level"] for c in CERT_FACTS["certifications"]}
+        late: list[str] = []
+        checked = 0
+        for n in range(40):
+            facts = CERT_FACTS | {"profession": f"{CERT_FACTS['profession']}-{n}"}
+            profile = gs.build_profile(facts, _ladder("lead"), "lead")
+            roles = [
+                r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]
+            ]
+            for cert in (
+                c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+            ):
+                tier = tier_of[cert["name"]]
+                if tier == "entry":
+                    continue
+                starts = [int(r["start"][:4]) for r in roles if r["title"] == facts["titles"][tier]]
+                control(len(starts) >= 1, f"the lead cell must have a {tier}-titled role: {roles}")
+                checked += 1
+                if int(cert["year"]) > min(starts):
+                    late.append(
+                        f"{facts['profession']}: {cert['name']} {cert['year']} > role {min(starts)}"
+                    )
+        control(checked == 80, f"expected 40 cells x 2 credentials above entry, checked {checked}")
+        assert not late, (
+            f"{len(late)} of {checked} credentials are dated after their role: {late[:3]}"
+        )
+
     @pytest.mark.parametrize(
         ("level", "held"),
         [
