@@ -1865,10 +1865,10 @@ def build_profile(
             lo=40,
             hi=160,
         )
-        asked_certs = held_certs[:1] + absent_certs[:1]
+        asked_certs = held_certs[-1:] + absent_certs[:1]
         cert_ask = ""
         if held_certs:
-            cert_ask += f" State {held_certs[0]['name']} as a required licence or certification."
+            cert_ask += f" State {held_certs[-1]['name']} as a required licence or certification."
         if absent_certs:
             cert_ask += f" State {absent_certs[0]['name']} as preferred."
         slots[jd_slots_for[2]] = _slot(

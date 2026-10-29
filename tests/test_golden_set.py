@@ -994,14 +994,6 @@ def _cert_names(profile: dict[str, Any]) -> list[str]:
 class TestCertifications:
     """Licences and certifications are facts the candidate holds by tier, and claims the candidate must not make."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        raises=AssertionError,
-        reason="known defect, item 194 scope 1: the posting requires the LOWEST-tier certification held "
-        "(a foreman posting requires an apprentice card), in 37 of the 56 committed cells that hold any. "
-        "Fixing `asked_certs` in build_profile flips this to a strict failure: remove the marker, then "
-        "the suite check's rebuild comparison forces those cells to be regenerated.",
-    )
     def test_the_posting_requires_the_highest_certification_the_candidate_holds(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("senior"), "senior")
         held = _cert_names(profile)  # lowest tier first
@@ -1059,14 +1051,16 @@ class TestCertifications:
     def test_the_jd_requires_a_held_certification_and_names_the_next_as_preferred(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
         needs = profile["slots"]["jd.hospital.needs"]
-        # The lowest-tier held certification is required; the lowest-tier one not yet held is preferred.
-        assert "OSHA 30-Hour Card" in needs["must_include"]
+        # The highest-tier held certification is required; the lowest-tier one not yet held is preferred.
+        assert "Journeyman Licence" in needs["must_include"]
         assert "Master Licence" in needs["must_include"]
-        assert "State OSHA 30-Hour Card as a required" in needs["brief"]
+        assert "OSHA 30-Hour Card" not in needs["must_include"]
+        assert "State Journeyman Licence as a required" in needs["brief"]
         assert "State Master Licence as preferred" in needs["brief"]
-        assert (
-            "30" in needs["allowed_numbers"]
-        )  # a digit in a certification's name is not an invented number
+        # A digit in a certification's name is not an invented number: the entry-tier card is the one
+        # with the "30", so a cell that holds only it asks for it and allows the digit.
+        entry = gs.build_profile(CERT_FACTS, _ladder("entry"), "entry")
+        assert "30" in entry["slots"]["jd.hospital.needs"]["allowed_numbers"]
 
     def test_the_résumé_lists_them_with_issuer_and_a_year_inside_the_career(self) -> None:
         profile = gs.build_profile(CERT_FACTS, _ladder("mid"), "mid")
