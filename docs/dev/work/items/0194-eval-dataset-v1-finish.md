@@ -25,7 +25,7 @@ What is left of the golden set after item 191 built the facts, the generator gua
 
 ## Open questions for the owner
 
-- Raise the cap for item 1 (about $2.8), or accept the realism fault for v1 and record it?
+- ~~Raise the cap for item 1 (about $2.8), or accept the realism fault for v1 and record it?~~ **Answered by the owner on 2026-10-28: raise the total cap to about $13.00 and fix it.** The cap applies to item 1 only; it replaces the $10.00 (of which $7.8797 is logged), covers no calibration run, eval or capture, and the call-log total keeps counting across runs.
 - Try `AUTHOR_EFFORT = "low"`? The owner kept `medium` on 2026-10-28; a different effort would mix settings across cells unless all are regenerated.
 - Did the cut-off `sales-senior` request (a ten-minute laptop standby) bill? The call log cannot say; the provider's usage page can. If it did, the true spend is a little above $7.88.
 - Does the keep-awake request actually prevent Modern Standby on this laptop? Only a long unattended run will show; a closed lid can still sleep a machine set to.
@@ -35,3 +35,7 @@ What is left of the golden set after item 191 built the facts, the generator gua
 ### 2026-10-28 -- filed on feat/eval-dataset-v1
 
 Filed at the close-out of item 191. Nothing here is started.
+
+### 2026-10-28 -- owner decision at the close of item 191
+
+Asked, after the hand-read found the certification-requirement defect: raise the cap, accept the fault, or decide later. **The owner chose to raise the total cap to about $13.00 and fix it** (scope 1). Order of work, unchanged: write the failing test first (the strict expected-failure in `tests/test_golden_set.py::TestCertifications` already asserts the right behaviour; fixing `asked_certs` in `build_profile` flips it to a strict failure, so remove its marker in the same commit), change the one line, delete the 37 stale cells and their fixtures (the suite check refuses a cell that no longer matches a fresh build), regenerate them with `--cell` batches under `--max-total-spend 13`, hand-read a sample of the new postings, and re-derive the pairs that involve a regenerated cell (`python -m evals.golden_set pairs` then `manifest`).
